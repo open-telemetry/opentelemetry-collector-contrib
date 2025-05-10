@@ -33,15 +33,13 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as json array")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as json array")
 }
 
 func TestParserByteFailureHeadersMismatch(t *testing.T) {
@@ -54,8 +52,7 @@ func TestParserByteFailureHeadersMismatch(t *testing.T) {
 	require.NoError(t, err)
 	parser := op.(*Parser)
 	_, err = parser.parse("[\"stanza\",\"INFO\",\"started agent\", 42, true]")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 5")
+	require.ErrorContains(t, err, "wrong number of fields: expected 3, found 5")
 }
 
 func TestParserJarray(t *testing.T) {

@@ -4,6 +4,7 @@
 package traces
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -39,4 +40,12 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Batch, "batch", true, "Whether to batch traces")
 	fs.IntVar(&c.LoadSize, "size", 0, "Desired minimum size in MB of string data for each trace generated. This can be used to test traces with large payloads, i.e. when testing the OTLP receiver endpoint max receive size.")
 	fs.DurationVar(&c.SpanDuration, "span-duration", 123*time.Microsecond, "The duration of each generated span.")
+}
+
+// Validate validates the test scenario parameters.
+func (c *Config) Validate() error {
+	if c.TotalDuration <= 0 && c.NumTraces <= 0 {
+		return fmt.Errorf("either `traces` or `duration` must be greater than 0")
+	}
+	return nil
 }

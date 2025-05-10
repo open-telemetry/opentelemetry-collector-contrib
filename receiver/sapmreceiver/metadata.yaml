@@ -1,10 +1,9 @@
 type: sapm
-scope_name: otelcol/sapmreceiver
 
 status:
   class: receiver
   stability:
-    beta: [traces]
+    deprecated: [traces]
   distributions: [contrib]
   codeowners:
     active: [atoulme]

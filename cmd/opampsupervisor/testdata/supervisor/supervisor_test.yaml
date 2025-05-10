@@ -11,7 +11,7 @@ capabilities:
   reports_remote_config: true
 
 storage:
-  directory: "{{.storage_dir}}"
+  directory: '{{.storage_dir}}'
 
 agent:
   executable: ../../bin/otelcontribcol_darwin_arm64

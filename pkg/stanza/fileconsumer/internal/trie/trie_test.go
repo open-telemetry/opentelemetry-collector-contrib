@@ -330,7 +330,7 @@ func get(key string, expect any, why string) testOp {
 func put(key string, val any) testOp {
 	return func(t *testing.T, trie *Trie[any]) {
 		trie.Put([]byte(key), val)
-		assert.Equalf(t, val, trie.Get([]byte(key)), "called Put(%s, %d) but HasKey(%s) does not return %d", key, key)
+		assert.Equalf(t, val, trie.Get([]byte(key)), "called Put(%s, %d) but HasKey(%s) does not return %d", key, val, key, val)
 	}
 }
 
@@ -342,7 +342,7 @@ func del(key string, why string) testOp {
 			assert.Falsef(t, trie.Delete([]byte(key)), why)
 		} else {
 			assert.Truef(t, trie.Delete([]byte(key)), why)
-			assert.Falsef(t, trie.Delete([]byte(key)), "called Del(%s) twice in a row and got true both times")
+			assert.Falsef(t, trie.Delete([]byte(key)), "called Del(%s) twice in a row and got true both times", key)
 		}
 	}
 }

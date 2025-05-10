@@ -31,7 +31,7 @@ func TestNewTracesExporter(t *testing.T) {
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	assert.Nil(t, got.Shutdown(context.Background()))
+	assert.NoError(t, got.Shutdown(context.Background()))
 }
 
 func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {

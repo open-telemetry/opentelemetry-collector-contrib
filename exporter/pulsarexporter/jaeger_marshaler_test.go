@@ -30,8 +30,7 @@ func buildTraces() ptrace.Traces {
 
 func TestJaegerJsonBatchMarshaler(t *testing.T) {
 	ptraces := buildTraces()
-	batches, err := jaeger.ProtoFromTraces(ptraces)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(ptraces)
 
 	jsonMarshaler := &jsonpb.Marshaler{}
 	buffer := new(bytes.Buffer)
@@ -43,13 +42,12 @@ func TestJaegerJsonBatchMarshaler(t *testing.T) {
 	}
 	jaegerJSONMessages, err := jaegerJSONMarshaler.Marshal(ptraces, "")
 	require.NoError(t, err)
-	assert.Equal(t, jaegerJSONMessages[0].Payload, jsonBytes)
+	assert.JSONEq(t, string(jaegerJSONMessages[0].Payload), string(jsonBytes))
 }
 
 func TestJaegerProtoBatchMarshaler(t *testing.T) {
 	ptraces := buildTraces()
-	batches, err := jaeger.ProtoFromTraces(ptraces)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(ptraces)
 
 	jaegerProtoBytes, err := batches[0].Marshal()
 	require.NoError(t, err)

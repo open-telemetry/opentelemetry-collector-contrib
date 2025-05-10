@@ -16,10 +16,13 @@ import (
 // Subscription is a subscription to a windows eventlog channel.
 type Subscription struct {
 	handle uintptr
+	Server string
 }
 
 // Open will open the subscription handle.
-func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark) error {
+// It returns an error if the subscription handle is already open or if any step in the process fails.
+// If the remote server is not reachable, it returns an error indicating the failure.
+func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, bookmark Bookmark) error {
 	if s.handle != 0 {
 		return fmt.Errorf("subscription handle is already open")
 	}
@@ -38,7 +41,7 @@ func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark) e
 	}
 
 	flags := s.createFlags(startAt, bookmark)
-	subscriptionHandle, err := evtSubscribe(0, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
+	subscriptionHandle, err := evtSubscribeFunc(sessionHandle, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}
@@ -61,10 +64,12 @@ func (s *Subscription) Close() error {
 	return nil
 }
 
+var errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
+
 // Read will read events from the subscription.
 func (s *Subscription) Read(maxReads int) ([]Event, error) {
 	if s.handle == 0 {
-		return nil, fmt.Errorf("subscription handle is not open")
+		return nil, errSubscriptionHandleNotOpen
 	}
 
 	if maxReads < 1 {
@@ -105,9 +110,18 @@ func (s *Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
 	return EvtSubscribeToFutureEvents
 }
 
-// NewSubscription will create a new subscription with an empty handle.
-func NewSubscription() Subscription {
+// NewRemoteSubscription will create a new remote subscription with an empty handle.
+func NewRemoteSubscription(server string) Subscription {
 	return Subscription{
+		Server: server,
+		handle: 0,
+	}
+}
+
+// NewLocalSubscription will create a new local subscription with an empty handle.
+func NewLocalSubscription() Subscription {
+	return Subscription{
+		Server: "",
 		handle: 0,
 	}
 }

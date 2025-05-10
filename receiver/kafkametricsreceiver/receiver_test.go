@@ -53,8 +53,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 		},
 	}
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	assert.Nil(t, r)
 }
 
@@ -62,7 +61,7 @@ func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
 	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
-		return scraperhelper.NewScraper("brokers", func(context.Context) (pmetric.Metrics, error) {
+		return scraperhelper.NewScraper(brokersScraperType, func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
 	}

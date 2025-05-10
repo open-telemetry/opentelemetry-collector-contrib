@@ -11,5 +11,5 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: By
         scope:
-          name: otelcol/snmpreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
           version: latest

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("file_storage")
+	Type      = component.MustNewType("file_storage")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 )
 
 const (

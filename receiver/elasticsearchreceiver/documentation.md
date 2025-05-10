@@ -181,6 +181,21 @@ The cumulative amount of time updating the cluster state since the node started.
 | state | State of cluster state update | Any Str |
 | type | Type of cluster state update | Str: ``computation``, ``context_construction``, ``commit``, ``completion``, ``master_apply``, ``notification`` |
 
+### elasticsearch.index.documents
+
+The number of documents for an index.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {documents} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of the document. | Str: ``active``, ``deleted`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
 ### elasticsearch.index.operations.completed
 
 The number of operations completed for an index.
@@ -196,6 +211,20 @@ The number of operations completed for an index.
 | operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
 | aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
+### elasticsearch.index.operations.merge.current
+
+The number of currently active segment merges
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {merges} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
 ### elasticsearch.index.operations.time
 
 Time spent on operations for an index.
@@ -209,6 +238,20 @@ Time spent on operations for an index.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
+### elasticsearch.index.segments.count
+
+Number of segments of an index.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {segments} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
 | aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
 ### elasticsearch.index.shards.size
@@ -837,21 +880,6 @@ The number of elements of the query cache for an index.
 | ---- | ----------- | ------ |
 | aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.index.documents
-
-The number of documents for an index.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {documents} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of the document. | Str: ``active``, ``deleted`` |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
-
 ### elasticsearch.index.operations.merge.docs_count
 
 The total number of documents in merge operations for an index.
@@ -873,20 +901,6 @@ The total size of merged segments for an index.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
-
-### elasticsearch.index.segments.count
-
-Number of segments of an index.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {segments} | Sum | Int | Cumulative | false |
 
 #### Attributes
 

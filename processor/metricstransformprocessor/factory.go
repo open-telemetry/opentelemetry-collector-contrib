@@ -49,7 +49,7 @@ func createMetricsProcessor(
 	}
 	metricsProcessor := newMetricsTransformProcessor(set.Logger, hCfg)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

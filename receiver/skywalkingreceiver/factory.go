@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
@@ -48,12 +48,12 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Endpoint:  testutil.EndpointForPort(defaultGRPCPort),
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 		},
 	}

@@ -10,9 +10,16 @@ import (
 
 	"github.com/google/uuid"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	grpccodes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-var ErrTooManyWaiters = fmt.Errorf("rejecting request, too many waiters")
+var ErrTooManyWaiters = status.Error(grpccodes.ResourceExhausted, "rejecting request, too much pending data")
+var ErrRequestTooLarge = status.Error(grpccodes.InvalidArgument, "rejecting request, request is too large")
 
 type BoundedQueue struct {
 	maxLimitBytes   int64
@@ -21,6 +28,7 @@ type BoundedQueue struct {
 	currentWaiters  int64
 	lock            sync.Mutex
 	waiters         *orderedmap.OrderedMap[uuid.UUID, waiter]
+	tracer          trace.Tracer
 }
 
 type waiter struct {
@@ -29,11 +37,12 @@ type waiter struct {
 	ID           uuid.UUID
 }
 
-func NewBoundedQueue(maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
+func NewBoundedQueue(ts component.TelemetrySettings, maxLimitBytes, maxLimitWaiters int64) Queue {
 	return &BoundedQueue{
 		maxLimitBytes:   maxLimitBytes,
 		maxLimitWaiters: maxLimitWaiters,
 		waiters:         orderedmap.New[uuid.UUID, waiter](),
+		tracer:          ts.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
 }
 
@@ -42,7 +51,7 @@ func (bq *BoundedQueue) admit(pendingBytes int64) (bool, error) {
 	defer bq.lock.Unlock()
 
 	if pendingBytes > bq.maxLimitBytes { // will never succeed
-		return false, fmt.Errorf("rejecting request, request size larger than configured limit")
+		return false, ErrRequestTooLarge
 	}
 
 	if bq.currentBytes+pendingBytes <= bq.maxLimitBytes { // no need to wait to admit
@@ -87,7 +96,9 @@ func (bq *BoundedQueue) Acquire(ctx context.Context, pendingBytes int64) error {
 	}
 
 	bq.lock.Unlock()
-	// @@@ instrument this code path
+	ctx, span := bq.tracer.Start(ctx, "admission_blocked",
+		trace.WithAttributes(attribute.Int64("pending", pendingBytes)))
+	defer span.End()
 
 	select {
 	case <-curWaiter.readyCh:
@@ -97,6 +108,7 @@ func (bq *BoundedQueue) Acquire(ctx context.Context, pendingBytes int64) error {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
 		err = fmt.Errorf("context canceled: %w ", ctx.Err())
+		span.SetStatus(codes.Error, "context canceled")
 
 		_, found := bq.waiters.Delete(curWaiter.ID)
 		if !found {

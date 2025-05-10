@@ -88,7 +88,7 @@ func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, 
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.TODO(),
 		params,
 		config,

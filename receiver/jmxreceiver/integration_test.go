@@ -52,13 +52,13 @@ func (suite *JMXIntegrationSuite) SetupSuite() {
 	for version, url := range jmxJarReleases {
 		jarPath, err := downloadJMXMetricGathererJAR(url)
 		suite.VersionToJar[version] = jarPath
-		require.NoError(suite.T(), err)
+		suite.Require().NoError(err)
 	}
 }
 
 func (suite *JMXIntegrationSuite) TearDownSuite() {
 	for _, path := range suite.VersionToJar {
-		require.NoError(suite.T(), os.Remove(path))
+		suite.Require().NoError(os.Remove(path))
 	}
 }
 
@@ -119,7 +119,7 @@ func integrationTest(version string, jar string) func(*testing.T) {
 				}
 				rCfg.OTLPExporterConfig = otlpExporterConfig{
 					Endpoint: "127.0.0.1:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: time.Second,
 					},
 				}
@@ -145,7 +145,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 1000 * time.Millisecond,
 			},
 		},
@@ -157,5 +157,5 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	}()
 
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
-	require.Contains(t, err.Error(), "listen tcp: lookup <invalid>:")
+	require.ErrorContains(t, err, "listen tcp: lookup <invalid>:")
 }

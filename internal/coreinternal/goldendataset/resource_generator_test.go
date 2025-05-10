@@ -16,7 +16,7 @@ func TestGenerateResource(t *testing.T) {
 		if rscID == ResourceEmpty {
 			assert.Equal(t, 0, rsc.Attributes().Len())
 		} else {
-			assert.True(t, rsc.Attributes().Len() > 0)
+			assert.Positive(t, rsc.Attributes().Len())
 		}
 	}
 }

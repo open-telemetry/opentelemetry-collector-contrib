@@ -1,5 +1,4 @@
 type: mongodb
-scope_name: otelcol/mongodbreceiver
 
 status:
   class: receiver

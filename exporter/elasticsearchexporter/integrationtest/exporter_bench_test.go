@@ -57,7 +57,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
-	exporter, err := runnerCfg.factory.CreateLogsExporter(
+	exporter, err := runnerCfg.factory.CreateLogs(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
@@ -86,7 +86,7 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
-	exporter, err := runnerCfg.factory.CreateTracesExporter(
+	exporter, err := runnerCfg.factory.CreateTraces(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
@@ -125,7 +125,7 @@ func prepareBenchmark(
 
 	cfg := &benchRunnerCfg{}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
-	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */)
+	receiver := newElasticsearchDataReceiver(b, withDecodeBulkRequest(false))
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 

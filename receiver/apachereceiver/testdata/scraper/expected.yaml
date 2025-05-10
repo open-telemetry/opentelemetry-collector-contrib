@@ -215,5 +215,5 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{workers}'
         scope:
-          name: otelcol/apachereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
           version: latest

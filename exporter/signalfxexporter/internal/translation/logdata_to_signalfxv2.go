@@ -84,6 +84,8 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 			return true
 		case splunk.SFxEventPropertiesKey:
 			return true
+		case splunk.SFxAccessTokenLabel:
+			return true
 		case splunk.SFxEventType:
 			if v.Type() == pcommon.ValueTypeStr {
 				event.EventType = v.Str()

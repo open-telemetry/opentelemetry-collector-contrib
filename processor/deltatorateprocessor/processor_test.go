@@ -119,7 +119,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				Metrics: test.metrics,
 			}
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -134,10 +134,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.NoError(t, mgp.Start(ctx, nil))
 
 			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
 			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()

@@ -1,14 +1,18 @@
 type: jmx
-scope_name: otelcol/jmxreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick]
+    active: []
+    emeritus: [rmfitzpatrick]
 
 tests:
   config:
     endpoint: myendpoint:12345
+  goleak:
+    ignore:
+      top:
+        - "internal/poll.runtime_pollWait"

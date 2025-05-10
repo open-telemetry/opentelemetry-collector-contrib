@@ -146,3 +146,8 @@ azuredataexplorer/8:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
+azuredataexplorer/9:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # weather to use the default azure auth
+  use_azure_auth: true

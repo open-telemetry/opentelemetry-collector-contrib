@@ -15,5 +15,5 @@ resourceMetrics:
             name: iis.request.queue.age.max
             unit: ms
         scope:
-          name: otelcol/iisreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
           version: latest

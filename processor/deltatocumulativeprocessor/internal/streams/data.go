@@ -9,21 +9,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
-// Samples returns an Iterator over each sample of all streams in the metric
-func Samples[D data.Point[D]](m metrics.Data[D]) Seq[D] {
-	mid := m.Ident()
-
-	return func(yield func(Ident, D) bool) bool {
-		for i := 0; i < m.Len(); i++ {
-			dp := m.At(i)
+func Datapoints[P data.Point[P], List metrics.Data[P]](dps List) func(func(identity.Stream, P) bool) {
+	return func(yield func(identity.Stream, P) bool) {
+		mid := dps.Ident()
+		pslice.All(dps)(func(dp P) bool {
 			id := identity.OfStream(mid, dp)
-			if !yield(id, dp) {
-				break
-			}
-		}
-		return false
+			return yield(id, dp)
+		})
 	}
 }
 
@@ -44,6 +39,7 @@ func Apply[P data.Point[P], List filterable[P]](dps List, fn func(Ident, P) (P, 
 		next, err := fn(id, dp)
 		if err != nil {
 			if !errors.Is(err, Drop) {
+				err = Error(id, err)
 				errs = errors.Join(errs, err)
 			}
 			return false

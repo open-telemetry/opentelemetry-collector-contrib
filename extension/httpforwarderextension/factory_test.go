@@ -5,7 +5,6 @@ package httpforwarderextension
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
@@ -50,14 +49,14 @@ func TestFactory(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			e, err := f.CreateExtension(
+			e, err := f.Create(
 				context.Background(),
 				extensiontest.NewNopSettings(),
 				test.config,
 			)
 			if test.wantErr {
 				if test.wantErrMessage != "" {
-					require.True(t, strings.Contains(err.Error(), test.wantErrMessage))
+					require.Contains(t, err.Error(), test.wantErrMessage)
 				}
 				require.Error(t, err)
 				require.Nil(t, e)

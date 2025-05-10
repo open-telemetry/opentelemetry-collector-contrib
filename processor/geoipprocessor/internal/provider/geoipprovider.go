@@ -5,12 +5,16 @@ package provider // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"net"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+// ErrNoMetadataFound error should be returned when a provider could not find the corresponding IP metadata
+var ErrNoMetadataFound = errors.New("no geo IP metadata found")
 
 // Config is the configuration of a GeoIPProvider.
 type Config interface {

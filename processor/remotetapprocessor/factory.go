@@ -33,7 +33,7 @@ func createMetricsProcessor(ctx context.Context, params processor.Settings, cfg 
 		return newProcessor(params, rCfg)
 	})
 	fn := p.Unwrap().(*wsprocessor).ConsumeMetrics
-	return processorhelper.NewMetricsProcessor(ctx, params, cfg, c,
+	return processorhelper.NewMetrics(ctx, params, cfg, c,
 		fn,
 		processorhelper.WithCapabilities(consumer.Capabilities{
 			MutatesData: false,
@@ -48,7 +48,7 @@ func createLogsProcessor(ctx context.Context, params processor.Settings, cfg com
 		return newProcessor(params, rCfg)
 	})
 	fn := p.Unwrap().(*wsprocessor).ConsumeLogs
-	return processorhelper.NewLogsProcessor(ctx, params, cfg, c,
+	return processorhelper.NewLogs(ctx, params, cfg, c,
 		fn,
 		processorhelper.WithCapabilities(consumer.Capabilities{
 			MutatesData: false,
@@ -63,7 +63,7 @@ func createTraceProcessor(ctx context.Context, params processor.Settings, cfg co
 		return newProcessor(params, rCfg)
 	})
 	fn := p.Unwrap().(*wsprocessor).ConsumeTraces
-	return processorhelper.NewTracesProcessor(ctx, params, cfg, c,
+	return processorhelper.NewTraces(ctx, params, cfg, c,
 		fn,
 		processorhelper.WithCapabilities(consumer.Capabilities{
 			MutatesData: false,

@@ -265,7 +265,7 @@ func TestTracesToMetrics(t *testing.T) {
 			assert.NoError(t, conn.ConsumeTraces(context.Background(), testSpans))
 
 			allMetrics := sink.AllMetrics()
-			assert.Equal(t, 1, len(allMetrics))
+			assert.Len(t, allMetrics, 1)
 
 			// golden.WriteMetrics(t, filepath.Join("testdata", "traces", tc.name+".yaml"), allMetrics[0])
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", tc.name+".yaml"))
@@ -507,7 +507,7 @@ func TestMetricsToMetrics(t *testing.T) {
 			assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics))
 
 			allMetrics := sink.AllMetrics()
-			assert.Equal(t, 1, len(allMetrics))
+			assert.Len(t, allMetrics, 1)
 
 			// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", tc.name+".yaml"), allMetrics[0])
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".yaml"))
@@ -679,7 +679,7 @@ func TestLogsToMetrics(t *testing.T) {
 			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
 
 			allMetrics := sink.AllMetrics()
-			assert.Equal(t, 1, len(allMetrics))
+			assert.Len(t, allMetrics, 1)
 
 			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", tc.name+".yaml"), allMetrics[0])
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".yaml"))

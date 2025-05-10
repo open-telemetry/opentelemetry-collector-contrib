@@ -46,7 +46,7 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, config compo
 		return nil, fmt.Errorf("cannot get DataSetExporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		config,

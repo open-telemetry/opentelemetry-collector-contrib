@@ -1,5 +1,4 @@
 type: hostmetricsreceiver/filesystem
-scope_name: otelcol/hostmetricsreceiver/filesystem
 
 parent: hostmetrics
 

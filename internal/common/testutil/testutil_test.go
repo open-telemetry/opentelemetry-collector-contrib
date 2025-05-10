@@ -42,6 +42,10 @@ func TestGetAvailableLocalUDPAddress(t *testing.T) {
 	require.Nil(t, ln1)
 }
 
+func TestEndpointForPort(t *testing.T) {
+	require.Equal(t, "localhost:22", EndpointForPort(22))
+}
+
 func TestCreateExclusionsList(t *testing.T) {
 	// Test two examples of typical output from "netsh interface ipv4 show excludedportrange protocol=tcp"
 	emptyExclusionsText := `
@@ -63,8 +67,8 @@ Start Port    End Port
 * - Administered port exclusions.
 `
 	exclusions := createExclusionsList(t, exclusionsText)
-	require.Equal(t, len(exclusions), 2)
+	require.Len(t, exclusions, 2)
 
 	emptyExclusions := createExclusionsList(t, emptyExclusionsText)
-	require.Equal(t, len(emptyExclusions), 0)
+	require.Empty(t, emptyExclusions)
 }

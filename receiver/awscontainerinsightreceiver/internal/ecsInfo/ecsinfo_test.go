@@ -48,7 +48,6 @@ func (ii *MockTaskInfo) getRunningTaskCount() int64 {
 	return ii.runningTaskCount
 }
 func (ii *MockTaskInfo) getRunningTasksInfo() []ECSTask {
-
 	return ii.tasks
 }
 
@@ -76,7 +75,6 @@ func (c *MockCgroupScanner) getMEMReservedInTask(_ string, _ string, _ []ECSCont
 func TestNewECSInfo(t *testing.T) {
 	// test the case when containerInstanceInfor fails to initialize
 	containerInstanceInfoCreatorOpt := func(ei *EcsInfo) {
-
 		ei.containerInstanceInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider {
 			return &MockInstanceInfo{
 				clusterName: "Cluster-name",
@@ -131,5 +129,4 @@ func TestNewECSInfo(t *testing.T) {
 
 	assert.Equal(t, int64(1024), ecsinfo.GetCPUReserved())
 	assert.Equal(t, int64(1024), ecsinfo.GetMemReserved())
-
 }

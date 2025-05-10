@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
@@ -24,9 +25,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				PipelinePriority: [][]component.ID{
+				PipelinePriority: [][]pipeline.ID{
 					{
-						component.NewIDWithName(component.DataTypeTraces, ""),
+						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
 					},
 				},
 				RetryInterval: 10 * time.Minute,
@@ -37,19 +38,19 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				PipelinePriority: [][]component.ID{
+				PipelinePriority: [][]pipeline.ID{
 					{
-						component.NewIDWithName(component.DataTypeTraces, "first"),
-						component.NewIDWithName(component.DataTypeTraces, "also_first"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "first"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "also_first"),
 					},
 					{
-						component.NewIDWithName(component.DataTypeTraces, "second"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "second"),
 					},
 					{
-						component.NewIDWithName(component.DataTypeTraces, "third"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "third"),
 					},
 					{
-						component.NewIDWithName(component.DataTypeTraces, "fourth"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "fourth"),
 					},
 				},
 				RetryInterval: 5 * time.Minute,

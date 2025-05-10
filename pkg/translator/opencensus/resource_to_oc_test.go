@@ -211,7 +211,6 @@ func TestResourceToOCAndBack(t *testing.T) {
 						assert.Equal(t, strconv.FormatInt(v.Int(), 10), a.Str())
 					}
 				case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
-					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)
 				}

@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,
-		QueueSettings:     exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 

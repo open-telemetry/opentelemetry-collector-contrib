@@ -29,7 +29,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.Enabled = false
 
 	return &Config{

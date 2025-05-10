@@ -26,18 +26,16 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 
 // Transform will apply the retain operation to an entry
 func (t *Transformer) Transform(e *entry.Entry) error {
-	newEntry := entry.New()
-	newEntry.ObservedTimestamp = e.ObservedTimestamp
-	newEntry.Timestamp = e.Timestamp
+	retainedEntryFields := entry.New()
 
 	if !t.AllResourceFields {
-		newEntry.Resource = e.Resource
+		retainedEntryFields.Resource = e.Resource
 	}
 	if !t.AllAttributeFields {
-		newEntry.Attributes = e.Attributes
+		retainedEntryFields.Attributes = e.Attributes
 	}
 	if !t.AllBodyFields {
-		newEntry.Body = e.Body
+		retainedEntryFields.Body = e.Body
 	}
 
 	for _, field := range t.Fields {
@@ -45,12 +43,16 @@ func (t *Transformer) Transform(e *entry.Entry) error {
 		if !ok {
 			continue
 		}
-		err := newEntry.Set(field, val)
+		err := retainedEntryFields.Set(field, val)
 		if err != nil {
 			return err
 		}
 	}
 
-	*e = *newEntry
+	// The entry's Resource, Attributes & Body are modified.
+	// All other fields are left untouched (Ex: Timestamp, TraceID, ..)
+	e.Resource = retainedEntryFields.Resource
+	e.Attributes = retainedEntryFields.Attributes
+	e.Body = retainedEntryFields.Body
 	return nil
 }

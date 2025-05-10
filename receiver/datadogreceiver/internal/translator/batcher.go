@@ -48,14 +48,14 @@ var metricTypeMap = map[string]pmetric.MetricType{
 }
 
 func parseSeriesProperties(name string, metricType string, tags []string, host string, version string, stringPool *StringPool) dimensions {
-	resourceAttrs, scopeAttrs, dpAttrs := tagsToAttributes(tags, host, stringPool)
+	attrs := tagsToAttributes(tags, host, stringPool)
 	return dimensions{
 		name:          name,
 		metricType:    metricTypeMap[metricType],
 		buildInfo:     version,
-		resourceAttrs: resourceAttrs,
-		scopeAttrs:    scopeAttrs,
-		dpAttrs:       dpAttrs,
+		resourceAttrs: attrs.resource,
+		scopeAttrs:    attrs.scope,
+		dpAttrs:       attrs.dp,
 	}
 }
 
@@ -98,7 +98,7 @@ func (d dimensions) Resource() pcommon.Resource {
 
 func (d dimensions) Scope() pcommon.InstrumentationScope {
 	scope := pcommon.NewInstrumentationScope()
-	scope.SetName("otelcol/datadogreceiver")
+	scope.SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator")
 	scope.SetVersion(d.buildInfo)
 	d.scopeAttrs.CopyTo(scope.Attributes())
 	return scope

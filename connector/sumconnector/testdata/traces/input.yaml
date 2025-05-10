@@ -1,0 +1,852 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeSpans:
+      - scope: {}
+        spans:
+          - name: span-with-attrs-foo-bar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: bar
+              - key: beep
+                value:
+                  doubleValue: 2.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attrs-foo-notbar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: notbar
+              - key: beep
+                value:
+                  intValue: 3
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      intValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      stringValue: "3"
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      stringValue: "2"
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attr-notfoo
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: notfoo
+              - key: beep
+                value:
+                  doubleValue: 3.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-no-attrs
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 1.1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 1.1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeSpans:
+      - scope: {}
+        spans:
+          - name: span-with-attrs-foo-bar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: bar
+              - key: beep
+                value:
+                  doubleValue: 2.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2.1
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attrs-foo-notbar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: notbar
+              - key: beep
+                value:
+                  intValue: 3
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      intValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      stringValue: "3"
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attr-notfoo
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: notfoo
+              - key: beep
+                value:
+                  doubleValue: 3.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-no-attrs
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeSpans:
+      - scope: {}
+        spans:
+          - name: span-with-attrs-foo-bar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: bar
+              - key: beep
+                value:
+                  doubleValue: 2.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attrs-foo-notbar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: notbar
+              - key: beep
+                value:
+                  intValue: 3
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      intValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      stringValue: "3"
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attr-notfoo
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: notfoo
+              - key: beep
+                value:
+                  doubleValue: 3.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-no-attrs
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+  - resource: {}
+    scopeSpans:
+      - scope: {}
+        spans:
+          - name: span-with-attrs-foo-bar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: bar
+              - key: beep
+                value:
+                  doubleValue: 2.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attrs-foo-notbar
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: foo
+              - key: span.optional
+                value:
+                  stringValue: notbar
+              - key: beep
+                value:
+                  intValue: 3
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      intValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      stringValue: "3"
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-attr-notfoo
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+              - key: span.required
+                value:
+                  stringValue: notfoo
+              - key: beep
+                value:
+                  doubleValue: 3.1
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+          - name: span-with-no-attrs
+            parentSpanId: ""
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
+            attributes:
+            endTimeUnixNano: "1581452773000000789"
+            events:
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: bar
+                  - key: beep
+                    value:
+                      doubleValue: 1
+                name: event-with-attrs-foo-bar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: foo
+                  - key: event.optional
+                    value:
+                      stringValue: notbar
+                  - key: beep
+                    value:
+                      doubleValue: 1
+                name: event-with-attrs-foo-notbar
+                timeUnixNano: "1581452773000000123"
+              - attributes:
+                  - key: event.required
+                    value:
+                      stringValue: notfoo
+                  - key: beep
+                    value:
+                      doubleValue: 2
+                name: event-with-attr-notfoo
+                timeUnixNano: "1581452773000000123"
+              - name: event-with-no-attrs
+                timeUnixNano: "1581452773000000123"
+
+

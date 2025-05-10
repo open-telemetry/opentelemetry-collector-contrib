@@ -1,5 +1,4 @@
 type: logicmonitor
-scope_name: otelcol/logicmonitor
 
 status:
   class: exporter

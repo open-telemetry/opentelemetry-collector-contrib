@@ -3,7 +3,6 @@
 package tracesegment
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -31,7 +30,7 @@ func TestSplitHeaderBodyWithSeparatorDoesNotExist(t *testing.T) {
 	_, _, err := SplitHeaderBody(buf)
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
+	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
 	assert.EqualError(t, err,
 		fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", buf),
 		"expected error messages")
@@ -41,7 +40,7 @@ func TestSplitHeaderBodyNilBuf(t *testing.T) {
 	_, _, err := SplitHeaderBody(nil)
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
+	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
 	assert.EqualError(t, err, "buffer to split is nil",
 		"expected error messages")
 }
@@ -52,8 +51,8 @@ func TestSplitHeaderBodyNonJsonHeader(t *testing.T) {
 	_, _, err := SplitHeaderBody(buf)
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
-	assert.Contains(t, err.Error(), "invalid character 'o'")
+	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
+	assert.ErrorContains(t, err, "invalid character 'o'")
 }
 
 func TestSplitHeaderBodyEmptyBody(t *testing.T) {
@@ -66,7 +65,7 @@ func TestSplitHeaderBodyEmptyBody(t *testing.T) {
 		Format:  "json",
 		Version: 1,
 	}, header, "actual header is different from the expected")
-	assert.Len(t, body, 0, "body should be empty")
+	assert.Empty(t, body, "body should be empty")
 }
 
 func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
@@ -76,8 +75,8 @@ func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
 	assert.Error(t, err, "should fail because version is invalid")
 
 	var errRecv *recvErr.ErrRecoverable
-	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
-	assert.Contains(t, err.Error(),
+	assert.ErrorAs(t, err, &errRecv, "should return recoverable error")
+	assert.ErrorContains(t, err,
 		fmt.Sprintf("invalid header %+v", Header{
 			Format:  "json",
 			Version: 20,

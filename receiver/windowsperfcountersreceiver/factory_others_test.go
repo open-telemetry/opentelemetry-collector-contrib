@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -30,7 +30,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			Gauge:       GaugeMetric{},
 		},
 	}
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.EqualError(t, err, "the windows perf counters receiver is only supported on Windows")
 	assert.Nil(t, mReceiver)

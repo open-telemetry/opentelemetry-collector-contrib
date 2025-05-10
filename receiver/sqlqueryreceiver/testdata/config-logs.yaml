@@ -7,4 +7,5 @@ sqlquery:
       tracking_start_value: '10'
       tracking_column: log_id
       logs:
-      - body_column: log_body
+        - body_column: log_body
+          attribute_columns: [ "log_attribute_1", "log_attribute_2" ]

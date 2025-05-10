@@ -41,7 +41,6 @@ func newCurrentStatsReader(
 	database *datasource.Database,
 	metricsMetadata *metadata.MetricsMetadata,
 	config ReaderConfig) *currentStatsReader {
-
 	return &currentStatsReader{
 		logger:                 logger,
 		database:               database,

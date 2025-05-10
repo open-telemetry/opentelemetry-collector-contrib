@@ -4,6 +4,8 @@
 package metrics
 
 import (
+	"fmt"
+
 	"github.com/spf13/pflag"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
@@ -39,6 +41,10 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
+	if c.TotalDuration <= 0 && c.NumMetrics <= 0 {
+		return fmt.Errorf("either `metrics` or `duration` must be greater than 0")
+	}
+
 	if c.TraceID != "" {
 		if err := common.ValidateTraceID(c.TraceID); err != nil {
 			return err

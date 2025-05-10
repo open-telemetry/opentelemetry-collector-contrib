@@ -236,7 +236,6 @@ func TestInvalidConfig(t *testing.T) {
 
 			err := component.ValidateConfig(cfg)
 			assert.Error(t, err, tC.err)
-
 		})
 	}
 }

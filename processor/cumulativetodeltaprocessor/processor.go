@@ -66,7 +66,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						MetricUnit:             m.Unit(),
 						MetricIsMonotonic:      ms.IsMonotonic(),
 					}
-					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
+					ctdp.convertNumberDataPoints(ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				case pmetric.MetricTypeHistogram:
@@ -116,47 +116,45 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in any, baseIdentity tracking.MetricIdentity) {
-	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
-		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
-			id := baseIdentity
-			id.StartTimestamp = dp.StartTimestamp()
-			id.Attributes = dp.Attributes()
-			id.MetricValueType = dp.ValueType()
-			point := tracking.ValuePoint{
-				ObservedTimestamp: dp.Timestamp(),
-			}
+func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {
+	dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
+		id := baseIdentity
+		id.StartTimestamp = dp.StartTimestamp()
+		id.Attributes = dp.Attributes()
+		id.MetricValueType = dp.ValueType()
+		point := tracking.ValuePoint{
+			ObservedTimestamp: dp.Timestamp(),
+		}
 
-			if dp.Flags().NoRecordedValue() {
-				// drop points with no value
-				return true
+		if dp.Flags().NoRecordedValue() {
+			// drop points with no value
+			return true
+		}
+		if id.IsFloatVal() {
+			// Do not attempt to transform NaN values
+			if math.IsNaN(dp.DoubleValue()) {
+				return false
 			}
-			if id.IsFloatVal() {
-				// Do not attempt to transform NaN values
-				if math.IsNaN(dp.DoubleValue()) {
-					return false
-				}
-				point.FloatValue = dp.DoubleValue()
-			} else {
-				point.IntValue = dp.IntValue()
-			}
-			trackingPoint := tracking.MetricPoint{
-				Identity: id,
-				Value:    point,
-			}
-			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
-			if !valid {
-				return true
-			}
-			dp.SetStartTimestamp(delta.StartTimestamp)
-			if id.IsFloatVal() {
-				dp.SetDoubleValue(delta.FloatValue)
-			} else {
-				dp.SetIntValue(delta.IntValue)
-			}
-			return false
-		})
-	}
+			point.FloatValue = dp.DoubleValue()
+		} else {
+			point.IntValue = dp.IntValue()
+		}
+		trackingPoint := tracking.MetricPoint{
+			Identity: id,
+			Value:    point,
+		}
+		delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
+		if !valid {
+			return true
+		}
+		dp.SetStartTimestamp(delta.StartTimestamp)
+		if id.IsFloatVal() {
+			dp.SetDoubleValue(delta.FloatValue)
+		} else {
+			dp.SetIntValue(delta.IntValue)
+		}
+		return false
+	})
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in any, baseIdentity tracking.MetricIdentity) {

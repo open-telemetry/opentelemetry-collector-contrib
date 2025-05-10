@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("deltatocumulative")
+	Type      = component.MustNewType("deltatocumulative")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

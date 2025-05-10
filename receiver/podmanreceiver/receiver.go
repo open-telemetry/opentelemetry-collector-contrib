@@ -58,7 +58,7 @@ func createMetricsReceiver(
 	podmanConfig := config.(*Config)
 
 	recv := newMetricsReceiver(params, podmanConfig, nil)
-	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
+	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
 	if err != nil {
 		return nil, err
 	}

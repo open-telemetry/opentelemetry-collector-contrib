@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("sapm")
+	Type      = component.MustNewType("sapm")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 )
 
 const (

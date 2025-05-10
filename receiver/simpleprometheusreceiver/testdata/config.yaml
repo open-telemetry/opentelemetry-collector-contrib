@@ -3,6 +3,7 @@ prometheus_simple/all_settings:
   endpoint: "localhost:1234"
   collection_interval: 30s
   metrics_path: /v2/metrics
+  job_name: "job123"
   params:
     columns: "name,messages"
     key: [ "foo","bar" ]

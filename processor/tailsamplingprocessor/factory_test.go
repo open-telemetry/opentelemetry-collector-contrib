@@ -37,7 +37,7 @@ func TestCreateProcessor(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := processortest.NewNopSettings()
-	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 

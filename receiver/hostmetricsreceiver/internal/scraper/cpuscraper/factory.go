@@ -6,6 +6,7 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -18,6 +19,11 @@ import (
 const (
 	// TypeStr the value of "type" key in configuration.
 	TypeStr = "cpu"
+)
+
+var (
+	// scraperType is the component type used for the built scraper.
+	scraperType component.Type = component.MustNewType(TypeStr)
 )
 
 // Factory is the Factory for scraper.
@@ -40,7 +46,7 @@ func (f *Factory) CreateMetricsScraper(
 	s := newCPUScraper(ctx, settings, cfg)
 
 	return scraperhelper.NewScraper(
-		TypeStr,
+		scraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

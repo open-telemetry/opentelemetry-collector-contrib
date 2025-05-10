@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("otelarrow")
+	Type      = component.MustNewType("otelarrow")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter"
 )
 
 const (
-	TracesStability  = component.StabilityLevelAlpha
-	MetricsStability = component.StabilityLevelAlpha
-	LogsStability    = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

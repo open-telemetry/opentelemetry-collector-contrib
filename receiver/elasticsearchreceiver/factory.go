@@ -35,12 +35,13 @@ func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = defaultHTTPClientTimeout
+
 	return &Config{
-		ControllerConfig: cfg,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: defaultEndpoint,
-			Timeout:  defaultHTTPClientTimeout,
-		},
+		ControllerConfig:     cfg,
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		Nodes:                []string{"_all"},
 		Indices:              []string{"_all"},
@@ -62,7 +63,7 @@ func createMetricsReceiver(
 	}
 	es := newElasticSearchScraper(params, c)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), es.scrape, scraperhelper.WithStart(es.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err
 	}

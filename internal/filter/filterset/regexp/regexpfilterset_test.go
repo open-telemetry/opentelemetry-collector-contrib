@@ -109,7 +109,7 @@ func TestRegexpDeDup(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, fs)
 	assert.Nil(t, fs.cache)
-	assert.EqualValues(t, 1, len(fs.regexes))
+	assert.Len(t, fs.regexes, 1)
 }
 
 func TestRegexpMatchesCaches(t *testing.T) {

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("splunk_hec")
+	Type      = component.MustNewType("splunk_hec")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 )
 
 const (

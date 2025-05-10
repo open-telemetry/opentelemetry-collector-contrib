@@ -1,0 +1,96 @@
+metricsgeneration/add_sum_sum:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: sum
+      metric2: sum
+      operation: add
+metricsgeneration/add_gauge_gauge:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: gauge
+      metric2: gauge
+      operation: add
+metricsgeneration/add_gauge_sum:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: gauge
+      metric2: sum
+      operation: add
+metricsgeneration/add_sum_gauge:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: sum
+      metric2: gauge
+      operation: add
+metricsgeneration/multiply_gauge_sum:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: gauge
+      metric2: sum
+      operation: multiply
+metricsgeneration/multiply_sum_gauge:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: sum
+      metric2: gauge
+      operation: multiply
+metricsgeneration/divide_gauge_sum:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: gauge
+      metric2: sum
+      operation: multiply
+metricsgeneration/divide_sum_gauge:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: sum
+      metric2: gauge
+      operation: divide
+metricsgeneration/subtract_gauge_sum:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: gauge
+      metric2: sum
+      operation: subtract
+metricsgeneration/subtract_sum_gauge:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: sum
+      metric2: gauge
+      operation: subtract
+metricsgeneration/percent_gauge_sum:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: gauge
+      metric2: sum
+      operation: percent
+metricsgeneration/percent_sum_gauge:
+  rules:
+    - name: new_metric
+      unit: percent
+      type: calculate
+      metric1: sum
+      metric2: gauge
+      operation: percent

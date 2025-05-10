@@ -20,8 +20,9 @@ type perScopeBatcher struct {
 	next             consumer.Logs
 }
 
+// Capabilities returns capabilities of the next consumer because perScopeBatcher doesn't mutate data itself.
 func (rb *perScopeBatcher) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return rb.next.Capabilities()
 }
 
 func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) error {

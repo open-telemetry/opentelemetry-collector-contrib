@@ -69,16 +69,16 @@ func TestCopyTruncate(t *testing.T) {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
 					time.Sleep(10 * time.Millisecond)
 				}
-				require.NoError(t, file.Sync())
+				assert.NoError(t, file.Sync())
 				_, err := file.Seek(0, 0)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				dst := filetest.OpenFile(t, fileName(fn, rotationNum))
 				_, err = io.Copy(dst, file)
-				require.NoError(t, err)
-				require.NoError(t, dst.Close())
-				require.NoError(t, file.Truncate(0))
+				assert.NoError(t, err)
+				assert.NoError(t, dst.Close())
+				assert.NoError(t, file.Truncate(0))
 				_, err = file.Seek(0, 0)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		}(fileNum)
 	}
@@ -130,8 +130,8 @@ func TestMoveCreate(t *testing.T) {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
 					time.Sleep(10 * time.Millisecond)
 				}
-				require.NoError(t, file.Close())
-				require.NoError(t, os.Rename(baseFileName(fn), fileName(fn, rotationNum)))
+				assert.NoError(t, file.Close())
+				assert.NoError(t, os.Rename(baseFileName(fn), fileName(fn, rotationNum)))
 			}
 		}(fileNum)
 	}

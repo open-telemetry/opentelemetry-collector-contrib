@@ -15,21 +15,21 @@ func TestNewMetricType(t *testing.T) {
 	metricDataType := NewMetricType(pmetric.MetricTypeGauge, pmetric.AggregationTemporalityDelta, true)
 
 	require.NotNil(t, metricDataType)
-	assert.Equal(t, metricDataType.MetricType(), pmetric.MetricTypeGauge)
-	assert.Equal(t, metricDataType.AggregationTemporality(), pmetric.AggregationTemporalityDelta)
+	assert.Equal(t, pmetric.MetricTypeGauge, metricDataType.MetricType())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, metricDataType.AggregationTemporality())
 	assert.True(t, metricDataType.IsMonotonic())
 }
 
 func TestMetricValueDataType_MetricType(t *testing.T) {
 	valueDataType := metricValueDataType{dataType: pmetric.MetricTypeGauge}
 
-	assert.Equal(t, valueDataType.MetricType(), pmetric.MetricTypeGauge)
+	assert.Equal(t, pmetric.MetricTypeGauge, valueDataType.MetricType())
 }
 
 func TestMetricValueDataType_AggregationTemporality(t *testing.T) {
 	valueDataType := metricValueDataType{aggregationTemporality: pmetric.AggregationTemporalityDelta}
 
-	assert.Equal(t, valueDataType.AggregationTemporality(), pmetric.AggregationTemporalityDelta)
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, valueDataType.AggregationTemporality())
 }
 
 func TestMetricValueDataType_IsMonotonic(t *testing.T) {

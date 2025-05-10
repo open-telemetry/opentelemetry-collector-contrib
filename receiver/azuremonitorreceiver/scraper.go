@@ -126,6 +126,8 @@ func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
 	switch s.cfg.Cloud {
 	case azureGovernmentCloud:
 		cloudToUse = cloud.AzureGovernment
+	case azureChinaCloud:
+		cloudToUse = cloud.AzureChina
 	default:
 		cloudToUse = cloud.AzurePublic
 	}
@@ -218,7 +220,6 @@ func (s *azureScraper) loadCredentials() (err error) {
 }
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-
 	s.getResources(ctx)
 	resourcesIDsWithDefinitions := make(chan string)
 
@@ -321,7 +322,6 @@ func (s *azureScraper) getResourcesFilter() string {
 }
 
 func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resourceID string) {
-
 	if time.Since(s.resources[resourceID].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
 		return
 	}
@@ -337,7 +337,6 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		}
 
 		for _, v := range nextResult.Value {
-
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			name := *v.Name.Value
 			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
@@ -372,7 +371,6 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 	res := *s.resources[resourceID]
 
 	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
-
 		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
@@ -381,7 +379,6 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 		start := 0
 
 		for start < len(metricsByGrain.metrics) {
-
 			end := start + s.cfg.MaximumNumberOfMetricsInACall
 			if end > len(metricsByGrain.metrics) {
 				end = len(metricsByGrain.metrics)
@@ -408,9 +405,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 			}
 
 			for _, metric := range result.Value {
-
 				for _, timeseriesElement := range metric.Timeseries {
-
 					if timeseriesElement.Data != nil {
 						attributes := map[string]*string{}
 						for name, value := range res.attributes {

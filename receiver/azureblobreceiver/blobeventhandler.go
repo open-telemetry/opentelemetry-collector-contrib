@@ -37,7 +37,6 @@ const (
 )
 
 func (p *azureBlobEventHandler) run(ctx context.Context) error {
-
 	if p.hub != nil {
 		return nil
 	}
@@ -65,7 +64,6 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 }
 
 func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
-
 	type eventData struct {
 		Topic           string
 		Subject         string
@@ -112,7 +110,6 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 }
 
 func (p *azureBlobEventHandler) close(ctx context.Context) error {
-
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
 		if err != nil {

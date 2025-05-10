@@ -27,7 +27,9 @@ func TestLoadConfig(t *testing.T) {
 	metricCfg := metadata.DefaultMetricsBuilderConfig()
 	metricCfg.Metrics.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
 	metricCfg.Metrics.ProcessRuntimeMemstatsMallocs.Enabled = false
-
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost:8000/custom/path"
+	clientConfig.Timeout = time.Second * 5
 	tests := []struct {
 		id           component.ID
 		expected     component.Config
@@ -45,10 +47,7 @@ func TestLoadConfig(t *testing.T) {
 					InitialDelay:       time.Second,
 					Timeout:            time.Second * 5,
 				},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost:8000/custom/path",
-					Timeout:  time.Second * 5,
-				},
+				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metricCfg,
 			},
 		},

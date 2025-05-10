@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -212,10 +212,10 @@ func TestAddsRequiredAttributes(t *testing.T) {
 
 			lines := body.Lines
 			for _, line := range lines {
-				assert.True(t, line.Timestamp > 0)
-				assert.Equal(t, line.Level, "info")
-				assert.Equal(t, line.App, "")
-				assert.Equal(t, line.Line, "minimal attribute log")
+				assert.Positive(t, line.Timestamp)
+				assert.Equal(t, "info", line.Level)
+				assert.Equal(t, "", line.App)
+				assert.Equal(t, "minimal attribute log", line.Line)
 			}
 
 			return http.StatusOK, ""
@@ -256,17 +256,17 @@ func Test404IngestError(t *testing.T) {
 	err := exporter.pushLogData(context.Background(), logs)
 	require.NoError(t, err)
 
-	assert.Equal(t, logObserver.Len(), 2)
+	assert.Equal(t, 2, logObserver.Len())
 
 	logLine := logObserver.All()[0]
-	assert.Equal(t, logLine.Message, "got http status (/foobar): 404 Not Found")
-	assert.Equal(t, logLine.Level, zapcore.ErrorLevel)
+	assert.Equal(t, "got http status (/foobar): 404 Not Found", logLine.Message)
+	assert.Equal(t, zapcore.ErrorLevel, logLine.Level)
 
 	logLine = logObserver.All()[1]
-	assert.Equal(t, logLine.Message, "http response")
-	assert.Equal(t, logLine.Level, zapcore.DebugLevel)
+	assert.Equal(t, "http response", logLine.Message)
+	assert.Equal(t, zapcore.DebugLevel, logLine.Level)
 
 	responseField := logLine.Context[0]
-	assert.Equal(t, responseField.Key, "response")
-	assert.Equal(t, responseField.String, `{"foo":"bar"}`)
+	assert.Equal(t, "response", responseField.Key)
+	assert.JSONEq(t, `{"foo":"bar"}`, responseField.String)
 }

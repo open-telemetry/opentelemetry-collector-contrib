@@ -106,8 +106,7 @@ func TestValidateConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), test.expect.Error())
+			require.ErrorContains(t, err, test.expect.Error())
 		})
 	}
 }

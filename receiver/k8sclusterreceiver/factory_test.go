@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -43,7 +43,7 @@ func TestFactory(t *testing.T) {
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}, rCfg)
 
-	r, err := f.CreateTracesReceiver(
+	r, err := f.CreateTraces(
 		context.Background(), receivertest.NewNopSettings(),
 		cfg, consumertest.NewNop(),
 	)
@@ -72,14 +72,14 @@ func TestFactoryDistributions(t *testing.T) {
 
 	// default
 	r := newTestReceiver(t, rCfg)
-	err := r.Start(context.Background(), componenttest.NewNopHost())
+	err := r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
 
 	// openshift
 	rCfg.Distribution = "openshift"
 	r = newTestReceiver(t, rCfg)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(context.Background(), newNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
 }
@@ -105,12 +105,12 @@ type nopHostWithExporters struct {
 }
 
 func newNopHostWithExporters() component.Host {
-	return &nopHostWithExporters{Host: componenttest.NewNopHost()}
+	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	return map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},
 			component.MustNewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},

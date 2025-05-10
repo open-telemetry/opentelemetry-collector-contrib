@@ -24,4 +24,5 @@ func TestCreateMetricsScraper(t *testing.T) {
 	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
+	assert.Equal(t, scraperType.String(), scraper.ID().String())
 }

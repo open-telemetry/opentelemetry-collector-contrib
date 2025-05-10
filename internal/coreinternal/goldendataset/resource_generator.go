@@ -5,7 +5,7 @@ package goldendataset // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
 // GenerateResource generates a PData Resource object with representative attributes for the

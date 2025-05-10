@@ -7,19 +7,21 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type eventSourcePair struct {
-	source *component.InstanceID
-	event  *component.StatusEvent
+	source *componentstatus.InstanceID
+	event  *componentstatus.Event
 }
 
 type healthCheckExtension struct {
@@ -29,11 +31,12 @@ type healthCheckExtension struct {
 	subcomponents []component.Component
 	eventCh       chan *eventSourcePair
 	readyCh       chan struct{}
+	host          component.Host
 }
 
 var _ component.Component = (*healthCheckExtension)(nil)
-var _ extension.ConfigWatcher = (*healthCheckExtension)(nil)
-var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.ConfigWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func newExtension(
 	ctx context.Context,
@@ -92,6 +95,8 @@ func newExtension(
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 	hc.telemetry.Logger.Debug("Starting health check extension V2", zap.Any("config", hc.config))
 
+	hc.host = host
+
 	for _, comp := range hc.subcomponents {
 		if err := comp.Start(ctx, host); err != nil {
 			return err
@@ -104,7 +109,7 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 // Shutdown implements the component.Component interface.
 func (hc *healthCheckExtension) Shutdown(ctx context.Context) error {
 	// Preemptively send the stopped event, so it can be exported before shutdown
-	hc.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
+	componentstatus.ReportStatus(hc.host, componentstatus.NewEvent(componentstatus.StatusStopped))
 
 	close(hc.eventCh)
 	hc.aggregator.Close()
@@ -119,8 +124,8 @@ func (hc *healthCheckExtension) Shutdown(ctx context.Context) error {
 
 // ComponentStatusChanged implements the extension.StatusWatcher interface.
 func (hc *healthCheckExtension) ComponentStatusChanged(
-	source *component.InstanceID,
-	event *component.StatusEvent,
+	source *componentstatus.InstanceID,
+	event *componentstatus.Event,
 ) {
 	// There can be late arriving events after shutdown. We need to close
 	// the event channel so that this function doesn't block and we release all
@@ -138,11 +143,11 @@ func (hc *healthCheckExtension) ComponentStatusChanged(
 	hc.eventCh <- &eventSourcePair{source: source, event: event}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	var err error
 	for _, comp := range hc.subcomponents {
-		if cw, ok := comp.(extension.ConfigWatcher); ok {
+		if cw, ok := comp.(extensioncapabilities.ConfigWatcher); ok {
 			err = multierr.Append(err, cw.NotifyConfig(ctx, conf))
 		}
 	}
@@ -173,7 +178,7 @@ func (hc *healthCheckExtension) eventLoop(ctx context.Context) {
 			if !ok {
 				return
 			}
-			if esp.event.Status() != component.StatusStarting {
+			if esp.event.Status() != componentstatus.StatusStarting {
 				eventQueue = append(eventQueue, esp)
 				continue
 			}

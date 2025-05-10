@@ -123,7 +123,6 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-
 	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
@@ -151,7 +150,6 @@ func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID str
 }
 
 func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
-
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
 		h.settings.Logger.Error("error decoding message", zap.Error(err))
@@ -162,7 +160,6 @@ func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub
 }
 
 func (h *eventhubHandler) close(ctx context.Context) error {
-
 	if h.hub != nil {
 		err := h.hub.Close(ctx)
 		if err != nil {
@@ -178,12 +175,10 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 }
 
 func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
-
 	h.dataConsumer = dataConsumer
 }
 
 func newEventhubHandler(config *Config, settings receiver.Settings) *eventhubHandler {
-
 	return &eventhubHandler{
 		config:   config,
 		settings: settings,

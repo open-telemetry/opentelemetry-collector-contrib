@@ -20,7 +20,7 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
 		receivertest.NewNopSettings(),
@@ -31,7 +31,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.Nil(t, metricsReceiver)
 }
 
-func TestCreateMetricsReceiverWithEnv(t *testing.T) {
+func TestCreateMetricsWithEnv(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
@@ -44,7 +44,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 }
 
-func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
+func TestCreateMetricsWithBadUrl(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
 
 	metricsReceiver, err := createMetricsReceiver(
@@ -57,7 +57,7 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 	require.Nil(t, metricsReceiver)
 }
 
-func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
+func TestCreateMetricsWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
 		receivertest.NewNopSettings(),

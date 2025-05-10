@@ -27,6 +27,7 @@ func createDefaultConfig() component.Config {
 		Server: &OpAMPServer{},
 		Capabilities: Capabilities{
 			ReportsEffectiveConfig: true,
+			ReportsHealth:          true,
 		},
 		PPIDPollInterval: 5 * time.Second,
 	}

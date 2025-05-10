@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func testManager(t *testing.T, cfg *Config, opts ...Option) (*Manager, *emittest.Sink) {
@@ -20,6 +22,7 @@ func testManager(t *testing.T, cfg *Config, opts ...Option) (*Manager, *emittest
 func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink, opts ...Option) *Manager {
 	set := componenttest.NewNopTelemetrySettings()
 	input, err := cfg.Build(set, sink.Callback, opts...)
+	input.tracker = tracker.NewFileTracker(set, cfg.MaxBatches, cfg.PollsToArchive, testutil.NewUnscopedMockPersister())
 	require.NoError(t, err)
 	t.Cleanup(func() { input.tracker.ClosePreviousFiles() })
 	return input

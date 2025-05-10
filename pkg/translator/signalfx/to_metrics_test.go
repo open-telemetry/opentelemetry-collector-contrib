@@ -19,7 +19,7 @@ import (
 
 func TestNumMetricTypes(t *testing.T) {
 	// Assert that all values for the metric types are less than numMetricTypes.
-	assert.Equal(t, len(sfxpb.MetricType_value), numMetricTypes)
+	assert.Len(t, sfxpb.MetricType_value, numMetricTypes)
 	for _, v := range sfxpb.MetricType_value {
 		assert.Less(t, v, int32(numMetricTypes))
 	}
@@ -225,7 +225,7 @@ func TestToMetrics(t *testing.T) {
 				targetLen := 2*len(pt.Dimensions) + 1
 				dimensions := make([]*sfxpb.Dimension, targetLen)
 				copy(dimensions[1:], pt.Dimensions)
-				assert.Equal(t, targetLen, len(dimensions))
+				assert.Len(t, dimensions, targetLen)
 				assert.Nil(t, dimensions[0])
 				pt.Dimensions = dimensions
 				return []*sfxpb.DataPoint{pt}

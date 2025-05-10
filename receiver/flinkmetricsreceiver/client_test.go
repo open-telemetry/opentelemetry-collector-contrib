@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -47,6 +48,18 @@ const (
 )
 
 func TestNewClient(t *testing.T) {
+	clientConfigNoCA := confighttp.NewDefaultClientConfig()
+	clientConfigNoCA.Endpoint = defaultEndpoint
+	clientConfigNoCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+
 	testCase := []struct {
 		desc        string
 		cfg         *Config
@@ -58,14 +71,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				},
+				ClientConfig: clientConfigNoCA,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -75,10 +81,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{},
-					Endpoint:   defaultEndpoint,
-				},
+				ClientConfig: clientConfig,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -92,7 +95,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -142,7 +145,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -150,7 +153,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 
 				metrics, err := tc.GetJobmanagerMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -159,7 +162,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 				jobmanagerMetricValuesData := loadAPIResponseData(t, apiResponses, jobmanagerMetricValues)
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(jobmanagerMetricValuesData)
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -211,7 +214,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte(`{`))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -219,7 +222,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body:")
+				require.ErrorContains(t, err, "failed to unmarshal response body:")
 			},
 		},
 		{
@@ -229,12 +232,12 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if match, _ := regexp.MatchString(taskmanagerIDsRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerIDs)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -242,7 +245,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body:")
+				require.ErrorContains(t, err, "failed to unmarshal response body:")
 			},
 		},
 		{
@@ -253,13 +256,13 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if match, _ := regexp.MatchString(taskmanagerIDsRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerIDs)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 
 					if match, _ := regexp.MatchString(taskmanagerMetricNamesRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerMetricValuesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 				}))
@@ -312,7 +315,7 @@ func TestGetJobsMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte(`{`))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -320,7 +323,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				metrics, err := tc.GetJobsMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -330,11 +333,11 @@ func TestGetJobsMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == jobsOverviewEndpoint {
 						_, err := w.Write(jobsOverviewData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte(`{`))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -342,7 +345,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				metrics, err := tc.GetJobsMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -353,12 +356,12 @@ func TestGetJobsMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == jobsOverviewEndpoint {
 						_, err := w.Write(jobsOverviewData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsMetricNamesRegex, r.URL.Path); match {
 						_, err := w.Write(jobsMetricValuesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 				}))
@@ -414,7 +417,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -422,7 +425,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -432,11 +435,11 @@ func TestGetSubtasksMetrics(t *testing.T) {
 					jobsData := loadAPIResponseData(t, apiResponses, jobsIDs)
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -444,7 +447,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -455,16 +458,16 @@ func TestGetSubtasksMetrics(t *testing.T) {
 					jobsWithIDData := loadAPIResponseData(t, apiResponses, jobsWithID)
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsWithIDRegex, r.URL.Path); match {
 						_, err := w.Write(jobsWithIDData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -472,7 +475,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -484,21 +487,21 @@ func TestGetSubtasksMetrics(t *testing.T) {
 					verticesData := loadAPIResponseData(t, apiResponses, vertices)
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsWithIDRegex, r.URL.Path); match {
 						_, err := w.Write(jobsWithIDData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(verticesRegex, r.URL.Path); match {
 						_, err := w.Write(verticesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					_, err := w.Write([]byte("{"))
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -506,7 +509,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -519,22 +522,22 @@ func TestGetSubtasksMetrics(t *testing.T) {
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == jobsEndpoint {
 						_, err := w.Write(jobsData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(jobsWithIDRegex, r.URL.Path); match {
 						_, err := w.Write(jobsWithIDData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(verticesRegex, r.URL.Path); match {
 						_, err := w.Write(verticesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 					if match, _ := regexp.MatchString(subtaskMetricNamesRegex, r.URL.Path); match {
 						_, err := w.Write(subtaskMetricValuesData)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						return
 					}
 				}))
@@ -544,7 +547,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				var e *models.JobsResponse
 				_ = json.Unmarshal(jobsData, &e)
-				require.EqualValues(t, e.Jobs[0].ID, "54a5c6e527e00e1bb861272a39fe13e4")
+				require.EqualValues(t, "54a5c6e527e00e1bb861272a39fe13e4", e.Jobs[0].ID)
 
 				// Load the valid data into a struct to compare
 				var expected *models.MetricsResponse

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("kinetica")
+	Type      = component.MustNewType("kinetica")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter"
 )
 
 const (

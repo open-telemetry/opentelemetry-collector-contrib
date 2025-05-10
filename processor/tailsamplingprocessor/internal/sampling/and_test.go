@@ -35,7 +35,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, decision, NotSampled)
+	assert.Equal(t, NotSampled, decision)
 
 }
 
@@ -61,7 +61,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, decision, Sampled)
+	assert.Equal(t, Sampled, decision)
 
 }
 
@@ -87,7 +87,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, decision, Sampled)
+	assert.Equal(t, Sampled, decision)
 
 }
 
@@ -113,6 +113,6 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, decision, InvertNotSampled)
+	assert.Equal(t, InvertNotSampled, decision)
 
 }

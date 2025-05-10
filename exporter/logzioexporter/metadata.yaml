@@ -1,5 +1,4 @@
 type: logzio
-scope_name: otelcol/logzio
 
 status:
   class: exporter

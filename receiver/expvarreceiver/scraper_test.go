@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -89,7 +90,7 @@ func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
 		if req.URL.Path == defaultPath {
 			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write(fileContents)
-			require.NoError(tb, err)
+			assert.NoError(tb, err)
 			return
 		}
 		rw.WriteHeader(http.StatusNotFound)

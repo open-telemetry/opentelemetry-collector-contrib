@@ -109,8 +109,8 @@ func TestMetricResourceProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
-			processors := map[string]string{
-				"resource": test.resourceProcessorConfig,
+			processors := []ProcessorNameAndConfigBody{
+				{Name: "resource", Body: test.resourceProcessorConfig},
 			}
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)

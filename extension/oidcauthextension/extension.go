@@ -27,10 +27,11 @@ import (
 type oidcExtension struct {
 	cfg *Config
 
-	provider *oidc.Provider
-	verifier *oidc.IDTokenVerifier
-
-	logger *zap.Logger
+	provider  *oidc.Provider
+	verifier  *oidc.IDTokenVerifier
+	client    *http.Client
+	logger    *zap.Logger
+	transport *http.Transport
 }
 
 var (
@@ -53,19 +54,31 @@ func newExtension(cfg *Config, logger *zap.Logger) auth.Server {
 		cfg:    cfg,
 		logger: logger,
 	}
-	return auth.NewServer(auth.WithServerStart(oe.start), auth.WithServerAuthenticate(oe.authenticate))
+	return auth.NewServer(
+		auth.WithServerStart(oe.start),
+		auth.WithServerAuthenticate(oe.authenticate),
+		auth.WithServerShutdown(oe.shutdown),
+	)
 }
 
-func (e *oidcExtension) start(context.Context, component.Host) error {
-	provider, err := getProviderForConfig(e.cfg)
+func (e *oidcExtension) start(ctx context.Context, _ component.Host) error {
+	err := e.setProviderConfig(ctx, e.cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
 	}
-	e.provider = provider
-
 	e.verifier = e.provider.Verifier(&oidc.Config{
 		ClientID: e.cfg.Audience,
 	})
+	return nil
+}
+
+func (e *oidcExtension) shutdown(context.Context) error {
+	if e.client != nil {
+		e.client.CloseIdleConnections()
+	}
+	if e.transport != nil {
+		e.transport.CloseIdleConnections()
+	}
 
 	return nil
 }
@@ -124,6 +137,44 @@ func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]s
 	return client.NewContext(ctx, cl), nil
 }
 
+func (e *oidcExtension) setProviderConfig(ctx context.Context, config *Config) error {
+	e.transport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 10 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	cert, err := getIssuerCACertFromPath(config.IssuerCAPath)
+	if err != nil {
+		return err // the errors from this path have enough context already
+	}
+
+	if cert != nil {
+		e.transport.TLSClientConfig = &tls.Config{
+			RootCAs: x509.NewCertPool(),
+		}
+		e.transport.TLSClientConfig.RootCAs.AddCert(cert)
+	}
+
+	e.client = &http.Client{
+		Timeout:   5 * time.Second,
+		Transport: e.transport,
+	}
+	oidcContext := oidc.ClientContext(ctx, e.client)
+	provider, err := oidc.NewProvider(oidcContext, config.IssuerURL)
+	e.provider = provider
+
+	return err
+}
+
 func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback string) (string, error) {
 	if len(usernameClaim) > 0 {
 		username, found := claims[usernameClaim]
@@ -165,41 +216,6 @@ func getGroupsFromClaims(claims map[string]any, groupsClaim string) ([]string, e
 	}
 
 	return []string{}, nil
-}
-
-func getProviderForConfig(config *Config) (*oidc.Provider, error) {
-	t := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 10 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   5 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	cert, err := getIssuerCACertFromPath(config.IssuerCAPath)
-	if err != nil {
-		return nil, err // the errors from this path have enough context already
-	}
-
-	if cert != nil {
-		t.TLSClientConfig = &tls.Config{
-			RootCAs: x509.NewCertPool(),
-		}
-		t.TLSClientConfig.RootCAs.AddCert(cert)
-	}
-
-	client := &http.Client{
-		Timeout:   5 * time.Second,
-		Transport: t,
-	}
-	oidcContext := oidc.ClientContext(context.Background(), client)
-	return oidc.NewProvider(oidcContext, config.IssuerURL)
 }
 
 func getIssuerCACertFromPath(path string) (*x509.Certificate, error) {

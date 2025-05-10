@@ -49,7 +49,7 @@ func TestEmptyHashFunction(t *testing.T) {
 	require.InDelta(t, 0.568, float64(hashed)/float64(numHashBuckets), 0.001)
 }
 
-func TestNewTracesProcessor(t *testing.T) {
+func TestNewTraces(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Traces
@@ -276,20 +276,20 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 
 			sampledData := sink.AllTraces()
 			if tt.sampled {
-				require.Equal(t, 1, len(sampledData))
+				require.Len(t, sampledData, 1)
 				assert.Equal(t, 1, sink.SpanCount())
 			} else {
-				require.Equal(t, 0, len(sampledData))
+				require.Empty(t, sampledData)
 				assert.Equal(t, 0, sink.SpanCount())
 			}
 
 			if tt.pct != 0 {
 				// pct==0 bypasses the randomness check
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "traces sampler")
 				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
 			} else {
-				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
+				require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 			}
 		})
 	}
@@ -406,10 +406,10 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 
 				sampledData := sink.AllTraces()
 				if tt.sampled {
-					require.Equal(t, 1, len(sampledData))
+					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.SpanCount())
 				} else {
-					require.Equal(t, 0, len(sampledData))
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
 				}
 			})
@@ -882,7 +882,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					expectSampled, expectCount, expectTS = tt.sf(mode)
 				}
 				if expectSampled {
-					require.Equal(t, 1, len(sampledData))
+					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.SpanCount())
 					got := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 					gotTs, err := sampling.NewW3CTraceState(got.TraceState().AsRaw())
@@ -899,15 +899,15 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					}
 					require.Equal(t, expectTS, got.TraceState().AsRaw())
 				} else {
-					require.Equal(t, 0, len(sampledData))
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
 					require.Equal(t, "", expectTS)
 				}
 
 				if len(tt.log) == 0 {
-					require.Equal(t, 0, len(observed.All()), "should not have logs: %v", observed.All())
+					require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				} else {
-					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "traces sampler")
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
 				}
@@ -1026,10 +1026,10 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 
 				sampledData := sink.AllTraces()
 
-				require.Equal(t, 0, len(sampledData))
+				require.Empty(t, sampledData)
 				assert.Equal(t, 0, sink.SpanCount())
 
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				if observed.All()[0].Message == "trace sampler" {
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
 				} else {

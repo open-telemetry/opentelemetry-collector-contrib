@@ -77,7 +77,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 	if err != nil {
 		return nil, err // Can't do anything
 	}
-	if resp.StatusCode == 429 {
+	if resp.StatusCode == http.StatusTooManyRequests {
 		expBackoff := &backoff.ExponentialBackOff{
 			InitialInterval:     rt.backoffConfig.InitialInterval,
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
@@ -110,7 +110,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 			if err != nil {
 				return nil, err
 			}
-			if resp.StatusCode != 429 {
+			if resp.StatusCode != http.StatusTooManyRequests {
 				break
 			}
 		}

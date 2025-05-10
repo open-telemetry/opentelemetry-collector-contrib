@@ -41,7 +41,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -60,7 +60,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg compo
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

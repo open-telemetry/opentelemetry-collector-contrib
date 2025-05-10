@@ -44,7 +44,6 @@ func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
 	r := &awsContainerInsightReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -79,7 +78,6 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
-
 		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, host, acir.settings)
 		if err != nil {
 			return err
@@ -134,7 +132,6 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	}
 
 	return errs
-
 }
 
 // collectData collects container stats from cAdvisor and k8s api server (if it is an elected leader)

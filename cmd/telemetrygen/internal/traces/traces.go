@@ -102,10 +102,12 @@ func Start(cfg *Config) error {
 
 // Run executes the test scenario.
 func Run(c *Config, logger *zap.Logger) error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
 	if c.TotalDuration > 0 {
 		c.NumTraces = 0
-	} else if c.NumTraces <= 0 {
-		return fmt.Errorf("either `traces` or `duration` must be greater than 0")
 	}
 
 	limit := rate.Limit(c.Rate)

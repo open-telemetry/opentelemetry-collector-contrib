@@ -1,0 +1,47 @@
+-- in --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: sum
+            sum:
+              aggregationTemporality: 1 # delta
+              dataPoints:
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "0"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "1"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "2"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "3"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "4"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "5"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "6"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "7"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "8"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "9"}}]}
+
+-- out --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: sum
+            sum:
+              aggregationTemporality: 2 # cumulative
+              dataPoints:
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "0"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "1"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "2"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "3"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "4"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "5"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "6"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "7"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "8"}}]}
+                - {timeUnixNano: 1, asDouble: 1, attributes: [{key: series, value: {stringValue: "9"}}]}

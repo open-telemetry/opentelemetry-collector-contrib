@@ -26,7 +26,6 @@ func NewDatabaseReader(ctx context.Context,
 	serviceAccountPath string,
 	readerConfig ReaderConfig,
 	logger *zap.Logger) (*DatabaseReader, error) {
-
 	database, err := datasource.NewDatabase(ctx, databaseID, serviceAccountPath)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred during client instantiation for database %q: %w", databaseID.ID(), err)

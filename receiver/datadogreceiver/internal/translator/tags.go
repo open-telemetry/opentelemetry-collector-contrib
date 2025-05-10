@@ -116,13 +116,21 @@ func (s *StringPool) Intern(str string) string {
 	return interned
 }
 
-func tagsToAttributes(tags []string, host string, stringPool *StringPool) (pcommon.Map, pcommon.Map, pcommon.Map) {
-	resourceAttrs := pcommon.NewMap()
-	scopeAttrs := pcommon.NewMap()
-	dpAttrs := pcommon.NewMap()
+type attributes struct {
+	resource pcommon.Map
+	scope    pcommon.Map
+	dp       pcommon.Map
+}
+
+func tagsToAttributes(tags []string, host string, stringPool *StringPool) attributes {
+	attrs := attributes{
+		resource: pcommon.NewMap(),
+		scope:    pcommon.NewMap(),
+		dp:       pcommon.NewMap(),
+	}
 
 	if host != "" {
-		resourceAttrs.PutStr(semconv.AttributeHostName, host)
+		attrs.resource.PutStr(semconv.AttributeHostName, host)
 	}
 
 	var key, val string
@@ -130,13 +138,13 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) (pcomm
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
 			val = stringPool.Intern(val) // No need to intern the key if we already have it
-			resourceAttrs.PutStr(attr, val)
+			attrs.resource.PutStr(attr, val)
 		} else {
 			key = stringPool.Intern(translateDatadogKeyToOTel(key))
 			val = stringPool.Intern(val)
-			dpAttrs.PutStr(key, val)
+			attrs.dp.PutStr(key, val)
 		}
 	}
 
-	return resourceAttrs, scopeAttrs, dpAttrs
+	return attrs
 }

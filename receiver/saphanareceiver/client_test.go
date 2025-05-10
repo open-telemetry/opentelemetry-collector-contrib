@@ -211,7 +211,7 @@ func TestNullOutput(t *testing.T) {
 
 	results, err := client.collectDataFromQuery(context.TODO(), query)
 	// Error expected for second row, but data is also returned
-	require.Contains(t, err.Error(), "database row NULL value for required metric label id")
+	require.ErrorContains(t, err, "database row NULL value for required metric label id")
 	require.Equal(t, []map[string]string{
 		{
 			"id":    "my_id",

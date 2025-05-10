@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("file")
+	Type      = component.MustNewType("file")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 )
 
 const (

@@ -28,11 +28,10 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-		CollectionInterval: 10 * time.Second,
+		Applications: make(map[string]ApplicationConfig),
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 5 * time.Second,
 			},
 		},

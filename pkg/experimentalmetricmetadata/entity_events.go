@@ -4,6 +4,8 @@
 package experimentalmetricmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -18,6 +20,7 @@ const (
 
 	semconvOtelEntityID         = "otel.entity.id"
 	semconvOtelEntityType       = "otel.entity.type"
+	semconvOtelEntityInterval   = "otel.entity.interval"
 	semconvOtelEntityAttributes = "otel.entity.attributes"
 
 	semconvOtelEntityEventAsScope = "otel.entity.event_as_log"
@@ -171,6 +174,21 @@ func (s EntityStateDetails) EntityType() string {
 // SetEntityType sets the type of the entity.
 func (s EntityStateDetails) SetEntityType(t string) {
 	s.orig.Attributes().PutStr(semconvOtelEntityType, t)
+}
+
+// SetInterval sets the reporting period
+// i.e. how frequently the information about this entity is reported via EntityState events even if the entity does not change.
+func (s EntityStateDetails) SetInterval(t time.Duration) {
+	s.orig.Attributes().PutInt(semconvOtelEntityInterval, t.Milliseconds())
+}
+
+// Interval returns the reporting period
+func (s EntityStateDetails) Interval() time.Duration {
+	t, ok := s.orig.Attributes().Get(semconvOtelEntityInterval)
+	if !ok {
+		return 0
+	}
+	return time.Duration(t.Int()) * time.Millisecond
 }
 
 // EntityDeleteDetails represents the details of an EntityDelete event.

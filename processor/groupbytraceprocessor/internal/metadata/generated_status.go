@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("groupbytrace")
+	Type      = component.MustNewType("groupbytrace")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 )
 
 const (

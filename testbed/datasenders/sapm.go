@@ -51,7 +51,7 @@ func (je *SapmDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

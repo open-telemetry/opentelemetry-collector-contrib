@@ -78,7 +78,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: KBy
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -159,7 +159,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: KBy
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -240,7 +240,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: KBy
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -347,7 +347,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -454,7 +454,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -561,7 +561,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -668,7 +668,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -775,7 +775,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
   - resource:
       attributes:
@@ -882,5 +882,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{packets}'
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest

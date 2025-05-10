@@ -42,7 +42,7 @@ func createMetricsProcessor(
 
 	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, set.Logger)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

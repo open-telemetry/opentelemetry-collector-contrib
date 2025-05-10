@@ -92,7 +92,7 @@ func TestRemote(t *testing.T) {
 
 			go func() {
 				err = server.Serve(lis)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}()
 			defer func() { server.Stop() }()
 

@@ -460,13 +460,11 @@ func TestResourceFieldUnmarshalFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy ResourceField
 			err := yaml.UnmarshalStrict(tc.invalid, &fy)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expectedErr)
+			require.ErrorContains(t, err, tc.expectedErr)
 
 			var fj ResourceField
 			err = json.Unmarshal(tc.invalid, &fj)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expectedErr)
+			require.ErrorContains(t, err, tc.expectedErr)
 		})
 	}
 }

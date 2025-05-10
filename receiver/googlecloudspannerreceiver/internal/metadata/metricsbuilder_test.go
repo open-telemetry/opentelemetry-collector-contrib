@@ -29,7 +29,6 @@ type mockItemFilterResolver struct {
 func (r *mockItemFilterResolver) Resolve(string) (filter.ItemFilter, error) {
 	args := r.Called()
 	return args.Get(0).(filter.ItemFilter), args.Error(1)
-
 }
 
 func (r *mockItemFilterResolver) Shutdown() error {
@@ -121,7 +120,7 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.M
 	assert.Equal(t, len(dataForTesting.expectedGroups), metric.MetricCount())
 	assert.Equal(t, 1, metric.ResourceMetrics().At(0).ScopeMetrics().Len())
 	assert.Equal(t, len(dataForTesting.expectedGroups), metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
-	require.Equal(t, instrumentationLibraryName, metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver", metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 
 	for i := 0; i < len(dataForTesting.expectedGroups); i++ {
 		ilMetric := metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)
@@ -221,7 +220,7 @@ func TestMetricsFromDataPointBuilder_GroupAndFilter_NilDataPoints(t *testing.T) 
 
 	require.NoError(t, err)
 
-	assert.Equal(t, 0, len(groupedDataPoints))
+	assert.Empty(t, groupedDataPoints)
 }
 
 func TestMetricsFromDataPointBuilder_Filter(t *testing.T) {
@@ -345,7 +344,6 @@ func executeShutdown(t *testing.T, metricsBuilder MetricsBuilder, expectError bo
 
 func executeMockedShutdown(t *testing.T, metricsBuilder MetricsBuilder, filterResolver *mockItemFilterResolver,
 	expectedError error) {
-
 	filterResolver.On("Shutdown").Return(expectedError)
 	_ = metricsBuilder.Shutdown()
 	filterResolver.AssertExpectations(t)

@@ -22,10 +22,7 @@ type jaegerMarshaler struct {
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
 func (j jaegerMarshaler) Marshal(traces ptrace.Traces, _ string) ([]*pulsar.ProducerMessage, error) {
-	batches, err := jaeger.ProtoFromTraces(traces)
-	if err != nil {
-		return nil, err
-	}
+	batches := jaeger.ProtoFromTraces(traces)
 
 	var errs error
 	messages := make([]*pulsar.ProducerMessage, 0, len(batches))

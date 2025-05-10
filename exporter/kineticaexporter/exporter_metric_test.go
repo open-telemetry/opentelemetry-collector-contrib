@@ -34,8 +34,6 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
 		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(3))
-
-		require.Equal(t, 15, 15)
 	})
 }
 

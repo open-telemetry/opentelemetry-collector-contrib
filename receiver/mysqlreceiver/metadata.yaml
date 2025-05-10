@@ -1,5 +1,4 @@
 type: mysql
-scope_name: otelcol/mysqlreceiver
 
 status:
   class: receiver

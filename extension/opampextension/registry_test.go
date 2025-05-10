@@ -52,7 +52,7 @@ func TestRegistry_Register(t *testing.T) {
 		sender, err := registry.Register(capabilityString)
 		require.Nil(t, sender)
 		require.ErrorIs(t, err, capabilityErr)
-		require.Len(t, registry.capabilityToMsgChannels, 0, "Setting capability failed, but callback ended up in the map anyways")
+		require.Empty(t, registry.capabilityToMsgChannels, "Setting capability failed, but callback ended up in the map anyways")
 	})
 }
 
@@ -101,7 +101,7 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		// If we did not skip sending on blocked channels, we'd expect this to never return.
 		registry.ProcessMessage(customMessage)
 
-		require.Equal(t, 0, len(sender.Message()))
+		require.Empty(t, sender.Message())
 	})
 
 	t.Run("Callback is called only for its own capability", func(t *testing.T) {

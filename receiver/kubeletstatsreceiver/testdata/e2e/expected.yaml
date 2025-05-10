@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: kind-control-plane
     scopeMetrics:
       - scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
         metrics:
           - name: k8s.node.cpu.time

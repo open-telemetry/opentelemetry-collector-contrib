@@ -25,11 +25,14 @@ func TestMain(m *testing.M) {
 func TestTracingGoldenData(t *testing.T) {
 	tests, err := correctnesstests.LoadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
 	require.NoError(t, err)
-	processors := map[string]string{
-		"batch": `
+	processors := []correctnesstests.ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
     send_batch_size: 1024
 `,
+		},
 	}
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
@@ -46,7 +49,7 @@ func testWithTracingGoldenDataset(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
-	processors map[string]string,
+	processors []correctnesstests.ProcessorNameAndConfigBody,
 ) {
 	dataProvider := testbed.NewGoldenDataProvider(
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",

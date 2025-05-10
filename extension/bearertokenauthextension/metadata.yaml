@@ -1,12 +1,10 @@
 type: bearertokenauth
-scope_name: otelcol/bearertokenauth
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions:
-  - contrib
+  distributions: [contrib, k8s]
   codeowners:
     active: [jpkrohling, frzifus]
     emeritus: [pavankrish123]

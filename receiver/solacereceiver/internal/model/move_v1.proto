@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package solace.messaging.proto.broker.trace.move.v1;
+
+// Messages with the following topic contain a message matching this
+// specification:
+// _telemetry/broker/trace/move/v1[/additional/topic/levels]
+// Note that the topic allows for additional topic levels to be added in the
+// future. Receiving clients must not assume there are no additional topic
+// levels.
+//
+// This message describes telemetry data that a Solace PubSub+ broker captures
+// as a result of moving a message from one queue to another; for example,
+// moving a message to a dead message queue if TTL expires.
+//
+// Fields with names that end in "time_unix_nano" are 64-bit timestamps, in
+// nanoseconds, since midnight, Jan. 1, 1970 UTC.
+//
+message SpanData {
+  
+  // 16-byte globally unique trace ID. Any two spans with the same trace ID
+  // are part of the same trace.
+  bytes trace_id = 1;
+
+  // 8-byte span ID, unique within the scope of a trace.
+  bytes span_id = 2;
+
+  // If not present, this is a root span. If present, this is an 8-byte span
+  // ID of the parent span.
+  optional bytes parent_span_id = 3;
+
+  // The start and end timestamps of the receive span. The start of the span
+  // is when Guaranteed Messaging processing begins in the broker.
+  sfixed64 start_time_unix_nano = 4;
+  sfixed64 end_time_unix_nano = 5;
+
+  // The name of the queue or topic endpoint the message is being moved from.
+  oneof source {
+    string source_queue_name = 6;
+    string source_topic_endpoint_name = 7;
+  }
+
+  // The destination queue or topic endpoint the message is being moved to.
+  oneof destination {
+    string destination_queue_name = 8;
+    string destination_topic_endpoint_name = 9;
+  }
+
+  // The nested "info" message below provides the following information:
+  // * The reason for the message being moved.
+  // * Any additional information associated with that particular reason.
+  // Currently, the defined "info" messages contain no information. An enum
+  // could have been used to express this instead. The "info" message technique
+  // was chosen to allow for information related specifically to each scenario
+  // to be easily added in the future.
+  oneof type_info {
+    MaxRedeliveriesInfo max_redeliveries_info = 10;
+    TtlExpiredInfo ttl_expired_info = 11;
+    RejectedOutcomeInfo rejected_outcome_info = 12;
+  }
+  
+  // The router-name of the broker generating this message at the time the
+  // message was generated.
+  string router_name = 13;
+
+  // The broker's message-vpn name. This field may be removed in the future
+  // without a major version change since the field is specified as optional.
+  //
+  // Rather than rely on this field, receiving clients should obtain the VPN
+  // by using an SMF API to extract the VPN_NAME_IN_USE from the API's Session
+  // object. The message_vpn_name of all messages received from via an SMF
+  // API's session will match the session's VPN_NAME_IN_USE.
+  optional string message_vpn_name = 14;
+
+  // The SolOS version of the broker generating the message. All elements of
+  // egress_spans will always have been created by the same broker version.
+  string solos_version = 15;
+  
+  // The message's globally unique Replication Group Message ID, in binary
+  // format. This will not be present if the message is being discarded.
+  // The format of these bytes are:
+  // byte[0]: Version.
+  // byte[1:len-1]: Binary representation of a replication group message ID in
+  // the specified version.
+  // This should only be treated as opaque data by applications. If comparing
+  // two ID's and the versions are the same, then the ID's are the same if the
+  // remaining bytes are the same. If the versions are different, no comparison
+  // can be made.
+
+ optional bytes replication_group_message_id = 16;
+ 
+  // Partition number of queue the message is being moved from, 
+  // if the associated queue is a partitioned queue
+  optional uint32 source_partition_number = 17;
+  
+  // Partition number of the destination DMQ the message is being moved to,
+  // if the associated queue is a partitioned queue
+  optional uint32 destination_partition_number = 18;
+}
+
+
+// The presence of this message implies the reason for the span is that a
+// message exceeded the maximum number of redeliveries.
+message MaxRedeliveriesInfo {}
+
+// The presence of this message implies the reason for the span is that the
+// message's TTL has expired.
+message TtlExpiredInfo {}
+
+// The presence of this message implies the reason for the span is that a
+// consuming client settled the message with an outcome of "rejected".
+message RejectedOutcomeInfo {}

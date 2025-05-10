@@ -19,7 +19,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "somerandometoken"
 	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)

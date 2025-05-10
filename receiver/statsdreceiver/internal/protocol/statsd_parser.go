@@ -54,7 +54,7 @@ const (
 
 	DefaultObserverType = DisableObserver
 
-	receiverName = "otelcol/statsdreceiver"
+	receiverName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 )
 
 type TimerHistogramMapping struct {
@@ -84,14 +84,15 @@ var defaultObserverCategory = ObserverCategory{
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	instrumentsByAddress map[netAddr]*instruments
-	enableMetricType     bool
-	enableSimpleTags     bool
-	isMonotonicCounter   bool
-	timerEvents          ObserverCategory
-	histogramEvents      ObserverCategory
-	lastIntervalTime     time.Time
-	BuildInfo            component.BuildInfo
+	instrumentsByAddress    map[netAddr]*instruments
+	enableMetricType        bool
+	enableSimpleTags        bool
+	isMonotonicCounter      bool
+	enableIPOnlyAggregation bool
+	timerEvents             ObserverCategory
+	histogramEvents         ObserverCategory
+	lastIntervalTime        time.Time
+	BuildInfo               component.BuildInfo
 }
 
 type instruments struct {
@@ -166,7 +167,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -174,6 +175,8 @@ func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, 
 	p.enableMetricType = enableMetricType
 	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
+	p.enableIPOnlyAggregation = enableIPOnlyAggregation
+
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
@@ -292,6 +295,10 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	}
 
 	addrKey := newNetAddr(addr)
+	if p.enableIPOnlyAggregation {
+		addrKey = newIPOnlyNetAddr(addr)
+	}
+
 	instrument, ok := p.instrumentsByAddress[addrKey]
 	if !ok {
 		instrument = newInstruments(addr)
@@ -493,4 +500,13 @@ type netAddr struct {
 
 func newNetAddr(addr net.Addr) netAddr {
 	return netAddr{addr.Network(), addr.String()}
+}
+
+func newIPOnlyNetAddr(addr net.Addr) netAddr {
+	host, _, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		// if there is an error, use the original address
+		return netAddr{addr.Network(), addr.String()}
+	}
+	return netAddr{addr.Network(), host}
 }

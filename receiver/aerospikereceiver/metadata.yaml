@@ -1,5 +1,4 @@
 type: aerospike
-scope_name: otelcol/aerospikereceiver
 
 status:
   class: receiver
@@ -9,6 +8,14 @@ status:
   codeowners:
     active: [djaglowski, antonblock]
     seeking_new: true
+
+tests:
+  goleak:
+    ignore:
+      top:
+        - "github.com/aerospike/aerospike-client-go/v7.(*baseMultiCommand).parseRecordResults"
+        - "github.com/aerospike/aerospike-client-go/v7.(*Cluster).clusterBoss"
+        - "sync.runtime_Semacquire"
 
 resource_attributes:
   aerospike.node.name:

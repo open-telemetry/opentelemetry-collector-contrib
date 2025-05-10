@@ -20,7 +20,7 @@ func TestReceiver(t *testing.T) {
 
 	settings := receivertest.NewNopSettings()
 	sink := new(consumertest.LogsSink)
-	logs, err := factory.CreateLogsReceiver(context.Background(), settings, cfg, sink)
+	logs, err := factory.CreateLogs(context.Background(), settings, cfg, sink)
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.Shutdown(context.Background()))

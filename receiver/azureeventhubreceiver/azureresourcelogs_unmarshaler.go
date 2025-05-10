@@ -10,14 +10,26 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 )
 
-type AzureResourceLogsEventUnmarshaler struct {
-	unmarshaler *azure.ResourceLogsUnmarshaler
+type logsUnmarshaler interface {
+	UnmarshalLogs([]byte) (plog.Logs, error)
 }
 
-func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventLogsUnmarshaler {
+type AzureResourceLogsEventUnmarshaler struct {
+	unmarshaler logsUnmarshaler
+}
 
+func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool) eventLogsUnmarshaler {
+	if applySemanticConventions {
+		return AzureResourceLogsEventUnmarshaler{
+			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
+				Version: buildInfo.Version,
+				Logger:  logger,
+			},
+		}
+	}
 	return AzureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
 			Version: buildInfo.Version,
@@ -33,6 +45,5 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
 func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
-
 	return r.unmarshaler.UnmarshalLogs(event.Data)
 }

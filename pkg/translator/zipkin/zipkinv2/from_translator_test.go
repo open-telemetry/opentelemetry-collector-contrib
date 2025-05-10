@@ -95,7 +95,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	for _, td := range tds {
 		zipkinSpans, err := FromTranslator{}.FromTraces(td)
 		assert.NoError(t, err)
-		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
+		assert.Len(t, zipkinSpans, td.SpanCount())
 		tdFromZS, zErr := ToTranslator{}.ToTraces(zipkinSpans)
 		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)

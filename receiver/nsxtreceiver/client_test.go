@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -296,73 +297,73 @@ func mockServer(t *testing.T) *httptest.Server {
 		authUser, authPass, ok := req.BasicAuth()
 		switch {
 		case !ok:
-			rw.WriteHeader(401)
+			rw.WriteHeader(http.StatusUnauthorized)
 			return
 		case authUser == user500:
-			rw.WriteHeader(500)
+			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		case authUser != goodUser || authPass != goodPassword:
-			rw.WriteHeader(403)
+			rw.WriteHeader(http.StatusForbidden)
 			return
 		}
 
 		if req.URL.Path == "/api/v1/transport-nodes" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeBytes)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == "/api/v1/cluster/nodes" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(cNodeBytes)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", managerNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(mNodeInterfaces)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/transport-nodes/%s/status", transportNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeStatus)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces", transportNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeInterfaces)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces/%s/stats", transportNode1, transportNodeNic1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeInterfaceStats)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", managerNode1, managerNodeNic1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(mNodeInterfaceStats)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/cluster/nodes/%s/status", managerNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(mNodeStatus)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 
 	return nsxMock

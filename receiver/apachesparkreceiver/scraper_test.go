@@ -35,6 +35,8 @@ const (
 )
 
 func TestScraper(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
 	testcases := []struct {
 		desc              string
 		setupMockClient   func(t *testing.T) client
@@ -68,10 +70,8 @@ func TestScraper(t *testing.T) {
 			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: defaultCollectionInterval,
 			},
-				ApplicationNames: []string{"local-123", "local-987"},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				ApplicationNames:     []string{"local-123", "local-987"},
+				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedErr: errNoMatchingAllowedApps,
@@ -215,10 +215,8 @@ func TestScraper(t *testing.T) {
 			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: defaultCollectionInterval,
 			},
-				ApplicationNames: []string{"streaming-example"},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				ApplicationNames:     []string{"streaming-example"},
+				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedErr: nil,

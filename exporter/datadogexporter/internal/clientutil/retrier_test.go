@@ -26,7 +26,7 @@ func TestDoWithRetries(t *testing.T) {
 
 	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error { return nil })
 	require.NoError(t, err)
-	assert.Equal(t, retryNum, int64(0))
+	assert.Equal(t, int64(0), retryNum)
 
 	retrier = NewRetrier(zap.NewNop(),
 		configretry.BackOffConfig{
@@ -39,18 +39,18 @@ func TestDoWithRetries(t *testing.T) {
 	)
 	retryNum, err = retrier.DoWithRetries(ctx, func(context.Context) error { return errors.New("action failed") })
 	require.Error(t, err)
-	assert.Greater(t, retryNum, int64(0))
+	assert.Positive(t, retryNum)
 }
 
 func TestNoRetriesOnPermanentError(t *testing.T) {
 	scrubber := scrub.NewScrubber()
 	retrier := NewRetrier(zap.NewNop(), configretry.NewDefaultBackOffConfig(), scrubber)
 	ctx := context.Background()
-	respNonRetriable := http.Response{StatusCode: 404}
+	respNonRetriable := http.Response{StatusCode: http.StatusNotFound}
 
 	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error {
 		return WrapError(fmt.Errorf("test"), &respNonRetriable)
 	})
 	require.Error(t, err)
-	assert.Equal(t, retryNum, int64(0))
+	assert.Equal(t, int64(0), retryNum)
 }

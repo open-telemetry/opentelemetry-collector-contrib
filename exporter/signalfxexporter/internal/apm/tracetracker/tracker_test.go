@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
@@ -150,7 +150,7 @@ func TestCorrelationEmptyEnvironment(t *testing.T) {
 	a.ProcessTraces(context.Background(), fakeTraces)
 
 	cors := correlationClient.getCorrelations()
-	assert.Equal(t, 4, len(cors), "expected 4 correlations to be made")
+	assert.Len(t, cors, 4, "expected 4 correlations to be made")
 	for _, c := range cors {
 		assert.Contains(t, []string{"container_id", "kubernetes_pod_uid", "host", "AWSUniqueId"}, c.DimName)
 		assert.Contains(t, []string{"test", "randomAWSUniqueId", "testk8sPodUID", "testContainerID"}, c.DimValue)
@@ -206,5 +206,5 @@ func TestCorrelationUpdates(t *testing.T) {
 	numHostIDDimCorrelations := len(hostIDDims)*(numEnvironments+numServices) + 4 /* 4 deletes for service & environment fetched at startup */
 	numContainerLevelCorrelations := 2 * len(containerLevelIDDims)
 	totalExpectedCorrelations := numHostIDDimCorrelations + numContainerLevelCorrelations
-	assert.Equal(t, totalExpectedCorrelations, len(correlationClient.getCorrelations()), "# of correlation requests do not match")
+	assert.Len(t, correlationClient.getCorrelations(), totalExpectedCorrelations, "# of correlation requests do not match")
 }

@@ -221,7 +221,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
@@ -281,7 +281,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.False(t, ok)
 
-	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+	assert.EqualValues(t, []string{"host.name", "host.id"}, droppedAttributes)
 }
 
 func TestFilterAttributes_NilAttributes(t *testing.T) {
@@ -298,7 +298,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }
 
 func TestFilterAttributes_NoAttributes(t *testing.T) {
@@ -315,5 +315,5 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }

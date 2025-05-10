@@ -90,7 +90,7 @@ func TestListDatabaseNames(t *testing.T) {
 		}
 		dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
 		require.NoError(t, err)
-		require.Equal(t, dbNames[0], "admin")
+		require.Equal(t, "admin", dbNames[0])
 	})
 
 }
@@ -229,8 +229,7 @@ func TestGetVersionFailures(t *testing.T) {
 			}
 
 			_, err := client.GetVersion(context.TODO())
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.partialError)
+			require.ErrorContains(t, err, tc.partialError)
 		})
 	}
 

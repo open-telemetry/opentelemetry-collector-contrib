@@ -34,9 +34,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				Encoding: Encoding{
 					Name:        "otlp",
 					Compression: "none",
@@ -59,8 +59,8 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 				Encoding: Encoding{
 					Name:        "otlp-proto",
 					Compression: "none",

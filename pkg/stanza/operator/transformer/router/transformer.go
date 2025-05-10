@@ -57,7 +57,6 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 				err = output.Process(ctx, entry)
 				if err != nil {
 					t.Logger().Error("Failed to process entry", zap.Error(err))
-					return err
 				}
 			}
 			break

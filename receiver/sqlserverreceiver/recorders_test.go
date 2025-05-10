@@ -25,7 +25,7 @@ func TestPerfCounterRecorders(t *testing.T) {
 			for counterPath := range counter.recorders {
 				counterFullName := fmt.Sprintf("%s:%s %s", defaultObjectName, counter.object, counterPath)
 				_, ok := expectedCounters[counterFullName]
-				require.True(t, ok, fmt.Sprintf("counter %s not found", counterFullName))
+				require.Truef(t, ok, "counter %s not found", counterFullName)
 			}
 		}
 	})
@@ -37,7 +37,7 @@ func TestPerfCounterRecorders(t *testing.T) {
 			for counterPath := range counter.recorders {
 				counterFullName := fmt.Sprintf("MSSQL$TEST_NAME:%s %s", counter.object, counterPath)
 				_, ok := expectedCounters[counterFullName]
-				require.True(t, ok, fmt.Sprintf("counter %s not found", counterFullName))
+				require.Truef(t, ok, "counter %s not found", counterFullName)
 			}
 		}
 	})

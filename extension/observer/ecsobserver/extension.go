@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
@@ -23,7 +24,7 @@ type ecsObserver struct {
 }
 
 // Start runs the service discovery in background
-func (e *ecsObserver) Start(_ context.Context, _ component.Host) error {
+func (e *ecsObserver) Start(_ context.Context, host component.Host) error {
 	e.telemetrySettings.Logger.Info("Starting ECSDiscovery")
 	// Ignore the ctx parameter as it is not for long running operation
 	ctx, cancel := context.WithCancel(context.Background())
@@ -31,8 +32,7 @@ func (e *ecsObserver) Start(_ context.Context, _ component.Host) error {
 	go func() {
 		if err := e.sd.runAndWriteFile(ctx); err != nil {
 			e.telemetrySettings.Logger.Error("ECSDiscovery stopped by error", zap.Error(err))
-			// Stop the collector
-			e.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

@@ -7,10 +7,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 // NewFactory should be called to create a factory with default values.
@@ -25,10 +27,12 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:          "unix:///var/run/docker.sock",
-		Timeout:           5 * time.Second,
+		Config: docker.Config{
+			Endpoint:         client.DefaultDockerHost,
+			Timeout:          5 * time.Second,
+			DockerAPIVersion: defaultDockerAPIVersion,
+		},
 		CacheSyncInterval: 60 * time.Minute,
-		DockerAPIVersion:  defaultDockerAPIVersion,
 	}
 }
 

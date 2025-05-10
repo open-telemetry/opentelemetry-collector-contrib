@@ -44,7 +44,7 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 			Enabled: true,
 		},
 	}
-	mem, err := factory.CreateMetricsReceiver(
+	mem, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&Config{

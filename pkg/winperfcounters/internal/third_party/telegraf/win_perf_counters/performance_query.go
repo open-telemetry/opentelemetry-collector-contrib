@@ -225,7 +225,7 @@ func UTF16PtrToString(s *uint16) string {
 	return string(utf16.Decode(slice))
 }
 
-// UTF16ToStringArray converts list of Windows API NULL terminated strings  to go string array
+// UTF16ToStringArray converts list of Windows API NULL terminated strings to go string array
 func UTF16ToStringArray(buf []uint16) []string {
 	var strings []string
 	nextLineStart := 0

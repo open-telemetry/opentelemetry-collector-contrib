@@ -67,7 +67,7 @@ func TestMetricsGrouping(t *testing.T) {
 					otlpDataModelGateEnabled: useOTLP,
 				}
 
-				mtp, err := processorhelper.NewMetricsProcessor(
+				mtp, err := processorhelper.NewMetrics(
 					context.Background(),
 					processortest.NewNopSettings(),
 					&Config{},
@@ -75,7 +75,7 @@ func TestMetricsGrouping(t *testing.T) {
 				require.NoError(t, err)
 
 				caps := mtp.Capabilities()
-				assert.Equal(t, true, caps.MutatesData)
+				assert.True(t, caps.MutatesData)
 
 				input, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_in.yaml"))
 				require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestMetricsGrouping(t *testing.T) {
 				assert.NoError(t, cErr)
 
 				got := next.AllMetrics()
-				require.Equal(t, 1, len(got))
+				require.Len(t, got, 1)
 				require.NoError(t, pmetrictest.CompareMetrics(expected, got[0], pmetrictest.IgnoreMetricValues()))
 
 				assert.NoError(t, mtp.Shutdown(context.Background()))

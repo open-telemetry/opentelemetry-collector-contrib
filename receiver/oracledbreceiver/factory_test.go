@@ -20,7 +20,7 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receiver.Settings{
 			ID:                component.NewID(metadata.Type),
@@ -93,7 +93,7 @@ func TestGetDataSource(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			dataSource := getDataSource(*tc.config)
-			require.Equal(t, dataSource, tc.expected)
+			require.Equal(t, tc.expected, dataSource)
 			_, err := url.PathUnescape(dataSource)
 			require.NoError(t, err)
 		})

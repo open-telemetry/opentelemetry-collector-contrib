@@ -220,12 +220,10 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		name string
 		td   ptrace.Traces
 		jb   *model.Batch
-		err  error
 	}{
 		{
 			name: "empty",
 			td:   ptrace.NewTraces(),
-			err:  nil,
 		},
 
 		{
@@ -234,13 +232,11 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			jb: &model.Batch{
 				Process: generateProtoProcess(),
 			},
-			err: nil,
 		},
 
 		{
 			name: "no-resource-attrs",
 			td:   generateTracesResourceOnlyWithNoAttrs(),
-			err:  nil,
 		},
 
 		{
@@ -254,7 +250,6 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					generateProtoSpanWithTraceState(),
 				},
 			},
-			err: nil,
 		},
 		{
 			name: "library-info",
@@ -267,7 +262,6 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					generateProtoSpanWithLibraryInfo("io.opentelemetry.test"),
 				},
 			},
-			err: nil,
 		},
 		{
 			name: "two-spans-child-parent",
@@ -281,7 +275,6 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					generateProtoChildSpan(),
 				},
 			},
-			err: nil,
 		},
 
 		{
@@ -296,7 +289,6 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					generateProtoFollowerSpan(),
 				},
 			},
-			err: nil,
 		},
 
 		{
@@ -310,7 +302,6 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					generateJProtoSpanWithEventAttribute(),
 				},
 			},
-			err: nil,
 		},
 		{
 			name: "a-spans-with-two-parent",
@@ -330,12 +321,11 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			jbs, err := ProtoFromTraces(test.td)
-			assert.EqualValues(t, test.err, err)
+			jbs := ProtoFromTraces(test.td)
 			if test.jb == nil {
-				assert.Len(t, jbs, 0)
+				assert.Empty(t, jbs)
 			} else {
-				require.Equal(t, 1, len(jbs))
+				require.Len(t, jbs, 1)
 				assert.EqualValues(t, test.jb, jbs[0])
 			}
 		})
@@ -348,8 +338,7 @@ func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
-		protoBatches, err := ProtoFromTraces(td)
-		assert.NoError(t, err)
+		protoBatches := ProtoFromTraces(td)
 		tdFromPB, err := ProtoToTraces(protoBatches)
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), tdFromPB.SpanCount())
@@ -388,7 +377,7 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, err := ProtoFromTraces(td)
-		assert.NoError(b, err)
+		batches := ProtoFromTraces(td)
+		assert.NotEmpty(b, batches)
 	}
 }

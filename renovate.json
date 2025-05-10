@@ -5,7 +5,7 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.21.0"
+      "go": "1.22.0"
     },
     "schedule": ["every tuesday"],
     "extends": ["config:recommended"],
@@ -79,6 +79,11 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchPackagePrefixes": ["cloud.google.com/go"],
+        "groupName": "All cloud.google.com/go packages"
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
         "groupName": "All github.com/googlecloudplatform packages"
       },
@@ -103,7 +108,6 @@
       }
     ],
     "ignoreDeps": [
-      "github.com/mattn/go-ieproxy",
       "github.com/DataDog/datadog-agent/pkg/trace/exportable"
     ],
     "prConcurrentLimit": 200,

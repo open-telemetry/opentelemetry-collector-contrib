@@ -54,10 +54,9 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 
 	unknownExtensionID := component.NewID(component.MustNewType("invalid_encoding"))
 	cfg.EncodingExtensionID = &unknownExtensionID
-	host := mockHost{}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
-	err := exporter.start(context.Background(), host)
+	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "unknown encoding \"invalid_encoding\"")
 
 	err = exporter.shutdown(context.Background())
@@ -161,12 +160,4 @@ func (c *mockPublisher) Publish(ctx context.Context, message publisher.Message) 
 func (c *mockPublisher) Close() error {
 	args := c.Called()
 	return args.Error(0)
-}
-
-type mockHost struct {
-	component.Host
-}
-
-func (h mockHost) GetExtensions() map[component.ID]component.Component {
-	return make(map[component.ID]component.Component)
 }

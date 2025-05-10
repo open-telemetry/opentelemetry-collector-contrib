@@ -9,8 +9,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 )
 
-const instrumentationLibraryName = "otelcol/googlecloudspannermetrics"
-
 type MetricsBuilder interface {
 	Build(dataPoints []*MetricsDataPoint) (pmetric.Metrics, error)
 	Shutdown() error
@@ -44,7 +42,7 @@ func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pme
 
 	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
-	ilm.Scope().SetName(instrumentationLibraryName)
+	ilm.Scope().SetName(ScopeName)
 
 	for key, points := range groupedDataPoints {
 		metric := ilm.Metrics().AppendEmpty()

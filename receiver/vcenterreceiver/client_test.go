@@ -230,7 +230,7 @@ func TestDatacenterInventoryListObjects(t *testing.T) {
 		}
 		dcs, err := client.DatacenterInventoryListObjects(ctx)
 		require.NoError(t, err)
-		require.Equal(t, len(dcs), 2)
+		require.Len(t, dcs, 2)
 	}, vpx)
 }
 

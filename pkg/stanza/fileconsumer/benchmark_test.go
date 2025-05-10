@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
@@ -210,12 +211,12 @@ func BenchmarkFileInput(b *testing.B) {
 					// Write the other half of the content while running
 					for i := 0; i < b.N/2; i++ {
 						_, err := f.WriteString(severalLines)
-						require.NoError(b, err)
+						assert.NoError(b, err)
 					}
 					// Signal end of file
 					_, err := f.WriteString("\n")
-					require.NoError(b, err)
-					require.NoError(b, f.Sync())
+					assert.NoError(b, err)
+					assert.NoError(b, f.Sync())
 				}(file)
 			}
 

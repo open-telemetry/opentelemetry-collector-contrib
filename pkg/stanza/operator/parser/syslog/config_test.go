@@ -128,8 +128,7 @@ func TestUnmarshal(t *testing.T) {
 func TestParserMissingProtocol(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := NewConfig().Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing field 'protocol'")
+	require.ErrorContains(t, err, "missing field 'protocol'")
 }
 
 func TestRFC6587ConfigOptions(t *testing.T) {
@@ -232,6 +231,5 @@ func TestParserInvalidLocation(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to load location "+config.Location)
+	require.ErrorContains(t, err, "failed to load location "+config.Location)
 }

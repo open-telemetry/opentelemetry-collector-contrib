@@ -13,28 +13,28 @@ import (
 func TestTruncateString(t *testing.T) {
 	t.Run("Test empty string", func(t *testing.T) {
 		s := truncateString("", 10)
-		require.Len(t, s, 0)
+		require.Empty(t, s)
 	})
 
 	// Test string is less than the maximum length
 	t.Run("Test shorter string", func(t *testing.T) {
 		s := truncateString("short", 10)
 		require.Len(t, s, 5)
-		require.Equal(t, s, "short")
+		require.Equal(t, "short", s)
 	})
 
 	// Test string is equal to the maximum length
 	t.Run("Test equal string", func(t *testing.T) {
 		s := truncateString("short", 5)
 		require.Len(t, s, 5)
-		require.Equal(t, s, "short")
+		require.Equal(t, "short", s)
 	})
 
 	// Test string is longer than the maximum length
 	t.Run("Test longer string", func(t *testing.T) {
 		s := truncateString("longstring", 4)
 		require.Len(t, s, 4)
-		require.Equal(t, s, "long")
+		require.Equal(t, "long", s)
 	})
 }
 

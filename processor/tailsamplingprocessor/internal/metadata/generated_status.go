@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("tail_sampling")
+	Type      = component.MustNewType("tail_sampling")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
 const (

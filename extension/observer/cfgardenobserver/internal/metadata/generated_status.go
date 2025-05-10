@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("cfgarden_observer")
+	Type      = component.MustNewType("cfgarden_observer")
+	ScopeName = "otelcol/cfgardenobserver"
 )
 
 const (

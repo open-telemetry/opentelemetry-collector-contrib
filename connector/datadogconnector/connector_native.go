@@ -37,6 +37,9 @@ type traceToMetricConnectorNative struct {
 	// ctagKeys are container tag keys
 	ctagKeys []string
 
+	// peerTagKeys are peer tag keys to group APM stats
+	peerTagKeys []string
+
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
@@ -75,6 +78,7 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		translator:      trans,
 		tcfg:            tcfg,
 		ctagKeys:        cfg.(*Config).Traces.ResourceAttributesAsContainerTags,
+		peerTagKeys:     tcfg.ConfiguredPeerTags(),
 		concentrator:    stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient),
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
@@ -114,7 +118,7 @@ func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys)
+	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys, c.peerTagKeys)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}

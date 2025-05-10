@@ -81,7 +81,7 @@ func TestTrackerStart(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errMsg != "" {
-					require.Contains(t, err.Error(), tt.errMsg)
+					require.ErrorContains(t, err, tt.errMsg)
 				}
 			} else {
 				require.NoError(t, err)

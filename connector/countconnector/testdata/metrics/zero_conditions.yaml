@@ -26,7 +26,7 @@ resourceMetrics:
                   timeUnixNano: "1678391923815881000"
               isMonotonic: true
         scope:
-          name: otelcol/countconnector
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
   - resource:
       attributes:
         - key: resource.required
@@ -54,7 +54,7 @@ resourceMetrics:
                   timeUnixNano: "1678391923815923000"
               isMonotonic: true
         scope:
-          name: otelcol/countconnector
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
   - resource:
       attributes:
         - key: resource.required
@@ -79,7 +79,7 @@ resourceMetrics:
                   timeUnixNano: "1678391923815929000"
               isMonotonic: true
         scope:
-          name: otelcol/countconnector
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
   - resource: {}
     scopeMetrics:
       - metrics:
@@ -100,7 +100,7 @@ resourceMetrics:
                   timeUnixNano: "1678391923815933000"
               isMonotonic: true
         scope:
-          name: otelcol/countconnector
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
   - resource:
       attributes:
         - key: resource.int
@@ -128,4 +128,4 @@ resourceMetrics:
                   timeUnixNano: "1678391923815929000"
               isMonotonic: true
         scope:
-          name: otelcol/countconnector
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector

@@ -25,8 +25,7 @@ func TestJaegerMarshaler(t *testing.T) {
 	span.SetEndTimestamp(pcommon.Timestamp(20))
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	batches, err := jaeger.ProtoFromTraces(td)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(td)
 
 	batches[0].Spans[0].Process = batches[0].Process
 	jaegerProtoBytes, err := batches[0].Spans[0].Marshal()

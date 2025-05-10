@@ -26,14 +26,14 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = 1 * time.Minute
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			TLSSetting: configtls.ClientConfig{},
-			Endpoint:   defaultEndpoint,
-			Timeout:    1 * time.Minute,
-		},
+		ClientConfig:         clientConfig,
 	}
 }
 
@@ -45,7 +45,7 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	ns := newCouchdbScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

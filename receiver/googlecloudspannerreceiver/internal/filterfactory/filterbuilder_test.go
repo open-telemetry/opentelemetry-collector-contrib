@@ -30,7 +30,7 @@ func TestFilterBuilder_BuildFilterByMetricZeroTotalLimit(t *testing.T) {
 	result := builder.buildFilterByMetricZeroTotalLimit()
 
 	// Because we have 2 groups and each group has 2 metrics
-	assert.Equal(t, len(metricPrefixes)*2, len(result))
+	assert.Len(t, result, len(metricPrefixes)*2)
 	for _, metadataItem := range metadataItems {
 		for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 			f, exists := result[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -82,7 +82,7 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 			require.NoError(t, err)
 
 			// Because we have 2 groups and each group has 2 metrics
-			assert.Equal(t, len(testCase.metricPrefixes)*2, len(result))
+			assert.Len(t, result, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
 				for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 					f, exists := result[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -138,7 +138,7 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 			require.NoError(t, err)
 
 			// Because we have 2 groups and each group has 2 metrics
-			assert.Equal(t, len(testCase.metricPrefixes)*2, len(filterByMetric))
+			assert.Len(t, filterByMetric, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
 				for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 					f, exists := filterByMetric[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -194,7 +194,7 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 			require.NoError(t, err)
 
 			// Because we have 2 groups and each group has 2 metrics
-			assert.Equal(t, len(testCase.metricPrefixes)*2, len(filterByMetric))
+			assert.Len(t, filterByMetric, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
 				for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 					f, exists := filterByMetric[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -229,7 +229,7 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 	require.NoError(t, err)
 
 	// Because we have 2 groups and each group has 2 metrics
-	assert.Equal(t, len(metricPrefixes)*2, len(filterByMetric))
+	assert.Len(t, filterByMetric, len(metricPrefixes)*2)
 	for _, metadataItem := range metadataItems {
 		for _, metricValueMetadata := range metadataItem.QueryMetricValuesMetadata {
 			f, exists := filterByMetric[metadataItem.MetricNamePrefix+metricValueMetadata.Name()]
@@ -257,12 +257,12 @@ func TestGroupByCardinality(t *testing.T) {
 
 	result := groupByCardinality(metadataItems)
 
-	assert.Equal(t, 2, len(result))
+	assert.Len(t, result, 2)
 
 	for _, metadataItem := range metadataItems {
 		groups, exists := result[metadataItem.HighCardinality]
 		assert.True(t, exists)
-		assert.Equal(t, 1, len(groups))
+		assert.Len(t, groups, 1)
 		assert.Equal(t, metadataItem, groups[0])
 	}
 }

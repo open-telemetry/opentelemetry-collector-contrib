@@ -1050,7 +1050,7 @@ func TestCreateLabels(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			lbls := createLabels(tc.metricName, tc.baseLabels, tc.extras...)
-			assert.Equal(t, lbls, tc.expected)
+			assert.Equal(t, tc.expected, lbls)
 		})
 	}
 }

@@ -10,6 +10,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
 
+var (
+	_ Point[Number]       = Number{}
+	_ Point[Histogram]    = Histogram{}
+	_ Point[ExpHistogram] = ExpHistogram{}
+	_ Point[Summary]      = Summary{}
+)
+
 type Point[Self any] interface {
 	StartTimestamp() pcommon.Timestamp
 	Timestamp() pcommon.Timestamp
@@ -21,8 +28,26 @@ type Point[Self any] interface {
 	Add(Self) Self
 }
 
+type Typed[Self any] interface {
+	Point[Self]
+	Number | Histogram | ExpHistogram | Summary
+}
+
 type Number struct {
 	pmetric.NumberDataPoint
+}
+
+func Zero[P Typed[P]]() P {
+	var point P
+	switch ty := any(&point).(type) {
+	case *Number:
+		ty.NumberDataPoint = pmetric.NewNumberDataPoint()
+	case *Histogram:
+		ty.HistogramDataPoint = pmetric.NewHistogramDataPoint()
+	case *ExpHistogram:
+		ty.DataPoint = pmetric.NewExponentialHistogramDataPoint()
+	}
+	return point
 }
 
 func (dp Number) Clone() Number {
@@ -76,3 +101,19 @@ var (
 	_ = mustPoint[Histogram]{}
 	_ = mustPoint[ExpHistogram]{}
 )
+
+type Summary struct {
+	pmetric.SummaryDataPoint
+}
+
+func (dp Summary) Clone() Summary {
+	clone := Summary{SummaryDataPoint: pmetric.NewSummaryDataPoint()}
+	if dp.SummaryDataPoint != (pmetric.SummaryDataPoint{}) {
+		dp.CopyTo(clone)
+	}
+	return clone
+}
+
+func (dp Summary) CopyTo(dst Summary) {
+	dp.SummaryDataPoint.CopyTo(dst.SummaryDataPoint)
+}

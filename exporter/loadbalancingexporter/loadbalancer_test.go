@@ -102,7 +102,7 @@ func TestLoadBalancerStart(t *testing.T) {
 		require.NoError(t, p.Shutdown(context.Background()))
 	}()
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestWithDNSResolver(t *testing.T) {
@@ -208,7 +208,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestOnBackendChanges(t *testing.T) {
@@ -274,7 +274,7 @@ func TestAddMissingExporters(t *testing.T) {
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTracesExporter(ctx, exportertest.NewNopSettings(), &oCfg)
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(), &oCfg)
 	}
 
 	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)
@@ -309,7 +309,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTracesExporter(ctx, exportertest.NewNopSettings(), &oCfg)
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(), &oCfg)
 	}
 
 	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)

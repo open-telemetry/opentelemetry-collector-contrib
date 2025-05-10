@@ -20,6 +20,12 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	clientConfigInvalid := confighttp.NewDefaultClientConfig()
+	clientConfigInvalid.Endpoint = "http://localhost :5984"
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost:5984"
+
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -28,9 +34,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username, password and invalid endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost :5984",
-				},
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
@@ -42,9 +46,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing password and invalid endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost :5984",
-				},
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 				Username:         "otelu",
 			},
@@ -56,9 +58,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username and invalid endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost :5984",
-				},
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 				Password:         "otelp",
 			},
@@ -70,11 +70,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost :5984",
-				},
+				Username:         "otel",
+				Password:         "otel",
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
@@ -82,11 +80,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "no error",
 			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost:5984",
-				},
+				Username:         "otel",
+				Password:         "otel",
+				ClientConfig:     clientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: nil,

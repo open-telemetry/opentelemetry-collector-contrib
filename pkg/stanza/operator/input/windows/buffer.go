@@ -23,6 +23,9 @@ type Buffer struct {
 
 // ReadBytes will read UTF-8 bytes from the buffer, where offset is the number of bytes to be read
 func (b *Buffer) ReadBytes(offset uint32) ([]byte, error) {
+	if offset > uint32(len(b.buffer)) {
+		offset = uint32(len(b.buffer))
+	}
 	utf16 := b.buffer[:offset]
 	utf8, err := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder().Bytes(utf16)
 	if err != nil {

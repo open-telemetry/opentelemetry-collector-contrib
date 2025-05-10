@@ -30,18 +30,18 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
 			},
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: defaultEndpoint,
-			},
+			ClientConfig:         clientConfig,
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		consumertest.NewNop(),

@@ -31,7 +31,6 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	rCfg := cfg.(*Config)
 	return newFluentReceiver(params, rCfg, consumer)
 }

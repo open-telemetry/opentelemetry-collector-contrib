@@ -1,0 +1,11 @@
+# Error: readSpan.traceId: parse trace_id:invalid length for ID, error found in #10 byte
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+            body:
+              stringValue: '{"resourceSpans":[{"resource":{"attributes":[{"key":"resource-attr","value":{"stringValue":"0"}},{"key":"service.name","value":{"stringValue":"starter-otel"}},{"key":"service.version","value":{"stringValue":"52"}}],"droppedAttributesCount":0},"scopeSpans":[{"scope":{"name":"go.opentelemetry.io/otel/sdk/tracer","version":"","attributes":[],"droppedAttributesCount":0},"spans":[{"traceId":"inmyB8/qrDAAP6cV5ZFR9A==","spanId":"FcpNz02EdAs=","traceState":"","parentSpanId":"","flags":256,"name":"serve","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1723610203654164405","endTimeUnixNano":"1723610203654483065","attributes":[],"droppedAttributesCount":0,"events":[],"droppedEventsCount":0,"links":[],"droppedLinksCount":0,"status":{"message":"","code":"STATUS_CODE_UNSET"}}],"schemaUrl":""}],"schemaUrl":"https://opentelemetry.io/schemas/1.7.0"}]}'
+            spanId: ""
+            traceId: ""
+        scope: {}

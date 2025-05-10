@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("active_directory_ds")
+	Type      = component.MustNewType("active_directory_ds")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 )
 
 const (

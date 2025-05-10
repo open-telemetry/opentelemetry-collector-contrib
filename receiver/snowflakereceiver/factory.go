@@ -51,7 +51,7 @@ func createMetricsReceiver(_ context.Context,
 	cfg := baseCfg.(*Config)
 	snowflakeScraper := newSnowflakeMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}

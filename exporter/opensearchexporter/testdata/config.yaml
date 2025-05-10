@@ -7,6 +7,8 @@ opensearch:
   http:
     endpoint: https://opensearch.example.com:9200
 
+opensearch/default:
+
 opensearch/empty_namespace:
   dataset: ngnix
   namespace: ""

@@ -1,5 +1,4 @@
 type: batchmemorylimit
-scope_name: otelcol/batchmemorylimit
 
 status:
   class: processor

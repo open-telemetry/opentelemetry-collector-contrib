@@ -57,7 +57,7 @@ func TestFactory(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r, err := f.CreateMetricsReceiver(
+			r, err := f.CreateMetrics(
 				context.Background(),
 				receivertest.NewNopSettings(),
 				test.config,

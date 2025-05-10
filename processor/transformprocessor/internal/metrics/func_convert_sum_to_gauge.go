@@ -30,7 +30,7 @@ func convertSumToGauge() (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 		dps := metric.Sum().DataPoints()
 
 		// Setting the data type removed all the data points, so we must copy them back to the metric.
-		dps.CopyTo(metric.SetEmptyGauge().DataPoints())
+		dps.MoveAndAppendTo(metric.SetEmptyGauge().DataPoints())
 
 		return nil, nil
 	}, nil

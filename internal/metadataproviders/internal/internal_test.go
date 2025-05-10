@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 func TestGOOSToOsType(t *testing.T) {

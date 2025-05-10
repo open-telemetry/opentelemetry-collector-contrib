@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -48,7 +49,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
 				sl := rl.ScopeLogs().AppendEmpty()
-				sl.Scope().SetName(receiverScopeName)
+				sl.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver")
 
 				for idx, line := range strings.Split(payload, "\n") {
 					lr := sl.LogRecords().AppendEmpty()
@@ -86,7 +87,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				}))
 
 				sl := rl.ScopeLogs().AppendEmpty()
-				sl.Scope().SetName(receiverScopeName)
+				sl.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver")
 				lr := sl.LogRecords().AppendEmpty()
 
 				require.NoError(t, lr.Attributes().FromRaw(map[string]any{
@@ -132,7 +133,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			if tc.expectedErr != "" {
 				require.Error(t, err)
 				require.Nil(t, logs)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
@@ -191,11 +192,12 @@ func TestHandleRequest(t *testing.T) {
 		expectedStatusCode int
 		logExpected        bool
 		consumerFailure    bool
+		permanentFailure   bool // indicates a permanent error
 	}{
 		{
 			name: "No secret provided",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
 			},
@@ -206,7 +208,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Invalid payload",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"`)),
 				Header: map[string][]string{
@@ -220,7 +222,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Consumer fails",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
 				Header: map[string][]string{
@@ -229,12 +231,27 @@ func TestHandleRequest(t *testing.T) {
 			},
 			logExpected:        false,
 			consumerFailure:    true,
-			expectedStatusCode: http.StatusInternalServerError,
+			expectedStatusCode: http.StatusServiceUnavailable,
+		},
+		{
+			name: "Consumer fails - permanent error",
+			request: &http.Request{
+				Method: http.MethodPost,
+				URL:    &url.URL{},
+				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
+				Header: map[string][]string{
+					textproto.CanonicalMIMEHeaderKey(secretHeaderName): {"abc123"},
+				},
+			},
+			logExpected:        false,
+			consumerFailure:    true,
+			permanentFailure:   true,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name: "Request succeeds",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1", "MyTimestamp": "2023-03-03T05:29:06Z"}`)),
 				Header: map[string][]string{
@@ -248,7 +265,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Request succeeds with gzip",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(gzippedMessage(`{"ClientIP": "127.0.0.1", "MyTimestamp": "2023-03-03T05:29:06Z"}`))),
 				Header: map[string][]string{
@@ -264,7 +281,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Request fails to unzip gzip",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`thisisnotvalidzippedcontent`)),
 				Header: map[string][]string{
@@ -280,7 +297,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "test message passes",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`test`)),
 				Header: map[string][]string{
@@ -298,6 +315,9 @@ func TestHandleRequest(t *testing.T) {
 			var consumer consumer.Logs
 			if tc.consumerFailure {
 				consumer = consumertest.NewErr(errors.New("consumer failed"))
+				if tc.permanentFailure {
+					consumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer failed")))
+				}
 			} else {
 				consumer = &consumertest.LogsSink{}
 			}

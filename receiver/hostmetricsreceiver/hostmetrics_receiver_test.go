@@ -34,9 +34,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
-var armMetrics = []string{
+var allMetrics = []string{
 	"system.cpu.time",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
@@ -54,11 +55,6 @@ var armMetrics = []string{
 	"system.network.io",
 	"system.network.packets",
 	"system.paging.operations",
-}
-
-var archSpecificMetrics = map[string][]string{
-	"arm64": armMetrics,
-	"amd64": append(armMetrics, "system.paging.usage"),
 }
 
 var resourceMetrics = []string{
@@ -86,6 +82,7 @@ var factories = map[string]internal.ScraperFactory{
 	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
 	processscraper.TypeStr:    &processscraper.Factory{},
+	systemscraper.TypeStr:     &systemscraper.Factory{},
 }
 
 type testEnv struct {
@@ -129,7 +126,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		cfg.Scrapers[processscraper.TypeStr] = scraperFactories[processscraper.TypeStr].CreateDefaultConfig()
 	}
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	receiver, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
@@ -172,9 +169,12 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		}
 	}
 
-	// verify the expected list of metrics returned (os dependent)
-	var expectedMetrics []string
-	expectedMetrics = append(expectedMetrics, archSpecificMetrics[runtime.GOARCH]...)
+	// verify the expected list of metrics returned (os/arch dependent)
+	expectedMetrics := allMetrics
+	if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
+		expectedMetrics = append(expectedMetrics, "system.paging.usage")
+	}
+
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
 	for _, expected := range expectedMetrics {
@@ -247,7 +247,7 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -262,7 +262,7 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -397,6 +397,19 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
+func Benchmark_ScrapeUptimeMetrics(b *testing.B) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		b.Skip("skipping test on non linux/windows")
+	}
+
+	cfg := &Config{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Scrapers:         map[string]internal.Config{systemscraper.TypeStr: (&systemscraper.Factory{}).CreateDefaultConfig()},
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
 func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -431,6 +444,7 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 			networkscraper.TypeStr:    &networkscraper.Config{},
 			pagingscraper.TypeStr:     (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processesscraper.TypeStr:  &processesscraper.Config{},
+			systemscraper.TypeStr:     &systemscraper.Config{},
 		},
 	}
 

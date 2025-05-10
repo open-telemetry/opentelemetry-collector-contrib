@@ -1,0 +1,43 @@
+default:
+all_set:
+  metrics:
+    process.count:
+      enabled: true
+    process.cpu.percent:
+      enabled: true
+    process.memory.percent:
+      enabled: true
+    process.open_file_descriptors:
+      enabled: true
+    process.threads:
+      enabled: true
+  resource_attributes:
+    group.name:
+      enabled: true
+none_set:
+  metrics:
+    process.count:
+      enabled: false
+    process.cpu.percent:
+      enabled: false
+    process.memory.percent:
+      enabled: false
+    process.open_file_descriptors:
+      enabled: false
+    process.threads:
+      enabled: false
+  resource_attributes:
+    group.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    group.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    group.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "group.name-val"

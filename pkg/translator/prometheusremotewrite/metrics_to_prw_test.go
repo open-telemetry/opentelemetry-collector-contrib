@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,7 +34,7 @@ func BenchmarkFromMetrics(b *testing.B) {
 								b.Run(fmt.Sprintf("labels per metric: %v", labelsPerMetric), func(b *testing.B) {
 									for _, exemplarsPerSeries := range []int{0, 5, 10} {
 										b.Run(fmt.Sprintf("exemplars per series: %v", exemplarsPerSeries), func(b *testing.B) {
-											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries)
+											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries, pcommon.Timestamp(uint64(time.Now().UnixNano())))
 
 											for i := 0; i < b.N; i++ {
 												tsMap, err := FromMetrics(payload.Metrics(), Settings{})
@@ -69,7 +71,7 @@ func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
 								b.Run(fmt.Sprintf("labels per metric: %v", labelsPerMetric), func(b *testing.B) {
 									for _, exemplarsPerSeries := range []int{0, 5, 10} {
 										b.Run(fmt.Sprintf("exemplars per series: %v", exemplarsPerSeries), func(b *testing.B) {
-											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries)
+											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries, pcommon.Timestamp(uint64(time.Now().UnixNano())))
 
 											for i := 0; i < b.N; i++ {
 												converter := newPrometheusConverter()
@@ -88,14 +90,13 @@ func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
 	}
 }
 
-func createExportRequest(resourceAttributeCount int, histogramCount int, nonHistogramCount int, labelsPerMetric int, exemplarsPerSeries int) pmetricotlp.ExportRequest {
+func createExportRequest(resourceAttributeCount int, histogramCount int, nonHistogramCount int, labelsPerMetric int, exemplarsPerSeries int, timestamp pcommon.Timestamp) pmetricotlp.ExportRequest {
 	request := pmetricotlp.NewExportRequest()
 
 	rm := request.Metrics().ResourceMetrics().AppendEmpty()
 	generateAttributes(rm.Resource().Attributes(), "resource", resourceAttributeCount)
 
 	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	for i := 1; i <= histogramCount; i++ {
 		m := metrics.AppendEmpty()
@@ -103,7 +104,7 @@ func createExportRequest(resourceAttributeCount int, histogramCount int, nonHist
 		m.SetName(fmt.Sprintf("histogram-%v", i))
 		m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		h := m.Histogram().DataPoints().AppendEmpty()
-		h.SetTimestamp(ts)
+		h.SetTimestamp(timestamp)
 
 		// Set 50 samples, 10 each with values 0.5, 1, 2, 4, and 8
 		h.SetCount(50)
@@ -112,7 +113,7 @@ func createExportRequest(resourceAttributeCount int, histogramCount int, nonHist
 		h.ExplicitBounds().FromRaw([]float64{.5, 1, 2, 4, 8, 16}) // Bucket boundaries include the upper limit (ie. each sample is on the upper limit of its bucket)
 
 		generateAttributes(h.Attributes(), "series", labelsPerMetric)
-		generateExemplars(h.Exemplars(), exemplarsPerSeries, ts)
+		generateExemplars(h.Exemplars(), exemplarsPerSeries, timestamp)
 	}
 
 	for i := 1; i <= nonHistogramCount; i++ {
@@ -121,10 +122,10 @@ func createExportRequest(resourceAttributeCount int, histogramCount int, nonHist
 		m.SetName(fmt.Sprintf("sum-%v", i))
 		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		point := m.Sum().DataPoints().AppendEmpty()
-		point.SetTimestamp(ts)
+		point.SetTimestamp(timestamp)
 		point.SetDoubleValue(1.23)
 		generateAttributes(point.Attributes(), "series", labelsPerMetric)
-		generateExemplars(point.Exemplars(), exemplarsPerSeries, ts)
+		generateExemplars(point.Exemplars(), exemplarsPerSeries, timestamp)
 	}
 
 	for i := 1; i <= nonHistogramCount; i++ {
@@ -132,10 +133,10 @@ func createExportRequest(resourceAttributeCount int, histogramCount int, nonHist
 		m.SetEmptyGauge()
 		m.SetName(fmt.Sprintf("gauge-%v", i))
 		point := m.Gauge().DataPoints().AppendEmpty()
-		point.SetTimestamp(ts)
+		point.SetTimestamp(timestamp)
 		point.SetDoubleValue(1.23)
 		generateAttributes(point.Attributes(), "series", labelsPerMetric)
-		generateExemplars(point.Exemplars(), exemplarsPerSeries, ts)
+		generateExemplars(point.Exemplars(), exemplarsPerSeries, timestamp)
 	}
 
 	return request
@@ -154,5 +155,48 @@ func generateExemplars(exemplars pmetric.ExemplarSlice, count int, ts pcommon.Ti
 		e.SetDoubleValue(2.22)
 		e.SetSpanID(pcommon.SpanID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
 		e.SetTraceID(pcommon.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f})
+	}
+}
+
+func TestIsSameMetric(t *testing.T) {
+	tests := []struct {
+		name   string
+		labels func() []prompb.Label
+		ts     func() *prompb.TimeSeries
+		same   bool
+	}{
+		{
+			name: "same",
+			same: true,
+			labels: func() []prompb.Label {
+				return getPromLabels(label11, value11, label12, value12)
+			},
+			ts: func() *prompb.TimeSeries {
+				return getTimeSeries(
+					getPromLabels(label11, value11, label12, value12),
+					getSample(float64(intVal1), msTime1),
+				)
+			},
+		},
+		{
+			name: "not_same",
+			same: false,
+			labels: func() []prompb.Label {
+				return getPromLabels(label11, value11, label12, value12)
+			},
+			ts: func() *prompb.TimeSeries {
+				return getTimeSeries(
+					getPromLabels(label11, value11, label21, value21),
+					getSample(float64(intVal1), msTime1),
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			same := isSameMetric(tt.ts(), tt.labels())
+			assert.Equal(t, tt.same, same)
+		})
 	}
 }

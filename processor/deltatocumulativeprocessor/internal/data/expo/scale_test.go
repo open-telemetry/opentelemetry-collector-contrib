@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 func TestDownscale(t *testing.T) {
@@ -83,7 +83,7 @@ func TestDownscale(t *testing.T) {
 				buckets[i] = Repr[B]{scale: r.scale, bkt: bkt}
 			}
 
-			is := expotest.Is(t)
+			is := datatest.New(t)
 			for i := 0; i < len(buckets)-1; i++ {
 				expo.Downscale(buckets[i].bkt, buckets[i].scale, buckets[i+1].scale)
 

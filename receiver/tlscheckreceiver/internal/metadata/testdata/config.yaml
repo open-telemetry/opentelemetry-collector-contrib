@@ -1,0 +1,27 @@
+default:
+all_set:
+  metrics:
+    tlscheck.time_left:
+      enabled: true
+  resource_attributes:
+    tlscheck.url:
+      enabled: true
+none_set:
+  metrics:
+    tlscheck.time_left:
+      enabled: false
+  resource_attributes:
+    tlscheck.url:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    tlscheck.url:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    tlscheck.url:
+      enabled: true
+      metrics_exclude:
+        - strict: "tlscheck.url-val"

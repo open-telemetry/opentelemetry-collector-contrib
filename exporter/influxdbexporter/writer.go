@@ -205,10 +205,10 @@ func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	if err = res.Body.Close(); err != nil {
 		return err
 	}
-	switch res.StatusCode / 100 {
-	case 2: // Success
+	switch {
+	case res.StatusCode >= 200 && res.StatusCode < 300: // Success
 		break
-	case 5: // Retryable error
+	case res.StatusCode >= 500 && res.StatusCode < 600: // Retryable error
 		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
 	default: // Terminal error
 		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))

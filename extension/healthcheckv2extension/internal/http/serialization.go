@@ -6,9 +6,9 @@ package http // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type healthyFunc func(status.Event) bool
@@ -40,22 +40,22 @@ type SerializableEvent struct {
 	Timestamp    time.Time `json:"status_time"`
 }
 
-var stringToStatusMap = map[string]component.Status{
-	"StatusNone":             component.StatusNone,
-	"StatusStarting":         component.StatusStarting,
-	"StatusOK":               component.StatusOK,
-	"StatusRecoverableError": component.StatusRecoverableError,
-	"StatusPermanentError":   component.StatusPermanentError,
-	"StatusFatalError":       component.StatusFatalError,
-	"StatusStopping":         component.StatusStopping,
-	"StatusStopped":          component.StatusStopped,
+var stringToStatusMap = map[string]componentstatus.Status{
+	"StatusNone":             componentstatus.StatusNone,
+	"StatusStarting":         componentstatus.StatusStarting,
+	"StatusOK":               componentstatus.StatusOK,
+	"StatusRecoverableError": componentstatus.StatusRecoverableError,
+	"StatusPermanentError":   componentstatus.StatusPermanentError,
+	"StatusFatalError":       componentstatus.StatusFatalError,
+	"StatusStopping":         componentstatus.StatusStopping,
+	"StatusStopped":          componentstatus.StatusStopped,
 }
 
-func (ev *SerializableEvent) Status() component.Status {
+func (ev *SerializableEvent) Status() componentstatus.Status {
 	if st, ok := stringToStatusMap[ev.StatusString]; ok {
 		return st
 	}
-	return component.StatusNone
+	return componentstatus.StatusNone
 }
 
 func toSerializableEvent(ev status.Event, isHealthy bool) *SerializableEvent {

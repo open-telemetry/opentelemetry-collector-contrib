@@ -1,0 +1,29 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: source.address
+          value:
+            stringValue: '%'
+        - key: ip
+          value:
+            stringValue: 1.2.3.4
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: test.gauge
+            gauge:
+              dataPoints:
+                - timeUnixNano: "1000000"
+                  asDouble: 345
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

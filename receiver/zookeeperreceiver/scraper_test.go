@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -362,7 +363,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]strin
 			case <-ms.quit:
 				return
 			default:
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		}
 		reader := bufio.NewReader(conn)
@@ -372,13 +373,13 @@ func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]strin
 			continue
 		}
 
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		filename := cmdToFileMap[cmd]
 		out, err := os.ReadFile(filepath.Join("testdata", filename))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		_, err = conn.Write(out)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		conn.Close()
 	}

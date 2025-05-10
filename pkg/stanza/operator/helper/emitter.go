@@ -18,8 +18,8 @@ import (
 type LogEmitter struct {
 	OutputOperator
 	logChan       chan []*entry.Entry
+	closeChan     chan struct{}
 	stopOnce      sync.Once
-	cancel        context.CancelFunc
 	batchMux      sync.Mutex
 	batch         []*entry.Entry
 	wg            sync.WaitGroup
@@ -66,10 +66,10 @@ func NewLogEmitter(set component.TelemetrySettings, opts ...EmitterOption) *LogE
 	e := &LogEmitter{
 		OutputOperator: op,
 		logChan:        make(chan []*entry.Entry),
+		closeChan:      make(chan struct{}),
 		maxBatchSize:   defaultMaxBatchSize,
 		batch:          make([]*entry.Entry, 0, defaultMaxBatchSize),
 		flushInterval:  defaultFlushInterval,
-		cancel:         func() {},
 	}
 	for _, opt := range opts {
 		opt.apply(e)
@@ -79,18 +79,15 @@ func NewLogEmitter(set component.TelemetrySettings, opts ...EmitterOption) *LogE
 
 // Start starts the goroutine(s) required for this operator
 func (e *LogEmitter) Start(_ operator.Persister) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	e.cancel = cancel
-
 	e.wg.Add(1)
-	go e.flusher(ctx)
+	go e.flusher()
 	return nil
 }
 
 // Stop will close the log channel and stop running goroutines
 func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
-		e.cancel()
+		close(e.closeChan)
 		e.wg.Wait()
 
 		close(e.logChan)
@@ -135,7 +132,7 @@ func (e *LogEmitter) appendEntry(ent *entry.Entry) []*entry.Entry {
 }
 
 // flusher flushes the current batch every flush interval. Intended to be run as a goroutine
-func (e *LogEmitter) flusher(ctx context.Context) {
+func (e *LogEmitter) flusher() {
 	defer e.wg.Done()
 
 	ticker := time.NewTicker(e.flushInterval)
@@ -145,9 +142,13 @@ func (e *LogEmitter) flusher(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
-				e.flush(ctx, oldBatch)
+				e.flush(context.Background(), oldBatch)
 			}
-		case <-ctx.Done():
+		case <-e.closeChan:
+			// flush currently batched entries
+			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
+				e.flush(context.Background(), oldBatch)
+			}
 			return
 		}
 	}

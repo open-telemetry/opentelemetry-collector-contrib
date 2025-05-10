@@ -6,7 +6,6 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/jaegertracing/jaeger/model"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -30,10 +29,7 @@ type jaegerEncoder struct {
 var _ Encoder = (*jaegerEncoder)(nil)
 
 func (je jaegerEncoder) Traces(td ptrace.Traces) (*Batch, error) {
-	traces, err := jaeger.ProtoFromTraces(td)
-	if err != nil {
-		return nil, consumererror.NewTraces(err, td)
-	}
+	traces := jaeger.ProtoFromTraces(td)
 
 	bt := New(je.batchOptions...)
 

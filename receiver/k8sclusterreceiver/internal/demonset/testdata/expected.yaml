@@ -38,5 +38,5 @@ resourceMetrics:
             name: k8s.daemonset.ready_nodes
             unit: "{node}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest

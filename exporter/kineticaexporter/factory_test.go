@@ -20,39 +20,39 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateLogsExporter(t *testing.T) {
+func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Host = defaultHost
 	})
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
 	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
 
-func TestFactory_CreateTracesExporter(t *testing.T) {
+func TestFactory_CreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Host = defaultHost
 	})
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
 	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
 
-func TestFactory_CreateMetricsExporter(t *testing.T) {
+func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Host = defaultHost
 	})
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 

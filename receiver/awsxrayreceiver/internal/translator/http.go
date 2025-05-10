@@ -51,5 +51,4 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 			addInt64(&lengthPointer, conventions.AttributeHTTPResponseContentLength, attrs)
 		}
 	}
-
 }

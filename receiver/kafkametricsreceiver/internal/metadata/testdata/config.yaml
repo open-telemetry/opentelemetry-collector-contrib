@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    kafka.broker.log_retention_period:
+      enabled: true
     kafka.brokers:
       enabled: true
     kafka.consumer_group.lag:
@@ -21,10 +23,23 @@ all_set:
       enabled: true
     kafka.partition.replicas_in_sync:
       enabled: true
+    kafka.topic.log_retention_period:
+      enabled: true
+    kafka.topic.log_retention_size:
+      enabled: true
+    kafka.topic.min_insync_replicas:
+      enabled: true
     kafka.topic.partitions:
+      enabled: true
+    kafka.topic.replication_factor:
+      enabled: true
+  resource_attributes:
+    kafka.cluster.alias:
       enabled: true
 none_set:
   metrics:
+    kafka.broker.log_retention_period:
+      enabled: false
     kafka.brokers:
       enabled: false
     kafka.consumer_group.lag:
@@ -45,5 +60,28 @@ none_set:
       enabled: false
     kafka.partition.replicas_in_sync:
       enabled: false
+    kafka.topic.log_retention_period:
+      enabled: false
+    kafka.topic.log_retention_size:
+      enabled: false
+    kafka.topic.min_insync_replicas:
+      enabled: false
     kafka.topic.partitions:
       enabled: false
+    kafka.topic.replication_factor:
+      enabled: false
+  resource_attributes:
+    kafka.cluster.alias:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    kafka.cluster.alias:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    kafka.cluster.alias:
+      enabled: true
+      metrics_exclude:
+        - strict: "kafka.cluster.alias-val"

@@ -95,7 +95,7 @@ func TestTranslateDockerMetric_ResourceAttrbutesAreTranslatedCorrectly(t *testin
 
 			res, ok := actual.Get(tc.nameOut)
 			assert.True(t, ok)
-			assert.Equal(t, res.AsString(), "a")
+			assert.Equal(t, "a", res.AsString())
 		})
 	}
 }

@@ -1,3 +1,4 @@
 status:
   codeowners:
-    active: [rmfitzpatrick, jamesmoessis]
+    active: [jamesmoessis, MovieStoreGuy]
+    emeritus: [rmfitzpatrick]

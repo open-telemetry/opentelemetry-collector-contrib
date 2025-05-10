@@ -155,8 +155,7 @@ func TestAuthentication(t *testing.T) {
 			config := &sarama.Config{}
 			err := ConfigureAuthentication(test.auth, config)
 			if test.err != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.err)
+				assert.ErrorContains(t, err, test.err)
 			} else {
 				// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
 				config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc

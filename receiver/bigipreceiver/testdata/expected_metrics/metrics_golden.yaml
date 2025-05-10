@@ -133,7 +133,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -269,7 +269,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -397,7 +397,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -525,7 +525,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -653,7 +653,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -781,7 +781,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -909,7 +909,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1031,7 +1031,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1162,7 +1162,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1284,7 +1284,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1415,7 +1415,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1546,7 +1546,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1677,7 +1677,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1808,7 +1808,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{sessions}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -1930,7 +1930,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest
   - resource:
       attributes:
@@ -2052,5 +2052,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/bigipreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
           version: latest

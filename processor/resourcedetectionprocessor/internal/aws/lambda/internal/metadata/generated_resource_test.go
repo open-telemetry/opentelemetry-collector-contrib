@@ -9,9 +9,9 @@ import (
 )
 
 func TestResourceBuilder(t *testing.T) {
-	for _, test := range []string{"default", "all_set", "none_set"} {
-		t.Run(test, func(t *testing.T) {
-			cfg := loadResourceAttributesConfig(t, test)
+	for _, tt := range []string{"default", "all_set", "none_set"} {
+		t.Run(tt, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetAwsLogGroupNames([]any{"aws.log.group.names-item1", "aws.log.group.names-item2"})
 			rb.SetAwsLogStreamNames([]any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"})
@@ -26,7 +26,7 @@ func TestResourceBuilder(t *testing.T) {
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
-			switch test {
+			switch tt {
 			case "default":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
@@ -35,7 +35,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
-				assert.Failf(t, "unexpected test case: %s", test)
+				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
 			val, ok := res.Attributes().Get("aws.log.group.names")

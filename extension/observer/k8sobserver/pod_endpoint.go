@@ -5,6 +5,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -38,22 +39,41 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 	}}
 
 	// Map of running containers by name.
-	containerRunning := map[string]bool{}
+	runningContainers := map[string]RunningContainer{}
 
 	for _, container := range pod.Status.ContainerStatuses {
 		if container.State.Running != nil {
-			containerRunning[container.Name] = true
+			runningContainers[container.Name] = containerIDWithRuntime(container)
 		}
 	}
 
 	// Create endpoint for each named container port.
 	for _, container := range pod.Spec.Containers {
-		if !containerRunning[container.Name] {
+		var runningContainer RunningContainer
+		var ok bool
+		if runningContainer, ok = runningContainers[container.Name]; !ok {
 			continue
 		}
 
+		endpointID := observer.EndpointID(
+			fmt.Sprintf(
+				"%s/%s", podID, container.Name,
+			),
+		)
+		endpoints = append(endpoints, observer.Endpoint{
+			ID:     endpointID,
+			Target: podIP,
+			Details: &observer.PodContainer{
+				Name:        container.Name,
+				ContainerID: runningContainer.ID,
+				Image:       container.Image,
+				Pod:         podDetails,
+			},
+		})
+
+		// Create endpoint for each named container port.
 		for _, port := range container.Ports {
-			endpointID := observer.EndpointID(
+			endpointID = observer.EndpointID(
 				fmt.Sprintf(
 					"%s/%s(%d)", podID, port.Name, port.ContainerPort,
 				),
@@ -82,4 +102,21 @@ func getTransport(protocol v1.Protocol) observer.Transport {
 		return observer.ProtocolUDP
 	}
 	return observer.ProtocolUnknown
+}
+
+// containerIDWithRuntime parses the container ID to get the actual ID string
+func containerIDWithRuntime(c v1.ContainerStatus) RunningContainer {
+	cID := c.ContainerID
+	if cID != "" {
+		parts := strings.Split(cID, "://")
+		if len(parts) == 2 {
+			return RunningContainer{parts[1], parts[0]}
+		}
+	}
+	return RunningContainer{}
+}
+
+type RunningContainer struct {
+	ID      string
+	Runtime string
 }

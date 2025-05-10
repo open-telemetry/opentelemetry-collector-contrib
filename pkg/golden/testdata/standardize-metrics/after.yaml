@@ -52,7 +52,7 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: AAA
-          name: otelcol/FakeMetric
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/FakeMetric
           version: latest
       - metrics:
           - description: Fake Metric
@@ -80,7 +80,7 @@ resourceMetrics:
             - key: a
               value:
                 stringValue: CCCC
-          name: otelcol/anotherfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/anotherfakereceiver
           version: latest
   - resource:
       attributes:
@@ -199,5 +199,5 @@ resourceMetrics:
             - key: b
               value:
                 stringValue: BBB
-          name: otelcol/standardization
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/standardization
           version: latest

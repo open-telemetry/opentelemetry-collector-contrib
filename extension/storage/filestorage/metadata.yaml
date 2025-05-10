@@ -1,11 +1,10 @@
 type: file_storage
-scope_name: otelcol/filestorage
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [djaglowski]
     seeking_new: true

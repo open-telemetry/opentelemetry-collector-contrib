@@ -1,5 +1,4 @@
 type: syslog
-scope_name: otelcol/syslog
 
 status:
   class: exporter
@@ -7,7 +6,7 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [kkujawa-sumo, rnishtala-sumo, andrzej-stencel]
+    active: [kasia-kujawa, rnishtala-sumo, andrzej-stencel]
 
 # TODO: Update the exporter to pass the tests
 tests:

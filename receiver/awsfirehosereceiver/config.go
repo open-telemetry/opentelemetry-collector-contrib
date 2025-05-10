@@ -30,8 +30,10 @@ func (c *Config) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("must specify endpoint")
 	}
-	if c.RecordType == "" {
-		return errors.New("must specify record type")
+	// If a record type is specified, it must be valid.
+	// An empty string is acceptable, however, because it will use a telemetry-type-specific default.
+	if c.RecordType != "" {
+		return validateRecordType(c.RecordType)
 	}
-	return validateRecordType(c.RecordType)
+	return nil
 }

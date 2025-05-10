@@ -29,8 +29,8 @@ const (
 	outputDestinationStdout     = "stdout"
 
 	// AppSignals EMF config
-	appSignalsMetricNamespace    = "AppSignals"
-	appSignalsLogGroupNamePrefix = "/aws/appsignals/"
+	appSignalsMetricNamespace    = "ApplicationSignals"
+	appSignalsLogGroupNamePrefix = "/aws/application-signals/"
 )
 
 type emfExporter struct {

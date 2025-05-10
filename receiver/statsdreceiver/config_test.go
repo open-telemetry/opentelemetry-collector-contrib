@@ -213,8 +213,7 @@ func TestConfig_Validate_MaxSize(t *testing.T) {
 			},
 		}
 		err := cfg.Validate()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "histogram max_size out of range")
+		assert.ErrorContains(t, err, "histogram max_size out of range")
 	}
 }
 func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
@@ -126,7 +127,7 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 		defer fmr.shutdownWG.Done()
 
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			fmr.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -232,10 +233,14 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // validate checks the Firehose access key in the header against
 // the one passed into the Config
 func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
-	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != string(fmr.config.AccessKey) {
-		return http.StatusUnauthorized, errInvalidAccessKey
+	if string(fmr.config.AccessKey) == "" {
+		// No access key is configured - accept all requests.
+		return http.StatusAccepted, nil
 	}
-	return http.StatusAccepted, nil
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey == string(fmr.config.AccessKey) {
+		return http.StatusAccepted, nil
+	}
+	return http.StatusUnauthorized, errInvalidAccessKey
 }
 
 // getBody reads the body from the request as a slice of bytes.

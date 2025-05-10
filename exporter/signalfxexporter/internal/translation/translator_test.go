@@ -2027,7 +2027,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			}}, 1, make(chan struct{}))
 			require.NoError(t, err)
 			tr := mt.TranslateDataPoints(logger, dps)
-			require.Equal(t, 2, len(tr))
+			require.Len(t, tr, 2)
 			if test.wantErr == "" {
 				require.Equal(t, 0, observedLogs.Len())
 			} else {
@@ -2086,7 +2086,7 @@ func TestCalcNewMetricInputPairs_SameDims(t *testing.T) {
 		},
 	}
 	pairs := calcNewMetricInputPairs(pts, rule)
-	require.Equal(t, 1, len(pairs))
+	require.Len(t, pairs, 1)
 	pair := pairs[0]
 	require.Equal(t, "m1", pair[0].Metric)
 	require.Equal(t, "m2", pair[1].Metric)
@@ -2149,7 +2149,7 @@ func TestNewMetricInputPairs_MultiPairs(t *testing.T) {
 		},
 	}
 	pairs := calcNewMetricInputPairs(pts, rule)
-	require.Equal(t, 2, len(pairs))
+	require.Len(t, pairs, 2)
 	pair1 := pairs[0]
 	require.EqualValues(t, 1, *pair1[0].Value.IntValue)
 	require.EqualValues(t, 2, *pair1[1].Value.IntValue)
@@ -2528,7 +2528,7 @@ func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 	c := testConverter(t, map[string]string{"foo": "bar"})
 	md := intMD(1, 1)
 	idx := indexPts(c.MetricsToSignalFxV2(md))
-	require.Equal(t, 1, len(idx))
+	require.Len(t, idx, 1)
 }
 
 func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
@@ -2541,7 +2541,7 @@ func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	dblTS("cpu0", "user", 1, 1, 1, md2.SetEmptySum().DataPoints().AppendEmpty())
 	pts := c.MetricsToSignalFxV2(wrapMetric(md2))
 	idx := indexPts(pts)
-	require.Equal(t, 1, len(idx))
+	require.Len(t, idx, 1)
 }
 
 func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
@@ -2551,11 +2551,11 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 
 	dp1 := c.MetricsToSignalFxV2(md1)
 	m1 := indexPts(dp1)
-	require.Equal(t, 1, len(m1))
+	require.Len(t, m1, 1)
 
 	dp2 := c.MetricsToSignalFxV2(md2)
 	m2 := indexPts(dp2)
-	require.Equal(t, 2, len(m2))
+	require.Len(t, m2, 2)
 
 	origPts, ok := m2["system.cpu.time"]
 	require.True(t, ok)
@@ -2570,7 +2570,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 
 	dp3 := c.MetricsToSignalFxV2(md3)
 	m3 := indexPts(dp3)
-	require.Equal(t, 2, len(m3))
+	require.Len(t, m3, 2)
 
 	deltaPts2, ok := m3["system.cpu.delta"]
 	require.True(t, ok)

@@ -1,5 +1,4 @@
 type: zookeeper
-scope_name: otelcol/zookeeperreceiver
 
 status:
   class: receiver

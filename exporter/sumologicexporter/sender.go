@@ -215,7 +215,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 
 	// API responds with a 200 or 204 with ConentLength set to 0 when all data
 	// has been successfully ingested.
-	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
+	if resp.ContentLength == 0 && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent) {
 		return nil
 	}
 
@@ -229,7 +229,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 	// API responds with a 200 or 204 with a JSON body describing what issues
 	// were encountered when processing the sent data.
 	switch resp.StatusCode {
-	case 200, 204:
+	case http.StatusOK, http.StatusNoContent:
 		if resp.ContentLength < 0 {
 			s.logger.Warn("Unknown length of server response")
 			return nil
@@ -259,7 +259,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		l.Warn("There was an issue sending data")
 		return nil
 
-	case 401:
+	case http.StatusUnauthorized:
 		return errUnauthorized
 
 	default:

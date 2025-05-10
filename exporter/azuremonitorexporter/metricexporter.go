@@ -49,7 +49,7 @@ func newMetricsExporter(config *Config, transportChannel transportChannel, set e
 		packer:           newMetricPacker(set.Logger),
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		context.TODO(),
 		set,
 		config,

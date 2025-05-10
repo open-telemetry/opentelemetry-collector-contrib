@@ -38,7 +38,7 @@ func createTracesProcessor(
 	oCfg := cfg.(*Config)
 	op := newOpsrampK8sAttributesProcessor(set.Logger, oCfg.RedisHost, oCfg.RedisPort, oCfg.RedisPass, oCfg.ClusterName, oCfg.ClusterUid, oCfg.NodeName)
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -58,7 +58,7 @@ func createLogsProcessor(
 	oCfg := cfg.(*Config)
 	op := newOpsrampK8sAttributesProcessor(set.Logger, oCfg.RedisHost, oCfg.RedisPort, oCfg.RedisPass, oCfg.ClusterName, oCfg.ClusterUid, oCfg.NodeName)
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -78,7 +78,7 @@ func createMetricsProcessor(
 	oCfg := cfg.(*Config)
 	op := newOpsrampK8sAttributesProcessor(set.Logger, oCfg.RedisHost, oCfg.RedisPort, oCfg.RedisPass, oCfg.ClusterName, oCfg.ClusterUid, oCfg.NodeName)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

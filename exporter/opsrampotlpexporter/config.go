@@ -63,9 +63,9 @@ func (s *SecuritySettings) Validate() error {
 
 // Config defines configuration for OpenCensus exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	Security                SecuritySettings         `mapstructure:"security"`
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -77,7 +77,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if err := cfg.QueueSettings.Validate(); err != nil {
+	if err := cfg.QueueConfig.Validate(); err != nil {
 		return fmt.Errorf("queue settings has invalid configuration: %w", err)
 	}
 
