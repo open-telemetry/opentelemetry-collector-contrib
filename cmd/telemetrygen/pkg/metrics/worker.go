@@ -24,6 +24,7 @@ type worker struct {
 	aggregationTemporality AggregationTemporality       // Temporality type to use
 	exemplars              []metricdata.Exemplar[int64] // exemplars to attach to the metric
 	numMetrics             int                          // how many metrics the worker has to generate (only when duration==0)
+	enforceUnique          bool                         // if true, the worker will generate unique timeseries
 	totalDuration          time.Duration                // how long to run the test for (overrides `numMetrics`)
 	limitPerSecond         rate.Limit                   // how many metrics per second to generate
 	wg                     *sync.WaitGroup              // notify when done
@@ -82,13 +83,16 @@ var histogramBucketSamples = []struct {
 	},
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
+func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *timeBox) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	startTime := w.clock.Now()
 
 	var i int64
 	for w.running.Load() {
+		if w.enforceUnique {
+			signalAttrs = append(signalAttrs, tb.getAttribute())
+		}
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
