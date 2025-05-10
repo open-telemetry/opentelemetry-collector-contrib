@@ -278,6 +278,14 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.cluster_enabled
+
+Indicate Redis cluster is enabled
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### redis.cmd.calls
 
 Total number of calls for a command
@@ -329,6 +337,22 @@ The value of the maxmemory configuration directive
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### redis.memory.used_memory_overhead
+
+The sum in bytes of all overheads that the server allocated for managing its internal data structures
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| bytes | Gauge | Int |
+
+### redis.memory.used_memory_startup
+
+Initial amount of memory consumed by Redis at startup in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| bytes | Gauge | Int |
+
 ### redis.replication.replica_offset
 
 Offset for redis replica
@@ -350,6 +374,14 @@ Redis node's role
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | role | Redis node's role | Str: ``replica``, ``primary`` |
+
+### redis.stats.tracking_total_keys
+
+Number of keys being tracked by the server
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {key} | Gauge | Int |
 
 ## Resource Attributes
 

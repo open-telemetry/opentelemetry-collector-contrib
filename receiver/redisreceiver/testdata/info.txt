@@ -113,6 +113,7 @@ active_defrag_hits:0
 active_defrag_misses:0
 active_defrag_key_hits:0
 active_defrag_key_misses:0
+tracking_total_keys:1
 
 # Replication
 role:master
