@@ -206,7 +206,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
 
 				sumMetric.SetDescription(histogramMetric.Description())
-				sumMetric.SetName(histogramMetric.Name() + "_sum")
+				sumMetric.SetName(histogramMetric.Name() + ".sum")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(histogramMetric.Unit())
@@ -222,7 +222,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 		{ // this checks if subsequent statements apply to the newly created metric
 			statements: []string{
 				`extract_sum_metric(true) where name == "operationB"`,
-				`set(name, "new_name") where name == "operationB_sum"`,
+				`set(name, "new_name") where name == "operationB.sum"`,
 			},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
@@ -256,7 +256,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				fillMetricTwo(histogramMetric)
 
 				countMetric.SetDescription(histogramMetric.Description())
-				countMetric.SetName(histogramMetric.Name() + "_count")
+				countMetric.SetName(histogramMetric.Name() + ".count")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				countMetric.Sum().SetIsMonotonic(true)
 				countMetric.SetUnit("1")
@@ -381,7 +381,7 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
 
 				sumMetric.SetDescription(histogramMetric.Description())
-				sumMetric.SetName(histogramMetric.Name() + "_sum")
+				sumMetric.SetName(histogramMetric.Name() + ".sum")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(histogramMetric.Unit())
@@ -397,7 +397,7 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 		{ // this checks if subsequent statements apply to the newly created metric
 			statements: []string{
 				`extract_sum_metric(true) where metric.name == "operationB"`,
-				`set(metric.name, "new_name") where metric.name == "operationB_sum"`,
+				`set(metric.name, "new_name") where metric.name == "operationB.sum"`,
 			},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
@@ -431,7 +431,7 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 				fillMetricTwo(histogramMetric)
 
 				countMetric.SetDescription(histogramMetric.Description())
-				countMetric.SetName(histogramMetric.Name() + "_count")
+				countMetric.SetName(histogramMetric.Name() + ".count")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				countMetric.Sum().SetIsMonotonic(true)
 				countMetric.SetUnit("1")
@@ -753,7 +753,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 				summaryDp := summaryMetric.Summary().DataPoints().At(0)
 
 				sumMetric.SetDescription(summaryMetric.Description())
-				sumMetric.SetName(summaryMetric.Name() + "_count")
+				sumMetric.SetName(summaryMetric.Name() + ".count")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(summaryMetric.Unit())
@@ -775,7 +775,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 				summaryDp := summaryMetric.Summary().DataPoints().At(0)
 
 				sumMetric.SetDescription(summaryMetric.Description())
-				sumMetric.SetName(summaryMetric.Name() + "_sum")
+				sumMetric.SetName(summaryMetric.Name() + ".sum")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(summaryMetric.Unit())
@@ -800,7 +800,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 				summaryDp := summaryMetric.Summary().DataPoints().At(0)
 
 				sumMetric.SetDescription(summaryMetric.Description())
-				sumMetric.SetName(summaryMetric.Name() + "_sum")
+				sumMetric.SetName(summaryMetric.Name() + ".sum")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit("new unit")
@@ -1196,7 +1196,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 				summaryDp := summaryMetric.Summary().DataPoints().At(0)
 
 				sumMetric.SetDescription(summaryMetric.Description())
-				sumMetric.SetName(summaryMetric.Name() + "_count")
+				sumMetric.SetName(summaryMetric.Name() + ".count")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(summaryMetric.Unit())
@@ -1218,7 +1218,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 				summaryDp := summaryMetric.Summary().DataPoints().At(0)
 
 				sumMetric.SetDescription(summaryMetric.Description())
-				sumMetric.SetName(summaryMetric.Name() + "_sum")
+				sumMetric.SetName(summaryMetric.Name() + ".sum")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit(summaryMetric.Unit())
@@ -1243,7 +1243,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 				summaryDp := summaryMetric.Summary().DataPoints().At(0)
 
 				sumMetric.SetDescription(summaryMetric.Description())
-				sumMetric.SetName(summaryMetric.Name() + "_sum")
+				sumMetric.SetName(summaryMetric.Name() + ".sum")
 				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 				sumMetric.SetUnit("new unit")
