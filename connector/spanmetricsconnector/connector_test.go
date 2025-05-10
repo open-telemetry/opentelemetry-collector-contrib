@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -373,7 +373,7 @@ func buildSampleTrace() ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceSpans.serviceName)
 	}
 
 	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
