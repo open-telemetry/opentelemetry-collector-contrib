@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -27,7 +27,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "ok",
 			code: ptrace.StatusCodeOk,
 			tag: model.KeyValue{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: model.ValueType_STRING,
 				VStr:  statusOk,
 			},
@@ -37,7 +37,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "error",
 			code: ptrace.StatusCodeError,
 			tag: model.KeyValue{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: model.ValueType_STRING,
 				VStr:  statusError,
 			},
@@ -78,7 +78,7 @@ func TestGetTagFromStatusMsg(t *testing.T) {
 	got, ok := getTagFromStatusMsg("test-error")
 	assert.True(t, ok)
 	assert.Equal(t, model.KeyValue{
-		Key:   conventions.OtelStatusDescription,
+		Key:   string(conventions.OtelStatusDescriptionKey),
 		VStr:  "test-error",
 		VType: model.ValueType_STRING,
 	}, got)
@@ -170,7 +170,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 	attributes.PutStr("string-val", "abc")
 	attributes.PutDouble("double-val", 1.23)
 	attributes.PutEmptyBytes("bytes-val").FromRaw([]byte{1, 2, 3, 4})
-	attributes.PutStr(conventions.AttributeServiceName, "service-name")
+	attributes.PutStr(string(conventions.ServiceNameKey), "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -199,7 +199,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			VBinary: []byte{1, 2, 3, 4},
 		},
 		{
-			Key:   conventions.AttributeServiceName,
+			Key:   string(conventions.ServiceNameKey),
 			VType: model.ValueType_STRING,
 			VStr:  "service-name",
 		},
