@@ -22,6 +22,7 @@ type Aggregator interface {
 	Numbers(state, dp pmetric.NumberDataPoint) error
 	Histograms(state, dp pmetric.HistogramDataPoint) error
 	Exponential(state, dp pmetric.ExponentialHistogramDataPoint) error
+	Summary(state, dp pmetric.SummaryDataPoint) error
 }
 
 var _ Aggregator = (*Adder)(nil)
@@ -136,6 +137,24 @@ func (add Adder) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) er
 	} else {
 		state.RemoveMax()
 	}
+
+	return nil
+}
+
+func (add Adder) Summary(state, dp pmetric.SummaryDataPoint) error {
+	// Add sum and count for cumulative values
+	state.SetSum(state.Sum() + dp.Sum())
+	state.SetCount(state.Count() + dp.Count())
+
+	// For quantiles, just replace with new values
+	// Clear old quantiles and copy new ones by creating a new slice
+	quantiles := state.QuantileValues()
+	quantiles.RemoveIf(func(_ pmetric.SummaryDataPointValueAtQuantile) bool {
+		return true // Remove all existing quantiles
+	})
+
+	// Copy all quantiles from the input datapoint
+	dp.QuantileValues().CopyTo(quantiles)
 
 	return nil
 }
