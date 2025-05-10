@@ -1,0 +1,18 @@
+metricsaggregation:
+  transforms:
+    - include: name
+      action: combine
+      operations:
+        - action: aggregate_labels
+          label_set: [new_label1, label2]
+          aggregation_type: sum
+
+metricsaggregation/multiple:
+  transforms:
+    - include: name2
+      match_type: strict
+      action: insert
+      operations:
+        - action: aggregate_labels
+          label_set: [new_label1, label2]
+          aggregation_type: sum
