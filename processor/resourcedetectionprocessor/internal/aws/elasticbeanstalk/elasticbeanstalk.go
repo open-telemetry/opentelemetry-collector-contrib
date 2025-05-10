@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk/internal/metadata"
@@ -67,8 +67,8 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 		return pcommon.NewResource(), "", err
 	}
 
-	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSElasticBeanstalk.Value.AsString())
 	d.rb.SetServiceInstanceID(strconv.Itoa(ebmd.DeploymentID))
 	d.rb.SetDeploymentEnvironment(ebmd.EnvironmentName)
 	d.rb.SetServiceVersion(ebmd.VersionLabel)

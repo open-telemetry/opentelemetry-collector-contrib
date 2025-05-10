@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
@@ -105,8 +105,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
-	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEC2)
+	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSEC2.Value.AsString())
 	d.rb.SetCloudRegion(meta.Region)
 	d.rb.SetCloudAccountID(meta.AccountID)
 	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)

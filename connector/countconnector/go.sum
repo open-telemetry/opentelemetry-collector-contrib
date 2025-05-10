@@ -128,8 +128,6 @@ go.opentelemetry.io/collector/pipeline v0.125.1-0.20250509190408-4ca0f1829e0a h1
 go.opentelemetry.io/collector/pipeline v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:TO02zju/K6E+oFIOdi372Wk0MXd+Szy72zcTsFQwXl4=
 go.opentelemetry.io/collector/pipeline/xpipeline v0.125.1-0.20250509190408-4ca0f1829e0a h1:1CzquHDiUtPiDtG1p7QblNo0hPZY5ZK2FHcbCCZpptE=
 go.opentelemetry.io/collector/pipeline/xpipeline v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:wuzpoh+f5u3Vnk32M4EUfEddnoZC8oEjX/LmvsB5Ni4=
-go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a h1:/HizykVN2OLqUcD9Vu/I6eqmkZMR0FYUiGx487Z/6v8=
-go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:te6VQ4zZJO5Lp8dM2XIhDxDiL45mwX0YAQQWRQ0Qr9U=
 go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 h1:ojdSRDvjrnm30beHOmwsSvLpoRF40MlwNCA+Oo93kXU=
 go.opentelemetry.io/contrib/bridges/otelzap v0.10.0/go.mod h1:oTTm4g7NEtHSV2i/0FeVdPaPgUIZPfQkFbq0vbzqnv0=
 go.opentelemetry.io/otel v1.35.0 h1:xKWKPxrxB6OtMCbmMY021CqC45J+3Onta9MqjhnusiQ=

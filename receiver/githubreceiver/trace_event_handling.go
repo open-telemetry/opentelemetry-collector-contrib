@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-github/v71/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -315,7 +315,7 @@ func (gtr *githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(semconv.AttributeCicdPipelineTaskName, name)
+	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(step.GetStartedAt().Time))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(step.GetCompletedAt().Time))

@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -46,14 +46,14 @@ const (
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
-		attrs.PutStr(semconv.AttributeTelemetrySDKVersion, "Datadog-"+ddTracerVersion)
+		attrs.PutStr(string(semconv.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get(header.Lang); ddTracerLang != "" {
 		otelLang := ddTracerLang
 		if ddTracerLang == ".NET" {
 			otelLang = "dotnet"
 		}
-		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, otelLang)
+		attrs.PutStr(string(semconv.TelemetrySDKLanguageKey), otelLang)
 	}
 }
 
@@ -95,14 +95,14 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		semconv.AttributeContainerID:           payload.ContainerID,
-		semconv.AttributeTelemetrySDKLanguage:  payload.LanguageName,
-		semconv.AttributeProcessRuntimeVersion: payload.LanguageVersion,
-		semconv.AttributeDeploymentEnvironment: payload.Env,
-		semconv.AttributeHostName:              payload.Hostname,
-		semconv.AttributeServiceVersion:        payload.AppVersion,
-		semconv.AttributeTelemetrySDKName:      "Datadog",
-		semconv.AttributeTelemetrySDKVersion:   payload.TracerVersion,
+		string(semconv.ContainerIDKey):           payload.ContainerID,
+		string(semconv.TelemetrySDKLanguageKey):  payload.LanguageName,
+		string(semconv.ProcessRuntimeVersionKey): payload.LanguageVersion,
+		string(semconv.DeploymentEnvironmentKey): payload.Env,
+		string(semconv.HostNameKey):              payload.Hostname,
+		string(semconv.ServiceVersionKey):        payload.AppVersion,
+		string(semconv.TelemetrySDKNameKey):      "Datadog",
+		string(semconv.TelemetrySDKVersionKey):   payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)
@@ -201,7 +201,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 		rs := results.ResourceSpans().AppendEmpty()
 		rs.SetSchemaUrl(semconv.SchemaURL)
 		sharedAttributes.CopyTo(rs.Resource().Attributes())
-		rs.Resource().Attributes().PutStr(semconv.AttributeServiceName, service)
+		rs.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), service)
 
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")

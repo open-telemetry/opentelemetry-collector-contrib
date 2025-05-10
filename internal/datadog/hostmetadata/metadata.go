@@ -22,7 +22,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
@@ -43,14 +43,14 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 	}
 
 	// AWS EC2 resource metadata
-	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	cloudProvider, ok := attrs.Get(string(conventions.CloudProviderKey))
 	switch {
-	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAWS:
+	case ok && cloudProvider.Str() == conventions.CloudProviderAWS.Value.AsString():
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
+	case ok && cloudProvider.Str() == conventions.CloudProviderGCP.Value.AsString():
 		gcpHostInfo := gcp.HostInfoFromAttrs(attrs)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
