@@ -76,16 +76,27 @@ func (pki *PartitionKeyBuilder) fileName() string {
 }
 
 func (pki *PartitionKeyBuilder) uniqueKey() string {
-	if pki.UniqueKeyFunc != nil {
-		return pki.UniqueKeyFunc()
-	}
+    if pki.UniqueKeyFunc != nil {
+        return pki.UniqueKeyFunc()
+    }
 
-	// This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
-	const (
-		uniqueValues = 999999999
-		minOffset    = 100000000
-	)
+    const (
+        letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        digits  = "0123456789"
+        length  = 9
+    )
 
-	return strconv.Itoa(minOffset + rand.IntN(uniqueValues-minOffset))
+    result := make([]byte, length)
+
+    // First character must be a letter to ensure valid key names
+    result[0] = letters[rand.Int63()%int64(len(letters))]
+
+    // Remaining characters can be either letters or digits
+    combined := letters + digits
+    for i := 1; i < length; i++ {
+        result[i] = combined[rand.Int63()%int64(len(combined))]
+    }
+
+    return string(result)
 }
