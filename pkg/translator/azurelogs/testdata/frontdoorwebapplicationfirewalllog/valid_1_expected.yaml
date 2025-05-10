@@ -1,0 +1,67 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/OPENTELEMETRY-AZURE-SUB/RESOURCEGROUPS/OPENTELEMETRY-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/OPENTELEMETRY-FRONTDOOR-PROFILE
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: client.port
+                value:
+                  intValue: "57660"
+              - key: url.original
+                value:
+                  stringValue: http://opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net:80/
+              - key: url.port
+                value:
+                  intValue: "80"
+              - key: url.scheme
+                value:
+                  stringValue: http
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: client.address
+                value:
+                  stringValue: 2001:1c00:3280:6700:fbfa:bf04:1296:ebfc
+              - key: source.address
+                value:
+                  stringValue: 2001:1c00:3280:6700:fbfa:bf04:1296:ebfc
+              - key: azure.ref
+                value:
+                  stringValue: 20250424T153506Z-1756f49cc78nldhvhC1DUS3dhw000000080000000000d207
+              - key: http.request.header.host
+                value:
+                  stringValue: opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net
+              - key: azure.frontdoor.waf.policy.name
+                value:
+                  stringValue: policy
+              - key: azure.frontdoor.waf.policy.mode
+                value:
+                  stringValue: prevention
+              - key: azure.frontdoor.waf.rule.name
+                value:
+                  stringValue: Rule1
+              - key: azure.frontdoor.waf.action
+                value:
+                  stringValue: Block
+              - key: azure.category
+                value:
+                  stringValue: FrontDoorWebApplicationFirewallLog
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Cdn/Profiles/WebApplicationFirewallLog/Write
+            body: {}
+            spanId: ""
+            timeUnixNano: "1745508906000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3
