@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/xray/types"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 type Recorder interface {
@@ -120,9 +120,14 @@ func (tr *telemetryRecorder) RecordConnectionError(err error) {
 	if err == nil {
 		return
 	}
-	var requestFailure awserr.RequestFailure
-	if ok := errors.As(err, &requestFailure); ok {
-		switch requestFailure.StatusCode() / 100 {
+
+	var (
+		responseErr *awshttp.ResponseError
+		requestErr  *smithyhttp.RequestSendError
+		timeoutErr  *awshttp.ResponseTimeoutError
+	)
+	if ok := errors.As(err, &responseErr); ok {
+		switch responseErr.HTTPStatusCode() / 100 {
 		case 5:
 			atomic.AddInt32(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
 		case 4:
@@ -130,20 +135,12 @@ func (tr *telemetryRecorder) RecordConnectionError(err error) {
 		default:
 			atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
 		}
+	} else if ok := errors.As(err, &timeoutErr); ok {
+		atomic.AddInt32(tr.record.BackendConnectionErrors.TimeoutCount, 1)
+	} else if ok := errors.As(err, &requestErr); ok {
+		atomic.AddInt32(tr.record.BackendConnectionErrors.UnknownHostCount, 1)
 	} else {
-		var awsError awserr.Error
-		if ok = errors.As(err, &awsError); ok {
-			switch awsError.Code() {
-			case request.ErrCodeResponseTimeout:
-				atomic.AddInt32(tr.record.BackendConnectionErrors.TimeoutCount, 1)
-			case request.ErrCodeRequestError:
-				atomic.AddInt32(tr.record.BackendConnectionErrors.UnknownHostCount, 1)
-			default:
-				atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
-			}
-		} else {
-			atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
-		}
+		atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
 	}
 	tr.hasRecording.Store(true)
 }
