@@ -4,6 +4,7 @@
 package upload
 
 import (
+	"cmp"
 	"compress/gzip"
 	"context"
 	"io"
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNewS3Manager(t *testing.T) {
@@ -44,7 +46,9 @@ func TestS3ManagerUpload(t *testing.T) {
 		data         []byte
 		errVal       string
 		storageClass string
-		uploadOpts   *UploadOptions
+		partitionPrefix string
+		partitionFormat string
+		filePrefix string
 	}{
 		{
 			name: "successful upload",
@@ -64,7 +68,6 @@ func TestS3ManagerUpload(t *testing.T) {
 			compression: configcompression.Type(""),
 			data:        []byte("hello world"),
 			errVal:      "",
-			uploadOpts:  nil,
 		},
 		{
 			name: "successful compression upload",
@@ -93,7 +96,6 @@ func TestS3ManagerUpload(t *testing.T) {
 			compression: configcompression.TypeGzip,
 			data:        []byte("hello world"),
 			errVal:      "",
-			uploadOpts:  nil,
 		},
 		{
 			name: "no data upload",
@@ -108,7 +110,6 @@ func TestS3ManagerUpload(t *testing.T) {
 			},
 			data:       nil,
 			errVal:     "",
-			uploadOpts: nil,
 		},
 		{
 			name: "failed upload",
@@ -122,7 +123,6 @@ func TestS3ManagerUpload(t *testing.T) {
 			},
 			data:       []byte("good payload"),
 			errVal:     "operation error S3: PutObject, https response error StatusCode: 401, RequestID: , HostID: , api error Unauthorized: Unauthorized",
-			uploadOpts: nil,
 		},
 		{
 			name: "STANDARD_IA storage class",
@@ -135,7 +135,6 @@ func TestS3ManagerUpload(t *testing.T) {
 			storageClass: "STANDARD_IA",
 			data:         []byte("some data"),
 			errVal:       "",
-			uploadOpts:   nil,
 		},
 		{
 			name: "upload with s3 prefix from resource attrbuites",
@@ -155,7 +154,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			compression: configcompression.Type(""),
 			data:        []byte("hello world"),
 			errVal:      "",
-			uploadOpts:  &UploadOptions{OverridePrefix: "foo-prefix-resource"},
+			partitionPrefix: "${com.awss3.prefix}",
 		},
 		{
 			name: "upload with s3 prefix from resource attrbuites empty",
@@ -175,7 +174,6 @@ func TestS3ManagerUpload(t *testing.T) {
 			compression: configcompression.Type(""),
 			data:        []byte("hello world"),
 			errVal:      "",
-			uploadOpts:  &UploadOptions{OverridePrefix: ""},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -184,19 +182,21 @@ func TestS3ManagerUpload(t *testing.T) {
 			s := httptest.NewServer(tc.handler(t))
 			t.Cleanup(s.Close)
 
+			pkb := &PartitionKeyBuilder{
+				PartitionPrefix: cmp.Or(tc.partitionPrefix, "telemetry"),
+				PartitionFormat: cmp.Or(tc.partitionFormat, "year=%Y/month=%m/day=%d/hour=%H/minute=%M"),
+				FilePrefix:      cmp.Or(tc.filePrefix, "signal-data-"),
+				Metadata:        "noop",
+				FileFormat:      "metrics",
+				Compression:     tc.compression,
+				UniqueKeyFunc: func() string {
+					return "random"
+				},
+			}
+
 			sm := NewS3Manager(
 				"my-bucket",
-				&PartitionKeyBuilder{
-					PartitionPrefix: "telemetry",
-					PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-					FilePrefix:      "signal-data-",
-					Metadata:        "noop",
-					FileFormat:      "metrics",
-					Compression:     tc.compression,
-					UniqueKeyFunc: func() string {
-						return "random"
-					},
-				},
+				pkb,
 				s3.New(s3.Options{
 					BaseEndpoint: aws.String(s.URL),
 					Region:       "local",
@@ -209,7 +209,12 @@ func TestS3ManagerUpload(t *testing.T) {
 			// to reduce the potential of flaky tests
 			mc := clock.NewMock(time.Date(2024, 0o1, 10, 10, 30, 40, 100, time.Local))
 
-			err := sm.Upload(clock.Context(context.Background(), mc), tc.data, tc.uploadOpts)
+			attrs := pcommon.NewMap()
+			attrs.FromRaw(map[string]any{
+				"com.awss3.prefix": "foo-prefix-resource",
+			})
+
+			err := sm.Upload(clock.Context(context.Background(), mc), tc.data, attrs)
 			if tc.errVal != "" {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error")
 			} else {

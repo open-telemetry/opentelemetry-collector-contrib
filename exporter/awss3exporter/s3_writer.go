@@ -4,6 +4,7 @@
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
+	"cmp"
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -66,16 +67,21 @@ func newUploadManager(
 			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
 	}
 
+	pkb := &upload.PartitionKeyBuilder{
+		PartitionPrefix: conf.S3Uploader.S3Prefix,
+		PartitionFormat: cmp.Or(conf.ResourceAttrsToS3.S3PartitionFormat, conf.S3Uploader.S3PartitionFormat),
+		FilePrefix:      cmp.Or(conf.ResourceAttrsToS3.FilePrefix, conf.S3Uploader.FilePrefix),
+		Metadata:        metadata,
+		FileFormat:      format,
+		Compression:     conf.S3Uploader.Compression,
+		UnknownAttributePlaceholder: conf.ResourceAttrsToS3.UnknownAttributePlaceholder,
+	}
+	if s := conf.ResourceAttrsToS3.S3Prefix; s != "" {
+		pkb.PartitionPrefix = "${" + s + "}"
+	}
 	return upload.NewS3Manager(
 		conf.S3Uploader.S3Bucket,
-		&upload.PartitionKeyBuilder{
-			PartitionPrefix: conf.S3Uploader.S3Prefix,
-			PartitionFormat: conf.S3Uploader.S3PartitionFormat,
-			FilePrefix:      conf.S3Uploader.FilePrefix,
-			Metadata:        metadata,
-			FileFormat:      format,
-			Compression:     conf.S3Uploader.Compression,
-		},
+		pkb,
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),
 		managerOpts...,

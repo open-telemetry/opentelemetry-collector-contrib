@@ -6,6 +6,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/subst"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
@@ -84,13 +86,14 @@ func createLogsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.ResourceAttrsToS3.S3Prefix == "" {
+	attrs := resourceAttributes(&cfg.ResourceAttrsToS3)
+	if len(attrs) == 0 {
 		return logsExporter, err
 	}
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(cfg.ResourceAttrsToS3.S3Prefix, logsExporter),
+		Logs:      batchperresourceattr.NewMultiBatchPerResourceLogs(attrs, logsExporter),
 	}
 	return wrapped, nil
 }
@@ -121,13 +124,14 @@ func createMetricsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.ResourceAttrsToS3.S3Prefix == "" {
+	attrs := resourceAttributes(&cfg.ResourceAttrsToS3)
+	if len(attrs) == 0 {
 		return metricsExporter, err
 	}
 
 	wrapped := &baseMetricsExporter{
 		Component: metricsExporter,
-		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(cfg.ResourceAttrsToS3.S3Prefix, metricsExporter),
+		Metrics:   batchperresourceattr.NewMultiBatchPerResourceMetrics(attrs, metricsExporter),
 	}
 	return wrapped, nil
 }
@@ -159,13 +163,14 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.ResourceAttrsToS3.S3Prefix == "" {
+	attrs := resourceAttributes(&cfg.ResourceAttrsToS3)
+	if len(attrs) == 0 {
 		return tracesExporter, err
 	}
 
 	wrapped := &baseTracesExporter{
 		Component: tracesExporter,
-		Traces:    batchperresourceattr.NewBatchPerResourceTraces(cfg.ResourceAttrsToS3.S3Prefix, tracesExporter),
+		Traces:    batchperresourceattr.NewMultiBatchPerResourceTraces(attrs, tracesExporter),
 	}
 	return wrapped, nil
 }
@@ -177,4 +182,12 @@ func checkAndCastConfig(c component.Config) (*Config, error) {
 		return nil, errors.New("config structure is not of type *awss3exporter.Config")
 	}
 	return cfg, nil
+}
+
+func resourceAttributes(cfg *ResourceAttrsToS3) []string {
+	vars := subst.Vars(cfg.S3PartitionFormat)
+	if cfg.S3Prefix != "" && !slices.Contains(vars, cfg.S3Prefix) {
+		vars = append(vars, cfg.S3Prefix)
+	}
+	return vars
 }
