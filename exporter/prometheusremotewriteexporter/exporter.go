@@ -250,6 +250,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+
 		// If feature flag not enabled support only RW1.
 		if !enableSendingRW2FeatureGate.IsEnabled() {
 			return prwe.pushMetricsV1(ctx, md)
