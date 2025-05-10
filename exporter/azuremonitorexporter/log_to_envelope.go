@@ -87,7 +87,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 	switch {
 	case packer.config.CustomEventsEnabled && isEventData(attributes):
 		packer.handleEventData(envelope, data, logRecord)
-	case packer.config.ExceptionEventEnabled && isExceptionData(attributes):
+	case packer.config.ExceptionEventsEnabled && isExceptionData(attributes):
 		packer.handleExceptionData(envelope, data, logRecord, resource, instrumentationScope)
 	default:
 		packer.handleMessageData(envelope, data, logRecord, resource, instrumentationScope)
