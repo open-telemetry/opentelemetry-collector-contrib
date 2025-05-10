@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/receiver v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250509190408-4ca0f1829e0a
