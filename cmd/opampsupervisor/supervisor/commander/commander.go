@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +33,7 @@ type Commander struct {
 	doneCh  chan struct{}
 	exitCh  chan struct{}
 	running *atomic.Int64
+	lastErr string
 }
 
 func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
@@ -42,8 +44,9 @@ func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...
 		args:    args,
 		running: &atomic.Int64{},
 		// Buffer channels so we can send messages without blocking on listeners.
-		doneCh: make(chan struct{}, 1),
-		exitCh: make(chan struct{}, 1),
+		doneCh:  make(chan struct{}, 1),
+		exitCh:  make(chan struct{}, 1),
+		lastErr: "",
 	}, nil
 }
 
@@ -79,11 +82,20 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
-	// PassthroughLogging changes how collector start up happens
-	if c.cfg.PassthroughLogs {
-		return c.startWithPassthroughLogging()
+	// grab cmd pipes
+	stdoutPipe, err := c.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdoutPipe: %w", err)
 	}
-	return c.startNormal()
+	stderrPipe, err := c.cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderrPipe: %w", err)
+	}
+
+	if c.cfg.PassthroughLogs {
+		return c.startWithPassthroughLogging(stdoutPipe, stderrPipe)
+	}
+	return c.startNormal(stdoutPipe, stderrPipe)
 }
 
 func (c *Commander) Restart(ctx context.Context) error {
@@ -95,56 +107,72 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) startNormal() error {
+func (c *Commander) startNormal(stdout, stderr io.ReadCloser) error {
 	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	stdoutFile, err := os.Create(logFilePath)
+	logFile, err := os.Create(logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
 	}
-
-	// Capture standard output and standard error.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
-	c.cmd.Stdout = stdoutFile
-	c.cmd.Stderr = stdoutFile
+	logWriter := bufio.NewWriter(logFile)
 
 	if err := c.cmd.Start(); err != nil {
-		stdoutFile.Close()
+		logFile.Close()
 		return fmt.Errorf("startNormal: %w", err)
 	}
-
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
+	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 
 	go func() {
-		defer stdoutFile.Close()
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			_, err := logWriter.WriteString(line + "\n")
+			if err != nil {
+				c.logger.Error("Error writing to agent log file: %w", zap.Error(err))
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
+		}
+		logWriter.Flush()
+	}()
+
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			_, err := logWriter.WriteString(line + "\n")
+			if err != nil {
+				c.logger.Error("Error writing to agent log file: %w", zap.Error(err))
+			}
+			c.lastErr = line
+		}
+		if err := scanner.Err(); err != nil {
+			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
+		}
+		logWriter.Flush()
+	}()
+
+	go func() {
+		defer logFile.Close()
 		c.watch()
 	}()
 
 	return nil
 }
 
-func (c *Commander) startWithPassthroughLogging() error {
-	// grab cmd pipes
-	stdoutPipe, err := c.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("stdoutPipe: %w", err)
-	}
-	stderrPipe, err := c.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("stderrPipe: %w", err)
-	}
-
+func (c *Commander) startWithPassthroughLogging(stdout, stderr io.ReadCloser) error {
 	// start agent
 	if err := c.cmd.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)
 	}
 	c.running.Store(1)
-
-	colLogger := c.logger.Named("collector")
+	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 
 	// capture agent output
+	colLogger := c.logger.Named("collector")
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
+		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
 			colLogger.Info(line)
@@ -154,10 +182,11 @@ func (c *Commander) startWithPassthroughLogging() error {
 		}
 	}()
 	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
+		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
 			colLogger.Info(line)
+			c.lastErr = line
 		}
 		if err := scanner.Err(); err != nil {
 			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
@@ -361,4 +390,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 	cancel()
 
 	return innerErr
+}
+
+func (c *Commander) LastErr() string {
+	return c.lastErr
 }
