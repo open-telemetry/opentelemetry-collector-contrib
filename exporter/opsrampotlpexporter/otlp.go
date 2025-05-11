@@ -169,22 +169,22 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 		e.settings,
 		configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent)),
 		configgrpc.WithGrpcDialOption(
-		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-			if httpproxy.FromEnvironment().HTTPProxy == "" {
-				return (&net.Dialer{}).Dial("tcp", addr)
-			}
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				if httpproxy.FromEnvironment().HTTPProxy == "" {
+					return (&net.Dialer{}).Dial("tcp", addr)
+				}
 
-			uri, er := url.Parse(httpproxy.FromEnvironment().HTTPProxy)
-			if er != nil {
-				return nil, er
-			}
+				uri, er := url.Parse(httpproxy.FromEnvironment().HTTPProxy)
+				if er != nil {
+					return nil, er
+				}
 
-			dialer, er := proxy.FromURL(uri, proxy.Direct)
-			if er != nil {
-				return nil, er
-			}
-			return dialer.Dial("tcp", addr)
-		})),
+				dialer, er := proxy.FromURL(uri, proxy.Direct)
+				if er != nil {
+					return nil, er
+				}
+				return dialer.Dial("tcp", addr)
+			})),
 	)
 	if err != nil {
 		return err
@@ -307,6 +307,8 @@ func (e *opsrampOTLPExporter) updateExpiredToken() error {
 }
 
 func (e *opsrampOTLPExporter) enhanceContext(ctx context.Context) context.Context {
+	e.mut.Lock()
+	defer e.mut.Unlock()
 	if e.metadata.Len() > 0 {
 		return metadata.NewOutgoingContext(ctx, e.metadata)
 	}
