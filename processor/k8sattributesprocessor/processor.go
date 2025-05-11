@@ -7,9 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/moid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 	"go.opentelemetry.io/collector/component"
@@ -21,7 +23,6 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
-	"strconv"
 )
 
 const (
@@ -73,14 +74,27 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		zap.Any("redisPort", kp.redisConfig.RedisPort),
 		zap.Any("redisPass", kp.redisConfig.RedisPass))
 
-	cache := lru.GetInstance(kp.redisConfig.LruCacheSize, kp.redisConfig.LruExpirationTime)
+	// cache := lru.GetInstance(kp.redisConfig.LruCacheSize, kp.redisConfig.LruExpirationTime)
 
-	if cache == nil {
-		kp.logger.Error("Failed to initilize the cache with GetInstance()")
-		return nil
+	// if cache == nil {
+	// 	kp.logger.Error("Failed to initilize the cache with GetInstance()")
+	// 	return nil
+	// }
+
+	// kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
+
+	primaryCache := cache.NewSyncMapWithExpiry(kp.redisConfig.PrimaryCacheEvictionTime)
+	if primaryCache == nil {
+		kp.logger.Error("Failed to initilize the primary cache")
+		return fmt.Errorf("failed to initialize the primary cache")
 	}
 
-	kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
+	secondaryCache := cache.NewSyncMapWithExpiry(kp.redisConfig.SecondaryCacheEvictionTime)
+	if secondaryCache == nil {
+		kp.logger.Error("Failed to initilize the secondary cache")
+		return fmt.Errorf("failed to initialize the primary cache")
+	}
+	kp.redisClient = redis.NewClient(kp.logger, primaryCache, secondaryCache, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheEvictionTime, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
 
 	// This might have been set by an option already
 	if kp.kc == nil {

@@ -11,8 +11,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
 
@@ -146,14 +146,13 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("node name is mandatory")
 	}
 
-	if cfg.RedisConfig.LruExpirationTime == 0 {
-		cfg.RedisConfig.LruExpirationTime = lru.DEFAULT_CACHE_EXPIRATION_INTERVAL
+	if cfg.RedisConfig.PrimaryCacheEvictionTime == 0 {
+		cfg.RedisConfig.PrimaryCacheEvictionTime = cache.DEFAULT_PRIMARY_CACHE_EXPIRATION_INTERVAL
 	}
 
-	if cfg.RedisConfig.LruCacheSize == 0 {
-		cfg.RedisConfig.LruCacheSize = lru.DEFAULT_CACHE_SIZE
+	if cfg.RedisConfig.SecondaryCacheEvictionTime == 0 {
+		cfg.RedisConfig.SecondaryCacheEvictionTime = cache.DEFAULT_SECONDARY_CACHE_EXPIRATION_INTERVAL
 	}
-
 	return nil
 }
 
