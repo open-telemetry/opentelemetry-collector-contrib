@@ -102,25 +102,6 @@ func handleFrontDoorHealthProbeLog(field string, value any, attrs map[string]any
 	}
 }
 
-func handleFrontdoorWebApplicationFirewallLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
-	switch field {
-	case "clientIP":
-		attrs["client.address"] = value
-	case "clientPort":
-		attrs["client.port"] = value
-	case "socketIP":
-		attrs[conventions.AttributeNetworkPeerAddress] = value
-	case "requestUri":
-		attrs[conventions.AttributeURLFull] = value
-	case "host":
-		attrs[conventions.AttributeServerAddress] = value
-	case "trackingReference":
-		attrs[conventions.AttributeAzServiceRequestID] = value
-	default:
-		attrsProps[field] = value
-	}
-}
-
 func handleAppServiceAppLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "ContainerId":
