@@ -20,7 +20,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/extension/extensiontest v0.125.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/service v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

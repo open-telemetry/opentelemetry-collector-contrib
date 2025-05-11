@@ -19,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/otel v1.35.0
 	go.uber.org/zap v1.27.0
 	k8s.io/apimachinery v0.32.3

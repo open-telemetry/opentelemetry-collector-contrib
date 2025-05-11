@@ -14,7 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 )
 
@@ -175,12 +175,12 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 		resource := resourceMetric.Resource()
 		resourceAttributes := resource.Attributes()
 		serviceName := ""
-		v, ok := resourceAttributes.Get(semconv.AttributeServiceName)
+		v, ok := resourceAttributes.Get(string(semconv.ServiceNameKey))
 		if ok {
 			serviceName = v.AsString()
 		}
 		serviceInstance := ""
-		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		v, ok = resourceAttributes.Get(string(semconv.ServiceInstanceIDKey))
 		if ok {
 			serviceInstance = v.AsString()
 		}

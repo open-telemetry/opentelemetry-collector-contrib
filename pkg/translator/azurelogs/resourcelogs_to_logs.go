@@ -15,7 +15,7 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -147,9 +147,9 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	l := plog.NewLogs()
 	for resourceID, scopeLogs := range allResourceScopeLogs {
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		rl.Resource().Attributes().PutStr(conventions.AttributeCloudResourceID, resourceID)
-		rl.Resource().Attributes().PutStr(conventions.AttributeEventName, "az.resource.log")
+		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
+		rl.Resource().Attributes().PutStr(string(conventions.EventNameKey), "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
@@ -250,8 +250,8 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	setIf(attrs, azureResultType, log.ResultType)
 	setIf(attrs, azureTenantID, log.TenantID)
 
-	setIf(attrs, conventions.AttributeCloudRegion, log.Location)
-	setIf(attrs, conventions.AttributeNetworkPeerAddress, log.CallerIPAddress)
+	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
+	setIf(attrs, string(conventions.NetworkPeerAddressKey), log.CallerIPAddress)
 	return attrs
 }
 

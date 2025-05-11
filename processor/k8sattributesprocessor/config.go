@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -90,17 +90,17 @@ func (cfg *Config) Validate() error {
 
 	for _, field := range cfg.Extract.Metadata {
 		switch field {
-		case conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID,
+		case string(conventions.K8SNamespaceNameKey), string(conventions.K8SPodNameKey), string(conventions.K8SPodUIDKey),
 			specPodHostName, metadataPodStartTime, metadataPodIP,
-			conventions.AttributeK8SDeploymentName, conventions.AttributeK8SDeploymentUID,
-			conventions.AttributeK8SReplicaSetName, conventions.AttributeK8SReplicaSetUID,
-			conventions.AttributeK8SDaemonSetName, conventions.AttributeK8SDaemonSetUID,
-			conventions.AttributeK8SStatefulSetName, conventions.AttributeK8SStatefulSetUID,
-			conventions.AttributeK8SJobName, conventions.AttributeK8SJobUID,
-			conventions.AttributeK8SCronJobName,
-			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
-			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
-			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
+			string(conventions.K8SDeploymentNameKey), string(conventions.K8SDeploymentUIDKey),
+			string(conventions.K8SReplicaSetNameKey), string(conventions.K8SReplicaSetUIDKey),
+			string(conventions.K8SDaemonSetNameKey), string(conventions.K8SDaemonSetUIDKey),
+			string(conventions.K8SStatefulSetNameKey), string(conventions.K8SStatefulSetUIDKey),
+			string(conventions.K8SJobNameKey), string(conventions.K8SJobUIDKey),
+			string(conventions.K8SCronJobNameKey),
+			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
+			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
+			string(conventions.ContainerImageNameKey), string(conventions.ContainerImageTagKey),
 			containerImageRepoDigests, clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
