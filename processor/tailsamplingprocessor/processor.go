@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -301,7 +302,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 		}
 	}
 	// Dropped decision takes precedence over all others, therefore we evaluate them first.
-	tsp.policies = append(dropPolicies, policies...)
+	tsp.policies = slices.Concat(dropPolicies, policies)
 
 	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
 
