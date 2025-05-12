@@ -6,6 +6,7 @@
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8sobjects%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8sobjects) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8sobjects%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8sobjects) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_k8sobjects)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_k8sobjects&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@hvaghani221](https://www.github.com/hvaghani221), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -42,6 +43,10 @@ Brief description of configuration properties:
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
+- `error_mode` (default = `propagate`): Determines how to handle errors when the receiver is unable to pull or watch objects due to missing resources. This can be one of `propagate`, `ignore`, or `silent`.
+  - `propagate` will propagate the error to the collector as an Error.
+  - `ignore` will log and ignore the error and continue.
+  - `silent` will ignore the error and continue without logging.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
@@ -62,6 +67,27 @@ The full list of settings exposed for this receiver are documented in [config.go
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
+
+### Supported Kubernetes objects
+
+The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes objects from the API server. For example, the mostly used supported objects
+(in addition to other standard Kubernetes objects) are:
+
+- `pods`
+- `events`
+- `nodes`
+- `jobs`
+- `cronjobs`
+- `deployments`
+- `services`
+- `configmaps`
+- `secrets`
+- `statefulsets`
+- `replicasets`
+- `daemonsets`
+- `namespaces`
+
+This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Please note that custom resources are supported only if their CRDs are available in the cluster.
 
 ### Configuration
 

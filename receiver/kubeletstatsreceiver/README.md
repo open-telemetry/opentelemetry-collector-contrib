@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkubeletstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkubeletstats) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kubeletstats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kubeletstats&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -32,7 +33,7 @@ to connect and authenticate to the API server and how often to collect data
 and send it to the next consumer.
 
 Kubelet Stats Receiver supports both secure Kubelet endpoint exposed at port 10250 by default and read-only
-Kubelet endpoint exposed at port 10255. If `auth_type` set to `none`, the read-only endpoint will be used. The secure 
+Kubelet endpoint exposed at port 10255. If `auth_type` set to `none`, the read-only endpoint will be used. The secure
 endpoint will be used if `auth_type` set to any of the following values:
 
 - `tls` tells the receiver to use TLS for auth and requires that the fields
@@ -109,14 +110,14 @@ node's network namespace.
 
 #### Custom CA
 
-The service account client, by default, uses the CA certificate located at 
-`/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` to validate the kubelet certificate. 
-If the kubelet server uses a certificate issued by a different CA, 
+The service account client, by default, uses the CA certificate located at
+`/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` to validate the kubelet certificate.
+If the kubelet server uses a certificate issued by a different CA,
 specify the custom CA certificate path using the `ca_file` option.
 
 ##### AKS Custom CA example
 
-This use case applies to AKS cluster, where the kubelet certificate is issued by 
+This use case applies to AKS cluster, where the kubelet certificate is issued by
 `/etc/kubernetes/certs/kubeletserver.crt`
 
 ```yaml
@@ -169,6 +170,7 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```
+
 Note that using `auth_type` `kubeConfig`, the endpoint should only be the node name as the communication to the kubelet is proxied by the API server configured in the `kubeConfig`.
 `insecure_skip_verify` still applies by overriding the `kubeConfig` settings.
 If no `context` is specified, the current context or the default context is used.
@@ -244,6 +246,23 @@ receivers:
       - pod
 ```
 
+### Network metrics from all interfaces for Node and Pod
+
+By default, `k8s.[node|pod].network.*` metrics are collected only for the default network interface (e.g. `eth0`). To enable network IO/error metrics collection from all available interfaces on Node/Pod level - you can use `collect_all_network_interfaces` configuration parameters. Please be aware that enabling this options will increase the amount of produced network metrics and increase network metrics cardinality, because of `interface` attribute.
+For example, if you would like to have network IO/error metrics from all network interfaces for both Pod and Node level you can use the following configuration.
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    collect_all_network_interfaces:
+      pod: true
+      node: true
+```
+
 ### Collect `k8s.{container,pod}.{cpu,memory}.node.utilization` as ratio of total node's capacity
 
 In order to calculate the `k8s.container.cpu.node.utilization`, `k8s.pod.cpu.node.utilization`,
@@ -259,6 +278,7 @@ env:
       fieldRef:
         fieldPath: spec.nodeName
 ```
+
 Then set `node` value to `${env:K8S_NODE_NAME}` in the receiver's configuration:
 
 ```yaml
@@ -304,7 +324,7 @@ rules:
   - apiGroups: [""]
     resources: ["nodes/stats"]
     verbs: ["get"]
-    
+
   # Only needed if you are using extra_metadata_labels or
   # are collecting the request/limit utilization metrics
   - apiGroups: [""]
@@ -333,4 +353,4 @@ You can enable the usage of the deprecated metrics by disabling the `receiver.ku
 - removed three releases after stable.
 
 More information about the deprecation plan and
-the background reasoning can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885.
+the background reasoning can be found at <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885>.

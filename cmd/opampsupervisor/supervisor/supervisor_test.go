@@ -783,6 +783,107 @@ service:
 		assert.Nil(t, s.cfgState.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
+	t.Run("RemoteConfig - Don't report status if config is not changed", func(t *testing.T) {
+		const testConfigMessage = `receivers:
+  debug:`
+
+		const expectedMergedConfig = `extensions:
+    health_check:
+        endpoint: localhost:8000
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 88888
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    debug: null
+service:
+    extensions:
+        - health_check
+        - opamp
+    telemetry:
+        logs:
+            encoding: json
+        resource: null
+`
+
+		// the remote config message we will send that will get merged and compared with the initial config
+		remoteConfig := &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {
+						Body: []byte(testConfigMessage),
+					},
+				},
+			},
+			ConfigHash: []byte("hash"),
+		}
+
+		remoteConfigStatusUpdated := false
+		mc := &mockOpAMPClient{
+			setRemoteConfigStatusFunc: func(_ *protobufs.RemoteConfigStatus) error {
+				remoteConfigStatusUpdated = true
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		configStorageDir := t.TempDir()
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: configStorageDir,
+				},
+			},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			opampClient:                  mc,
+			agentDescription:             &atomic.Value{},
+			cfgState:                     &atomic.Value{},
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		require.NoError(t, s.createTemplates())
+
+		// need to set the agent description as part of initialization
+		s.agentDescription.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes:    []*protobufs.KeyValue{},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{},
+		})
+
+		// initially write & store config so that we have the same config when we send the remote config message
+		err := os.WriteFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile), []byte(testConfigMessage), 0o600)
+		require.NoError(t, err)
+
+		s.cfgState.Store(&configState{
+			mergedConfig:     expectedMergedConfig,
+			configMapIsEmpty: false,
+		})
+
+		s.onMessage(context.Background(), &types.MessageData{
+			RemoteConfig: remoteConfig,
+		})
+
+		// assert the remote config status callback was not called
+		assert.False(t, remoteConfigStatusUpdated)
+		// assert the config file and stored data are still the same
+		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
+		require.NoError(t, err)
+		assert.Contains(t, string(fileContent), testConfigMessage)
+		assert.Equal(t, expectedMergedConfig, s.cfgState.Load().(*configState).mergedConfig)
+	})
 }
 
 func Test_handleAgentOpAMPMessage(t *testing.T) {
@@ -995,6 +1096,39 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		assert.Empty(t, s.effectiveConfig.Load())
 		assert.False(t, updatedClientEffectiveConfig)
 	})
+
+	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
+		healthSet := false
+		mc := &mockOpAMPClient{
+			setHealthFunc: func(_ *protobufs.ComponentHealth) {
+				healthSet = true
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		s := Supervisor{
+			telemetrySettings:            newNopTelemetrySettings(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    &atomic.Value{},
+			opampClient:                  mc,
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			Health: &protobufs.ComponentHealth{
+				Healthy: true,
+			},
+		})
+
+		assert.True(t, healthSet)
+	})
 }
 
 func TestSupervisor_setAgentDescription(t *testing.T) {
@@ -1128,6 +1262,7 @@ type mockOpAMPClient struct {
 	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
 	updateEffectiveConfigFunc func(ctx context.Context) error
 	setRemoteConfigStatusFunc func(rcs *protobufs.RemoteConfigStatus) error
+	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
 func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
@@ -1147,7 +1282,8 @@ func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return m.agentDesc
 }
 
-func (mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error {
+func (m mockOpAMPClient) SetHealth(h *protobufs.ComponentHealth) error {
+	m.setHealthFunc(h)
 	return nil
 }
 
