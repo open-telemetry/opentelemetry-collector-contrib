@@ -20,7 +20,7 @@ func Test_SpanFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
 	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 	expected[isRootSpanFactory.Name()] = isRootSpanFactory
-	actual := SpanFunctions([]ottl.Factory[ottlspan.TransformContext]{})
+	actual := SpanFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
@@ -48,7 +48,7 @@ func Test_SpanFunctions_AdditionalSpanFuncs(t *testing.T) {
 	expected[isRootSpanFactory.Name()] = isRootSpanFactory
 
 	additionalSpanFuncs := []ottl.Factory[ottlspan.TransformContext]{testSpanFuncFactory}
-	actual := SpanFunctions(additionalSpanFuncs)
+	actual := SpanFunctions(additionalSpanFuncs...)
 
 	require.Len(t, actual, len(expected))
 	for k := range actual {
