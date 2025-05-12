@@ -62,7 +62,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
 
-	actual := MetricFunctions([]ottl.Factory[ottlmetric.TransformContext]{})
+	actual := MetricFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
@@ -96,7 +96,7 @@ func Test_MetricFunctions_AdditionalMetricFuncs(t *testing.T) {
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
 
 	additionalMetricFuncs := []ottl.Factory[ottlmetric.TransformContext]{testMetricFuncFactory}
-	actual := MetricFunctions(additionalMetricFuncs)
+	actual := MetricFunctions(additionalMetricFuncs...)
 
 	require.Len(t, actual, len(expected))
 	for k := range actual {
