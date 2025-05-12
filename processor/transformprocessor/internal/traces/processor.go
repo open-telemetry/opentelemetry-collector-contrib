@@ -22,7 +22,7 @@ type Processor struct {
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, additionalSpanFuncs []ottl.Factory[ottlspan.TransformContext]) (*Processor, error) {
-	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions(additionalSpanFuncs)), common.WithSpanEventParser(SpanEventFunctions()), common.WithTraceErrorMode(errorMode))
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions(additionalSpanFuncs...)), common.WithSpanEventParser(SpanEventFunctions()), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
