@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 go 1.23.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.64.3
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.3
+	github.com/DataDog/datadog-agent/pkg/trace v0.65.1
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.65.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.125.0
@@ -27,9 +27,9 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.64.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.65.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.65.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.27.0 // indirect
@@ -141,7 +141,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
