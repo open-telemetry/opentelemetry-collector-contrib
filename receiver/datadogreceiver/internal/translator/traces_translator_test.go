@@ -555,7 +555,7 @@ func TestToTracesServerAddress(t *testing.T) {
 				Header: http.Header{},
 			}
 
-			traces := ToTraces(payload, req)
+			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
 			for _, rs := range traces.ResourceSpans().All() {
 				for _, ss := range rs.ScopeSpans().All() {
 					for _, span := range ss.Spans().All() {
