@@ -90,7 +90,7 @@ func TestIntegration(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -288,7 +288,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -481,7 +481,7 @@ func TestIntegrationLogs(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -638,7 +638,7 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
@@ -787,7 +787,7 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		_ = app.Run(context.Background()) // ignore shutdown error
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
 		wg.Done()
 	}()
 	defer func() {
