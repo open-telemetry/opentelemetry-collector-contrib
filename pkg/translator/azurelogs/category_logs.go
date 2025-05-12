@@ -392,7 +392,7 @@ func addFrontDoorWAFLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse AzureCdnAccessLog properties: %w", err)
 	}
 
-	if err := putInt(conventions.AttributeClientPort, properties.ClientPort, record); err != nil {
+	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
 		return err
 	}
 
@@ -400,8 +400,8 @@ func addFrontDoorWAFLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf(`failed to handle "requestUri" field: %w`, err)
 	}
 
-	putStr(conventions.AttributeClientAddress, properties.ClientIP, record)
-	putStr(conventions.AttributeSourceAddress, properties.SocketIP, record)
+	putStr(string(conventions.ClientAddressKey), properties.ClientIP, record)
+	putStr(string(conventions.SourceAddressKey), properties.SocketIP, record)
 	putStr(attributeAzureRef, properties.TrackingReference, record)
 	putStr("http.request.header.host", properties.Host, record)
 	putStr(attributeAzureFrontDoorWAFPolicyName, properties.Policy, record)
