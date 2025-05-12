@@ -1,0 +1,1 @@
+/* otel-collector-ignore */ PREPARE otel_114514 AS select * from pg_stat_activity where id = $1

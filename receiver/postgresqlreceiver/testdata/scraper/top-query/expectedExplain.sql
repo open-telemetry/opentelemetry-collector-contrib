@@ -1,0 +1,1 @@
+/* otel-collector-ignore */ EXPLAIN(FORMAT JSON) EXECUTE otel_114514(null)

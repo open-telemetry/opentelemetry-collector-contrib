@@ -83,6 +83,8 @@ We provide functionality to collect the most executed queries from postgresql. I
 ...
 ```
 
+Along with those attributes, we will also report the query plan we gathered if it is possible. 
+
 By default, top query collection is disabled, also note, to use it, you will need 
 to create the extension to every database. Take the example from `testdata/integration/02-create-extension.sh`
 
@@ -95,6 +97,12 @@ The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_statements`.
 - `top_n_query`: (optional, default=1000) The maximum number of active queries to report (to the next consumer) in a single run.
+- `max_explain_each_interval`: (optional, default=1000). The maximum number of explain query to be sent in each scrape interval. The top query 
+collection would not get the query plan directly. Instead, we need to mimic the query in the database and get the query plan from database 
+separately. This could lead some resources usage and limit this will reduce the impact on your database.
+- `query_plan_cache_size`: (optional, default=1000). The query plan cache size. Once we got explain for one query, we will store it in the cache.
+This defines the cache's size for query plan.
+- `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 
 ### Example Configuration
 
