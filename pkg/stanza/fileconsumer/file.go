@@ -261,8 +261,13 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 		return r, nil
 	}
 
+	// When the NoStateTracker is used, this would result in log spam as new
+	// readers are created every scrape interval.
+	if m.tracker.Name() != tracker.NoStateTracker {
+		m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+	}
+
 	// If we don't match any previously known files, create a new reader from scratch
-	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
 	r, err := m.readerFactory.NewReader(file, fp)
 	if err != nil {
 		return nil, err

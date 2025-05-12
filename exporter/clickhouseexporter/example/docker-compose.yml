@@ -24,7 +24,8 @@ services:
       - "24224:24224" # fluentforwarder
       - "24224:24224/udp" # fluentforwarder
     depends_on:
-      - clickhouse
+      clickhouse:
+        condition: service_healthy
     networks:
       - otel-clickhouse
 
@@ -33,8 +34,13 @@ services:
     ports:
       - "9000:9000"
       - "8123:8123"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
     networks:
       - otel-clickhouse
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=default
 
   grafana:
     image: grafana/grafana:latest

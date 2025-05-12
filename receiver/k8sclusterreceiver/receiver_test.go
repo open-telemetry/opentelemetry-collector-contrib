@@ -301,6 +301,9 @@ func getUpdatedPod(pod *corev1.Pod) any {
 				"key": "value",
 			},
 		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+		},
 	}
 }
 
