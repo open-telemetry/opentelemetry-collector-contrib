@@ -10,12 +10,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.125.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/consumer v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/processor v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/processor v1.31.1-0.20250512210654-f592f1cefb67
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0
 	go.opentelemetry.io/otel/sdk/metric v1.35.0
