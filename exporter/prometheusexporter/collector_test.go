@@ -26,32 +26,41 @@ import (
 type mockAccumulator struct {
 	metrics            []pmetric.Metric
 	resourceAttributes pcommon.Map // Same attributes for all metrics.
+	scopes             []pcommon.InstrumentationScope
 }
 
 func (a *mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 	return 0
 }
 
-func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
+func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []pcommon.InstrumentationScope) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
+	scopes := make([]pcommon.InstrumentationScope, len(a.metrics))
 	for i := range rAttrs {
 		rAttrs[i] = a.resourceAttributes
 	}
+	for i := range scopes {
+		scopes[i] = a.scopes[i]
+	}
 
-	return a.metrics, rAttrs
+	return a.metrics, rAttrs, scopes
 }
 
 func TestConvertInvalidDataType(t *testing.T) {
 	metric := pmetric.NewMetric()
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test_scope")
+	scope.SetVersion("1.0.0")
 	c := collector{
 		accumulator: &mockAccumulator{
-			[]pmetric.Metric{metric},
-			pcommon.NewMap(),
+			metrics:            []pmetric.Metric{metric},
+			resourceAttributes: pcommon.NewMap(),
+			scopes:             []pcommon.InstrumentationScope{scope},
 		},
 		logger: zap.NewNop(),
 	}
 
-	_, err := c.convertMetric(metric, pcommon.NewMap())
+	_, err := c.convertMetric(metric, pcommon.NewMap(), scope)
 	require.Equal(t, errUnknownMetricType, err)
 
 	ch := make(chan prometheus.Metric, 1)
@@ -139,7 +148,7 @@ func TestConvertMetric(t *testing.T) {
 				c.metricFamilies.Store(k, v)
 			}
 
-			_, err := c.convertMetric(metric, pcommon.NewMap())
+			_, err := c.convertMetric(metric, pcommon.NewMap(), pcommon.NewInstrumentationScope())
 			if tt.err {
 				require.Error(t, err)
 				return
@@ -226,7 +235,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	pbMetric, _ := c.convertDoubleHistogram(metric, pMap)
+	pbMetric, _ := c.convertDoubleHistogram(metric, pMap, pcommon.NewInstrumentationScope())
 	m := io_prometheus_client.Metric{}
 	err := pbMetric.Write(&m)
 	if err != nil {
@@ -267,7 +276,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	promMetric, _ := c.convertSum(metric, pMap)
+	promMetric, _ := c.convertSum(metric, pMap, pcommon.NewInstrumentationScope())
 	outMetric := io_prometheus_client.Metric{}
 	err := promMetric.Write(&outMetric)
 	if err != nil {
@@ -312,11 +321,13 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	loggerCore := errorCheckCore{}
+	scope := pcommon.NewInstrumentationScope()
 	c := collector{
 		namespace: "test_space",
 		accumulator: &mockAccumulator{
-			[]pmetric.Metric{metric},
-			pcommon.NewMap(),
+			metrics:            []pmetric.Metric{metric},
+			resourceAttributes: pcommon.NewMap(),
+			scopes:             []pcommon.InstrumentationScope{scope},
 		},
 		sendTimestamps: false,
 		logger:         zap.New(&loggerCore),
@@ -520,11 +531,16 @@ func TestCollectMetrics(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("test_scope")
+				scope.SetVersion("1.0.0")
+				scope.Attributes().PutStr("test_label", "test_value")
 				c := collector{
 					namespace: "test_space",
 					accumulator: &mockAccumulator{
 						[]pmetric.Metric{metric},
 						rAttrs,
+						[]pcommon.InstrumentationScope{scope},
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
@@ -553,12 +569,12 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,job,instance}`)
+					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,otel_scope_test_label,otel_scope_name,otel_scope_version,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
 
-					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "job": "prod/testapp", "instance": "localhost:9090"}
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "otel_scope_test_label": "test_value", "otel_scope_name": "test_scope", "otel_scope_version": "1.0.0", "job": "prod/testapp", "instance": "localhost:9090"}
 					for _, l := range pbMetric.Label {
 						require.Equal(t, labelsKeys[*l.Name], *l.Value)
 					}
@@ -644,10 +660,15 @@ func TestAccumulateHistograms(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("test_scope")
+				scope.SetVersion("1.0.0")
+				scope.Attributes().PutStr("test_label", "test_value")
 				c := collector{
 					accumulator: &mockAccumulator{
-						[]pmetric.Metric{metric},
-						pcommon.NewMap(),
+						metrics:            []pmetric.Metric{metric},
+						resourceAttributes: pcommon.NewMap(),
+						scopes:             []pcommon.InstrumentationScope{scope},
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
@@ -669,7 +690,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
 
-					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "otel_scope_test_label": "test_value", "otel_scope_name": "test_scope", "otel_scope_version": "1.0.0"}
 					for _, l := range pbMetric.Label {
 						require.Equal(t, labelsKeys[*l.Name], *l.Value)
 					}
@@ -754,10 +775,15 @@ func TestAccumulateSummary(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("test_scope")
+				scope.SetVersion("1.0.0")
+				scope.Attributes().PutStr("test_label", "test_value")
 				c := collector{
 					accumulator: &mockAccumulator{
-						[]pmetric.Metric{metric},
-						pcommon.NewMap(),
+						metrics:            []pmetric.Metric{metric},
+						resourceAttributes: pcommon.NewMap(),
+						scopes:             []pcommon.InstrumentationScope{scope},
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
@@ -779,7 +805,7 @@ func TestAccumulateSummary(t *testing.T) {
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
 
-					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "otel_scope_test_label": "test_value", "otel_scope_name": "test_scope", "otel_scope_version": "1.0.0"}
 					for _, l := range pbMetric.Label {
 						require.Equal(t, labelsKeys[*l.Name], *l.Value)
 					}

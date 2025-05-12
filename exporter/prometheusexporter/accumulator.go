@@ -35,7 +35,7 @@ type accumulator interface {
 	Accumulate(resourceMetrics pmetric.ResourceMetrics) (processed int)
 	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
 	// The number or metrics and attributes returned will be the same.
-	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map)
+	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopes []pcommon.InstrumentationScope)
 }
 
 // LastValueAccumulator keeps last value for accumulated metrics
@@ -102,7 +102,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcomm
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
+		signature := timeseriesSignature(il, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -131,7 +131,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
+		signature := timeseriesSignature(il, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -177,7 +177,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
+		signature := timeseriesSignature(il, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -229,7 +229,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
+		signature := timeseriesSignature(il, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -291,11 +291,9 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 }
 
 // Collect returns a slice with relevant aggregated metrics and their resource attributes.
-func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
+func (a *lastValueAccumulator) Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopes []pcommon.InstrumentationScope) {
 	a.logger.Debug("Accumulator collect called")
 
-	var metrics []pmetric.Metric
-	var resourceAttrs []pcommon.Map
 	expirationTime := time.Now().Add(-a.metricExpiration)
 
 	a.registeredMetrics.Range(func(key, value any) bool {
@@ -308,18 +306,26 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 
 		metrics = append(metrics, v.value)
 		resourceAttrs = append(resourceAttrs, v.resourceAttrs)
+		scopes = append(scopes, v.scope)
 		return true
 	})
 
-	return metrics, resourceAttrs
+	return metrics, resourceAttrs, scopes
 }
 
-func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
+func timeseriesSignature(ilm pcommon.InstrumentationScope, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
 	var b strings.Builder
 	b.WriteString(metric.Type().String())
-	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
-	attrs := make([]string, 0, attributes.Len())
+	b.WriteString("*" + ilm.Name())
+	b.WriteString("*" + ilm.Version())
+	attrs := make([]string, 0, ilm.Attributes().Len())
+	for k, v := range ilm.Attributes().All() {
+		attrs = append(attrs, k+"*"+v.AsString())
+	}
+	sort.Strings(attrs)
+	b.WriteString("*" + strings.Join(attrs, "*"))
+	attrs = make([]string, 0, attributes.Len())
 	for k, v := range attributes.All() {
 		attrs = append(attrs, k+"*"+v.AsString())
 	}
