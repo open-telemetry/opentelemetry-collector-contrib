@@ -23,7 +23,6 @@ var (
 // attributes with the prefix `gcp.<monitored resource type>.`.
 func CustomLoggingMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.MonitoredResource {
 	return customMonitoredResourceMapping(r, collector.DefaultConfig().LogConfig.MapMonitoredResource)
-
 }
 
 // CustomMetricMonitoredResourceMapping allows mapping from OTel resources to
