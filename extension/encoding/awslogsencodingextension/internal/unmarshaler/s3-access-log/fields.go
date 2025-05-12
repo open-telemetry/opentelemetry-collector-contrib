@@ -4,7 +4,7 @@
 package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (
@@ -53,26 +53,26 @@ const (
 // a comment in front of each attribute to help the reader navigate the mapping.
 // See available fields: https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
 var attributeNames = [...]string{
-	fieldIndexSourceAddress:    semconv.AttributeSourceAddress,          // remote IP
-	fieldIndexRequester:        semconv.AttributeUserID,                 // requester
-	fieldIndexRequestID:        "aws.request_id",                        // request ID
-	fieldIndexOperation:        semconv.AttributeRPCMethod,              // operation
-	fieldIndexS3Key:            semconv.AttributeAWSS3Key,               // key
-	fieldIndexHTTPStatus:       semconv.AttributeHTTPResponseStatusCode, // HTTP status
-	fieldIndexErrorCode:        semconv.AttributeErrorType,              // error code
-	fieldIndexBytesSent:        semconv.AttributeHTTPResponseBodySize,   // bytes sent
-	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                // object size
-	fieldIndexTotalTime:        duration,                                // total time
-	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,            // turn around time
-	fieldIndexReferer:          "http.request.header.referer",           // referer
-	fieldIndexUserAgent:        semconv.AttributeUserAgentOriginal,      // user agent
-	fieldIndexVersionID:        "aws.s3.version_id",                     // version ID
-	fieldIndexHostID:           "aws.extended_request_id",               // host ID
-	fieldIndexSignatureVersion: "aws.signature.version",                 // signature version
-	fieldIndexTLSCipher:        semconv.AttributeTLSCipher,              // cipher suite
-	fieldIndexAuthType:         "aws.s3.auth_type",                      // authentication type
-	fieldIndexHostHeader:       "http.request.header.host",              // host header
-	fieldIndexTLSVersion:       semconv.AttributeTLSProtocolVersion,     // TLS version
-	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",               // access point ARN
-	fieldIndexACLRequired:      attributeAWSS3AclRequired,               // acl required
+	fieldIndexSourceAddress:    string(semconv.SourceAddressKey),          // remote IP
+	fieldIndexRequester:        string(semconv.UserIDKey),                 // requester
+	fieldIndexRequestID:        "aws.request_id",                          // request ID
+	fieldIndexOperation:        string(semconv.RPCMethodKey),              // operation
+	fieldIndexS3Key:            string(semconv.AWSS3KeyKey),               // key
+	fieldIndexHTTPStatus:       string(semconv.HTTPResponseStatusCodeKey), // HTTP status
+	fieldIndexErrorCode:        string(semconv.ErrorTypeKey),              // error code
+	fieldIndexBytesSent:        string(semconv.HTTPResponseBodySizeKey),   // bytes sent
+	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                  // object size
+	fieldIndexTotalTime:        duration,                                  // total time
+	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,              // turn around time
+	fieldIndexReferer:          "http.request.header.referer",             // referer
+	fieldIndexUserAgent:        string(semconv.UserAgentOriginalKey),      // user agent
+	fieldIndexVersionID:        "aws.s3.version_id",                       // version ID
+	fieldIndexHostID:           "aws.extended_request_id",                 // host ID
+	fieldIndexSignatureVersion: "aws.signature.version",                   // signature version
+	fieldIndexTLSCipher:        string(semconv.TLSCipherKey),              // cipher suite
+	fieldIndexAuthType:         "aws.s3.auth_type",                        // authentication type
+	fieldIndexHostHeader:       "http.request.header.host",                // host header
+	fieldIndexTLSVersion:       string(semconv.TLSProtocolVersionKey),     // TLS version
+	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",                 // access point ARN
+	fieldIndexACLRequired:      attributeAWSS3AclRequired,                 // acl required
 }

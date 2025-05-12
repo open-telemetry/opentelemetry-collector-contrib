@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -59,7 +59,7 @@ func TestNamespaceMetadata(t *testing.T) {
 
 	require.NotNil(t, meta)
 	require.Contains(t, meta, experimentalmetricmetadata.ResourceID("test-namespace-uid"))
-	require.Equal(t, "test-namespace", meta[experimentalmetricmetadata.ResourceID("test-namespace-uid")].Metadata[conventions.AttributeK8SNamespaceName])
+	require.Equal(t, "test-namespace", meta[experimentalmetricmetadata.ResourceID("test-namespace-uid")].Metadata[string(conventions.K8SNamespaceNameKey)])
 	require.Equal(t, "active", meta[experimentalmetricmetadata.ResourceID("test-namespace-uid")].Metadata["k8s.namespace.phase"])
 	require.Equal(t, ns.CreationTimestamp.Format(time.RFC3339), meta[experimentalmetricmetadata.ResourceID("test-namespace-uid")].Metadata["k8s.namespace.creation_timestamp"])
 }

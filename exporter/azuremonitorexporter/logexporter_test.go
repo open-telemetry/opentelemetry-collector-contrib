@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -175,9 +175,9 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
 	resourceAttributes := resource.Attributes().AsRaw()
-	expectedCloudRole := resourceAttributes[conventions.AttributeServiceNamespace].(string) + "." + resourceAttributes[conventions.AttributeServiceName].(string)
+	expectedCloudRole := resourceAttributes[string(conventions.ServiceNamespaceKey)].(string) + "." + resourceAttributes[string(conventions.ServiceNameKey)].(string)
 	require.Equal(t, expectedCloudRole, envelope.Tags[aiCloudRoleConvention])
-	expectedCloudRoleInstance := resourceAttributes[conventions.AttributeServiceInstanceID]
+	expectedCloudRoleInstance := resourceAttributes[string(conventions.ServiceInstanceIDKey)]
 	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
 }
 
@@ -200,9 +200,9 @@ func getTestLogs() plog.Logs {
 	// add the resource
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
-	resource.Attributes().PutStr(conventions.AttributeServiceName, defaultServiceName)
-	resource.Attributes().PutStr(conventions.AttributeServiceNamespace, defaultServiceNamespace)
-	resource.Attributes().PutStr(conventions.AttributeServiceInstanceID, defaultServiceInstance)
+	resource.Attributes().PutStr(string(conventions.ServiceNameKey), defaultServiceName)
+	resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), defaultServiceNamespace)
+	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), defaultServiceInstance)
 
 	// add the scope
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -346,4 +346,92 @@ func TestSetAttributesAsProperties(t *testing.T) {
 	assert.Equal(t, "123", properties["int_key"])
 	assert.Equal(t, "4.56", properties["double_key"])
 	assert.Equal(t, "true", properties["bool_key"])
+}
+
+func TestHandleExceptionDataWithDetails(t *testing.T) {
+	logger := zap.NewNop()
+	config := &Config{}
+	packer := newLogPacker(logger, config)
+
+	tests := []struct {
+		name             string
+		severityNum      plog.SeverityNumber
+		severityText     string
+		exceptionType    string
+		exceptionMessage string
+		stackTrace       string
+		resourceAttrs    map[string]any
+	}{
+		{
+			name:             "Full exception details",
+			severityNum:      plog.SeverityNumberError,
+			severityText:     "RuntimeError",
+			exceptionType:    "TypeError",
+			exceptionMessage: "Cannot read property 'undefined'",
+			stackTrace:       "at Object.method (/path/file.js:10)\nat Object.method2 (/path/file2.js:20)",
+			resourceAttrs: map[string]any{
+				string(conventions.ServiceNameKey): "testService",
+				"custom.attr":                      "value",
+			},
+		},
+		{
+			name:             "Minimal exception details",
+			severityNum:      plog.SeverityNumberFatal,
+			severityText:     "FatalError",
+			exceptionType:    "SystemError",
+			exceptionMessage: "System crash",
+			resourceAttrs:    map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envelope := contracts.NewEnvelope()
+			envelope.Tags = make(map[string]string)
+			data := contracts.NewData()
+
+			logRecord := plog.NewLogRecord()
+			logRecord.SetSeverityNumber(tt.severityNum)
+			logRecord.SetSeverityText(tt.severityText)
+
+			attrs := logRecord.Attributes()
+			attrs.PutStr(string(conventions.ExceptionTypeKey), tt.exceptionType)
+			attrs.PutStr(string(conventions.ExceptionMessageKey), tt.exceptionMessage)
+			if tt.stackTrace != "" {
+				attrs.PutStr(string(conventions.ExceptionStacktraceKey), tt.stackTrace)
+			}
+
+			resource := pcommon.NewResource()
+			for k, v := range tt.resourceAttrs {
+				if str, ok := v.(string); ok {
+					resource.Attributes().PutStr(k, str)
+				}
+			}
+
+			scope := pcommon.NewInstrumentationScope()
+
+			packer.handleExceptionData(envelope, data, logRecord, resource, scope)
+
+			exceptionData := data.BaseData.(*contracts.ExceptionData)
+			assert.Equal(t, tt.severityText, exceptionData.ProblemId)
+			assert.NotEmpty(t, exceptionData.Properties)
+
+			require.Len(t, exceptionData.Exceptions, 1)
+			exception := exceptionData.Exceptions[0]
+			assert.Equal(t, tt.exceptionType, exception.TypeName)
+			assert.Equal(t, tt.exceptionMessage, exception.Message)
+
+			if tt.stackTrace != "" {
+				assert.Equal(t, tt.stackTrace, exception.Stack)
+				assert.True(t, exception.HasFullStack)
+			}
+
+			// Resource attributes should be copied to properties
+			for k, v := range tt.resourceAttrs {
+				if str, ok := v.(string); ok {
+					assert.Equal(t, str, exceptionData.Properties[k])
+				}
+			}
+		})
+	}
 }

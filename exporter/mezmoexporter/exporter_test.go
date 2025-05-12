@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -41,9 +41,9 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("10byteslog")
-		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr(string(conventions.ServiceNameKey), "myapp")
 		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}

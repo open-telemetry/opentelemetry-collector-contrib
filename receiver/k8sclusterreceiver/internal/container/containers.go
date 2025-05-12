@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -138,7 +138,7 @@ func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger)
 
 	return &metadata.KubernetesMetadata{
 		EntityType:    "container",
-		ResourceIDKey: conventions.AttributeContainerID,
+		ResourceIDKey: string(conventions.ContainerIDKey),
 		ResourceID:    metadataPkg.ResourceID(utils.StripContainerID(cs.ContainerID)),
 		Metadata:      mdata,
 	}

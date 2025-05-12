@@ -17,7 +17,9 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	collectorconventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions112 "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -79,15 +81,15 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (ptrace.Tra
 
 var nonSpanAttributes = func() map[string]struct{} {
 	attrs := make(map[string]struct{})
-	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
+	for _, key := range collectorconventions.GetResourceSemanticConventionAttributeNames() {
 		attrs[key] = struct{}{}
 	}
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
-	attrs[conventions.OtelLibraryName] = struct{}{}
-	attrs[conventions.OtelLibraryVersion] = struct{}{}
+	attrs[string(conventions.OtelLibraryNameKey)] = struct{}{}
+	attrs[string(conventions.OtelLibraryVersionKey)] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
 	attrs[occonventions.AttributeExporterVersion] = struct{}{}
-	attrs[conventions.AttributeProcessPID] = struct{}{}
+	attrs[string(conventions.ProcessPIDKey)] = struct{}{}
 	attrs[occonventions.AttributeResourceType] = struct{}{}
 	return attrs
 }()
@@ -145,12 +147,12 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 }
 
 func populateSpanStatus(tags map[string]string, status ptrace.Status) {
-	if value, ok := tags[conventions.OtelStatusCode]; ok {
+	if value, ok := tags[string(conventions.OtelStatusCodeKey)]; ok {
 		status.SetCode(ptrace.StatusCode(statusCodeValue[value]))
-		delete(tags, conventions.OtelStatusCode)
-		if value, ok := tags[conventions.OtelStatusDescription]; ok {
+		delete(tags, string(conventions.OtelStatusCodeKey))
+		if value, ok := tags[string(conventions.OtelStatusDescriptionKey)]; ok {
 			status.SetMessage(value)
-			delete(tags, conventions.OtelStatusDescription)
+			delete(tags, string(conventions.OtelStatusDescriptionKey))
 		}
 	}
 
@@ -299,27 +301,27 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
-			dest.PutStr(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
+			dest.PutStr(string(conventions112.NetHostIPKey), zspan.LocalEndpoint.IPv4.String())
 		}
 		if zspan.LocalEndpoint.IPv6 != nil {
-			dest.PutStr(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
+			dest.PutStr(string(conventions112.NetHostIPKey), zspan.LocalEndpoint.IPv6.String())
 		}
 		if zspan.LocalEndpoint.Port > 0 {
-			dest.PutInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
+			dest.PutInt(string(conventions.NetHostPortKey), int64(zspan.LocalEndpoint.Port))
 		}
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			dest.PutStr(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
+			dest.PutStr(string(conventions.PeerServiceKey), zspan.RemoteEndpoint.ServiceName)
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
-			dest.PutStr(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
+			dest.PutStr(string(conventions112.NetPeerIPKey), zspan.RemoteEndpoint.IPv4.String())
 		}
 		if zspan.RemoteEndpoint.IPv6 != nil {
-			dest.PutStr(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
+			dest.PutStr(string(conventions112.NetPeerIPKey), zspan.RemoteEndpoint.IPv6.String())
 		}
 		if zspan.RemoteEndpoint.Port > 0 {
-			dest.PutInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
+			dest.PutInt(string(conventions.NetPeerPortKey), int64(zspan.RemoteEndpoint.Port))
 		}
 	}
 	return parseErr
@@ -359,20 +361,20 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 
 	if len(tags) == 0 {
-		resource.Attributes().PutStr(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutStr(string(conventions.ServiceNameKey), localServiceName)
 		return
 	}
 
 	snSource := tags[zipkin.TagServiceNameSource]
 	if snSource == "" {
-		resource.Attributes().PutStr(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutStr(string(conventions.ServiceNameKey), localServiceName)
 	} else {
 		resource.Attributes().PutStr(snSource, localServiceName)
 	}
 	delete(tags, zipkin.TagServiceNameSource)
 
 	for key := range nonSpanAttributes {
-		if key == conventions.OtelLibraryName || key == conventions.OtelLibraryVersion {
+		if key == string(conventions.OtelLibraryNameKey) || key == string(conventions.OtelLibraryVersionKey) {
 			continue
 		}
 		if value, ok := tags[key]; ok {
@@ -386,13 +388,13 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 	if instrLibName == "" {
 		return
 	}
-	if value, ok := tags[conventions.OtelLibraryName]; ok {
+	if value, ok := tags[string(conventions.OtelLibraryNameKey)]; ok {
 		library.SetName(value)
-		delete(tags, conventions.OtelLibraryName)
+		delete(tags, string(conventions.OtelLibraryNameKey))
 	}
-	if value, ok := tags[conventions.OtelLibraryVersion]; ok {
+	if value, ok := tags[string(conventions.OtelLibraryVersionKey)]; ok {
 		library.SetVersion(value)
-		delete(tags, conventions.OtelLibraryVersion)
+		delete(tags, string(conventions.OtelLibraryVersionKey))
 	}
 }
 
@@ -415,7 +417,7 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || len(zspan.Tags) == 0 {
 		return ""
 	}
-	return zspan.Tags[conventions.OtelLibraryName]
+	return zspan.Tags[string(conventions.OtelLibraryNameKey)]
 }
 
 func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest ptrace.Span, destAttrs pcommon.Map) {
