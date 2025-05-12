@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -217,10 +217,10 @@ func testTransactionAppendMultipleResources(t *testing.T, enableNativeHistograms
 
 	for _, expectedResource := range expectedResources {
 		foundResource := false
-		expectedServiceName, _ := expectedResource.Attributes().Get(conventions.AttributeServiceName)
+		expectedServiceName, _ := expectedResource.Attributes().Get(string(conventions.ServiceNameKey))
 		for i := 0; i < mds[0].ResourceMetrics().Len(); i++ {
 			res := mds[0].ResourceMetrics().At(i).Resource()
-			if serviceName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
+			if serviceName, ok := res.Attributes().Get(string(conventions.ServiceNameKey)); ok {
 				if serviceName.AsString() == expectedServiceName.AsString() {
 					foundResource = true
 					require.Equal(t, expectedResource, res)
@@ -669,18 +669,20 @@ func TestAppendCTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
 
+	var atMs, ctMs int64
+	atMs, ctMs = 200, 100
 	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
-	), 200, 100)
+	), atMs, ctMs)
 	assert.NoError(t, err)
 
 	_, err = tr.Append(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
-	), 200, 100)
+	), atMs, 100)
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
@@ -692,7 +694,7 @@ func TestAppendCTZeroSample(t *testing.T) {
 	require.Equal(t, 1, mds[0].MetricCount())
 	require.Equal(
 		t,
-		pcommon.Timestamp(100000000000),
+		pcommon.NewTimestampFromTime(time.UnixMilli(ctMs)),
 		mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
 	)
 }
@@ -701,18 +703,20 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
+	var atMs, ctMs int64
+	atMs, ctMs = 200, 100
 	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
-	), 200, 100, nil, nil)
+	), atMs, ctMs, nil, nil)
 	assert.NoError(t, err)
 
 	_, err = tr.AppendHistogram(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
-	), 200, tsdbutil.GenerateTestHistogram(1), tsdbutil.GenerateTestFloatHistogram(1))
+	), atMs, tsdbutil.GenerateTestHistogram(1), tsdbutil.GenerateTestFloatHistogram(1))
 
 	assert.NoError(t, err)
 
@@ -725,7 +729,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 	require.Equal(t, 1, mds[0].MetricCount())
 	require.Equal(
 		t,
-		pcommon.Timestamp(100000000000),
+		pcommon.NewTimestampFromTime(time.UnixMilli(ctMs)),
 		mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).StartTimestamp(),
 	)
 }

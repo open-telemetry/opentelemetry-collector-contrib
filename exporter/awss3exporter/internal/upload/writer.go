@@ -17,10 +17,14 @@ import (
 )
 
 type Manager interface {
-	Upload(ctx context.Context, data []byte) error
+	Upload(ctx context.Context, data []byte, opts *UploadOptions) error
 }
 
 type ManagerOpt func(Manager)
+
+type UploadOptions struct {
+	OverridePrefix string
+}
 
 type s3manager struct {
 	bucket       string
@@ -48,7 +52,7 @@ func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Clien
 	return manager
 }
 
-func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
+func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOptions) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -65,9 +69,14 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
 
 	now := clock.Now(ctx)
 
+	overridePrefix := ""
+	if opts != nil {
+		overridePrefix = opts.OverridePrefix
+	}
+
 	_, err = sw.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:          aws.String(sw.bucket),
-		Key:             aws.String(sw.builder.Build(now)),
+		Key:             aws.String(sw.builder.Build(now, overridePrefix)),
 		Body:            content,
 		ContentEncoding: aws.String(encoding),
 		StorageClass:    sw.storageClass,

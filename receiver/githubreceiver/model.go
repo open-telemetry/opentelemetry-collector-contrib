@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-github/v71/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 // model.go contains specific attributes from the 1.28 and 1.29 releases of
@@ -94,12 +94,13 @@ const (
 	AttributeCICDPipelineTaskRunSenderLogin     = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
 	AttributeCICDPipelineFilePath               = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
 	AttributeCICDPipelinePreviousAttemptURLFull = "cicd.pipeline.run.previous_attempt.url.full"
-	AttributeCICDPipelineWorkerID               = "cicd.pipeline.worker.id"         // GitHub's Runner ID
-	AttributeCICDPipelineWorkerGroupID          = "cicd.pipeline.worker.group.id"   // GitHub's Runner Group ID
-	AttributeCICDPipelineWorkerName             = "cicd.pipeline.worker.name"       // GitHub's Runner Name
-	AttributeCICDPipelineWorkerGroupName        = "cicd.pipeline.worker.group.name" // GitHub's Runner Group Name
-	AttributeCICDPipelineWorkerNodeID           = "cicd.pipeline.worker.node.id"    // GitHub's Runner Node ID
-	AttributeCICDPipelineWorkerLabels           = "cicd.pipeline.worker.labels"     // GitHub's Runner Labels
+	AttributeCICDPipelineWorkerID               = "cicd.pipeline.worker.id"          // GitHub's Runner ID
+	AttributeCICDPipelineWorkerGroupID          = "cicd.pipeline.worker.group.id"    // GitHub's Runner Group ID
+	AttributeCICDPipelineWorkerName             = "cicd.pipeline.worker.name"        // GitHub's Runner Name
+	AttributeCICDPipelineWorkerGroupName        = "cicd.pipeline.worker.group.name"  // GitHub's Runner Group Name
+	AttributeCICDPipelineWorkerNodeID           = "cicd.pipeline.worker.node.id"     // GitHub's Runner Node ID
+	AttributeCICDPipelineWorkerLabels           = "cicd.pipeline.worker.labels"      // GitHub's Runner Labels
+	AttributeCICDPipelineRunQueueDuration       = "cicd.pipeline.run.queue.duration" // GitHub's Queue Duration
 
 	// The following attributes are exclusive to GitHub but not listed under
 	// Vendor Extensions within Semantic Conventions yet.
@@ -144,7 +145,7 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 		err = errors.New("failed to get service.name")
 	}
 
-	attrs.PutStr(semconv.AttributeServiceName, svc)
+	attrs.PutStr(string(semconv.ServiceNameKey), svc)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -156,10 +157,10 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 	attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.GetWorkflowRun().GetHeadCommit().GetCommitter().GetEmail())
 
 	// CICD Attributes
-	attrs.PutStr(semconv.AttributeCicdPipelineName, e.GetWorkflowRun().GetName())
+	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.GetWorkflowRun().GetName())
 	attrs.PutStr(AttributeCICDPipelineRunSenderLogin, e.GetSender().GetLogin())
 	attrs.PutStr(AttributeCICDPipelineRunURLFull, e.GetWorkflowRun().GetHTMLURL())
-	attrs.PutInt(semconv.AttributeCicdPipelineRunID, e.GetWorkflowRun().GetID())
+	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), e.GetWorkflowRun().GetID())
 	switch status := strings.ToLower(e.GetWorkflowRun().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusSuccess)
@@ -217,7 +218,7 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 		err = errors.New("failed to get service.name")
 	}
 
-	attrs.PutStr(semconv.AttributeServiceName, svc)
+	attrs.PutStr(string(semconv.ServiceNameKey), svc)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -243,10 +244,10 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 	}
 
 	// CICD Attributes
-	attrs.PutStr(semconv.AttributeCicdPipelineName, e.GetWorkflowJob().GetName())
+	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.GetWorkflowJob().GetName())
 	attrs.PutStr(AttributeCICDPipelineTaskRunSenderLogin, e.GetSender().GetLogin())
-	attrs.PutStr(semconv.AttributeCicdPipelineTaskRunURLFull, e.GetWorkflowJob().GetHTMLURL())
-	attrs.PutInt(semconv.AttributeCicdPipelineTaskRunID, e.GetWorkflowJob().GetID())
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), e.GetWorkflowJob().GetHTMLURL())
+	attrs.PutInt(string(semconv.CICDPipelineTaskRunIDKey), e.GetWorkflowJob().GetID())
 	switch status := strings.ToLower(e.GetWorkflowJob().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusSuccess)

@@ -46,7 +46,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v0.125.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
@@ -61,7 +61,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
@@ -135,7 +135,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/extension v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.125.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect

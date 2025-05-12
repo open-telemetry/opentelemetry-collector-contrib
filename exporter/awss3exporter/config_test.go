@@ -135,7 +135,7 @@ func TestConfigS3ACL(t *testing.T) {
 	factories.Exporters[factory.Type()] = factory
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories)
+		filepath.Join("testdata", "config-s3_acl.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -152,7 +152,8 @@ func TestConfigS3ACL(t *testing.T) {
 			S3Prefix:          "bar",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
-			StorageClass:      "STANDARD_IA",
+			StorageClass:      "STANDARD",
+			ACL:               "bucket-owner-read",
 		},
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
@@ -405,6 +406,43 @@ func TestCompressionName(t *testing.T) {
 			StorageClass:      "STANDARD",
 		},
 		MarshalerName: "otlp_proto",
+	}, e,
+	)
+}
+
+func TestResourceAttrsToS3(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_resource-attrs-to-s3.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+
+	assert.Equal(t, &Config{
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD",
+		},
+		MarshalerName: "otlp_json",
+		ResourceAttrsToS3: ResourceAttrsToS3{
+			S3Prefix: "com.awss3.prefix",
+		},
 	}, e,
 	)
 }
