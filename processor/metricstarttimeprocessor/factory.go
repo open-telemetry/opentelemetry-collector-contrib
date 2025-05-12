@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/offset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
@@ -41,6 +42,9 @@ func createMetricsProcessor(
 		adjustMetrics = adjuster.AdjustMetrics
 	case subtractinitial.Type:
 		adjuster := subtractinitial.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
+		adjustMetrics = adjuster.AdjustMetrics
+	case offset.Type:
+		adjuster := offset.NewAdjuster(set.TelemetrySettings, rCfg.Offset)
 		adjustMetrics = adjuster.AdjustMetrics
 	}
 

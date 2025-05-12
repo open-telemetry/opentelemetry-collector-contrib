@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/offset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
@@ -55,6 +56,22 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_strategy"),
 			errorMessage: "\"bad\" is not a valid strategy",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "offset-default"),
+			expected: &Config{
+				Strategy:   offset.Type,
+				Offset:     60 * time.Second,
+				GCInterval: 10 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "offset-manual"),
+			expected: &Config{
+				Strategy:   offset.Type,
+				Offset:     15 * time.Second,
+				GCInterval: 10 * time.Minute,
+			},
 		},
 	}
 
