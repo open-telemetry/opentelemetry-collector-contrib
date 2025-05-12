@@ -132,9 +132,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 var _ component.Config = (*Config)(nil)
 
-func (c *Config) ValidateTraceStatements(additionalSpanFuncs ...ottl.Factory[ottlspan.TransformContext]) error {
+func (c *Config) validateTraceStatements(additionalSpanFuncs ...ottl.Factory[ottlspan.TransformContext]) error {
 	var errors error
-	pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(additionalSpanFuncs)), common.WithSpanEventParser(traces.SpanEventFunctions()))
+	pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(additionalSpanFuncs...)), common.WithSpanEventParser(traces.SpanEventFunctions()))
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (c *Config) ValidateTraceStatements(additionalSpanFuncs ...ottl.Factory[ott
 	return errors
 }
 
-func (c *Config) ValidateLogStatements(additionalLogFuncs ...ottl.Factory[ottllog.TransformContext]) error {
+func (c *Config) validateLogStatements(additionalLogFuncs ...ottl.Factory[ottllog.TransformContext]) error {
 	var errors error
 	pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(additionalLogFuncs...)))
 	if err != nil {
@@ -162,7 +162,7 @@ func (c *Config) ValidateLogStatements(additionalLogFuncs ...ottl.Factory[ottllo
 	return errors
 }
 
-func (c *Config) ValidateMetricStatements(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) error {
+func (c *Config) validateMetricStatements(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) error {
 	var errors error
 	pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions(additionalMetricFuncs...)), common.WithDataPointParser(metrics.DataPointFunctions()))
 	if err != nil {
@@ -181,21 +181,52 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		err := c.ValidateTraceStatements()
+		err := c.validateTraceStatements()
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
 	}
 
 	if len(c.MetricStatements) > 0 {
-		err := c.ValidateMetricStatements()
+		err := c.validateMetricStatements()
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
 	}
 
 	if len(c.LogStatements) > 0 {
-		err := c.ValidateLogStatements()
+		err := c.validateLogStatements()
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
+	if c.FlattenData && !flatLogsFeatureGate.IsEnabled() {
+		errors = multierr.Append(errors, errFlatLogsGateDisabled)
+	}
+
+	return errors
+}
+
+func (c *Config) ValidateWithAdditionalFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformContext], logFunctions []ottl.Factory[ottllog.TransformContext], spanFunctions []ottl.Factory[ottlspan.TransformContext]) error {
+	var errors error
+
+	if len(c.TraceStatements) > 0 {
+		err := c.validateTraceStatements(spanFunctions...)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
+	if len(c.MetricStatements) > 0 {
+		err := c.validateMetricStatements(metricFunctions...)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
+	if len(c.LogStatements) > 0 {
+		err := c.validateLogStatements(logFunctions...)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
