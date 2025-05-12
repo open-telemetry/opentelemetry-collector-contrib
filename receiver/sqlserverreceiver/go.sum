@@ -10,8 +10,8 @@ github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.0.0 h1:D3occ
 github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.0.0/go.mod h1:bTSOgj05NGRuHHhQwAdPnYr9TOdNmKlZTgGLL6nyAdI=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 h1:XHOnouVk1mxXfQidrMEnLlPk9UMeRtyBTnEFtxkV0kU=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.3 h1:hgf4Yp2MRnNnlstRh+He2pixCOwLKGQmrWLRHwM7LGI=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.3/go.mod h1:izbemZjqzBn9upkZj8SyT9igSGPMALaQYgswJ0408vY=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.65.1 h1:WMSComl8tXteUjDnQKZzONEOnaVloOPbZWjjGv+kFNQ=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.65.1/go.mod h1:aZhd/54tdkoestFE6bqGn+u2Z3eEnKnWwy4xY/bzSW4=
 github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEUqFvRDw=
 github.com/DataDog/datadog-go/v5 v5.6.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.3 h1:Kl2T6QVndMEZqQSY8rkoltYP+LVNaA54N+EwAMc9N5w=

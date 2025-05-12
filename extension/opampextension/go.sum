@@ -219,8 +219,6 @@ go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250509190408-4c
 go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:CoSPPn3kwVcAhdLOK5NVjMCVVjmCsFpBXU9h9I6Kdh8=
 go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250509190408-4ca0f1829e0a h1:SNEloHK32c3b4F/mD9wofg2lOg3nvaLtFjwR1LceCRI=
 go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:5Kl/mtf6oIy+rizFcElkUpp3LEVTJnjAyos6z+FVsGc=
-go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a h1:/HizykVN2OLqUcD9Vu/I6eqmkZMR0FYUiGx487Z/6v8=
-go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:te6VQ4zZJO5Lp8dM2XIhDxDiL45mwX0YAQQWRQ0Qr9U=
 go.opentelemetry.io/collector/service v0.125.1-0.20250509190408-4ca0f1829e0a h1:F6BRzO5asuKPgY/p/+ktU1TZoKaDMasmrCr5yGkbDnI=
 go.opentelemetry.io/collector/service v0.125.1-0.20250509190408-4ca0f1829e0a/go.mod h1:JHn122wvMFqsYrXIBoTt3ind9+7yBFoD8xQFT8FweGY=
 go.opentelemetry.io/collector/service/hostcapabilities v0.125.1-0.20250509190408-4ca0f1829e0a h1:5tsfHbGxBOSWk1zANjTPnJIGoNruXXqvgODuUh5pjdg=

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/datad
 go 1.23.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/serializer v0.64.3
+	github.com/DataDog/datadog-agent/pkg/serializer v0.65.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.125.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.31.1-0.20250509190408-4ca0f1829e0a
@@ -18,10 +18,10 @@ require (
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.64.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.65.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.65.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.65.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.0 // indirect
@@ -92,7 +92,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
