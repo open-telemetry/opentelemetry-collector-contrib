@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -169,9 +169,9 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.S
 		var exceptionMessage, exceptionType string
 		for k, v := range event.Attributes().All() {
 			switch k {
-			case conventions.AttributeExceptionMessage:
+			case string(conventions.ExceptionMessageKey):
 				exceptionMessage = v.Str()
-			case conventions.AttributeExceptionType:
+			case string(conventions.ExceptionTypeKey):
 				exceptionType = v.Str()
 			}
 		}
@@ -303,7 +303,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 	// on what is most likely and what is most useful (ex. http is prioritized over FaaS)
 
 	// If http.method exists, this is an http request span.
-	if httpMethod, ok := attrs.Get(conventions.AttributeHTTPMethod); ok {
+	if httpMethod, ok := attrs.Get(string(conventions.HTTPMethodKey)); ok {
 		opBuilder.WriteString("http")
 
 		switch spanKind {
@@ -327,11 +327,11 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 	}
 
 	// If db.type exists then this is a database call span.
-	if _, ok := attrs.Get(conventions.AttributeDBSystem); ok {
+	if _, ok := attrs.Get(string(conventions.DBSystemKey)); ok {
 		opBuilder.WriteString("db")
 
 		// Use DB statement (Ex "SELECT * FROM table") if possible as description.
-		if statement, okInst := attrs.Get(conventions.AttributeDBStatement); okInst {
+		if statement, okInst := attrs.Get(string(conventions.DBStatementKey)); okInst {
 			dBuilder.WriteString(statement.Str())
 		} else {
 			dBuilder.WriteString(name)
@@ -341,7 +341,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 	}
 
 	// If rpc.service exists then this is a rpc call span.
-	if _, ok := attrs.Get(conventions.AttributeRPCService); ok {
+	if _, ok := attrs.Get(string(conventions.RPCServiceKey)); ok {
 		opBuilder.WriteString("rpc")
 
 		return opBuilder.String(), name

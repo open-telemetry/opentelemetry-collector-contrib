@@ -8,52 +8,52 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 )
 
 // See:
 // https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/
 // https://github.com/DataDog/opentelemetry-mapping-go/blob/main/pkg/otlp/attributes/attributes.go
 var datadogKnownResourceAttributes = map[string]string{
-	"env":     semconv.AttributeDeploymentEnvironment,
-	"service": semconv.AttributeServiceName,
-	"version": semconv.AttributeServiceVersion,
+	"env":     string(semconv.DeploymentEnvironmentKey),
+	"service": string(semconv.ServiceNameKey),
+	"version": string(semconv.ServiceVersionKey),
 
 	// Container-related attributes
-	"container_id":   semconv.AttributeContainerID,
-	"container_name": semconv.AttributeContainerName,
-	"image_name":     semconv.AttributeContainerImageName,
-	"image_tag":      semconv.AttributeContainerImageTag,
-	"runtime":        semconv.AttributeContainerRuntime,
+	"container_id":   string(semconv.ContainerIDKey),
+	"container_name": string(semconv.ContainerNameKey),
+	"image_name":     string(semconv.ContainerImageNameKey),
+	"image_tag":      string(semconv.ContainerImageTagKey),
+	"runtime":        string(semconv.ContainerRuntimeKey),
 
 	// Cloud-related attributes
-	"cloud_provider": semconv.AttributeCloudProvider,
-	"region":         semconv.AttributeCloudRegion,
-	"zone":           semconv.AttributeCloudAvailabilityZone,
+	"cloud_provider": string(semconv.CloudProviderKey),
+	"region":         string(semconv.CloudRegionKey),
+	"zone":           string(semconv.CloudAvailabilityZoneKey),
 
 	// ECS-related attributes
-	"task_family":        semconv.AttributeAWSECSTaskFamily,
-	"task_arn":           semconv.AttributeAWSECSTaskARN,
-	"ecs_cluster_name":   semconv.AttributeAWSECSClusterARN,
-	"task_version":       semconv.AttributeAWSECSTaskRevision,
-	"ecs_container_name": semconv.AttributeAWSECSContainerARN,
+	"task_family":        string(semconv.AWSECSTaskFamilyKey),
+	"task_arn":           string(semconv.AWSECSTaskARNKey),
+	"ecs_cluster_name":   string(semconv.AWSECSClusterARNKey),
+	"task_version":       string(semconv.AWSECSTaskRevisionKey),
+	"ecs_container_name": string(semconv.AWSECSContainerARNKey),
 
 	// K8-related attributes
-	"kube_container_name": semconv.AttributeK8SContainerName,
-	"kube_cluster_name":   semconv.AttributeK8SClusterName,
-	"kube_deployment":     semconv.AttributeK8SDeploymentName,
-	"kube_replica_set":    semconv.AttributeK8SReplicaSetName,
-	"kube_stateful_set":   semconv.AttributeK8SStatefulSetName,
-	"kube_daemon_set":     semconv.AttributeK8SDaemonSetName,
-	"kube_job":            semconv.AttributeK8SJobName,
-	"kube_cronjob":        semconv.AttributeK8SCronJobName,
-	"kube_namespace":      semconv.AttributeK8SNamespaceName,
-	"pod_name":            semconv.AttributeK8SPodName,
+	"kube_container_name": string(semconv.K8SContainerNameKey),
+	"kube_cluster_name":   string(semconv.K8SClusterNameKey),
+	"kube_deployment":     string(semconv.K8SDeploymentNameKey),
+	"kube_replica_set":    string(semconv.K8SReplicaSetNameKey),
+	"kube_stateful_set":   string(semconv.K8SStatefulSetNameKey),
+	"kube_daemon_set":     string(semconv.K8SDaemonSetNameKey),
+	"kube_job":            string(semconv.K8SJobNameKey),
+	"kube_cronjob":        string(semconv.K8SCronJobNameKey),
+	"kube_namespace":      string(semconv.K8SNamespaceNameKey),
+	"pod_name":            string(semconv.K8SPodNameKey),
 
 	// Other
-	"process_id":       semconv.AttributeProcessPID,
-	"error.stacktrace": semconv.AttributeExceptionStacktrace,
-	"error.msg":        semconv.AttributeExceptionMessage,
+	"process_id":       string(semconv.ProcessPIDKey),
+	"error.stacktrace": string(semconv.ExceptionStacktraceKey),
+	"error.msg":        string(semconv.ExceptionMessageKey),
 }
 
 // translateDatadogTagToKeyValuePair translates a Datadog tag to a key value pair
@@ -129,7 +129,7 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	}
 
 	if host != "" {
-		attrs.resource.PutStr(semconv.AttributeHostName, host)
+		attrs.resource.PutStr(string(semconv.HostNameKey), host)
 	}
 
 	var key, val string

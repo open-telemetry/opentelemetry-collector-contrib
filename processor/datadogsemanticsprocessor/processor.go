@@ -13,7 +13,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
@@ -43,7 +43,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 			}
 
 			serviceVersion := ""
-			if serviceVersionAttr, ok := otelres.Attributes().Get(semconv.AttributeServiceVersion); ok {
+			if serviceVersionAttr, ok := otelres.Attributes().Get(string(semconv.ServiceVersionKey)); ok {
 				serviceVersion = serviceVersionAttr.AsString()
 			}
 			if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion); err != nil {
@@ -129,13 +129,13 @@ func status2Error(status ptrace.Status, events ptrace.SpanEventSlice, metaMap ma
 			continue
 		}
 		attrs := e.Attributes()
-		if v, ok := attrs.Get(semconv.AttributeExceptionMessage); ok {
+		if v, ok := attrs.Get(string(semconv.ExceptionMessageKey)); ok {
 			metaMap["error.msg"] = v.AsString()
 		}
-		if v, ok := attrs.Get(semconv.AttributeExceptionType); ok {
+		if v, ok := attrs.Get(string(semconv.ExceptionTypeKey)); ok {
 			metaMap["error.type"] = v.AsString()
 		}
-		if v, ok := attrs.Get(semconv.AttributeExceptionStacktrace); ok {
+		if v, ok := attrs.Get(string(semconv.ExceptionStacktraceKey)); ok {
 			metaMap["error.stack"] = v.AsString()
 		}
 	}
