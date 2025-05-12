@@ -8,13 +8,13 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.36.0
-	go.opentelemetry.io/collector/component v1.30.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/component/componenttest v0.124.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/confmap v1.30.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/extension v1.30.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/extension/extensiontest v0.124.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/extension/xextension v0.124.1-0.20250422165940-c47951a8bf71
+	github.com/testcontainers/testcontainers-go v0.37.0
+	go.opentelemetry.io/collector/component v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/extension/extensiontest v0.125.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/extension/xextension v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	modernc.org/sqlite v1.37.0
@@ -38,6 +38,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -49,7 +50,7 @@ require (
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/magiconair/properties v1.8.9 // indirect
+	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -75,9 +76,9 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250422165940-c47951a8bf71 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.124.1-0.20250422165940-c47951a8bf71 // indirect
-	go.opentelemetry.io/collector/pdata v1.30.1-0.20250422165940-c47951a8bf71 // indirect
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
@@ -104,9 +105,3 @@ require (
 	modernc.org/memory v1.9.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250422165940-c47951a8bf71

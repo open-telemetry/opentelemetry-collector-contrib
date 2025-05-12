@@ -6,7 +6,7 @@ package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetr
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, timestamp pcommon.Timestamp) pmetric.Metrics {

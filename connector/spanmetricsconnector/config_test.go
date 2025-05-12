@@ -53,7 +53,6 @@ func TestLoadConfig(t *testing.T) {
 					{Name: "http.status_code", Default: (*string)(nil)},
 				},
 				Namespace:                DefaultNamespace,
-				DimensionsCacheSize:      1500,
 				ResourceMetricsCacheSize: 1600,
 				MetricsFlushInterval:     30 * time.Second,
 				Exemplars: ExemplarsConfig{
@@ -76,7 +75,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Namespace:                DefaultNamespace,
 				AggregationTemporality:   cumulative,
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
@@ -103,7 +101,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -115,7 +112,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled_with_max_per_datapoint"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -127,7 +123,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "resource_metrics_key_attributes"),
 			expected: &Config{
 				AggregationTemporality:       "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:          defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize:     defaultResourceMetricsCacheSize,
 				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
 				MetricsFlushInterval:         60 * time.Second,
@@ -140,7 +135,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
 				TimestampCacheSize:       &customTimestampCacheSize,
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -151,7 +145,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "default_delta_timestamp_cache_size"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -164,6 +157,22 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_delta_timestamp_cache_size"),
 			errorMessage: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "separate_calls_and_duration_dimensions"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit, Dimensions: []Dimension{{Name: "http.status_code", Default: (*string)(nil)}}},
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+				},
+				CallsDimensions: []Dimension{
+					{Name: "http.url", Default: (*string)(nil)},
+				},
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Namespace:                DefaultNamespace,
+			},
 		},
 	}
 
@@ -298,7 +307,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
@@ -309,18 +317,8 @@ func TestConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid dimensions cache size",
-			config: Config{
-				DimensionsCacheSize:      -1,
-				ResourceMetricsCacheSize: 1000,
-				MetricsFlushInterval:     60 * time.Second,
-			},
-			expectedErr: "invalid cache size: -1, the maximum number of the items in the cache should be positive",
-		},
-		{
 			name: "invalid metrics flush interval",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     -1 * time.Second,
 			},
@@ -329,7 +327,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "invalid metrics expiration",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				MetricsExpiration:        -1 * time.Second,
@@ -339,7 +336,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "invalid delta timestamp cache size",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				AggregationTemporality:   delta,
@@ -350,7 +346,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "invalid aggregation cardinality limit",
 			config: Config{
-				DimensionsCacheSize:         1000,
 				ResourceMetricsCacheSize:    1000,
 				MetricsFlushInterval:        60 * time.Second,
 				AggregationCardinalityLimit: -1,
@@ -360,7 +355,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "both explicit and exponential histogram",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
@@ -377,7 +371,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "duplicate dimension name",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				Dimensions: []Dimension{
@@ -389,7 +382,6 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "events enabled with no dimensions",
 			config: Config{
-				DimensionsCacheSize:      1000,
 				ResourceMetricsCacheSize: 1000,
 				MetricsFlushInterval:     60 * time.Second,
 				Events: EventsConfig{

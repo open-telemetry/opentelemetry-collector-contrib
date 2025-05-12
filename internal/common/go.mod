@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/distribution/reference v0.6.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250422165940-c47951a8bf71
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -24,9 +24,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250422165940-c47951a8bf71

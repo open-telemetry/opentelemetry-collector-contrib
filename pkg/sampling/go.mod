@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.30.1-0.20250422165940-c47951a8bf71
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.uber.org/multierr v1.11.0
 )
 
@@ -21,9 +21,3 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250422165940-c47951a8bf71

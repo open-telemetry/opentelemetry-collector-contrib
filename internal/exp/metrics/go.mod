@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/me
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.125.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.30.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/semconv v0.124.1-0.20250422165940-c47951a8bf71
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/otel v1.34.0
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.124.1-0.20250422165940-c47951a8bf71 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
@@ -35,9 +35,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250422165940-c47951a8bf71
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250422165940-c47951a8bf71

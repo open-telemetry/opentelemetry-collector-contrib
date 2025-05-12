@@ -40,3 +40,11 @@ netflow/sflow:
   sockets: 1
   workers: 1
   queue_size: 0
+
+netflow/raw_logs:
+  scheme: netflow
+  port: 2055
+  sockets: 1
+  workers: 1
+  queue_size: 0
+  send_raw: true

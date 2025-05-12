@@ -3,14 +3,17 @@
 
 module-sets:
   contrib-base:
-    version: v0.124.1
+    version: v0.125.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
+      - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector

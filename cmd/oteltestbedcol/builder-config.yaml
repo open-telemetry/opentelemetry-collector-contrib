@@ -7,64 +7,60 @@ dist:
   module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
-  version: 0.124.1-dev
+  version: 0.125.0-dev
   output_path: ./cmd/oteltestbedcol
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.124.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.124.1
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.125.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.124.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.124.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.124.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.124.1
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.125.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.124.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.124.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.124.1
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.125.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.124.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.124.1
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.124.1
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.125.1-0.20250509190408-4ca0f1829e0a
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.125.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.30.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.30.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.30.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.30.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.30.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.31.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.31.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.31.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.31.1-0.20250509190408-4ca0f1829e0a
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.31.1-0.20250509190408-4ca0f1829e0a
 
 # When using `make genoteltestbedcol`, the `replaces` content is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
-  - go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250422165940-c47951a8bf71
-  - go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250422165940-c47951a8bf71
-  - go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250422165940-c47951a8bf71
-
