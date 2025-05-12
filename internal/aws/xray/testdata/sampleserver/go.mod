@@ -6,6 +6,7 @@ require github.com/aws/aws-xray-sdk-go/v2 v2.0.0
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect

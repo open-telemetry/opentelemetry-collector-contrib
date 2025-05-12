@@ -7,3 +7,5 @@ require (
 	golang.org/x/mod v0.24.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require github.com/ebitengine/purego v0.8.3 // indirect

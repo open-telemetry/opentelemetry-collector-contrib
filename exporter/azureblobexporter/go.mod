@@ -21,6 +21,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
