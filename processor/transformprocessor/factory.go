@@ -13,9 +13,12 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
@@ -26,55 +29,21 @@ import (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 type transformProcessorFactory struct {
-	additionalLogFunctions    []ottl.Factory[ottllog.TransformContext]
-	additionalSpanFunctions   []ottl.Factory[ottlspan.TransformContext]
-	additionalMetricFunctions []ottl.Factory[ottlmetric.TransformContext]
+	ottlprocessor.OttlProcessorFactory
 }
 
 // FactoryOption applies changes to transformProcessorFactory.
 type FactoryOption func(factory *transformProcessorFactory)
 
-// defaultAdditionalMetricFunctions returns an empty slice of ottl function factories.
-func defaultAdditionalMetricFunctions() []ottl.Factory[ottlmetric.TransformContext] {
-	return []ottl.Factory[ottlmetric.TransformContext]{}
-}
-
-// defaultAdditionalLogFunctions returns an empty slice of ottl function factories.
-func defaultAdditionalLogFunctions() []ottl.Factory[ottllog.TransformContext] {
-	return []ottl.Factory[ottllog.TransformContext]{}
-}
-
-// defaultAdditionalSpanFunctions returns an empty slice of ottl function factories.
-func defaultAdditionalSpanFunctions() []ottl.Factory[ottlspan.TransformContext] {
-	return []ottl.Factory[ottlspan.TransformContext]{}
-}
-
-// WithAdditionalMetricFunctions adds ottl metric functions to resulting processor
-func WithAdditionalMetricFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
-	return func(factory *transformProcessorFactory) {
-		factory.additionalMetricFunctions = metricFunctions
-	}
-}
-
-// WithAdditionalLogFunctions adds ottl log functions to resulting processor
-func WithAdditionalLogFunctions(logFunctions []ottl.Factory[ottllog.TransformContext]) FactoryOption {
-	return func(factory *transformProcessorFactory) {
-		factory.additionalLogFunctions = logFunctions
-	}
-}
-
-// WithAdditionalSpanFunctions adds ottl span functions to resulting processor
-func WithAdditionalSpanFunctions(spanFunctions []ottl.Factory[ottlspan.TransformContext]) FactoryOption {
-	return func(factory *transformProcessorFactory) {
-		factory.additionalSpanFunctions = spanFunctions
-	}
-}
-
 func NewFactory(options ...FactoryOption) processor.Factory {
 	f := &transformProcessorFactory{
-		additionalMetricFunctions: defaultAdditionalMetricFunctions(),
-		additionalLogFunctions:    defaultAdditionalLogFunctions(),
-		additionalSpanFunctions:   defaultAdditionalSpanFunctions(),
+		OttlProcessorFactory: ottlprocessor.OttlProcessorFactory{
+			AdditionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
+			AdditionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
+			AdditionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
+			AdditionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
+			AdditionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
+		},
 	}
 	for _, o := range options {
 		o(f)
@@ -82,19 +51,24 @@ func NewFactory(options ...FactoryOption) processor.Factory {
 
 	return processor.NewFactory(
 		metadata.Type,
-		createDefaultConfig,
+		f.createDefaultConfig,
 		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
 		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 	)
 }
 
-func createDefaultConfig() component.Config {
+func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
-		ErrorMode:        ottl.PropagateError,
-		TraceStatements:  []common.ContextStatements{},
-		MetricStatements: []common.ContextStatements{},
-		LogStatements:    []common.ContextStatements{},
+		ErrorMode:                    ottl.PropagateError,
+		TraceStatements:              []common.ContextStatements{},
+		MetricStatements:             []common.ContextStatements{},
+		LogStatements:                []common.ContextStatements{},
+		additionalLogFunctions:       f.OttlProcessorFactory.AdditionalLogFunctions,
+		additionalSpanFunctions:      f.OttlProcessorFactory.AdditionalSpanFunctions,
+		additionalMetricFunctions:    f.OttlProcessorFactory.AdditionalMetricFunctions,
+		additionalSpanEventFunctions: f.OttlProcessorFactory.AdditionalSpanEventFunctions,
+		additionalDataPointFunctions: f.OttlProcessorFactory.AdditionalDataPointFunctions,
 	}
 }
 
@@ -106,7 +80,7 @@ func (f *transformProcessorFactory) createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.additionalLogFunctions)
+	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.AdditionalLogFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -127,7 +101,7 @@ func (f *transformProcessorFactory) createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.additionalSpanFunctions)
+	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.AdditionalSpanFunctions, f.AdditionalSpanEventFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -149,7 +123,7 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
 
-	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.additionalMetricFunctions)
+	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.AdditionalMetricFunctions, f.AdditionalDataPointFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

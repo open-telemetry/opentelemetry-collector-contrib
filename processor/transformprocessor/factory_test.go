@@ -17,6 +17,11 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
@@ -30,10 +35,15 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
-		ErrorMode:        ottl.PropagateError,
-		TraceStatements:  []common.ContextStatements{},
-		MetricStatements: []common.ContextStatements{},
-		LogStatements:    []common.ContextStatements{},
+		ErrorMode:                    ottl.PropagateError,
+		TraceStatements:              []common.ContextStatements{},
+		MetricStatements:             []common.ContextStatements{},
+		LogStatements:                []common.ContextStatements{},
+		additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
+		additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
+		additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
+		additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
+		additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
 	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
