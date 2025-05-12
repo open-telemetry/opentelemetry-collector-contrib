@@ -45,7 +45,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/ebitengine/purego v0.8.2 // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/expr-lang/expr v1.17.2 // indirect
@@ -186,7 +186,6 @@ require (
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect

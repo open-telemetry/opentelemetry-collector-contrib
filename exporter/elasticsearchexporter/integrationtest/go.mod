@@ -47,7 +47,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.16.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/ebitengine/purego v0.8.2 // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.18.0 // indirect
 	github.com/elastic/go-freelru v0.16.0 // indirect
@@ -195,7 +195,6 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/service v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.125.1-0.20250509190408-4ca0f1829e0a // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
