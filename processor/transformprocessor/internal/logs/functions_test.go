@@ -17,7 +17,7 @@ import (
 
 func Test_LogFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
-	actual := LogFunctions([]ottl.Factory[ottllog.TransformContext]{})
+	actual := LogFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
@@ -42,7 +42,7 @@ func Test_LogFunctions_AdditionalLogFuncs(t *testing.T) {
 	expected[testLogFuncFactory.Name()] = testLogFuncFactory
 
 	additionalLogFuncs := []ottl.Factory[ottllog.TransformContext]{testLogFuncFactory}
-	actual := LogFunctions(additionalLogFuncs)
+	actual := LogFunctions(additionalLogFuncs...)
 
 	require.Len(t, actual, len(expected))
 	for k := range actual {
