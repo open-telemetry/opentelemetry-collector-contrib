@@ -20,7 +20,7 @@ var (
 //
 // The monitored resource type is extracted from the `gcp.resource_type`
 // attribute. And the monitored resource labels are extracted from resource
-// attributes with the prefix `gcp.type.`.
+// attributes with the prefix `gcp.<monitored resource type>.`.
 func CustomLoggingMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.MonitoredResource {
 	return customMonitoredResourceMapping(r, collector.DefaultConfig().LogConfig.MapMonitoredResource)
 
