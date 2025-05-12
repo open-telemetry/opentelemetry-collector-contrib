@@ -23,7 +23,13 @@ func SpanFunctions(additionalSpanFuncs ...ottl.Factory[ottlspan.TransformContext
 	return m
 }
 
-func SpanEventFunctions() map[string]ottl.Factory[ottlspanevent.TransformContext] {
+func SpanEventFunctions(additionalSpanEventFuncs ...ottl.Factory[ottlspanevent.TransformContext]) map[string]ottl.Factory[ottlspanevent.TransformContext] {
 	// No trace-only functions yet.
-	return ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
+	m := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
+
+	for _, fn := range additionalSpanEventFuncs {
+		m[fn.Name()] = fn
+	}
+
+	return m
 }
