@@ -153,6 +153,14 @@ func (cfg *Config) Validate() error {
 	if cfg.RedisConfig.SecondaryCacheEvictionTime == 0 {
 		cfg.RedisConfig.SecondaryCacheEvictionTime = cache.DEFAULT_SECONDARY_CACHE_EXPIRATION_INTERVAL
 	}
+
+	if cfg.RedisConfig.PrimaryCacheSize == 0 {
+		cfg.RedisConfig.PrimaryCacheSize = cache.DEFAULT_PRIMARY_CACHE_SIZE
+	}
+
+	if cfg.RedisConfig.SecondaryCacheSize == 0 {
+		cfg.RedisConfig.SecondaryCacheSize = cache.DEFAULT_SECONDARY_CACHE_SIZE
+	}
 	return nil
 }
 

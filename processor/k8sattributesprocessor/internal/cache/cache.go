@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-const (
-	DEFAULT_PRIMARY_CACHE_EXPIRATION_INTERVAL   = 5 * time.Minute
-	DEFAULT_SECONDARY_CACHE_EXPIRATION_INTERVAL = 2 * time.Minute
-)
-
 type entry struct {
 	value       interface{}
 	expiryTime  time.Time

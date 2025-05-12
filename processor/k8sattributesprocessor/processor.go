@@ -82,20 +82,14 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 	// }
 
 	// kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
+  cacheObj := cache.GetCacheInstance(kp.redisConfig.PrimaryCacheSize, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheSize, kp.redisConfig.SecondaryCacheEvictionTime)
 
-	primaryCache := cache.NewSyncMapWithExpiry(kp.redisConfig.PrimaryCacheEvictionTime)
-	if primaryCache == nil {
-		kp.logger.Error("Failed to initilize the primary cache")
-		return fmt.Errorf("failed to initialize the primary cache")
+	if cacheObj == nil {
+		kp.logger.Error("Failed to initilize the cache with GetInstance()")
+		return fmt.Errorf("failed to initialize cache")
 	}
 
-	secondaryCache := cache.NewSyncMapWithExpiry(kp.redisConfig.SecondaryCacheEvictionTime)
-	if secondaryCache == nil {
-		kp.logger.Error("Failed to initilize the secondary cache")
-		return fmt.Errorf("failed to initialize the primary cache")
-	}
-	kp.redisClient = redis.NewClient(kp.logger, primaryCache, secondaryCache, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheEvictionTime, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
-
+	kp.redisClient = redis.NewClient(kp.logger, cacheObj, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheEvictionTime)
 	// This might have been set by an option already
 	if kp.kc == nil {
 		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)

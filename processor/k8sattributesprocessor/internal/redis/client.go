@@ -11,14 +11,15 @@ import (
 )
 
 type Client struct {
-	Host                                                 string
-	Port                                                 string
-	Password                                             string
-	GoClient                                             *goredis.Client
-	PrimaryCache, SecondaryCache                         *cache.SyncMapWithExpiry
-	PrimaryCacheEvictionTime, SecondaryCacheEvictionTime time.Duration
-	Enabled                                              bool
-	logger                                               *zap.Logger
+	Host                       string
+	Port                       string
+	Password                   string
+	GoClient                   *goredis.Client
+	CacheObject                *cache.Cache
+	PrimaryCacheEvictionTime   time.Duration
+	SecondaryCacheEvictionTime time.Duration
+	Enabled                    bool
+	logger                     *zap.Logger
 }
 
 type OpsrampRedisConfig struct {
@@ -28,19 +29,20 @@ type OpsrampRedisConfig struct {
 	ClusterName                string        `mapstructure:"clusterName"`
 	ClusterUid                 string        `mapstructure:"clusterUid"`
 	NodeName                   string        `mapstructure:"nodeName"`
+	PrimaryCacheSize           int           `mapstructure:"primaryCacheSize"`
+	SecondaryCacheSize         int           `mapstructure:"secondaryCacheSize"`
 	PrimaryCacheEvictionTime   time.Duration `mapstructure:"primaryCacheEvictionTime"`
 	SecondaryCacheEvictionTime time.Duration `mapstructure:"secondaryCacheEvictionTime"`
 }
 
-func NewClient(logger *zap.Logger, primaryCache, secondaryCache *cache.SyncMapWithExpiry, primaryCacheEvictionTime, secondaryCacheEvictionTime time.Duration, rHost, rPort, rPass string) *Client {
+func NewClient(logger *zap.Logger, cache *cache.Cache, rHost, rPort, rPass string, primaryCacheEvictionTime, secondaryCacheEvictionTime time.Duration) *Client {
 	client := Client{
 		Host:                       rHost,
 		Port:                       rPort,
 		Password:                   rPass,
 		Enabled:                    true,
 		logger:                     logger,
-		PrimaryCache:               primaryCache,
-		SecondaryCache:             secondaryCache,
+		CacheObject:                cache,
 		PrimaryCacheEvictionTime:   primaryCacheEvictionTime,
 		SecondaryCacheEvictionTime: secondaryCacheEvictionTime,
 	}
@@ -103,34 +105,26 @@ func (c *Client) TestConnection(ctx context.Context) error {
 func (c *Client) GetUuidValueInString(ctx context.Context, key string) string {
 	logger := c.logger
 	// Check primary cache
-	if c.PrimaryCache != nil {
-		if val, ok, _, _ := c.PrimaryCache.Load(key); ok {
+	if c.CacheObject != nil {
+		if val, err := c.CacheObject.GetFromPrimary(key); err == nil {
 			logger.Debug("Got value from PrimaryCache", zap.Any("key", key), zap.Any("value", val))
-			return val.(string)
+			return val
+		}
+		if val, err := c.CacheObject.GetFromSecondary(key); err == nil {
+			logger.Debug("Got value from SecondaryCache", zap.Any("key", key), zap.Any("value", val))
+			return val
 		}
 	}
-	logger.Debug("Failed to fetch the key from primary cache", zap.Any("key", key))
-	// Check secondary cache
-	if c.SecondaryCache != nil {
-		if _, ok, _, _ := c.SecondaryCache.Load(key); ok {
-			logger.Debug("Key exists in SecondaryCache", zap.Any("key", key))
-			return ""
-		}
-	}
-	logger.Debug("Failed to fetch the key from secondary cache", zap.Any("key", key))
 	// Query Redis if enabled
 	if c.Enabled {
 		val, err := c.GoClient.Get(ctx, key).Result()
 		if err == goredis.Nil {
 			logger.Debug("Key does not exist in Redis", zap.Any("key", key))
-			if c.SecondaryCache != nil {
-				c.SecondaryCache.Store(key, "", c.SecondaryCacheEvictionTime, c.SecondaryCacheEvictionTime)
-			}
+			c.CacheObject.AddToSecondaryWithTTL(key, "", c.SecondaryCacheEvictionTime)
+			return ""
 		} else if err != nil {
 			logger.Error("Failed to fetch the key from Redis", zap.Error(err))
-			if c.SecondaryCache != nil {
-				c.SecondaryCache.Store(key, "", c.SecondaryCacheEvictionTime, c.SecondaryCacheEvictionTime)
-			}
+			c.CacheObject.AddToSecondaryWithTTL(key, "", c.SecondaryCacheEvictionTime)
 			return ""
 		}
 
@@ -149,10 +143,12 @@ func (c *Client) GetUuidValueInString(ctx context.Context, key string) string {
 		}
 
 		value := redisData.ResourceUuid
-		if value == "" && c.SecondaryCache != nil {
-			c.SecondaryCache.Store(key, value, c.SecondaryCacheEvictionTime, c.SecondaryCacheEvictionTime)
-		} else if c.PrimaryCache != nil {
-			c.PrimaryCache.Store(key, value, c.PrimaryCacheEvictionTime, c.PrimaryCacheEvictionTime)
+		if c.CacheObject != nil {
+			if value == "" {
+				c.CacheObject.AddToSecondaryWithTTL(key, "", c.SecondaryCacheEvictionTime)
+			} else {
+				c.CacheObject.AddToPrimaryWithTTL(key, value, c.PrimaryCacheEvictionTime)
+			}
 		}
 		return value
 	}
