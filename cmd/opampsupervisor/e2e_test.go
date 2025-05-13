@@ -45,7 +45,7 @@ import (
 	"github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -765,9 +765,9 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 				identAttr := ad.IdentifyingAttributes
 				for _, attr := range identAttr {
 					switch attr.Key {
-					case semconv.AttributeServiceName:
+					case string(semconv.ServiceNameKey):
 						agentName = attr.Value.GetStringValue()
-					case semconv.AttributeServiceVersion:
+					case string(semconv.ServiceVersionKey):
 						agentVersion = attr.Value.GetStringValue()
 					}
 				}
@@ -865,9 +865,9 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 		identAttr := ad.IdentifyingAttributes
 		for _, attr := range identAttr {
 			switch attr.Key {
-			case semconv.AttributeServiceName:
+			case string(semconv.ServiceNameKey):
 				agentName = attr.Value.GetStringValue()
-			case semconv.AttributeServiceVersion:
+			case string(semconv.ServiceVersionKey):
 				agentVersion = attr.Value.GetStringValue()
 			}
 		}
@@ -1024,15 +1024,15 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	expectedDescription := &protobufs.AgentDescription{
 		IdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue(semconv.AttributeServiceInstanceID, uuid.UUID(ad.InstanceUid).String()),
-			stringKeyValue(semconv.AttributeServiceName, command),
-			stringKeyValue(semconv.AttributeServiceVersion, version),
+			stringKeyValue(string(semconv.ServiceInstanceIDKey), uuid.UUID(ad.InstanceUid).String()),
+			stringKeyValue(string(semconv.ServiceNameKey), command),
+			stringKeyValue(string(semconv.ServiceVersionKey), version),
 		},
 		NonIdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("env", "prod"),
-			stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-			stringKeyValue(semconv.AttributeHostName, host),
-			stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+			stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
+			stringKeyValue(string(semconv.HostNameKey), host),
+			stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
 		},
 	}
 
@@ -2034,9 +2034,9 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		identAttr := ad.IdentifyingAttributes
 		for _, attr := range identAttr {
 			switch attr.Key {
-			case semconv.AttributeServiceName:
+			case string(semconv.ServiceNameKey):
 				agentName = attr.Value.GetStringValue()
-			case semconv.AttributeServiceVersion:
+			case string(semconv.ServiceVersionKey):
 				agentVersion = attr.Value.GetStringValue()
 			}
 		}
@@ -2052,7 +2052,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	}, 10*time.Second, 250*time.Millisecond)
 
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
-	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
+	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(string(semconv.ServiceNameKey))
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -174,9 +174,9 @@ func testCollectorInstanceInfo(t *testing.T) CollectorInstanceInfo {
 	t.Helper()
 
 	set := componenttest.NewNopTelemetrySettings()
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, testServiceInstanceID)
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, testServiceName)
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceNamespace, testNamespace)
+	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), testServiceInstanceID)
+	set.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), testServiceName)
+	set.Resource.Attributes().PutStr(string(semconv.ServiceNamespaceKey), testNamespace)
 	return NewCollectorInstanceInfo(set)
 }
 
