@@ -353,7 +353,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 						logger.Error("failed to close", zap.Error(err))
 					}
 				}
-				explained += 1
+				explained++
 			} else {
 				record.Attributes().PutStr(dbAttributePrefix+"query_plan", "")
 			}
