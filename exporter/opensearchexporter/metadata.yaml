@@ -8,6 +8,7 @@ status:
   codeowners:
     active: []
     emeritus: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
+    seeking_new: true
 
 tests:
   expect_consumer_error: true
