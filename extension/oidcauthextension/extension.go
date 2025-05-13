@@ -68,7 +68,8 @@ func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
 	}
 	e.verifier = e.provider.Verifier(&oidc.Config{
-		ClientID: e.cfg.Audience,
+		ClientID:          e.cfg.Audience,
+		SkipClientIDCheck: e.cfg.IgnoreAudience,
 	})
 	return nil
 }

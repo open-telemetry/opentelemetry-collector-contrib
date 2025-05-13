@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fkafka) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_kafka&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -88,6 +89,22 @@ The following settings can be optionally configured:
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
   - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type
+  - `compression_params`
+    - `level` (default = -1) the compression level used when producing messages to kafka.
+    - The following are valid combinations of `compression` and `level`
+      - `gzip`
+        - BestSpeed: `1`
+        - BestCompression: `9`
+        - DefaultCompression: `-1`
+      - `zstd`
+        - SpeedFastest: `1`
+        - SpeedDefault: `3`
+        - SpeedBetterCompression: `6`
+        - SpeedBestCompression: `11`
+      - `lz4`
+        Only supports fast level
+      - `snappy`
+        No compression levels supported yet
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
 
 ### Supported encodings

@@ -1,0 +1,17 @@
+signaltometrics:
+  spans:
+    - name: metric.trace.duration
+      description: Spans with resource attribute including resource.foo as a histogram metric
+      unit: ms
+      histogram:
+        value: Int(Milliseconds(end_time - start_time))
+    - name: metric.trace.duration
+      description: Spans with resource attribute including resource.foo as a exponential histogram metric
+      unit: ms
+      exponential_histogram:
+        value: Int(Milliseconds(end_time - start_time))
+    - name: metric.trace.duration
+      description: Spans with resource attribute including resource.foo as a sum metric
+      unit: ms
+      sum:
+        value: Int(Milliseconds(end_time - start_time))

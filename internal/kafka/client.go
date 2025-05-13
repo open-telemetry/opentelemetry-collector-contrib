@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
@@ -19,6 +20,13 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"snappy": sarama.CompressionSnappy,
 	"lz4":    sarama.CompressionLZ4,
 	"zstd":   sarama.CompressionZSTD,
+}
+
+func convertToSaramaCompressionLevel(p configcompression.Level) int {
+	if p == configcompression.DefaultCompressionLevel {
+		return sarama.CompressionLevelDefault
+	}
+	return int(p)
 }
 
 var saramaInitialOffsets = map[string]int64{
@@ -63,6 +71,14 @@ func NewSaramaConsumerGroup(
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
 	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	// Set the rebalance strategy
+	rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
+	if rebalanceStrategy != nil {
+		saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
+	}
+	if len(consumerConfig.GroupInstanceID) > 0 {
+		saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+	}
 	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
 }
 
@@ -88,6 +104,7 @@ func NewSaramaSyncProducer(
 	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
 	saramaConfig.Producer.Timeout = producerTimeout
 	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	saramaConfig.Producer.CompressionLevel = convertToSaramaCompressionLevel(producerConfig.CompressionParams.Level)
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
 }
 
@@ -125,4 +142,17 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 	}
 	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil
+}
+
+func rebalanceStrategy(strategy string) sarama.BalanceStrategy {
+	switch strategy {
+	case sarama.RangeBalanceStrategyName:
+		return sarama.NewBalanceStrategyRange()
+	case sarama.StickyBalanceStrategyName:
+		return sarama.NewBalanceStrategySticky()
+	case sarama.RoundRobinBalanceStrategyName:
+		return sarama.NewBalanceStrategyRoundRobin()
+	default:
+		return nil
+	}
 }

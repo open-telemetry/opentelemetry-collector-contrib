@@ -55,6 +55,14 @@ func mockDispatchArtifacts(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte(`{"links":{},"origin":"https://somehost:8089/services/server/status/dispatch-artifacts","updated":"2024-10-24T04:46:47+00:00","generator":{"build":"05775df3af30","version":"9.2.2406.108"},"entry":[{"name":"result","id":"https://somehost:8089/services/server/status/dispatch-artifacts/result","updated":"1970-01-01T00:00:00+00:00","links":{"alternate":"/services/server/status/dispatch-artifacts/result","list":"/services/server/status/dispatch-artifacts/result"},"author":"system","acl":{"app":"","can_list":true,"can_write":true,"modifiable":false,"owner":"system","perms":{"read":["*"],"write":[]},"removable":false,"sharing":"system"},"content":{"adhoc_count":"7","adhoc_size_mb":"1","adhoc_subsearch_count":"0","adhoc_subsearch_size_mb":"0","cached_job_status_info_csv_size_mb":"0","cached_job_status_status_csv_size_mb":"0","cached_job_status_total_entries":"20","completed_count":"20","completed_size_mb":"2","count_summary":"1","disk_usage_MB":"2","eai:acl":null,"incomple_count":"0","incomple_size_mb":"0","invalid_count":"1","remote_count":"0","remote_mb":"0","rsa_count":"0","rsa_scheduled_count":"0","rsa_scheduled_size_mb":"0","rsa_size_mb":"0","scheduled_count":"13","scheduled_size_mb":"1","scheduled_subsearch_count":"0","scheduled_subsearch_size_mb":"0","ss_count":"7","status_cache_info_csv_size_mb":"0","status_cache_status_csv_size_mb":"0","status_cache_total_entries":"20","temp_dispatch_count":"0","temp_dispatch_size_mb":"0","top_apps":{"0":{"splunk_instrumentation":"6"},"1":{"search":"1"}},"top_named_searches":null,"top_users":{"0":{"splunk-system-user":"6"},"1":{"internal_observability":"1"}},"total_count":"7"}}],"paging":{"total":1,"perPage":30,"offset":0},"messages":[]}`))
 }
 
+func mockIndexerClusterMangerStatus(w http.ResponseWriter, _ *http.Request) {
+	status := http.StatusOK
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(`{"links":{},"origin":"https://somehost:8089/services/cluster/manager/status","updated":"2025-03-27T22:21:40+00:00","generator":{"build":"b10ab43f821f","version":"9.3.2408.109"},"entry":[{"name":"master","id":"https://somehost:8089/services/cluster/manager/status/master","updated":"1970-01-01T00:00:00+00:00","links":{"alternate":"/services/cluster/manager/status/master","list":"/services/cluster/manager/status/master"},"author":"system","acl":{"app":"","can_list":true,"can_write":true,"modifiable":false,"owner":"system","perms":{"read":["admin","index-manager","internal_ops_admin","splunk-system-role"],"write":["admin","index-manager","internal_ops_admin","splunk-system-role"]},"removable":false,"sharing":"system"},"content":{"available_sites":"[site11, site12, site13]","decommission_force_timeout":"0","eai:acl":null,"ha_mode":"Disabled","maintenance_mode":false,"messages":"","multisite":true,"peers":{},"restart_inactivity_timeout":"0","restart_progress":{"done":[],"failed":[],"in_progress":[],"skipped":[],"to_be_restarted":[]},"rolling_restart_flag":false,"rolling_restart_or_upgrade":false,"rolling_restart_type":"None","searchable_rolling":false,"service_ready_flag":true}}],"paging":{"total":1,"perPage":30,"offset":0},"messages":[]}
+`))
+}
+
 // mock server create
 func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +75,8 @@ func createMockServer() *httptest.Server {
 			mockIntrospectionQueues(w, r)
 		case "/services/server/status/dispatch-artifacts?output_mode=json&count=-1":
 			mockDispatchArtifacts(w, r)
+		case "/services/cluster/manager/status?output_mode=json":
+			mockIndexerClusterMangerStatus(w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)
 		}
@@ -94,18 +104,19 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
+	metricsettings.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		SHEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		CMEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,

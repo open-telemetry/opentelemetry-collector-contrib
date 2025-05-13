@@ -6,6 +6,7 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazuremonitor%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazuremonitor) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazuremonitor%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazuremonitor) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azuremonitor)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azuremonitor&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@nslaughter](https://www.github.com/nslaughter), [@celian-garcia](https://www.github.com/celian-garcia) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -23,7 +24,7 @@ The following settings are required:
 
 The following settings are optional:
 
-- `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
+- `credentials` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
@@ -122,7 +123,7 @@ Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/develope
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    auth: "workload_identity"
+    credentials: "workload_identity"
     tenant_id: "${env:AZURE_TENANT_ID}"
     client_id: "${env:AZURE_CLIENT_ID}"
     federated_token_file: "${env:AZURE_FEDERATED_TOKEN_FILE}"
@@ -134,7 +135,7 @@ Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/az
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    auth: "managed_identity"
+    credentials: "managed_identity"
     client_id: "${env:AZURE_CLIENT_ID}"
 ```
 
@@ -144,7 +145,7 @@ Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    auth: "default_credentials"
+    credentials: "default_credentials"
 ```
 
 Overriding dimensions for a particular metric:
