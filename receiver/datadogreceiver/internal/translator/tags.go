@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
 // See:
@@ -64,7 +64,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	"http.useragent":               string(semconv.UserAgentOriginalKey),
 
 	// DB
-	"db.type":      string(semconv.DBSystemKey),
+	"db.type":      string(semconv.DBSystemNameKey),
 	"db.operation": string(semconv.DBOperationNameKey),
 	"db.instance":  string(semconv.DBCollectionNameKey),
 	"db.pool.name": string(semconv.DBClientConnectionPoolNameKey),

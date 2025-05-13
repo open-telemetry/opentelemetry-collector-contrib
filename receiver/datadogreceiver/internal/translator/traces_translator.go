@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -152,14 +152,14 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		string(semconv.ContainerIDKey):           payload.ContainerID,
-		string(semconv.TelemetrySDKLanguageKey):  payload.LanguageName,
-		string(semconv.ProcessRuntimeVersionKey): payload.LanguageVersion,
+		string(semconv.ContainerIDKey):               payload.ContainerID,
+		string(semconv.TelemetrySDKLanguageKey):      payload.LanguageName,
+		string(semconv.ProcessRuntimeVersionKey):     payload.LanguageVersion,
 		string(semconv.DeploymentEnvironmentNameKey): payload.Env,
-		string(semconv.HostNameKey):              payload.Hostname,
-		string(semconv.ServiceVersionKey):        payload.AppVersion,
-		string(semconv.TelemetrySDKNameKey):      "Datadog",
-		string(semconv.TelemetrySDKVersionKey):   payload.TracerVersion,
+		string(semconv.HostNameKey):                  payload.Hostname,
+		string(semconv.ServiceVersionKey):            payload.AppVersion,
+		string(semconv.TelemetrySDKNameKey):          "Datadog",
+		string(semconv.TelemetrySDKVersionKey):       payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)

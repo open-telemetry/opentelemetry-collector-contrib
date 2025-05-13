@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
 func strPtr(s string) *string       { return &s }
@@ -401,13 +401,13 @@ func TestTranslateSeriesV2(t *testing.T) {
 				requireMetricAndDataPointCounts(t, result, 1, 0)
 
 				require.Equal(t, 1, result.ResourceMetrics().Len())
-				v, exists := result.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeHostName)
+				v, exists := result.ResourceMetrics().At(0).Resource().Attributes().Get(string(semconv.HostNameKey))
 				require.True(t, exists)
 				require.Equal(t, "Host1", v.AsString())
-				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeDeploymentEnvironmentName)
+				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get(string(semconv.DeploymentEnvironmentNameKey))
 				require.True(t, exists)
 				require.Equal(t, "tag1", v.AsString())
-				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceVersion)
+				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get(string(semconv.ServiceVersionKey))
 				require.True(t, exists)
 				require.Equal(t, "tag2", v.AsString())
 
