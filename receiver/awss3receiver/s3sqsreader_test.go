@@ -193,7 +193,8 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, _ := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
 
 	var callbackCalled bool
 	var receivedKey string
@@ -313,7 +314,8 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, _ := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
 
 	var callbackCalled bool
 	var receivedKey string
@@ -466,8 +468,8 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			nil,
 		)
 
-		ctx, _ := context.WithTimeout(context.Background(), 500*time.Millisecond)
-
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cancel()
 		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
 			t.Fatal("Callback should not be called when S3 retrieval fails")
 			return nil

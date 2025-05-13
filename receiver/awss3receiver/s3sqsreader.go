@@ -151,14 +151,12 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 						continue
 					}
 
-					if snsMessage.Type == "Notification" {
-						if err := json.Unmarshal([]byte(snsMessage.Message), &s3Event); err != nil {
-							r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
-							continue
-						}
-					} else {
-						r.logger.Warn("Message is not a valid S3 notification",
-							zap.String("type", snsMessage.Type))
+					if snsMessage.Type != "Notification" {
+						r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMessage.Type))
+						continue
+					}
+					if err = json.Unmarshal([]byte(snsMessage.Message), &s3Event); err != nil {
+						r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
 						continue
 					}
 				}
