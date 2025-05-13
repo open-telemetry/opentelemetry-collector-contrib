@@ -6,8 +6,8 @@ status:
     unmaintained: [metrics, traces, logs]
   distributions: []
   codeowners:
-    active: [TylerHelmuth]
-    emeritus: [am-kinetica]
+    active: []
+    emeritus: [am-kinetica, TylerHelmuth]
 
 
 # TODO: Update the exporter to pass the tests
