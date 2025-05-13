@@ -6,10 +6,10 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.126.0
-	github.com/splunk/stef/go/grpc v0.0.5
-	github.com/splunk/stef/go/otel v0.0.5
-	github.com/splunk/stef/go/pdata v0.0.5
-	github.com/splunk/stef/go/pkg v0.0.5
+	github.com/splunk/stef/go/grpc v0.0.6
+	github.com/splunk/stef/go/otel v0.0.6
+	github.com/splunk/stef/go/pdata v0.0.6
+	github.com/splunk/stef/go/pkg v0.0.6
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.32.0
 	go.opentelemetry.io/collector/component/componenttest v0.126.0
