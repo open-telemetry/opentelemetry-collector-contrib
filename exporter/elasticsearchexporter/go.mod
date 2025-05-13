@@ -16,7 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
-	go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/client v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
@@ -24,15 +24,15 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/exporter v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/exporter/xexporter v0.125.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/extension v1.31.1-0.20250512210654-f592f1cefb67
-	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/ebpf-profiler v0.0.0-20250212075250-7bf12d3f962f
@@ -100,7 +100,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.125.1-0.20250512225928-0bef08994deb // indirect
-	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect

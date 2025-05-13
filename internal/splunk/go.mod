@@ -33,9 +33,9 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configretry v1.31.1-0.20250512225928-0bef08994deb // indirect
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb // indirect
-	go.opentelemetry.io/collector/extension v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250512225928-0bef08994deb // indirect
