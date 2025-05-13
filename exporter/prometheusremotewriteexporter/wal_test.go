@@ -14,6 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -166,7 +167,8 @@ func TestExportWithWALEnabled(t *testing.T) {
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
 		},
-		TargetInfo: &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",

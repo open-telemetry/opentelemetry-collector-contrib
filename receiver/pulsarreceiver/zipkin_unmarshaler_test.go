@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -26,7 +26,7 @@ var v2FromTranslator zipkinv2.FromTranslator
 func TestUnmarshalZipkin(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "my_service")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "my_service")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pcommon.Timestamp(1597759000))

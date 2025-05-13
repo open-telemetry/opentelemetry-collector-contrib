@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -148,7 +148,7 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	meta := maps.MergeStringMaps(map[string]string{}, node.Labels)
 
-	meta[conventions.AttributeK8SNodeName] = node.Name
+	meta[string(conventions.K8SNodeNameKey)] = node.Name
 	meta[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
 	// Node can have many additional conditions (gke has 18 on v1.29). Bad thresholds/implementations
@@ -173,7 +173,7 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		nodeID: {
 			EntityType:    "k8s.node",
-			ResourceIDKey: conventions.AttributeK8SNodeUID,
+			ResourceIDKey: string(conventions.K8SNodeUIDKey),
 			ResourceID:    nodeID,
 			Metadata:      meta,
 		},
