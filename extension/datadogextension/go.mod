@@ -10,8 +10,8 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
-	go.opentelemetry.io/collector/extension v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/extension/extensiontest v0.125.1-0.20250512225928-0bef08994deb
 )
@@ -60,7 +60,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/client v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configauth v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.125.1-0.20250512225928-0bef08994deb // indirect
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/exporter v0.125.1-0.20250512225928-0bef08994deb // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250512225928-0bef08994deb // indirect

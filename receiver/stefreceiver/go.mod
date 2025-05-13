@@ -14,13 +14,13 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/confignet v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250512225928-0bef08994deb
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -56,7 +56,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/splunk/stef/go/pkg v0.0.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/client v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configauth v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.125.1-0.20250512225928-0bef08994deb // indirect
@@ -65,8 +65,8 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/exporter v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.125.1-0.20250512225928-0bef08994deb // indirect
-	go.opentelemetry.io/collector/extension v1.31.1-0.20250512210654-f592f1cefb67 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250512225928-0bef08994deb // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250512225928-0bef08994deb // indirect

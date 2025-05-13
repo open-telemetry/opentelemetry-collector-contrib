@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/extension v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250512225928-0bef08994deb
 )
