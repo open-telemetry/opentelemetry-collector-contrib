@@ -69,10 +69,10 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.125.0
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.31.1-0.20250512225928-0bef08994deb // indirect
