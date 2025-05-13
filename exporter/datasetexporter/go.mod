@@ -17,11 +17,11 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configretry v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250512225928-0bef08994deb
 )
 
 require (
