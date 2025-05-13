@@ -67,3 +67,7 @@ The GitLab receiver creates deterministic trace/spanIDs for pipelines by using a
 This means:
 - The receiver can automatically create traces/spans for GitLab pipelines
 - You cannot manually instrument code within your pipeline jobs and have those spans appear in the same trace as the pipeline spans
+
+### Child and Multi-Project Pipelines
+
+**Limitation**: Child and multi-project pipelines are not supported yet. The hierarchy between parent/trigger pipelines wouldn't be reflected correctly, and instead two independent traces would be created for each pipeline. This means that the parent-child relationship between pipelines is not preserved in the generated traces.
