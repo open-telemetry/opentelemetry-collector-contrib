@@ -91,10 +91,10 @@ func (c Config) Validate() error {
 	// Check for valid time-based configuration
 	hasStartTime := c.StartTime != ""
 	hasEndTime := c.EndTime != ""
-	hasSNS := c.SQS != nil
+	hasSQS := c.SQS != nil
 
-	if !hasStartTime && !hasEndTime && !hasSNS {
-		errs = multierr.Append(errs, errors.New("either starttime/endtime or sns configuration must be provided"))
+	if !hasStartTime && !hasEndTime && !hasSQS {
+		errs = multierr.Append(errs, errors.New("either starttime/endtime or sqs configuration must be provided"))
 	}
 
 	// If one of StartTime/EndTime is specified, the other must also be specified
@@ -105,9 +105,9 @@ func (c Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("when endtime is specified, starttime is required"))
 	}
 
-	// StartTime and SNS cannot be specified together
-	if hasStartTime && hasSNS {
-		errs = multierr.Append(errs, errors.New("starttime/endtime and sns configuration cannot be used together"))
+	// StartTime and SQS cannot be specified together
+	if hasStartTime && hasSQS {
+		errs = multierr.Append(errs, errors.New("starttime/endtime and sqs configuration cannot be used together"))
 	}
 
 	// Validate StartTime format if specified
@@ -123,21 +123,21 @@ func (c Config) Validate() error {
 		}
 	}
 
-	// Validate SNS notifications if configured
+	// Validate SQS notifications if configured
 	if c.SQS != nil {
 		if c.SQS.QueueURL == "" {
-			errs = multierr.Append(errs, errors.New("sns.queue_url is required"))
+			errs = multierr.Append(errs, errors.New("sqs.queue_url is required"))
 		}
 		if c.SQS.Region == "" {
-			errs = multierr.Append(errs, errors.New("sns.region is required"))
+			errs = multierr.Append(errs, errors.New("sqs.region is required"))
 		}
 		// Validate wait time seconds
 		if c.SQS.WaitTimeSeconds < 0 || c.SQS.WaitTimeSeconds > 20 {
-			errs = multierr.Append(errs, errors.New("sns.wait_time_seconds must be between 0 and 20"))
+			errs = multierr.Append(errs, errors.New("sqs.wait_time_seconds must be between 0 and 20"))
 		}
 		// Validate max number of messages
 		if c.SQS.MaxNumberOfMessages < 0 || c.SQS.MaxNumberOfMessages > 10 {
-			errs = multierr.Append(errs, errors.New("sns.max_number_of_messages must be between 1 and 10"))
+			errs = multierr.Append(errs, errors.New("sqs.max_number_of_messages must be between 1 and 10"))
 		}
 	}
 	return errs

@@ -47,6 +47,12 @@ type s3EventNotification struct {
 	Records []S3EventRecord `json:"Records"`
 }
 
+// SNSMessage represents the structure of an SNS notification message
+type SNSMessage struct {
+	Type    string `json:"Type"`
+	Message string `json:"Message"`
+}
+
 // s3SQSNotificationReader listens for SNS notifications about new S3 objects
 type s3SQSNotificationReader struct {
 	logger              *zap.Logger
@@ -59,18 +65,16 @@ type s3SQSNotificationReader struct {
 	waitTimeSeconds     int32
 }
 
-func newSQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSNotificationReader, error) {
+func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSNotificationReader, error) {
 	if cfg.SQS == nil {
-		return nil, errors.New("SNS configuration is required")
+		return nil, errors.New("SQS configuration is required")
 	}
 
-	// Create SQS client
 	sqsClient, err := newSQSClient(ctx, cfg.SQS.Region, cfg.SQS.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SQS client: %w", err)
 	}
 
-	// Create S3 client with specific configuration
 	_, getObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
 	if err != nil {
 		return nil, err
@@ -99,7 +103,6 @@ func newSQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSN
 	}, nil
 }
 
-// readAll monitors SNS notifications and processes new S3 objects
 func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callback s3ObjectCallback) error {
 	r.logger.Info("Starting SQS notification processing",
 		zap.String("queueURL", r.queueURL),
@@ -107,23 +110,21 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 		zap.String("s3Prefix", r.s3Prefix),
 		zap.Int32("maxNumberOfMessages", r.maxNumberOfMessages),
 		zap.Int32("waitTimeSeconds", r.waitTimeSeconds))
-	// Process messages until context is canceled
+
 	for {
 		select {
 		case <-ctx.Done():
 			r.logger.Info("Context canceled, stopping SQS notification processing")
 			return ctx.Err()
 		default:
-			r.logger.Info("Waiting for messages from SQS")
-			// Receive messages from SQS
+			r.logger.Debug("Waiting for messages from SQS")
 			result, err := r.sqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:            aws.String(r.queueURL),
 				MaxNumberOfMessages: r.maxNumberOfMessages,
-				WaitTimeSeconds:     r.waitTimeSeconds, // Long polling
+				WaitTimeSeconds:     r.waitTimeSeconds,
 			})
 			if err != nil {
 				if ctx.Err() != nil {
-					// Context canceled, exit gracefully
 					return ctx.Err()
 				}
 				r.logger.Warn("Error receiving messages from SQS", zap.Error(err))
@@ -131,26 +132,21 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			r.logger.Info("Received messages from SQS",
+			r.logger.Debug("Received messages from SQS",
 				zap.Int("messageCount", len(result.Messages)))
 
-			// Process each message
 			for _, message := range result.Messages {
 				var s3Event s3EventNotification
 				messageBody := *message.Body
 
 				// First try to parse as direct S3 event notification
-				err := json.Unmarshal([]byte(messageBody), &s3Event)
-				if err != nil || len(s3Event.Records) == 0 {
+				if err = json.Unmarshal([]byte(messageBody), &s3Event); err != nil || len(s3Event.Records) == 0 {
 					// If direct parsing failed, try to extract from SNS notification format
 					r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
 
-					var snsMessage struct {
-						Type    string `json:"Type"`
-						Message string `json:"Message"`
-					}
+					var snsMessage SNSMessage
 
-					if err := json.Unmarshal([]byte(messageBody), &snsMessage); err != nil {
+					if err = json.Unmarshal([]byte(messageBody), &snsMessage); err != nil {
 						r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
 						continue
 					}
@@ -173,7 +169,6 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 						bucket := record.S3.Bucket.Name
 						key := record.S3.Object.Key
 
-						// Skip if this object is not in our target bucket
 						if bucket != r.s3Bucket {
 							r.logger.Debug("Skipping object from different bucket",
 								zap.String("bucket", bucket),
@@ -181,7 +176,6 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 							continue
 						}
 
-						// Skip if this is not in our target prefix
 						if r.s3Prefix != "" && !strings.HasPrefix(key, r.s3Prefix) {
 							r.logger.Debug("Skipping object not matching prefix",
 								zap.String("key", key),
@@ -194,7 +188,6 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 							zap.String("key", key))
 
 						var content []byte
-						// Get S3 object content
 						content, err = retrieveS3Object(ctx, r.s3Client, bucket, key)
 						if err != nil {
 							r.logger.Error("Failed to get S3 object",
@@ -204,7 +197,6 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 							continue
 						}
 
-						// Process the object content
 						err = callback(ctx, key, content)
 						if err != nil {
 							r.logger.Error("Failed to process S3 object content",
@@ -214,7 +206,6 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 					}
 				}
 
-				// Delete processed message from queue
 				_, err = r.sqsClient.DeleteMessage(ctx, &sqs.DeleteMessageInput{
 					QueueUrl:      aws.String(r.queueURL),
 					ReceiptHandle: message.ReceiptHandle,

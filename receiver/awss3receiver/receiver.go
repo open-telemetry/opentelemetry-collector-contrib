@@ -53,17 +53,17 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 	// Create the appropriate reader based on configuration
 	switch {
 	case cfg.StartTime != "" && cfg.EndTime != "":
-		reader, err = newS3Reader(ctx, notifier, settings.Logger, cfg)
+		reader, err = newS3TimeBasedReader(ctx, notifier, settings.Logger, cfg)
 		if err != nil {
 			return nil, err
 		}
 	case cfg.SQS != nil:
-		reader, err = newSQSReader(ctx, settings.Logger, cfg)
+		reader, err = newS3SQSReader(ctx, settings.Logger, cfg)
 		if err != nil {
 			return nil, err
 		}
 	default:
-		return nil, errors.New("invalid configuration: either time-based (StartTime/EndTime) or SNS-based configuration must be provided")
+		return nil, errors.New("invalid configuration: either time-based (StartTime/EndTime) or SQS-based configuration must be provided")
 	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{

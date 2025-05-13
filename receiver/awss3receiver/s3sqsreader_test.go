@@ -9,7 +9,6 @@ import (
 	"errors"
 	"io"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -23,12 +22,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// Mock GetObjectAPI implementation for testing
-type mockS3ClientSNS struct {
+type mockS3ClientSQS struct {
 	mock.Mock
 }
 
-func (m *mockS3ClientSNS) GetObject(ctx context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+func (m *mockS3ClientSQS) GetObject(ctx context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	args := m.Called(ctx, params)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -45,7 +43,6 @@ func (m *mockS3ClientSNS) GetObject(ctx context.Context, params *s3.GetObjectInp
 	}, args.Error(1)
 }
 
-// mockSQSClient implements the SQSClient interface for testing
 type mockSQSClient struct {
 	mock.Mock
 }
@@ -66,10 +63,10 @@ func (m *mockSQSClient) DeleteMessage(ctx context.Context, params *sqs.DeleteMes
 	return args.Get(0).(*sqs.DeleteMessageOutput), args.Error(1)
 }
 
-func TestNewSNSReader(t *testing.T) {
+func TestNewS3SQSReader(t *testing.T) {
 	logger := zap.NewNop()
 
-	t.Run("fails with nil SNS config", func(t *testing.T) {
+	t.Run("fails with nil SQS config", func(t *testing.T) {
 		cfg := &Config{
 			S3Downloader: S3DownloaderConfig{
 				S3Bucket: "test-bucket",
@@ -77,12 +74,12 @@ func TestNewSNSReader(t *testing.T) {
 			},
 		}
 
-		reader, err := newSQSReader(context.Background(), logger, cfg)
+		reader, err := newS3SQSReader(context.Background(), logger, cfg)
 		assert.Error(t, err)
 		assert.Nil(t, reader)
 	})
 
-	t.Run("succeeds with valid SNS config", func(t *testing.T) {
+	t.Run("succeeds with valid SQS config", func(t *testing.T) {
 		cfg := &Config{
 			S3Downloader: S3DownloaderConfig{
 				S3Bucket: "test-bucket",
@@ -94,15 +91,13 @@ func TestNewSNSReader(t *testing.T) {
 			},
 		}
 
-		// This test will fail due to AWS SDK calls, but we're only testing initialization logic
-		r, err := newSQSReader(context.Background(), logger, cfg)
+		r, err := newS3SQSReader(context.Background(), logger, cfg)
 		assert.NotNil(t, r)
-		// Error is expected because we can't create real AWS sessions in a unit test
 		assert.NoError(t, err)
 	})
 }
 
-func TestSNSReadAll(t *testing.T) {
+func TestS3SQSReader_ReadAll(t *testing.T) {
 	logger := zap.NewNop()
 	cfg := &Config{
 		S3Downloader: S3DownloaderConfig{
@@ -115,10 +110,9 @@ func TestSNSReadAll(t *testing.T) {
 		},
 	}
 
-	mockS3 := new(mockS3ClientSNS)
+	mockS3 := new(mockS3ClientSQS)
 	mockSQS := new(mockSQSClient)
 
-	// Create reader with mocks
 	reader := &s3SQSNotificationReader{
 		logger:              logger,
 		s3Client:            mockS3,
@@ -130,7 +124,6 @@ func TestSNSReadAll(t *testing.T) {
 		waitTimeSeconds:     20,
 	}
 
-	// Create S3 event notification
 	s3Event := s3EventNotification{
 		Records: []S3EventRecord{
 			{
@@ -151,10 +144,7 @@ func TestSNSReadAll(t *testing.T) {
 	eventJSON, err := json.Marshal(s3Event)
 	require.NoError(t, err)
 
-	snsNotification := struct {
-		Type    string `json:"Type"`
-		Message string `json:"Message"`
-	}{
+	snsNotification := SNSMessage{
 		Type:    "Notification",
 		Message: string(eventJSON),
 	}
@@ -162,7 +152,6 @@ func TestSNSReadAll(t *testing.T) {
 	snsJSON, err := json.Marshal(snsNotification)
 	require.NoError(t, err)
 
-	// Mock SQS message reception
 	mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
 		return *input.QueueUrl == cfg.SQS.QueueURL &&
 			input.MaxNumberOfMessages == 10 &&
@@ -177,7 +166,7 @@ func TestSNSReadAll(t *testing.T) {
 			},
 		},
 		nil,
-	).Once() // Only return the message once
+	).Once()
 
 	// After processing one message, return empty results to exit the loop
 	mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
@@ -187,7 +176,6 @@ func TestSNSReadAll(t *testing.T) {
 		nil,
 	)
 
-	// Mock S3 object retrieval
 	mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
 		Bucket: aws.String("test-bucket"),
 		Key:    aws.String("test-key"),
@@ -196,7 +184,6 @@ func TestSNSReadAll(t *testing.T) {
 		nil,
 	)
 
-	// Mock message deletion
 	mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
 		return *input.QueueUrl == cfg.SQS.QueueURL &&
 			*input.ReceiptHandle == "test-receipt-handle"
@@ -206,17 +193,13 @@ func TestSNSReadAll(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 500*time.Millisecond)
 
 	var callbackCalled bool
 	var receivedKey string
 	var receivedContent []byte
-	var callbackMu sync.Mutex
 
 	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
-		callbackMu.Lock()
-		defer callbackMu.Unlock()
 		callbackCalled = true
 		receivedKey = key
 		receivedContent = content
@@ -228,8 +211,6 @@ func TestSNSReadAll(t *testing.T) {
 	assert.Equal(t, context.DeadlineExceeded, err)
 
 	// Verify callback was called with correct data
-	callbackMu.Lock()
-	defer callbackMu.Unlock()
 	assert.True(t, callbackCalled)
 	assert.Equal(t, "test-key", receivedKey)
 	assert.Equal(t, []byte("test-content"), receivedContent)
@@ -239,9 +220,9 @@ func TestSNSReadAll(t *testing.T) {
 	mockSQS.AssertExpectations(t)
 }
 
-// TestDirectS3EventNotification tests processing S3 event notifications received directly in SQS
+// TestS3SQSReader_ReadAllDirectS3EventNotification tests processing S3 event notifications received directly in SQS
 // without being wrapped in an SNS notification
-func TestDirectS3EventNotification(t *testing.T) {
+func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 	logger := zap.NewNop()
 	cfg := &Config{
 		S3Downloader: S3DownloaderConfig{
@@ -254,7 +235,7 @@ func TestDirectS3EventNotification(t *testing.T) {
 		},
 	}
 
-	mockS3 := new(mockS3ClientSNS)
+	mockS3 := new(mockS3ClientSQS)
 	mockSQS := new(mockSQSClient)
 
 	// Create reader with mocks
@@ -332,17 +313,13 @@ func TestDirectS3EventNotification(t *testing.T) {
 	)
 
 	// Run test with callback
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 500*time.Millisecond)
 
 	var callbackCalled bool
 	var receivedKey string
 	var receivedContent []byte
-	var callbackMu sync.Mutex
 
 	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
-		callbackMu.Lock()
-		defer callbackMu.Unlock()
 		callbackCalled = true
 		receivedKey = key
 		receivedContent = content
@@ -354,8 +331,6 @@ func TestDirectS3EventNotification(t *testing.T) {
 	assert.Equal(t, context.DeadlineExceeded, err)
 
 	// Verify callback was called with correct data
-	callbackMu.Lock()
-	defer callbackMu.Unlock()
 	assert.True(t, callbackCalled)
 	assert.Equal(t, "test-key", receivedKey)
 	assert.Equal(t, []byte("test-trace-data"), receivedContent)
@@ -365,7 +340,7 @@ func TestDirectS3EventNotification(t *testing.T) {
 	mockSQS.AssertExpectations(t)
 }
 
-func TestReadAllErrorHandling(t *testing.T) {
+func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 	logger := zap.NewNop()
 	cfg := &Config{
 		S3Downloader: S3DownloaderConfig{
@@ -379,7 +354,7 @@ func TestReadAllErrorHandling(t *testing.T) {
 	}
 
 	t.Run("handles context cancellation", func(t *testing.T) {
-		mockS3 := new(mockS3ClientSNS)
+		mockS3 := new(mockS3ClientSQS)
 		mockSQS := new(mockSQSClient)
 
 		// Create reader with mocks
@@ -409,7 +384,7 @@ func TestReadAllErrorHandling(t *testing.T) {
 	})
 
 	t.Run("handles S3 object retrieval error", func(t *testing.T) {
-		mockS3 := new(mockS3ClientSNS)
+		mockS3 := new(mockS3ClientSQS)
 		mockSQS := new(mockSQSClient)
 
 		// Create reader with mocks
@@ -445,10 +420,7 @@ func TestReadAllErrorHandling(t *testing.T) {
 		eventJSON, err := json.Marshal(s3Event)
 		require.NoError(t, err)
 
-		snsNotification := struct {
-			Type    string `json:"Type"`
-			Message string `json:"Message"`
-		}{
+		snsNotification := SNSMessage{
 			Type:    "Notification",
 			Message: string(eventJSON),
 		}
@@ -468,10 +440,12 @@ func TestReadAllErrorHandling(t *testing.T) {
 			nil,
 		).Once()
 
-		// After processing one message, simulate context cancellation
+		// After processing one message, return empty results to exit the loop
 		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
-			&sqs.ReceiveMessageOutput{},
-			errors.New("context canceled"),
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{},
+			},
+			nil,
 		)
 
 		// Mock S3 object retrieval with error
@@ -492,8 +466,7 @@ func TestReadAllErrorHandling(t *testing.T) {
 			nil,
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
+		ctx, _ := context.WithTimeout(context.Background(), 500*time.Millisecond)
 
 		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
 			t.Fatal("Callback should not be called when S3 retrieval fails")
@@ -504,12 +477,12 @@ func TestReadAllErrorHandling(t *testing.T) {
 	})
 }
 
-func TestSNSReadAllWithPrefix(t *testing.T) {
+func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	logger := zap.NewNop()
 	cfg := &Config{
 		S3Downloader: S3DownloaderConfig{
 			S3Bucket: "test-bucket",
-			S3Prefix: "logs/", // Setting a prefix
+			S3Prefix: "logs/",
 			Region:   "us-east-1",
 		},
 		SQS: &SQSConfig{
@@ -518,10 +491,9 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 		},
 	}
 
-	mockS3 := new(mockS3ClientSNS)
+	mockS3 := new(mockS3ClientSQS)
 	mockSQS := new(mockSQSClient)
 
-	// Create reader with mocks and prefix
 	reader := &s3SQSNotificationReader{
 		logger:              logger,
 		s3Client:            mockS3,
@@ -544,7 +516,7 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 						Name: "test-bucket",
 					},
 					Object: S3ObjectData{
-						Key: "logs/matched-key-1", // This matches the prefix
+						Key: "logs/matched-key-1",
 					},
 				},
 			},
@@ -556,7 +528,7 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 						Name: "test-bucket",
 					},
 					Object: S3ObjectData{
-						Key: "data/unmatched-key", // This doesn't match the prefix
+						Key: "data/unmatched-key",
 					},
 				},
 			},
@@ -568,7 +540,7 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 						Name: "test-bucket",
 					},
 					Object: S3ObjectData{
-						Key: "logs/matched-key-2", // This matches the prefix
+						Key: "logs/matched-key-2",
 					},
 				},
 			},
@@ -578,10 +550,7 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 	eventJSON, err := json.Marshal(s3Event)
 	require.NoError(t, err)
 
-	snsNotification := struct {
-		Type    string `json:"Type"`
-		Message string `json:"Message"`
-	}{
+	snsNotification := SNSMessage{
 		Type:    "Notification",
 		Message: string(eventJSON),
 	}
@@ -589,7 +558,6 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 	snsJSON, err := json.Marshal(snsNotification)
 	require.NoError(t, err)
 
-	// Mock SQS message reception
 	mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
 		return *input.QueueUrl == cfg.SQS.QueueURL &&
 			input.MaxNumberOfMessages == 10 &&
@@ -604,7 +572,7 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 			},
 		},
 		nil,
-	).Once() // Only return the message once
+	).Once()
 
 	// After processing one message, return empty results to exit the loop
 	mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
@@ -647,11 +615,8 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 	defer cancel()
 
 	processedKeys := make(map[string][]byte)
-	var mu sync.Mutex
 
 	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
-		mu.Lock()
-		defer mu.Unlock()
 		processedKeys[key] = content
 		return nil
 	})
@@ -661,8 +626,6 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 	assert.Equal(t, context.DeadlineExceeded, err)
 
 	// Verify that only keys matching the prefix were processed
-	mu.Lock()
-	defer mu.Unlock()
 	assert.Len(t, processedKeys, 2)
 	assert.Contains(t, processedKeys, "logs/matched-key-1")
 	assert.Contains(t, processedKeys, "logs/matched-key-2")

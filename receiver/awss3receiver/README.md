@@ -54,9 +54,9 @@ The receiver can subscribe to an SQS queue that receives S3 event notifications:
 
 ```yaml
 sqs:
-  # Required: The ARN of the SQS topic that receives S3 bucket notifications
+  # Required: The ARN of the SQS queue that receives S3 bucket notifications
   queue_url: "https:https://sqs.us-east-1.amazonaws.com/123456789012/test-queue" 
-  # Required: The AWS region of the SNS topic
+  # Required: The AWS region of the SQS queue
   region: "us-east-1"
 ```
 
@@ -118,7 +118,7 @@ service:
       receivers: [awss3/traces]
       exporters: [otlp]
       
-    traces/sns:
+    traces/sqs:
       receivers: [awss3/sqs_traces]
       exporters: [otlp]
 ```

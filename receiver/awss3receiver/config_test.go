@@ -41,8 +41,8 @@ func TestConfig_Validate_Valid(t *testing.T) {
 		assert.NoError(t, cfg.Validate())
 	})
 
-	// Valid config with SNS
-	t.Run("with sns", func(t *testing.T) {
+	// Valid config with SQS
+	t.Run("with sqs", func(t *testing.T) {
 		cfg := Config{
 			S3Downloader: S3DownloaderConfig{
 				Region:              "",
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "bucket is required; either starttime/endtime or sns configuration must be provided",
+			errorMessage: "bucket is required; either starttime/endtime or sqs configuration must be provided",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
