@@ -32,7 +32,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.69.0"),
 )
 
-var customMonitoredResourcesMetricsGate = featuregate.GlobalRegistry().MustRegister(
+var customMonitoredResourcesGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.googlecloud.CustomMonitoredResources",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the googlecloudexporter"+
@@ -66,6 +66,10 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
+	config := eCfg.Config
+	if customMonitoredResourcesGate.IsEnabled() {
+		config.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
+	}
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
@@ -119,8 +123,8 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
 	config := eCfg.Config
-	if customMonitoredResourcesMetricsGate.IsEnabled() {
-		config.MetricConfig.MapMonitoredResource = resourcemapping.CustomMonitoredResourceMapping
+	if customMonitoredResourcesGate.IsEnabled() {
+		config.MetricConfig.MapMonitoredResource = resourcemapping.CustomMetricMonitoredResourceMapping
 	}
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {

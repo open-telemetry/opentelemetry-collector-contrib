@@ -59,11 +59,6 @@ type Config struct {
 	// Default Coralogix application and subsystem name values.
 	AppName   string `mapstructure:"application_name"`
 	SubSystem string `mapstructure:"subsystem_name"`
-
-	// Reference:
-	// 	https://github.com/open-telemetry/opentelemetry-collector/issues/8122
-	// Deprecated: [v0.124.0] use QueueSettings settings instead.
-	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"` //nolint:staticcheck
 }
 
 func isEmpty(endpoint string) bool {

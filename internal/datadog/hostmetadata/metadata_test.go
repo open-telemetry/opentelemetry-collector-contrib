@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -100,11 +100,11 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "AWS",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-				conventions.AttributeHostID:        "host-id",
-				conventions.AttributeHostName:      "ec2amaz-host-name",
-				"ec2.tag.tag1":                     "val1",
-				"ec2.tag.tag2":                     "val2",
+				string(conventions.CloudProviderKey): conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.HostIDKey):        "host-id",
+				string(conventions.HostNameKey):      "ec2amaz-host-name",
+				"ec2.tag.tag1":                       "val1",
+				"ec2.tag.tag2":                       "val2",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "host-id",
@@ -119,12 +119,12 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "GCP",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
-				conventions.AttributeHostID:                "host-id",
-				conventions.AttributeCloudAccountID:        "project-id",
-				conventions.AttributeHostName:              "host-name",
-				conventions.AttributeHostType:              "host-type",
-				conventions.AttributeCloudAvailabilityZone: "cloud-zone",
+				string(conventions.CloudProviderKey):         conventions.CloudProviderGCP.Value.AsString(),
+				string(conventions.HostIDKey):                "host-id",
+				string(conventions.CloudAccountIDKey):        "project-id",
+				string(conventions.HostNameKey):              "host-name",
+				string(conventions.HostTypeKey):              "host-type",
+				string(conventions.CloudAvailabilityZoneKey): "cloud-zone",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "host-name.project-id",
@@ -139,12 +139,12 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "Azure",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
-				conventions.AttributeHostName:       "azure-host-name",
-				conventions.AttributeCloudRegion:    "location",
-				conventions.AttributeHostID:         "azure-vm-id",
-				conventions.AttributeCloudAccountID: "subscriptionID",
-				azure.AttributeResourceGroupName:    "resourceGroup",
+				string(conventions.CloudProviderKey):  conventions.CloudProviderAzure.Value.AsString(),
+				string(conventions.HostNameKey):       "azure-host-name",
+				string(conventions.CloudRegionKey):    "location",
+				string(conventions.HostIDKey):         "azure-vm-id",
+				string(conventions.CloudAccountIDKey): "subscriptionID",
+				azure.AttributeResourceGroupName:      "resourceGroup",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "azure-vm-id",

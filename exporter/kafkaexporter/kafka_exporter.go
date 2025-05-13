@@ -117,13 +117,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		ctx, e.cfg.IncludeMetadataKeys,
 	))
 	if err := e.producer.SendMessages(allSaramaMessages); err != nil {
-		var prodErr sarama.ProducerErrors
-		if errors.As(err, &prodErr) {
-			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-			}
-		}
-		return err
+		return wrapKafkaProducerError(err)
 	}
 	return nil
 }
@@ -341,4 +335,25 @@ func metadataToHeaders(ctx context.Context, keys []string) []sarama.RecordHeader
 		}
 	}
 	return headers
+}
+
+func wrapKafkaProducerError(err error) error {
+	var prodErr sarama.ProducerErrors
+	if !errors.As(err, &prodErr) || len(prodErr) == 0 {
+		return err
+	}
+
+	var areConfigErrs bool
+	var confErr sarama.ConfigurationError
+	for _, producerErr := range prodErr {
+		if areConfigErrs = errors.As(producerErr.Err, &confErr); !areConfigErrs {
+			break
+		}
+	}
+
+	if areConfigErrs {
+		return consumererror.NewPermanent(confErr)
+	}
+
+	return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 }
