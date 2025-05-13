@@ -335,7 +335,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			metric.SetUnit(unit)
 			metric.SetDescription(description)
 
-			// Otherwise, we append the samples to the existing metric.
 			switch ts.Metadata.Type {
 			case writev2.Metadata_METRIC_TYPE_GAUGE:
 				metric.SetEmptyGauge()
@@ -358,6 +357,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			metric.SetDescription(description)
 		}
 
+		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
