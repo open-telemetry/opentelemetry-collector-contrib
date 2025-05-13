@@ -126,8 +126,8 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67 h1:Mnjt4DbhbRdXoPPTd4C4gxFm8RjGEnahsRatnPkvphU=
-go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67/go.mod h1:pSyJ1+XhsLP6nqJDP7uj3AFTw26z9mqCnRGyMw0Im8o=
+go.opentelemetry.io/collector/client v1.31.1-0.20250512225928-0bef08994deb h1:0Y+f6EW155iP50gBhO1z8yKWGnvXWviKKcS2uZP25kY=
+go.opentelemetry.io/collector/client v1.31.1-0.20250512225928-0bef08994deb/go.mod h1:pSyJ1+XhsLP6nqJDP7uj3AFTw26z9mqCnRGyMw0Im8o=
 go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb h1:SmrwRBB0fpb2G9Q7dwyglEzGyapuVM+ZuC3LM922pkc=
 go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb/go.mod h1:JbZl/KywXJxpUXPbt96qlEXJSym1zQ2hauMxYMuvlxM=
 go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb h1:9XrCWJKttcKh0TRheo7olCkVecGv+Fi8+r7Xjew3lz0=
@@ -152,8 +152,8 @@ go.opentelemetry.io/collector/pdata/testdata v0.125.0 h1:due1Hl0EEVRVwfCkiamRy5E
 go.opentelemetry.io/collector/pdata/testdata v0.125.0/go.mod h1:1GpEWlgdMrd+fWsBk37ZC2YmOP5YU3gFQ4rWuCu9g24=
 go.opentelemetry.io/collector/pipeline v0.125.1-0.20250512225928-0bef08994deb h1:owF/zNVXokNIFYb2xIMFwRoRNihFGKt3K8Wgpn8J6aQ=
 go.opentelemetry.io/collector/pipeline v0.125.1-0.20250512225928-0bef08994deb/go.mod h1:TO02zju/K6E+oFIOdi372Wk0MXd+Szy72zcTsFQwXl4=
-go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67 h1:hrmDiGYkPaM4YtfNFlntUMeKSkaeuymISVa6agn7tug=
-go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67/go.mod h1:anXwycaclREl9Argn3X01bGBeGTQB9P5vPox2QzspUk=
+go.opentelemetry.io/collector/receiver v1.31.1-0.20250512225928-0bef08994deb h1:EgRbhPFSKYQQc20uhGlJlyqRrAUjpc1VVegJ+3RzHM4=
+go.opentelemetry.io/collector/receiver v1.31.1-0.20250512225928-0bef08994deb/go.mod h1:anXwycaclREl9Argn3X01bGBeGTQB9P5vPox2QzspUk=
 go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250512225928-0bef08994deb h1:uKQjwm2owSNvnHyaqLn27CGteizr+5r6bMx62JHvNno=
 go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250512225928-0bef08994deb/go.mod h1:CoSPPn3kwVcAhdLOK5NVjMCVVjmCsFpBXU9h9I6Kdh8=
 go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250512225928-0bef08994deb h1:8nrowu3dWG6rkflPPpkpGp6vKASfW/OC8DxaLv5qhyk=

@@ -12,13 +12,13 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250512225928-0bef08994deb
 	go.uber.org/goleak v1.3.0

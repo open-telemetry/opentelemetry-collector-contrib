@@ -17,12 +17,12 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configretry v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/extension v1.31.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/filter v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/goleak v1.3.0
