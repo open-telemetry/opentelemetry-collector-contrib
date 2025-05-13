@@ -48,7 +48,6 @@ Top-Query collection specific options (only useful when top-query collection are
 - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
 - `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
 - `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
-  - This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration).
   - This value can only guarantee that the top queries are collected at most once in this interval.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `60s`.
       - In this case, the default receiver scraper will still try to run in every 10 seconds.
