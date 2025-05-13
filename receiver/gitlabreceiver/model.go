@@ -90,7 +90,7 @@ func (s *glPipelineStage) setSpanData(span ptrace.Span) error {
 func (s *glPipelineStage) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
 	span.SetParentSpanID(parentSpanID)
 
-	stageSpanID, err := newStageSpanID(s.PipelineID, s.Name, s.PipelineFinishedAt)
+	stageSpanID, err := newStageSpanID(s.PipelineID, s.Name, s.StartedAt)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (j *glPipelineJob) setSpanData(span ptrace.Span) error {
 func (j *glPipelineJob) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
 	span.SetParentSpanID(parentSpanID)
 
-	spanID, err := newJobSpanID(j.ID, j.FinishedAt)
+	spanID, err := newJobSpanID(j.ID, j.StartedAt)
 	if err != nil {
 		return err
 	}

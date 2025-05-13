@@ -123,8 +123,9 @@ func TestProcessStageSpans(t *testing.T) {
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 
-	err := receiver.processStageSpans(resourceSpans, glPipeline, traceID, parentSpanID)
+	stages, err := receiver.processStageSpans(resourceSpans, glPipeline, traceID, parentSpanID)
 	require.NoError(t, err)
+	require.Equal(t, 2, len(stages), "should have two stages")
 
 	// Verify the stage spans were created
 	scopeSpansCount := resourceSpans.ScopeSpans().Len()
@@ -145,7 +146,10 @@ func TestProcessJobSpans(t *testing.T) {
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 
-	err := receiver.processJobSpans(resourceSpans, glPipeline, traceID)
+	stages, err := receiver.newStages(glPipeline)
+	require.NoError(t, err)
+
+	err = receiver.processJobSpans(resourceSpans, glPipeline, traceID, stages)
 	require.NoError(t, err)
 
 	// Verify the job spans were created
@@ -159,7 +163,7 @@ func TestProcessJobSpans(t *testing.T) {
 
 		// Get the job's stage to check the parent span ID
 		job := pipeline.Builds[i]
-		expectedParentSpanID, err := newStageSpanID(pipeline.ObjectAttributes.ID, job.Stage, pipeline.ObjectAttributes.FinishedAt)
+		expectedParentSpanID, err := newStageSpanID(pipeline.ObjectAttributes.ID, job.Stage, stages[job.Stage].StartedAt)
 		require.NoError(t, err)
 
 		require.Equal(t, expectedParentSpanID, span.ParentSpanID(), "parent span IDs should match stage span ID")
@@ -250,38 +254,38 @@ func TestNewPipelineSpanID(t *testing.T) {
 
 func TestNewStageSpanID(t *testing.T) {
 	tests := []struct {
-		name       string
-		id         int
-		stage      string
-		finishedAt string
-		expectErr  bool
+		name      string
+		id        int
+		stage     string
+		startedAt string
+		expectErr bool
 	}{
 		{
-			name:       "valid input",
-			id:         12345,
-			stage:      "build",
-			finishedAt: "2022-01-01 12:00:00 UTC",
-			expectErr:  false,
+			name:      "valid input",
+			id:        12345,
+			stage:     "build",
+			startedAt: "2022-01-01 12:00:00 UTC",
+			expectErr: false,
 		},
 		{
-			name:       "invalid timestamp",
-			id:         12345,
-			stage:      "build",
-			finishedAt: "invalid timestamp",
-			expectErr:  true,
+			name:      "invalid timestamp",
+			id:        12345,
+			stage:     "build",
+			startedAt: "invalid timestamp",
+			expectErr: true,
 		},
 		{
-			name:       "empty stage",
-			id:         12345,
-			stage:      "",
-			finishedAt: "2022-01-01 12:00:00 UTC",
-			expectErr:  true,
+			name:      "empty stage",
+			id:        12345,
+			stage:     "",
+			startedAt: "2022-01-01 12:00:00 UTC",
+			expectErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newStageSpanID(tt.id, tt.stage, tt.finishedAt)
+			spanID, err := newStageSpanID(tt.id, tt.stage, tt.startedAt)
 			if tt.expectErr {
 				require.Error(t, err)
 				require.Equal(t, pcommon.SpanID{}, spanID)
@@ -295,28 +299,28 @@ func TestNewStageSpanID(t *testing.T) {
 
 func TestNewJobSpanID(t *testing.T) {
 	tests := []struct {
-		name       string
-		id         int
-		finishedAt string
-		expectErr  bool
+		name      string
+		id        int
+		startedAt string
+		expectErr bool
 	}{
 		{
-			name:       "valid input",
-			id:         12345,
-			finishedAt: "2022-01-01 12:00:00 UTC",
-			expectErr:  false,
+			name:      "valid input",
+			id:        12345,
+			startedAt: "2022-01-01 12:00:00 UTC",
+			expectErr: false,
 		},
 		{
-			name:       "invalid timestamp",
-			id:         12345,
-			finishedAt: "invalid timestamp",
-			expectErr:  true,
+			name:      "invalid timestamp",
+			id:        12345,
+			startedAt: "invalid timestamp",
+			expectErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newJobSpanID(tt.id, tt.finishedAt)
+			spanID, err := newJobSpanID(tt.id, tt.startedAt)
 			if tt.expectErr {
 				require.Error(t, err)
 				require.Equal(t, pcommon.SpanID{}, spanID)

@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -56,11 +55,12 @@ func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanProcessing, err)
 	}
 
-	if err := gtr.processStageSpans(r, pipeline, traceID, pipelineSpanID); err != nil {
+	stages, err := gtr.processStageSpans(r, pipeline, traceID, pipelineSpanID)
+	if err != nil {
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errStageSpanProcessing, err)
 	}
 
-	if err := gtr.processJobSpans(r, pipeline, traceID); err != nil {
+	if err := gtr.processJobSpans(r, pipeline, traceID, stages); err != nil {
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errJobSpanProcessing, err)
 	}
 
@@ -76,27 +76,27 @@ func (gtr *gitlabTracesReceiver) processPipelineSpan(r ptrace.ResourceSpans, pip
 	return nil
 }
 
-func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipeline *glPipeline, traceID pcommon.TraceID, parentSpanID pcommon.SpanID) error {
+func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipeline *glPipeline, traceID pcommon.TraceID, parentSpanID pcommon.SpanID) (map[string]*glPipelineStage, error) {
 	stages, err := gtr.newStages(pipeline)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, stage := range stages {
 		err = gtr.createSpan(r, stage, traceID, parentSpanID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return stages, nil
 }
 
-func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPipeline, traceID pcommon.TraceID) error {
+func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPipeline, traceID pcommon.TraceID, stages map[string]*glPipelineStage) error {
 	for _, job := range p.Builds {
 		jobEvent := glPipelineJob(job)
 
 		if job.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage, p.ObjectAttributes.FinishedAt)
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage, stages[job.Stage].StartedAt)
 			if err != nil {
 				return err
 			}
@@ -166,19 +166,19 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 	return spanID, nil
 }
 
-// newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and pipeline finishedAt time.
+// newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and stage startedAt time.
 // It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
-func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommon.SpanID, error) {
+func newStageSpanID(pipelineID int, stageName string, startedAt string) (pcommon.SpanID, error) {
 	if stageName == "" {
 		return pcommon.SpanID{}, errors.New("stageName is empty")
 	}
 
-	_, err := parseGitlabTime(finishedAt)
+	_, err := parseGitlabTime(startedAt)
 	if err != nil {
-		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
+		return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
 	}
 
-	spanID, err := newSpanID(fmt.Sprintf("%d%s%s", pipelineID, stageName, finishedAt))
+	spanID, err := newSpanID(fmt.Sprintf("%d%s%s", pipelineID, stageName, startedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -187,13 +187,13 @@ func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommo
 }
 
 // newJobSpanID creates a deterministic Job Span ID based on the unique jobID
-func newJobSpanID(jobID int, finishedAt string) (pcommon.SpanID, error) {
-	_, err := parseGitlabTime(finishedAt)
+func newJobSpanID(jobID int, startedAt string) (pcommon.SpanID, error) {
+	_, err := parseGitlabTime(startedAt)
 	if err != nil {
-		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
+		return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
 	}
 
-	spanID, err := newSpanID(strconv.Itoa(jobID))
+	spanID, err := newSpanID(fmt.Sprintf("%d%s", jobID, startedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
