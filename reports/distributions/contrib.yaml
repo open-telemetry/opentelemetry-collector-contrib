@@ -67,6 +67,7 @@ components:
         - asapclient
         - awscloudwatchmetricstreams_encoding
         - awsproxy
+        - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
@@ -75,6 +76,7 @@ components:
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
@@ -102,6 +104,7 @@ components:
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -115,6 +118,7 @@ components:
         - transform
     provider:
         - aes
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:

@@ -1,9 +1,12 @@
 # This file is auto-generated. Do not edit manually.
+cmd/codecovgen cmd/codecovgen
+cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
+confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
 connector/countconnector connector/count
@@ -72,6 +75,7 @@ extension/azureauthextension extension/azureauth
 extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
+extension/datadogextension extension/datadog
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams

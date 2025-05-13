@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -40,8 +39,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -54,7 +53,6 @@ import (
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 // seriesSlice represents an unmarshalled series payload
@@ -75,23 +73,7 @@ type point struct {
 	Value     float64
 }
 
-func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
-	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
-	require.NoError(t, err)
-	defer func() {
-		err = featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), previousVal)
-		require.NoError(t, err)
-	}()
-
-	testIntegration(t)
-}
-
-func TestIntegration_LegacyOTelAPMStatsIngest(t *testing.T) {
-	testIntegration(t)
-}
-
-func testIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
@@ -99,25 +81,27 @@ func testIntegration(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
-	t.Setenv("PROM_SERVER_PORT", promPort)
-	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
-	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
-	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
-	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
+	otlpEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_HTTP_SERVER", otlpEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		wg.Done()
 	}()
-	defer app.Shutdown()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
 
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
-	sendTraces(t, otlpGRPCEndpoint)
+	sendTraces(t, otlpEndpoint)
 
 	// 4. Validate traces and APM stats from the mock server
 	var spans []*pb.Span
@@ -171,7 +155,6 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
-			prometheusreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
 		}...,
 	)
@@ -239,7 +222,7 @@ func sendTraces(t *testing.T, endpoint string) {
 	ctx := context.Background()
 
 	// Set up OTel-Go SDK and exporter
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint(endpoint))
+	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
@@ -296,25 +279,27 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
-	t.Setenv("PROM_SERVER_PORT", promPort)
-	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
-	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
-	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
-	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
+	otlpEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_HTTP_SERVER", otlpEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_toplevel_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		wg.Done()
 	}()
-	defer app.Shutdown()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
 
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
-	sendTracesComputeTopLevelBySpanKind(t, otlpGRPCEndpoint)
+	sendTracesComputeTopLevelBySpanKind(t, otlpEndpoint)
 
 	// 4. Validate traces and APM stats from the mock server
 	var spans []*pb.Span
@@ -406,7 +391,7 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 	ctx := context.Background()
 
 	// Set up OTel-Go SDK and exporter
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint(endpoint))
+	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
@@ -487,28 +472,30 @@ func TestIntegrationLogs(t *testing.T) {
 	})
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
-	t.Setenv("PROM_SERVER_PORT", promPort)
-	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
-	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
-	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
-	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
+	otlpEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_HTTP_SERVER", otlpEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		wg.Done()
 	}()
-	defer app.Shutdown()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
 
 	waitForReadiness(app)
 
 	// 3. Generate and send logs
-	sendLogs(t, 5, otlpGRPCEndpoint)
+	sendLogs(t, 5, otlpEndpoint)
 
 	// 4. Validate logs and metrics from the mock server
-	// Wait until `doneChannel` is closed and prometheus metrics are received.
+	// Wait until `doneChannel` is closed and internal metrics are received.
 	var metricMap seriesSlice
 	for len(metricMap.Series) < 4 {
 		select {
@@ -551,7 +538,7 @@ func TestIntegrationLogs(t *testing.T) {
 
 func sendLogs(t *testing.T, numLogs int, endpoint string) {
 	ctx := context.Background()
-	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure(), otlploggrpc.WithEndpoint(endpoint))
+	logExporter, err := otlploghttp.New(ctx, otlploghttp.WithInsecure(), otlploghttp.WithEndpoint(endpoint))
 	assert.NoError(t, err)
 	lr := make([]log.Record, numLogs)
 	assert.NoError(t, logExporter.Export(ctx, lr))
@@ -648,10 +635,16 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_host_metrics_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		wg.Done()
 	}()
-	defer app.Shutdown()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
 
 	waitForReadiness(app)
 
@@ -735,4 +728,96 @@ func seriesFromAPIClient(t *testing.T, metricsBytes []byte, expectedMetrics map[
 		}
 	}
 	return metricMap, nil
+}
+
+func TestIntegrationInternalMetrics(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
+	}()
+	expectedMetrics := map[string]struct{}{
+		// Datadog internal metrics on trace and stats writers
+		"datadog.otlp_translator.resources.missing_source": {},
+		"datadog.trace_agent.stats_writer.bytes":           {},
+		"datadog.trace_agent.stats_writer.retries":         {},
+		"datadog.trace_agent.stats_writer.stats_buckets":   {},
+		"datadog.trace_agent.stats_writer.stats_entries":   {},
+		"datadog.trace_agent.stats_writer.payloads":        {},
+		"datadog.trace_agent.stats_writer.client_payloads": {},
+		"datadog.trace_agent.stats_writer.errors":          {},
+		"datadog.trace_agent.stats_writer.splits":          {},
+		"datadog.trace_agent.trace_writer.bytes":           {},
+		"datadog.trace_agent.trace_writer.retries":         {},
+		"datadog.trace_agent.trace_writer.spans":           {},
+		"datadog.trace_agent.trace_writer.traces":          {},
+		"datadog.trace_agent.trace_writer.payloads":        {},
+		"datadog.trace_agent.trace_writer.errors":          {},
+		"datadog.trace_agent.trace_writer.events":          {},
+
+		// OTel collector internal metrics
+		"otelcol_process_memory_rss":                     {},
+		"otelcol_process_runtime_total_sys_memory_bytes": {},
+		"otelcol_process_uptime":                         {},
+		"otelcol_process_cpu_seconds":                    {},
+		"otelcol_process_runtime_heap_alloc_bytes":       {},
+		"otelcol_process_runtime_total_alloc_bytes":      {},
+		"otelcol_receiver_accepted_metric_points":        {},
+		"otelcol_receiver_accepted_spans":                {},
+		"otelcol_exporter_queue_capacity":                {},
+		"otelcol_exporter_queue_size":                    {},
+		"otelcol_exporter_sent_spans":                    {},
+		"otelcol_exporter_sent_metric_points":            {},
+	}
+	testIntegrationInternalMetrics(t, expectedMetrics)
+}
+
+func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]struct{}) {
+	// 1. Set up mock Datadog server
+	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte, 100)}
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte, 100)}
+	server := testutil.DatadogServerMock(seriesRec.HandlerFunc, tracesRec.HandlerFunc)
+	defer server.Close()
+	t.Setenv("SERVER_URL", server.URL)
+	otlpEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_HTTP_SERVER", otlpEndpoint)
+
+	// 2. Start in-process collector
+	factories := getIntegrationTestComponents(t)
+	app := getIntegrationTestCollector(t, "integration_test_internal_metrics_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		_ = app.Run(context.Background()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
+		wg.Done()
+	}()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
+
+	waitForReadiness(app)
+
+	// 3. Generate and send traces
+	sendTraces(t, otlpEndpoint)
+
+	// 4. Validate Datadog trace agent & OTel internal metrics are sent to the mock server
+	metricMap := make(map[string]series)
+	for len(metricMap) < len(expectedMetrics) {
+		select {
+		case <-tracesRec.ReqChan:
+			// Drain the channel, no need to look into the traces
+		case metricsBytes := <-seriesRec.ReqChan:
+			var metrics seriesSlice
+			gz := getGzipReader(t, metricsBytes)
+			dec := json.NewDecoder(gz)
+			assert.NoError(t, dec.Decode(&metrics))
+			for _, s := range metrics.Series {
+				if _, ok := expectedMetrics[s.Metric]; ok {
+					metricMap[s.Metric] = s
+				}
+			}
+		case <-time.After(60 * time.Second):
+			t.Fail()
+		}
+	}
 }
