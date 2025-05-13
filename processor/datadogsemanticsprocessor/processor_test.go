@@ -252,6 +252,84 @@ func TestBasicTranslation(t *testing.T) {
 			},
 		},
 		{
+			name:                          "overrideIncomingDatadogFields even if override would be empty",
+			overrideIncomingDatadogFields: true,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "",
+						"resource.name":               "",
+						"deployment.environment.name": "",
+						"host.name":                   "",
+						"service.version":             "",
+						"datadog.env":                 "specified-host-name",
+						"datadog.host.name":           "specified-host-name",
+						"datadog.version":             "specified-version",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							Events: []testutil.OTLPSpanEvent{
+								{
+									Timestamp: 66,
+									Name:      "exception",
+									Attributes: map[string]any{
+										string(semconv.ExceptionMessageKey):    "",
+										string(semconv.ExceptionTypeKey):       "",
+										string(semconv.ExceptionStacktraceKey): "",
+									},
+									Dropped: 4,
+								},
+							},
+							StatusCode: ptrace.StatusCodeError,
+							StatusMsg:  "overridden-error-msg",
+							TraceID:    [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:       ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"datadog.service":                 "specified-service",
+								"datadog.resource":                "specified-resource",
+								"datadog.name":                    "specified-operation",
+								"datadog.type":                    "specified-type",
+								"datadog.host.name":               "specified-hostname",
+								"datadog.span.kind":               "specified-span-kind",
+								"datadog.env":                     "specified-env",
+								"datadog.http_status_code":        "500",
+								"datadog.error":                   1,
+								"datadog.error.msg":               "specified-error-msg",
+								"datadog.error.type":              "specified-error-type",
+								"datadog.error.stack":             "specified-error-stack",
+								string(semconv.HTTPStatusCodeKey): 200,
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "otlpresourcenoservicename")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "default")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "")
+
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.name", "server.request")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "web")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "server")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "200")
+				ddError, _ := sattr.Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.msg", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.type", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "")
+			},
+		},
+		{
 			name:                          "dont override incoming Datadog fields",
 			overrideIncomingDatadogFields: false,
 			in: []testutil.OTLPResourceSpan{
