@@ -109,7 +109,7 @@ func evaluateSeverityNumberMapping(value int64, criteria []any) (bool, error) {
 		rangeMin, gotMin := rangeMap[minKey]
 		rangeMax, gotMax := rangeMap[maxKey]
 		if !gotMin || !gotMax {
-			continue
+			return false, fmt.Errorf("range criteria must contain min and max values")
 		}
 		rangeMinInt, ok := rangeMin.(int64)
 		if !ok {

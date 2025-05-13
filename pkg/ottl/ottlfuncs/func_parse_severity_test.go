@@ -252,7 +252,7 @@ func Test_parseSeverity(t *testing.T) {
 					return m, nil
 				},
 			},
-			expectErrorMsg: "could not map log level: no matching log level found for value '400'",
+			expectErrorMsg: "could not map log level: could not evaluate log level of value '400': range criteria must contain min and max values",
 		},
 		{
 			name: "missing max in range, no match",
@@ -271,7 +271,7 @@ func Test_parseSeverity(t *testing.T) {
 					return m, nil
 				},
 			},
-			expectErrorMsg: "could not map log level: no matching log level found for value '400'",
+			expectErrorMsg: "could not map log level: could not evaluate log level of value '400': range criteria must contain min and max values",
 		},
 		{
 			name: "incorrect format of severity mapping, no match",
