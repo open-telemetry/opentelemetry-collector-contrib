@@ -731,7 +731,7 @@ func seriesFromAPIClient(t *testing.T, metricsBytes []byte, expectedMetrics map[
 }
 
 func TestIntegrationInternalMetrics(t *testing.T) {
-	t.Skip("flaky test")
+	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40056")
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
