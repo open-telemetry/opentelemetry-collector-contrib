@@ -1056,9 +1056,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
-				conventions.AttributeServiceInstanceID:  "instance-1",
-				conventions.AttributeServiceVersion:     "1.0.1",
-				conventions.AttributeServiceName:        "app",
+				string(conventions.ServiceInstanceIDKey):  "instance-1",
+				string(conventions.ServiceVersionKey):     "1.0.1",
+				string(conventions.ServiceNameKey):        "app",
 			},
 		},
 		{
@@ -1115,10 +1115,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				}
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
 					Attributes: map[string]string{
-						conventions.AttributeServiceInstanceID: "explicit-instance",
-						conventions.AttributeServiceVersion:    "explicit-version",
-						conventions.AttributeServiceName:       "explicit-name",
-						conventions.AttributeServiceNamespace:  "explicit-ns",
+						string(conventions.ServiceInstanceIDKey): "explicit-instance",
+						string(conventions.ServiceVersionKey):    "explicit-version",
+						string(conventions.ServiceNameKey):       "explicit-name",
+						string(conventions.ServiceNamespaceKey):  "explicit-ns",
 					},
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
@@ -1138,15 +1138,15 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
 			},
 			wantAttrs: map[string]any{
-				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				conventions.AttributeContainerID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
-				conventions.AttributeK8SContainerName:   "app",
-				conventions.AttributeContainerImageName: "test/app",
-				conventions.AttributeContainerImageTag:  "1.0.1",
-				conventions.AttributeServiceInstanceID:  "explicit-instance",
-				conventions.AttributeServiceVersion:     "explicit-version",
-				conventions.AttributeServiceName:        "explicit-name",
-				conventions.AttributeServiceNamespace:   "explicit-ns",
+				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				string(conventions.K8SContainerNameKey):   "app",
+				string(conventions.ContainerImageNameKey): "test/app",
+				string(conventions.ContainerImageTagKey):  "1.0.1",
+				string(conventions.ServiceInstanceIDKey):  "explicit-instance",
+				string(conventions.ServiceVersionKey):     "explicit-version",
+				string(conventions.ServiceNameKey):        "explicit-name",
+				string(conventions.ServiceNamespaceKey):   "explicit-ns",
 			},
 		},
 		{
