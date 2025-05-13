@@ -1,0 +1,86 @@
+{
+  "action": "completed",
+  "workflow_job": {
+    "id": 41546348818,
+    "run_id": 14796710445,
+    "workflow_name": "skip-me",
+    "head_branch": "main",
+    "run_url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/actions/runs/14796710445",
+    "run_attempt": 13,
+    "node_id": "CR_kwDOOjaRi88AAAAJrFr5Eg",
+    "head_sha": "51eb1fb55541bf4856a7a24afd15bb3e90eea0ff",
+    "url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/actions/jobs/41546348818",
+    "html_url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/runs/14796710445/job/41546348818",
+    "status": "completed",
+    "conclusion": "skipped",
+    "created_at": "2025-05-02T14:15:55Z",
+    "started_at": "2025-05-02T14:15:54Z",
+    "completed_at": "2025-05-02T14:15:54Z",
+    "name": "build",
+    "steps": [
+
+    ],
+    "check_run_url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/check-runs/41546348818",
+    "labels": [
+
+    ],
+    "runner_id": null,
+    "runner_name": null,
+    "runner_group_id": null,
+    "runner_group_name": null
+  },
+  "repository": {
+    "id": 976654731,
+    "node_id": "R_kgDOOjaRiw",
+    "name": "opentelemetry-collector-contrib",
+    "full_name": "open-telemetry/opentelemetry-collector-contrib",
+    "private": false,
+    "owner": {
+      "login": "open-telemetry",
+      "id": 31416286,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjMxNDE2Mjg2",
+      "url": "https://api.github.com/users/open-telemetry",
+      "html_url": "https://github.com/open-telemetry",
+      "followers_url": "https://api.github.com/users/open-telemetry/followers",
+      "following_url": "https://api.github.com/users/open-telemetry/following{/other_user}",
+      "gists_url": "https://api.github.com/users/open-telemetry/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/open-telemetry/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/open-telemetry/subscriptions",
+      "organizations_url": "https://api.github.com/users/open-telemetry/orgs",
+      "repos_url": "https://api.github.com/users/open-telemetry/repos",
+      "events_url": "https://api.github.com/users/open-telemetry/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/open-telemetry/received_events",
+      "type": "Organization",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "html_url": "https://github.com/open-telemetry/opentelemetry-collector-contrib",
+    "fork": false,
+    "url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib",
+    "forks_url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/forks",
+    "keys_url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/keys{/key_id}",
+    "deployments_url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/deployments",
+    "created_at": "2025-05-02T13:57:56Z",
+    "updated_at": "2025-05-02T14:01:14Z",
+    "pushed_at": "2025-05-02T14:01:10Z",
+    "visibility": "public",
+    "default_branch": "main",
+    "custom_properties": {
+
+    }
+  },
+  "organization": {
+    "login": "open-telemetry",
+    "id": 31416286,
+    "node_id": "MDEyOk9yZ2FuaXphdGlvbjMxNDE2Mjg2",
+    "url": "https://api.github.com/orgs/open-telemetry"
+  },
+  "sender": {
+    "login": "adrielp",
+    "url": "https://api.github.com/users/adrielp",
+    "html_url": "https://github.com/adrielp",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  }
+}

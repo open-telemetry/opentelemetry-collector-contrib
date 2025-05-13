@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -184,14 +184,14 @@ type resourceKey struct {
 // setResourceAttributes sets attributes on a pcommon.Resource from a cwMetric.
 func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 	attributes := resource.Attributes()
-	attributes.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attributes.PutStr(conventions.AttributeCloudAccountID, key.accountID)
-	attributes.PutStr(conventions.AttributeCloudRegion, key.region)
+	attributes.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	attributes.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
+	attributes.PutStr(string(conventions.CloudRegionKey), key.region)
 	serviceNamespace, serviceName := toServiceAttributes(key.namespace)
 	if serviceNamespace != "" {
-		attributes.PutStr(conventions.AttributeServiceNamespace, serviceNamespace)
+		attributes.PutStr(string(conventions.ServiceNamespaceKey), serviceNamespace)
 	}
-	attributes.PutStr(conventions.AttributeServiceName, serviceName)
+	attributes.PutStr(string(conventions.ServiceNameKey), serviceName)
 	attributes.PutStr(attributeAWSCloudWatchMetricStreamName, key.metricStreamName)
 }
 
@@ -200,7 +200,7 @@ func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
 	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], conventions.AttributeCloudProviderAWS) {
+	if index != -1 && strings.EqualFold(namespace[:index], conventions.CloudProviderAWS.Value.AsString()) {
 		return namespace[:index], namespace[index+1:]
 	}
 	return "", namespace
@@ -212,7 +212,7 @@ func setDataPointAttributes(m cWMetric, dp pmetric.SummaryDataPoint) {
 	for k, v := range m.Dimensions {
 		switch k {
 		case dimensionInstanceID:
-			attrs.PutStr(conventions.AttributeServiceInstanceID, v)
+			attrs.PutStr(string(conventions.ServiceInstanceIDKey), v)
 		default:
 			attrs.PutStr(k, v)
 		}
