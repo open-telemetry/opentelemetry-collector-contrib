@@ -51,7 +51,7 @@ func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanIDGeneration, err)
 	}
 
-	if err := gtr.processPipelineSpan(r, pipeline, traceID, pipelineSpanID); err != nil {
+	if err = gtr.processPipelineSpan(r, pipeline, traceID, pipelineSpanID); err != nil {
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanProcessing, err)
 	}
 

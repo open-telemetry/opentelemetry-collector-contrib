@@ -125,7 +125,7 @@ func TestProcessStageSpans(t *testing.T) {
 
 	stages, err := receiver.processStageSpans(resourceSpans, glPipeline, traceID, parentSpanID)
 	require.NoError(t, err)
-	require.Equal(t, 2, len(stages), "should have two stages")
+	require.Len(t, stages, 2, "should have two stages")
 
 	// Verify the stage spans were created
 	scopeSpansCount := resourceSpans.ScopeSpans().Len()
