@@ -86,7 +86,11 @@ func addToGroupedMetric(
 			}
 
 			// Extra params to use when grouping metrics
-			metadata.groupedMetricMetadata.batchIndex = i
+			if !(metadata.groupedMetricMetadata.metricDataType == pmetric.MetricTypeSummary && config.DetailedMetrics) {
+				// Summary metrics can be split into separate datapoints when using DetailedMetrics, but we still want to group
+				// them together into one EMF log event, so don't set batchIndex when it's a summary metric
+				metadata.groupedMetricMetadata.batchIndex = i
+			}
 			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log

@@ -438,6 +438,63 @@ func TestAddToGroupedMetric(t *testing.T) {
 			idx++
 		}
 	})
+
+	t.Run("Detailed summary metrics", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+		groupedMetrics := make(map[any]*groupedMetric)
+		generateMetrics := []pmetric.Metrics{
+			generateTestSummaryMetric("foo"),
+		}
+		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
+
+		rms := finalOtelMetrics.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+		assert.Equal(t, 2, metrics.Len(), "2 metrics are required to form 1 delta metric")
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.DetailedMetrics = true
+
+		for i := 0; i < metrics.Len(); i++ {
+			err := addToGroupedMetric(metrics.At(i),
+				groupedMetrics,
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				true,
+				nil,
+				cfg,
+				emfCalcs,
+			)
+			assert.NoError(t, err)
+		}
+		assert.Len(t, groupedMetrics, 3) // sum + count, quantile 0, quantile 100 (see generateTestSummaryMetric)
+		for _, group := range groupedMetrics {
+			for metricName, metricInfo := range group.metrics {
+				switch metricName {
+				case "foo_sum", "foo_count":
+					assert.Len(t, group.metrics, 2, "sum and count should be grouped together for detailed summary metrics")
+					assert.Equal(t, "Seconds", metricInfo.unit)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+				case "foo":
+					quantileVal, ok := group.labels["quantile"]
+					assert.True(t, ok)
+					switch quantileVal {
+					case "0":
+						assert.Equal(t, float64(1), metricInfo.value)
+					case "100":
+						assert.Equal(t, float64(5), metricInfo.value)
+					default:
+						assert.Fail(t, "Unexpected quantile value")
+					}
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+				default:
+					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
+				}
+				// ensure label1:value1 is always present (may not be the only label though)
+				assert.Equal(t, "value1", group.labels["label1"])
+			}
+		}
+	})
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
