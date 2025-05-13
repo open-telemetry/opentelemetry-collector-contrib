@@ -17,7 +17,6 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	collectorconventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	conventions112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
 
@@ -79,9 +78,97 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (ptrace.Tra
 	return traceData, nil
 }
 
+func getResourceSemanticConventionAttributeNames() []string {
+	return []string{
+		string(conventions.CloudProviderKey),
+		string(conventions.CloudAccountIDKey),
+		string(conventions.CloudRegionKey),
+		string(conventions.CloudAvailabilityZoneKey),
+		string(conventions.CloudPlatformKey),
+		string(conventions.AWSECSContainerARNKey),
+		string(conventions.AWSECSClusterARNKey),
+		string(conventions.AWSECSLaunchtypeKey),
+		string(conventions.AWSECSTaskARNKey),
+		string(conventions.AWSECSTaskFamilyKey),
+		string(conventions.AWSECSTaskRevisionKey),
+		string(conventions.AWSEKSClusterARNKey),
+		string(conventions.AWSLogGroupNamesKey),
+		string(conventions.AWSLogGroupARNsKey),
+		string(conventions.AWSLogStreamNamesKey),
+		string(conventions.AWSLogStreamARNsKey),
+		string(conventions.ContainerNameKey),
+		string(conventions.ContainerIDKey),
+		string(conventions.ContainerRuntimeKey),
+		string(conventions.ContainerImageNameKey),
+		string(conventions.ContainerImageTagKey),
+		string(conventions.DeploymentEnvironmentKey),
+		string(conventions.DeviceIDKey),
+		string(conventions.DeviceModelIdentifierKey),
+		string(conventions.DeviceModelNameKey),
+		string(conventions.DeviceManufacturerKey),
+		string(conventions.FaaSNameKey),
+		string(conventions.FaaSIDKey),
+		string(conventions.FaaSVersionKey),
+		string(conventions.FaaSInstanceKey),
+		string(conventions.FaaSMaxMemoryKey),
+		string(conventions.HostIDKey),
+		string(conventions.HostNameKey),
+		string(conventions.HostTypeKey),
+		string(conventions.HostArchKey),
+		string(conventions.HostImageNameKey),
+		string(conventions.HostImageIDKey),
+		string(conventions.HostImageVersionKey),
+		string(conventions.K8SClusterNameKey),
+		string(conventions.K8SNodeNameKey),
+		string(conventions.K8SNodeUIDKey),
+		string(conventions.K8SNamespaceNameKey),
+		string(conventions.K8SPodUIDKey),
+		string(conventions.K8SPodNameKey),
+		string(conventions.K8SContainerNameKey),
+		string(conventions.K8SContainerRestartCountKey),
+		string(conventions.K8SReplicaSetUIDKey),
+		string(conventions.K8SReplicaSetNameKey),
+		string(conventions.K8SDeploymentUIDKey),
+		string(conventions.K8SDeploymentNameKey),
+		string(conventions.K8SStatefulSetUIDKey),
+		string(conventions.K8SStatefulSetNameKey),
+		string(conventions.K8SDaemonSetUIDKey),
+		string(conventions.K8SDaemonSetNameKey),
+		string(conventions.K8SJobUIDKey),
+		string(conventions.K8SJobNameKey),
+		string(conventions.K8SCronJobUIDKey),
+		string(conventions.K8SCronJobNameKey),
+		string(conventions.OSTypeKey),
+		string(conventions.OSDescriptionKey),
+		string(conventions.OSNameKey),
+		string(conventions.OSVersionKey),
+		string(conventions.ProcessPIDKey),
+		string(conventions.ProcessExecutableNameKey),
+		string(conventions.ProcessExecutablePathKey),
+		string(conventions.ProcessCommandKey),
+		string(conventions.ProcessCommandLineKey),
+		string(conventions.ProcessCommandArgsKey),
+		string(conventions.ProcessOwnerKey),
+		string(conventions.ProcessRuntimeNameKey),
+		string(conventions.ProcessRuntimeVersionKey),
+		string(conventions.ProcessRuntimeDescriptionKey),
+		string(conventions.ServiceNameKey),
+		string(conventions.ServiceNamespaceKey),
+		string(conventions.ServiceInstanceIDKey),
+		string(conventions.ServiceVersionKey),
+		string(conventions.TelemetrySDKNameKey),
+		string(conventions.TelemetrySDKLanguageKey),
+		string(conventions.TelemetrySDKVersionKey),
+		string(conventions.TelemetryAutoVersionKey),
+		string(conventions.WebEngineNameKey),
+		string(conventions.WebEngineVersionKey),
+		string(conventions.WebEngineDescriptionKey),
+	}
+}
+
 var nonSpanAttributes = func() map[string]struct{} {
 	attrs := make(map[string]struct{})
-	for _, key := range collectorconventions.GetResourceSemanticConventionAttributeNames() {
+	for _, key := range getResourceSemanticConventionAttributeNames() {
 		attrs[key] = struct{}{}
 	}
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
