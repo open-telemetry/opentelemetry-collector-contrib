@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -37,6 +38,14 @@ var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
 		" leave the start time unset. Use the new metricstarttime processor instead."),
 )
 
+var removeScopeInfo = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.RemoveScopeInfo",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("To comply with the OpenTelemetry specification, Prometheus receiver will"+
+		" stop populating scope attributes from the otel_scope_info metric. Instead, scope attributes will be populated from"+
+		" labels that start with the prefix 'otel_scope_'. Update your SDKs to a version that follows this spec change."),
+)
+
 type resourceKey struct {
 	job      string
 	instance string
@@ -62,20 +71,26 @@ type transaction struct {
 	sink                   consumer.Metrics
 	externalLabels         labels.Labels
 	nodeResources          map[resourceKey]pcommon.Resource
-	scopeAttributes        map[resourceKey]map[scopeID]pcommon.Map
-	logger                 *zap.Logger
-	buildInfo              component.BuildInfo
-	metricAdjuster         MetricsAdjuster
-	obsrecv                *receiverhelper.ObsReport
+	// scopeAttributes is a in-memory cache of attributes extracted from the otel_scope_info metric.
+	// If the feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is enabled, this cache isn't used.
+	scopeAttributes map[resourceKey]map[string]pcommon.Map
+	logger          *zap.Logger
+	buildInfo       component.BuildInfo
+	metricAdjuster  MetricsAdjuster
+	obsrecv         *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
 
-var emptyScopeID scopeID
-
 type scopeID struct {
-	name    string
-	version string
+	name       string
+	version    string
+	schemaURL  string
+	attributes pcommon.Map
+}
+
+func (s *scopeID) isEmpty() bool {
+	return s.name == "" && s.version == "" && s.schemaURL == "" && s.attributes.Len() == 0
 }
 
 func newTransaction(
@@ -101,7 +116,7 @@ func newTransaction(
 		buildInfo:              settings.BuildInfo,
 		obsrecv:                obsrecv,
 		bufBytes:               make([]byte, 0, 1024),
-		scopeAttributes:        make(map[resourceKey]map[scopeID]pcommon.Map),
+		scopeAttributes:        make(map[resourceKey]map[string]pcommon.Map),
 		nodeResources:          map[resourceKey]pcommon.Resource{},
 	}
 }
@@ -165,8 +180,8 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == prometheus.ScopeInfoMetricName {
-		t.addScopeInfo(*rKey, ls)
+	if metricName == prometheus.ScopeInfoMetricName && !removeScopeInfo.IsEnabled() {
+		t.cacheScopeFromScopeInfo(*rKey, ls)
 		return 0, nil
 	}
 
@@ -430,19 +445,26 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 			ils := rms.ScopeMetrics().AppendEmpty()
 			// If metrics don't include otel_scope_name or otel_scope_version
 			// labels, use the receiver name and version.
-			if scope == emptyScopeID {
+			if scope.isEmpty() {
 				ils.Scope().SetName(mdata.ScopeName)
 				ils.Scope().SetVersion(t.buildInfo.Version)
 			} else {
 				// Otherwise, use the scope that was provided with the metrics.
 				ils.Scope().SetName(scope.name)
 				ils.Scope().SetVersion(scope.version)
-				// If we got an otel_scope_info metric for that scope, get scope
-				// attributes from it.
-				if scopeAttributes, ok := t.scopeAttributes[rKey]; ok {
-					if attributes, ok := scopeAttributes[scope]; ok {
-						attributes.CopyTo(ils.Scope().Attributes())
+
+				if !removeScopeInfo.IsEnabled() {
+					// Get full Scope from cache.
+					if scopeAttributes, ok := t.scopeAttributes[rKey]; ok {
+						scopeKey := fmt.Sprintf("%s:%s", scope.name, scope.version)
+						if attributes, ok := scopeAttributes[scopeKey]; ok {
+							attributes.CopyTo(ils.Scope().Attributes())
+						}
 					}
+				} else {
+					// If we're not parsing the otel_scope_info metric, we get scope
+					// from the pre-populated scope.
+					scope.attributes.CopyTo(ils.Scope().Attributes())
 				}
 			}
 			metrics := ils.Metrics()
@@ -471,12 +493,25 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 
 func getScopeID(ls labels.Labels) scopeID {
 	var scope scopeID
+	scope.attributes = pcommon.NewMap()
 	ls.Range(func(lbl labels.Label) {
+		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
+			return
+		}
 		if lbl.Name == prometheus.ScopeNameLabelKey {
 			scope.name = lbl.Value
+			return
 		}
 		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
+			return
+		}
+		if lbl.Name == "otel_scope_schema_url" {
+			scope.schemaURL = lbl.Value
+			return
+		}
+		if strings.HasPrefix(lbl.Name, "otel_scope_") {
+			scope.attributes.PutStr(strings.TrimPrefix(lbl.Name, "otel_scope_"), lbl.Value)
 		}
 	})
 	return scope
@@ -587,28 +622,18 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 	}
 }
 
-func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
+func (t *transaction) cacheScopeFromScopeInfo(key resourceKey, ls labels.Labels) {
 	t.addingNativeHistogram = false
-	attrs := pcommon.NewMap()
-	scope := scopeID{}
-	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
-			return
-		}
-		if lbl.Name == prometheus.ScopeNameLabelKey {
-			scope.name = lbl.Value
-			return
-		}
-		if lbl.Name == prometheus.ScopeVersionLabelKey {
-			scope.version = lbl.Value
-			return
-		}
-		attrs.PutStr(lbl.Name, lbl.Value)
-	})
+	scope := getScopeID(ls)
 	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
+		t.scopeAttributes[key] = make(map[string]pcommon.Map)
 	}
-	t.scopeAttributes[key][scope] = attrs
+
+	// Only scope name and version are used to match otel_scope_info
+	// with all other metrics. So the cache key will be a concatenation
+	// of these two values.
+	scopeKey := fmt.Sprintf("%s:%s", scope.name, scope.version)
+	t.scopeAttributes[key][scopeKey] = scope.attributes
 }
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
