@@ -45,7 +45,7 @@ const (
 	attributeDatadogSpanID = "datadog.span.id"
 )
 
-var spanProcessor = map[string]func(*pb.Span, *ptrace.Span) error{
+var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// HTTP
 	"servlet.request": processHTTPSpan,
 
@@ -101,13 +101,12 @@ func traceID64to128(span *pb.Span, traceIDCache *simplelru.LRU[uint64, pcommon.T
 	return pcommon.TraceID{}, nil
 }
 
-func processInternalSpan(span *pb.Span, newSpan *ptrace.Span) error {
+func processInternalSpan(span *pb.Span, newSpan *ptrace.Span) {
 	newSpan.SetName(span.Resource)
 	newSpan.SetKind(ptrace.SpanKindInternal)
-	return nil
 }
 
-func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) error {
+func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name
 	// We assume that http.route coming from datadog is low cardinality
 	if val, ok := span.Meta["http.method"]; ok {
@@ -117,10 +116,9 @@ func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) error {
 			newSpan.SetName(val)
 		}
 	}
-	return nil
 }
 
-func processDBSpan(span *pb.Span, newSpan *ptrace.Span) error {
+func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
 	if val, ok := span.Meta["db.query.summary"]; ok {
 		newSpan.SetName(val)
@@ -135,14 +133,12 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) error {
 			newSpan.SetName(val)
 		}
 	}
-	return nil
 }
 
-func processSpanByName(span *pb.Span, newSpan *ptrace.Span) error {
+func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	if processor, ok := spanProcessor[span.Name]; ok {
-		return processor(span, newSpan)
+		processor(span, newSpan)
 	}
-	return nil
 }
 
 func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
@@ -269,7 +265,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			}
 
 			// Some spans need specific processing (http, db, ...)
-			_ = processSpanByName(span, &newSpan)
+			processSpanByName(span, &newSpan)
 		}
 	}
 

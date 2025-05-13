@@ -343,7 +343,6 @@ func TestToTracesServiceName(t *testing.T) {
 						assert.Equal(t, tt.expectedSpanName, span.Name())
 					}
 				}
-
 			}
 		})
 	}
@@ -474,10 +473,11 @@ func TestProcessSpanByName(t *testing.T) {
 		},
 	}
 
+	//nolint:govet
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			span := ptrace.NewSpan()
-			_ = processSpanByName(&tt.span, &span)
+			processSpanByName(&tt.span, &span)
 			assert.Equal(t, tt.expectedSpanName, span.Name())
 		})
 	}
