@@ -23,6 +23,13 @@ transform:
     - context: resource
       statements:
         - set(attributes["name"], "bear")
+  profile_statements:
+    - context: profile
+      statements:
+        - set(original_payload_format, "bear") where original_payload_format == "/animal"
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
 
 transform/with_conditions:
   trace_statements:
@@ -43,6 +50,12 @@ transform/with_conditions:
         - attributes["http.path"] == "/animal"
       statements:
         - set(body, "bear")     
+  profile_statements:
+    - context: profile
+      conditions:
+        - original_payload_format == "/animal"
+      statements:
+        - set(original_payload_format, "bear")
 
 transform/ignore_errors:
   error_mode: ignore
@@ -72,6 +85,13 @@ transform/bad_syntax_trace:
         - set(name, "bear" where attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
 
+transform/bad_syntax_profile:
+  log_statements:
+    - context: profile
+      statements:
+        - set(original_payload_format, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+
 transform/bad_syntax_multi_signal:
   trace_statements:
     - context: span
@@ -87,6 +107,11 @@ transform/bad_syntax_multi_signal:
     - context: log
       statements:
         - set(body, "bear" none["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+  profile_statements:
+    - context: profile
+      statements:
+        - set(original_payload_format, "bear" none["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/unknown_function_log:
@@ -108,6 +133,13 @@ transform/unknown_function_trace:
     - context: span
       statements:
         - set(name, "bear") where attributes["http.path"] == "/animal"
+        - not_a_function(attributes, ["http.method", "http.path"])
+
+transform/unknown_function_profile:
+  log_statements:
+    - context: profile
+      statements:
+        - set(original_payload_format, "bear") where attributes["http.path"] == "/animal"
         - not_a_function(attributes, ["http.method", "http.path"])
 
 transform/unknown_context:
@@ -132,6 +164,10 @@ transform/structured_configuration_with_path_context:
     - context: log
       statements:
         - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+  profile_statements:
+    - context: profile
+      statements:
+        - set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"
 
 transform/structured_configuration_with_inferred_context:
   trace_statements:
@@ -146,6 +182,10 @@ transform/structured_configuration_with_inferred_context:
     - statements:
       - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
       - set(resource.attributes["name"], "bear")
+  profile_statements:
+    - statements:
+        - set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"
+        - set(resource.attributes["name"], "bear")
 
 transform/flat_configuration:
   trace_statements:
@@ -156,6 +196,9 @@ transform/flat_configuration:
     - set(resource.attributes["name"], "bear")
   log_statements:
     - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
+  profile_statements:
+    - set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"
     - set(resource.attributes["name"], "bear")
 
 transform/mixed_configuration_styles:
@@ -190,6 +233,12 @@ transform/context_statements_error_mode:
     - statements:
         - set(resource.attributes["name"], "ignore")
   log_statements:
+    - error_mode: propagate
+      statements:
+        - set(resource.attributes["name"], "propagate")
+    - statements:
+        - set(resource.attributes["name"], "ignore")
+  profile_statements:
     - error_mode: propagate
       statements:
         - set(resource.attributes["name"], "propagate")
