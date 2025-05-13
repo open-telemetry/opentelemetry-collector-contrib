@@ -12,8 +12,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512210654-f592f1cefb67
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512225928-0bef08994deb
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
 	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
@@ -96,7 +96,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector v0.125.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configauth v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.125.1-0.20250512225928-0bef08994deb // indirect
@@ -108,7 +108,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250512210654-f592f1cefb67 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.1-0.20250512225928-0bef08994deb // indirect
-	go.opentelemetry.io/collector/internal/sharedcomponent v0.125.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/internal/sharedcomponent v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/receiver v1.31.1-0.20250512210654-f592f1cefb67 // indirect

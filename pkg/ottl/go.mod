@@ -17,7 +17,7 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/otel v1.35.0

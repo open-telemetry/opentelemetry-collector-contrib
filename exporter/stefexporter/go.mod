@@ -12,7 +12,7 @@ require (
 	github.com/splunk/stef/go/pkg v0.0.5
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configgrpc v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configretry v1.31.1-0.20250512225928-0bef08994deb
@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/exporter v0.125.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/pdata/testdata v0.125.1-0.20250512225928-0bef08994deb
 	go.uber.org/goleak v1.3.0

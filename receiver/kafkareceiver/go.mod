@@ -21,7 +21,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configretry v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/confmap v1.31.1-0.20250512210654-f592f1cefb67

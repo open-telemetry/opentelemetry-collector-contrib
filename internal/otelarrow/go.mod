@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/otel-arrow v0.35.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configgrpc v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/configtelemetry v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
@@ -71,7 +71,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.31.1-0.20250512210654-f592f1cefb67 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512210654-f592f1cefb67 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configauth v0.125.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250512225928-0bef08994deb // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.125.1-0.20250512225928-0bef08994deb // indirect

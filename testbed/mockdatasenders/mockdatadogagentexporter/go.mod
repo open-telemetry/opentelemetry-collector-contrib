@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/tinylib/msgp v1.2.5
 	go.opentelemetry.io/collector/component v1.31.1-0.20250512225928-0bef08994deb
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512210654-f592f1cefb67
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250512225928-0bef08994deb
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250512225928-0bef08994deb
