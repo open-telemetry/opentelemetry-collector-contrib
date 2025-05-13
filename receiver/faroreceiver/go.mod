@@ -39,7 +39,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.125.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.126.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
@@ -69,10 +69,10 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.126.0
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.32.0 // indirect

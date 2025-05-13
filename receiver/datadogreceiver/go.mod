@@ -10,9 +10,9 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.126.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tinylib/msgp v1.2.5
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -78,7 +78,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.125.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.126.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
