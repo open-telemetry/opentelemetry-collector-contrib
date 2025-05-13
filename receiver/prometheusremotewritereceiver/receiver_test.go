@@ -471,6 +471,76 @@ func TestTranslateV2(t *testing.T) {
 				return metrics
 			}(),
 		},
+		{
+			name: "summary metric (sum/count/quantiles)",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "latency_seconds", // 1,2  base name (quantiles)
+					"__name__", "latency_seconds_sum", // 3,4
+					"__name__", "latency_seconds_count", // 5,6
+					"job", "api/test", // 7,8
+					"instance", "node1", // 9,10
+					"quantile", "0.5", // 11,12
+					"quantile", "0.9", // 13,14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+						LabelsRefs:       []uint32{3, 4, 7, 8, 9, 10},
+						Samples:          []writev2.Sample{{Value: 12.34, Timestamp: 1}},
+						CreatedTimestamp: 1,
+					},
+					{
+						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+						LabelsRefs:       []uint32{5, 6, 7, 8, 9, 10},
+						Samples:          []writev2.Sample{{Value: 7, Timestamp: 1}},
+						CreatedTimestamp: 1,
+					},
+					{
+						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+						LabelsRefs:       []uint32{1, 2, 7, 8, 9, 10, 11, 12},
+						Samples:          []writev2.Sample{{Value: 0.123, Timestamp: 1}},
+						CreatedTimestamp: 1,
+					},
+					{
+						Metadata:         writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+						LabelsRefs:       []uint32{1, 2, 7, 8, 9, 10, 13, 14},
+						Samples:          []writev2.Sample{{Value: 0.456, Timestamp: 1}},
+						CreatedTimestamp: 1,
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				rm := m.ResourceMetrics().AppendEmpty()
+				attr := rm.Resource().Attributes()
+				attr.PutStr("service.namespace", "api")
+				attr.PutStr("service.name", "test")
+				attr.PutStr("service.instance.id", "node1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("latency_seconds")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetSum(12.34)
+				dp.SetCount(7)
+				q1 := dp.QuantileValues().AppendEmpty()
+				q1.SetQuantile(0.5)
+				q1.SetValue(0.123)
+				q2 := dp.QuantileValues().AppendEmpty()
+				q2.SetQuantile(0.9)
+				q2.SetValue(0.456)
+				return m
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test

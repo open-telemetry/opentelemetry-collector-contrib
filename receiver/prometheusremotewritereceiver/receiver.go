@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -270,6 +271,20 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
 		metricName := ls.Get(labels.MetricName)
+
+		// Summary-specific handling:
+		// Collapse *_sum, *_count, and quantile series to one base metric name so
+		// they become a single OTLP Summary rather than three independent metrics.
+		baseMetricName := metricName
+		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_SUMMARY {
+			switch {
+			case strings.HasSuffix(metricName, "_sum"):
+				baseMetricName = strings.TrimSuffix(metricName, "_sum")
+			case strings.HasSuffix(metricName, "_count"):
+				baseMetricName = strings.TrimSuffix(metricName, "_count")
+			}
+		}
+
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
 			continue
@@ -289,7 +304,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			resourceID.String(), // Resource identity
 			scopeName,           // Scope name
 			scopeVersion,        // Scope version
-			metricName,          // Metric name
+			baseMetricName,      // Metric name (normalized for Summary)
 			unit,                // Unit
 			ts.Metadata.Type,    // Metric type
 		)
@@ -316,7 +331,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// If the metric does not exist, we create an empty metric and add it to the cache.
 		if !exists {
 			metric = scope.Metrics().AppendEmpty()
-			metric.SetName(metricName)
+			metric.SetName(baseMetricName)
 			metric.SetUnit(unit)
 			metric.SetDescription(description)
 
@@ -342,7 +357,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			metric.SetDescription(description)
 		}
 
-		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
@@ -399,8 +413,62 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 	}
 }
 
-func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addSummaryDatapoints(datapoints pmetric.SummaryDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	metricName := ls.Get(labels.MetricName)
+	isSum := strings.HasSuffix(metricName, "_sum")
+	isCount := strings.HasSuffix(metricName, "_count")
+	qLabel := ls.Get("quantile")
+
+	var qVal float64
+	hasQuantile := qLabel != ""
+	if hasQuantile {
+		if v, err := strconv.ParseFloat(qLabel, 64); err == nil {
+			qVal = v
+		}
+	}
+
+	// Build the attribute map once (remove resource-level labels and quantile).
+	attrs := extractAttributes(ls)
+	if hasQuantile {
+		attrs.Remove("quantile")
+	}
+
+	for _, s := range ts.Samples {
+		tsNanos := pcommon.Timestamp(s.Timestamp * int64(time.Millisecond))
+		startNanos := pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond))
+
+		// Re-use an existing datapoint if timestamp+attributes match;
+		// otherwise append a new one.
+		var dp pmetric.SummaryDataPoint
+		found := false
+		for i := 0; i < datapoints.Len(); i++ {
+			cand := datapoints.At(i)
+			if cand.Timestamp() == tsNanos &&
+				cand.Attributes().Len() == attrs.Len() &&
+				cand.Attributes().Equal(attrs) {
+				dp = cand
+				found = true
+				break
+			}
+		}
+		if !found {
+			dp = datapoints.AppendEmpty()
+			dp.SetStartTimestamp(startNanos)
+			dp.SetTimestamp(tsNanos)
+			attrs.CopyTo(dp.Attributes())
+		}
+
+		switch {
+		case isSum:
+			dp.SetSum(s.Value)
+		case isCount:
+			dp.SetCount(uint64(s.Value))
+		case hasQuantile:
+			q := dp.QuantileValues().AppendEmpty()
+			q.SetQuantile(qVal)
+			q.SetValue(s.Value)
+		}
+	}
 }
 
 func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
@@ -421,4 +489,19 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 		scopeVersion = sVersion
 	}
 	return scopeName, scopeVersion
+}
+
+// extractAttributes copies Prometheus labels to OTLP attributes,
+// skipping labels that become resource or scope information.
+func extractAttributes(ls labels.Labels) pcommon.Map {
+	out := pcommon.NewMap()
+	for _, l := range ls {
+		switch l.Name {
+		case labels.MetricName, "job", "instance", "otel_scope_name", "otel_scope_version":
+			continue
+		default:
+			out.PutStr(l.Name, l.Value)
+		}
+	}
+	return out
 }
