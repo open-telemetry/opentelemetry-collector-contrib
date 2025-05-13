@@ -6,7 +6,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -30,13 +30,13 @@ var AutomaticLabelRules = []FieldExtractionRule{
 }
 
 var serviceNamePrecedence = []string{
-	conventions.AttributeK8SDeploymentName,
-	conventions.AttributeK8SReplicaSetName,
-	conventions.AttributeK8SStatefulSetName,
-	conventions.AttributeK8SDaemonSetName,
-	conventions.AttributeK8SCronJobName,
-	conventions.AttributeK8SJobName,
-	conventions.AttributeK8SPodName,
+	string(conventions.K8SDeploymentNameKey),
+	string(conventions.K8SReplicaSetNameKey),
+	string(conventions.K8SStatefulSetNameKey),
+	string(conventions.K8SDaemonSetNameKey),
+	string(conventions.K8SCronJobNameKey),
+	string(conventions.K8SJobNameKey),
+	string(conventions.K8SPodNameKey),
 }
 
 func AutomaticServiceName(containerName string, names map[string]string) string {

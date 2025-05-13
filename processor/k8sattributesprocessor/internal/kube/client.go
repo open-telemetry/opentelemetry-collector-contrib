@@ -458,7 +458,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		tags[string(conventions.K8SPodNameKey)] = pod.Name
 	}
 	if c.Rules.ServiceAttributes {
-		serviceNames[conventions.AttributeK8SPodName] = pod.Name
+		serviceNames[string(conventions.K8SPodNameKey)] = pod.Name
 	}
 
 	if c.Rules.PodHostName {
@@ -505,7 +505,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceAttributes {
-					serviceNames[conventions.AttributeK8SReplicaSetName] = ref.Name
+					serviceNames[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceAttributes {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
@@ -515,7 +515,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 								tags[string(conventions.K8SDeploymentNameKey)] = name
 							}
 							if c.Rules.ServiceAttributes {
-								serviceNames[conventions.AttributeK8SDeploymentName] = name
+								serviceNames[string(conventions.K8SDeploymentNameKey)] = name
 							}
 						}
 					}
@@ -535,7 +535,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SDaemonSetNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceAttributes {
-					serviceNames[conventions.AttributeK8SDaemonSetName] = ref.Name
+					serviceNames[string(conventions.K8SDaemonSetNameKey)] = ref.Name
 				}
 			case "StatefulSet":
 				if c.Rules.StatefulSetUID {
@@ -545,7 +545,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SStatefulSetNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceAttributes {
-					serviceNames[conventions.AttributeK8SStatefulSetName] = ref.Name
+					serviceNames[string(conventions.K8SStatefulSetNameKey)] = ref.Name
 				}
 			case "Job":
 				if c.Rules.CronJobName || c.Rules.ServiceAttributes {
@@ -556,7 +556,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 							tags[string(conventions.K8SCronJobNameKey)] = name
 						}
 						if c.Rules.ServiceAttributes {
-							serviceNames[conventions.AttributeK8SCronJobName] = name
+							serviceNames[string(conventions.K8SCronJobNameKey)] = name
 						}
 					}
 				}
@@ -567,7 +567,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SJobNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceAttributes {
-					serviceNames[conventions.AttributeK8SJobName] = ref.Name
+					serviceNames[string(conventions.K8SJobNameKey)] = ref.Name
 				}
 			}
 		}

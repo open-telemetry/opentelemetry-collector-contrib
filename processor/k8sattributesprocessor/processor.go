@@ -173,7 +173,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 
 		{
-			resource.Attributes().PutStr(conventions.AttributeServiceNamespace, namespace)
+			resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), namespace)
 		}
 	}
 
@@ -252,13 +252,13 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		setResourceAttribute(attrs, string(conventions.ContainerImageTagKey), containerSpec.ImageTag)
 	}
 	if containerSpec.ServiceInstanceID != "" {
-		setResourceAttribute(attrs, conventions.AttributeServiceInstanceID, containerSpec.ServiceInstanceID)
+		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
 	}
 	if containerSpec.ServiceVersion != "" {
-		setResourceAttribute(attrs, conventions.AttributeServiceVersion, containerSpec.ServiceVersion)
+		setResourceAttribute(attrs, string(conventions.ServiceVersionKey), containerSpec.ServiceVersion)
 	}
 	if containerSpec.ServiceName != "" {
-		setResourceAttribute(attrs, conventions.AttributeServiceName, kube.AutomaticServiceName(containerSpec.ServiceName, pod.ServiceNames))
+		setResourceAttribute(attrs, string(conventions.ServiceNameKey), kube.AutomaticServiceName(containerSpec.ServiceName, pod.ServiceNames))
 	}
 	// attempt to get container ID from restart count
 	runID := -1
