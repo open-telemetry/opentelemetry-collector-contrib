@@ -66,14 +66,6 @@ func (m *mockSQSClient) DeleteMessage(ctx context.Context, params *sqs.DeleteMes
 	return args.Get(0).(*sqs.DeleteMessageOutput), args.Error(1)
 }
 
-func (m *mockSQSClient) DeleteQueue(ctx context.Context, params *sqs.DeleteQueueInput, _ ...func(*sqs.Options)) (*sqs.DeleteQueueOutput, error) {
-	args := m.Called(ctx, params)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*sqs.DeleteQueueOutput), args.Error(1)
-}
-
 func TestNewSNSReader(t *testing.T) {
 	logger := zap.NewNop()
 
@@ -140,37 +132,15 @@ func TestSNSReadAll(t *testing.T) {
 
 	// Create S3 event notification
 	s3Event := s3EventNotification{
-		Records: []struct {
-			EventSource string `json:"eventSource"`
-			EventName   string `json:"eventName"`
-			S3          struct {
-				Bucket struct {
-					Name string `json:"name"`
-				} `json:"bucket"`
-				Object struct {
-					Key string `json:"key"`
-				} `json:"object"`
-			} `json:"s3"`
-		}{
+		Records: []S3EventRecord{
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: struct {
-					Bucket struct {
-						Name string `json:"name"`
-					} `json:"bucket"`
-					Object struct {
-						Key string `json:"key"`
-					} `json:"object"`
-				}{
-					Bucket: struct {
-						Name string `json:"name"`
-					}{
+				S3: S3Data{
+					Bucket: S3BucketData{
 						Name: "test-bucket",
 					},
-					Object: struct {
-						Key string `json:"key"`
-					}{
+					Object: S3ObjectData{
 						Key: "test-key",
 					},
 				},
@@ -235,11 +205,129 @@ func TestSNSReadAll(t *testing.T) {
 		nil,
 	)
 
-	// Mock queue deletion on shutdown
-	mockSQS.On("DeleteQueue", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteQueueInput) bool {
+	// Run test with callback
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	var callbackCalled bool
+	var receivedKey string
+	var receivedContent []byte
+	var callbackMu sync.Mutex
+
+	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+		callbackMu.Lock()
+		defer callbackMu.Unlock()
+		callbackCalled = true
+		receivedKey = key
+		receivedContent = content
+		return nil
+	})
+
+	// Context cancellation is expected
+	assert.Error(t, err)
+	assert.Equal(t, context.DeadlineExceeded, err)
+
+	// Verify callback was called with correct data
+	callbackMu.Lock()
+	defer callbackMu.Unlock()
+	assert.True(t, callbackCalled)
+	assert.Equal(t, "test-key", receivedKey)
+	assert.Equal(t, []byte("test-content"), receivedContent)
+
+	// Verify all expectations
+	mockS3.AssertExpectations(t)
+	mockSQS.AssertExpectations(t)
+}
+
+// TestDirectS3EventNotification tests processing S3 event notifications received directly in SQS
+// without being wrapped in an SNS notification
+func TestDirectS3EventNotification(t *testing.T) {
+	logger := zap.NewNop()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket: "test-bucket", // Match the bucket in the notification
+			Region:   "us-east-1",
+		},
+		SQS: &SQSConfig{
+			QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+			Region:   "us-east-1",
+		},
+	}
+
+	mockS3 := new(mockS3ClientSNS)
+	mockSQS := new(mockSQSClient)
+
+	// Create reader with mocks
+	reader := &s3SQSNotificationReader{
+		logger:              logger,
+		s3Client:            mockS3,
+		sqsClient:           mockSQS,
+		queueURL:            cfg.SQS.QueueURL,
+		s3Bucket:            cfg.S3Downloader.S3Bucket,
+		s3Prefix:            cfg.S3Downloader.S3Prefix,
+		maxNumberOfMessages: 10,
+		waitTimeSeconds:     20,
+	}
+
+	// Create S3 event notification
+	s3Event := s3EventNotification{
+		Records: []S3EventRecord{
+			{
+				EventSource: "aws:s3",
+				EventName:   "ObjectCreated:Put",
+				S3: S3Data{
+					Bucket: S3BucketData{
+						Name: "test-bucket",
+					},
+					Object: S3ObjectData{
+						Key: "test-key",
+					},
+				},
+			},
+		},
+	}
+
+	directS3Notification, err := json.Marshal(s3Event)
+	require.NoError(t, err)
+
+	// Mock SQS message reception with direct S3 notification
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
 		return *input.QueueUrl == cfg.SQS.QueueURL
 	})).Return(
-		&sqs.DeleteQueueOutput{},
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{
+				{
+					Body:          aws.String(string(directS3Notification)),
+					ReceiptHandle: aws.String("direct-s3-receipt-handle"),
+				},
+			},
+		},
+		nil,
+	).Once() // Only return the message once
+
+	// After processing one message, return empty results to exit test
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{},
+		},
+		nil,
+	)
+
+	// Mock S3 object retrieval
+	mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key"),
+	}).Return(
+		[]byte("test-trace-data"),
+		nil,
+	)
+
+	// Mock message deletion
+	mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+		return *input.QueueUrl == cfg.SQS.QueueURL &&
+			*input.ReceiptHandle == "direct-s3-receipt-handle"
+	})).Return(
+		&sqs.DeleteMessageOutput{},
 		nil,
 	)
 
@@ -270,7 +358,7 @@ func TestSNSReadAll(t *testing.T) {
 	defer callbackMu.Unlock()
 	assert.True(t, callbackCalled)
 	assert.Equal(t, "test-key", receivedKey)
-	assert.Equal(t, []byte("test-content"), receivedContent)
+	assert.Equal(t, []byte("test-trace-data"), receivedContent)
 
 	// Verify all expectations
 	mockS3.AssertExpectations(t)
@@ -312,14 +400,6 @@ func TestReadAllErrorHandling(t *testing.T) {
 			errors.New("context canceled"),
 		)
 
-		// Mock queue deletion on shutdown
-		mockSQS.On("DeleteQueue", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteQueueInput) bool {
-			return *input.QueueUrl == cfg.SQS.QueueURL
-		})).Return(
-			&sqs.DeleteQueueOutput{},
-			nil,
-		)
-
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel context immediately to trigger error case
 
@@ -346,37 +426,15 @@ func TestReadAllErrorHandling(t *testing.T) {
 
 		// Create S3 event notification
 		s3Event := s3EventNotification{
-			Records: []struct {
-				EventSource string `json:"eventSource"`
-				EventName   string `json:"eventName"`
-				S3          struct {
-					Bucket struct {
-						Name string `json:"name"`
-					} `json:"bucket"`
-					Object struct {
-						Key string `json:"key"`
-					} `json:"object"`
-				} `json:"s3"`
-			}{
+			Records: []S3EventRecord{
 				{
 					EventSource: "aws:s3",
 					EventName:   "ObjectCreated:Put",
-					S3: struct {
-						Bucket struct {
-							Name string `json:"name"`
-						} `json:"bucket"`
-						Object struct {
-							Key string `json:"key"`
-						} `json:"object"`
-					}{
-						Bucket: struct {
-							Name string `json:"name"`
-						}{
+					S3: S3Data{
+						Bucket: S3BucketData{
 							Name: "test-bucket",
 						},
-						Object: struct {
-							Key string `json:"key"`
-						}{
+						Object: S3ObjectData{
 							Key: "test-key",
 						},
 					},
@@ -434,14 +492,6 @@ func TestReadAllErrorHandling(t *testing.T) {
 			nil,
 		)
 
-		// Mock queue deletion on shutdown
-		mockSQS.On("DeleteQueue", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteQueueInput) bool {
-			return *input.QueueUrl == cfg.SQS.QueueURL
-		})).Return(
-			&sqs.DeleteQueueOutput{},
-			nil,
-		)
-
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 		defer cancel()
 
@@ -485,37 +535,15 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 
 	// Create S3 event notification with multiple objects - some matching the prefix, some not
 	s3Event := s3EventNotification{
-		Records: []struct {
-			EventSource string `json:"eventSource"`
-			EventName   string `json:"eventName"`
-			S3          struct {
-				Bucket struct {
-					Name string `json:"name"`
-				} `json:"bucket"`
-				Object struct {
-					Key string `json:"key"`
-				} `json:"object"`
-			} `json:"s3"`
-		}{
+		Records: []S3EventRecord{
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: struct {
-					Bucket struct {
-						Name string `json:"name"`
-					} `json:"bucket"`
-					Object struct {
-						Key string `json:"key"`
-					} `json:"object"`
-				}{
-					Bucket: struct {
-						Name string `json:"name"`
-					}{
+				S3: S3Data{
+					Bucket: S3BucketData{
 						Name: "test-bucket",
 					},
-					Object: struct {
-						Key string `json:"key"`
-					}{
+					Object: S3ObjectData{
 						Key: "logs/matched-key-1", // This matches the prefix
 					},
 				},
@@ -523,22 +551,11 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: struct {
-					Bucket struct {
-						Name string `json:"name"`
-					} `json:"bucket"`
-					Object struct {
-						Key string `json:"key"`
-					} `json:"object"`
-				}{
-					Bucket: struct {
-						Name string `json:"name"`
-					}{
+				S3: S3Data{
+					Bucket: S3BucketData{
 						Name: "test-bucket",
 					},
-					Object: struct {
-						Key string `json:"key"`
-					}{
+					Object: S3ObjectData{
 						Key: "data/unmatched-key", // This doesn't match the prefix
 					},
 				},
@@ -546,22 +563,11 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: struct {
-					Bucket struct {
-						Name string `json:"name"`
-					} `json:"bucket"`
-					Object struct {
-						Key string `json:"key"`
-					} `json:"object"`
-				}{
-					Bucket: struct {
-						Name string `json:"name"`
-					}{
+				S3: S3Data{
+					Bucket: S3BucketData{
 						Name: "test-bucket",
 					},
-					Object: struct {
-						Key string `json:"key"`
-					}{
+					Object: S3ObjectData{
 						Key: "logs/matched-key-2", // This matches the prefix
 					},
 				},
@@ -633,14 +639,6 @@ func TestSNSReadAllWithPrefix(t *testing.T) {
 			*input.ReceiptHandle == "test-receipt-handle"
 	})).Return(
 		&sqs.DeleteMessageOutput{},
-		nil,
-	)
-
-	// Mock queue deletion on shutdown
-	mockSQS.On("DeleteQueue", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteQueueInput) bool {
-		return *input.QueueUrl == cfg.SQS.QueueURL
-	})).Return(
-		&sqs.DeleteQueueOutput{},
 		nil,
 	)
 

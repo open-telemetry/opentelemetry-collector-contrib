@@ -18,19 +18,33 @@ import (
 
 // S3 event notification structure from AWS
 // See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
+
+// S3ObjectData represents an S3 object in the notification
+type S3ObjectData struct {
+	Key string `json:"key"`
+}
+
+// S3BucketData represents an S3 bucket in the notification
+type S3BucketData struct {
+	Name string `json:"name"`
+}
+
+// S3Data represents the S3 specific data in the notification
+type S3Data struct {
+	Bucket S3BucketData `json:"bucket"`
+	Object S3ObjectData `json:"object"`
+}
+
+// S3EventRecord represents a single record in an S3 event notification
+type S3EventRecord struct {
+	EventSource string `json:"eventSource"`
+	EventName   string `json:"eventName"`
+	S3          S3Data `json:"s3"`
+}
+
+// s3EventNotification is the top-level structure for S3 event notifications
 type s3EventNotification struct {
-	Records []struct {
-		EventSource string `json:"eventSource"`
-		EventName   string `json:"eventName"`
-		S3          struct {
-			Bucket struct {
-				Name string `json:"name"`
-			} `json:"bucket"`
-			Object struct {
-				Key string `json:"key"`
-			} `json:"object"`
-		} `json:"s3"`
-	} `json:"Records"`
+	Records []S3EventRecord `json:"Records"`
 }
 
 // s3SQSNotificationReader listens for SNS notifications about new S3 objects
@@ -87,22 +101,20 @@ func newSQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSN
 
 // readAll monitors SNS notifications and processes new S3 objects
 func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callback s3ObjectCallback) error {
+	r.logger.Info("Starting SQS notification processing",
+		zap.String("queueURL", r.queueURL),
+		zap.String("s3Bucket", r.s3Bucket),
+		zap.String("s3Prefix", r.s3Prefix),
+		zap.Int32("maxNumberOfMessages", r.maxNumberOfMessages),
+		zap.Int32("waitTimeSeconds", r.waitTimeSeconds))
 	// Process messages until context is canceled
 	for {
 		select {
 		case <-ctx.Done():
-			r.logger.Info("Context canceled, stopping SNS notification processing")
-			// Clean up the SQS queue
-			if r.queueURL != "" {
-				_, err := r.sqsClient.DeleteQueue(context.Background(), &sqs.DeleteQueueInput{
-					QueueUrl: aws.String(r.queueURL),
-				})
-				if err != nil {
-					r.logger.Warn("Failed to delete SQS queue during shutdown", zap.Error(err))
-				}
-			}
+			r.logger.Info("Context canceled, stopping SQS notification processing")
 			return ctx.Err()
 		default:
+			r.logger.Info("Waiting for messages from SQS")
 			// Receive messages from SQS
 			result, err := r.sqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:            aws.String(r.queueURL),
@@ -119,74 +131,85 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 				time.Sleep(5 * time.Second)
 				continue
 			}
+			r.logger.Info("Received messages from SQS",
+				zap.Int("messageCount", len(result.Messages)))
 
 			// Process each message
 			for _, message := range result.Messages {
-				// Parse the SNS notification from the SQS message
-				var snsMessage struct {
-					Type    string `json:"Type"`
-					Message string `json:"Message"`
-				}
+				var s3Event s3EventNotification
+				messageBody := *message.Body
 
-				err := json.Unmarshal([]byte(*message.Body), &snsMessage)
-				if err != nil {
-					r.logger.Warn("Failed to parse SNS message", zap.Error(err))
-					continue
-				}
+				// First try to parse as direct S3 event notification
+				err := json.Unmarshal([]byte(messageBody), &s3Event)
+				if err != nil || len(s3Event.Records) == 0 {
+					// If direct parsing failed, try to extract from SNS notification format
+					r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
 
-				// Extract S3 event from the SNS message
-				if snsMessage.Type == "Notification" {
-					var s3Event s3EventNotification
-					err = json.Unmarshal([]byte(snsMessage.Message), &s3Event)
-					if err != nil {
-						r.logger.Warn("Failed to parse S3 event notification", zap.Error(err))
+					var snsMessage struct {
+						Type    string `json:"Type"`
+						Message string `json:"Message"`
+					}
+
+					if err := json.Unmarshal([]byte(messageBody), &snsMessage); err != nil {
+						r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
 						continue
 					}
 
-					// Process each S3 object notification
-					for _, record := range s3Event.Records {
-						if record.EventSource == "aws:s3" && strings.HasPrefix(record.EventName, "ObjectCreated:") {
-							bucket := record.S3.Bucket.Name
-							key := record.S3.Object.Key
+					if snsMessage.Type == "Notification" {
+						if err := json.Unmarshal([]byte(snsMessage.Message), &s3Event); err != nil {
+							r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
+							continue
+						}
+					} else {
+						r.logger.Warn("Message is not a valid S3 notification",
+							zap.String("type", snsMessage.Type))
+						continue
+					}
+				}
 
-							// Skip if this object is not in our target bucket
-							if bucket != r.s3Bucket {
-								r.logger.Debug("Skipping object from different bucket",
-									zap.String("bucket", bucket),
-									zap.String("targetBucket", r.s3Bucket))
-								continue
-							}
+				// Process each S3 object notification
+				for _, record := range s3Event.Records {
+					if record.EventSource == "aws:s3" && strings.HasPrefix(record.EventName, "ObjectCreated:") {
+						bucket := record.S3.Bucket.Name
+						key := record.S3.Object.Key
 
-							// Skip if this is not in our target prefix
-							if r.s3Prefix != "" && !strings.HasPrefix(key, r.s3Prefix) {
-								r.logger.Debug("Skipping object not matching prefix",
-									zap.String("key", key),
-									zap.String("prefix", r.s3Prefix))
-								continue
-							}
-
-							r.logger.Info("Processing new S3 object",
+						// Skip if this object is not in our target bucket
+						if bucket != r.s3Bucket {
+							r.logger.Debug("Skipping object from different bucket",
 								zap.String("bucket", bucket),
-								zap.String("key", key))
+								zap.String("targetBucket", r.s3Bucket))
+							continue
+						}
 
-							var content []byte
-							// Get S3 object content
-							content, err = retrieveS3Object(ctx, r.s3Client, bucket, key)
-							if err != nil {
-								r.logger.Error("Failed to get S3 object",
-									zap.String("bucket", bucket),
-									zap.String("key", key),
-									zap.Error(err))
-								continue
-							}
+						// Skip if this is not in our target prefix
+						if r.s3Prefix != "" && !strings.HasPrefix(key, r.s3Prefix) {
+							r.logger.Debug("Skipping object not matching prefix",
+								zap.String("key", key),
+								zap.String("prefix", r.s3Prefix))
+							continue
+						}
 
-							// Process the object content
-							err = callback(ctx, key, content)
-							if err != nil {
-								r.logger.Error("Failed to process S3 object content",
-									zap.String("key", key),
-									zap.Error(err))
-							}
+						r.logger.Info("Processing new S3 object",
+							zap.String("bucket", bucket),
+							zap.String("key", key))
+
+						var content []byte
+						// Get S3 object content
+						content, err = retrieveS3Object(ctx, r.s3Client, bucket, key)
+						if err != nil {
+							r.logger.Error("Failed to get S3 object",
+								zap.String("bucket", bucket),
+								zap.String("key", key),
+								zap.Error(err))
+							continue
+						}
+
+						// Process the object content
+						err = callback(ctx, key, content)
+						if err != nil {
+							r.logger.Error("Failed to process S3 object content",
+								zap.String("key", key),
+								zap.Error(err))
 						}
 					}
 				}
