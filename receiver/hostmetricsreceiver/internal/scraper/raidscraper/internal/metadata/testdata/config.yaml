@@ -1,9 +1,33 @@
 default:
 all_set:
   metrics:
-    raid.blocks:
+    md.blocks.synced:
+      enabled: true
+    md.blocks.total:
+      enabled: true
+    md.disks:
+      enabled: true
+    md.disks.required:
+      enabled: true
+    md.raid.degraded:
+      enabled: true
+    md.raid.disks:
+      enabled: true
+    md.state:
       enabled: true
 none_set:
   metrics:
-    raid.blocks:
+    md.blocks.synced:
+      enabled: false
+    md.blocks.total:
+      enabled: false
+    md.disks:
+      enabled: false
+    md.disks.required:
+      enabled: false
+    md.raid.degraded:
+      enabled: false
+    md.raid.disks:
+      enabled: false
+    md.state:
       enabled: false

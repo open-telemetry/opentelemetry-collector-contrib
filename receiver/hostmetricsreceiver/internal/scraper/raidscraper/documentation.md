@@ -12,7 +12,21 @@ metrics:
     enabled: false
 ```
 
-### raid.blocks
+### md.blocks.synced
+
+Number of synced blocks on device
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| blocks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### md.blocks.total
 
 Number of blocks on device
 
@@ -25,3 +39,75 @@ Number of blocks on device
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
+
+### md.disks
+
+Number of active/failed/spare disks of device.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| blocks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| state | State of the disk | Any Str |
+
+### md.disks.required
+
+Total number of disks of device.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| blocks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### md.raid.degraded
+
+Number of degraded raid disks on device
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| disks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### md.raid.disks
+
+Number of raid disks on device
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| disks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### md.state
+
+Indicates the state of md-device
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| blocks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| state | State of the disk | Any Str |

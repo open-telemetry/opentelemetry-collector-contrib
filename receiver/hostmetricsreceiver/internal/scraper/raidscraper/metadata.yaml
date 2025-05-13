@@ -14,12 +14,57 @@ attributes:
   device:
     description: Name of the disk.
     type: string
+  state:
+    description: State of the disk
+    type: string
 
 metrics:
-  raid.blocks:
+  md.blocks.total:
     enabled: true
     description: Number of blocks on device
     unit: blocks
+    gauge:
+      value_type: int
+    attributes: [device]
+  md.blocks.synced:
+    enabled: true
+    description: Number of synced blocks on device
+    unit: blocks
+    gauge:
+      value_type: int
+    attributes: [device]
+  md.disks:
+    enabled: true
+    description: Number of active/failed/spare disks of device.
+    unit: blocks
+    gauge:
+      value_type: int
+    attributes: [device,state]
+  md.disks.required:
+    enabled: true
+    description: Total number of disks of device.
+    unit: blocks
+    gauge:
+      value_type: int
+    attributes: [device]
+  md.state:
+    enabled: true
+    description: Indicates the state of md-device
+    unit: blocks
+    gauge:
+      value_type: int
+    attributes: [device, state]
+  md.raid.disks:
+    enabled: true
+    description: Number of raid disks on device
+    unit: disks
+    gauge:
+      value_type: int
+    attributes: [device]
+  md.raid.degraded:
+    enabled: true
+    description: Number of degraded raid disks on device
+    unit: disks
     gauge:
       value_type: int
     attributes: [device]

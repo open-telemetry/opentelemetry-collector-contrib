@@ -25,7 +25,6 @@ func TestComponentConfigStruct(t *testing.T) {
 }
 
 func TestComponentLifecycle(t *testing.T) {
-	
 	factory := NewFactory()
 
 	tests := []struct {

@@ -27,12 +27,36 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for raid metrics.
 type MetricsConfig struct {
-	RaidBlocks MetricConfig `mapstructure:"raid.blocks"`
+	MdBlocksSynced  MetricConfig `mapstructure:"md.blocks.synced"`
+	MdBlocksTotal   MetricConfig `mapstructure:"md.blocks.total"`
+	MdDisks         MetricConfig `mapstructure:"md.disks"`
+	MdDisksRequired MetricConfig `mapstructure:"md.disks.required"`
+	MdRaidDegraded  MetricConfig `mapstructure:"md.raid.degraded"`
+	MdRaidDisks     MetricConfig `mapstructure:"md.raid.disks"`
+	MdState         MetricConfig `mapstructure:"md.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		RaidBlocks: MetricConfig{
+		MdBlocksSynced: MetricConfig{
+			Enabled: true,
+		},
+		MdBlocksTotal: MetricConfig{
+			Enabled: true,
+		},
+		MdDisks: MetricConfig{
+			Enabled: true,
+		},
+		MdDisksRequired: MetricConfig{
+			Enabled: true,
+		},
+		MdRaidDegraded: MetricConfig{
+			Enabled: true,
+		},
+		MdRaidDisks: MetricConfig{
+			Enabled: true,
+		},
+		MdState: MetricConfig{
 			Enabled: true,
 		},
 	}

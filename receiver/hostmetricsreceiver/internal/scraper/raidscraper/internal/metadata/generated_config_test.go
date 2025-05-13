@@ -27,7 +27,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RaidBlocks: MetricConfig{Enabled: true},
+					MdBlocksSynced:  MetricConfig{Enabled: true},
+					MdBlocksTotal:   MetricConfig{Enabled: true},
+					MdDisks:         MetricConfig{Enabled: true},
+					MdDisksRequired: MetricConfig{Enabled: true},
+					MdRaidDegraded:  MetricConfig{Enabled: true},
+					MdRaidDisks:     MetricConfig{Enabled: true},
+					MdState:         MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -35,7 +41,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RaidBlocks: MetricConfig{Enabled: false},
+					MdBlocksSynced:  MetricConfig{Enabled: false},
+					MdBlocksTotal:   MetricConfig{Enabled: false},
+					MdDisks:         MetricConfig{Enabled: false},
+					MdDisksRequired: MetricConfig{Enabled: false},
+					MdRaidDegraded:  MetricConfig{Enabled: false},
+					MdRaidDisks:     MetricConfig{Enabled: false},
+					MdState:         MetricConfig{Enabled: false},
 				},
 			},
 		},
