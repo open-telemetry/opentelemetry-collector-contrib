@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -76,5 +77,10 @@ func sanitizeURLPath(urlPath string) (string, error) {
 	if !path.IsAbs(u.Path) {
 		u.Path = "/" + u.Path
 	}
+
+	if !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
+	}
+
 	return u.Path, nil
 }

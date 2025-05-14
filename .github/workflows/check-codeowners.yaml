@@ -59,4 +59,4 @@ jobs:
         run: |
           cd pr
           GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} ../.tools/githubgen codeowners
-          git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gencodeowners" or apply this diff and commit the changes in this PR.' && git diff && exit 1)
