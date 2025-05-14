@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.126.0
 	github.com/stretchr/testify v1.10.0
-	github.com/tinylib/msgp v1.2.5
+	github.com/tinylib/msgp v1.3.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v1.32.0
 	go.opentelemetry.io/collector/component/componentstatus v0.126.0
