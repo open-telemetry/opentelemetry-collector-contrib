@@ -125,6 +125,8 @@ go.opentelemetry.io/collector/extension/extensionmiddleware v0.126.0 h1:7QwG8/op
 go.opentelemetry.io/collector/extension/extensionmiddleware v0.126.0/go.mod h1:yZYfdaxnDOCNWruM0GrF5lBBmFoBorAXqXtCeLrcllU=
 go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.126.0 h1:3jgdq3HnNVEznOabzEp8cv6YgzVeak+lgX0mC3uwyK4=
 go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.126.0/go.mod h1:qi7wSIB9GJCqzdfoVMF+yamgblFggUe4JEEzAhPuqqs=
+go.opentelemetry.io/collector/extension/extensiontest v0.126.0 h1:BZueZvfbJmlmx62J17o6P8aNyPS32iFSmDYDfajQkew=
+go.opentelemetry.io/collector/extension/extensiontest v0.126.0/go.mod h1:9Vg70EOtd28TMdHjRECGu2jdEXnFhSCyvh+/oUGnTfA=
 go.opentelemetry.io/collector/featuregate v1.32.0 h1:ArSnZF3hxXC09aO7v2Ff9XSCA8oI/hkWSv+lYnpSCac=
 go.opentelemetry.io/collector/featuregate v1.32.0/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/internal/telemetry v0.126.0 h1:sSts1qwubFcmi5GMg9zwi3UPmOh7vxsj+y7j962+whQ=
