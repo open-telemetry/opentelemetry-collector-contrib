@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 )
@@ -22,8 +22,8 @@ func DefaultConfig() *Config {
 		ClientConfig:        clientConfig,
 		StaleServiceTimeout: 5 * time.Minute,
 		SyncAttributes: map[string]string{
-			conventions.AttributeK8SPodUID:   conventions.AttributeK8SPodUID,
-			conventions.AttributeContainerID: conventions.AttributeContainerID,
+			string(conventions.K8SPodUIDKey):   string(conventions.K8SPodUIDKey),
+			string(conventions.ContainerIDKey): string(conventions.ContainerIDKey),
 		},
 		Config: correlations.Config{
 			MaxRequests:     20,

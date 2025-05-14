@@ -12,13 +12,14 @@ import (
 
 // Config defines configuration for Azure Monitor
 type Config struct {
-	QueueSettings       exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	Endpoint            string                          `mapstructure:"endpoint"`
-	ConnectionString    configopaque.String             `mapstructure:"connection_string"`
-	InstrumentationKey  configopaque.String             `mapstructure:"instrumentation_key"`
-	MaxBatchSize        int                             `mapstructure:"maxbatchsize"`
-	MaxBatchInterval    time.Duration                   `mapstructure:"maxbatchinterval"`
-	SpanEventsEnabled   bool                            `mapstructure:"spaneventsenabled"`
-	ShutdownTimeout     time.Duration                   `mapstructure:"shutdown_timeout"`
-	CustomEventsEnabled bool                            `mapstructure:"custom_events_enabled"`
+	QueueSettings          exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	Endpoint               string                          `mapstructure:"endpoint"`
+	ConnectionString       configopaque.String             `mapstructure:"connection_string"`
+	InstrumentationKey     configopaque.String             `mapstructure:"instrumentation_key"`
+	MaxBatchSize           int                             `mapstructure:"maxbatchsize"`
+	MaxBatchInterval       time.Duration                   `mapstructure:"maxbatchinterval"`
+	SpanEventsEnabled      bool                            `mapstructure:"spaneventsenabled"`
+	ShutdownTimeout        time.Duration                   `mapstructure:"shutdown_timeout"`
+	CustomEventsEnabled    bool                            `mapstructure:"custom_events_enabled"`
+	ExceptionEventsEnabled bool                            `mapstructure:"exception_events_enabled"`
 }
