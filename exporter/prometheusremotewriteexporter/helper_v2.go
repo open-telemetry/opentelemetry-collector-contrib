@@ -5,6 +5,8 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"errors"
+	"sort"
+
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 )
 
@@ -53,7 +55,18 @@ func convertTimeseriesToRequestV2(tsArray []writev2.TimeSeries, symbolsTable wri
 		// See:
 		// * https://github.com/open-telemetry/wg-prometheus/issues/10
 		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
-		Timeseries: tsArray,
+		// TODO: try to sort while batching?
+		Timeseries: orderBySampleTimestampV2(tsArray),
 		Symbols:    symbolsTable.Symbols(),
 	}
+}
+
+func orderBySampleTimestampV2(tsArray []writev2.TimeSeries) []writev2.TimeSeries {
+	for i := range tsArray {
+		sL := tsArray[i].Samples
+		sort.Slice(sL, func(i, j int) bool {
+			return sL[i].Timestamp < sL[j].Timestamp
+		})
+	}
+	return tsArray
 }
