@@ -223,7 +223,7 @@ func (r *roundTripper) RoundTrip(request *http.Request) (*http.Response, error) 
 		if req.URL == nil {
 			return nil, errors.New("unexpected nil request URL")
 		}
-		host := req.URL.Host
+		host = req.URL.Host
 		if host == "" {
 			return nil, errors.New("unexpected empty Host in request URL")
 		}
