@@ -12,7 +12,7 @@ import (
 	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 var (
@@ -225,14 +225,14 @@ func addMessageAttributes(m producer.ProducerMessage, r *plog.LogRecord) error {
 	r.SetTimestamp(pcommon.NewTimestampFromTime(startTime))
 
 	// Source and destination attributes
-	r.Attributes().PutStr(semconv.AttributeSourceAddress, srcAddr.String())
-	r.Attributes().PutInt(semconv.AttributeSourcePort, int64(pm.SrcPort))
-	r.Attributes().PutStr(semconv.AttributeDestinationAddress, dstAddr.String())
-	r.Attributes().PutInt(semconv.AttributeDestinationPort, int64(pm.DstPort))
+	r.Attributes().PutStr(string(semconv.SourceAddressKey), srcAddr.String())
+	r.Attributes().PutInt(string(semconv.SourcePortKey), int64(pm.SrcPort))
+	r.Attributes().PutStr(string(semconv.DestinationAddressKey), dstAddr.String())
+	r.Attributes().PutInt(string(semconv.DestinationPortKey), int64(pm.DstPort))
 
 	// Network attributes
-	r.Attributes().PutStr(semconv.AttributeNetworkTransport, getTransportName(pm.Proto))
-	r.Attributes().PutStr(semconv.AttributeNetworkType, getEtypeName(pm.Etype))
+	r.Attributes().PutStr(string(semconv.NetworkTransportKey), getTransportName(pm.Proto))
+	r.Attributes().PutStr(string(semconv.NetworkTypeKey), getEtypeName(pm.Etype))
 
 	// There is no semconv as of today for these
 	r.Attributes().PutInt("flow.io.bytes", int64(pm.Bytes))

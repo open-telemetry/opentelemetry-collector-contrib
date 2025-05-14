@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/metric/noop"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
@@ -181,7 +181,7 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 		rs := traces.ResourceSpans().At(i)
 		attrs := rs.Resource().Attributes()
 
-		containerID, ok := attrs.Get(semconv.AttributeContainerID)
+		containerID, ok := attrs.Get(string(semconv.ContainerIDKey))
 		if !ok {
 			continue
 		}

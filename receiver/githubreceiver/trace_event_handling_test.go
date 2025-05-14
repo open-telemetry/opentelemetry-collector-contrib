@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v72/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -79,6 +79,55 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 
 	expectedTraces, err := golden.ReadTraces(expectedFile)
 	require.NoError(t, err, "Failed to read expected traces")
+
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+}
+
+func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.Endpoint = "localhost:0"
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-job-skipped.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	traces, err := receiver.handleWorkflowJob(&event)
+	require.NoError(t, err, "Failed to handle workflow job event")
+
+	expectedFile := filepath.Join("testdata", "workflow-job-skipped-expected.yaml")
+
+	// Uncomment the following line to update the golden file
+	// golden.WriteTraces(t, expectedFile, traces)
+
+	expectedTraces, err := golden.ReadTraces(expectedFile)
+	require.NoError(t, err, "Failed to read expected traces")
+
+	var queueSpan ptrace.Span
+	resourceSpans := expectedTraces.ResourceSpans()
+	for i := range resourceSpans.Len() {
+		scopeSpans := resourceSpans.At(i).ScopeSpans()
+		for j := range scopeSpans.Len() {
+			spans := scopeSpans.At(j).Spans()
+			for k := range spans.Len() {
+				if spans.At(k).Name() == "queue-build" {
+					queueSpan = spans.At(k)
+					break
+				}
+			}
+		}
+	}
+	require.Equal(t, queueSpan.StartTimestamp(), queueSpan.EndTimestamp(), "Start and end timestamps should be equal for queue-build span")
+	queueAttr, exists := queueSpan.Attributes().Get("cicd.pipeline.run.queue.duration")
+	require.True(t, exists)
+	require.Equal(t, float64(0), queueAttr.Double())
 
 	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
 }

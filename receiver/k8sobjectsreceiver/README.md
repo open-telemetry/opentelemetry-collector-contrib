@@ -26,6 +26,7 @@ The following is example configuration
 ```yaml
   k8sobjects:
     auth_type: serviceAccount
+    k8s_leader_elector: k8s_leader_elector
     objects:
       - name: pods
         mode: pull
@@ -61,6 +62,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 use this config to specify the group to select. By default, it will select the first group.
 For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In 
 this case, it will select `v1` by default.
+- `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)

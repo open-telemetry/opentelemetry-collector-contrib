@@ -14,14 +14,29 @@ var (
 	monitoredResourceLabelPrefix = "gcp."
 )
 
-// CustomMonitoredResourceMapping allows mapping from OTel resources to
+// CustomLoggingMonitoredResourceMapping allows mapping from OTel resources to
 // Monitored Resources defined here:
 // https://cloud.google.com/monitoring/api/resources
 //
 // The monitored resource type is extracted from the `gcp.resource_type`
 // attribute. And the monitored resource labels are extracted from resource
 // attributes with the prefix `gcp.<monitored resource type>.`.
-func CustomMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.MonitoredResource {
+func CustomLoggingMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.MonitoredResource {
+	return customMonitoredResourceMapping(r, collector.DefaultConfig().LogConfig.MapMonitoredResource)
+}
+
+// CustomMetricMonitoredResourceMapping allows mapping from OTel resources to
+// Monitored Resources defined here:
+// https://cloud.google.com/monitoring/api/resources
+//
+// The monitored resource type is extracted from the `gcp.resource_type`
+// attribute. And the monitored resource labels are extracted from resource
+// attributes with the prefix `gcp.<monitored resource type>.`.
+func CustomMetricMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.MonitoredResource {
+	return customMonitoredResourceMapping(r, collector.DefaultConfig().MetricConfig.MapMonitoredResource)
+}
+
+func customMonitoredResourceMapping(r pcommon.Resource, mmrFunc func(pcommon.Resource) *monitoredrespb.MonitoredResource) *monitoredrespb.MonitoredResource {
 	var monitoredResourceType string
 	monitoredResourceLabels := make(map[string]string)
 	for k, v := range r.Attributes().All() {
@@ -32,7 +47,7 @@ func CustomMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.Monitore
 	}
 
 	if monitoredResourceType == "" {
-		return collector.DefaultConfig().MetricConfig.MapMonitoredResource(r)
+		return mmrFunc(r)
 	}
 
 	prefix := monitoredResourceLabelPrefix + monitoredResourceType + "."

@@ -7,6 +7,22 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.126.0
+
+### 🛑 Breaking changes 🛑
+
+- `fluentforwardreceiver`: Unexport AckResponse (#39831)
+- `splunkenterprisereceiver`: Unexport InfoEntry and InfoContent (#39830)
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: Add methods to scrape raw values from Windows performance counters. (#39835)
+- `eventlogreceiver`: add raw XML query filtering option (#38517)
+- `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate and configuration to the exporter to send Prometheus remote write 2.0 version. (#33661)
+  WARNING! PRW 2.0 support for the exporter is still under development and not ready for usage.
+
+<!-- previous-version -->
+
 ## v0.125.0
 
 ### 💡 Enhancements 💡
