@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -182,19 +182,19 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        propertiesRaw,
 			},
 			expected: map[string]any{
-				azureTenantID:                           "tenant.id",
-				azureOperationName:                      "operation.name",
-				azureOperationVersion:                   "operation.version",
-				azureCategory:                           "category",
-				azureCorrelationID:                      correlationID,
-				azureResultType:                         "result.type",
-				azureResultSignature:                    "result.signature",
-				azureResultDescription:                  "result.description",
-				azureDuration:                           int64(1234),
-				conventions.AttributeNetworkPeerAddress: "127.0.0.1",
-				azureIdentity:                           "someone",
-				conventions.AttributeCloudRegion:        "location",
-				azureProperties:                         properties,
+				azureTenantID:                             "tenant.id",
+				azureOperationName:                        "operation.name",
+				azureOperationVersion:                     "operation.version",
+				azureCategory:                             "category",
+				azureCorrelationID:                        correlationID,
+				azureResultType:                           "result.type",
+				azureResultSignature:                      "result.signature",
+				azureResultDescription:                    "result.description",
+				azureDuration:                             int64(1234),
+				string(conventions.NetworkPeerAddressKey): "127.0.0.1",
+				azureIdentity:                             "someone",
+				string(conventions.CloudRegionKey):        "location",
+				azureProperties:                           properties,
 			},
 		},
 		{
