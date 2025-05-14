@@ -350,3 +350,13 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../../processor/deltatocumulativeprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../../internal/gopsutilenv
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../../pkg/datadog
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../../internal/metadataproviders
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../../internal/datadog
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../../internal/aws/ecsutil
