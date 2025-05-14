@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/procfs/sysfs"
 )
 
-// newUptimeScraper creates an Uptime related metric
+// newRaidScraper creates raid related metrics
 func newRaidScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*raidScraper, error) {
 
 	scraper := &raidScraper{settings: settings, config: cfg, getMdStats: getMDStats, getMdraids: getMdraids}
