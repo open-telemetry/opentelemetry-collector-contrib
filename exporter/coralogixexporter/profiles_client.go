@@ -5,75 +5,43 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"runtime"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 func newProfilesExporter(cfg component.Config, set exporter.Settings) (*profilesExporter, error) {
-	oCfg := cfg.(*Config)
-
-	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Profiles.Endpoint) {
-		return nil, errors.New("coralogix exporter config requires `domain` or `profiles.endpoint` configuration")
+	oCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Profiles.Endpoint, oCfg.Profiles.Headers)
+	if err != nil {
+		return nil, err
+	}
 
 	return &profilesExporter{
-		config:    oCfg,
-		settings:  set.TelemetrySettings,
-		userAgent: userAgent,
+		signalExporter: *signalExporter,
 	}, nil
 }
 
 type profilesExporter struct {
-	// Input configuration.
-	config *Config
-
 	profilesExporter pprofileotlp.GRPCClient
-	clientConn       *grpc.ClientConn
-	callOptions      []grpc.CallOption
-
-	settings component.TelemetrySettings
-
-	// Default user-agent header.
-	userAgent string
+	signalExporter
 }
 
 func (e *profilesExporter) start(ctx context.Context, host component.Host) (err error) {
-	switch {
-	case !isEmpty(e.config.Profiles.Endpoint):
-		if e.clientConn, err = e.config.Profiles.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
-			return err
-		}
-	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
-			return err
-		}
+	wrapper := &signalConfigWrapper{config: &e.config.Profiles}
+	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
+		return err
 	}
-
 	e.profilesExporter = pprofileotlp.NewGRPCClient(e.clientConn)
-	if e.config.Profiles.Headers == nil {
-		e.config.Profiles.Headers = make(map[string]configopaque.String)
-	}
-	e.config.Profiles.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
-
-	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.Profiles.WaitForReady),
-	}
-
-	return
+	return nil
 }
 
 func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profiles) error {
@@ -100,17 +68,6 @@ func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profile
 	return nil
 }
 
-func (e *profilesExporter) shutdown(context.Context) error {
-	if e.clientConn == nil {
-		return nil
-	}
-	return e.clientConn.Close()
-}
-
 func (e *profilesExporter) enhanceContext(ctx context.Context) context.Context {
-	md := metadata.New(nil)
-	for k, v := range e.config.Profiles.Headers {
-		md.Set(k, string(v))
-	}
-	return metadata.NewOutgoingContext(ctx, md)
+	return e.signalExporter.enhanceContext(ctx)
 }
