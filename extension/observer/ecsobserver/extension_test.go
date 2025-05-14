@@ -29,7 +29,7 @@ func TestExtensionStartStop(t *testing.T) {
 	refreshInterval := 100 * time.Millisecond
 
 	createTestExt := func(c *ecsmock.Cluster, output string) extension.Extension {
-		f := newTestTaskFetcher(t, c)
+		f := newTestTaskFetcher(t, c, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
@@ -54,7 +54,7 @@ func TestExtensionStartStop(t *testing.T) {
 
 	t.Run("critical error", func(t *testing.T) {
 		c := ecsmock.NewClusterWithName("different than default config")
-		f := newTestTaskFetcher(t, c)
+		f := newTestTaskFetcher(t, c, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
