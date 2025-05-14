@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/raidscraper/internal/metadata"
 )
 
-// scraper for Uptime Metrics
+// scraper for raid Metrics
 type raidScraper struct {
 	settings       scraper.Settings
 	config         *Config
