@@ -301,7 +301,6 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 
 	// If no previously known files are matched, readers will be created after matching against the archive.
 	return nil, nil
-
 }
 
 func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
