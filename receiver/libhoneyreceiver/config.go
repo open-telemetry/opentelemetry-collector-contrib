@@ -79,7 +79,7 @@ func sanitizeURLPath(urlPath string) (string, error) {
 	}
 
 	if !strings.HasSuffix(u.Path, "/") {
-		u.Path = u.Path + "/"
+		u.Path += "/"
 	}
 
 	return u.Path, nil
