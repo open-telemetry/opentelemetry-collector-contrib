@@ -182,6 +182,11 @@ func TestScrapeV2(t *testing.T) {
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled).
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withLabelMatchers(LabelMatcher{ // matches "container.label.2" but not "container.label"
 					MatchType: regexpMatchType,
 					Include:   "container\\.label\\.",
@@ -209,6 +214,11 @@ func TestScrapeV2(t *testing.T) {
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled).
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withLabelMatchers(LabelMatcher{
 					MatchType: regexpMatchType,
 					Include:   ".*",
@@ -231,6 +241,11 @@ func TestScrapeV2(t *testing.T) {
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled).
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withLabelMatchers(LabelMatcher{
 					MatchType: regexpMatchType,
 					Include:   ".*",
@@ -251,6 +266,11 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 			cfgBuilder: newTestConfigBuilder().
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withMetrics(allMetricsEnabled),
 		},
 		{
@@ -268,6 +288,11 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 			cfgBuilder: newTestConfigBuilder().
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled),
 		},
@@ -285,6 +310,11 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 			cfgBuilder: newTestConfigBuilder().
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled),
 		},

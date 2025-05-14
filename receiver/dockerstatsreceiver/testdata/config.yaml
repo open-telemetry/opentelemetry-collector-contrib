@@ -23,3 +23,6 @@ docker_stats/allsettings:
       enabled: false
     container.memory.total_rss:
       enabled: true
+  resource_attributes:
+    container.labels:
+      enabled: true

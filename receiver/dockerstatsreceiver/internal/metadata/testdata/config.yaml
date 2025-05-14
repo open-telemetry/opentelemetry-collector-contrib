@@ -316,7 +316,7 @@ none_set:
     container.image.name:
       enabled: false
     container.labels:
-      enabled: false
+      enabled: true
     container.name:
       enabled: false
     container.runtime:

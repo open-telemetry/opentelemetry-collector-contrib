@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 						Include:   "my.container.prefix.*",
 					},
 				},
-				
+
 				ContainerLabelsToMetricLabels: map[string]string{
 					"my.container.label":       "my-metric-label",
 					"my.other.container.label": "my-other-metric-label",
@@ -88,6 +88,10 @@ func TestLoadConfig(t *testing.T) {
 					m.Metrics.ContainerMemoryTotalRss = metadata.MetricConfig{
 						Enabled: true,
 					}
+
+					m.ResourceAttributes = metadata.DefaultResourceAttributesConfig()
+					m.ResourceAttributes.ContainerLabels.Enabled = true
+
 					return m
 				}(),
 			},
