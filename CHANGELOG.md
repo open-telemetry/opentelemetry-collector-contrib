@@ -7,6 +7,138 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.126.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg`: Remove the fields from category AzureCdnAccessLog from the body log record and place them as log record attributes. (#39811)
+- `azuremonitorreceiver`: Renamed the `auth` field to `credentials` in the azuremonitorreceiver configuration. (#39738)
+- `pkg/datadog`: Switch feature gate datadog.EnableOperationAndResourceNameV2 to beta. This gate affects exporter/datadog and connector/datadog. It modifies the logic for computing operation names from OTLP spans to produce shorter, more readable names and improve alignment with OpenTelemetry specifications. (#39895)
+  Please see the migration guide for more details. https://docs.datadoghq.com/opentelemetry/migrate/migrate_operation_names/?tab=opentelemetrycollector
+- `opampsupervisor`: Remnove `agent.health_check_port`. (#39908)
+  The opampsupervisor no longer starts the collector with a default health check extension.
+- `googlecloudpubsubreceiver`: Add `ignore_encoding_error` configuration to ignore decoding failures from the configured encoder (#38164)
+  Introduce a setting to ignore errors when the configured encoder. It's advised to set this to `true` when using 
+  a custom encoder, and use the new `receiver.googlecloudpubsub.encoding_error` metric to monitor the number of errors. 
+  Ignoring the error will cause the receiver to drop the message.
+  
+- `coralogixexporter`: Remove deprecated batcher config for coralogixexporter, use sending_queue::batch (#39960)
+- `sqlserverreceiver`: Update event properties (#39868)
+  This change only applies to top query events and query sample events:
+    * Update event name of top query event from `top query` to `db.server.top_query`
+    * Update event name of query sample event from `query sample` to `db.server.query_sample`
+    * Remove body of query sample event
+    * Rename `sqlserver.username` to `user.name` in query sample event
+  
+- `receiver/prometheus`: Upgrade `receiver.prometheusreceiver.RemoveLegacyResourceAttributes` feature gate to `beta` stability (enabled by default) (#32814)
+  Disable the `receiver.promtheusreceiver.RemoveLegacyResourceAttributes` feature gate to restore previous behavior. This feature gate will be removed in a future release.
+  The feature gate is used to replace the following legacy resource attributes:
+  `net.host.name` -> `server.address`
+  `net.host.port` -> `server.port`
+  `http.scheme` -> `url.scheme`
+  
+
+### 🚩 Deprecations 🚩
+
+- `googlecloudpubsubreceiver`: Add deprecation warning for the build-in encoders (#39371)
+  The build-in encoders `cloud_logging` and `raw_text` both have encoding extension alternatives and will be removed
+  in version v0.132.0 of the collector.
+  
+- `processor/tailsampling`: The invert decisions (InvertSampled and InvertNotSampled) have been deprecated, please make use of drop policy to explicitly not sample select traces. (#39833)
+
+### 🚀 New components 🚀
+
+- `golden`: Add a new CLI, golden, to run comparison of expected payloads over OTLP. (#39662)
+  You can run golden with `--otlp-endpoint localhost:4317 --expected expected.yaml --write-expected --timeout 1m`
+  
+- `confmap/googlesecretmanagerprovider`: Initial implementation of secrets manager provider. Allows fetch secrets from Google Secrets Manager (#39665)
+- `googlecloudlogentryencodingextension`: Update stability to alpha. (#37531)
+
+### 💡 Enhancements 💡
+
+- `azuremonitorexxporter`: support logging exceptions for azuremonitor exporter (#38432)
+- `fileconsumer`: Support "`compression:auto`" which automatically detects file compression type and ingests data. Currently, only gzip compressed files are auto detected. This allows for mix of compressed and uncompressed files to be ingested with the same filelogreceiver. (#37772)
+- `kafkaexporter`: Add compression level in kafka producer. (#39772)
+- `processor/metricstarttime`: Upgrade the stability to `Alpha` (#39857)
+- `splunkenterprisereceiver`: adds `splunk.indexer.rollingrestart.status` metric (#39023)
+- `carbonreceiver`: Support unnamed groups in carbon receiver regex parser (#39137)
+- `splunkenterprisereceiver`: Added a new `splunk.search.initiation`, `splunk.search.duration`, `splunk.search.status`, and `splunk.search.success` metrics. (#39566)
+- `googlecloudexporter`: Updated the exporter.googlecloud.CustomMonitoredResources featuregate to support user defined mapping from OTel resources to Monitored Resources for logging (#40001)
+- `dockerstatsreceiver`: Returns Docker client options, using the DOCKER_HOST environment variable if no endpoint is configured. (#35779)
+  - Previously, the receiver required explicit configuration of the endpoint.  
+  - This change allows automatic detection of DOCKER_HOST, improving flexibility in different environments. 
+- `elasticsearchexporter`: Report Elasticsearch request success / failure via componentstatus (#39562)
+- `eventlogreceiver`: add raw XML query filtering option (#38517)
+- `faroreceiver`: Completes the implementation of the Faro receiver. (#19180)
+- `mongodbatlasreceiver`: Add support for setting custom base URL for the MongoDB Atlas API (#39345)
+- `postgresqlreceiver`: Reduce component footprint by removing the loading of unnecessary SQL drivers (#39918)
+  Custom builds that are using the postgresql receiver and no other SQL related receivers
+  will see a reduction in the output binary size. A similar effect is expected also for
+  the sqlserverreceiver.
+  
+- `spanmetricsconnector`: Separate Dimensions for calls and duration metrics (#36805)
+  Add two new fields to the settings: `histogram.dimensions` and `calls_dimensions`. 
+  Use them to add independent dimensions to the duration and calls metrics.
+  
+- `cmd/golden`: Add a docker image for golden (#39662)
+- `confmap/googlesecretmanager`: Mark the Google Secret Manager provider as alpha stability. (#39665)
+- `confmap/googlesecretmanager`: Update scheme to use googlesecretsmanager instead of googlesecretmanagerprovider. (#39971)
+- `pkg/ottl`: Add support for HasPrefix and HasSuffix functions (#39825)
+- `datadogexporter`: Enable instrumentation_scope_metadata_as_tags by default in datadogexporter. Scope attributes are now added as tags to metrics. (#39767)
+  If you have too many unique values for instrumentation scope attributes, this may cause cardinality issues.
+  If this is a concern, you can disable this by setting `datadog.metrics.instrumentation_scope_metadata_as_tags` to `false`.
+  
+- `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate and configuration to the exporter to send Prometheus remote write 2.0 version. (#33661)
+  WARNING! PRW 2.0 support for the exporter is still under development and not ready for usage.
+- `k8sobjectsreceiver`: k8sobject receiver support leader election (#39054)
+- `receiver/k8scluster`: Add node name to pod metadata (#37454)
+- `receiver/hostmetricsreceiver`: Migrated `hostmetricsreceiver` to use `pkg/winperfcounters` when retrieving Windows performance counters. (#38858)
+- `netflowreceiver`: Add `send_raw` option to send logs as a raw string in the log body instead of parsed into attributes. (#38920)
+- `oidcauthextension`: Add ignore_audience config option for ignoring oidc audience (#36568)
+  go-oidc SkipClientIDCheck is set based on config ignore_audience
+- `opampsupervisor`: Update supervisor to forward the agent's ComponentHealth message to the server whenever it is received. (#39890)
+- `pkg/ottl`: Add the OTTL function ProfileID() (#39587)
+- `pkg/ottl`: OTTL is now officially considered Beta stability (#39910)
+- `postgresqlreceiver`: we introduced the top query collection to postgresql receiver. this will collect the queries from `pg_stat_statements` and report the related metrics. this will help the end user to identify which queries are most executed, and resources most used. (#39573)
+- `processor/redaction`: Apply redaction to log.body (#37239)
+- `metricstarttimeprocessor`: Implementation of the subtractinitial strategy (#38379)
+- `awsfirehosereceiver`: support all possible quantile values of CloudWatch metrics in addition to quantile 0 (min) and 1 (max) (#39687)
+- `processor/tailsampling`: New policy type to explicitly drop traces regardless of other policy decisions. (#39668)
+- `stefexporter`: Implement async exporting (#39958)
+- `processor/transform`: The transformprocessor is now officially considered Beta stability (#39928)
+- `receiver/ntp`: Move ntpreceiver to beta stability (#39897)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg`: Fix empty resource attributes in the azure logs translator (#39571)
+- `datadogexporter`: Fixes a memory leak in the Datadog exporter caused by an uninitialized logger. (#39959)
+- `datadogreceiver`: Support 128 bits TraceIDs coming from Datadog (#36926)
+  This fix is released behind a featuregate so as to not be a breaking change for users. To enable it, enable 
+  `receiver.datadogreceiver.Enable128BitTraceID`. The feature uses an LRU cache that will keep the last 100 trace ids by
+  default. This can be configured via `receivers.datadog.trace_id_cache_size`.
+  
+- `kafkaexporter`: Make Sarama's ConfigurationError as permanent to prevent retries (#38604)
+- `clickhouseexporter`: clickhouseexporter doesn't set the database name in the dsn of the query that creates the database (#38829)
+- `kafkaexporter`: fix the default topic configuration, and default message partitioning (#39810, #39816)
+- `kafkareceiver`: Fix support for built-in text encodings with hyphens in the encoding name (#39793)
+- `tailsamplingprocessor`: Fix the misleading decision timer latency metric (#38502)
+- `pkg/stanza/fileconsumer`: Mute new reader log when the noStateTracker is used (#39855)
+- `cmd/opampsupervisor`: Fix slice merging when using local configuration files (#39947)
+- `prometheusreceiver`: Add 'fallback_scrape_protocol' to entries obtained through Target Allocator, unless already defined. (#39672)
+  This applies the same configuration change that is already applied on static configuration.
+- `prometheusreceiver`: Convert ms to s when setting start time on the metric (#39912)
+- `githubreceiver`: fix queue span lengths caused by GitHub event timestamp bug (#39824)
+  GitHub events from skipped jobs sometimes have the createdAt timestamp to be
+  AFTER the startedAt timestamp. This causes the created span to having a time
+  of some crazy long time, while the duration attribute is negative. This change
+  accounts for that inconsistent behavior from GitHub and adds the corresponding
+  tests.
+  
+- `signaltometricsconnector`: Fix same metric name, unit, and type with different description ignoring description (#39736)
+- `receiver/sqlserver`: Properly parse numbers stored in scientific notation to integers (#39124)
+
+<!-- previous-version -->
+
 ## v0.125.0
 
 ### 🛑 Breaking changes 🛑
