@@ -9,13 +9,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"go.opentelemetry.io/collector/scraper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 // newRaidScraper creates raid related metrics
 func newRaidScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*raidScraper, error) {
-
 	scraper := &raidScraper{settings: settings, config: cfg}
 	var err error
 

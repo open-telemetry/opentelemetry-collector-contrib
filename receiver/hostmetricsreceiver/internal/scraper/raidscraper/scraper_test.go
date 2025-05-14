@@ -160,7 +160,6 @@ func TestScrapeExclude(t *testing.T) {
 
 	assert.Equal(t, 0, metrics.MetricCount())
 	assert.Equal(t, 0, metrics.DataPointCount())
-
 }
 
 func TestScrapeInclude(t *testing.T) {
@@ -194,7 +193,6 @@ func TestScrapeInclude(t *testing.T) {
 
 	assert.Equal(t, 5, metrics.MetricCount())
 	assert.Equal(t, 11, metrics.DataPointCount())
-
 }
 
 func TestScrapeExcludeOverridesInclude(t *testing.T) {
@@ -232,7 +230,6 @@ func TestScrapeExcludeOverridesInclude(t *testing.T) {
 
 	assert.Equal(t, 0, metrics.MetricCount())
 	assert.Equal(t, 0, metrics.DataPointCount())
-
 }
 
 func getMetric(t *testing.T, expectedMetricName string, rms pmetric.ResourceMetricsSlice) pmetric.Metric {
@@ -251,7 +248,6 @@ func getMetric(t *testing.T, expectedMetricName string, rms pmetric.ResourceMetr
 }
 
 func getGaugeDatapointIntValueByLabels(metric pmetric.Gauge, labels map[string]string) *pmetric.NumberDataPoint {
-
 	for _, dp := range metric.DataPoints().All() {
 		matches := len(labels)
 		for label, labelValue := range labels {

@@ -19,7 +19,6 @@ import (
 
 // newRaidScraper creates raid related metrics
 func newRaidScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*raidScraper, error) {
-
 	scraper := &raidScraper{settings: settings, config: cfg, getMdStats: getMDStats, getMdraids: getMdraids}
 	var err error
 
@@ -38,12 +37,10 @@ func newRaidScraper(_ context.Context, settings scraper.Settings, cfg *Config) (
 	}
 
 	return scraper, nil
-
 }
 
 func getMDStats() ([]MDStat, error) {
 	procFS, err := procfs.NewFS(procfs.DefaultMountPoint)
-
 	if err != nil {
 		return []MDStat{}, fmt.Errorf("failed to open procfs: %w", err)
 	}
@@ -56,9 +53,7 @@ func getMDStats() ([]MDStat, error) {
 }
 
 func getMdraids() ([]Mdraid, error) {
-
 	sysFS, err := sysfs.NewFS("/sys")
-
 	if err != nil {
 		return []Mdraid{}, fmt.Errorf("failed to open sysfs: %w", err)
 	}
@@ -76,7 +71,6 @@ func convertMdStats(stats1 []procfs.MDStat) []MDStat {
 		stats2 = append(stats2, MDStat(stat))
 	}
 	return stats2
-
 }
 
 func convertMdraids(stats1 []sysfs.Mdraid) []Mdraid {
@@ -97,7 +91,6 @@ func convertMdraids(stats1 []sysfs.Mdraid) []Mdraid {
 		})
 	}
 	return stats2
-
 }
 
 func convertMdraidComponents(stats1 []sysfs.MdraidComponent) []MdraidComponent {

@@ -30,7 +30,6 @@ func createMetricsScraper(
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
-
 	raidScraper, err := newRaidScraper(ctx, settings, cfg.(*Config))
 	if err != nil {
 		return nil, err
