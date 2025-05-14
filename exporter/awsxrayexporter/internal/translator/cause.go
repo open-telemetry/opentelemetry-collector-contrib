@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -60,7 +60,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	switch {
 	case hasExceptions:
 		language := ""
-		if val, ok := resource.Attributes().Get(conventionsv112.AttributeTelemetrySDKLanguage); ok {
+		if val, ok := resource.Attributes().Get(string(conventionsv112.TelemetrySDKLanguageKey)); ok {
 			language = val.Str()
 		}
 		isRemote := false
@@ -76,22 +76,22 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				message = ""
 				stacktrace := ""
 
-				if val, ok := event.Attributes().Get(conventionsv112.AttributeExceptionType); ok {
+				if val, ok := event.Attributes().Get(string(conventionsv112.ExceptionTypeKey)); ok {
 					exceptionType = val.Str()
 				}
 
-				if val, ok := event.Attributes().Get(conventionsv112.AttributeExceptionMessage); ok {
+				if val, ok := event.Attributes().Get(string(conventionsv112.ExceptionMessageKey)); ok {
 					message = val.Str()
 				}
 
-				if val, ok := event.Attributes().Get(conventionsv112.AttributeExceptionStacktrace); ok {
+				if val, ok := event.Attributes().Get(string(conventionsv112.ExceptionStacktraceKey)); ok {
 					stacktrace = val.Str()
 				}
 
 				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
 			} else if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
-				errorCode, ok1 := event.Attributes().Get(conventions.AttributeHTTPResponseStatusCode)
+				errorCode, ok1 := event.Attributes().Get(string(conventions.HTTPResponseStatusCodeKey))
 				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
 				if ok1 && ok2 {
 					eventEpochTime := event.Timestamp().AsTime().UnixMicro()
@@ -154,9 +154,9 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	val, ok := span.Attributes().Get(conventionsv112.AttributeHTTPStatusCode)
+	val, ok := span.Attributes().Get(string(conventionsv112.HTTPStatusCodeKey))
 	if !ok {
-		val, ok = span.Attributes().Get(conventions.AttributeHTTPResponseStatusCode)
+		val, ok = span.Attributes().Get(string(conventions.HTTPResponseStatusCodeKey))
 	}
 
 	// The segment status for http spans will be based on their http.statuscode as we found some http

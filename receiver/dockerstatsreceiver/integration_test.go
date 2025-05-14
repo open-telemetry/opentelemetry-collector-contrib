@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -64,7 +64,7 @@ func hasResourceScopeMetrics(containerID string, metrics []pmetric.Metrics) bool
 		for i := 0; i < m.ResourceMetrics().Len(); i++ {
 			rm := m.ResourceMetrics().At(i)
 
-			id, ok := rm.Resource().Attributes().Get(conventions.AttributeContainerID)
+			id, ok := rm.Resource().Attributes().Get(string(conventions.ContainerIDKey))
 			if ok && id.AsString() == containerID && rm.ScopeMetrics().Len() > 0 {
 				return true
 			}
