@@ -244,6 +244,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/api/v1/sketches",
 		"/api/beta/sketches",
 		"/intake",
+		"/intake/",
 		"/api/v1/distribution_points",
 		"/v0.6/stats"
 	],
@@ -272,6 +273,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/api/v1/sketches",
 		"/api/beta/sketches",
 		"/intake",
+		"/intake/",
 		"/api/v1/distribution_points",
 		"/v0.6/stats"
 	],
