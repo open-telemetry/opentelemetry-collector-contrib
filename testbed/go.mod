@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.126.1-0.20250514212006-a93f9509c28c
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.126.0
@@ -28,6 +29,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver v0.126.1-0.20250514212006-a93f9509c28c
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.126.0
@@ -277,6 +279,10 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/splunk/stef/go/grpc v0.0.6 // indirect
+	github.com/splunk/stef/go/otel v0.0.6 // indirect
+	github.com/splunk/stef/go/pdata v0.0.6 // indirect
+	github.com/splunk/stef/go/pkg v0.0.6 // indirect
 	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
@@ -378,6 +384,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
+	modernc.org/b/v2 v2.1.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
@@ -478,3 +485,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ..
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../internal/exp/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../internal/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver => ../receiver/stefreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter => ../exporter/stefexporter
