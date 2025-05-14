@@ -223,7 +223,7 @@ func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.DeploymentUID != "" {
 		return pod.DeploymentUID
 	}
-	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SDeploymentName)
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
