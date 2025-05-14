@@ -17,7 +17,7 @@ var ReceiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry().MustRegiste
 // OperationAndResourceNameV2FeatureGate is a feature gate that enables enhanced span operation name and resource names in Datadog exporter and connector
 var OperationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"datadog.EnableOperationAndResourceNameV2",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, datadogexporter and datadogconnector use improved logic to compute operation name and resource name."),
 	featuregate.WithRegisterFromVersion("v0.118.0"),
 )

@@ -13,7 +13,6 @@ capabilities:
 
 agent:
   executable: ../../../bin/collector_binary
-  health_check_port: 12345
 
 storage:
   directory: "./testdata/storage"

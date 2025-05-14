@@ -19,3 +19,4 @@ agent:
   env:
     OUT_FILE: '{{.outputLogFile}}'
     IN_FILE: '{{.inputLogFile}}'
+    HEALTHCHECK_PORT: '{{.healthcheckPort}}'

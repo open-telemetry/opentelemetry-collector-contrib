@@ -16,8 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
+const (
+	FileTracker    = "fileTracker"
+	NoStateTracker = "noStateTracker"
+)
+
 // Interface for tracking files that are being consumed.
 type Tracker interface {
+	Name() string
 	Add(reader *reader.Reader)
 	GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader
 	GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader
@@ -61,6 +67,10 @@ func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBat
 		archive:           archive.New(ctx, set.Logger.Named("archive"), pollsToArchive, persister),
 	}
 	return t
+}
+
+func (t *fileTracker) Name() string {
+	return FileTracker
 }
 
 func (t *fileTracker) Add(reader *reader.Reader) {
@@ -153,6 +163,10 @@ func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Track
 		maxBatchFiles:    maxBatchFiles,
 		currentPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 	}
+}
+
+func (t *noStateTracker) Name() string {
+	return NoStateTracker
 }
 
 func (t *noStateTracker) Add(reader *reader.Reader) {

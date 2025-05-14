@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -32,11 +32,11 @@ const (
 )
 
 var otSpanTagsMapping = map[string]string{
-	"url":         conventions.AttributeHTTPURL,
-	"status_code": conventions.AttributeHTTPStatusCode,
-	"db.type":     conventions.AttributeDBSystem,
-	"db.instance": conventions.AttributeDBName,
-	"mq.broker":   conventions.AttributeNetPeerName,
+	"url":         string(conventions.HTTPURLKey),
+	"status_code": string(conventions.HTTPStatusCodeKey),
+	"db.type":     string(conventions.DBSystemKey),
+	"db.instance": string(conventions.DBNameKey),
+	"mq.broker":   string(conventions.NetPeerNameKey),
 }
 
 // ProtoToTraces converts multiple skywalking proto batches to internal traces
@@ -55,8 +55,8 @@ func ProtoToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().PutStr(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().PutStr(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().PutStr(string(conventions.ServiceNameKey), segment.GetService())
+	rs.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), segment.GetServiceInstance())
 	rs.Attributes().PutStr(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()

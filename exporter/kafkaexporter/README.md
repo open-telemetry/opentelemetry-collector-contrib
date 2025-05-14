@@ -89,6 +89,22 @@ The following settings can be optionally configured:
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
   - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type
+  - `compression_params`
+    - `level` (default = -1) the compression level used when producing messages to kafka.
+    - The following are valid combinations of `compression` and `level`
+      - `gzip`
+        - BestSpeed: `1`
+        - BestCompression: `9`
+        - DefaultCompression: `-1`
+      - `zstd`
+        - SpeedFastest: `1`
+        - SpeedDefault: `3`
+        - SpeedBetterCompression: `6`
+        - SpeedBestCompression: `11`
+      - `lz4`
+        Only supports fast level
+      - `snappy`
+        No compression levels supported yet
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
 
 ### Supported encodings

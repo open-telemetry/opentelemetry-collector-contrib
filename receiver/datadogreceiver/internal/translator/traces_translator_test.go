@@ -12,11 +12,13 @@ import (
 	"testing"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
@@ -92,7 +94,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	tracePayloads, _ := HandleTracesPayload(req)
 	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
 	tracePayload := tracePayloads[0]
-	translated := ToTraces(tracePayload, req)
+	translated, _ := ToTraces(zap.NewNop(), tracePayload, req, nil)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
@@ -208,7 +210,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
-	val, ok := attrs1.Get(semconv.AttributeTelemetrySDKVersion)
+	val, ok := attrs1.Get(string(semconv.TelemetrySDKVersionKey))
 	assert.True(t, ok)
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
@@ -217,7 +219,70 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
-	val, ok = attrs2.Get(semconv.AttributeTelemetrySDKLanguage)
+	val, ok = attrs2.Get(string(semconv.TelemetrySDKLanguageKey))
 	assert.True(t, ok)
 	assert.Equal(t, "dotnet", val.Str())
+}
+
+func TestToTraces64to128bits(t *testing.T) {
+	// Test that we properly reconstruct a 128 bits TraceID from Datadog spans.
+	// This is necessary when a datadog instrumented service has been called by an OTel instrumented one as Datadog will
+	// split the TraceID into two different values:
+	// * TraceID holds the lower 64 bits
+	// * `_dd.p.tid` holds the upper 64 bits
+	expectedTraceID128 := "f233b7e1421e8bde1d99f09757cf199d"
+	expectedTraceID64 := "00000000000000001d99f09757cf199d"
+	spanIDParentOtel, _ := strconv.ParseUint("6b953724b399048a", 16, 32)
+	spanIDParentDD, _ := strconv.ParseUint("039f8ec65ed09993", 16, 32)
+	spanIDChildDD, _ := strconv.ParseUint("5ab19b8ebe922796", 16, 32)
+
+	spans := []pb.Span{
+		{
+			TraceID:  2133000431340558749,
+			SpanID:   spanIDParentDD,
+			ParentID: spanIDParentOtel,
+			Meta: map[string]string{
+				"_dd.p.tid": "f233b7e1421e8bde",
+			},
+		},
+		{
+			TraceID:  2133000431340558749,
+			SpanID:   spanIDChildDD,
+			ParentID: spanIDParentDD,
+		},
+	}
+	payload := &pb.TracerPayload{
+		Chunks: traceChunksFromSpans(spans),
+	}
+
+	req := &http.Request{
+		Header: http.Header{},
+	}
+	req.Header.Set(header.Lang, "go")
+
+	// Test 1: We reconstructed the 128 bits trace id on both spans
+	cache, _ := simplelru.NewLRU[uint64, pcommon.TraceID](2, func(_ uint64, _ pcommon.TraceID) {})
+
+	traces, _ := ToTraces(zap.NewNop(), payload, req, cache)
+	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
+
+	for _, rs := range traces.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				assert.Equal(t, expectedTraceID128, span.TraceID().String())
+			}
+		}
+	}
+
+	// Test 2: TraceID is reconstructed only with the lower 64 bits (previous behavior)
+	traces, _ = ToTraces(zap.NewNop(), payload, req, nil)
+	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
+
+	for _, rs := range traces.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				assert.Equal(t, expectedTraceID64, span.TraceID().String())
+			}
+		}
+	}
 }

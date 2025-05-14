@@ -1,0 +1,20 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: example.com
+        - key: service.version
+          value:
+            stringValue: "1.0.0"
+        - key: deployment.environment
+          value:
+            stringValue: prod
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: "timestamp=2025-03-01T15:42:14Z kind=log message=\"Hello world\" level=info context_app=foo sdk_name=@grafana/faro-core sdk_version=1.0.0 app_name=example.com app_version=1.0.0 app_environment=prod session_id=ABCD1234 page_url=https://example.com/ browser_mobile=false view_name=default"
+            attributes:
+              - key: kind
+                value:
+                  stringValue: log

@@ -109,12 +109,14 @@ func (s *priorityContextInferrer) infer(statements []string, conditions []string
 			return "", err
 		}
 	}
-	s.telemetrySettings.Logger.Debug("Inferring context from statements and conditions",
-		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
-		zap.Any("priority", s.contextPriority),
-		zap.Strings("statements", statements),
-		zap.Strings("conditions", conditions),
-	)
+	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
+		s.telemetrySettings.Logger.Debug("Inferring context from statements and conditions",
+			zap.Strings("candidates", maps.Keys(s.contextCandidate)),
+			zap.Any("priority", s.contextPriority),
+			zap.Strings("statements", statements),
+			zap.Strings("conditions", conditions),
+		)
+	}
 	return s.inferFromHints(append(statementsHints, conditionsHints...))
 }
 

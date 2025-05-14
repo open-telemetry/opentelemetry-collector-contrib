@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -370,7 +370,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: http.MethodGet,
+				string(conventions.HTTPMethodKey): http.MethodGet,
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",
@@ -380,7 +380,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: http.MethodPost,
+				string(conventions.HTTPMethodKey): http.MethodPost,
 			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",
@@ -390,7 +390,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
 			attrs: map[string]any{
-				conventions.AttributeDBSystem: "redis",
+				string(conventions.DBSystemKey): "redis",
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
@@ -400,8 +400,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "db-call-with-statement",
 			name:     "mysql call",
 			attrs: map[string]any{
-				conventions.AttributeDBSystem:    "sqlite",
-				conventions.AttributeDBStatement: "SELECT * FROM table",
+				string(conventions.DBSystemKey):    "sqlite",
+				string(conventions.DBStatementKey): "SELECT * FROM table",
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
@@ -411,7 +411,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
 			attrs: map[string]any{
-				conventions.AttributeRPCService: "EchoService",
+				string(conventions.RPCServiceKey): "EchoService",
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "rpc",

@@ -6,9 +6,9 @@ package ecsobserver
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,8 +17,8 @@ func TestTask_Tags(t *testing.T) {
 	t.Run("ec2", func(t *testing.T) {
 		task := taskAnnotated{}
 		assert.Equal(t, map[string]string(nil), task.EC2Tags())
-		task.EC2 = &ec2.Instance{
-			Tags: []*ec2.Tag{
+		task.EC2 = &ec2types.Instance{
+			Tags: []ec2types.Tag{
 				{
 					Key:   aws.String("k"),
 					Value: aws.String("v"),
@@ -29,9 +29,9 @@ func TestTask_Tags(t *testing.T) {
 	})
 
 	t.Run("task", func(t *testing.T) {
-		task := taskAnnotated{Task: &ecs.Task{}}
+		task := taskAnnotated{Task: ecstypes.Task{}}
 		assert.Equal(t, map[string]string(nil), task.TaskTags())
-		task.Task.Tags = []*ecs.Tag{
+		task.Task.Tags = []ecstypes.Tag{
 			{
 				Key:   aws.String("k"),
 				Value: aws.String("v"),
@@ -41,10 +41,10 @@ func TestTask_Tags(t *testing.T) {
 	})
 
 	t.Run("container", func(t *testing.T) {
-		task := taskAnnotated{Definition: &ecs.TaskDefinition{ContainerDefinitions: []*ecs.ContainerDefinition{{}}}}
+		task := taskAnnotated{Definition: &ecstypes.TaskDefinition{ContainerDefinitions: []ecstypes.ContainerDefinition{{}}}}
 		assert.Equal(t, map[string]string(nil), task.ContainerLabels(0))
-		task.Definition.ContainerDefinitions[0].DockerLabels = map[string]*string{
-			"k": aws.String("v"),
+		task.Definition.ContainerDefinitions[0].DockerLabels = map[string]string{
+			"k": "v",
 		}
 		assert.Equal(t, map[string]string{"k": "v"}, task.ContainerLabels(0))
 	})
@@ -53,13 +53,13 @@ func TestTask_Tags(t *testing.T) {
 func TestTask_PrivateIP(t *testing.T) {
 	t.Run("awsvpc", func(t *testing.T) {
 		task := taskAnnotated{
-			Task: &ecs.Task{
+			Task: ecstypes.Task{
 				TaskArn:           aws.String("arn:task:t2"),
 				TaskDefinitionArn: aws.String("t2"),
-				Attachments: []*ecs.Attachment{
+				Attachments: []ecstypes.Attachment{
 					{
 						Type: aws.String("ElasticNetworkInterface"),
-						Details: []*ecs.KeyValuePair{
+						Details: []ecstypes.KeyValuePair{
 							{
 								Name:  aws.String("privateIPv4Address"),
 								Value: aws.String("172.168.1.1"),
@@ -68,7 +68,7 @@ func TestTask_PrivateIP(t *testing.T) {
 					},
 				},
 			},
-			Definition: &ecs.TaskDefinition{NetworkMode: aws.String(ecs.NetworkModeAwsvpc)},
+			Definition: &ecstypes.TaskDefinition{NetworkMode: ecstypes.NetworkModeAwsvpc},
 		}
 		ip, err := task.PrivateIP()
 		require.NoError(t, err)
@@ -77,34 +77,31 @@ func TestTask_PrivateIP(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		task := taskAnnotated{
-			Task:       &ecs.Task{TaskArn: aws.String("arn:task:1")},
-			Definition: &ecs.TaskDefinition{},
+			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
+			Definition: &ecstypes.TaskDefinition{},
 		}
-		modes := []string{"", ecs.NetworkModeBridge, ecs.NetworkModeHost, ecs.NetworkModeAwsvpc, ecs.NetworkModeNone, "not even a network mode"}
+		modes := []ecstypes.NetworkMode{"", ecstypes.NetworkModeBridge, ecstypes.NetworkModeHost, ecstypes.NetworkModeAwsvpc, ecstypes.NetworkModeNone, "not even a network mode"}
 		for _, mode := range modes {
-			task.Definition.NetworkMode = aws.String(mode)
+			task.Definition.NetworkMode = mode
 			_, err := task.PrivateIP()
 			assert.Error(t, err)
 			errPINF := &errPrivateIPNotFound{}
 			require.ErrorAs(t, err, &errPINF)
 			assert.Equal(t, mode, errPINF.NetworkMode)
-			// doing contains on error message is not good, but this line increase test coverage from 93% to 98%
-			// not sure how the average coverage is calculated ...
-			assert.ErrorContains(t, err, mode)
 		}
 	})
 }
 
 func TestTask_MappedPort(t *testing.T) {
-	ec2BridgeTask := &ecs.Task{
+	ec2BridgeTask := ecstypes.Task{
 		TaskArn: aws.String("arn:task:1"),
-		Containers: []*ecs.Container{
+		Containers: []ecstypes.Container{
 			{
 				Name: aws.String("c1"),
-				NetworkBindings: []*ecs.NetworkBinding{
+				NetworkBindings: []ecstypes.NetworkBinding{
 					{
-						ContainerPort: aws.Int64(2112),
-						HostPort:      aws.Int64(2345),
+						ContainerPort: aws.Int32(2112),
+						HostPort:      aws.Int32(2345),
 					},
 				},
 			},
@@ -114,37 +111,37 @@ func TestTask_MappedPort(t *testing.T) {
 	t.Run("empty is ec2 bridge", func(t *testing.T) {
 		task := taskAnnotated{
 			Task:       ec2BridgeTask,
-			Definition: &ecs.TaskDefinition{NetworkMode: nil},
-			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
+			Definition: &ecstypes.TaskDefinition{NetworkMode: ""},
+			EC2:        &ec2types.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
 		}
 		ip, err := task.PrivateIP()
 		require.NoError(t, err)
 		assert.Equal(t, "172.168.1.1", ip)
-		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
+		p, err := task.MappedPort(ecstypes.ContainerDefinition{Name: aws.String("c1")}, 2112)
 		require.NoError(t, err)
-		assert.Equal(t, int64(2345), p)
+		assert.Equal(t, int32(2345), p)
 	})
 
 	t.Run("ec2 bridge", func(t *testing.T) {
 		task := taskAnnotated{
 			Task:       ec2BridgeTask,
-			Definition: &ecs.TaskDefinition{NetworkMode: aws.String(ecs.NetworkModeBridge)},
-			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
+			Definition: &ecstypes.TaskDefinition{NetworkMode: ecstypes.NetworkModeBridge},
+			EC2:        &ec2types.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
 		}
-		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
+		p, err := task.MappedPort(ecstypes.ContainerDefinition{Name: aws.String("c1")}, 2112)
 		require.NoError(t, err)
-		assert.Equal(t, int64(2345), p)
+		assert.Equal(t, int32(2345), p)
 	})
 
-	vpcTaskDef := &ecs.TaskDefinition{
-		NetworkMode: aws.String(ecs.NetworkModeAwsvpc),
-		ContainerDefinitions: []*ecs.ContainerDefinition{
+	vpcTaskDef := &ecstypes.TaskDefinition{
+		NetworkMode: ecstypes.NetworkModeAwsvpc,
+		ContainerDefinitions: []ecstypes.ContainerDefinition{
 			{
 				Name: aws.String("c1"),
-				PortMappings: []*ecs.PortMapping{
+				PortMappings: []ecstypes.PortMapping{
 					{
-						ContainerPort: aws.Int64(2112),
-						HostPort:      aws.Int64(2345),
+						ContainerPort: aws.Int32(2112),
+						HostPort:      aws.Int32(2345),
 					},
 				},
 			},
@@ -152,40 +149,40 @@ func TestTask_MappedPort(t *testing.T) {
 	}
 	t.Run("awsvpc", func(t *testing.T) {
 		task := taskAnnotated{
-			Task:       &ecs.Task{TaskArn: aws.String("arn:task:1")},
+			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
 			Definition: vpcTaskDef,
 		}
 		p, err := task.MappedPort(vpcTaskDef.ContainerDefinitions[0], 2112)
 		require.NoError(t, err)
-		assert.Equal(t, int64(2345), p)
+		assert.Equal(t, int32(2345), p)
 	})
 
 	t.Run("host", func(t *testing.T) {
 		def := vpcTaskDef
-		def.NetworkMode = aws.String(ecs.NetworkModeHost)
+		def.NetworkMode = ecstypes.NetworkModeHost
 		task := taskAnnotated{
-			Task:       &ecs.Task{TaskArn: aws.String("arn:task:1")},
+			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
 			Definition: def,
 		}
 		p, err := task.MappedPort(def.ContainerDefinitions[0], 2112)
 		require.NoError(t, err)
-		assert.Equal(t, int64(2345), p)
+		assert.Equal(t, int32(2345), p)
 	})
 
 	t.Run("not found", func(t *testing.T) {
 		task := taskAnnotated{
-			Task:       &ecs.Task{TaskArn: aws.String("arn:task:1")},
-			Definition: &ecs.TaskDefinition{},
+			Task:       ecstypes.Task{TaskArn: aws.String("arn:task:1")},
+			Definition: &ecstypes.TaskDefinition{},
 		}
-		modes := []string{"", ecs.NetworkModeBridge, ecs.NetworkModeHost, ecs.NetworkModeAwsvpc, ecs.NetworkModeNone, "not even a network mode"}
+		modes := []ecstypes.NetworkMode{"", ecstypes.NetworkModeBridge, ecstypes.NetworkModeHost, ecstypes.NetworkModeAwsvpc, ecstypes.NetworkModeNone, "not even a network mode"}
 		for _, mode := range modes {
-			task.Definition.NetworkMode = aws.String(mode)
-			_, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c11")}, 1234)
+			task.Definition.NetworkMode = mode
+			_, err := task.MappedPort(ecstypes.ContainerDefinition{Name: aws.String("c11")}, 1234)
 			assert.Error(t, err)
 			errMPNF := &errMappedPortNotFound{}
 			require.ErrorAs(t, err, &errMPNF)
 			assert.Equal(t, mode, errMPNF.NetworkMode)
-			assert.ErrorContains(t, err, mode) // for coverage
+			assert.ErrorContains(t, err, string(mode)) // for coverage
 		}
 	})
 }

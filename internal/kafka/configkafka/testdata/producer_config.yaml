@@ -3,6 +3,20 @@ kafka/full:
   max_message_bytes: 1
   required_acks: 0
   compression: gzip
+  compression_params:
+    level: 1
+  flush_max_messages: 2
+kafka/default_compression_level:
+  max_message_bytes: 1
+  required_acks: 0
+  compression: zstd
+  flush_max_messages: 2
+kafka/invalid_compression_level:
+  max_message_bytes: 1
+  required_acks: 0
+  compression: gzip
+  compression_params:
+    level: -123
   flush_max_messages: 2
 kafka/required_acks_all:
   required_acks: all

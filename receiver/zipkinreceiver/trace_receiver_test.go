@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 
 	zipkin2 "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
@@ -103,7 +103,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	req := reqs.ResourceSpans().At(0)
-	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
+	sn, _ := req.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 	assert.Equal(t, "frontend", sn.Str())
 
 	// Expecting 9 non-nil spans

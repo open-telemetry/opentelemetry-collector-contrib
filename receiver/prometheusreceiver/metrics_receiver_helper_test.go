@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"gopkg.in/yaml.v2"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -266,20 +266,20 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 }
 
 func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool {
-	targetJobName, ok := target.attributes.Get(semconv.AttributeServiceName)
+	targetJobName, ok := target.attributes.Get(string(semconv.ServiceNameKey))
 	if !ok {
 		return false
 	}
-	targetInstanceID, ok := target.attributes.Get(semconv.AttributeServiceInstanceID)
+	targetInstanceID, ok := target.attributes.Get(string(semconv.ServiceInstanceIDKey))
 	if !ok {
 		return false
 	}
 
-	resourceJobName, ok := rms.Resource().Attributes().Get(semconv.AttributeServiceName)
+	resourceJobName, ok := rms.Resource().Attributes().Get(string(semconv.ServiceNameKey))
 	if !ok {
 		return false
 	}
-	resourceInstanceID, ok := rms.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+	resourceInstanceID, ok := rms.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
 	if !ok {
 		return false
 	}

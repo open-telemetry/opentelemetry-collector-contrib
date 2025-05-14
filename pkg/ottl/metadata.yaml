@@ -4,7 +4,8 @@ status:
   disable_codecov_badge: true
   class: pkg
   stability:
-    alpha: [ traces, metrics, logs ]
+    development: [ profiles ]
+    beta: [ traces, metrics, logs ]
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta]
     emeritus: [anuraaga, kentquirk, bogdandrutu]

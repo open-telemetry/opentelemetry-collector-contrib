@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -139,6 +139,8 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta[podStatusReason] = reason
 	}
 
+	meta[string(conventions.K8SNodeNameKey)] = pod.Spec.NodeName
+
 	for _, or := range pod.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
 		meta[metadata.GetOTelNameFromKind(kind)] = or.Name
@@ -171,7 +173,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		podID: {
 			EntityType:    "k8s.pod",
-			ResourceIDKey: conventions.AttributeK8SPodUID,
+			ResourceIDKey: string(conventions.K8SPodUIDKey),
 			ResourceID:    podID,
 			Metadata:      meta,
 		},
@@ -194,9 +196,9 @@ func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.
 
 		jobObj := job.(*batchv1.Job)
 		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, constants.K8sKindCronJob); cronJobRef != nil {
-			return getWorkloadProperties(cronJobRef, conventions.AttributeK8SCronJobName)
+			return getWorkloadProperties(cronJobRef, string(conventions.K8SCronJobNameKey))
 		}
-		return getWorkloadProperties(jobRef, conventions.AttributeK8SJobName)
+		return getWorkloadProperties(jobRef, string(conventions.K8SJobNameKey))
 	}
 	return nil
 }
@@ -217,9 +219,9 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 
 		replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
 		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, constants.K8sKindDeployment); deployRef != nil {
-			return getWorkloadProperties(deployRef, conventions.AttributeK8SDeploymentName)
+			return getWorkloadProperties(deployRef, string(conventions.K8SDeploymentNameKey))
 		}
-		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicaSetName)
+		return getWorkloadProperties(rsRef, string(conventions.K8SReplicaSetNameKey))
 	}
 	return nil
 }
@@ -227,16 +229,16 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 func logDebug(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
 	logger.Debug(
 		"Resource does not exist in store, properties from it will not be synced.",
-		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
-		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
+		zap.String(string(conventions.K8SPodUIDKey), string(podUID)),
+		zap.String(string(conventions.K8SJobUIDKey), string(ref.UID)),
 	)
 }
 
 func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
 	logger.Error(
 		"Failed to get resource from store, properties from it will not be synced.",
-		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
-		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
+		zap.String(string(conventions.K8SPodUIDKey), string(podUID)),
+		zap.String(string(conventions.K8SJobUIDKey), string(ref.UID)),
 		zap.Error(err),
 	)
 }

@@ -1,5 +1,5 @@
 - targets:
-  - 172.168.1.0:2113
+    - 172.168.1.0:2113
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -16,7 +16,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.1.1:2113
+    - 172.168.1.1:2113
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -33,7 +33,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2117
+    - 172.168.2.1:2117
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -42,7 +42,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t3
@@ -53,7 +56,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2117
+    - 172.168.2.1:2117
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -62,7 +65,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t3
@@ -74,7 +80,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2118
+    - 172.168.2.0:2118
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -83,7 +89,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t4
@@ -94,7 +103,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2118
+    - 172.168.2.0:2118
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -103,7 +112,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t4
@@ -115,7 +127,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2119
+    - 172.168.2.1:2119
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -124,7 +136,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t5
@@ -135,7 +150,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2119
+    - 172.168.2.1:2119
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -144,7 +159,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t5
@@ -156,7 +174,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2120
+    - 172.168.2.0:2120
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -165,7 +183,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t6
@@ -176,7 +197,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2120
+    - 172.168.2.0:2120
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -185,7 +206,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t6
@@ -197,7 +221,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2121
+    - 172.168.2.1:2121
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -206,7 +230,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t7
@@ -217,7 +244,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2121
+    - 172.168.2.1:2121
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -226,7 +253,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t7
@@ -238,7 +268,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2122
+    - 172.168.2.0:2122
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -247,7 +277,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t8
@@ -258,7 +291,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2122
+    - 172.168.2.0:2122
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -267,7 +300,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t8
@@ -279,7 +315,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2123
+    - 172.168.2.1:2123
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -288,7 +324,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t9
@@ -299,7 +338,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2123
+    - 172.168.2.1:2123
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -308,7 +347,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-1
     __meta_ecs_ec2_private_ip: 172.168.2.1
+    __meta_ecs_ec2_public_ip: 192.168.1.1
+    __meta_ecs_ec2_subnet_id: subnet-1
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni1
+    __meta_ecs_ec2_vpc_id: vpc-1
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t9
@@ -320,7 +362,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2124
+    - 172.168.2.0:2124
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -329,7 +371,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t10
@@ -340,7 +385,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2124
+    - 172.168.2.0:2124
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -349,7 +394,10 @@
     __meta_ecs_container_name: c1
     __meta_ecs_ec2_instance_id: i-0
     __meta_ecs_ec2_private_ip: 172.168.2.0
+    __meta_ecs_ec2_public_ip: 192.168.1.0
+    __meta_ecs_ec2_subnet_id: subnet-0
     __meta_ecs_ec2_tags_aws_cloudformation_instance: cfni0
+    __meta_ecs_ec2_vpc_id: vpc-0
     __meta_ecs_health_status: ""
     __meta_ecs_service_name: s1
     __meta_ecs_source: t10

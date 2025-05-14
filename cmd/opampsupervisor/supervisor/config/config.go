@@ -185,7 +185,6 @@ type Agent struct {
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
-	HealthCheckPort         int               `mapstructure:"health_check_port"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
@@ -200,10 +199,6 @@ func (a Agent) Validate() error {
 
 	if a.BootstrapTimeout <= 0 {
 		return errors.New("agent::bootstrap_timeout must be positive")
-	}
-
-	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
-		return errors.New("agent::health_check_port must be a valid port number")
 	}
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {

@@ -3,7 +3,8 @@ type: transform
 status:
   class: processor
   stability:
-    alpha: [traces, metrics, logs]
+    development: [profiles]
+    beta: [traces, metrics, logs]
   distributions: [contrib, k8s]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
