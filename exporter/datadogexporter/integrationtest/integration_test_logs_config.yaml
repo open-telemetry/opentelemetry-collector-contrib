@@ -4,8 +4,6 @@ receivers:
     protocols:
       http:
         endpoint: ${env:OTLP_HTTP_SERVER}
-      grpc:
-        endpoint: ${env:OTLP_GRPC_SERVER}
 
 exporters:
   datadog:
@@ -28,6 +26,7 @@ service:
       level: "basic"
       readers:
         - periodic:
+            interval: 5000 # milliseconds
             exporter:
               otlp:
                 protocol: http/protobuf
