@@ -533,8 +533,7 @@ func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
 		req.URL.Scheme = "https"
 		req.URL.Host = host
 		// we want to use our own API key for all calls
-		req.Header.Del("Dd-Api-Key")
-		req.Header.Add("Dd-Api-Key", key)
+		req.Header.Set("Dd-Api-Key", key)
 		// intake puts the API key in the query string as well
 		req.URL.RawQuery = query
 		// Technically, the JSON body of the `/intake` request contains the API key as well
