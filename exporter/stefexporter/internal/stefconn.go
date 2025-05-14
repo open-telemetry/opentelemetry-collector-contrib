@@ -71,12 +71,15 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 	settings := stefgrpc.ClientSettings{
 		Logger:       &loggerWrapper{s.logger},
 		GrpcClient:   grpcClient,
-		ClientSchema: &schema,
+		ClientSchema: stefgrpc.ClientSchema{WireSchema: &schema, RootStructName: oteltef.MetricsStructName},
 		Callbacks: stefgrpc.ClientCallbacks{
 			OnAck: func(ackId uint64) error { return conn.onGrpcAck(ackId) },
 		},
 	}
-	conn.client = stefgrpc.NewClient(settings)
+	conn.client, err = stefgrpc.NewClient(settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create STEF client: %w", err)
+	}
 
 	connCtx, connCancel := context.WithCancel(context.Background())
 

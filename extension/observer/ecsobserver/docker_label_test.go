@@ -6,8 +6,8 @@ package ecsobserver
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
@@ -52,36 +52,37 @@ func TestDockerLabelMatcher_Match(t *testing.T) {
 	genTasks := func() []*taskAnnotated {
 		return []*taskAnnotated{
 			{
-				Definition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{
+				Definition: &ecstypes.TaskDefinition{
+					ContainerDefinitions: []ecstypes.ContainerDefinition{
 						{
-							DockerLabels: map[string]*string{
-								portLabel:        aws.String("2112"),
-								jobLabel:         aws.String("PROM_JOB_1"),
-								metricsPathLabel: aws.String("/new/metrics"),
+							DockerLabels: map[string]string{
+								portLabel:        "2112",
+								jobLabel:         "PROM_JOB_1",
+								metricsPathLabel: "/new/metrics",
 							},
-							PortMappings: []*ecs.PortMapping{
+							PortMappings: []ecstypes.PortMapping{
 								{
-									ContainerPort: aws.Int64(2112),
-									HostPort:      aws.Int64(2113), // doesn't matter for matcher test
+									ContainerPort: aws.Int32(2112),
+									HostPort:      aws.Int32(2113), // doesn't matter for matcher test
 								},
 							},
 						},
 						{
-							DockerLabels: map[string]*string{
-								"not" + portLabel: aws.String("bar"),
+							DockerLabels: map[string]string{
+								"not" + portLabel: "bar",
 							},
+							Name: aws.String(portLabelWithInvalidValue),
 							// no port mapping at all
 						},
 						{
 							// port value in label does not match container port.
 							// most likely a misconfiguration or the labels are attached by tools.
-							DockerLabels: map[string]*string{
-								portLabelWithoutMapping: aws.String("2113"),
+							DockerLabels: map[string]string{
+								portLabelWithoutMapping: "2113",
 							},
-							PortMappings: []*ecs.PortMapping{
+							PortMappings: []ecstypes.PortMapping{
 								{
-									ContainerPort: aws.Int64(2113 + 1), // a different port from label value
+									ContainerPort: aws.Int32(2113 + 1), // a different port from label value
 								},
 							},
 						},
@@ -89,12 +90,13 @@ func TestDockerLabelMatcher_Match(t *testing.T) {
 				},
 			},
 			{
-				Definition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{
+				Definition: &ecstypes.TaskDefinition{
+					ContainerDefinitions: []ecstypes.ContainerDefinition{
 						{
-							DockerLabels: map[string]*string{
-								portLabelWithInvalidValue: aws.String("not a port number"),
+							DockerLabels: map[string]string{
+								portLabelWithInvalidValue: "not a port number",
 							},
+							Name: aws.String(portLabelWithInvalidValue),
 						},
 					},
 				},
