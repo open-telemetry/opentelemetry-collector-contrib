@@ -702,9 +702,11 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
-	automaticRules := ExtractionRules{
-		ServiceAttributes: true,
-		Labels:            AutomaticLabelRules,
+	serviceRules := ExtractionRules{
+		ServiceNamespace:  true,
+		ServiceName:       true,
+		ServiceVersion:    true,
+		ServiceInstanceID: true,
 		Annotations:       []FieldExtractionRule{OtelAnnotations()},
 	}
 
@@ -972,16 +974,8 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:       "automatic-rules-builtin",
-			rules:      automaticRules,
-			attributes: map[string]string{
-				// tested in automatic-container-level-attributes below
-			},
-			serviceName: "auth-service",
-		},
-		{
-			name:  "automatic-rules-label-values",
-			rules: automaticRules,
+			name:  "service-attributes-label-values",
+			rules: serviceRules,
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/name":    "label-service",
 				"app.kubernetes.io/version": "label-version",
@@ -992,8 +986,8 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:  "automatic-rules-label-values-instance",
-			rules: automaticRules,
+			name:  "service-attributes-label-values-instance",
+			rules: serviceRules,
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/instance": "instance-service",
 				"app.kubernetes.io/name":     "label-service",
@@ -1005,8 +999,8 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:  "automatic-rules-annotation-override",
-			rules: automaticRules,
+			name:  "service-attributes-annotation-override",
+			rules: serviceRules,
 			additionalAnnotations: map[string]string{
 				"resource.opentelemetry.io/service.instance.id": "annotation-id",
 				"resource.opentelemetry.io/service.version":     "annotation-version",
@@ -1639,7 +1633,10 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "automatic-container-level-attributes",
 			rules: ExtractionRules{
-				ServiceAttributes: true,
+				ServiceNamespace:  true,
+				ServiceName:       true,
+				ServiceVersion:    true,
+				ServiceInstanceID: true,
 			},
 			pod: &pod,
 			want: PodContainers{

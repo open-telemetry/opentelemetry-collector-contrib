@@ -172,7 +172,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 
-		{
+		if kp.rules.ServiceNamespace {
 			resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), namespace)
 		}
 	}

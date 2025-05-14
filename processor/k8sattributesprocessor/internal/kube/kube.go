@@ -242,11 +242,13 @@ type ExtractionRules struct {
 	ContainerImageRepoDigests bool
 	ContainerImageTag         bool
 	ClusterUID                bool
+	ServiceNamespace          bool
+	ServiceName               bool
+	ServiceVersion            bool
+	ServiceInstanceID         bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
-
-	ServiceAttributes bool
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -269,7 +271,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return rules.ServiceAttributes
+	return rules.ServiceName
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

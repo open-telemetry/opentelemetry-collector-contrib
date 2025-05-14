@@ -133,6 +133,7 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sStatefulsetUID.Enabled {
 		attributes = append(attributes, string(conventions.K8SStatefulSetUIDKey))
 	}
+	// todo add service atts
 	return
 }
 
@@ -192,6 +193,31 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageTag = true
 			case clusterUID:
 				p.rules.ClusterUID = true
+			case string(conventions.ServiceNamespaceKey):
+				p.rules.ServiceNamespace = true
+			case string(conventions.ServiceNameKey):
+				p.rules.ServiceName = true
+				p.rules.Labels = append(p.rules.Labels, []kube.FieldExtractionRule{
+					{
+						Name: "service.name",
+						Key:  "app.kubernetes.io/name",
+						From: kube.MetadataFromPod,
+					},
+					{
+						Name: "service.name",
+						Key:  "app.kubernetes.io/instance",
+						From: kube.MetadataFromPod,
+					}}...)
+			case string(conventions.ServiceVersionKey):
+				p.rules.ServiceVersion = true
+				p.rules.Labels = append(p.rules.Labels,
+					kube.FieldExtractionRule{
+						Name: "service.version",
+						Key:  "app.kubernetes.io/version",
+						From: kube.MetadataFromPod,
+					})
+			case string(conventions.ServiceInstanceIDKey):
+				p.rules.ServiceInstanceID = true
 			}
 		}
 		return nil
@@ -202,18 +228,6 @@ func withOtelAnnotations(enabled bool) option {
 	return func(p *kubernetesprocessor) error {
 		if enabled {
 			p.rules.Annotations = append(p.rules.Annotations, kube.OtelAnnotations())
-		}
-		return nil
-	}
-}
-
-func withServiceAttributes(config ServiceAttributesConfig) option {
-	return func(p *kubernetesprocessor) error {
-		if config.Enabled {
-			p.rules.ServiceAttributes = true
-			if config.Labels {
-				p.rules.Labels = append(p.rules.Labels, kube.AutomaticLabelRules...)
-			}
 		}
 		return nil
 	}

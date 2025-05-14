@@ -10,25 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// AutomaticLabelRules has rules where the last entry wins
-var AutomaticLabelRules = []FieldExtractionRule{
-	{
-		Name: "service.name",
-		Key:  "app.kubernetes.io/name",
-		From: MetadataFromPod,
-	},
-	{
-		Name: "service.name",
-		Key:  "app.kubernetes.io/instance",
-		From: MetadataFromPod,
-	},
-	{
-		Name: "service.version",
-		Key:  "app.kubernetes.io/version",
-		From: MetadataFromPod,
-	},
-}
-
 var serviceNamePrecedence = []string{
 	string(conventions.K8SDeploymentNameKey),
 	string(conventions.K8SReplicaSetNameKey),

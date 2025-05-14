@@ -101,6 +101,8 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
 			string(conventions.ContainerImageNameKey), string(conventions.ContainerImageTagKey),
+			string(conventions.ServiceNamespaceKey), string(conventions.ServiceNameKey),
+			string(conventions.ServiceVersionKey), string(conventions.ServiceInstanceIDKey),
 			containerImageRepoDigests, clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
@@ -171,17 +173,6 @@ type ExtractConfig struct {
 	// OtelAnnotations extracts all pod annotations with the prefix "resource.opentelemetry.io" as resource attributes
 	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
-
-	// ServiceAttributes allows to extract service attributes based on kubernetes metadata.
-	ServiceAttributes ServiceAttributesConfig `mapstructure:"service_attributes"`
-}
-
-// ServiceAttributesConfig allows to extract service attributes based on kubernetes metadata.
-type ServiceAttributesConfig struct {
-	// Enabled enables the extraction of service attributes based on kubernetes metadata.
-	Enabled bool `mapstructure:"enabled"`
-	// WellKnownLabels enables the extraction of well-known labels as service attributes.
-	Labels bool `mapstructure:"well_known_labels"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)

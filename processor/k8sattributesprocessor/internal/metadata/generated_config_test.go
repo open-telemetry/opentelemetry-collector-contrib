@@ -50,6 +50,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicasetUID:          ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetName:        ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetUID:         ResourceAttributeConfig{Enabled: true},
+				// todo add service atts
 			},
 		},
 		{
