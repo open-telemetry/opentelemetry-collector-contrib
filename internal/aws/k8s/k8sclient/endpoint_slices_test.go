@@ -22,7 +22,7 @@ import (
 var endpointSlicesArray = []runtime.Object{
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "guestbook",
+			Name:            "guestbook-12345",
 			GenerateName:    "",
 			Namespace:       "default",
 			SelfLink:        "/api/v1/namespaces/default/endpoints/guestbook",
@@ -33,7 +33,8 @@ var endpointSlicesArray = []runtime.Object{
 				Time: time.Now(),
 			},
 			Labels: map[string]string{
-				"app": "guestbook",
+				"app":                        "guestbook",
+				"kubernetes.io/service-name": "guestbook",
 			},
 		},
 		Endpoints: []discoveryv1.Endpoint{
@@ -83,6 +84,40 @@ var endpointSlicesArray = []runtime.Object{
 	},
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
+			Name:            "guestbook-54321",
+			GenerateName:    "",
+			Namespace:       "default",
+			SelfLink:        "/api/v1/namespaces/default/endpoints/guestbook",
+			UID:             "a885b78c-5573-11e9-b47e-066a7a20bac9",
+			ResourceVersion: "1550349",
+			Generation:      0,
+			CreationTimestamp: metav1.Time{
+				Time: time.Now(),
+			},
+			Labels: map[string]string{
+				"app":                        "guestbook",
+				"kubernetes.io/service-name": "guestbook",
+			},
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"192.168.122.126"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-76-62.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "guestbook-asjkh",
+					UID:             "9ca74e86-5573-11e9-b47e-066a7a20bac9",
+					APIVersion:      "",
+					ResourceVersion: "1550312",
+					FieldPath:       "",
+				},
+			},
+		},
+	},
+	&discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kubernetes",
 			GenerateName:    "",
 			Namespace:       "default",
@@ -93,6 +128,9 @@ var endpointSlicesArray = []runtime.Object{
 			CreationTimestamp: metav1.Time{
 				Time: time.Now(),
 			},
+			Labels: map[string]string{
+				"kubernetes.io/service-name": "kubernetes",
+			},
 		},
 		Endpoints: []discoveryv1.Endpoint{
 			{
@@ -102,7 +140,7 @@ var endpointSlicesArray = []runtime.Object{
 	},
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "redis-master",
+			Name:            "redis-master-shk9s",
 			GenerateName:    "",
 			Namespace:       "default",
 			SelfLink:        "/api/v1/namespaces/default/endpoints/redis-master",
@@ -113,8 +151,9 @@ var endpointSlicesArray = []runtime.Object{
 				Time: time.Now(),
 			},
 			Labels: map[string]string{
-				"app":  "redis",
-				"role": "master",
+				"app":                        "redis",
+				"role":                       "master",
+				"kubernetes.io/service-name": "redis-master",
 			},
 		},
 		Endpoints: []discoveryv1.Endpoint{
@@ -136,10 +175,10 @@ var endpointSlicesArray = []runtime.Object{
 	},
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "redis-slave",
+			Name:            "redis-replica",
 			GenerateName:    "",
 			Namespace:       "default",
-			SelfLink:        "/api/v1/namespaces/default/endpoints/redis-slave",
+			SelfLink:        "/api/v1/namespaces/default/endpoints/redis-replica",
 			UID:             "8dee375e-5573-11e9-b47e-066a7a20bac8",
 			ResourceVersion: "1550242",
 			Generation:      0,
@@ -147,8 +186,9 @@ var endpointSlicesArray = []runtime.Object{
 				Time: time.Now(),
 			},
 			Labels: map[string]string{
-				"app":  "redis",
-				"role": "slave",
+				"app":                        "redis",
+				"role":                       "replica",
+				"kubernetes.io/service-name": "redis-replica",
 			},
 		},
 		Endpoints: []discoveryv1.Endpoint{
@@ -159,7 +199,7 @@ var endpointSlicesArray = []runtime.Object{
 				TargetRef: &v1.ObjectReference{
 					Kind:            "Pod",
 					Namespace:       "default",
-					Name:            "redis-slave-mdjsj",
+					Name:            "redis-replica-mdjsj",
 					UID:             "8137c74b-5573-11e9-b47e-066a7a20bac8",
 					APIVersion:      "",
 					ResourceVersion: "1550226",
@@ -173,7 +213,7 @@ var endpointSlicesArray = []runtime.Object{
 				TargetRef: &v1.ObjectReference{
 					Kind:            "Pod",
 					Namespace:       "default",
-					Name:            "redis-slave-gtd5x",
+					Name:            "redis-replica-gtd5x",
 					UID:             "813878c3-5573-11e9-b47e-066a7a20bac8",
 					APIVersion:      "",
 					ResourceVersion: "1550226",
@@ -198,7 +238,7 @@ var endpointSlicesArray = []runtime.Object{
 	},
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "kube-controller-manager",
+			Name:            "kube-controller-manager-wys1d",
 			GenerateName:    "",
 			Namespace:       "kube-system",
 			SelfLink:        "/api/v1/namespaces/kube-system/endpoints/kube-controller-manager",
@@ -211,11 +251,13 @@ var endpointSlicesArray = []runtime.Object{
 			Annotations: map[string]string{
 				"control-plane.alpha.kubernetes.io/leader": "{\"holderIdentity\":\"ip-10-0-189-120.eu-west-1.compute.internal_89407f85-57e1-11e9-b6ea-02eb484bead6\",\"leaseDurationSeconds\":15,\"acquireTime\":\"2019-04-05T20:34:54Z\",\"renewTime\":\"2019-05-06T20:04:02Z\",\"leaderTransitions\":1}",
 			},
-		},
+			Labels: map[string]string{
+				"kubernetes.io/service-name": "kube-controller-manager",
+			}},
 	},
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "kube-dns",
+			Name:            "kube-dns-sjhsk",
 			GenerateName:    "",
 			Namespace:       "kube-system",
 			SelfLink:        "/api/v1/namespaces/kube-system/endpoints/kube-dns",
@@ -230,6 +272,7 @@ var endpointSlicesArray = []runtime.Object{
 				"k8s-app":                       "kube-dns",
 				"kubernetes.io/cluster-service": "true",
 				"kubernetes.io/name":            "CoreDNS",
+				"kubernetes.io/service-name":    "kube-dns",
 			},
 		},
 		Endpoints: []discoveryv1.Endpoint{
@@ -265,7 +308,7 @@ var endpointSlicesArray = []runtime.Object{
 	},
 	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "kube-scheduler",
+			Name:            "kube-scheduler-xbxsh",
 			GenerateName:    "",
 			Namespace:       "kube-system",
 			SelfLink:        "/api/v1/namespaces/kube-system/endpoints/kube-scheduler",
@@ -277,6 +320,9 @@ var endpointSlicesArray = []runtime.Object{
 			},
 			Annotations: map[string]string{
 				"control-plane.alpha.kubernetes.io/leader": "{\"holderIdentity\":\"ip-10-0-189-120.eu-west-1.compute.internal_949a4400-57e1-11e9-a7bb-02eb484bead6\",\"leaseDurationSeconds\":15,\"acquireTime\":\"2019-04-05T20:34:57Z\",\"renewTime\":\"2019-05-06T20:04:02Z\",\"leaderTransitions\":1}",
+			},
+			Labels: map[string]string{
+				"kubernetes.io/service-name": "kube-scheduler",
 			},
 		},
 	},
@@ -303,13 +349,14 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 
 	expectedMap := map[string][]string{
 		"namespace:default,podName:redis-master-rh2bd":           {"redis-master"},
-		"namespace:default,podName:redis-slave-mdjsj":            {"redis-slave"},
-		"namespace:default,podName:redis-slave-gtd5x":            {"redis-slave"},
+		"namespace:default,podName:redis-replica-mdjsj":          {"redis-replica"},
+		"namespace:default,podName:redis-replica-gtd5x":          {"redis-replica"},
 		"namespace:kube-system,podName:coredns-7554568866-26jdf": {"kube-dns"},
 		"namespace:kube-system,podName:coredns-7554568866-shwn6": {"kube-dns"},
 		"namespace:default,podName:guestbook-qjqnz":              {"guestbook"},
 		"namespace:default,podName:guestbook-92wmq":              {"guestbook"},
 		"namespace:default,podName:guestbook-qbdv8":              {"guestbook"},
+		"namespace:default,podName:guestbook-asjkh":              {"guestbook"},
 	}
 	resultMap := client.PodKeyToServiceNames()
 	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
@@ -322,10 +369,10 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointSlicesArray), ""))
 
 	expectedMap := map[Service]int{
-		NewService("redis-slave", "default"):  2,
-		NewService("kube-dns", "kube-system"): 2,
-		NewService("redis-master", "default"): 1,
-		NewService("guestbook", "default"):    3,
+		NewService("redis-replica", "default"): 2,
+		NewService("kube-dns", "kube-system"):  2,
+		NewService("redis-master", "default"):  1,
+		NewService("guestbook", "default"):     4,
 	}
 	resultMap := client.ServiceToPodNum()
 	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
