@@ -29,7 +29,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.8.1
 	github.com/sijms/go-ora/v2 v2.8.24
-	github.com/snowflakedb/gosnowflake v1.13.3
+	github.com/snowflakedb/gosnowflake v1.14.0
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component/componenttest v0.126.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.126.0
