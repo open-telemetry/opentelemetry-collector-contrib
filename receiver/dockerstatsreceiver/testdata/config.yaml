@@ -4,6 +4,11 @@ docker_stats/allsettings:
   collection_interval: 2s
   timeout: 20s
   api_version: '1.40'
+  container_labels_to_resource_attributes:
+    - match_type: strict
+      include: my.container.label
+    - match_type: regexp
+      include: my.container.prefix.*
   container_labels_to_metric_labels:
     my.container.label: my-metric-label
     my.other.container.label: my-other-metric-label

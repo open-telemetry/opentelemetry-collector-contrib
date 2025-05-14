@@ -60,6 +60,17 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 
+				ContainerLabelsToResourceAttributes: []LabelMatcher{
+					LabelMatcher{
+						MatchType: strictMatchType,
+						Include:   "my.container.label",
+					},
+					LabelMatcher{
+						MatchType: regexpMatchType,
+						Include:   "my.container.prefix.*",
+					},
+				},
+				
 				ContainerLabelsToMetricLabels: map[string]string{
 					"my.container.label":       "my-metric-label",
 					"my.other.container.label": "my-other-metric-label",

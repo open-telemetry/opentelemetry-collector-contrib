@@ -28,6 +28,11 @@ The following settings are optional:
 - `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `container_labels_to_resource_attributes` (no default): An OR'ed allow list of matchers
+to pass container labels through as ResourceAttributes. Each matcher consists of a
+`match_type` of value `strict` or `regexp` as well as an `include` that represents the
+string or pattern to be matched. Regex patterns are interpreted according to the
+[regexp](https://golang.org/pkg/regexp/) package definition.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
 as the specified metric label key.
 - `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
@@ -53,6 +58,7 @@ receivers:
     collection_interval: 2s
     timeout: 20s
     api_version: "1.24"
+    
     container_labels_to_metric_labels:
       my.container.label: my-metric-label
       my.other.container.label: my-other-metric-label

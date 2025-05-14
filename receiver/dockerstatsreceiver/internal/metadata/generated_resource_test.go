@@ -27,7 +27,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
@@ -40,42 +40,42 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("container.command_line")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "container.command_line-val", val.Str())
+				assert.EqualValues(t, "container.command_line-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.hostname")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.hostname-val", val.Str())
+				assert.EqualValues(t, "container.hostname-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.id-val", val.Str())
+				assert.EqualValues(t, "container.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.image.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "container.image.id-val", val.Str())
+				assert.EqualValues(t, "container.image.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.image.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.image.name-val", val.Str())
+				assert.EqualValues(t, "container.image.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.labels")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, map[string]any{"key1": "container.labels-val1", "key2": "container.labels-val2"}, val.Map().AsRaw())
 			}
 			val, ok = res.Attributes().Get("container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.name-val", val.Str())
+				assert.EqualValues(t, "container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.runtime")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.runtime-val", val.Str())
+				assert.EqualValues(t, "container.runtime-val", val.Str())
 			}
 		})
 	}

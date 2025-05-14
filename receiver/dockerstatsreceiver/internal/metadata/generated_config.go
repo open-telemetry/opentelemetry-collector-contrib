@@ -375,7 +375,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ContainerLabels: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerName: ResourceAttributeConfig{
 			Enabled: true,
