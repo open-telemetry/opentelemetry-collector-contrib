@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -166,7 +166,7 @@ func prepareLogs() plog.Logs {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("test log")
 	logRecord.Attributes().PutStr(splunk.DefaultNameLabel, "test- label")
-	logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+	logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(ts)
 	return logs
@@ -185,7 +185,7 @@ func prepareLogsNonDefaultParams(index string, source string, sourcetype string,
 	logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, source)
 	logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, sourcetype)
 	logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, index)
-	logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+	logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(ts)
 	return logs
