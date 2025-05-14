@@ -6,8 +6,8 @@ package ecsobserver
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,8 +37,8 @@ func TestServiceMatcher(t *testing.T) {
 		require.Error(t, cfg.validate())
 	})
 
-	emptyDef := &ecs.TaskDefinition{
-		ContainerDefinitions: []*ecs.ContainerDefinition{
+	emptyDef := &types.TaskDefinition{
+		ContainerDefinitions: []types.ContainerDefinition{
 			{
 				Name: aws.String("I got nothing, just to trigger the for loop ~~for coverage~~"),
 			},
@@ -47,24 +47,24 @@ func TestServiceMatcher(t *testing.T) {
 	genTasks := func() []*taskAnnotated {
 		return []*taskAnnotated{
 			{
-				Service: &ecs.Service{ServiceName: aws.String("nginx-service")},
-				Definition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{
+				Service: &types.Service{ServiceName: aws.String("nginx-service")},
+				Definition: &types.TaskDefinition{
+					ContainerDefinitions: []types.ContainerDefinition{
 						{
 							Name: aws.String("port-2112"),
-							PortMappings: []*ecs.PortMapping{
+							PortMappings: []types.PortMapping{
 								{
-									ContainerPort: aws.Int64(2112),
-									HostPort:      aws.Int64(2113), // doesn't matter for matcher test
+									ContainerPort: aws.Int32(2112),
+									HostPort:      aws.Int32(2113), // doesn't matter for matcher test
 								},
 							},
 						},
 						{
 							Name: aws.String("port-2114"),
-							PortMappings: []*ecs.PortMapping{
+							PortMappings: []types.PortMapping{
 								{
-									ContainerPort: aws.Int64(2113 + 1), // a different port
-									HostPort:      aws.Int64(2113),     // doesn't matter for matcher test
+									ContainerPort: aws.Int32(2113 + 1), // a different port
+									HostPort:      aws.Int32(2113),     // doesn't matter for matcher test
 								},
 							},
 						},
@@ -72,7 +72,7 @@ func TestServiceMatcher(t *testing.T) {
 				},
 			},
 			{
-				Service:    &ecs.Service{ServiceName: aws.String("memcached-service")},
+				Service:    &types.Service{ServiceName: aws.String("memcached-service")},
 				Definition: emptyDef,
 			},
 			{
