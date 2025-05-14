@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -26,6 +25,9 @@ const (
 
 	minKey = "min"
 	maxKey = "max"
+
+	rangeKey  = "range"
+	equalsKey = "equals"
 )
 
 type ParseSeverityArguments[K any] struct {
@@ -98,8 +100,19 @@ func evaluateSeverityMapping(value any, criteria []any) (bool, error) {
 
 func evaluateSeverityNumberMapping(value int64, criteria []any) (bool, error) {
 	for _, crit := range criteria {
+		criteriaItem, ok := crit.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		// right now, we only have a "range" criteria for numeric log levels, so we specifically check for this here
+		rangeMapObj, ok := criteriaItem[rangeKey]
+		if !ok {
+			continue
+		}
+
 		// if we have a numeric severity number, we need to match with number ranges
-		rangeMap, ok := crit.(map[string]any)
+		rangeMap, ok := rangeMapObj.(map[string]any)
 		if !ok {
 			rangeMap, ok = parseValueRangePlaceholder(crit)
 			if !ok {
@@ -161,13 +174,23 @@ func parseValueRangePlaceholder(crit any) (map[string]any, bool) {
 
 func evaluateSeverityStringMapping(value string, criteria []any) bool {
 	for _, crit := range criteria {
-		// if we have a severity string, we need to match with string mappings
-		criteriaString, ok := crit.(string)
+		criteriaItem, ok := crit.(map[string]any)
 		if !ok {
 			return false
 		}
-		if criteriaString == value {
-			return true
+		criteriaEquals, ok := criteriaItem[equalsKey]
+		if !ok {
+			return false
+		}
+		// if we have a severity string, we need to match with string mappings
+		equalsStrings, ok := criteriaEquals.([]string)
+		if !ok {
+			return false
+		}
+		for _, equals := range equalsStrings {
+			if value == equals {
+				return true
+			}
 		}
 	}
 	return false

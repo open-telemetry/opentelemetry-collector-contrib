@@ -312,27 +312,28 @@ func Test_parseSeverity(t *testing.T) {
 func getTestSeverityMapping() pcommon.Map {
 	m := pcommon.NewMap()
 	errorMapping := m.PutEmptySlice("error")
-	rangeMap := errorMapping.AppendEmpty().SetEmptyMap()
+	rangeMap := errorMapping.AppendEmpty().SetEmptyMap().PutEmptyMap("range")
 	rangeMap.PutInt("min", 400)
 	rangeMap.PutInt("max", 499)
 
 	debugMapping := m.PutEmptySlice("debug")
-	rangeMap2 := debugMapping.AppendEmpty().SetEmptyMap()
+	rangeMap2 := debugMapping.AppendEmpty().SetEmptyMap().PutEmptyMap("range")
 	rangeMap2.PutInt("min", 100)
 	rangeMap2.PutInt("max", 199)
 
 	infoMapping := m.PutEmptySlice("info")
-	infoMapping.AppendEmpty().SetStr("inf")
-	infoMapping.AppendEmpty().SetStr("info")
-	infoMapping.AppendEmpty().SetStr(http2xx)
+	infoEquals := infoMapping.AppendEmpty().SetEmptyMap().PutEmptySlice("equals")
+	infoEquals.AppendEmpty().SetStr("inf")
+	infoEquals.AppendEmpty().SetStr("info")
+	infoEquals.AppendEmpty().SetStr(http2xx)
 
 	warnMapping := m.PutEmptySlice("warn")
-	rangeMap4 := warnMapping.AppendEmpty().SetEmptyMap()
+	rangeMap4 := warnMapping.AppendEmpty().SetEmptyMap().PutEmptyMap("range")
 	rangeMap4.PutInt("min", 300)
 	rangeMap4.PutInt("max", 399)
 
 	fatalMapping := m.PutEmptySlice("fatal")
-	rangeMap5 := fatalMapping.AppendEmpty().SetEmptyMap()
+	rangeMap5 := fatalMapping.AppendEmpty().SetEmptyMap().PutEmptyMap("range")
 	rangeMap5.PutInt("min", 500)
 	rangeMap5.PutInt("max", 599)
 
