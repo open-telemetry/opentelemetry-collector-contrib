@@ -244,6 +244,14 @@ metrics:
       input_type: string
     attributes: [ physical_filename, logical_filename, file_type, direction ]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.operations:
+    enabled: false
+    description: The rate of operations issued.
+    unit: "{operations}/s"
+    gauge:
+      value_type: double
+    attributes: [ direction ]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.resource_pool.disk.throttled.read.rate:
     enabled: false
     description: The number of read operations that were throttled in the last second

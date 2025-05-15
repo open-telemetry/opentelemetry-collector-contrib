@@ -306,6 +306,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverReplicaDataRate: metricInfo{
 		Name: "sqlserver.replica.data.rate",
 	},
+	SqlserverResourcePoolDiskOperations: metricInfo{
+		Name: "sqlserver.resource_pool.disk.operations",
+	},
 	SqlserverResourcePoolDiskThrottledReadRate: metricInfo{
 		Name: "sqlserver.resource_pool.disk.throttled.read.rate",
 	},
@@ -382,6 +385,7 @@ type metricsInfo struct {
 	SqlserverPageSplitRate                      metricInfo
 	SqlserverProcessesBlocked                   metricInfo
 	SqlserverReplicaDataRate                    metricInfo
+	SqlserverResourcePoolDiskOperations         metricInfo
 	SqlserverResourcePoolDiskThrottledReadRate  metricInfo
 	SqlserverResourcePoolDiskThrottledWriteRate metricInfo
 	SqlserverTableCount                         metricInfo
@@ -1956,6 +1960,57 @@ func newMetricSqlserverReplicaDataRate(cfg MetricConfig) metricSqlserverReplicaD
 	return m
 }
 
+type metricSqlserverResourcePoolDiskOperations struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.resource_pool.disk.operations metric with initial data.
+func (m *metricSqlserverResourcePoolDiskOperations) init() {
+	m.data.SetName("sqlserver.resource_pool.disk.operations")
+	m.data.SetDescription("The rate of operations issued.")
+	m.data.SetUnit("{operations}/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverResourcePoolDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverResourcePoolDiskOperations) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverResourcePoolDiskOperations) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverResourcePoolDiskOperations(cfg MetricConfig) metricSqlserverResourcePoolDiskOperations {
+	m := metricSqlserverResourcePoolDiskOperations{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverResourcePoolDiskThrottledReadRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2694,6 +2749,7 @@ type MetricsBuilder struct {
 	metricSqlserverPageSplitRate                      metricSqlserverPageSplitRate
 	metricSqlserverProcessesBlocked                   metricSqlserverProcessesBlocked
 	metricSqlserverReplicaDataRate                    metricSqlserverReplicaDataRate
+	metricSqlserverResourcePoolDiskOperations         metricSqlserverResourcePoolDiskOperations
 	metricSqlserverResourcePoolDiskThrottledReadRate  metricSqlserverResourcePoolDiskThrottledReadRate
 	metricSqlserverResourcePoolDiskThrottledWriteRate metricSqlserverResourcePoolDiskThrottledWriteRate
 	metricSqlserverTableCount                         metricSqlserverTableCount
@@ -2764,6 +2820,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverPageSplitRate:                      newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
 		metricSqlserverProcessesBlocked:                   newMetricSqlserverProcessesBlocked(mbc.Metrics.SqlserverProcessesBlocked),
 		metricSqlserverReplicaDataRate:                    newMetricSqlserverReplicaDataRate(mbc.Metrics.SqlserverReplicaDataRate),
+		metricSqlserverResourcePoolDiskOperations:         newMetricSqlserverResourcePoolDiskOperations(mbc.Metrics.SqlserverResourcePoolDiskOperations),
 		metricSqlserverResourcePoolDiskThrottledReadRate:  newMetricSqlserverResourcePoolDiskThrottledReadRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledReadRate),
 		metricSqlserverResourcePoolDiskThrottledWriteRate: newMetricSqlserverResourcePoolDiskThrottledWriteRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledWriteRate),
 		metricSqlserverTableCount:                         newMetricSqlserverTableCount(mbc.Metrics.SqlserverTableCount),
@@ -2911,6 +2968,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverPageSplitRate.emit(ils.Metrics())
 	mb.metricSqlserverProcessesBlocked.emit(ils.Metrics())
 	mb.metricSqlserverReplicaDataRate.emit(ils.Metrics())
+	mb.metricSqlserverResourcePoolDiskOperations.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledReadRate.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledWriteRate.emit(ils.Metrics())
 	mb.metricSqlserverTableCount.emit(ils.Metrics())
@@ -3129,6 +3187,11 @@ func (mb *MetricsBuilder) RecordSqlserverProcessesBlockedDataPoint(ts pcommon.Ti
 // RecordSqlserverReplicaDataRateDataPoint adds a data point to sqlserver.replica.data.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverReplicaDataRateDataPoint(ts pcommon.Timestamp, val float64, replicaDirectionAttributeValue AttributeReplicaDirection) {
 	mb.metricSqlserverReplicaDataRate.recordDataPoint(mb.startTime, ts, val, replicaDirectionAttributeValue.String())
+}
+
+// RecordSqlserverResourcePoolDiskOperationsDataPoint adds a data point to sqlserver.resource_pool.disk.operations metric.
+func (mb *MetricsBuilder) RecordSqlserverResourcePoolDiskOperationsDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricSqlserverResourcePoolDiskOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint adds a data point to sqlserver.resource_pool.disk.throttled.read.rate metric.
