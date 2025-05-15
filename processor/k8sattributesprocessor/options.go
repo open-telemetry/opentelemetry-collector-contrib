@@ -133,7 +133,18 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sStatefulsetUID.Enabled {
 		attributes = append(attributes, string(conventions.K8SStatefulSetUIDKey))
 	}
-	// todo add service atts
+	if defaultConfig.ServiceNamespace.Enabled {
+		attributes = append(attributes, string(conventions.ServiceNamespaceKey))
+	}
+	if defaultConfig.ServiceName.Enabled {
+		attributes = append(attributes, string(conventions.ServiceNameKey))
+	}
+	if defaultConfig.ServiceVersion.Enabled {
+		attributes = append(attributes, string(conventions.ServiceVersionKey))
+	}
+	if defaultConfig.ServiceInstanceID.Enabled {
+		attributes = append(attributes, string(conventions.ServiceInstanceIDKey))
+	}
 	return
 }
 
