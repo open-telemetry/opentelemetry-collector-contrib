@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -50,7 +51,10 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicasetUID:          ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetName:        ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetUID:         ResourceAttributeConfig{Enabled: true},
-				// todo add service atts
+				ServiceInstanceID:         ResourceAttributeConfig{Enabled: true},
+				ServiceName:               ResourceAttributeConfig{Enabled: true},
+				ServiceNamespace:          ResourceAttributeConfig{Enabled: true},
+				ServiceVersion:            ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -81,6 +85,10 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicasetUID:          ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetName:        ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetUID:         ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:         ResourceAttributeConfig{Enabled: false},
+				ServiceName:               ResourceAttributeConfig{Enabled: false},
+				ServiceNamespace:          ResourceAttributeConfig{Enabled: false},
+				ServiceVersion:            ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
