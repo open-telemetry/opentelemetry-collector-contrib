@@ -34,7 +34,7 @@ import (
 
 const (
 	defaultMaxConcurrentFiles = 1024
-	defaultEncoding           = "utf-8-raw"
+	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
 )
 

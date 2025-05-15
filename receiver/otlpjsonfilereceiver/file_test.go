@@ -203,7 +203,7 @@ func testdataConfigYamlAsMap() *Config {
 				IncludeFilePathResolved: false,
 			},
 			PollInterval:       200 * time.Millisecond,
-			Encoding:           "utf-8-raw",
+			Encoding:           "utf-8",
 			StartAt:            "end",
 			FingerprintSize:    1000,
 			InitialBufferSize:  16 * 1024,
