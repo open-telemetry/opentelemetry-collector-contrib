@@ -84,6 +84,16 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
+	if rs.configInfo.ClusterInfoEnabled {
+		clusterInf, errClsInf := rs.redisSvc.clusterInfo()
+		if errClsInf != nil {
+			return pmetric.Metrics{}, errClsInf
+		}
+		for k, v := range clusterInf {
+			inf[k] = v
+		}
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 	currentUptime, err := inf.getUptimeInSeconds()
 	if err != nil {
