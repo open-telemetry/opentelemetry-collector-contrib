@@ -201,6 +201,7 @@ internal/collectd
 internal/kubelet
 internal/sqlquery
 internal/tools
+internal/unmarshaler
 pkg/translator/azure
 pkg/translator/azurelogs
 processor/attributesprocessor
