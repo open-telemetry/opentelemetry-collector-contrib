@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -110,8 +109,6 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	le, err := createLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
-
-	config.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 
 	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
