@@ -974,6 +974,11 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name:        "service-name",
+			rules:       serviceRules,
+			serviceName: "auth-service",
+		},
+		{
 			name:  "service-attributes-label-values",
 			rules: serviceRules,
 			additionalLabels: map[string]string{

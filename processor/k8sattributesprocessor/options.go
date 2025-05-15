@@ -197,25 +197,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ServiceNamespace = true
 			case string(conventions.ServiceNameKey):
 				p.rules.ServiceName = true
-				p.rules.Labels = append(p.rules.Labels, []kube.FieldExtractionRule{
-					{
-						Name: "service.name",
-						Key:  "app.kubernetes.io/name",
-						From: kube.MetadataFromPod,
-					},
-					{
-						Name: "service.name",
-						Key:  "app.kubernetes.io/instance",
-						From: kube.MetadataFromPod,
-					}}...)
 			case string(conventions.ServiceVersionKey):
 				p.rules.ServiceVersion = true
-				p.rules.Labels = append(p.rules.Labels,
-					kube.FieldExtractionRule{
-						Name: "service.version",
-						Key:  "app.kubernetes.io/version",
-						From: kube.MetadataFromPod,
-					})
 			case string(conventions.ServiceInstanceIDKey):
 				p.rules.ServiceInstanceID = true
 			}

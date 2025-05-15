@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
 	"regexp"
 	"strings"
 	"sync"
@@ -589,10 +590,26 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		r.extractFromPodMetadata(pod.Labels, tags, "k8s.pod.labels.%s")
 	}
 
+	if c.Rules.ServiceName {
+		copyLabel(pod, tags, "app.kubernetes.io/name", conventions.ServiceNameKey)
+		// app.kubernetes.io/instance has a higher precedence than app.kubernetes.io/name
+		copyLabel(pod, tags, "app.kubernetes.io/instance", conventions.ServiceNameKey)
+	}
+
+	if c.Rules.ServiceVersion {
+		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
+	}
+
 	for _, r := range c.Rules.Annotations {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
 	return tags, serviceNames
+}
+
+func copyLabel(pod *api_v1.Pod, tags map[string]string, labelKey string, key attribute.Key) {
+	if val, ok := pod.Labels[labelKey]; ok {
+		tags[string(key)] = val
+	}
 }
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
@@ -675,7 +692,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		}
 	}
 
-	if len(rules.Labels) > 0 {
+	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
 		transformedPod.Labels = pod.Labels
 	}
 
