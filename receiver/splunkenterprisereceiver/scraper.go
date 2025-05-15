@@ -106,6 +106,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeSearchArtifacts,
 		s.scrapeHealth,
 		s.scrapeSearch,
+		s.scrapeIndexerClusterManagerStatus,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -119,7 +120,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		info = s.scrapeInfo(ctx, now, errChan)
 	} else {
 		info = make(infoDict)
-		nullInfo := Info{Host: "", Entries: make([]InfoEntry, 1)}
+		nullInfo := Info{Host: "", Entries: make([]infoEntry, 1)}
 		info[typeCm] = nullInfo
 		info[typeSh] = nullInfo
 		info[typeIdx] = nullInfo
@@ -1791,7 +1792,7 @@ func (s *splunkScraper) scrapeHealth(_ context.Context, now pcommon.Timestamp, i
 	}
 }
 
-func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now pcommon.Timestamp, i InfoContent) {
+func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now pcommon.Timestamp, i infoContent) {
 	if details.Features == nil {
 		return
 	}
@@ -1813,7 +1814,7 @@ func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs 
 	// there could be an endpoint configured for each type (never more than 3)
 
 	info := make(infoDict)
-	nullInfo := Info{Host: "", Entries: make([]InfoEntry, 1)}
+	nullInfo := Info{Host: "", Entries: make([]infoEntry, 1)}
 	info[typeCm] = nullInfo
 	info[typeSh] = nullInfo
 	info[typeIdx] = nullInfo
@@ -1980,25 +1981,25 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 	}
 }
 
-func (s *splunkScraper) recordSplunkSearchInitiationDataPoint(now pcommon.Timestamp, value int64, i InfoContent) {
+func (s *splunkScraper) recordSplunkSearchInitiationDataPoint(now pcommon.Timestamp, value int64, i infoContent) {
 	if s.conf.Metrics.SplunkSearchInitiation.Enabled {
 		s.mb.RecordSplunkSearchInitiationDataPoint(now, value, i.Build, i.Version)
 	}
 }
 
-func (s *splunkScraper) recordSplunkSearchStatusDataPoint(now pcommon.Timestamp, value int64, state string, i InfoContent) {
+func (s *splunkScraper) recordSplunkSearchStatusDataPoint(now pcommon.Timestamp, value int64, state string, i infoContent) {
 	if s.conf.Metrics.SplunkSearchStatus.Enabled {
 		s.mb.RecordSplunkSearchStatusDataPoint(now, value, state, i.Build, i.Version)
 	}
 }
 
-func (s *splunkScraper) recordSplunkSearchDurationDataPoint(now pcommon.Timestamp, value float64, i InfoContent) {
+func (s *splunkScraper) recordSplunkSearchDurationDataPoint(now pcommon.Timestamp, value float64, i infoContent) {
 	if s.conf.Metrics.SplunkSearchDuration.Enabled {
 		s.mb.RecordSplunkSearchDurationDataPoint(now, value, i.Build, i.Version)
 	}
 }
 
-func (s *splunkScraper) recordSplunkSearchSuccessDataPoint(now pcommon.Timestamp, value int64, i InfoContent) {
+func (s *splunkScraper) recordSplunkSearchSuccessDataPoint(now pcommon.Timestamp, value int64, i infoContent) {
 	if s.conf.Metrics.SplunkSearchInitiation.Enabled {
 		s.mb.RecordSplunkSearchSuccessDataPoint(now, value, i.Build, i.Version)
 	}
@@ -2059,4 +2060,40 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	}
 
 	return nil
+}
+
+// Scrape Indexer Cluster Manger Status Endpoint
+func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+	if !s.conf.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
+		return
+	}
+
+	i := info[typeCm].Entries[0].Content
+
+	ept := apiDict[`SplunkIndexerClusterManagerStatus`]
+	var icms indexersClusterManagerStatus
+
+	req, err := s.splunkClient.createAPIRequest(typeCm, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	if err := json.NewDecoder(res.Body).Decode(&icms); err != nil {
+		errs <- err
+		return
+	}
+
+	for _, ic := range icms.Entries {
+		if ic.Content.RollingRestartOrUpgrade {
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+		}
+		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+	}
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"gopkg.in/yaml.v2"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	"gopkg.in/yaml.v3"
 )
 
 var scrapeFileTargetPage = `
@@ -52,7 +52,7 @@ func TestScrapeConfigFiles(t *testing.T) {
 
 func verifyScrapeConfigFiles(t *testing.T, _ *testData, result []pmetric.ResourceMetrics) {
 	require.Len(t, result, 1)
-	serviceName, ok := result[0].Resource().Attributes().Get(semconv.AttributeServiceName)
+	serviceName, ok := result[0].Resource().Attributes().Get(string(semconv.ServiceNameKey))
 	assert.True(t, ok)
 	assert.Equal(t, "target1", serviceName.Str())
 	assert.Equal(t, 6, result[0].ScopeMetrics().At(0).Metrics().Len())

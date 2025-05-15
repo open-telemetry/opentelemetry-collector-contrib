@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +92,7 @@ func simpleTraces(count int) ptrace.Traces {
 		s.SetKind(ptrace.SpanKindInternal)
 		s.SetStartTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		s.SetEndTimestamp(pcommon.NewTimestampFromTime(timestamp.Add(time.Minute)))
-		s.Attributes().PutStr(semconv.AttributeServiceName, "v")
+		s.Attributes().PutStr(string(semconv.ServiceNameKey), "v")
 		s.Status().SetMessage("error")
 		s.Status().SetCode(ptrace.StatusCodeError)
 		event := s.Events().AppendEmpty()
