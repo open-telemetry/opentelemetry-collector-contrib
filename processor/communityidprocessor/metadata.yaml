@@ -5,4 +5,4 @@ status:
   stability:
     development: [traces, metrics, logs]
   codeowners:
-    active: [mashhurs, edmocosta]
+    active: [edmocosta]
