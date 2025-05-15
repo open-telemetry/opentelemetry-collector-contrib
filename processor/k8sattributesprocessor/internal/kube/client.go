@@ -7,11 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/attribute"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
