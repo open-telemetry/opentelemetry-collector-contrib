@@ -262,6 +262,8 @@ func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Times
 			s.mb.RecordSparkStageStatusDataPoint(now, 0, false, false, true, false)
 		case "FAILED":
 			s.mb.RecordSparkStageStatusDataPoint(now, 0, false, false, false, true)
+		case "SKIPPED":
+			continue
 		default:
 			s.logger.Warn("Unsupported Spark stage status supplied: ignoring this stage's metrics and continuing to metrics for next stage", zap.String("status", stage.Status))
 			continue
