@@ -123,6 +123,10 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
+		if s.lastExecutionTimestamp.Add(s.config.TopQueryCollection.CollectionInterval).After(time.Now()) {
+			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
@@ -130,14 +134,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
 
-	// This will be removed once supports for structured events in mdatagen is done.
-	data := s.lb.Emit(metadata.WithLogsResource(resources))
-	if data.LogRecordCount() == 0 {
-		s.logger.Info("SQLServerScraperHelper: No rows found by query")
-		return plog.Logs{}, nil
-	}
-
-	return data, err
+	return s.lb.Emit(metadata.WithLogsResource(resources)), err
 }
 
 func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
@@ -552,11 +549,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// the time returned from mssql is in microsecond
 		totalWorkerTime = "total_worker_time"
 	)
-
-	if s.lastExecutionTimestamp.Add(s.config.TopQueryCollection.CollectionInterval).After(time.Now()) {
-		s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
-		return pcommon.Resource{}, nil
-	}
 
 	resources := pcommon.NewResource()
 
