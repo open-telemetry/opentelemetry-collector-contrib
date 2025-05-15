@@ -182,7 +182,7 @@ pkg/translator/zipkin/                                           @open-telemetry
 pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @alxbl @pjanotti
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
-processor/communityidprocessor/                                  @open-telemetry/collector-contrib-approvers @mashhurs @edmocosta
+processor/communityidprocessor/                                  @open-telemetry/collector-contrib-approvers @edmocosta
 processor/coralogixprocessor/                                    @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv
 processor/cumulativetodeltaprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/datadogsemanticsprocessor/                             @open-telemetry/collector-contrib-approvers @songy23 @IbraheemA @mx-psi @dineshg13 @ankitpatel96 @jade-guiton-dd @jackgopack4
