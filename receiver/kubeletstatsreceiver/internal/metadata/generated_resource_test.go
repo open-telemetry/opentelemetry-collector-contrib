@@ -21,6 +21,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNodeAnnotation("key", "val")
+			rb.SetK8sNodeLabel("key", "val")
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
@@ -36,7 +38,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 15, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 17, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -83,6 +85,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "k8s.namespace.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.node.annotation.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.node.label.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
