@@ -32,12 +32,6 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0 h1:PxuIAp6OjpM3ortPxmKQcf40hwjSNOLKaGQV6LDuOSI=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0/go.mod h1:BGk7fFn1tjvFw+luzTsJaIbKLJqhzLJonRujmS5rgLM=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.126.0 h1:A0ngaz213hmNCCX6AoKs3tqM0WAAsURHdIv5h0UXLeM=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.126.0/go.mod h1:NHImkI6CD3ijcfLe4h6XP1MXQG0PSWH9TpLenZf6Wys=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.126.0 h1:dJYkcvcx7Uyb5b4JfJrW5W1NFrGNq+mX7PldytKXiN8=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.126.0/go.mod h1:fd4I8Jgwk5167CVj++JLHqDhOlAOBVBsSYZr2NPF6d4=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
