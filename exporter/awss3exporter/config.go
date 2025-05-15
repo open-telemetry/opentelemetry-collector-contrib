@@ -55,6 +55,18 @@ const (
 type ResourceAttrsToS3 struct {
 	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
 	S3Prefix string `mapstructure:"s3_prefix"`
+	// S3PartitionFormat is used to provide the rollup on how data is written.
+	// If overrides the value in S3UploaderConfig.S3PartitionFormat.
+	// In addition to the format supported by S3UploaderConfig.S3PartitionFormat it also
+	// supports bracketed shell-style variable substitutions (${var}), where the variables are resource attribute names.
+	S3PartitionFormat string `mapstructure:"s3_partition_format"`
+	// FilePrefix is the filename prefix used for the file to avoid any potential collisions.
+	// If overrides the value in S3UploaderConfig.FilePrefix.
+	// It supports bracketed shell-style variable substitutions (${var}), where the variables are resource attribute names.
+	FilePrefix string `mapstructure:"file_prefix"`
+	// UnknownAttributePlaceholder is the placeholder used for missing attributes specified in S3PartitionFormat.
+	// If unset "_unknown_" is used.
+	UnknownAttributePlaceholder string `mapstructure:"unknown_attribute_placeholder"`
 }
 
 // Config contains the main configuration options for the s3 exporter
