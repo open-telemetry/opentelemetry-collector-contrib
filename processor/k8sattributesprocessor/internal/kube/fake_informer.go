@@ -160,6 +160,15 @@ func NewNoOpInformer(
 	}
 }
 
+func NewNoOpWorkloadInformer(
+	_ kubernetes.Interface,
+	_ string,
+) cache.SharedInformer {
+	return &NoOpInformer{
+		NoOpController: &NoOpController{},
+	}
+}
+
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }

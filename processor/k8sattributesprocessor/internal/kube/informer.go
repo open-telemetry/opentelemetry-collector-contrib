@@ -40,9 +40,10 @@ type InformerProviderNode func(
 	client kubernetes.Interface,
 ) cache.SharedInformer
 
-// InformerProviderReplicaSet defines a function type that returns a new SharedInformer. It is used to
+// InformerProviderWorkload defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client.
-type InformerProviderReplicaSet func(
+// It's used for high-level workloads such as ReplicaSets, Deployments, DaemonSets, StatefulSets or Jobs
+type InformerProviderWorkload func(
 	client kubernetes.Interface,
 	namespace string,
 ) cache.SharedInformer
@@ -151,5 +152,32 @@ func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace stri
 func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
+	}
+}
+
+func newDeploymentSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  deploymentListFuncWithSelectors(client, namespace),
+			WatchFunc: deploymentWatchFuncWithSelectors(client, namespace),
+		},
+		&apps_v1.Deployment{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func deploymentListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.AppsV1().Deployments(namespace).List(context.Background(), opts)
+	}
+}
+
+func deploymentWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.AppsV1().Deployments(namespace).Watch(context.Background(), opts)
 	}
 }
