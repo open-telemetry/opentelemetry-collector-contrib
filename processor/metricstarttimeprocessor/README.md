@@ -69,3 +69,16 @@ Cons:
 
 * The absolute value of counters is modified. This is generally not an issue, since counters are usually used to compute rates.
 * The initial point is dropped, which loses information.
+
+### Strategy: Fixed Offset
+
+The `offset` strategy computes missing start times for data points of any
+temporality by subtracting a configured duration from their timestamp:
+
+```yaml
+strategy: offset
+offset: <duration> | default = 1m
+```
+
+
+E.g. a datapoint at `2025-05-12T13:51:55` would receive a start time of `2025-05-12T13:50:55`.
