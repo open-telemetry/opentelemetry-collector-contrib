@@ -186,6 +186,7 @@ body:
       - pkg/winperfcounters
       - pkg/xk8stest
       - processor/attributes
+      - processor/communityid
       - processor/coralogix
       - processor/cumulativetodelta
       - processor/datadogsemantics
