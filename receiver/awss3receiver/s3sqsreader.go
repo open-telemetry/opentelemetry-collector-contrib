@@ -70,7 +70,7 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		return nil, errors.New("SQS configuration is required")
 	}
 
-	sqsClient, err := newSQSClient(ctx, cfg.SQS.Region, cfg.SQS.Endpoint)
+	sqsAPIClient, err := newSQSClient(ctx, cfg.SQS.Region, cfg.SQS.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SQS client: %w", err)
 	}
@@ -94,7 +94,7 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 	return &s3SQSNotificationReader{
 		logger:              logger,
 		s3Client:            getObjectClient,
-		sqsClient:           sqsClient,
+		sqsClient:           sqsAPIClient,
 		queueURL:            cfg.SQS.QueueURL,
 		s3Bucket:            cfg.S3Downloader.S3Bucket,
 		s3Prefix:            cfg.S3Downloader.S3Prefix,
@@ -144,18 +144,18 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 					// If direct parsing failed, try to extract from SNS notification format
 					r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
 
-					var snsMessage snsMessage
+					var snsMsg snsMessage
 
-					if err = json.Unmarshal([]byte(messageBody), &snsMessage); err != nil {
+					if err = json.Unmarshal([]byte(messageBody), &snsMsg); err != nil {
 						r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
 						continue
 					}
 
-					if snsMessage.Type != "Notification" {
-						r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMessage.Type))
+					if snsMsg.Type != "Notification" {
+						r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMsg.Type))
 						continue
 					}
-					if err = json.Unmarshal([]byte(snsMessage.Message), &s3Event); err != nil {
+					if err = json.Unmarshal([]byte(snsMsg.Message), &s3Event); err != nil {
 						r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
 						continue
 					}
