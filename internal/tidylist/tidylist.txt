@@ -28,6 +28,7 @@ exporter/sapmexporter
 pkg/experimentalmetricmetadata
 pkg/translator/signalfx
 exporter/signalfxexporter
+exporter/stefexporter
 exporter/syslogexporter
 pkg/translator/zipkin
 receiver/zipkinreceiver
@@ -43,6 +44,7 @@ receiver/signalfxreceiver
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
+receiver/stefreceiver
 receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
@@ -142,7 +144,6 @@ internal/rabbitmq
 exporter/rabbitmqexporter
 exporter/sematextexporter
 exporter/sentryexporter
-exporter/stefexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
@@ -309,7 +310,6 @@ receiver/sqlqueryreceiver
 receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
-receiver/stefreceiver
 receiver/systemdreceiver
 receiver/tcpcheckreceiver
 receiver/tcplogreceiver
