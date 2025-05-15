@@ -38,7 +38,7 @@ func TestScrapeSimple(t *testing.T) {
 			},
 		}, nil
 	}
-	s.getMdraids = func() ([]Mdraid, error) {
+	s.getMdraids = func(_ string) ([]Mdraid, error) {
 		return []Mdraid{
 			{
 				Device:        "disk1",
@@ -148,7 +148,7 @@ func TestScrapeExclude(t *testing.T) {
 			},
 		}, nil
 	}
-	s.getMdraids = func() ([]Mdraid, error) {
+	s.getMdraids = func(_ string) ([]Mdraid, error) {
 		return []Mdraid{}, nil
 	}
 
@@ -181,7 +181,7 @@ func TestScrapeInclude(t *testing.T) {
 			},
 		}, nil
 	}
-	s.getMdraids = func() ([]Mdraid, error) {
+	s.getMdraids = func(_ string) ([]Mdraid, error) {
 		return []Mdraid{}, nil
 	}
 
@@ -218,7 +218,7 @@ func TestScrapeExcludeOverridesInclude(t *testing.T) {
 			},
 		}, nil
 	}
-	s.getMdraids = func() ([]Mdraid, error) {
+	s.getMdraids = func(_ string) ([]Mdraid, error) {
 		return []Mdraid{}, nil
 	}
 

@@ -15,10 +15,11 @@ import (
 
 func TestCreateRaidScraper(t *testing.T) {
 	factory := NewFactory()
-	cfg := &Config{}
+	cfg := factory.CreateDefaultConfig().(*Config)
 
 	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
+	assert.Equal(t, defaultSysDeviceFilesystem, cfg.SysDeviceFilesystem)
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
 }

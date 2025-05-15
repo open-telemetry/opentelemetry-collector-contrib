@@ -18,6 +18,9 @@ type Config struct {
 	// If neither `include` or `exclude` are set, metrics will be generated for all devices.
 	Include MatchConfig `mapstructure:"include"`
 	Exclude MatchConfig `mapstructure:"exclude"`
+
+	// Override the /sys virtual filesystem where mdstats is
+	SysDeviceFilesystem string `mapstructure:"sys_device_filesystem"`
 }
 
 type MatchConfig struct {

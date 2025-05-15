@@ -12,6 +12,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/raidscraper/internal/metadata"
 )
 
+const defaultSysDeviceFilesystem = "/sys"
+
 // NewFactory for System scraper.
 func NewFactory() scraper.Factory {
 	return scraper.NewFactory(metadata.Type, createDefaultConfig, scraper.WithMetrics(createMetricsScraper, metadata.MetricsStability))
@@ -20,6 +22,7 @@ func NewFactory() scraper.Factory {
 // createDefaultConfig creates the default configuration for the Scraper.
 func createDefaultConfig() component.Config {
 	return &Config{
+		SysDeviceFilesystem:  defaultSysDeviceFilesystem,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

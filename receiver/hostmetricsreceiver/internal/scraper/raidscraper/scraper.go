@@ -27,7 +27,7 @@ type raidScraper struct {
 
 	// for mocking
 	getMdStats func() ([]MDStat, error)
-	getMdraids func() ([]Mdraid, error)
+	getMdraids func(fs string) ([]Mdraid, error)
 }
 
 type MDStat struct {
@@ -150,7 +150,7 @@ func (s *raidScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.getMdraids != nil {
-		mdRaids, err := s.getMdraids()
+		mdRaids, err := s.getMdraids(s.config.SysDeviceFilesystem)
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}

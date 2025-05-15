@@ -50,8 +50,8 @@ func getMDStats() ([]MDStat, error) {
 	return convertMdStats(mdstats), nil
 }
 
-func getMdraids() ([]Mdraid, error) {
-	sysFS, err := sysfs.NewFS("/sys")
+func getMdraids(fs string) ([]Mdraid, error) {
+	sysFS, err := sysfs.NewFS(fs)
 	if err != nil {
 		return []Mdraid{}, fmt.Errorf("failed to open sysfs: %w", err)
 	}
