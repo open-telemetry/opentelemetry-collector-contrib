@@ -112,7 +112,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -147,7 +147,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							Scheme:          "https",
 							MetricsPath:     "/metric",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -179,7 +179,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -220,7 +220,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{
@@ -299,7 +299,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -342,7 +342,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -379,7 +379,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -416,7 +416,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
