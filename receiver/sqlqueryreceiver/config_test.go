@@ -60,6 +60,43 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:    component.NewIDWithName(metadata.Type, ""),
+			fname: "config-datasource-config.yaml",
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver: "mydriver",
+					DataSourceConfig: sqlquery.DataSourceConfig{
+						Host:     "localhost",
+						Port:     5432,
+						Database: "mydb",
+						Username: "me",
+						Password: "s3cr3t",
+					},
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			fname:        "config-invalid-datatype.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "unsupported data_type: 'xyzgauge'",
@@ -107,7 +144,17 @@ func TestLoadConfig(t *testing.T) {
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource' cannot be empty",
+			errorMessage: "'datasource_config.host' must be specified",
+		},
+		{
+			fname:        "config-invalid-missing-datasource-port.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'datasource_config.port' must be specified",
+		},
+		{
+			fname:        "config-invalid-missing-datasource-database.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'datasource_config.database' must be specified",
 		},
 		{
 			fname: "config-logs.yaml",
@@ -120,6 +167,39 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Driver:     "mydriver",
 					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Queries: []sqlquery.Query{
+						{
+							SQL:                "select * from test_logs where log_id > ?",
+							TrackingColumn:     "log_id",
+							TrackingStartValue: "10",
+							Logs: []sqlquery.LogsCfg{
+								{
+									BodyColumn:       "log_body",
+									AttributeColumns: []string{"log_attribute_1", "log_attribute_2"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			fname: "config-logs-datasource-config.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver: "mydriver",
+					DataSourceConfig: sqlquery.DataSourceConfig{
+						Host:     "localhost",
+						Port:     5432,
+						Database: "mydb",
+						Username: "me",
+						Password: "s3cr3t",
+					},
 					Queries: []sqlquery.Query{
 						{
 							SQL:                "select * from test_logs where log_id > ?",
