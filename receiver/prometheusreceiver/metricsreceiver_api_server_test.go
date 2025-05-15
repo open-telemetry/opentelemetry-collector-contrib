@@ -64,7 +64,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		defer mp.Close()
 
 		require.NoError(t, err)
-		receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
 			APIServer: &APIServer{
 				Enabled: true,
@@ -73,6 +73,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 				},
 			},
 		}, new(consumertest.MetricsSink))
+		require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 		endpointsToReceivers[endpoint] = receiver
 
 		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))

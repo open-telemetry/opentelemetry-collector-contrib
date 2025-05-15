@@ -63,7 +63,7 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	configWarnings(set.Logger, cfg.(*Config))
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer)
 }
 
 func configWarnings(logger *zap.Logger, cfg *Config) {
