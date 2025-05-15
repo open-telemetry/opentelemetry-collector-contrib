@@ -31,7 +31,9 @@ type ResourceAttributesConfig struct {
 	ContainerImageName        ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageRepoDigests ResourceAttributeConfig `mapstructure:"container.image.repo_digests"`
 	ContainerImageTag         ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerPorts            ResourceAttributeConfig `mapstructure:"container.ports"`
 	K8sClusterUID             ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
+	K8sContainerCPURequest    ResourceAttributeConfig `mapstructure:"k8s.container.cpu.request"`
 	K8sContainerName          ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName            ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sDaemonsetName          ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
@@ -68,7 +70,13 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		ContainerPorts: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sClusterUID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sContainerCPURequest: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
