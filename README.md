@@ -113,7 +113,6 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
-- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
@@ -123,6 +122,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 Emeritus Maintainers
 
+- [Daniel Jaglowski](https://github.com/djaglowski), Bindplane
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
