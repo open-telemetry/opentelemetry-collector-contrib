@@ -1,8 +1,8 @@
 # Contributing
 
-If you would like to contribute please read OpenTelemetry Collector [contributing
+If you would like to contribute please read OpenTelemetry core Collector [contributing
 guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md)
-before you begin your work.
+before you begin your work with the contrib Collector.
 
 ## Local Testing
 
@@ -19,8 +19,10 @@ repository:
 2. Run the contrib Collector with a local configuration file:
 
   ```shell
-  ./bin/otelcorecol_<os>_<arch> --config otel-config.yaml
+  ./bin/otelcontribcol_<os>_<arch> --config otel-config.yaml
   ```
+
+  The actual name of the binary will depend on your platform. For example, on Linux x64, use `./bin/otelcontribcol_linux_amd64`.
 
 The actual name of the binary will depend on your platform, adjust accordingly
 (e.g., `./bin/otelcontribcol_linux_amd64`).
@@ -30,25 +32,36 @@ Replace `otel-config.yaml` with the appropriate configuration file as needed.
 3. Verify that your changes are reflected in the contrib Collector's behavior by
    testing it against the provided configuration.
 
-4. Lint your changes. Navigate to the affected components directory and run. For
-example, to lint the Elasticsearch exporter:
+4. Lint your changes:
 
+ - For the entire project:
+  ```shell
+  make golint
+  ```
+
+ - For specific components (e.g., Elasticsearch exporter):
   ```shell
   cd exporter/elasticsearchexporter/
   make lint
   ```
 
-5. Run the unit tests. Navigate to the affected components directory and run. 
-   For example, to run the Elasticsearch exporter tests:
+5. Run the unit tests:
 
+ - Run tests for the whole project from the project root:
   ```shell
+  make gotest
+  ```
+ - Alternatively, run tests for the affected components. For example, to run the Elasticsearch exporter tests:
+  ```shell
+  cd exporter/elasticsearchexporter/
   make test
-  ````
+  ```
 
 ## Changelog
 
 ### Overview
 
+There are two auto-generated Changelogs for this repository:
 There are two auto generated Changelogs for this repository:
 
 - `CHANGELOG.md` is intended for users of the collector and lists changes that affect the behavior of the collector.
@@ -73,7 +86,7 @@ Pull requests that contain user-facing changes will require a changelog entry. K
 3. Those who are depending on APIs exported from collector packages
 4. Those who are contributing to the repository
 
-Changes that affect the first two groups should be noted in `CHANGELOG.md`. Changes that affect the third or forth groups should be noted in `CHANGELOG-API.md`.
+Changes that affect the first two groups should be noted in `CHANGELOG.md`. Changes that affect the third or fourth groups should be noted in `CHANGELOG-API.md`.
 
 If a changelog entry is not required, a maintainer or approver will add the `Skip Changelog` label to the pull request.
 
