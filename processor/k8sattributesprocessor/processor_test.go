@@ -802,7 +802,7 @@ func TestAddNamespaceLabels(t *testing.T) {
 		t,
 		func() component.Config {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Extract.Metadata = []string{}
+			cfg.Extract.Metadata = []string{string(conventions.ServiceNamespaceKey)}
 			cfg.Extract.Labels = []FieldExtractConfig{
 				{
 					From: kube.MetadataFromNamespace,
@@ -1404,7 +1404,12 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				t,
 				NewFactory().CreateDefaultConfig(),
 				nil,
-				withServiceAttributes(ServiceAttributesConfig{Enabled: true}),
+				withExtractMetadata(
+					string(conventions.ServiceNamespaceKey),
+					string(conventions.ServiceNameKey),
+					string(conventions.ServiceVersionKey),
+					string(conventions.ServiceInstanceIDKey),
+				),
 			)
 			m.kubernetesProcessorOperation(tt.op)
 			m.testConsume(context.Background(),
