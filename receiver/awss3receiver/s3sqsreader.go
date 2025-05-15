@@ -19,27 +19,27 @@ import (
 // S3 event notification structure from AWS
 // See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
 
-// S3ObjectData represents an S3 object in the notification
-type S3ObjectData struct {
+// s3ObjectData represents an S3 object in the notification
+type s3ObjectData struct {
 	Key string `json:"key"`
 }
 
-// S3BucketData represents an S3 bucket in the notification
-type S3BucketData struct {
+// s3BucketData represents an S3 bucket in the notification
+type s3BucketData struct {
 	Name string `json:"name"`
 }
 
-// S3Data represents the S3 specific data in the notification
-type S3Data struct {
-	Bucket S3BucketData `json:"bucket"`
-	Object S3ObjectData `json:"object"`
+// s3Data represents the S3 specific data in the notification
+type s3Data struct {
+	Bucket s3BucketData `json:"bucket"`
+	Object s3ObjectData `json:"object"`
 }
 
 // S3EventRecord represents a single record in an S3 event notification
 type S3EventRecord struct {
 	EventSource string `json:"eventSource"`
 	EventName   string `json:"eventName"`
-	S3          S3Data `json:"s3"`
+	S3          s3Data `json:"s3"`
 }
 
 // s3EventNotification is the top-level structure for S3 event notifications
@@ -47,8 +47,8 @@ type s3EventNotification struct {
 	Records []S3EventRecord `json:"Records"`
 }
 
-// SNSMessage represents the structure of an SNS notification message
-type SNSMessage struct {
+// snsMessage represents the structure of an SNS notification message
+type snsMessage struct {
 	Type    string `json:"Type"`
 	Message string `json:"Message"`
 }
@@ -57,7 +57,7 @@ type SNSMessage struct {
 type s3SQSNotificationReader struct {
 	logger              *zap.Logger
 	s3Client            GetObjectAPI
-	sqsClient           SQSClient
+	sqsClient           sqsClient
 	queueURL            string
 	s3Bucket            string
 	s3Prefix            string
@@ -144,7 +144,7 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 					// If direct parsing failed, try to extract from SNS notification format
 					r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
 
-					var snsMessage SNSMessage
+					var snsMessage snsMessage
 
 					if err = json.Unmarshal([]byte(messageBody), &snsMessage); err != nil {
 						r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))

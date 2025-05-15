@@ -129,11 +129,11 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: S3Data{
-					Bucket: S3BucketData{
+				S3: s3Data{
+					Bucket: s3BucketData{
 						Name: "test-bucket",
 					},
-					Object: S3ObjectData{
+					Object: s3ObjectData{
 						Key: "test-key",
 					},
 				},
@@ -144,7 +144,7 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	eventJSON, err := json.Marshal(s3Event)
 	require.NoError(t, err)
 
-	snsNotification := SNSMessage{
+	snsNotification := snsMessage{
 		Type:    "Notification",
 		Message: string(eventJSON),
 	}
@@ -257,11 +257,11 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: S3Data{
-					Bucket: S3BucketData{
+				S3: s3Data{
+					Bucket: s3BucketData{
 						Name: "test-bucket",
 					},
-					Object: S3ObjectData{
+					Object: s3ObjectData{
 						Key: "test-key",
 					},
 				},
@@ -407,11 +407,11 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 				{
 					EventSource: "aws:s3",
 					EventName:   "ObjectCreated:Put",
-					S3: S3Data{
-						Bucket: S3BucketData{
+					S3: s3Data{
+						Bucket: s3BucketData{
 							Name: "test-bucket",
 						},
-						Object: S3ObjectData{
+						Object: s3ObjectData{
 							Key: "test-key",
 						},
 					},
@@ -422,7 +422,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		eventJSON, err := json.Marshal(s3Event)
 		require.NoError(t, err)
 
-		snsNotification := SNSMessage{
+		snsNotification := snsMessage{
 			Type:    "Notification",
 			Message: string(eventJSON),
 		}
@@ -513,11 +513,11 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: S3Data{
-					Bucket: S3BucketData{
+				S3: s3Data{
+					Bucket: s3BucketData{
 						Name: "test-bucket",
 					},
-					Object: S3ObjectData{
+					Object: s3ObjectData{
 						Key: "logs/matched-key-1",
 					},
 				},
@@ -525,11 +525,11 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: S3Data{
-					Bucket: S3BucketData{
+				S3: s3Data{
+					Bucket: s3BucketData{
 						Name: "test-bucket",
 					},
-					Object: S3ObjectData{
+					Object: s3ObjectData{
 						Key: "data/unmatched-key",
 					},
 				},
@@ -537,11 +537,11 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
-				S3: S3Data{
-					Bucket: S3BucketData{
+				S3: s3Data{
+					Bucket: s3BucketData{
 						Name: "test-bucket",
 					},
-					Object: S3ObjectData{
+					Object: s3ObjectData{
 						Key: "logs/matched-key-2",
 					},
 				},
@@ -552,7 +552,7 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	eventJSON, err := json.Marshal(s3Event)
 	require.NoError(t, err)
 
-	snsNotification := SNSMessage{
+	snsNotification := snsMessage{
 		Type:    "Notification",
 		Message: string(eventJSON),
 	}

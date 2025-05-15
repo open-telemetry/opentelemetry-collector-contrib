@@ -11,14 +11,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
-// SQSClient defines the SQS operations used by s3SQSNotificationReader
-type SQSClient interface {
+// sqsClient defines the SQS operations used by s3SQSNotificationReader
+type sqsClient interface {
 	ReceiveMessage(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error)
 	DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)
 }
 
 // newSQSClient creates a new SQS client with the provided configuration
-func newSQSClient(ctx context.Context, region string, endpoint string) (SQSClient, error) {
+func newSQSClient(ctx context.Context, region string, endpoint string) (sqsClient, error) {
 	optionsFuncs := make([]func(*config.LoadOptions) error, 0)
 	if region != "" {
 		optionsFuncs = append(optionsFuncs, config.WithRegion(region))
