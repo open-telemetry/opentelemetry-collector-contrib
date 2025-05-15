@@ -205,6 +205,7 @@ internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 processor/attributesprocessor
+processor/communityidprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/datadogsemanticsprocessor
