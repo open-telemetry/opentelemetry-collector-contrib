@@ -84,7 +84,7 @@ type MdraidComponent struct {
 	State  string // Current state of device.
 }
 
-func (s *raidScraper) start(ctx context.Context, _ component.Host) error {
+func (s *raidScraper) start(_ context.Context, _ component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
@@ -120,7 +120,7 @@ func (s *raidScraper) includeDevice(deviceName string) bool {
 		(s.excludeDevices == nil || !s.excludeDevices.Matches(deviceName))
 }
 
-func (s *raidScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *raidScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	if s.getMdStats != nil {
@@ -132,7 +132,6 @@ func (s *raidScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		mdStats = s.filterMdStatsByDevice(mdStats)
 
 		for _, mdStat := range mdStats {
-
 			stateVals := make(map[string]int64)
 			stateVals[mdStat.ActivityState] = 1
 

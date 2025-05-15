@@ -9,9 +9,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/scraper"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 // newRaidScraper creates raid related metrics

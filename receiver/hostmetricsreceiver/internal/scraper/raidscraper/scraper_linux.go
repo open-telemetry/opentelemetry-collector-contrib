@@ -9,12 +9,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/scraper"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-
 	"github.com/prometheus/procfs"
 	"github.com/prometheus/procfs/sysfs"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 // newRaidScraper creates raid related metrics
