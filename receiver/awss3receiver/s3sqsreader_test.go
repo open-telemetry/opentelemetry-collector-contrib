@@ -125,7 +125,7 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	}
 
 	s3Event := s3EventNotification{
-		Records: []S3EventRecord{
+		Records: []s3EventRecord{
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
@@ -253,7 +253,7 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 
 	// Create S3 event notification
 	s3Event := s3EventNotification{
-		Records: []S3EventRecord{
+		Records: []s3EventRecord{
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",
@@ -403,7 +403,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 
 		// Create S3 event notification
 		s3Event := s3EventNotification{
-			Records: []S3EventRecord{
+			Records: []s3EventRecord{
 				{
 					EventSource: "aws:s3",
 					EventName:   "ObjectCreated:Put",
@@ -509,7 +509,7 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 
 	// Create S3 event notification with multiple objects - some matching the prefix, some not
 	s3Event := s3EventNotification{
-		Records: []S3EventRecord{
+		Records: []s3EventRecord{
 			{
 				EventSource: "aws:s3",
 				EventName:   "ObjectCreated:Put",

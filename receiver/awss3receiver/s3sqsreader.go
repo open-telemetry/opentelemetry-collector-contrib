@@ -35,8 +35,8 @@ type s3Data struct {
 	Object s3ObjectData `json:"object"`
 }
 
-// S3EventRecord represents a single record in an S3 event notification
-type S3EventRecord struct {
+// s3EventRecord represents a single record in an S3 event notification
+type s3EventRecord struct {
 	EventSource string `json:"eventSource"`
 	EventName   string `json:"eventName"`
 	S3          s3Data `json:"s3"`
@@ -44,7 +44,7 @@ type S3EventRecord struct {
 
 // s3EventNotification is the top-level structure for S3 event notifications
 type s3EventNotification struct {
-	Records []S3EventRecord `json:"Records"`
+	Records []s3EventRecord `json:"Records"`
 }
 
 // snsMessage represents the structure of an SNS notification message
