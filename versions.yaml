@@ -183,6 +183,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/communityidprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
