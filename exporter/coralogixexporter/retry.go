@@ -16,7 +16,7 @@ import (
 // Send a telemetry data request to the server. "perform" function is expected to make
 // the actual gRPC unary call that sends the request. This function implements the
 // common OTLP logic around request handling such as retries and throttling.
-func processError(err error) error {
+func processError(err error, signalExporter *signalExporter) error {
 	if err == nil {
 		return nil
 	}
@@ -28,7 +28,11 @@ func processError(err error) error {
 
 	retryInfo := getRetryInfo(st)
 
-	if !shouldRetry(st.Code(), retryInfo) {
+	shouldRetry, shouldFlagRateLimit := shouldRetry(st.Code(), retryInfo)
+	if !shouldRetry {
+		if shouldFlagRateLimit {
+			signalExporter.EnableRateLimit(err)
+		}
 		return consumererror.NewPermanent(err)
 	}
 
@@ -40,7 +44,9 @@ func processError(err error) error {
 	return err
 }
 
-func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
+// shouldRetry returns true if the error should be retried.
+// The second return value indicates if the error should flag the rate limiting mechanism.
+func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) (bool, bool) {
 	switch code {
 	case codes.Canceled,
 		codes.DeadlineExceeded,
@@ -48,15 +54,16 @@ func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
 		codes.OutOfRange,
 		codes.Unavailable,
 		codes.DataLoss:
-		// These are retryable errors.
-		return true
+		return true, false
 	case codes.ResourceExhausted:
 		// Retry only if RetryInfo was supplied by the server.
 		// This indicates that the server can still recover from resource exhaustion.
-		return retryInfo != nil
+		return retryInfo != nil, retryInfo == nil
+	case codes.Unauthenticated, codes.PermissionDenied:
+		return false, true
+	default:
+		return false, false
 	}
-	// Don't retry on any other code.
-	return false
 }
 
 func getRetryInfo(status *status.Status) *errdetails.RetryInfo {

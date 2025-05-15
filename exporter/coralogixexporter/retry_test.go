@@ -63,7 +63,7 @@ func TestProcessError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := processError(tt.err)
+			err := processError(tt.err, &signalExporter{})
 			if tt.expected == nil {
 				assert.NoError(t, err)
 			} else {
@@ -80,34 +80,39 @@ func TestProcessError(t *testing.T) {
 
 func TestShouldRetry(t *testing.T) {
 	tests := []struct {
-		name      string
-		code      codes.Code
-		retryInfo *errdetails.RetryInfo
-		expected  bool
+		name             string
+		code             codes.Code
+		retryInfo        *errdetails.RetryInfo
+		expected         bool
+		expectedThrottle bool
 	}{
 		{
-			name:      "Canceled is retryable",
-			code:      codes.Canceled,
-			retryInfo: nil,
-			expected:  true,
+			name:             "Canceled is retryable",
+			code:             codes.Canceled,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "DeadlineExceeded is retryable",
-			code:      codes.DeadlineExceeded,
-			retryInfo: nil,
-			expected:  true,
+			name:             "DeadlineExceeded is retryable",
+			code:             codes.DeadlineExceeded,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "Unavailable is retryable",
-			code:      codes.Unavailable,
-			retryInfo: nil,
-			expected:  true,
+			name:             "Unavailable is retryable",
+			code:             codes.Unavailable,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "ResourceExhausted without retry info is not retryable",
-			code:      codes.ResourceExhausted,
-			retryInfo: nil,
-			expected:  false,
+			name:             "ResourceExhausted without retry info is not retryable",
+			code:             codes.ResourceExhausted,
+			retryInfo:        nil,
+			expected:         false,
+			expectedThrottle: true,
 		},
 		{
 			name: "ResourceExhausted with retry info is retryable",
@@ -115,20 +120,23 @@ func TestShouldRetry(t *testing.T) {
 			retryInfo: &errdetails.RetryInfo{
 				RetryDelay: durationpb.New(time.Second),
 			},
-			expected: true,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "InvalidArgument is not retryable",
-			code:      codes.InvalidArgument,
-			retryInfo: nil,
-			expected:  false,
+			name:             "InvalidArgument is not retryable",
+			code:             codes.InvalidArgument,
+			retryInfo:        nil,
+			expected:         false,
+			expectedThrottle: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := shouldRetry(tt.code, tt.retryInfo)
+			result, isThrottle := shouldRetry(tt.code, tt.retryInfo)
 			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expectedThrottle, isThrottle)
 		})
 	}
 }
