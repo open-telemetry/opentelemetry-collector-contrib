@@ -59,6 +59,7 @@ The following allocatable resource types are available.
   - memory
   - ephemeral-storage
   - storage
+  - pods
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
 - `namespace`: Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed. 
