@@ -1041,7 +1041,7 @@ type metricK8sHpaCurrentReplicas struct {
 // init fills k8s.hpa.current_replicas metric with initial data.
 func (m *metricK8sHpaCurrentReplicas) init() {
 	m.data.SetName("k8s.hpa.current_replicas")
-	m.data.SetDescription("Current number of pod replicas managed by this autoscaler.")
+	m.data.SetDescription("Current number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerstatus-v1-autoscaling for details.")
 	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
@@ -1090,7 +1090,7 @@ type metricK8sHpaDesiredReplicas struct {
 // init fills k8s.hpa.desired_replicas metric with initial data.
 func (m *metricK8sHpaDesiredReplicas) init() {
 	m.data.SetName("k8s.hpa.desired_replicas")
-	m.data.SetDescription("Desired number of pod replicas managed by this autoscaler.")
+	m.data.SetDescription("Desired number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerstatus-v1-autoscaling for details.")
 	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
@@ -1139,7 +1139,7 @@ type metricK8sHpaMaxReplicas struct {
 // init fills k8s.hpa.max_replicas metric with initial data.
 func (m *metricK8sHpaMaxReplicas) init() {
 	m.data.SetName("k8s.hpa.max_replicas")
-	m.data.SetDescription("Maximum number of replicas to which the autoscaler can scale up.")
+	m.data.SetDescription("Maximum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerspec-v1-autoscaling for details.")
 	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
@@ -1188,7 +1188,7 @@ type metricK8sHpaMinReplicas struct {
 // init fills k8s.hpa.min_replicas metric with initial data.
 func (m *metricK8sHpaMinReplicas) init() {
 	m.data.SetName("k8s.hpa.min_replicas")
-	m.data.SetDescription("Minimum number of replicas to which the autoscaler can scale up.")
+	m.data.SetDescription("Minimum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerspec-v1-autoscaling for details.")
 	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
