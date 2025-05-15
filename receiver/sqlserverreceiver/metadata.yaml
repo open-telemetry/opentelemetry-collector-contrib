@@ -89,7 +89,7 @@ metrics:
   sqlserver.lock.wait.count:
     enabled: false
     description: Cumulative count of lock waits that occurred.
-    unit: "{waits}"
+    unit: "{wait}"
     sum:
       monotonic: true
       aggregation_temporality: cumulative

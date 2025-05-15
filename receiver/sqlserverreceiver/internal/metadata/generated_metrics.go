@@ -1182,7 +1182,7 @@ type metricSqlserverLockWaitCount struct {
 func (m *metricSqlserverLockWaitCount) init() {
 	m.data.SetName("sqlserver.lock.wait.count")
 	m.data.SetDescription("Cumulative count of lock waits that occurred.")
-	m.data.SetUnit("{waits}")
+	m.data.SetUnit("{wait}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

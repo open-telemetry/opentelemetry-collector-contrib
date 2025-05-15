@@ -367,7 +367,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {waits} | Sum | Int | Cumulative | true |
+| {wait} | Sum | Int | Cumulative | true |
 
 ### sqlserver.login.rate
 
