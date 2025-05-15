@@ -5,6 +5,7 @@ package main // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"time"
@@ -21,13 +22,13 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
-	cfg, err := internal.ReadConfig(os.Args)
+func run(args []string) error {
+	cfg, err := internal.ReadConfig(args)
 	if err != nil {
 		return err
 	}
@@ -79,14 +80,19 @@ func run() error {
 	}()
 
 	ticker := time.NewTicker(cfg.Timeout)
+	timeout := false
 	select {
 	case <-ticker.C:
 		logger.Error("Timeout waiting for data")
+		timeout = true
 	case <-sink.DoneChan:
 	}
 
 	if sink.Error != nil {
 		return sink.Error
+	}
+	if timeout {
+		return errors.New("timeout waiting for data")
 	}
 
 	return nil
