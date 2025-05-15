@@ -210,17 +210,15 @@ func (c *WatchClient) Start() error {
 
 	// set up the replicaset informer if needed
 	if c.replicasetInformerProvider != nil {
-		c.replicasetInformer = c.replicasetInformerProvider(c.kc, c.Filters.Namespace, c.stopCh)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
+		transformFunc := func(object any) (any, error) {
+			originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+				return object, nil
+			}
 
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
+			return removeUnnecessaryReplicaSetData(originalReplicaset), nil
+		}
+		c.replicasetInformer, err = c.replicasetInformerProvider(c.kc, c.Filters.Namespace, transformFunc, c.stopCh)
 		if err != nil {
 			return err
 		}
@@ -269,17 +267,15 @@ func (c *WatchClient) Start() error {
 	}
 
 	// set up the pod informer
-	c.podInformer = c.podInformerProvider(c.kc, c.Filters.Namespace, c.labelSelector, c.fieldSelector, c.stopCh)
-	err = c.podInformer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
+	transformFunc := func(object any) (any, error) {
+		originalPod, success := object.(*api_v1.Pod)
+		if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+			return object, nil
+		}
 
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
-	)
+		return removeUnnecessaryPodData(originalPod, c.Rules), nil
+	}
+	c.podInformer, err = c.podInformerProvider(c.kc, c.Filters.Namespace, c.labelSelector, c.fieldSelector, transformFunc, c.stopCh)
 	if err != nil {
 		return err
 	}

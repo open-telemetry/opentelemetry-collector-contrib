@@ -26,16 +26,20 @@ func NewFakeInformer(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
+	transformFunc cache.TransformFunc,
 	closeCh chan struct{},
-) cache.SharedInformer {
+) (cache.SharedInformer, error) {
 	informer := &FakeInformer{
 		FakeController: &FakeController{},
 		namespace:      namespace,
 		labelSelector:  labelSelector,
 		fieldSelector:  fieldSelector,
 	}
+	if err := informer.SetTransform(transformFunc); err != nil {
+		return nil, err
+	}
 	go informer.Run(closeCh)
-	return informer
+	return informer, nil
 }
 
 func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
@@ -99,13 +103,14 @@ type FakeReplicaSetInformer struct {
 func NewFakeReplicaSetInformer(
 	_ kubernetes.Interface,
 	_ string,
+	_ cache.TransformFunc,
 	stopCh chan struct{},
-) cache.SharedInformer {
+) (cache.SharedInformer, error) {
 	informer := &FakeInformer{
 		FakeController: &FakeController{},
 	}
 	go informer.Run(stopCh)
-	return informer
+	return informer, nil
 }
 
 func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}

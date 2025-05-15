@@ -29,8 +29,9 @@ type InformerProvider func(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
-) cache.SharedInformer
+) (cache.SharedInformer, error)
 
 // InformerProviderNamespace defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client for fetching namespace objects.
@@ -53,16 +54,18 @@ type InformerProviderNode func(
 type InformerProviderReplicaSet func(
 	client kubernetes.Interface,
 	namespace string,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
-) cache.SharedInformer
+) (cache.SharedInformer, error)
 
 func newSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
 	ls labels.Selector,
 	fs fields.Selector,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
-) cache.SharedInformer {
+) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
 			ListFunc:  informerListFuncWithSelectors(client, namespace, ls, fs),
@@ -71,8 +74,11 @@ func newSharedInformer(
 		&api_v1.Pod{},
 		watchSyncPeriod,
 	)
+	if err := informer.SetTransform(transformFunc); err != nil {
+		return nil, err
+	}
 	go informer.Run(stopCh)
-	return informer
+	return informer, nil
 }
 
 func informerListFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.ListFunc {
@@ -145,8 +151,9 @@ func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
 func newReplicaSetSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
-) cache.SharedInformer {
+) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
 			ListFunc:  replicasetListFuncWithSelectors(client, namespace),
@@ -155,8 +162,11 @@ func newReplicaSetSharedInformer(
 		&apps_v1.ReplicaSet{},
 		watchSyncPeriod,
 	)
+	if err := informer.SetTransform(transformFunc); err != nil {
+		return nil, err
+	}
 	go informer.Run(stopCh)
-	return informer
+	return informer, nil
 }
 
 func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
