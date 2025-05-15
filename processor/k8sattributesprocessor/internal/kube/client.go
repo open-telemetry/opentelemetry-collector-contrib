@@ -12,10 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
