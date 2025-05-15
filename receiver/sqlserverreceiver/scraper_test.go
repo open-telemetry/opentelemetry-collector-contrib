@@ -61,6 +61,7 @@ func configureAllScraperMetrics(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverPageSplitRate.Enabled = enabled
 	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
 	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled
+	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
