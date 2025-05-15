@@ -5,6 +5,8 @@ package raidscraper // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/scraper"
@@ -33,6 +35,11 @@ func createMetricsScraper(
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
+
+	if runtime.GOOS != "linux" {
+		return nil, errors.New("process scraper only available on Linux, Windows, macOS, or FreeBSD")
+	}
+
 	raidScraper, err := newRaidScraper(ctx, settings, cfg.(*Config))
 	if err != nil {
 		return nil, err

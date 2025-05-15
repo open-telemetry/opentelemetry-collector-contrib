@@ -5,6 +5,7 @@ package raidscraper
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,13 @@ func TestCreateRaidScraper(t *testing.T) {
 
 	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
-	assert.Equal(t, defaultSysDeviceFilesystem, cfg.SysDeviceFilesystem)
-	assert.NoError(t, err)
-	assert.NotNil(t, scraper)
+	if runtime.GOOS == "linux" {
+		assert.Equal(t, defaultSysDeviceFilesystem, cfg.SysDeviceFilesystem)
+		assert.NoError(t, err)
+		assert.NotNil(t, scraper)
+	} else {
+		assert.Error(t, err)
+		assert.Nil(t, scraper)
+	}
+
 }
