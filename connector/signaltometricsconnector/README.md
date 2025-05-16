@@ -66,9 +66,10 @@ signaltometrics:
 
 `signaltometrics` produces a variety of metric types by utilizing [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
 to extract the relevant data for a metric type from the incoming data. The
-component can produce the following metric types for each signal types:
+component can produce the following metric types for each signal type:
 
 - [Sum](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums)
+- [Gauge](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#gauge)
 - [Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram)
 - [Exponential Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram)
 
@@ -90,6 +91,43 @@ sum:
   returned value determines the value type of the `sum` metric (`int` or `double`).
   [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
+
+#### Gauge
+
+Gauge metrics aggregate the last value of a signal and have the following configuration:
+
+```yaml
+gauge:
+  value: <ottl_value_expression>
+```
+
+- [**Required**] `value`represents an OTTL expression to extract a numeric value from 
+  the signal. Only OTTL expressions that return a value are accepted. The returned 
+  value determines the value type of the `gauge` metric (`int` or `double`).
+  - For logs: Use e.g. `ExtractGrokPatterns` with a single key selector (see below). 
+  - For other signals: Use a field such as `value_int`, `value_double`, or a valid OTTL expression.
+
+**Examples:**
+
+_Logs (with Grok pattern):_
+```yaml
+signaltometrics:
+  logs:
+    - name: logs.memory_mb
+      description: Extract memory_mb from log records
+      gauge:
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]
+```
+
+_Traces:_
+```yaml
+signaltometrics:
+  spans:
+    - name: span.duration.gauge
+      description: Span duration as gauge
+      gauge:
+        value: Int(Seconds(end_time - start_time))
+```
 
 #### Histogram
 
