@@ -43,6 +43,7 @@ type MetricsConfig struct {
 	SqlserverDeadlockRate                       MetricConfig `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverIndexSearchRate                    MetricConfig `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverLockTimeoutRate                    MetricConfig `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                      MetricConfig `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
 	SqlserverLoginRate                          MetricConfig `mapstructure:"sqlserver.login.rate"`
@@ -121,6 +122,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverLockTimeoutRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverLockWaitCount: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverLockWaitRate: MetricConfig{
