@@ -17,9 +17,20 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
+
+const (
+	enableRateLimiterFeatureGateID = "exporter.coralogix.enableRateLimiter"
+)
+
+var enableRateLimiterFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	enableRateLimiterFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enable the rate limiter"),
+	featuregate.WithRegisterFromVersion("v0.127.0"))
 
 // NewFactory by Coralogix
 func NewFactory() exporter.Factory {

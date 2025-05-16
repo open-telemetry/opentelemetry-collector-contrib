@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	exp "go.opentelemetry.io/collector/exporter"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -75,6 +76,8 @@ type signalExporter struct {
 
 	// Cached metadata for outgoing context
 	metadata metadata.MD
+
+	rateError rateError
 }
 
 func (e *signalExporter) shutdown(_ context.Context) error {
@@ -116,4 +119,21 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 	}
 
 	return nil
+}
+
+func (e *signalExporter) EnableRateLimit(err error) {
+	e.rateError.enableRateLimit(consumererror.NewPermanent(err))
+}
+
+func (e *signalExporter) canSend() bool {
+	if !e.rateError.isRateLimited() {
+		return true
+	}
+
+	if e.rateError.canDisableRateLimit() {
+		e.rateError.disableRateLimit()
+		return true
+	}
+
+	return false
 }
