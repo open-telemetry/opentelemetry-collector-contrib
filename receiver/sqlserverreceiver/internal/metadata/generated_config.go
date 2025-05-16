@@ -43,6 +43,7 @@ type MetricsConfig struct {
 	SqlserverDeadlockRate                       MetricConfig `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverIndexSearchRate                    MetricConfig `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverLockTimeoutRate                    MetricConfig `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                      MetricConfig `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
 	SqlserverLoginRate                          MetricConfig `mapstructure:"sqlserver.login.rate"`
@@ -59,6 +60,7 @@ type MetricsConfig struct {
 	SqlserverPageSplitRate                      MetricConfig `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverProcessesBlocked                   MetricConfig `mapstructure:"sqlserver.processes.blocked"`
 	SqlserverReplicaDataRate                    MetricConfig `mapstructure:"sqlserver.replica.data.rate"`
+	SqlserverResourcePoolDiskOperations         MetricConfig `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
 	SqlserverTableCount                         MetricConfig `mapstructure:"sqlserver.table.count"`
@@ -122,6 +124,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockTimeoutRate: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverLockWaitCount: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverLockWaitRate: MetricConfig{
 			Enabled: true,
 		},
@@ -168,6 +173,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverReplicaDataRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverResourcePoolDiskOperations: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverResourcePoolDiskThrottledReadRate: MetricConfig{

@@ -43,6 +43,15 @@ func TestNewLibhoneyReceiver(t *testing.T) {
 			config:    nil,
 			wantError: false,
 		},
+		{
+			name: "config_without_trailing_slashes",
+			config: &Config{
+				HTTP: &HTTPConfig{
+					TracesURLPaths: []string{"/1/events"},
+				},
+			},
+			wantError: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -99,7 +108,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 				},
 			},
 			contentType:    "application/json",
-			expectedStatus: http.StatusAccepted,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "valid_msgpack_event",
@@ -114,7 +123,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 				},
 			},
 			contentType:    "application/msgpack",
-			expectedStatus: http.StatusAccepted,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "invalid_content_type",

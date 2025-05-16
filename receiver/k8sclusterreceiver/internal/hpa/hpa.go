@@ -20,6 +20,9 @@ func RecordMetrics(mb *metadata.MetricsBuilder, hpa *autoscalingv2.HorizontalPod
 	rb.SetK8sHpaUID(string(hpa.UID))
 	rb.SetK8sHpaName(hpa.Name)
 	rb.SetK8sNamespaceName(hpa.Namespace)
+	rb.SetK8sHpaScaletargetrefApiversion(hpa.Spec.ScaleTargetRef.APIVersion)
+	rb.SetK8sHpaScaletargetrefKind(hpa.Spec.ScaleTargetRef.Kind)
+	rb.SetK8sHpaScaletargetrefName(hpa.Spec.ScaleTargetRef.Name)
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

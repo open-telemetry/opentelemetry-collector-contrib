@@ -221,7 +221,7 @@ func TestLogOtlpSendingQueue(t *testing.T) {
     retry_on_failure:
       enabled: true
 `)
-	otlpreceiver10.WithQueue(`
+	otlpreceiver100.WithQueue(`
     sending_queue:
       enabled: true
       queue_size: 100

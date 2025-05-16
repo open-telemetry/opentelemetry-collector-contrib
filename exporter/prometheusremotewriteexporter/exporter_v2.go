@@ -102,13 +102,11 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 	}
 
 	requests = append(requests, &writev2.Request{
-		// TODO sort
 		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
 		// See:
 		// * https://github.com/open-telemetry/wg-prometheus/issues/10
 		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
-		// Timeseries: orderBySampleTimestamp(tsArray),
-		Timeseries: tsArray,
+		Timeseries: orderBySampleTimestampV2(tsArray),
 		Symbols:    symbolsTable.Symbols(),
 	})
 

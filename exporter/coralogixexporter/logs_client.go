@@ -5,78 +5,43 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"runtime"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 func newLogsExporter(cfg component.Config, set exp.Settings) (*logsExporter, error) {
-	oCfg := cfg.(*Config)
-
-	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Logs.Endpoint) {
-		return nil, errors.New("coralogix exporter config requires `domain` or `logs.endpoint` configuration")
+	oCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
-	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &logsExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Logs.Endpoint, oCfg.Logs.Headers)
+	if err != nil {
+		return nil, err
+	}
+
+	return &logsExporter{
+		signalExporter: *signalExporter,
+	}, nil
 }
 
 type logsExporter struct {
-	// Input configuration.
-	config *Config
-
 	logExporter plogotlp.GRPCClient
-	clientConn  *grpc.ClientConn
-	callOptions []grpc.CallOption
-
-	settings component.TelemetrySettings
-
-	// Default user-agent header.
-	userAgent string
+	signalExporter
 }
 
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
-	switch {
-	case !isEmpty(e.config.Logs.Endpoint):
-		if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
-			return err
-		}
-	case !isEmpty(e.config.Domain):
-
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
-			return err
-		}
+	wrapper := &signalConfigWrapper{config: &e.config.Logs}
+	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
+		return err
 	}
-
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
-	if e.config.Logs.Headers == nil {
-		e.config.Logs.Headers = make(map[string]configopaque.String)
-	}
-	e.config.Logs.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
-
-	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.Logs.WaitForReady),
-	}
-
-	return
-}
-
-func (e *logsExporter) shutdown(context.Context) error {
-	if e.clientConn == nil {
-		return nil
-	}
-	return e.clientConn.Close()
+	return nil
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
@@ -105,9 +70,5 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *logsExporter) enhanceContext(ctx context.Context) context.Context {
-	md := metadata.New(nil)
-	for k, v := range e.config.Logs.Headers {
-		md.Set(k, string(v))
-	}
-	return metadata.NewOutgoingContext(ctx, md)
+	return e.signalExporter.enhanceContext(ctx)
 }

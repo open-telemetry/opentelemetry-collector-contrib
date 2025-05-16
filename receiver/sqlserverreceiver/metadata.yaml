@@ -86,6 +86,15 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.lock.wait.count:
+    enabled: false
+    description: Cumulative count of lock waits that occurred.
+    unit: "{wait}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
     description: Number of lock requests resulting in a wait.
@@ -243,6 +252,14 @@ metrics:
       value_type: int
       input_type: string
     attributes: [ physical_filename, logical_filename, file_type, direction ]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.operations:
+    enabled: false
+    description: The rate of operations issued.
+    unit: "{operations}/s"
+    gauge:
+      value_type: double
+    attributes: [ direction ]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.resource_pool.disk.throttled.read.rate:
     enabled: false

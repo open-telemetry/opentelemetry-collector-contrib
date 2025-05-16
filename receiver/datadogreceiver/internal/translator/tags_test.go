@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
 func TestGetMetricAttributes(t *testing.T) {
@@ -32,7 +33,7 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				"host.name": "host",
+				string(semconv.HostNameKey): "host",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -42,10 +43,10 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "service:my-service", "version:1.0"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				"host.name":              "host",
-				"deployment.environment": "prod",
-				"service.name":           "my-service",
-				"service.version":        "1.0",
+				string(semconv.HostNameKey):                  "host",
+				string(semconv.DeploymentEnvironmentNameKey): "prod",
+				string(semconv.ServiceNameKey):               "my-service",
+				string(semconv.ServiceVersionKey):            "1.0",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -55,8 +56,8 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "foo"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				"host.name":              "host",
-				"deployment.environment": "prod",
+				string(semconv.HostNameKey):                  "host",
+				string(semconv.DeploymentEnvironmentNameKey): "prod",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs: newMapFromKV(t, map[string]any{
@@ -147,4 +148,38 @@ func TestTranslateDataDogKeyToOtel(t *testing.T) {
 			assert.Equal(t, v, translateDatadogKeyToOTel(k))
 		})
 	}
+
+	// test dynamic attributes:
+	// * http.request.header.<header_name>
+	// * http.response.header.<header_name>
+	assert.Equal(t, "http.request.header.referer", translateDatadogKeyToOTel("http.request.headers.referer"))
+	assert.Equal(t, "http.response.header.content-type", translateDatadogKeyToOTel("http.response.headers.content-type"))
+}
+
+func TestImageTags(t *testing.T) {
+	// make sure container.image.tags is a string[]
+	expected := "[\"tag1\"]"
+	tags := []string{"env:prod", "foo", "image_tag:tag1"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	imageTags, _ := attrs.resource.Get(string(semconv.ContainerImageTagsKey))
+	assert.Equal(t, expected, imageTags.AsString())
+}
+
+func TestHTTPHeaders(t *testing.T) {
+	// make sure container.image.tags is a string[]
+	expected := "[\"value\"]"
+	tags := []string{"env:prod", "foo", "http.request.headers.header:value", "http.response.headers.header:value"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	header, found := attrs.resource.Get("http.request.header.header")
+	assert.True(t, found)
+	assert.Equal(t, expected, header.AsString())
+	header, found = attrs.resource.Get("http.response.header.header")
+	assert.True(t, found)
+	assert.Equal(t, expected, header.AsString())
 }
