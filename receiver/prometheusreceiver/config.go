@@ -68,13 +68,7 @@ var _ confmap.Unmarshaler = (*PromConfig)(nil)
 
 // ContainsScrapeConfigs returns true if the Prometheus config contains any scrape configs.
 func (cfg *PromConfig) ContainsScrapeConfigs() bool {
-	if cfg == nil {
-		return false
-	}
-	if len(cfg.ScrapeConfigs) == 0 && len(cfg.ScrapeConfigFiles) == 0 {
-		return false
-	}
-	return true
+	return cfg != nil && (len(cfg.ScrapeConfigs) > 0 || len(cfg.ScrapeConfigFiles) > 0)
 }
 
 func (cfg *PromConfig) Reload() error {
