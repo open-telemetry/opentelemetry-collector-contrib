@@ -24,12 +24,12 @@ import (
 const readBufferSize = 10 * 1024
 
 type server struct {
-	outCh            chan<- Event
+	outCh            chan<- event
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newServer(outCh chan<- Event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
+func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
 	return &server{
 		outCh:            outCh,
 		logger:           logger,
@@ -95,16 +95,16 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 			return err
 		}
 
-		var event Event
+		var event event
 		switch mode {
-		case UnknownMode:
+		case unknownMode:
 			return errors.New("could not determine event mode")
-		case MessageMode:
-			event = &MessageEventLogRecord{}
-		case ForwardMode:
-			event = &ForwardEventLogRecords{}
-		case PackedForwardMode:
-			event = &PackedForwardEventLogRecords{}
+		case messageMode:
+			event = &messageEventLogRecord{}
+		case forwardMode:
+			event = &forwardEventLogRecords{}
+		case packedForwardMode:
+			event = &packedForwardEventLogRecords{}
 		default:
 			panic("programmer bug in mode handling")
 		}
@@ -140,12 +140,12 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 // the second element of the array."  It is assumed that peeker is aligned at
 // the start of a new event, otherwise the result is undefined and will
 // probably error.
-func determineNextEventMode(peeker Peeker) (EventMode, error) {
+func determineNextEventMode(peeker peeker) (eventMode, error) {
 	var chunk []byte
 	var err error
 	chunk, err = peeker.Peek(2)
 	if err != nil {
-		return UnknownMode, err
+		return unknownMode, err
 	}
 
 	// The first byte is the array header, which will always be 1 byte since no
@@ -163,23 +163,23 @@ func determineNextEventMode(peeker Peeker) (EventMode, error) {
 		case 0xd9:
 			chunk, err = peeker.Peek(3)
 			if err != nil {
-				return UnknownMode, err
+				return unknownMode, err
 			}
 			tagLen += 1 + int(chunk[2])
 		case 0xda:
 			chunk, err = peeker.Peek(4)
 			if err != nil {
-				return UnknownMode, err
+				return unknownMode, err
 			}
 			tagLen += 2 + int(binary.BigEndian.Uint16(chunk[2:]))
 		case 0xdb:
 			chunk, err = peeker.Peek(6)
 			if err != nil {
-				return UnknownMode, err
+				return unknownMode, err
 			}
 			tagLen += 4 + int(binary.BigEndian.Uint32(chunk[2:]))
 		default:
-			return UnknownMode, errors.New("malformed tag field")
+			return unknownMode, errors.New("malformed tag field")
 		}
 	}
 
@@ -187,19 +187,19 @@ func determineNextEventMode(peeker Peeker) (EventMode, error) {
 	// one byte into the second field -- that is enough to know its type.
 	chunk, err = peeker.Peek(1 + tagLen + 1)
 	if err != nil {
-		return UnknownMode, err
+		return unknownMode, err
 	}
 
 	secondElmType := msgp.NextType(chunk[1+tagLen:])
 
 	switch secondElmType {
 	case msgp.IntType, msgp.UintType, msgp.ExtensionType:
-		return MessageMode, nil
+		return messageMode, nil
 	case msgp.ArrayType:
-		return ForwardMode, nil
+		return forwardMode, nil
 	case msgp.BinType, msgp.StrType:
-		return PackedForwardMode, nil
+		return packedForwardMode, nil
 	default:
-		return UnknownMode, fmt.Errorf("unable to determine next event mode for type %v", secondElmType)
+		return unknownMode, fmt.Errorf("unable to determine next event mode for type %v", secondElmType)
 	}
 }
