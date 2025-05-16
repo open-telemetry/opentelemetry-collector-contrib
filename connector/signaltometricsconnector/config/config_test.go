@@ -100,15 +100,9 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
-			path: "multiple_grok_patterns",
+			path: "invalid_grok_type_map",
 			errorMsgs: []string{
-				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: only exactly one grok pattern is supported for logs to gauge"),
-			},
-		},
-		{
-			path: "invalid_grok_type",
-			errorMsgs: []string{
-				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: only int, float, double, and long types are supported for logs to gauge"),
+				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: a single key selector[key] is required for signal to gauge"),
 			},
 		},
 		{

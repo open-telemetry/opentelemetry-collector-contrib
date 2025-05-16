@@ -3,15 +3,15 @@ signaltometrics:
     - name: logs.memory_mb
       description: Extract memory_mb from log records 
       gauge:
-        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]
     - name: logs.cpu
       description: Extract cpu from log records 
       gauge:
-        value: ExtractGrokPatterns(body, "CPU usage %{NUMBER:cpu:float}")
+        value: ExtractGrokPatterns(body, "CPU usage %{NUMBER:cpu:float}")["cpu"]
     - name: logs.foo.memory_mb
       description: Extract memory_mb from log records with attribute foo
       gauge:
-        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:long}MB", true)
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:long}MB", true)["memory_mb"]
       include_resource_attributes:
         - key: resource.foo
       attributes:
@@ -22,7 +22,7 @@ signaltometrics:
         - resource.attributes["404.attribute"] != nil
         - resource.attributes["resource.bar"] != nil
       gauge:
-        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:double}MB", true)
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:double}MB", true)["memory_mb"]
       attributes:
         - key: log.bar
     - name: log.ignored.gauge
@@ -34,4 +34,4 @@ signaltometrics:
       attributes:
         - key: log.bar
       gauge:
-        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]

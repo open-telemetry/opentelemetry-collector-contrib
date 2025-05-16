@@ -94,27 +94,39 @@ sum:
 
 #### Gauge
 
-Gauge metrics are supported for logs and allow extracting numeric values from log bodies using Grok patterns via the `ExtractGrokPatterns` OTTL function. The gauges are aggregated by last value. 
-
-Gauge metrics have the following configuration:
+Gauge metrics aggregate the last value of a signal and have the following configuration:
 
 ```yaml
 gauge:
-  value: ExtractGrokPatterns(target, pattern)
+  value: <ottl_value_expression>
 ```
 
-- [**Required**] `value`: An OTTL expression that must use `ExtractGrokPatterns` to extract a value from the log body. The Grok pattern must:
-  - Contain **exactly one** Grok pattern (e.g., `%{NUMBER:memory_mb:int}`)
-  - Use `int`,`long`,`double` or `float` as the data type for the extracted value.
+- [**Required**] `value`represents an OTTL expression to extract a numeric value from 
+  the signal. Only OTTL expressions that return a value are accepted. The returned 
+  value determines the value type of the `gauge` metric (`int` or `double`).
+  - For logs: Use e.g. `ExtractGrokPatterns` with a single key selector (see below). 
+  - For other signals: Use a field such as `value_int`, `value_double`, or a valid OTTL expression for your context.
 
-**Example:**
+**Examples:**
+
+_Logs (with Grok pattern):_
 ```yaml
 signaltometrics:
   logs:
     - name: logs.memory_mb
       description: Extract memory_mb from log records
       gauge:
-        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")["memory_mb"]
+```
+
+_Traces:_
+```yaml
+signaltometrics:
+  spans:
+    - name: span.duration.gauge
+      description: Span duration as gauge
+      gauge:
+        value: Int(Seconds(end_time - start_time))
 ```
 
 #### Histogram

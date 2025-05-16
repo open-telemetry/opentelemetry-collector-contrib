@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/lightstep/go-expohisto/structure"
@@ -324,28 +323,11 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		if _, err := parser.ParseValueExpression(mi.Gauge.Value); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
 		}
-		// Custom validation: fail if ExtractGrokPatterns is used with multiple patterns or configured with unsupported type
+		// if ExtractGrokPatterns is used, validate the key selector
 		if strings.Contains(mi.Gauge.Value, "ExtractGrokPatterns") {
-			// Count the number of grok patterns
-			count := strings.Count(mi.Gauge.Value, "%{")
-			if count > 1 {
-				return fmt.Errorf("ExtractGrokPatterns: only exactly one grok pattern is supported for logs to gauge, found %d", count)
-			}
-			// Validate grok pattern types
-			// Example: %{NUMBER:foo:int} or %{NUMBER:bar:float}
-			grokPatternRe := regexp.MustCompile(`%\{[^}]+\}`)
-			matches := grokPatternRe.FindAllString(mi.Gauge.Value, -1)
-			supportedTypes := []string{"int", "float", "double", "long"}
-			for _, p := range matches {
-				// Remove %{ and }
-				inner := p[2 : len(p)-1]
-				parts := strings.Split(inner, ":")
-				if len(parts) >= 3 {
-					typePart := parts[2]
-					if !slices.Contains(supportedTypes, typePart) {
-						return fmt.Errorf("ExtractGrokPatterns: only int, float, double, and long types are supported for logs to gauge, found '%s' in pattern '%s'", typePart, p)
-					}
-				}
+			// Ensure a [key] selector is present after ExtractGrokPatterns
+			if !regexp.MustCompile(`ExtractGrokPatterns\([^)]*\)\s*\[[^\]]+\]`).MatchString(mi.Gauge.Value) {
+				return fmt.Errorf("ExtractGrokPatterns: a single key selector[key] is required for signal to gauge")
 			}
 		}
 	}

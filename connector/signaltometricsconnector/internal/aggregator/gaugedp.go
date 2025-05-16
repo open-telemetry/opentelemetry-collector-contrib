@@ -13,7 +13,7 @@ import (
 // gaugeDP is a data point for gauge metrics.
 type gaugeDP struct {
 	attrs pcommon.Map
-	val   pcommon.Value
+	val   any
 }
 
 func newGaugeDP(attrs pcommon.Map) *gaugeDP {
@@ -22,9 +22,9 @@ func newGaugeDP(attrs pcommon.Map) *gaugeDP {
 	}
 }
 
-func (dp *gaugeDP) Aggregate(v pcommon.Value) {
-	switch v.Type() {
-	case pcommon.ValueTypeDouble, pcommon.ValueTypeInt:
+func (dp *gaugeDP) Aggregate(v any) {
+	switch v := v.(type) {
+	case float64, int64:
 		dp.val = v
 	default:
 		panic("unexpected usage of gauge datapoint, only double or int value expected")
@@ -37,11 +37,11 @@ func (dp *gaugeDP) Copy(
 	dest pmetric.NumberDataPoint,
 ) {
 	dp.attrs.CopyTo(dest.Attributes())
-	switch dp.val.Type() {
-	case pcommon.ValueTypeDouble:
-		dest.SetDoubleValue(dp.val.Double())
-	case pcommon.ValueTypeInt:
-		dest.SetIntValue(dp.val.Int())
+	switch dp.val.(type) {
+	case float64:
+		dest.SetDoubleValue(dp.val.(float64))
+	case int64:
+		dest.SetIntValue(dp.val.(int64))
 	}
 	// TODO determine appropriate start time
 	dest.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))

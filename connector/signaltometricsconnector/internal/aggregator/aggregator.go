@@ -6,6 +6,7 @@ package aggregator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -90,26 +91,25 @@ func (a *Aggregator[K]) Aggregate(
 			)
 		}
 	case pmetric.MetricTypeGauge:
-		// aggregated gauges are currently supported when used with the ExtractGrokPatterns OTTL function, where the result is a pcommon.Map with named capture groups
 		raw, err := md.Gauge.Value.Eval(ctx, tCtx)
 		if err != nil {
+			if strings.Contains(err.Error(), "key not found in map") {
+				// Gracefully skip missing keys in ExtractGrokPatterns
+				return nil
+			}
 			return fmt.Errorf("failed to execute OTTL value for gauge: %w", err)
 		}
-		v, ok := raw.(pcommon.Map)
-		if !ok {
-			return fmt.Errorf("failed to parse gauge OTTL value of type %T into pcommon.Map: %v", v, v)
+		if raw == nil {
+			return nil
 		}
-		v.Range(func(k string, v pcommon.Value) bool {
-			// Check if the value is a numeric type
-			switch v.Type() {
-			case pcommon.ValueTypeInt, pcommon.ValueTypeDouble:
-				return a.aggregateGauge(md, resAttrs, srcAttrs, v) == nil
-			default:
-				return true
-			}
-		})
-		if err != nil {
-			return err
+		switch v := raw.(type) {
+		case int64, float64:
+			return a.aggregateGauge(md, resAttrs, srcAttrs, v)
+		default:
+			return fmt.Errorf(
+				"failed to parse gauge OTTL value of type %T into int64 or float64: %v",
+				v, v,
+			)
 		}
 	}
 	return nil
@@ -169,10 +169,10 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 				dp.Copy(a.timestamp, destCounter.DataPoints().AppendEmpty())
 			}
 		}
-		if md.Gauge == nil {
-			continue
-		}
 		for resID, dpMap := range a.gauges[md.Key] {
+			if md.Gauge == nil {
+				continue
+			}
 			metrics := a.smLookup[resID].Metrics()
 			destMetric := metrics.AppendEmpty()
 			destMetric.SetName(md.Key.Name)
@@ -236,7 +236,7 @@ func (a *Aggregator[K]) aggregateDouble(
 func (a *Aggregator[K]) aggregateGauge(
 	md model.MetricDef[K],
 	resAttrs, srcAttrs pcommon.Map,
-	v pcommon.Value,
+	v any,
 ) error {
 	resID := a.getResourceID(resAttrs)
 	attrID := pdatautil.MapHash(srcAttrs)
