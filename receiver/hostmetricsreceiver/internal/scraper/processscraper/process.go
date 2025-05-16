@@ -6,7 +6,6 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -128,7 +128,7 @@ type wrappedProcessHandle struct {
 
 func (p *wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, error) {
 	pid := p.Pid
-	statPath := getEnvWithContext(ctx, string(common.HostProcEnvKey), "/proc", strconv.Itoa(int(pid)), "cgroup")
+	statPath := gopsutilenv.GetEnvWithContext(ctx, string(common.HostProcEnvKey), "/proc", strconv.Itoa(int(pid)), "cgroup")
 	contents, err := os.ReadFile(statPath)
 	if err != nil {
 		return "", err
@@ -165,25 +165,6 @@ func (p *wrappedProcessHandle) NumThreadsWithContext(ctx context.Context) (int32
 	}
 
 	return numThreads, nil
-}
-
-// copied from gopsutil:
-// GetEnvWithContext retrieves the environment variable key. If it does not exist it returns the default.
-// The context may optionally contain a map superseding os.EnvKey.
-func getEnvWithContext(ctx context.Context, key string, dfault string, combineWith ...string) string {
-	var value string
-	if env, ok := ctx.Value(common.EnvKey).(common.EnvMap); ok {
-		value = env[common.EnvKeyType(key)]
-	}
-	if value == "" {
-		value = os.Getenv(key)
-	}
-	if value == "" {
-		value = dfault
-	}
-	segments := append([]string{value}, combineWith...)
-
-	return filepath.Join(segments...)
 }
 
 func parentPid(ctx context.Context, handle processHandle, pid int32) (int32, error) {

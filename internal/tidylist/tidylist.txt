@@ -1,4 +1,5 @@
 cmd/codecovgen
+internal/gopsutilenv
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest

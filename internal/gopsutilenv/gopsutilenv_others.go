@@ -1,0 +1,28 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build !linux
+
+package gopsutilenv
+
+import (
+	"context"
+	"errors"
+
+	"github.com/shirou/gopsutil/v4/common"
+)
+
+func ValidateRootPath(rootPath string) error {
+	if rootPath == "" {
+		return nil
+	}
+	return errors.New("root_path is supported on linux only")
+}
+
+func SetGoPsutilEnvVars(_ string) (common.EnvMap, error) {
+	return common.EnvMap{}, nil
+}
+
+func GetEnvWithContext(_ context.Context, _ string, dfault string, _ ...string) string {
+	return dfault
+}

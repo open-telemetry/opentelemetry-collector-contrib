@@ -11,14 +11,15 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bytes"
 
+	"golang.org/x/net/context"
 	"golang.org/x/sys/unix"
 )
 
 // syscallUname maps to the golib system call, but can be modified for testing
 var syscallUname = unix.Uname
 
-func fillPlatformSpecificOSData(info *hostOS) error {
-	info.HostLinuxVersion, _ = getLinuxVersion()
+func fillPlatformSpecificOSData(ctx context.Context, info *hostOS) error {
+	info.HostLinuxVersion, _ = getLinuxVersion(ctx)
 
 	uname := &unix.Utsname{}
 	if err := syscallUname(uname); err != nil {
