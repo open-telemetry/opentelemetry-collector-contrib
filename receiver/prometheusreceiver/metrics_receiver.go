@@ -78,7 +78,10 @@ type pReceiver struct {
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) *pReceiver {
+func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
+	if err := cfg.PrometheusConfig.Reload(); err != nil {
+		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
+	}
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	registry := prometheus.NewRegistry()
 	registerer := prometheus.WrapRegistererWith(
@@ -98,7 +101,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 			enableNativeHistogramsGate.IsEnabled(),
 		),
 	}
-	return pr
+	return pr, nil
 }
 
 // Start is the method that starts Prometheus scraping. It
@@ -339,6 +342,8 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.EnableRemoteWriteReceiver,
 		o.AcceptRemoteWriteProtoMsgs,
 		o.EnableOTLPWriteReceiver,
+		o.ConvertOTLPDelta,
+		o.CTZeroIngestionEnabled,
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579

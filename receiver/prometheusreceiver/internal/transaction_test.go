@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
@@ -42,16 +43,16 @@ const (
 
 var (
 	target = scrape.NewTarget(
-		// processedLabels contain label values after processing (e.g. relabeling)
 		labels.FromMap(map[string]string{
 			model.InstanceLabel: "localhost:8080",
 		}),
-		// discoveredLabels contain labels prior to any processing
-		labels.FromMap(map[string]string{
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
 			model.AddressLabel: "address:8080",
 			model.SchemeLabel:  "http",
-		}),
-		nil)
+		},
+		nil,
+	)
 
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
@@ -454,17 +455,17 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 	sink := new(consumertest.MetricsSink)
 
 	scrapeTarget := scrape.NewTarget(
-		// processedLabels contain label values after processing (e.g. relabeling)
 		labels.FromMap(map[string]string{
 			model.InstanceLabel: "localhost:8080",
 			model.JobLabel:      "federate",
 		}),
-		// discoveredLabels contain labels prior to any processing
-		labels.FromMap(map[string]string{
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
 			model.AddressLabel: "address:8080",
 			model.SchemeLabel:  "http",
-		}),
-		nil)
+		},
+		nil,
+	)
 
 	ctx := scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), scrapeTarget),
