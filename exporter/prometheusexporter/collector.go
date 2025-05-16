@@ -100,35 +100,45 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 
 var errUnknownMetricType = errors.New("unknown metric type")
 
-func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scope pcommon.InstrumentationScope) (prometheus.Metric, error) {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
-		return c.convertGauge(metric, resourceAttrs)
+		return c.convertGauge(metric, resourceAttrs, scope)
 	case pmetric.MetricTypeSum:
-		return c.convertSum(metric, resourceAttrs)
+		return c.convertSum(metric, resourceAttrs, scope)
 	case pmetric.MetricTypeHistogram:
-		return c.convertDoubleHistogram(metric, resourceAttrs)
+		return c.convertDoubleHistogram(metric, resourceAttrs, scope)
 	case pmetric.MetricTypeSummary:
-		return c.convertSummary(metric, resourceAttrs)
+		return c.convertSummary(metric, resourceAttrs, scope)
 	}
 
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string, error) {
+func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map, scope pcommon.InstrumentationScope) (*prometheus.Desc, []string, error) {
 	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	keys := make([]string, 0, attributes.Len()+2) // +2 for job and instance labels.
-	values := make([]string, 0, attributes.Len()+2)
+	keys := make([]string, 0, attributes.Len()+scope.Attributes().Len()+4) // +2 for job and instance labels, +2 for scope name and version
+	values := make([]string, 0, attributes.Len()+scope.Attributes().Len()+4)
 
 	for k, v := range attributes.All() {
 		keys = append(keys, prometheustranslator.NormalizeLabel(k))
 		values = append(values, v.AsString())
 	}
+
+	for k, v := range scope.Attributes().All() {
+		keys = append(keys, prometheustranslator.NormalizeLabel("otel_scope_"+k))
+		values = append(values, v.AsString())
+	}
+
+	keys = append(keys, "otel_scope_name")
+	values = append(values, scope.Name())
+	keys = append(keys, "otel_scope_version")
+	values = append(values, scope.Version())
 
 	if job, ok := extractJob(resourceAttrs); ok {
 		keys = append(keys, model.JobLabel)
@@ -142,10 +152,10 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
-func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scope pcommon.InstrumentationScope) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
-	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_GAUGE.Enum(), ip.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_GAUGE.Enum(), ip.Attributes(), resourceAttrs, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +183,7 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	return m, nil
 }
 
-func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scope pcommon.InstrumentationScope) (prometheus.Metric, error) {
 	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
@@ -183,7 +193,7 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 		mType = dto.MetricType_COUNTER.Enum()
 	}
 
-	desc, attributes, err := c.getMetricMetadata(metric, mType, ip.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, mType, ip.Attributes(), resourceAttrs, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +234,7 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	return m, nil
 }
 
-func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scope pcommon.InstrumentationScope) (prometheus.Metric, error) {
 	// TODO: In the off chance that we have multiple points
 	// within the same metric, how should we handle them?
 	point := metric.Summary().DataPoints().At(0)
@@ -237,7 +247,7 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 		quantiles[qvj.Quantile()] = qvj.Value()
 	}
 
-	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_SUMMARY.Enum(), point.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_SUMMARY.Enum(), point.Attributes(), resourceAttrs, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -256,9 +266,9 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 	return m, nil
 }
 
-func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scope pcommon.InstrumentationScope) (prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
-	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), ip.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), ip.Attributes(), resourceAttrs, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +410,7 @@ Reporting
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
-	inMetrics, resourceAttrs := c.accumulator.Collect()
+	inMetrics, resourceAttrs, scopes := c.accumulator.Collect()
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
@@ -414,8 +424,9 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	for i := range inMetrics {
 		pMetric := inMetrics[i]
 		rAttr := resourceAttrs[i]
+		scope := scopes[i]
 
-		m, err := c.convertMetric(pMetric, rAttr)
+		m, err := c.convertMetric(pMetric, rAttr, scope)
 		if err != nil {
 			c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", pMetric.Name(), err.Error()))
 			continue
