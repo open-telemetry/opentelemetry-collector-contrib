@@ -15,6 +15,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
@@ -45,6 +50,12 @@ type Config struct {
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
+
+	additionalLogFunctions       []ottl.Factory[ottllog.TransformContext]
+	additionalSpanFunctions      []ottl.Factory[ottlspan.TransformContext]
+	additionalSpanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]
+	additionalMetricFunctions    []ottl.Factory[ottlmetric.TransformContext]
+	additionalDataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -133,7 +144,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions()), common.WithSpanEventParser(traces.SpanEventFunctions()))
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(c.additionalSpanFunctions...)), common.WithSpanEventParser(traces.SpanEventFunctions(c.additionalSpanEventFunctions...)))
 		if err != nil {
 			return err
 		}
@@ -146,7 +157,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions()), common.WithDataPointParser(metrics.DataPointFunctions()))
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions(c.additionalMetricFunctions...)), common.WithDataPointParser(metrics.DataPointFunctions(c.additionalDataPointFunctions...)))
 		if err != nil {
 			return err
 		}
@@ -159,7 +170,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions()))
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(c.additionalLogFunctions...)))
 		if err != nil {
 			return err
 		}

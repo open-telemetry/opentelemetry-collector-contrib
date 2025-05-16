@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -20,8 +22,8 @@ type Processor struct {
 	logger   *zap.Logger
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
-	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()), common.WithTraceErrorMode(errorMode))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, additionalSpanFuncs []ottl.Factory[ottlspan.TransformContext], additionalSpanEventFuncs []ottl.Factory[ottlspanevent.TransformContext]) (*Processor, error) {
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions(additionalSpanFuncs...)), common.WithSpanEventParser(SpanEventFunctions(additionalSpanEventFuncs...)), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
