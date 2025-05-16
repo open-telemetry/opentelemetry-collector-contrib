@@ -3,10 +3,11 @@ type: tcplog
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    unmaintained: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    emeritus: [djaglowski]
+    seeking_new: true
 
 tests:
   config:
