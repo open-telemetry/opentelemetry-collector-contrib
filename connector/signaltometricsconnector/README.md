@@ -66,9 +66,10 @@ signaltometrics:
 
 `signaltometrics` produces a variety of metric types by utilizing [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
 to extract the relevant data for a metric type from the incoming data. The
-component can produce the following metric types for each signal types:
+component can produce the following metric types for each signal type:
 
 - [Sum](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums)
+- [Gauge](#gauge)
 - [Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram)
 - [Exponential Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram)
 
@@ -90,6 +91,31 @@ sum:
   returned value determines the value type of the `sum` metric (`int` or `double`).
   [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
+
+#### Gauge
+
+Gauge metrics are supported for logs and allow extracting numeric values from log bodies using Grok patterns via the `ExtractGrokPatterns` OTTL function. The gauges are aggregated by last value. 
+
+Gauge metrics have the following configuration:
+
+```yaml
+gauge:
+  value: ExtractGrokPatterns(target, pattern)
+```
+
+- [**Required**] `value`: An OTTL expression that must use `ExtractGrokPatterns` to extract a value from the log body. The Grok pattern must:
+  - Contain **exactly one** Grok pattern (e.g., `%{NUMBER:memory_mb:int}`)
+  - Use `int`,`long`,`double` or `float` as the data type for the extracted value.
+
+**Example:**
+```yaml
+signaltometrics:
+  logs:
+    - name: logs.memory_mb
+      description: Extract memory_mb from log records
+      gauge:
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")
+```
 
 #### Histogram
 

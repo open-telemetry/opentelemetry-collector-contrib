@@ -6,6 +6,9 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/component"
@@ -163,6 +166,10 @@ type Sum struct {
 	Value string `mapstructure:"value"`
 }
 
+type Gauge struct {
+	Value string `mapstructure:"value"`
+}
+
 // MetricInfo defines the structure of the metric produced by the connector.
 type MetricInfo struct {
 	Name        string `mapstructure:"name"`
@@ -181,6 +188,7 @@ type MetricInfo struct {
 	Histogram            *Histogram            `mapstructure:"histogram"`
 	ExponentialHistogram *ExponentialHistogram `mapstructure:"exponential_histogram"`
 	Sum                  *Sum                  `mapstructure:"sum"`
+	Gauge                *Gauge                `mapstructure:"gauge"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -251,6 +259,15 @@ func (mi *MetricInfo) validateSum() error {
 	return nil
 }
 
+func (mi *MetricInfo) validateGauge() error {
+	if mi.Gauge != nil {
+		if mi.Gauge.Value == "" {
+			return errors.New("value must be defined for gauge metrics")
+		}
+	}
+	return nil
+}
+
 // validateMetricInfo is an utility method validate all supported metric
 // types defined for the metric info including any ottl expressions.
 func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
@@ -265,6 +282,9 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 	}
 	if err := mi.validateSum(); err != nil {
 		return fmt.Errorf("sum validation failed: %w", err)
+	}
+	if err := mi.validateGauge(); err != nil {
+		return fmt.Errorf("gauge validation failed: %w", err)
 	}
 
 	// Exactly one metric should be defined. Also, validate OTTL expressions,
@@ -297,6 +317,36 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		metricsDefinedCount++
 		if _, err := parser.ParseValueExpression(mi.Sum.Value); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for summary: %w", err)
+		}
+	}
+	if mi.Gauge != nil {
+		metricsDefinedCount++
+		if _, err := parser.ParseValueExpression(mi.Gauge.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
+		}
+		// Custom validation: fail if ExtractGrokPatterns is used with multiple patterns or configured with unsupported type
+		if strings.Contains(mi.Gauge.Value, "ExtractGrokPatterns") {
+			// Count the number of grok patterns
+			count := strings.Count(mi.Gauge.Value, "%{")
+			if count > 1 {
+				return fmt.Errorf("ExtractGrokPatterns: only exactly one grok pattern is supported for logs to gauge, found %d", count)
+			}
+			// Validate grok pattern types
+			// Example: %{NUMBER:foo:int} or %{NUMBER:bar:float}
+			grokPatternRe := regexp.MustCompile(`%\{[^}]+\}`)
+			matches := grokPatternRe.FindAllString(mi.Gauge.Value, -1)
+			supportedTypes := []string{"int", "float", "double", "long"}
+			for _, p := range matches {
+				// Remove %{ and }
+				inner := p[2 : len(p)-1]
+				parts := strings.Split(inner, ":")
+				if len(parts) >= 3 {
+					typePart := parts[2]
+					if !slices.Contains(supportedTypes, typePart) {
+						return fmt.Errorf("ExtractGrokPatterns: only int, float, double, and long types are supported for logs to gauge, found '%s' in pattern '%s'", typePart, p)
+					}
+				}
+			}
 		}
 	}
 	if metricsDefinedCount != 1 {

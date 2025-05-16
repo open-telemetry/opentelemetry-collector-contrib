@@ -1,0 +1,6 @@
+signaltometrics:
+  logs:
+    - name: logs.invalid_grok_type
+      description: Invalid grok type in pattern
+      gauge:
+        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:string}MB")

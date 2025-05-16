@@ -100,6 +100,18 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
+			path: "multiple_grok_patterns",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: only exactly one grok pattern is supported for logs to gauge"),
+			},
+		},
+		{
+			path: "invalid_grok_type",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: only int, float, double, and long types are supported for logs to gauge"),
+			},
+		},
+		{
 			path: "invalid_ottl_value_expression",
 			errorMsgs: []string{
 				fullErrorForSignal(t, "spans", "failed to parse value OTTL expression"),
