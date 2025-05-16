@@ -716,7 +716,6 @@ func TestExtractionRules(t *testing.T) {
 		additionalAnnotations map[string]string
 		additionalLabels      map[string]string
 		attributes            map[string]string
-		serviceName           string
 	}{
 		{
 			name:       "no-rules",
@@ -974,9 +973,11 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:        "service-name",
-			rules:       serviceRules,
-			serviceName: "auth-service",
+			name:  "service-name",
+			rules: serviceRules,
+			attributes: map[string]string{
+				"service.name": "pi-statefulset",
+			},
 		},
 		{
 			name:  "service-attributes-label-values",
@@ -1045,9 +1046,6 @@ func TestExtractionRules(t *testing.T) {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
 				assert.Equal(t, v, got)
-			}
-			if tc.serviceName != "" {
-				assert.Equal(t, tc.serviceName, AutomaticServiceName("containerName", p.ServiceNames))
 			}
 		})
 	}

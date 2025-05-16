@@ -452,14 +452,13 @@ func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
 	return nil, false
 }
 
-func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, map[string]string) {
+func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
-	serviceNames := map[string]string{}
 	if c.Rules.PodName {
 		tags[string(conventions.K8SPodNameKey)] = pod.Name
 	}
 	if c.Rules.ServiceName {
-		serviceNames[string(conventions.K8SPodNameKey)] = pod.Name
+		tags[string(conventions.ServiceNameKey)] = pod.Name
 	}
 
 	if c.Rules.PodHostName {
@@ -506,7 +505,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceName {
-					serviceNames[string(conventions.K8SReplicaSetNameKey)] = ref.Name
+					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
@@ -516,7 +515,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 								tags[string(conventions.K8SDeploymentNameKey)] = name
 							}
 							if c.Rules.ServiceName {
-								serviceNames[string(conventions.K8SDeploymentNameKey)] = name
+								// deployment name wins over replicaset name
+								tags[string(conventions.ServiceNameKey)] = name
 							}
 						}
 					}
@@ -536,7 +536,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SDaemonSetNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceName {
-					serviceNames[string(conventions.K8SDaemonSetNameKey)] = ref.Name
+					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 			case "StatefulSet":
 				if c.Rules.StatefulSetUID {
@@ -546,9 +546,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					tags[string(conventions.K8SStatefulSetNameKey)] = ref.Name
 				}
 				if c.Rules.ServiceName {
-					serviceNames[string(conventions.K8SStatefulSetNameKey)] = ref.Name
+					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 			case "Job":
+				if c.Rules.JobUID {
+					tags[string(conventions.K8SJobUIDKey)] = string(ref.UID)
+				}
+				if c.Rules.JobName {
+					tags[string(conventions.K8SJobNameKey)] = ref.Name
+				}
+				if c.Rules.ServiceName {
+					tags[string(conventions.ServiceNameKey)] = ref.Name
+				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
 					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
 					if len(parts) == 2 {
@@ -557,18 +566,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 							tags[string(conventions.K8SCronJobNameKey)] = name
 						}
 						if c.Rules.ServiceName {
-							serviceNames[string(conventions.K8SCronJobNameKey)] = name
+							// cronjob name wins over job name
+							tags[string(conventions.ServiceNameKey)] = name
 						}
 					}
-				}
-				if c.Rules.JobUID {
-					tags[string(conventions.K8SJobUIDKey)] = string(ref.UID)
-				}
-				if c.Rules.JobName {
-					tags[string(conventions.K8SJobNameKey)] = ref.Name
-				}
-				if c.Rules.ServiceName {
-					serviceNames[string(conventions.K8SJobNameKey)] = ref.Name
 				}
 			}
 		}
@@ -603,7 +604,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 	for _, r := range c.Rules.Annotations {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
-	return tags, serviceNames
+	return tags
 }
 
 func copyLabel(pod *api_v1.Pod, tags map[string]string, labelKey string, key attribute.Key) {
@@ -854,7 +855,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	if c.shouldIgnorePod(pod) {
 		newPod.Ignore = true
 	} else {
-		newPod.Attributes, newPod.ServiceNames = c.extractPodAttributes(pod)
+		newPod.Attributes = c.extractPodAttributes(pod)
 		if needContainerAttributes(c.Rules) {
 			newPod.Containers = c.extractPodContainersAttributes(pod)
 		}
@@ -1222,4 +1223,9 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 		return obj.Obj
 	}
 	return obj
+}
+
+func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
+	resNames := []string{pod.Namespace, pod.Name, containerName}
+	return strings.Join(resNames, ".")
 }

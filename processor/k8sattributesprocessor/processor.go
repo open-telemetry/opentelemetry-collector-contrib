@@ -258,7 +258,8 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		setResourceAttribute(attrs, string(conventions.ServiceVersionKey), containerSpec.ServiceVersion)
 	}
 	if containerSpec.ServiceName != "" {
-		setResourceAttribute(attrs, string(conventions.ServiceNameKey), kube.AutomaticServiceName(containerSpec.ServiceName, pod.ServiceNames))
+		// last fallback to automatic service name
+		setResourceAttribute(attrs, string(conventions.ServiceNameKey), containerSpec.ServiceName)
 	}
 	// attempt to get container ID from restart count
 	runID := -1

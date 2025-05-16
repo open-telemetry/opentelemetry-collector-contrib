@@ -117,8 +117,7 @@ type Pod struct {
 	// Containers specifies all containers in this pod.
 	Containers PodContainers
 
-	DeletedAt    time.Time
-	ServiceNames map[string]string
+	DeletedAt time.Time
 }
 
 // PodContainers specifies a list of pod containers. It is not safe for concurrent use.
