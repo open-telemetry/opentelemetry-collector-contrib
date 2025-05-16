@@ -446,3 +446,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidut
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../../pkg/winperfcounters
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../internal/gopsutilenv

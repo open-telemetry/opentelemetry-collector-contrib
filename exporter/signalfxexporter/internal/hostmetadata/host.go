@@ -18,16 +18,9 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
-)
 
-// etcPath is the path to host etc and can be set using the env var "HOST_ETC"
-// this is to maintain consistency with gopsutil
-var etcPath = func() string {
-	if etcPath := os.Getenv("HOST_ETC"); etcPath != "" {
-		return etcPath
-	}
-	return "/etc"
-}
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
+)
 
 const cpuStatsTimeout = 10 * time.Second
 
@@ -35,8 +28,8 @@ const cpuStatsTimeout = 10 * time.Second
 var (
 	cpuInfo          = cpu.InfoWithContext
 	cpuCounts        = cpu.CountsWithContext
-	memVirtualMemory = mem.VirtualMemory
-	hostInfo         = host.Info
+	memVirtualMemory = mem.VirtualMemoryWithContext
+	hostInfo         = host.InfoWithContext
 )
 
 // hostCPU information about the host
@@ -62,14 +55,14 @@ func (c *hostCPU) toStringMap() map[string]string {
 }
 
 // getCPU - adds information about the host cpu to the supplied map
-func getCPU() (info *hostCPU, err error) {
+func getCPU(ctx context.Context) (info *hostCPU, err error) {
 	info = &hostCPU{}
 
 	// get physical cpu stats
 	var cpus []cpu.InfoStat
 
 	// On Windows this can sometimes take longer than the default timeout (10 seconds).
-	ctx, cancel := context.WithTimeout(context.Background(), cpuStatsTimeout)
+	ctx, cancel := context.WithTimeout(ctx, cpuStatsTimeout)
 	defer cancel()
 
 	cpus, err = cpuInfo(ctx)
@@ -119,9 +112,9 @@ func (o *hostOS) toStringMap() map[string]string {
 }
 
 // getOS returns a struct with information about the host os
-func getOS() (info *hostOS, err error) {
+func getOS(ctx context.Context) (info *hostOS, err error) {
 	info = &hostOS{}
-	hInfo, err := hostInfo()
+	hInfo, err := hostInfo(ctx)
 	if err != nil {
 		return info, err
 	}
@@ -130,13 +123,13 @@ func getOS() (info *hostOS, err error) {
 	info.HostKernelName = hInfo.OS
 	// in gopsutil KernelVersion returns what we would expect for Kernel Release
 	info.HostKernelRelease = hInfo.KernelVersion
-	err = fillPlatformSpecificOSData(info)
+	err = fillPlatformSpecificOSData(ctx, info)
 	return info, err
 }
 
 // getLinuxVersion - adds information about the host linux version to the supplied map
-func getLinuxVersion() (string, error) {
-	etc := etcPath()
+func getLinuxVersion(ctx context.Context) (string, error) {
+	etc := gopsutilenv.GetEnvWithContext(ctx, "HOST_ETC", "/etc")
 	if value, err := getStringFromFile(`DISTRIB_DESCRIPTION="(.*)"`, filepath.Join(etc, "lsb-release")); err == nil {
 		return value, nil
 	}
@@ -169,9 +162,9 @@ func (m *Memory) toStringMap() map[string]string {
 }
 
 // getMemory returns the amount of memory on the host as datatype.USize
-func getMemory() (*Memory, error) {
+func getMemory(ctx context.Context) (*Memory, error) {
 	m := &Memory{}
-	memoryStat, err := memVirtualMemory()
+	memoryStat, err := memVirtualMemory(ctx)
 	if err == nil {
 		m.Total = int(memoryStat.Total)
 	}

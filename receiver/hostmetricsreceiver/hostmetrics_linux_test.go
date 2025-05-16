@@ -16,21 +16,9 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
-
-func TestConsistentRootPaths(t *testing.T) {
-	// use testdata because it's a directory that exists - don't actually use any files in it
-	assert.NoError(t, testValidate("testdata"))
-	assert.NoError(t, testValidate(""))
-	assert.NoError(t, testValidate("/"))
-}
-
-func TestInconsistentRootPaths(t *testing.T) {
-	globalRootPath = "foo"
-	err := testValidate("testdata")
-	assert.EqualError(t, err, "inconsistent root_path configuration detected between hostmetricsreceivers: `foo` != `testdata`")
-}
 
 func TestLoadConfigRootPath(t *testing.T) {
 	t.Setenv("HOST_PROC", "testdata")
@@ -40,7 +28,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, cm.Unmarshal(cfg))
 
-	globalRootPath = ""
+	gopsutilenv.SetGlobalRootPath("")
 
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
@@ -55,7 +43,11 @@ func TestLoadConfigRootPath(t *testing.T) {
 		common.HostSysEnvKey: "testdata/sys",
 		common.HostVarEnvKey: "testdata/var",
 	}
-	assert.Equal(t, expectedEnvMap, setGoPsutilEnvVars("testdata"))
+	envMap, err := gopsutilenv.SetGoPsutilEnvVars("testdata")
+	require.NoError(t, err)
+	assert.Equal(t, expectedEnvMap, envMap)
+
+	gopsutilenv.SetGlobalRootPath("")
 }
 
 func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
@@ -65,11 +57,16 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, cm.Unmarshal(cfg))
 	assert.ErrorContains(t, xconfmap.Validate(cfg), "invalid root_path:")
-	globalRootPath = ""
+	gopsutilenv.SetGlobalRootPath("")
 }
 
-func testValidate(rootPath string) error {
-	err := validateRootPath(rootPath)
-	globalRootPath = ""
-	return err
+func TestLoadConfigRootPath_InvalidConfig_InconsistentRootPaths(t *testing.T) {
+	gopsutilenv.SetGlobalRootPath("foo")
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-root-path.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, cm.Unmarshal(cfg))
+	assert.EqualError(t, xconfmap.Validate(cfg), "inconsistent root_path configuration detected among components: `foo` != `testdata`")
+	gopsutilenv.SetGlobalRootPath("")
 }
