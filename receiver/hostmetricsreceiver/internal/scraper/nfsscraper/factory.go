@@ -28,7 +28,7 @@ func createDefaultConfig() component.Config {
 
 // createMetricsScraper creates a resource scraper based on provided config.
 func createMetricsScraper(
-	ctx context.Context,
+	_ context.Context,
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
@@ -36,7 +36,10 @@ func createMetricsScraper(
 		return nil, errors.New("uptime scraper only available on Linux")
 	}
 
-	nfsScraper := newNfsScraper(ctx, settings, cfg.(*Config))
+	nfsScraper, err := newNfsScraper(settings, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
 
 	return scraper.NewMetrics(
 		nfsScraper.scrape,

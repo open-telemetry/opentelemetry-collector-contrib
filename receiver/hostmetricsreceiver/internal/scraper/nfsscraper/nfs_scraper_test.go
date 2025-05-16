@@ -5,25 +5,62 @@ package nfsscraper
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	//	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
 )
 
+func skipTestOnUnsupportedOS(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("skipping test on %v", runtime.GOOS)
+	}
+}
+
 func TestScrape(t *testing.T) {
-	ctx := context.Background()
+	skipTestOnUnsupportedOS(t)
 
-	s := newNfsScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-	})
+	type testCase struct {
+		name		string
+		NfsScraperEnabled	bool
+		NfsdScraperEnabled	bool
+	}
 
-	_, err := s.scrape(ctx)
-	require.NoErrorf(t, err, "scrape error %+v", err)
+	testCases := []testCase{
+		{
+			name: "NFS client metrics",
+			NfsScraperEnabled: true,
+			NfsdScraperEnabled: false,
+		},
+		{
+			name: "NFS server metrics",
+			NfsScraperEnabled: true,
+			NfsdScraperEnabled: false,
+		},
+		{
+			name: "All metrics",
+			NfsScraperEnabled: true,
+			NfsdScraperEnabled: false,
+		},
+	}
 
-	//	assert.Equal(t, 0, metrics.MetricCount())
-	//	assert.Equal(t, 0, metrics.DataPointCount())
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper, err := newNfsScraper(scrapertest.NewNopSettings(metadata.Type), &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			})
+			require.NoError(t, err, "Failed to create NFS scraper: %v", err)
+
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			md, err := scraper.scrape(context.Background())
+			require.NoError(t, err)
+		})
+	}
 }

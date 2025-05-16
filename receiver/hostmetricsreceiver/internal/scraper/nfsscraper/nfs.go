@@ -63,11 +63,15 @@ type NfsdRpcStats struct {
 	BadClientCount uint64
 }
 
+// 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
 type NfsStats struct {
 	NfsNetStats *NfsNetStats
 	NfsRpcStats *NfsRpcStats
+	NfsV3ProcedureStats []*RPCProcedureStats
+	NfsV4ProcedureStats []*RPCProcedureStats
 }
 
+// 15 metrics + 22 NFSv3 procedures + 76 NFSv4 procedures = 113 metrics
 type NfsdStats struct {
 	NfsdFhStats *NfsdFhStats
 	NfsdIoStats *NfsdIoStats
@@ -75,4 +79,6 @@ type NfsdStats struct {
 	NfsdRepcacheStats *NfsdRepcacheStats
 	NfsdRpcStats *NfsdRpcStats
 	NfsdThreadStats *NfsdThreadStats
+	NfsdV3ProcedureStats []*RPCProcedureStats
+	NfsdV4ProcedureStats []*RPCProcedureStats
 }
