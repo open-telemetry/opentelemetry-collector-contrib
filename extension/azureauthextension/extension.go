@@ -217,13 +217,16 @@ var _ http.RoundTripper = (*roundTripper)(nil)
 
 func (r *roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	req := request.Clone(request.Context())
-	if req.Header == nil {
-		return nil, errors.New(`request headers are empty, expected to find "Host" header`)
-	}
 
-	host := req.Header.Get("Host")
+	host := req.Host
 	if host == "" {
-		return nil, errors.New(`missing "host" header`)
+		if req.URL == nil {
+			return nil, errors.New("unexpected nil request URL")
+		}
+		host = req.URL.Host
+		if host == "" {
+			return nil, errors.New("unexpected empty Host in request URL")
+		}
 	}
 
 	token, err := r.auth.getTokenForHost(req.Context(), host)
