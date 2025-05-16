@@ -93,6 +93,10 @@ are then also available for the use within association rules. Available attribut
   - k8s.job.name
   - k8s.node.name
   - k8s.cluster.uid
+  - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
+  - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
+  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)
+  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)
   - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
 
 
@@ -262,6 +266,11 @@ The processor can be configured to set the
 ```yaml
   extract:
     otel_annotations: true 
+    metadata:
+      - service.namespace
+      - service.name
+      - service.version
+      - service.instance.id
 ```
 
 ### Config example
@@ -283,6 +292,10 @@ k8sattributes/2:
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
+      - service.namespace
+      - service.name
+      - service.version
+      - service.instance.id
     labels:
       # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
       - tag_name: app.label.component

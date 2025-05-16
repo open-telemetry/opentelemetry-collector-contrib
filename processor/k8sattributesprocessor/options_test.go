@@ -754,10 +754,10 @@ func TestOtelAnnotations(t *testing.T) {
 		wantAnnotations []kube.FieldExtractionRule
 	}{
 		{
-			name: "no automatic rules",
+			name: "no otel annotations",
 		},
 		{
-			name:    "default automatic rules",
+			name:    "with otel annotations",
 			enabled: true,
 			wantAnnotations: []kube.FieldExtractionRule{
 				{

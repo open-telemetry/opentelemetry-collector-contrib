@@ -171,6 +171,10 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		for key, val := range attrsToAdd {
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
+
+		if kp.rules.ServiceNamespace {
+			resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), namespace)
+		}
 	}
 
 	nodeName := getNodeName(pod, resource.Attributes())
@@ -246,6 +250,16 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	}
 	if containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, string(conventions.ContainerImageTagKey), containerSpec.ImageTag)
+	}
+	if containerSpec.ServiceInstanceID != "" {
+		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
+	}
+	if containerSpec.ServiceVersion != "" {
+		setResourceAttribute(attrs, string(conventions.ServiceVersionKey), containerSpec.ServiceVersion)
+	}
+	if containerSpec.ServiceName != "" {
+		// last fallback to automatic service name
+		setResourceAttribute(attrs, string(conventions.ServiceNameKey), containerSpec.ServiceName)
 	}
 	// attempt to get container ID from restart count
 	runID := -1
