@@ -80,7 +80,7 @@ type pReceiver struct {
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
 	if err := cfg.PrometheusConfig.Reload(); err != nil {
-		return nil, fmt.Errorf("failed to reload Prometheus config: %v", err)
+		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
 	}
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	registry := prometheus.NewRegistry()
