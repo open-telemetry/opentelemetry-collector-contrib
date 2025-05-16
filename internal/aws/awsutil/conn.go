@@ -45,7 +45,11 @@ func (c *Conn) getEC2Region(ctx context.Context, cfg aws.Config) (string, error)
 const (
 	STSEndpointPrefix         = "https://sts."
 	STSEndpointSuffix         = ".amazonaws.com"
-	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
+	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition
+	STSAwsIsoSuffix           = ".c2s.ic.gov"       // AWS ISO partition
+	STSAwsIsoBSuffix          = ".sc2s.sgov.gov"    // AWS ISO-B partition
+	STSAwsIsoESuffix          = ".cloud.adc-e.uk"   // AWS ISO-E partition
+	STSAwsIsoFSuffix          = ".csp.hci.ic.gov"   // AWS ISO-F partition
 )
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
@@ -152,11 +156,6 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	return cfg, nil
 }
 
-// GetAWSConfigSession maintains backwards compatibility with the original API but uses AWS SDK v2 internally
-func GetAWSConfigSession(ctx context.Context, logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (aws.Config, error) {
-	return GetAWSConfig(ctx, logger, cfg)
-}
-
 func CreateStaticCredentialProvider(accessKey, secretKey, sessionToken string) aws.CredentialsProvider {
 	return credentials.NewStaticCredentialsProvider(accessKey, secretKey, sessionToken)
 }
@@ -207,8 +206,8 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 }
 
 // getPartition returns AWS Partition for the provided region.
+// AWS SDK v2 provides the GetPartition function to the internal module (https://github.com/aws/aws-sdk-go-v2/blob/main/internal/endpoints/awsrulesfn/partitions.go) and cannot be imported directly.
 func getPartition(region string) string {
-	// This is a simplified version - in production we would use the actual AWS SDK v2
 	// partitions package to determine the correct partition
 	if region == "" {
 		return "aws" // default partition
@@ -226,6 +225,24 @@ func getPartition(region string) string {
 		}
 	}
 
+	// Check for AWS ISO regions
+	if len(region) >= 6 && region[:6] == "us-iso" {
+		if len(region) >= 7 && region[:7] == "us-isob" {
+			return "aws-iso-b"
+		}
+		return "aws-iso"
+	}
+
+	// Check for AWS ISO-E regions (European Sovereign Cloud)
+	if len(region) >= 7 && region[:7] == "eu-isoe" {
+		return "aws-iso-e"
+	}
+
+	// Check for AWS ISO-F regions
+	if len(region) >= 7 && region[:7] == "us-isof" {
+		return "aws-iso-f"
+	}
+
 	// Default to standard AWS partition
 	return "aws"
 }
@@ -234,12 +251,23 @@ func getPartition(region string) string {
 func getSTSRegionalEndpoint(r string) string {
 	p := getPartition(r)
 
-	var e string
+	var suffix string
 	switch p {
 	case "aws", "aws-us-gov":
-		e = STSEndpointPrefix + r + STSEndpointSuffix
+		suffix = STSEndpointSuffix
 	case "aws-cn":
-		e = STSEndpointPrefix + r + STSAwsCnPartitionIDSuffix
+		suffix = STSAwsCnPartitionIDSuffix
+	case "aws-iso":
+		suffix = STSAwsIsoSuffix
+	case "aws-iso-b":
+		suffix = STSAwsIsoBSuffix
+	case "aws-iso-e":
+		suffix = STSAwsIsoESuffix
+	case "aws-iso-f":
+		suffix = STSAwsIsoFSuffix
+	default:
+		suffix = STSEndpointSuffix
 	}
-	return e
+
+	return STSEndpointPrefix + r + suffix
 }
