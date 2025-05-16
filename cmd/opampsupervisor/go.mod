@@ -310,3 +310,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/m
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../exporter/prometheusremotewriteexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter => ../../exporter/stefexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver => ../../receiver/stefreceiver

@@ -335,3 +335,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/rout
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../../internal/exp/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../../internal/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter => ../../stefexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver => ../../../receiver/stefreceiver
