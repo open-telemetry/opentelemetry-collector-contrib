@@ -31,6 +31,8 @@ all_set:
       enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
+    sqlserver.lock.wait.count:
+      enabled: true
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
@@ -135,6 +137,8 @@ none_set:
     sqlserver.index.search.rate:
       enabled: false
     sqlserver.lock.timeout.rate:
+      enabled: false
+    sqlserver.lock.wait.count:
       enabled: false
     sqlserver.lock.wait.rate:
       enabled: false

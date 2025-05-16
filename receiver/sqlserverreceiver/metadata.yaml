@@ -86,6 +86,15 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.lock.wait.count:
+    enabled: false
+    description: Cumulative count of lock waits that occurred.
+    unit: "{wait}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
     description: Number of lock requests resulting in a wait.

@@ -359,6 +359,16 @@ Total number of lock timeouts.
 | ---- | ----------- | ---------- |
 | “{timeouts}/s” | Gauge | Double |
 
+### sqlserver.lock.wait.count
+
+Cumulative count of lock waits that occurred.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait} | Sum | Int | Cumulative | true |
+
 ### sqlserver.login.rate
 
 Total number of logins.
