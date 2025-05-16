@@ -20,6 +20,8 @@ type nfsScraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking
+	getNfsStats		func() (*NfsNetStats, error)
+	getNfsdStats		func() (*NfsdFhStats, error)
 }
 
 // newNfsScraper creates an Uptime related metric
