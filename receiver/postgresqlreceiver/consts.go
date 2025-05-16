@@ -17,3 +17,8 @@ const (
 	tempBlksReadColumnName      = "temp_blks_read"
 	tempBlksWrittenColumnName   = "temp_blks_written"
 )
+
+const (
+	QueryTextAttributeName = "db.query.text"
+	DatabaseAttributeName  = "db.namespace"
+)

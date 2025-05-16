@@ -1,0 +1,1 @@
+[{"Plan":{"Node Type":"Seq Scan","Parallel Aware":false,"Async Capable":false,"Relation Name":"pg_authid","Alias":"pg_authid","Startup Cost":"123","Total Cost":"456","Plan Rows":"789","Plan Width":"1011","Filter":"( rolcanlogin AND ( rolname = CURRENT_USER ) )"}}]

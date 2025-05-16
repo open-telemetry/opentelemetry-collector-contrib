@@ -1,0 +1,1 @@
+/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;

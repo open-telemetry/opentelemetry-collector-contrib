@@ -49,6 +49,9 @@ resourceLogs:
               - key: postgresql.total_plan_time 
                 value: 
                   doubleValue: 1
+              - key: postgresql.query_plan
+                value:
+                  stringValue: "{}"
             body:
               stringValue: top query
         scope:
