@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
@@ -61,6 +62,7 @@ func Test_ProcessScrape(t *testing.T) {
 
 func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "e2e", "expected_process_separate_proc.yaml")
+	defer gopsutilenv.SetGlobalRootPath("")
 
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -91,6 +93,7 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 	rootPath := filepath.Join("testdata", "e2e", "proc")
 	badRootPath := filepath.Join("testdata", "NOT A VALID FOLDER")
 	expectedFile := filepath.Join("testdata", "e2e", "expected_process_separate_proc.yaml")
+	defer gopsutilenv.SetGlobalRootPath("")
 
 	t.Setenv("HOST_PROC", rootPath)
 	scraperinttest.NewIntegrationTest(

@@ -7,7 +7,9 @@
 
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
-func fillPlatformSpecificOSData(_ *hostOS) error {
+import "context"
+
+func fillPlatformSpecificOSData(_ context.Context, _ *hostOS) error {
 	return nil
 }
 
