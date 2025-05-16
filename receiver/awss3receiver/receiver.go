@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -33,7 +34,7 @@ type receiverProcessor interface {
 }
 
 type awss3Receiver struct {
-	s3Reader        *s3Reader
+	reader          s3Reader
 	logger          *zap.Logger
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
@@ -46,10 +47,25 @@ type awss3Receiver struct {
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
 	notifier := newNotifier(cfg, settings.Logger)
-	reader, err := newS3Reader(ctx, notifier, settings.Logger, cfg)
-	if err != nil {
-		return nil, err
+	var reader s3Reader
+	var err error
+
+	// Create the appropriate reader based on configuration
+	switch {
+	case cfg.StartTime != "" && cfg.EndTime != "":
+		reader, err = newS3TimeBasedReader(ctx, notifier, settings.Logger, cfg)
+		if err != nil {
+			return nil, err
+		}
+	case cfg.SQS != nil:
+		reader, err = newS3SQSReader(ctx, settings.Logger, cfg)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("invalid configuration: either time-based (StartTime/EndTime) or SQS-based configuration must be provided")
 	}
+
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "s3",
@@ -60,7 +76,7 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 	}
 
 	return &awss3Receiver{
-		s3Reader:        reader,
+		reader:          reader,
 		telemetryType:   telemetryType,
 		logger:          settings.Logger,
 		cancel:          nil,
@@ -86,7 +102,7 @@ func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 	var cancelCtx context.Context
 	cancelCtx, r.cancel = context.WithCancel(context.Background())
 	go func() {
-		_ = r.s3Reader.readAll(cancelCtx, r.telemetryType, r.receiveBytes)
+		_ = r.reader.readAll(cancelCtx, r.telemetryType, r.receiveBytes)
 	}()
 	return nil
 }
