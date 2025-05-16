@@ -77,6 +77,7 @@ func TestAzureScraperStart(t *testing.T) {
 					time:                timeMock,
 					azIDCredentialsFunc: azIDCredentialsFuncMock,
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
+					settings:            componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -96,6 +97,7 @@ func TestAzureScraperStart(t *testing.T) {
 					time:                timeMock,
 					azIDCredentialsFunc: azIDCredentialsFuncMock,
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
+					settings:            componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -115,6 +117,7 @@ func TestAzureScraperStart(t *testing.T) {
 					time:                timeMock,
 					azIDCredentialsFunc: azIDCredentialsFuncMock,
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
+					settings:            componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -134,6 +137,7 @@ func TestAzureScraperStart(t *testing.T) {
 					time:                  timeMock,
 					azIDCredentialsFunc:   azIDCredentialsFuncMock,
 					azManagedIdentityFunc: azManagedIdentityFuncMock,
+					settings:              componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -153,6 +157,7 @@ func TestAzureScraperStart(t *testing.T) {
 					time:                     timeMock,
 					azIDCredentialsFunc:      azIDCredentialsFuncMock,
 					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
+					settings:                 componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {

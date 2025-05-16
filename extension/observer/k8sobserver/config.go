@@ -38,6 +38,8 @@ type Config struct {
 	ObserveServices bool `mapstructure:"observe_services"`
 	// ObserveIngresses determines whether to report observer ingress. `false` by default.
 	ObserveIngresses bool `mapstructure:"observe_ingresses"`
+	// Namespaces limits the namespaces for the observed resources. By default, all namespaces will be observed.
+	Namespaces []string `mapstructure:"namespaces"`
 }
 
 // Validate checks if the extension configuration is valid
