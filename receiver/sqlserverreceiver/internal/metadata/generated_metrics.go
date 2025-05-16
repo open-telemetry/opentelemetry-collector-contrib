@@ -2895,6 +2895,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
 	}
