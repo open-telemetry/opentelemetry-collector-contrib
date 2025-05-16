@@ -69,7 +69,7 @@ to extract the relevant data for a metric type from the incoming data. The
 component can produce the following metric types for each signal type:
 
 - [Sum](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums)
-- [Gauge](#gauge)
+- [Gauge](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#gauge)
 - [Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram)
 - [Exponential Histogram](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram)
 
@@ -105,7 +105,7 @@ gauge:
   the signal. Only OTTL expressions that return a value are accepted. The returned 
   value determines the value type of the `gauge` metric (`int` or `double`).
   - For logs: Use e.g. `ExtractGrokPatterns` with a single key selector (see below). 
-  - For other signals: Use a field such as `value_int`, `value_double`, or a valid OTTL expression for your context.
+  - For other signals: Use a field such as `value_int`, `value_double`, or a valid OTTL expression.
 
 **Examples:**
 
