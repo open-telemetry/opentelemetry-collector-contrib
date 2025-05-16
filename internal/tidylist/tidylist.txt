@@ -199,6 +199,7 @@ internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
 internal/kubelet
+internal/marshaler
 internal/sqlquery
 internal/tools
 pkg/translator/azure

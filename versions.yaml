@@ -147,6 +147,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/marshaler
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq
@@ -248,7 +249,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver      
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
