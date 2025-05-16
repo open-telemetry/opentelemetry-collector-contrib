@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.126.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.32.1-0.20250515040533-97a6accbc082
-	go.opentelemetry.io/collector/pdata/testdata v0.126.0
+	go.opentelemetry.io/collector/pdata/testdata v0.126.1-0.20250515040533-97a6accbc082
 	go.uber.org/multierr v1.11.0
 )
 
