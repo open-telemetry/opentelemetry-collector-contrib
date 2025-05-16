@@ -49,6 +49,15 @@ func TestMetricsReceiver_Start(t *testing.T) {
 		"WithDefaultEncoding": {
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
+		"WithOTLP_v1Encoding": {
+			recordType: "otlp_v1",
+			wantUnmarshalerType: func() pmetric.Unmarshaler {
+				c := metricsConsumer{}
+				u, err := c.newUnmarshalerFromEncoding(context.Background(), "otlp_v1", "opentelemetry1.0")
+				require.NoError(t, err)
+				return u
+			}(),
+		},
 		"WithBuiltinEncoding": {
 			encoding:            "cwmetrics",
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},

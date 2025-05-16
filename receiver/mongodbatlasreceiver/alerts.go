@@ -71,6 +71,7 @@ type alertsReceiver struct {
 	// only relevant in `poll` mode
 	projects          []*ProjectConfig
 	client            alertsClient
+	baseURL           string
 	privateKey        string
 	publicKey         string
 	backoffConfig     configretry.BackOffConfig
@@ -108,6 +109,7 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		mode:              cfg.Mode,
 		projects:          cfg.Projects,
 		backoffConfig:     baseConfig.BackOffConfig,
+		baseURL:           baseConfig.BaseURL,
 		publicKey:         baseConfig.PublicKey,
 		privateKey:        string(baseConfig.PrivateKey),
 		wg:                &sync.WaitGroup{},
@@ -119,7 +121,12 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	}
 
 	if recv.mode == alertModePoll {
-		recv.client = internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		client, err := internal.NewMongoDBAtlasClient(recv.baseURL, recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create MongoDB Atlas client for alerts receiver: %w", err)
+		}
+
+		recv.client = client
 		return recv, nil
 	}
 	s := &http.Server{
