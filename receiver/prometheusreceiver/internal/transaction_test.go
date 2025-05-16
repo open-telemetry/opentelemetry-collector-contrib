@@ -478,6 +478,133 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 	assert.NoError(t, err)
 }
 
+func TestTransactionScopeHandling(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+
+	/*
+	* First test: Ingest otel_scope_info metric and a counter metric with matching scope name and version.
+	* The counter metric should have the scope attributes from the otel_scope_info metric.
+	*
+	* Feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is disabled.
+	 */
+	testutil.SetFeatureGateForTest(t, removeScopeInfo, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
+	for _, lbls := range []labels.Labels{
+		labels.FromMap(map[string]string{
+			model.InstanceLabel:   "localhost:8080",
+			model.JobLabel:        "test",
+			model.MetricNameLabel: "otel_scope_info",
+			"otel_scope_name":     "test",
+			"otel_scope_version":  "1.0.0",
+			"otel_scope_test":     "test",
+		}),
+		labels.FromMap(map[string]string{
+			model.InstanceLabel:   "localhost:8080",
+			model.JobLabel:        "test",
+			model.MetricNameLabel: "counter_test",
+			// Matching scope name and version with scope info
+			"otel_scope_name":    "test",
+			"otel_scope_version": "1.0.0",
+		}),
+	} {
+		_, err := tr.Append(0, lbls, 1, 1.0)
+		require.NoError(t, err)
+	}
+	assert.NoError(t, tr.Commit())
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	rms := mds[0].ResourceMetrics().At(0)
+	ils := rms.ScopeMetrics()
+	require.Equal(t, 1, ils.Len())
+	attr, ok := ils.At(0).Scope().Attributes().Get("test")
+	require.True(t, ok)
+	require.Equal(t, "test", attr.AsString())
+	metrics := ils.At(0).Metrics()
+	require.Equal(t, 1, metrics.Len()) // otel_scope_info metric is not included in the output
+	require.Equal(t, "counter_test", metrics.At(0).Name())
+
+	sink.Reset()
+
+	/*
+	* Second test: Ingest single metric with labels prefixed with otel_scope_, which should become scope attributes.
+	*
+	* Feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is enabled.
+	 */
+	testutil.SetFeatureGateForTest(t, removeScopeInfo, true)
+	tr = newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
+	lbls := labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+		"otel_scope_name":     "test",
+		"otel_scope_version":  "1.0.0",
+		"otel_scope_test":     "test",
+	})
+	_, err := tr.Append(0, lbls, 1, 1.0)
+	require.NoError(t, err)
+	assert.NoError(t, tr.Commit())
+	mds = sink.AllMetrics()
+	require.Len(t, mds, 1)
+	rms = mds[0].ResourceMetrics().At(0)
+	ils = rms.ScopeMetrics()
+	require.Equal(t, 1, ils.Len())
+	attr, ok = ils.At(0).Scope().Attributes().Get("test")
+	require.True(t, ok)
+	require.Equal(t, "test", attr.AsString())
+
+	metrics = ils.At(0).Metrics()
+	require.Equal(t, 1, metrics.Len())
+	require.Equal(t, "counter_test", metrics.At(0).Name())
+
+	sink.Reset()
+
+	/*
+	* Third test: Multiple metrics with matching scope name, version and attributes.
+	* With the feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' enabled,
+	* the otel_scope_info metric will turn into a separate metric.
+	*
+	* Feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is enabled.
+	 */
+	testutil.SetFeatureGateForTest(t, removeScopeInfo, true)
+	tr = newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
+	for _, lbls := range []labels.Labels{
+		labels.FromMap(map[string]string{
+			model.InstanceLabel:   "localhost:8080",
+			model.JobLabel:        "test",
+			model.MetricNameLabel: "otel_scope_info",
+			"otel_scope_name":     "test",
+			"otel_scope_version":  "1.0.0",
+			"otel_scope_test":     "test",
+		}),
+		labels.FromMap(map[string]string{
+			model.InstanceLabel:   "localhost:8080",
+			model.JobLabel:        "test",
+			model.MetricNameLabel: "counter_test",
+			// Matching scope name and version with scope info
+			"otel_scope_name":    "test",
+			"otel_scope_version": "1.0.0",
+			"otel_scope_test":    "test",
+		}),
+	} {
+		_, err := tr.Append(0, lbls, 1, 1.0)
+		require.NoError(t, err)
+	}
+	assert.NoError(t, tr.Commit())
+	mds = sink.AllMetrics()
+	require.Len(t, mds, 1)
+	rms = mds[0].ResourceMetrics().At(0)
+	ils = rms.ScopeMetrics()
+	require.Equal(t, 1, ils.Len())
+	attr, ok = ils.At(0).Scope().Attributes().Get("test")
+	require.True(t, ok)
+	require.Equal(t, "test", attr.AsString())
+
+	metrics = ils.At(0).Metrics()
+	require.Equal(t, 2, metrics.Len())
+	require.Equal(t, "otel_scope_info", metrics.At(0).Name())
+	require.Equal(t, "counter_test", metrics.At(1).Name())
+}
+
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
 	for _, enableNativeHistograms := range []bool{true, false} {
 		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
