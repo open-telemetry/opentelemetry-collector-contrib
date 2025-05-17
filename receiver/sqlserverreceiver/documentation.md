@@ -401,6 +401,23 @@ Total memory in use.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | “KB” | Sum | Double | Cumulative | false |
 
+### sqlserver.os.wait.duration
+
+Total wait time for this wait type
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| wait.category | Category of the reason for a wait. | Any Str |
+| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str |
+
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
 Number of free list stalls.

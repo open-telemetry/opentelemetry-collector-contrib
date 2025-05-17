@@ -31,6 +31,7 @@ import (
 
 const (
 	computerNameKey  = "computer_name"
+	databaseNameKey  = "database_name"
 	instanceNameKey  = "sql_instance"
 	serverAddressKey = "server.address"
 	serverPortKey    = "server.port"
@@ -105,6 +106,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabasePerfCounterMetrics(ctx)
 	case getSQLServerPropertiesQuery(s.config.InstanceName):
 		err = s.recordDatabaseStatusMetrics(ctx)
+	case getSQLServerWaitStatsQuery(s.config.InstanceName):
+		err = s.recordDatabaseWaitMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -139,7 +142,6 @@ func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
-	const databaseNameKey = "database_name"
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
@@ -525,6 +527,46 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) error {
+	// Constants are the columns for metrics from query
+	const (
+		waitCategory = "wait_category"
+		waitTimeMs   = "wait_time_ms"
+		waitType     = "wait_type"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val any
+	for i, row := range rows {
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
+
+		val, err = retrieveFloat(row, waitTimeMs)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, waitTimeMs))
+		} else {
+			// The value is divided here because it's stored in SQL Server in ms, need to convert to s
+			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row[waitCategory], row[waitType])
+		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

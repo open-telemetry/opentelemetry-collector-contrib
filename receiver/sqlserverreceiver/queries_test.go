@@ -55,6 +55,18 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerPropertiesQuery,
 			expectedQueryValFilename: "propertyQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test wait stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerWaitStatsQuery,
+			expectedQueryValFilename: "waitStatsQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test wait stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerWaitStatsQuery,
+			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
