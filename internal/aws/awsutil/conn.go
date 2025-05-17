@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -51,6 +52,17 @@ const (
 	STSAwsIsoESuffix          = ".cloud.adc-e.uk"   // AWS ISO-E partition
 	STSAwsIsoFSuffix          = ".csp.hci.ic.gov"   // AWS ISO-F partition
 )
+
+// regionToPartitionRegexp defines the regex patterns for matching regions to AWS partitions
+var regionToPartitionRegexp = map[string]*regexp.Regexp{
+	"aws":        regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il)\-\w+\-\d+$`),
+	"aws-cn":     regexp.MustCompile(`^cn\-\w+\-\d+$`),
+	"aws-us-gov": regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
+	"aws-iso":    regexp.MustCompile(`^us\-iso\-\w+\-\d+$`),
+	"aws-iso-b":  regexp.MustCompile(`^us\-isob\-\w+\-\d+$`),
+	"aws-iso-e":  regexp.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
+	"aws-iso-f":  regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
+}
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
@@ -206,44 +218,22 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 }
 
 // getPartition returns AWS Partition for the provided region.
-// AWS SDK v2 provides the GetPartition function to the internal module (https://github.com/aws/aws-sdk-go-v2/blob/main/internal/endpoints/awsrulesfn/partitions.go) and cannot be imported directly.
+// AWS SDK v2 provides the GetPartition function in the internal module
+// (https://github.com/aws/aws-sdk-go-v2/blob/main/internal/endpoints/awsrulesfn/partitions.go)
+// which cannot be imported directly. This implementation mimics that logic using regex matching.
 func getPartition(region string) string {
-	// partitions package to determine the correct partition
 	if region == "" {
 		return "aws" // default partition
 	}
 
-	// Check for China regions
-	if len(region) >= 2 && region[:2] == "cn" {
-		return "aws-cn"
-	}
-
-	// Check for US Gov regions
-	if len(region) >= 3 && region[:3] == "us-" {
-		if len(region) >= 7 && region[:7] == "us-gov-" {
-			return "aws-us-gov"
+	// Try to match region to partition using regex patterns
+	for partition, re := range regionToPartitionRegexp {
+		if re.MatchString(region) {
+			return partition
 		}
 	}
 
-	// Check for AWS ISO regions
-	if len(region) >= 6 && region[:6] == "us-iso" {
-		if len(region) >= 7 && region[:7] == "us-isob" {
-			return "aws-iso-b"
-		}
-		return "aws-iso"
-	}
-
-	// Check for AWS ISO-E regions (European Sovereign Cloud)
-	if len(region) >= 7 && region[:7] == "eu-isoe" {
-		return "aws-iso-e"
-	}
-
-	// Check for AWS ISO-F regions
-	if len(region) >= 7 && region[:7] == "us-isof" {
-		return "aws-iso-f"
-	}
-
-	// Default to standard AWS partition
+	// Default to standard AWS partition if no match found
 	return "aws"
 }
 

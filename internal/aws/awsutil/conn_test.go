@@ -60,22 +60,50 @@ func TestRegionEnv(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test getPartition function
+// Test getPartition function with comprehensive test cases
 func TestGetPartition(t *testing.T) {
 	testCases := []struct {
 		region   string
 		expected string
 		name     string
 	}{
-		{region: "us-east-1", expected: "aws", name: "Standard AWS region"},
-		{region: "cn-north-1", expected: "aws-cn", name: "China region"},
-		{region: "us-gov-west-1", expected: "aws-us-gov", name: "GovCloud region"},
-		{region: "us-iso-east-1", expected: "aws-iso", name: "ISO region"},
-		{region: "us-isob-east-1", expected: "aws-iso-b", name: "ISO-B region"},
-		{region: "eu-isoe-west-1", expected: "aws-iso-e", name: "ISO-E region"},
-		{region: "us-isof-south-1", expected: "aws-iso-f", name: "ISO-F region"},
+		// Standard AWS regions
+		{region: "us-east-1", expected: "aws", name: "Standard AWS region (US East)"},
+		{region: "eu-west-1", expected: "aws", name: "Standard AWS region (EU West)"},
+		{region: "ap-northeast-1", expected: "aws", name: "Standard AWS region (AP Northeast)"},
+		{region: "sa-east-1", expected: "aws", name: "Standard AWS region (SA East)"},
+		{region: "ca-central-1", expected: "aws", name: "Standard AWS region (CA Central)"},
+		{region: "me-south-1", expected: "aws", name: "Standard AWS region (ME South)"},
+		{region: "af-south-1", expected: "aws", name: "Standard AWS region (AF South)"},
+		{region: "il-central-1", expected: "aws", name: "Standard AWS region (IL Central)"},
+
+		// China regions
+		{region: "cn-north-1", expected: "aws-cn", name: "China region (North)"},
+		{region: "cn-northwest-1", expected: "aws-cn", name: "China region (Northwest)"},
+
+		// GovCloud regions
+		{region: "us-gov-west-1", expected: "aws-us-gov", name: "GovCloud region (West)"},
+		{region: "us-gov-east-1", expected: "aws-us-gov", name: "GovCloud region (East)"},
+
+		// ISO regions
+		{region: "us-iso-east-1", expected: "aws-iso", name: "ISO region (East)"},
+		{region: "us-iso-west-1", expected: "aws-iso", name: "ISO region (West)"},
+
+		// ISO-B regions
+		{region: "us-isob-east-1", expected: "aws-iso-b", name: "ISO-B region (East)"},
+
+		// ISO-E regions
+		{region: "eu-isoe-west-1", expected: "aws-iso-e", name: "ISO-E region (West)"},
+
+		// ISO-F regions
+		{region: "us-isof-south-1", expected: "aws-iso-f", name: "ISO-F region (South)"},
+		{region: "us-isof-east-1", expected: "aws-iso-f", name: "ISO-F region (East)"},
+
+		// Edge cases
 		{region: "", expected: "aws", name: "Empty region"},
 		{region: "invalid-region", expected: "aws", name: "Invalid region"},
+		{region: "us-iso", expected: "aws", name: "Partial ISO region name"},
+		{region: "us-isof", expected: "aws", name: "Partial ISO-F region name"},
 	}
 
 	for _, tc := range testCases {
@@ -86,20 +114,42 @@ func TestGetPartition(t *testing.T) {
 	}
 }
 
-// Test getSTSRegionalEndpoint function
+// Test getSTSRegionalEndpoint function with comprehensive test cases
 func TestGetSTSRegionalEndpoint(t *testing.T) {
 	testCases := []struct {
 		region   string
 		expected string
 		name     string
 	}{
-		{region: "us-east-1", expected: STSEndpointPrefix + "us-east-1" + STSEndpointSuffix, name: "Standard AWS endpoint"},
-		{region: "cn-north-1", expected: STSEndpointPrefix + "cn-north-1" + STSAwsCnPartitionIDSuffix, name: "China endpoint"},
-		{region: "us-gov-west-1", expected: STSEndpointPrefix + "us-gov-west-1" + STSEndpointSuffix, name: "GovCloud endpoint"},
-		{region: "us-iso-east-1", expected: STSEndpointPrefix + "us-iso-east-1" + STSAwsIsoSuffix, name: "ISO endpoint"},
-		{region: "us-isob-east-1", expected: STSEndpointPrefix + "us-isob-east-1" + STSAwsIsoBSuffix, name: "ISO-B endpoint"},
-		{region: "eu-isoe-west-1", expected: STSEndpointPrefix + "eu-isoe-west-1" + STSAwsIsoESuffix, name: "ISO-E endpoint"},
-		{region: "us-isof-south-1", expected: STSEndpointPrefix + "us-isof-south-1" + STSAwsIsoFSuffix, name: "ISO-F endpoint"},
+		// Standard AWS regions
+		{region: "us-east-1", expected: STSEndpointPrefix + "us-east-1" + STSEndpointSuffix, name: "Standard AWS endpoint (US East)"},
+		{region: "us-west-2", expected: STSEndpointPrefix + "us-west-2" + STSEndpointSuffix, name: "Standard AWS endpoint (US West)"},
+		{region: "eu-west-1", expected: STSEndpointPrefix + "eu-west-1" + STSEndpointSuffix, name: "Standard AWS endpoint (EU West)"},
+
+		// China regions
+		{region: "cn-north-1", expected: STSEndpointPrefix + "cn-north-1" + STSAwsCnPartitionIDSuffix, name: "China endpoint (North)"},
+		{region: "cn-northwest-1", expected: STSEndpointPrefix + "cn-northwest-1" + STSAwsCnPartitionIDSuffix, name: "China endpoint (Northwest)"},
+
+		// GovCloud regions
+		{region: "us-gov-west-1", expected: STSEndpointPrefix + "us-gov-west-1" + STSEndpointSuffix, name: "GovCloud endpoint (West)"},
+		{region: "us-gov-east-1", expected: STSEndpointPrefix + "us-gov-east-1" + STSEndpointSuffix, name: "GovCloud endpoint (East)"},
+
+		// ISO regions
+		{region: "us-iso-east-1", expected: STSEndpointPrefix + "us-iso-east-1" + STSAwsIsoSuffix, name: "ISO endpoint (East)"},
+		{region: "us-iso-west-1", expected: STSEndpointPrefix + "us-iso-west-1" + STSAwsIsoSuffix, name: "ISO endpoint (West)"},
+
+		// ISO-B regions
+		{region: "us-isob-east-1", expected: STSEndpointPrefix + "us-isob-east-1" + STSAwsIsoBSuffix, name: "ISO-B endpoint (East)"},
+
+		// ISO-E regions
+		{region: "eu-isoe-west-1", expected: STSEndpointPrefix + "eu-isoe-west-1" + STSAwsIsoESuffix, name: "ISO-E endpoint (West)"},
+
+		// ISO-F regions
+		{region: "us-isof-south-1", expected: STSEndpointPrefix + "us-isof-south-1" + STSAwsIsoFSuffix, name: "ISO-F endpoint (South)"},
+		{region: "us-isof-east-1", expected: STSEndpointPrefix + "us-isof-east-1" + STSAwsIsoFSuffix, name: "ISO-F endpoint (East)"},
+
+		// Edge cases
+		{region: "invalid-region", expected: STSEndpointPrefix + "invalid-region" + STSEndpointSuffix, name: "Invalid region endpoint"},
 	}
 
 	for _, tc := range testCases {
