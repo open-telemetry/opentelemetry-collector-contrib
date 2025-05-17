@@ -48,6 +48,7 @@ func TestFactory(t *testing.T) {
 						LookbackTime:        uint(2 * 10),
 						MaxQuerySampleCount: 1000,
 						TopQueryCount:       200,
+						CollectionInterval:  time.Minute,
 					},
 					QuerySample: QuerySample{
 						Enabled:         false,
