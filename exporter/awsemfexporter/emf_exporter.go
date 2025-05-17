@@ -53,7 +53,8 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 	config.logger = set.Logger
 
 	// create AWS session
-	awsConfig, err := awsutil.GetAWSConfig(set.Logger, &config.AWSSessionSettings)
+	ctx := context.TODO()
+	awsConfig, err := awsutil.GetAWSConfig(ctx, set.Logger, &config.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
