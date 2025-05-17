@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -330,6 +331,73 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	sink.ExpectToken(t, append(content, additionalContext...))
 
 	sink.ExpectNoCalls(t)
+}
+
+func TestFileClosing(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	// Test Case 1: File is closed after reading to EOF
+	t.Run("close_at_eof", func(t *testing.T) {
+		// Create and write to a file
+		temp := filetest.OpenTemp(t, tempDir)
+		fileName := temp.Name()
+		filetest.WriteString(t, temp, "testlog1\ntestlog2\n")
+		require.NoError(t, temp.Close())
+
+		// Read the file
+		operator.poll(context.Background())
+		sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
+
+		// Verify the file is closed by attempting to rename it
+		// If the file is still open, this will fail on most operating systems
+		err := os.Rename(fileName, fileName+".moved")
+		require.NoError(t, err, "File should be closed after reading to EOF")
+	})
+
+	// Test Case 2: File is closed when renamed during reading
+	t.Run("close_on_rename", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Moving files while open is unsupported on Windows")
+		}
+
+		// Create and write initial content
+		temp := filetest.OpenTemp(t, tempDir)
+		originalName := temp.Name()
+		filetest.WriteString(t, temp, "testlog1\n")
+		require.NoError(t, temp.Close())
+
+		// Start reading
+		operator.poll(context.Background())
+		sink.ExpectToken(t, []byte("testlog1"))
+
+		// Wait for all goroutines to finish before renaming
+		operator.wg.Wait()
+
+		// Rename the file
+		newName := originalName + ".rotated"
+		err := os.Rename(originalName, newName)
+		require.NoError(t, err, "Should be able to rename file")
+
+		// Write more content to the renamed file
+		rotatedFile, err := os.OpenFile(newName, os.O_APPEND|os.O_WRONLY, 0644)
+		require.NoError(t, err)
+		filetest.WriteString(t, rotatedFile, "testlog2\n")
+		require.NoError(t, rotatedFile.Close())
+
+		// Create new file with same original name
+		newFile := filetest.OpenFile(t, originalName)
+		filetest.WriteString(t, newFile, "testlog3\n")
+		require.NoError(t, newFile.Close())
+
+		// Poll again and verify we can read from both files
+		operator.poll(context.Background())
+		sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog3"))
+	})
 }
 
 func BenchmarkFileRead(b *testing.B) {
