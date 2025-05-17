@@ -253,8 +253,6 @@ go.opentelemetry.io/collector/receiver/receivertest v0.126.0 h1:RMDJHIdrNBwtpRGI
 go.opentelemetry.io/collector/receiver/receivertest v0.126.0/go.mod h1:9TTbqtnyEEfdQ6JM5q82qwD7We56bis8XVeb5M3Ehkw=
 go.opentelemetry.io/collector/receiver/xreceiver v0.126.0 h1:0d5ZNmbww0jWipV7QvWoXBjRbBoFe+07sKKh0Z0xyGc=
 go.opentelemetry.io/collector/receiver/xreceiver v0.126.0/go.mod h1:XS5YuhY+jkhKux95IMMeWxGFkpvF2y2Xila8xoloca8=
-go.opentelemetry.io/collector/semconv v0.126.0 h1:1q1rfOhN9sOcHQomjs9JIqFUweIgp9REUq550R6B7d8=
-go.opentelemetry.io/collector/semconv v0.126.0/go.mod h1:te6VQ4zZJO5Lp8dM2XIhDxDiL45mwX0YAQQWRQ0Qr9U=
 go.opentelemetry.io/collector/service v0.126.0 h1:cRVyHkOROvJ7tu/Un9bfCHWB4yqlKaOtC0s/NOcGGiw=
 go.opentelemetry.io/collector/service v0.126.0/go.mod h1:B4BpEbUrE9drUbpMhxqY94klxKqDJO8pGHtdQkQxDGc=
 go.opentelemetry.io/collector/service/hostcapabilities v0.126.0 h1:6vkGj5e5JE3VMEemKepdT7IOfCVxJocrGvI3YVEJNaA=

@@ -13,7 +13,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 var (
@@ -38,7 +38,7 @@ type GitlabEvent interface {
 func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
-	r.Resource().Attributes().PutStr(semconv.AttributeServiceName, e.Project.PathWithNamespace)
+	r.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
 
 	traceID, err := newTraceID(e.ObjectAttributes.ID, e.ObjectAttributes.FinishedAt)
 	if err != nil {

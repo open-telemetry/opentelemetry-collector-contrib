@@ -58,11 +58,11 @@ of exposed configuration values can be found in [`config.go`](config.go).
 
 ## Tracing Limitations
 
-### Deterministic Trace/SpanIDs and Manual Instrumentation
+### Deterministic Trace/Span IDs and Manual Instrumentation
 
-The GitLab receiver creates deterministic trace/spanIDs for pipelines by using an unique pipeline/jobID and the pipeline's `finished_at` timestamp. This approach ensures that the same pipeline execution always generates the same ID.
+The GitLab receiver creates deterministic trace/span IDs for pipelines by using an unique pipeline/job ID and the pipeline's `finished_at` timestamp. This approach ensures that the same pipeline execution always generates the same ID.
 
-**Limitation**: Manual instrumentation within GitLab pipeline jobs is currently not possible. Since the traceID generation requires the `finished_at` timestamp, which is only available once the pipeline has completed, it's not possible to generate the same traceID within running jobs to correlate manually instrumented spans with the automatically created pipeline spans. More details can be found [here](https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215).
+**Limitation**: Manual instrumentation within GitLab pipeline jobs is currently not possible. Since the trace ID generation requires the `finished_at` timestamp, which is only available once the pipeline has completed, it's not possible to generate the same traceID within running jobs to correlate manually instrumented spans with the automatically created pipeline spans. More details can be found [here](https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215).
 
 This means:
 - The receiver can automatically create traces/spans for GitLab pipelines

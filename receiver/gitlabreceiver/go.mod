@@ -13,7 +13,6 @@ require (
 	go.opentelemetry.io/collector/receiver v1.32.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.126.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.126.0
-	go.opentelemetry.io/collector/semconv v0.126.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -139,7 +138,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.126.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.126.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
-	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
