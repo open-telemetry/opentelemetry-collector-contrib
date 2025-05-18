@@ -33,8 +33,11 @@ import (
 type WatchClient struct {
 	m         sync.RWMutex
 	deleteMut sync.Mutex
-	logger    *zap.Logger
-	kc        kubernetes.Interface
+	// Used to protect informer creation and handler registration/deregistration. Can't be the main mutex, because that
+	// blocks cache updates, which are necessary for handlers to sync.
+	informerMut sync.Mutex
+	logger      *zap.Logger
+	kc          kubernetes.Interface
 
 	// informer providers
 	podInformerProvider        InformerProvider
@@ -195,8 +198,8 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	var err error
-	c.m.Lock()
-	defer c.m.Unlock()
+	c.informerMut.Lock()
+	defer c.informerMut.Unlock()
 
 	// if we return an error, we need to signal any informers we created to stop
 	defer func() {
@@ -300,8 +303,9 @@ func (c *WatchClient) Start() error {
 
 // Stop signals the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
-	c.m.Lock()
-	defer c.m.Unlock()
+	c.informerMut.Lock()
+	defer c.informerMut.Unlock()
+
 	var eventHandlerRemovalErrors []error
 	if c.podHandlerRegistration != nil {
 		if err := c.podInformer.RemoveEventHandler(c.podHandlerRegistration); err != nil {
