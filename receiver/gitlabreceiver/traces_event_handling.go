@@ -28,6 +28,9 @@ const (
 	gitlabEventTimeFormat = "2006-01-02 15:04:05 UTC"
 )
 
+// GitlabEvent abstracts span setup for different GitLab event types (pipeline, stage, job)
+// It enables unified span creation logic while allowing type-specific customization
+// It must be implemented by all GitLab event types (pipeline, stage, job) to create spans
 type GitlabEvent interface {
 	setAttributes(ptrace.Span) error
 	setSpanIDs(ptrace.Span, pcommon.SpanID) error
