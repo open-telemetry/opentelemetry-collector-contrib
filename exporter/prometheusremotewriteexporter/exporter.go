@@ -135,7 +135,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	if err := config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
+	if err = config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
 		return nil, err
 	}
 
