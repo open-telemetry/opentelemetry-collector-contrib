@@ -12,6 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/config"
@@ -226,4 +231,65 @@ func TestExportWithWALEnabled(t *testing.T) {
 	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.
 	err = prwe.Shutdown(context.Background())
 	assert.NoError(t, err)
+}
+
+func TestWAL_Telemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background()))
+	})
+	set := metadatatest.NewSettings(tel)
+
+	cfg := &Config{
+		WAL: &WALConfig{
+			Directory: t.TempDir(),
+		},
+		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		// Do nothing
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prw, err := newPRWExporter(cfg, set)
+	require.NotNil(t, prw)
+	require.NoError(t, err)
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, prw.Shutdown(context.Background()))
+	})
+	wal := prw.wal
+
+	// Create some test data
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+
+	// Test successful WAL write
+	err = prw.handleExport(context.Background(), metrics, nil)
+	require.NoError(t, err)
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Test failed WAL write by causing an out-of-order write error
+	currentIndex := wal.wWALIndex.Load()
+	wal.wWALIndex.Store(currentIndex - 1)
+
+	err = prw.handleExport(context.Background(), metrics, nil)
+	require.Error(t, err)
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 }
