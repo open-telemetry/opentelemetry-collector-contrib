@@ -5,6 +5,7 @@ package gitlabreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +13,6 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	jsoniter "github.com/json-iterator/go"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -260,7 +260,7 @@ func (gtr *gitlabTracesReceiver) failBadReq(ctx context.Context,
 		return
 	}
 
-	jsonResp, marshalErr := jsoniter.Marshal(err.Error())
+	jsonResp, marshalErr := json.Marshal(err.Error())
 	if marshalErr != nil {
 		gtr.logger.Warn("failed to marshall error to json", zap.Error(marshalErr))
 		w.WriteHeader(httpStatusCode)
