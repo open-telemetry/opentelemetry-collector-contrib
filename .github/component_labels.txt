@@ -193,6 +193,7 @@ processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/aerospikereceiver receiver/aerospike
+receiver/apachereceiver receiver/apache
 receiver/apachesparkreceiver receiver/apachespark
 receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
@@ -258,6 +259,7 @@ receiver/mongodbreceiver receiver/mongodb
 receiver/mysqlreceiver receiver/mysql
 receiver/namedpipereceiver receiver/namedpipe
 receiver/netflowreceiver receiver/netflow
+receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
 receiver/ntpreceiver receiver/ntp
 receiver/opencensusreceiver receiver/opencensus
@@ -317,9 +319,7 @@ exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
 exporter/opensearchexporter exporter/opensearch
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
-receiver/apachereceiver receiver/apache
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/carbonreceiver receiver/carbon
-receiver/nginxreceiver receiver/nginx
 receiver/tcplogreceiver receiver/tcplog
 receiver/udplogreceiver receiver/udplog
