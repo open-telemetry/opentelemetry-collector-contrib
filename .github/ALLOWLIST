@@ -36,10 +36,8 @@ exporter/carbonexporter
 exporter/kineticaexporter
 exporter/opensearchexporter
 extension/observer/ecstaskobserver
-receiver/apachereceiver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver
-receiver/nginxreceiver
 receiver/tcplogreceiver
 receiver/udplogreceiver
 

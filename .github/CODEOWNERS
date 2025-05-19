@@ -212,6 +212,7 @@ processor/tailsamplingprocessor/                                 @open-telemetry
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
+receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @colelaven
 receiver/apachesparkreceiver/                                    @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @mrsillydog
 receiver/awscloudwatchreceiver/                                  @open-telemetry/collector-contrib-approvers @schmikei
 receiver/awscontainerinsightreceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
@@ -277,6 +278,7 @@ receiver/mongodbreceiver/                                        @open-telemetry
 receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers @antonblock
 receiver/namedpipereceiver/                                      @open-telemetry/collector-contrib-approvers @sinkingpoint
 receiver/netflowreceiver/                                        @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
+receiver/nginxreceiver/                                          @open-telemetry/collector-contrib-approvers @colelaven
 receiver/nsxtreceiver/                                           @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/ntpreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme
 receiver/opencensusreceiver/                                     @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -358,10 +360,8 @@ exporter/carbonexporter/                                         @open-telemetry
 exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers
 exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
-receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers
 receiver/awscloudwatchmetricsreceiver/                           @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
-receiver/nginxreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/tcplogreceiver/                                         @open-telemetry/collector-contrib-approvers
 receiver/udplogreceiver/                                         @open-telemetry/collector-contrib-approvers
 
