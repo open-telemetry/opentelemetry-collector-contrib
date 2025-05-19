@@ -44,11 +44,11 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
@@ -67,7 +67,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.126.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.116.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.126.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
