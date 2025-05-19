@@ -15,6 +15,10 @@ import (
 )
 
 func TestScrape(t *testing.T) {
+	if !supportedOS {
+                t.Skip()
+        }
+	
 	ctx := context.Background()
 
 	s := newNfsScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &Config{
