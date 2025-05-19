@@ -116,6 +116,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
@@ -484,6 +487,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.lock.wait.count":
+					assert.False(t, validatedMetrics["sqlserver.lock.wait.count"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.count")
+					validatedMetrics["sqlserver.lock.wait.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative count of lock waits that occurred.", ms.At(i).Description())
+					assert.Equal(t, "{wait}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "sqlserver.lock.wait.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.wait.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.rate")
 					validatedMetrics["sqlserver.lock.wait.rate"] = true
