@@ -107,7 +107,7 @@ Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
 
-Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
+Maintainers ([@open-telemetry/collector-contrib-maintainers](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainers)):
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
