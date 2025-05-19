@@ -1,12 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
 
-go 1.23.0
+go 1.23.6
+
+toolchain go1.23.8
 
 require (
 	github.com/apache/pulsar-client-go v0.15.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.126.0
 	github.com/stretchr/testify v1.10.0
