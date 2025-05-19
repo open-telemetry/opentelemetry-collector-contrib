@@ -33,6 +33,7 @@ type TopQueryCollection struct {
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	metadata.LogsBuilderConfig     `mapstructure:",squash"`
 	// EnableTopQueryCollection enables the collection of the top queries by the execution time.
 	// It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval.
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence

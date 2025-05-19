@@ -16,14 +16,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
 )
 
-func skipTestOnUnsupportedOS(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("skipping test on %v", runtime.GOOS)
-	}
-}
-
 func TestScrape(t *testing.T) {
-	skipTestOnUnsupportedOS(t)
+	if !supportedOS {
+                t.Skip()
+        }
 
 	type testCase struct {
 		name		string
