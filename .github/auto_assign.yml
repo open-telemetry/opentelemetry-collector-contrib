@@ -12,6 +12,7 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - ArthurSens
+    - braydonk
     - ChrsMark
     - crobert-1
     # - dashpole on leave
