@@ -8,7 +8,7 @@
 
 // source: https://github.com/DataDog/datadog-agent/blob/main/pkg/collector/python/datadog_agent.go
 
-package oracledbreceiver
+package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 
 import (
 	"sync"

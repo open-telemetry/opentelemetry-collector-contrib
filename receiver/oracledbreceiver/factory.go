@@ -11,12 +11,14 @@ import (
 	"strconv"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	go_ora "github.com/sijms/go-ora/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
@@ -41,6 +43,15 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		TopQueryCollection: TopQueryCollection{
+			Enabled:             false,
+			MaxQuerySampleCount: 1000,
+			TopQueryCount:       200,
+			QueryCacheSize:      5000,
+		},
+		QuerySample: QuerySample{
+			Enabled: false,
+		},
 	}
 }
 
@@ -87,19 +98,36 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 	) (receiver.Logs, error) {
 		sqlCfg := cfg.(*Config)
 
+		if !sqlCfg.TopQueryCollection.Enabled && !sqlCfg.QuerySample.Enabled {
+			settings.Logger.Debug("TopQueryCollection and QuerySample are not enabled for Oracle receiver.Skipping Log scrapper")
+			return nil, nil
+		}
+
 		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
 		if err != nil {
 			return nil, err
 		}
 
-		mp, err := newLogsScraper(sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
-			return sqlOpenerFunc(getDataSource(*sqlCfg))
-		}, clientProviderFunc, instanceName)
+		hostName, hostNameErr := getHostName(getDataSource(*sqlCfg))
+		if hostNameErr != nil {
+			return nil, hostNameErr
+		}
 
+		cacheSize := sqlCfg.QueryCacheSize
+		metricCache, err := lru.New[string, map[string]int64](cacheSize)
 		if err != nil {
+			settings.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
 			return nil, err
 		}
 
+		mp, err := newLogsScraper(sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
+			return sqlOpenerFunc(getDataSource(*sqlCfg))
+		}, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, sqlCfg.QuerySample, hostName)
+		if err != nil {
+			return nil, err
+		}
+		// adding a logs scraper is still not properly implemented in the helper, so we need to c&p some of that code here
+		// to make a logs scraper work
 		f := scraper.NewFactory(metadata.Type, nil,
 			scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 				return mp, nil
@@ -135,4 +163,12 @@ func getInstanceName(datasource string) (string, error) {
 
 	instanceName := datasourceURL.Host + datasourceURL.Path
 	return instanceName, nil
+}
+
+func getHostName(datasource string) (string, error) {
+	datasourceURL, err := url.Parse(datasource)
+	if err != nil {
+		return "", err
+	}
+	return datasourceURL.Host, nil
 }

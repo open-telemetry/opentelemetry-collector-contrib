@@ -30,6 +30,20 @@ func TestNewFactory(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
+
+	config := factory.CreateDefaultConfig().(*Config)
+	config.TopQueryCollection.Enabled = true
+	_, logsErr := factory.CreateLogs(
+		context.Background(),
+		receiver.Settings{
+			ID:                component.NewID(metadata.Type),
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		},
+		config,
+
+		consumertest.NewNop(),
+	)
+	require.NoError(t, logsErr)
 }
 
 func TestGetInstanceName(t *testing.T) {
