@@ -54,6 +54,7 @@ func TestFactory(t *testing.T) {
 						MaxRowsPerQuery: 100,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

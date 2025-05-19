@@ -88,8 +88,8 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
@@ -106,9 +106,9 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributes.ServerAddress.Enabled = true
-	cfg.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetrics(cfg, true)
@@ -162,8 +162,8 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 
 	assert.NoError(t, cfg.Validate())
 
@@ -193,7 +193,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 	cfg.TopQueryCollection.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -348,7 +348,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 	cfg.TopQueryCollection.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -492,7 +492,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			cfg.Password = "password"
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
-			cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetrics(cfg, false)
