@@ -78,6 +78,13 @@ func defaultConnectingHandler(connectionCallbacks types.ConnectionCallbacks) fun
 	}
 }
 
+func getAgentLogs(t *testing.T, storageDir string) string {
+	agentLogFile := filepath.Join(storageDir, "agent.log")
+	agentLog, err := os.ReadFile(agentLogFile)
+	require.NoError(t, err)
+	return string(agentLog)
+}
+
 // onConnectingFuncFactory is a function that will be given to types.ConnectionCallbacks as
 // OnConnectingFunc. This allows changing the ConnectionCallbacks both from the newOpAMPServer
 // caller and inside of newOpAMP Server, and for custom implementations of the value for `Accept`
@@ -261,6 +268,53 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 		return false
 	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+}
+
+func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
+	connected := atomic.Bool{}
+	server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(_ context.Context, _ types.Connection) {
+			connected.Store(true)
+		},
+	})
+
+	cfg, _, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	collectorConfigDir := t.TempDir()
+	cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
+	t.Cleanup(func() { cfgFile.Close() })
+	require.NoError(t, err)
+
+	_, err = cfgFile.Write(cfg.Bytes())
+	require.NoError(t, err)
+
+	storageDir := t.TempDir()
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":          server.addr,
+		"storage_dir":  storageDir,
+		"local_config": cfgFile.Name(),
+	})
+	t.Cleanup(s.Shutdown)
+	require.NoError(t, s.Start())
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	require.EventuallyWithTf(t, func(c *assert.CollectT) {
+		require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
 
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
