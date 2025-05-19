@@ -7,7 +7,7 @@ change_type: bug_fix
 component: kafkareceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: enforce a backoff mechanism on exporterhelper.ErrQueueIsFull error
+note: enforce a backoff mechanism on non-permanent errors, such as when the queue is full
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39580]
