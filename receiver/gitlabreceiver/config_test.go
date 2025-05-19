@@ -35,12 +35,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
-					defaultGitlabInstanceHeader: "https://gitlab.com",
+					defaultGitLabInstanceHeader: "https://gitlab.com",
 				},
 				Fixed: map[string]string{
-					defaultGitlabWebhookUUIDHeader: "",
-					defaultGitlabEventHeader:       "Pipeline Hook",
-					defaultGitlabEventUUIDHeader:   "",
+					defaultGitLabWebhookUUIDHeader: "",
+					defaultGitLabEventHeader:       "Pipeline Hook",
+					defaultGitLabEventUUIDHeader:   "",
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
@@ -80,12 +80,12 @@ func TestLoadConfig(t *testing.T) {
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
-					defaultGitlabInstanceHeader: "https://gitlab.com",
+					defaultGitLabInstanceHeader: "https://gitlab.com",
 				},
 				Fixed: map[string]string{
-					defaultGitlabWebhookUUIDHeader: "",
-					defaultGitlabEventHeader:       "Pipeline Hook",
-					defaultGitlabEventUUIDHeader:   "",
+					defaultGitLabWebhookUUIDHeader: "",
+					defaultGitLabEventHeader:       "Pipeline Hook",
+					defaultGitLabEventUUIDHeader:   "",
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
@@ -107,12 +107,12 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig.WebHook.GitlabHeaders = GitlabHeaders{
 		Customizable: map[string]string{
 			defaultUserAgentHeader:      "GitLab/1.2.3-custom-version",
-			defaultGitlabInstanceHeader: "https://gitlab.self-hosted.xyz",
+			defaultGitLabInstanceHeader: "https://gitlab.self-hosted.xyz",
 		},
 		Fixed: map[string]string{
-			defaultGitlabWebhookUUIDHeader: "",
-			defaultGitlabEventHeader:       "Pipeline Hook",
-			defaultGitlabEventUUIDHeader:   "",
+			defaultGitLabWebhookUUIDHeader: "",
+			defaultGitLabEventHeader:       "Pipeline Hook",
+			defaultGitLabEventUUIDHeader:   "",
 			defaultIdempotencyKeyHeader:    "",
 		},
 	}

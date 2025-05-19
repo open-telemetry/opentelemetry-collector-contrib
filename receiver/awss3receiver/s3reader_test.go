@@ -86,7 +86,7 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			reader := s3Reader{
+			reader := s3TimeBasedReader{
 				logger:      zap.NewNop(),
 				s3Prefix:    test.args.s3Prefix,
 				s3Partition: test.args.s3Partition,
@@ -136,7 +136,7 @@ func (m *mockListObjectsV2Pager) NextPage(_ context.Context, _ ...func(*s3.Optio
 func Test_readTelemetryForTime(t *testing.T) {
 	testKey1 := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
 	testKey2 := "year=2021/month=02/day=01/hour=17/minute=32/traces_2"
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
@@ -194,7 +194,7 @@ func Test_readTelemetryForTime(t *testing.T) {
 func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
 	testError := errors.New("test error")
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
@@ -237,7 +237,7 @@ func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 
 func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
@@ -273,7 +273,7 @@ func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
 	testError := errors.New("test page error")
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
@@ -334,7 +334,7 @@ func (m *mockNotifier) SendStatus(_ context.Context, notification statusNotifica
 }
 
 func Test_readAll(t *testing.T) {
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
@@ -382,7 +382,7 @@ func Test_readAll(t *testing.T) {
 
 func Test_readAll_StatusMessages(t *testing.T) {
 	notifier := mockNotifier{}
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
@@ -452,7 +452,7 @@ func Test_readAll_StatusMessages(t *testing.T) {
 
 func Test_readAll_ContextDone(t *testing.T) {
 	notifier := mockNotifier{}
-	reader := s3Reader{
+	reader := s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)

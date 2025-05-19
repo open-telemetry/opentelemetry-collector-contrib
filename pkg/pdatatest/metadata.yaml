@@ -2,4 +2,5 @@ status:
   disable_codecov_badge: true
   class: pkg
   codeowners:
-    active: [djaglowski, fatsheep9146]
+    active: [fatsheep9146]
+    emeritus: [djaglowski]

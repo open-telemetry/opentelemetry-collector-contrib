@@ -3,10 +3,11 @@ type: apache
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    emeritus: [djaglowski]
+    seeking_new: true
 
 resource_attributes:
     apache.server.name:

@@ -5,11 +5,9 @@ cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
-confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
-connector/countconnector connector/count
 connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
 connector/failoverconnector connector/failover
@@ -195,7 +193,6 @@ processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/aerospikereceiver receiver/aerospike
-receiver/apachereceiver receiver/apache
 receiver/apachesparkreceiver receiver/apachespark
 receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
@@ -261,7 +258,6 @@ receiver/mongodbreceiver receiver/mongodb
 receiver/mysqlreceiver receiver/mysql
 receiver/namedpipereceiver receiver/namedpipe
 receiver/netflowreceiver receiver/netflow
-receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
 receiver/ntpreceiver receiver/ntp
 receiver/opencensusreceiver receiver/opencensus
@@ -299,9 +295,7 @@ receiver/stefreceiver receiver/stef
 receiver/syslogreceiver receiver/syslog
 receiver/systemdreceiver receiver/systemd
 receiver/tcpcheckreceiver receiver/tcpcheck
-receiver/tcplogreceiver receiver/tcplog
 receiver/tlscheckreceiver receiver/tlscheck
-receiver/udplogreceiver receiver/udplog
 receiver/vcenterreceiver receiver/vcenter
 receiver/wavefrontreceiver receiver/wavefront
 receiver/webhookeventreceiver receiver/webhookevent
@@ -317,9 +311,15 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+confmap/provider/aesprovider confmap/provider/aesprovider
+connector/countconnector connector/count
 exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
 exporter/opensearchexporter exporter/opensearch
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
+receiver/apachereceiver receiver/apache
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/carbonreceiver receiver/carbon
+receiver/nginxreceiver receiver/nginx
+receiver/tcplogreceiver receiver/tcplog
+receiver/udplogreceiver receiver/udplog
