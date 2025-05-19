@@ -20,7 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
@@ -172,7 +171,7 @@ func CreateStaticCredentialProvider(accessKey, secretKey, sessionToken string) a
 	return credentials.NewStaticCredentialsProvider(accessKey, secretKey, sessionToken)
 }
 
-func CreateAssumeRoleCredentialProvider(ctx context.Context, cfg aws.Config, roleARN, externalID string) (aws.CredentialsProvider, error) {
+func CreateAssumeRoleCredentialProvider(cfg aws.Config, roleARN, externalID string) (aws.CredentialsProvider, error) {
 	stsClient := sts.NewFromConfig(cfg)
 
 	options := func(o *stscreds.AssumeRoleOptions) {

@@ -21,7 +21,7 @@ type mockConn struct {
 	mock.Mock
 }
 
-func (c *mockConn) getEC2Region(ctx context.Context, cfg aws.Config) (string, error) {
+func (c *mockConn) getEC2Region(_ context.Context, _ aws.Config) (string, error) {
 	args := c.Called(nil)
 	errorStr := args.String(0)
 	var err error
@@ -43,7 +43,7 @@ func TestEC2Session(t *testing.T) {
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 
 	// In SDK v2, we need to check Region field directly
-	assert.Equal(t, "", cfg.Region, "Region value should be empty when getEC2Region returns error")
+	assert.Empty(t, cfg.Region, "Region value should be empty when getEC2Region returns error")
 	assert.Error(t, err)
 }
 
@@ -169,7 +169,7 @@ func TestCreateStaticCredentialProvider(t *testing.T) {
 // Test assume role credential provider
 func TestCreateAssumeRoleCredentialProvider(t *testing.T) {
 	cfg := aws.Config{}
-	provider, err := CreateAssumeRoleCredentialProvider(context.Background(), cfg, "arn:aws:iam::123456789012:role/test-role", "")
+	provider, err := CreateAssumeRoleCredentialProvider(cfg, "arn:aws:iam::123456789012:role/test-role", "")
 	assert.NoError(t, err, "Should not return error")
 	assert.NotNil(t, provider, "Credential provider should not be nil")
 }
@@ -178,7 +178,7 @@ func TestCreateAssumeRoleCredentialProvider(t *testing.T) {
 func TestCreateAssumeRoleCredentialProviderWithExternalID(t *testing.T) {
 	cfg := aws.Config{}
 	externalID := "external-id-123"
-	provider, err := CreateAssumeRoleCredentialProvider(context.Background(), cfg, "arn:aws:iam::123456789012:role/test-role", externalID)
+	provider, err := CreateAssumeRoleCredentialProvider(cfg, "arn:aws:iam::123456789012:role/test-role", externalID)
 	assert.NoError(t, err, "Should not return error")
 	assert.NotNil(t, provider, "Credential provider should not be nil")
 }
