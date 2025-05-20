@@ -31,11 +31,11 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.27.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.27.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.1
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
@@ -358,7 +358,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/prometheus/alertmanager v0.27.0 // indirect
+	github.com/prometheus/alertmanager v0.27.1 // indirect
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
