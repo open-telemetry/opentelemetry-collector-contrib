@@ -76,13 +76,7 @@ type postgreSQLClient struct {
 
 // explainQuery implements client.
 func (c *postgreSQLClient) explainQuery(query string, queryID string, logger *zap.Logger) (string, error) {
-	_, err := c.client.Exec("/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;")
-	if err != nil {
-		logger.Error("failed to set plan cache mode", zap.Error(err))
-		return "", err
-	}
-
-	normalizedqueryID := strings.ReplaceAll(queryID, "-", "_")
+	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 	var queryBuilder strings.Builder
 	var nulls []string
 	counter := 1
@@ -99,20 +93,19 @@ func (c *postgreSQLClient) explainQuery(query string, queryID string, logger *za
 
 	preparedQuery := queryBuilder.String()
 
-	_, err = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ PREPARE otel_%s AS %s", normalizedqueryID, preparedQuery))
-	if err != nil {
-		logger.Error("failed to create prepare statement", zap.Error(err), zap.String("query", preparedQuery))
-		return "", err
-	}
 	//nolint:errcheck
-	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedqueryID))
+	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 
 	// if there is no parameter needed, we can not put an empty bracket
 	nullsString := ""
 	if len(nulls) > 0 {
 		nullsString = "(" + strings.Join(nulls, ", ") + ")"
 	}
-	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, fmt.Sprintf("/* otel-collector-ignore */ EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s", normalizedqueryID, nullsString), logger, sqlquery.TelemetryConfig{})
+	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
+	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, preparedQuery)
+	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
 
 	result, err := wrappedDb.QueryRows(context.Background())
 	if err != nil {
