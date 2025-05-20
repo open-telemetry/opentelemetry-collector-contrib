@@ -198,6 +198,7 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
+internal/gopsutilenv
 internal/kubelet
 internal/sqlquery
 internal/tools

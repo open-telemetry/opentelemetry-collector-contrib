@@ -43,7 +43,7 @@ func TestErrorsInStart(t *testing.T) {
 }
 
 func TestScraperLoop(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.CollectionInterval = 100 * time.Millisecond
 
 	client := make(mockClient)
