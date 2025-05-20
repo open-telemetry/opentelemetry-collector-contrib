@@ -43,6 +43,7 @@ type MetricsConfig struct {
 	SqlserverDeadlockRate                       MetricConfig `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverIndexSearchRate                    MetricConfig `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverLockTimeoutRate                    MetricConfig `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                      MetricConfig `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
 	SqlserverLoginRate                          MetricConfig `mapstructure:"sqlserver.login.rate"`
@@ -59,6 +60,7 @@ type MetricsConfig struct {
 	SqlserverPageSplitRate                      MetricConfig `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverProcessesBlocked                   MetricConfig `mapstructure:"sqlserver.processes.blocked"`
 	SqlserverReplicaDataRate                    MetricConfig `mapstructure:"sqlserver.replica.data.rate"`
+	SqlserverResourcePoolDiskOperations         MetricConfig `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
 	SqlserverTableCount                         MetricConfig `mapstructure:"sqlserver.table.count"`
@@ -122,6 +124,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockTimeoutRate: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverLockWaitCount: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverLockWaitRate: MetricConfig{
 			Enabled: true,
 		},
@@ -170,6 +175,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverReplicaDataRate: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverResourcePoolDiskOperations: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverResourcePoolDiskThrottledReadRate: MetricConfig{
 			Enabled: false,
 		},
@@ -215,6 +223,38 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for sqlserver events.
+type EventsConfig struct {
+	DbServerTopQuery EventConfig `mapstructure:"db.server.top_query"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerTopQuery: EventConfig{
+			Enabled: true,
+		},
+	}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -225,6 +265,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -243,6 +290,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
+	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
 	ServerAddress         ResourceAttributeConfig `mapstructure:"server.address"`
 	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
 	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
@@ -252,6 +300,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		ServerAddress: ResourceAttributeConfig{
 			Enabled: false,
 		},
@@ -279,6 +330,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for sqlserver logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

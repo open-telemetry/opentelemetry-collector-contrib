@@ -9,11 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v72/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -315,7 +316,7 @@ func (gtr *githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(semconv.AttributeCicdPipelineTaskName, name)
+	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(step.GetStartedAt().Time))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(step.GetCompletedAt().Time))
@@ -385,13 +386,25 @@ func (gtr *githubTracesReceiver) createJobQueueSpan(
 
 	span.SetSpanID(spanID)
 
-	time := event.GetWorkflowJob().GetStartedAt().Sub(event.GetWorkflowJob().GetCreatedAt().Time)
+	created := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time)
+	started := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time)
+	duration := event.WorkflowJob.GetStartedAt().Sub(event.GetWorkflowJob().GetCreatedAt().Time)
+
+	span.SetStartTimestamp(created)
+	span.SetEndTimestamp(started)
+
+	// GitHub sometimes reports the createdAt value as being a second after the
+	// startedAt value which results in unreal times in duration. To work around
+	// this we set the duration to 0 and the start/end spans to the started
+	// time in that event. Otherwise we calculate the time properly and set the
+	// span start time as the created time.
+	if created.AsTime().After(started.AsTime()) {
+		duration = time.Duration(0)
+		span.SetStartTimestamp(started)
+	}
 
 	attrs := span.Attributes()
-	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(time.Nanoseconds()))
-
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time))
+	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(duration.Nanoseconds()))
 
 	return spanID, nil
 }

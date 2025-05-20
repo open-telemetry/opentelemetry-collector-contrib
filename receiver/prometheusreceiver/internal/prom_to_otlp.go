@@ -10,8 +10,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
-	oldconventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 const removeOldSemconvFeatureGateID = "receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
@@ -51,20 +50,20 @@ func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) 
 	}
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventions.AttributeServiceName, job)
+	attrs.PutStr(string(conventions.ServiceNameKey), job)
 	if isDiscernibleHost(host) {
 		if !removeOldSemconvFeatureGate.IsEnabled() {
-			attrs.PutStr(oldconventions.AttributeNetHostName, host)
+			attrs.PutStr(string(conventions.NetHostNameKey), host)
 		}
-		attrs.PutStr(conventions.AttributeServerAddress, host)
+		attrs.PutStr(string(conventions.ServerAddressKey), host)
 	}
-	attrs.PutStr(conventions.AttributeServiceInstanceID, instance)
+	attrs.PutStr(string(conventions.ServiceInstanceIDKey), instance)
 	if !removeOldSemconvFeatureGate.IsEnabled() {
-		attrs.PutStr(conventions.AttributeNetHostPort, port)
-		attrs.PutStr(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+		attrs.PutStr(string(conventions.NetHostPortKey), port)
+		attrs.PutStr(string(conventions.HTTPSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
 	}
-	attrs.PutStr(conventions.AttributeServerPort, port)
-	attrs.PutStr(conventions.AttributeURLScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+	attrs.PutStr(string(conventions.ServerPortKey), port)
+	attrs.PutStr(string(conventions.URLSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
@@ -75,14 +74,14 @@ func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) 
 // through the kubernetes implementation of service discovery to opentelemetry
 // resource attribute keys.
 var kubernetesDiscoveryToResourceAttributes = map[string]string{
-	"__meta_kubernetes_pod_name":           conventions.AttributeK8SPodName,
-	"__meta_kubernetes_pod_uid":            conventions.AttributeK8SPodUID,
-	"__meta_kubernetes_pod_container_name": conventions.AttributeK8SContainerName,
-	"__meta_kubernetes_namespace":          conventions.AttributeK8SNamespaceName,
+	"__meta_kubernetes_pod_name":           string(conventions.K8SPodNameKey),
+	"__meta_kubernetes_pod_uid":            string(conventions.K8SPodUIDKey),
+	"__meta_kubernetes_pod_container_name": string(conventions.K8SContainerNameKey),
+	"__meta_kubernetes_namespace":          string(conventions.K8SNamespaceNameKey),
 	// Only one of the node name service discovery labels will be present
-	"__meta_kubernetes_pod_node_name":      conventions.AttributeK8SNodeName,
-	"__meta_kubernetes_node_name":          conventions.AttributeK8SNodeName,
-	"__meta_kubernetes_endpoint_node_name": conventions.AttributeK8SNodeName,
+	"__meta_kubernetes_pod_node_name":      string(conventions.K8SNodeNameKey),
+	"__meta_kubernetes_node_name":          string(conventions.K8SNodeNameKey),
+	"__meta_kubernetes_endpoint_node_name": string(conventions.K8SNodeNameKey),
 }
 
 // addKubernetesResource adds resource information detected by prometheus'
@@ -98,15 +97,15 @@ func addKubernetesResource(attrs pcommon.Map, serviceDiscoveryLabels labels.Labe
 	if controllerKind != "" && controllerName != "" {
 		switch controllerKind {
 		case "ReplicaSet":
-			attrs.PutStr(conventions.AttributeK8SReplicaSetName, controllerName)
+			attrs.PutStr(string(conventions.K8SReplicaSetNameKey), controllerName)
 		case "DaemonSet":
-			attrs.PutStr(conventions.AttributeK8SDaemonSetName, controllerName)
+			attrs.PutStr(string(conventions.K8SDaemonSetNameKey), controllerName)
 		case "StatefulSet":
-			attrs.PutStr(conventions.AttributeK8SStatefulSetName, controllerName)
+			attrs.PutStr(string(conventions.K8SStatefulSetNameKey), controllerName)
 		case "Job":
-			attrs.PutStr(conventions.AttributeK8SJobName, controllerName)
+			attrs.PutStr(string(conventions.K8SJobNameKey), controllerName)
 		case "CronJob":
-			attrs.PutStr(conventions.AttributeK8SCronJobName, controllerName)
+			attrs.PutStr(string(conventions.K8SCronJobNameKey), controllerName)
 		}
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 )
 
 type batchTimeSeriesState struct {
@@ -112,6 +113,16 @@ func convertMetadataToRequest(m []prompb.MetricMetadata) *prompb.WriteRequest {
 }
 
 func orderBySampleTimestamp(tsArray []prompb.TimeSeries) []prompb.TimeSeries {
+	for i := range tsArray {
+		sL := tsArray[i].Samples
+		sort.Slice(sL, func(i, j int) bool {
+			return sL[i].Timestamp < sL[j].Timestamp
+		})
+	}
+	return tsArray
+}
+
+func orderBySampleTimestampV2(tsArray []writev2.TimeSeries) []writev2.TimeSeries {
 	for i := range tsArray {
 		sL := tsArray[i].Samples
 		sort.Slice(sL, func(i, j int) bool {
