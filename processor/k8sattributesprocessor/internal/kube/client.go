@@ -760,9 +760,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageTag {
 					container.ImageTag = imageRef.Tag
 				}
-				serviceVersion, err := parseServiceVersionFromImage(spec.Image)
-				if err == nil {
-					if c.Rules.ServiceVersion {
+				if c.Rules.ServiceVersion {
+					serviceVersion, err := parseServiceVersionFromImage(spec.Image)
+					if err == nil {
 						container.ServiceVersion = serviceVersion
 					}
 				}
@@ -1115,7 +1115,6 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
-		rules.ServiceName ||
 		rules.ServiceVersion ||
 		rules.ServiceInstanceID
 }
