@@ -3,7 +3,7 @@ type: tcplog
 status:
   class: receiver
   stability:
-    unmaintained: [logs]
+    alpha: [logs]
   distributions: [contrib]
   codeowners:
     active: [VihasMakwana]
