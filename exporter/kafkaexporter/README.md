@@ -30,12 +30,15 @@ The following settings can be optionally configured:
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `metrics`
   - `topic` (default = otlp\_metrics): The name of the Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for metrics. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `traces`
   - `topic` (default = otlp\_spans): The name of the Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `topic` (Deprecated in v0.124.0: use `logs::topic`, `metrics::topic`, and `traces::topic`) If specified, this is used as the default topic, but will be overridden by signal-specific configuration. See [Destination Topic](#destination-topic) below for more details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details. 
 - `encoding` (Deprecated in v0.124.0: use `logs::encoding`, `metrics::encoding`, and `traces::encoding`) If specified, this is used as the default encoding, but will be overridden by signal-specific configuration. See [Supported encodings](#supported-encodings) below for more details.
