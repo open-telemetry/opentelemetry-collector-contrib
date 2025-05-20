@@ -18,6 +18,8 @@ exporter/opencensusexporter
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
+internal/exp/metrics
+processor/deltatocumulativeprocessor
 receiver/prometheusreceiver
 exporter/prometheusexporter
 internal/splunk
@@ -36,7 +38,6 @@ exporter/zipkinexporter
 extension/storage
 pkg/stanza
 receiver/carbonreceiver
-internal/exp/metrics
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/sapmreceiver
@@ -208,7 +209,6 @@ processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/datadogsemanticsprocessor
-processor/deltatocumulativeprocessor
 processor/deltatorateprocessor
 processor/dnslookupprocessor
 processor/filterprocessor
