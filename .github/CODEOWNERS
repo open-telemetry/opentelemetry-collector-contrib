@@ -164,7 +164,7 @@ pkg/pdatatest/                                                   @open-telemetry
 pkg/pdatautil/                                                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
-pkg/stanza/                                                      @open-telemetry/collector-contrib-approvers
+pkg/stanza/                                                      @open-telemetry/collector-contrib-approvers @andrzej-stencel
 pkg/stanza/fileconsumer/                                         @open-telemetry/collector-contrib-approvers @andrzej-stencel
 pkg/status/                                                      @open-telemetry/collector-contrib-approvers @mwear
 pkg/translator/azure/                                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
