@@ -3,7 +3,103 @@ all_set:
   metrics:
     system.nfs.net.count:
       enabled: true
+    system.nfs.net.tcp.connection.count:
+      enabled: true
+    system.nfs.net.tcp.count:
+      enabled: true
+    system.nfs.net.udp.count:
+      enabled: true
+    system.nfs.procedure.count:
+      enabled: true
+    system.nfs.rpc.authrefresh.count:
+      enabled: true
+    system.nfs.rpc.count:
+      enabled: true
+    system.nfs.rpc.retransmit.count:
+      enabled: true
+    system.nfsd.fh.stale.count:
+      enabled: true
+    system.nfsd.io.read.count:
+      enabled: true
+    system.nfsd.io.write.count:
+      enabled: true
+    system.nfsd.net.count:
+      enabled: true
+    system.nfsd.net.tcp.connection.count:
+      enabled: true
+    system.nfsd.net.tcp.count:
+      enabled: true
+    system.nfsd.net.udp.count:
+      enabled: true
+    system.nfsd.procedure.count:
+      enabled: true
+    system.nfsd.repcache.hits:
+      enabled: true
+    system.nfsd.repcache.misses:
+      enabled: true
+    system.nfsd.repcache.nocache:
+      enabled: true
+    system.nfsd.rpc.bad.count:
+      enabled: true
+    system.nfsd.rpc.badauth.count:
+      enabled: true
+    system.nfsd.rpc.badclient.count:
+      enabled: true
+    system.nfsd.rpc.badfmt.count:
+      enabled: true
+    system.nfsd.rpc.count:
+      enabled: true
+    system.nfsd.thread.count:
+      enabled: true
 none_set:
   metrics:
     system.nfs.net.count:
+      enabled: false
+    system.nfs.net.tcp.connection.count:
+      enabled: false
+    system.nfs.net.tcp.count:
+      enabled: false
+    system.nfs.net.udp.count:
+      enabled: false
+    system.nfs.procedure.count:
+      enabled: false
+    system.nfs.rpc.authrefresh.count:
+      enabled: false
+    system.nfs.rpc.count:
+      enabled: false
+    system.nfs.rpc.retransmit.count:
+      enabled: false
+    system.nfsd.fh.stale.count:
+      enabled: false
+    system.nfsd.io.read.count:
+      enabled: false
+    system.nfsd.io.write.count:
+      enabled: false
+    system.nfsd.net.count:
+      enabled: false
+    system.nfsd.net.tcp.connection.count:
+      enabled: false
+    system.nfsd.net.tcp.count:
+      enabled: false
+    system.nfsd.net.udp.count:
+      enabled: false
+    system.nfsd.procedure.count:
+      enabled: false
+    system.nfsd.repcache.hits:
+      enabled: false
+    system.nfsd.repcache.misses:
+      enabled: false
+    system.nfsd.repcache.nocache:
+      enabled: false
+    system.nfsd.rpc.bad.count:
+      enabled: false
+    system.nfsd.rpc.badauth.count:
+      enabled: false
+    system.nfsd.rpc.badclient.count:
+      enabled: false
+    system.nfsd.rpc.badfmt.count:
+      enabled: false
+    system.nfsd.rpc.count:
+      enabled: false
+    system.nfsd.thread.count:
       enabled: false

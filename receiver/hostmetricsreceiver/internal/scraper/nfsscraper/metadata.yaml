@@ -10,6 +10,16 @@ status:
 
 sem_conv_version: 1.9.0
 
+attributes:
+  rpc.onc.version:
+    enabled: true
+    description: ONC/Sun RPC program version
+    type: string
+  rpc.onc.procedure.name:
+    enabled: true
+    description: ONC/Sun RPC procedure name
+    type: string
+
 metrics:
   system.nfs.net.count:
     enabled: true

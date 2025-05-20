@@ -27,12 +27,108 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for nfs metrics.
 type MetricsConfig struct {
-	SystemNfsNetCount MetricConfig `mapstructure:"system.nfs.net.count"`
+	SystemNfsNetCount               MetricConfig `mapstructure:"system.nfs.net.count"`
+	SystemNfsNetTCPConnectionCount  MetricConfig `mapstructure:"system.nfs.net.tcp.connection.count"`
+	SystemNfsNetTCPCount            MetricConfig `mapstructure:"system.nfs.net.tcp.count"`
+	SystemNfsNetUDPCount            MetricConfig `mapstructure:"system.nfs.net.udp.count"`
+	SystemNfsProcedureCount         MetricConfig `mapstructure:"system.nfs.procedure.count"`
+	SystemNfsRPCAuthrefreshCount    MetricConfig `mapstructure:"system.nfs.rpc.authrefresh.count"`
+	SystemNfsRPCCount               MetricConfig `mapstructure:"system.nfs.rpc.count"`
+	SystemNfsRPCRetransmitCount     MetricConfig `mapstructure:"system.nfs.rpc.retransmit.count"`
+	SystemNfsdFhStaleCount          MetricConfig `mapstructure:"system.nfsd.fh.stale.count"`
+	SystemNfsdIoReadCount           MetricConfig `mapstructure:"system.nfsd.io.read.count"`
+	SystemNfsdIoWriteCount          MetricConfig `mapstructure:"system.nfsd.io.write.count"`
+	SystemNfsdNetCount              MetricConfig `mapstructure:"system.nfsd.net.count"`
+	SystemNfsdNetTCPConnectionCount MetricConfig `mapstructure:"system.nfsd.net.tcp.connection.count"`
+	SystemNfsdNetTCPCount           MetricConfig `mapstructure:"system.nfsd.net.tcp.count"`
+	SystemNfsdNetUDPCount           MetricConfig `mapstructure:"system.nfsd.net.udp.count"`
+	SystemNfsdProcedureCount        MetricConfig `mapstructure:"system.nfsd.procedure.count"`
+	SystemNfsdRepcacheHits          MetricConfig `mapstructure:"system.nfsd.repcache.hits"`
+	SystemNfsdRepcacheMisses        MetricConfig `mapstructure:"system.nfsd.repcache.misses"`
+	SystemNfsdRepcacheNocache       MetricConfig `mapstructure:"system.nfsd.repcache.nocache"`
+	SystemNfsdRPCBadCount           MetricConfig `mapstructure:"system.nfsd.rpc.bad.count"`
+	SystemNfsdRPCBadauthCount       MetricConfig `mapstructure:"system.nfsd.rpc.badauth.count"`
+	SystemNfsdRPCBadclientCount     MetricConfig `mapstructure:"system.nfsd.rpc.badclient.count"`
+	SystemNfsdRPCBadfmtCount        MetricConfig `mapstructure:"system.nfsd.rpc.badfmt.count"`
+	SystemNfsdRPCCount              MetricConfig `mapstructure:"system.nfsd.rpc.count"`
+	SystemNfsdThreadCount           MetricConfig `mapstructure:"system.nfsd.thread.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		SystemNfsNetCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsNetTCPConnectionCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsNetTCPCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsNetUDPCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsProcedureCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsRPCAuthrefreshCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsRPCCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsRPCRetransmitCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdFhStaleCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdIoReadCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdIoWriteCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdNetCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdNetTCPConnectionCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdNetTCPCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdNetUDPCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdProcedureCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRepcacheHits: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRepcacheMisses: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRepcacheNocache: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRPCBadCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRPCBadauthCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRPCBadclientCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRPCBadfmtCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdRPCCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdThreadCount: MetricConfig{
 			Enabled: true,
 		},
 	}

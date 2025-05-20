@@ -63,6 +63,102 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSystemNfsNetCountDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsNetTCPConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsNetTCPCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsNetUDPCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsProcedureCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.onc.procedure.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsRPCAuthrefreshCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsRPCCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsRPCRetransmitCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdFhStaleCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdIoReadCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdIoWriteCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdNetCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdNetTCPConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdNetTCPCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdNetUDPCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdProcedureCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.onc.procedure.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRepcacheHitsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRepcacheMissesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRepcacheNocacheDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRPCBadCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRPCBadauthCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRPCBadclientCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRPCBadfmtCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdRPCCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdThreadCountDataPoint(ts, 1)
+
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 
@@ -92,6 +188,306 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Reports the count of kernel NFS client network requests handled", ms.At(i).Description())
 					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.net.tcp.connection.count":
+					assert.False(t, validatedMetrics["system.nfs.net.tcp.connection.count"], "Found a duplicate in the metrics slice: system.nfs.net.tcp.connection.count")
+					validatedMetrics["system.nfs.net.tcp.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client TCP connections accepted", ms.At(i).Description())
+					assert.Equal(t, "{connection}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.net.tcp.count":
+					assert.False(t, validatedMetrics["system.nfs.net.tcp.count"], "Found a duplicate in the metrics slice: system.nfs.net.tcp.count")
+					validatedMetrics["system.nfs.net.tcp.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client TCP segments handled", ms.At(i).Description())
+					assert.Equal(t, "{segment}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.net.udp.count":
+					assert.False(t, validatedMetrics["system.nfs.net.udp.count"], "Found a duplicate in the metrics slice: system.nfs.net.udp.count")
+					validatedMetrics["system.nfs.net.udp.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client UDP datagrams handled", ms.At(i).Description())
+					assert.Equal(t, "{datagram}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.procedure.count":
+					assert.False(t, validatedMetrics["system.nfs.procedure.count"], "Found a duplicate in the metrics slice: system.nfs.procedure.count")
+					validatedMetrics["system.nfs.procedure.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server procedures", ms.At(i).Description())
+					assert.Equal(t, "{procedure}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("rpc.onc.procedure.name")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.onc.procedure.name-val", attrVal.Str())
+				case "system.nfs.rpc.authrefresh.count":
+					assert.False(t, validatedMetrics["system.nfs.rpc.authrefresh.count"], "Found a duplicate in the metrics slice: system.nfs.rpc.authrefresh.count")
+					validatedMetrics["system.nfs.rpc.authrefresh.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client RPC authentication refreshes", ms.At(i).Description())
+					assert.Equal(t, "{authrefresh}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.rpc.count":
+					assert.False(t, validatedMetrics["system.nfs.rpc.count"], "Found a duplicate in the metrics slice: system.nfs.rpc.count")
+					validatedMetrics["system.nfs.rpc.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client RPCs handled", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.rpc.retransmit.count":
+					assert.False(t, validatedMetrics["system.nfs.rpc.retransmit.count"], "Found a duplicate in the metrics slice: system.nfs.rpc.retransmit.count")
+					validatedMetrics["system.nfs.rpc.retransmit.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client RPC retransmits", ms.At(i).Description())
+					assert.Equal(t, "{retransmit}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.fh.stale.count":
+					assert.False(t, validatedMetrics["system.nfsd.fh.stale.count"], "Found a duplicate in the metrics slice: system.nfsd.fh.stale.count")
+					validatedMetrics["system.nfsd.fh.stale.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server stale file handles", ms.At(i).Description())
+					assert.Equal(t, "{fh}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.io.read.count":
+					assert.False(t, validatedMetrics["system.nfsd.io.read.count"], "Found a duplicate in the metrics slice: system.nfsd.io.read.count")
+					validatedMetrics["system.nfsd.io.read.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server bytes returned to read requests", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.io.write.count":
+					assert.False(t, validatedMetrics["system.nfsd.io.write.count"], "Found a duplicate in the metrics slice: system.nfsd.io.write.count")
+					validatedMetrics["system.nfsd.io.write.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server bytes passed to write requests", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.net.count":
+					assert.False(t, validatedMetrics["system.nfsd.net.count"], "Found a duplicate in the metrics slice: system.nfsd.net.count")
+					validatedMetrics["system.nfsd.net.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server network requests handled", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.net.tcp.connection.count":
+					assert.False(t, validatedMetrics["system.nfsd.net.tcp.connection.count"], "Found a duplicate in the metrics slice: system.nfsd.net.tcp.connection.count")
+					validatedMetrics["system.nfsd.net.tcp.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server TCP connections accepted", ms.At(i).Description())
+					assert.Equal(t, "{connection}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.net.tcp.count":
+					assert.False(t, validatedMetrics["system.nfsd.net.tcp.count"], "Found a duplicate in the metrics slice: system.nfsd.net.tcp.count")
+					validatedMetrics["system.nfsd.net.tcp.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server TCP segments handled", ms.At(i).Description())
+					assert.Equal(t, "{segment}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.net.udp.count":
+					assert.False(t, validatedMetrics["system.nfsd.net.udp.count"], "Found a duplicate in the metrics slice: system.nfsd.net.udp.count")
+					validatedMetrics["system.nfsd.net.udp.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server UDP datagrams handled", ms.At(i).Description())
+					assert.Equal(t, "{datagram}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.procedure.count":
+					assert.False(t, validatedMetrics["system.nfsd.procedure.count"], "Found a duplicate in the metrics slice: system.nfsd.procedure.count")
+					validatedMetrics["system.nfsd.procedure.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS client procedures", ms.At(i).Description())
+					assert.Equal(t, "{procedure}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("rpc.onc.procedure.name")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.onc.procedure.name-val", attrVal.Str())
+				case "system.nfsd.repcache.hits":
+					assert.False(t, validatedMetrics["system.nfsd.repcache.hits"], "Found a duplicate in the metrics slice: system.nfsd.repcache.hits")
+					validatedMetrics["system.nfsd.repcache.hits"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the kernel NFS server request reply cache hit count", ms.At(i).Description())
+					assert.Equal(t, "{hit}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.repcache.misses":
+					assert.False(t, validatedMetrics["system.nfsd.repcache.misses"], "Found a duplicate in the metrics slice: system.nfsd.repcache.misses")
+					validatedMetrics["system.nfsd.repcache.misses"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the kernel NFS server request reply cache miss count", ms.At(i).Description())
+					assert.Equal(t, "{miss}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.repcache.nocache":
+					assert.False(t, validatedMetrics["system.nfsd.repcache.nocache"], "Found a duplicate in the metrics slice: system.nfsd.repcache.nocache")
+					validatedMetrics["system.nfsd.repcache.nocache"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server request replies that are uncacheable", ms.At(i).Description())
+					assert.Equal(t, "{miss}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.rpc.bad.count":
+					assert.False(t, validatedMetrics["system.nfsd.rpc.bad.count"], "Found a duplicate in the metrics slice: system.nfsd.rpc.bad.count")
+					validatedMetrics["system.nfsd.rpc.bad.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the total count of kernel NFS server bad RPCs", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.rpc.badauth.count":
+					assert.False(t, validatedMetrics["system.nfsd.rpc.badauth.count"], "Found a duplicate in the metrics slice: system.nfsd.rpc.badauth.count")
+					validatedMetrics["system.nfsd.rpc.badauth.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the total count of kernel NFS server badly authenticated RPCs", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.rpc.badclient.count":
+					assert.False(t, validatedMetrics["system.nfsd.rpc.badclient.count"], "Found a duplicate in the metrics slice: system.nfsd.rpc.badclient.count")
+					validatedMetrics["system.nfsd.rpc.badclient.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the total count of kernel NFS server unauthorized client RPCs", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.rpc.badfmt.count":
+					assert.False(t, validatedMetrics["system.nfsd.rpc.badfmt.count"], "Found a duplicate in the metrics slice: system.nfsd.rpc.badfmt.count")
+					validatedMetrics["system.nfsd.rpc.badfmt.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the total count of kernel NFS server badly formatted RPCs", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.rpc.count":
+					assert.False(t, validatedMetrics["system.nfsd.rpc.count"], "Found a duplicate in the metrics slice: system.nfsd.rpc.count")
+					validatedMetrics["system.nfsd.rpc.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server RPCs handled", ms.At(i).Description())
+					assert.Equal(t, "{rpc}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.thread.count":
+					assert.False(t, validatedMetrics["system.nfsd.thread.count"], "Found a duplicate in the metrics slice: system.nfsd.thread.count")
+					validatedMetrics["system.nfsd.thread.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFS server available threads", ms.At(i).Description())
+					assert.Equal(t, "{thread}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
