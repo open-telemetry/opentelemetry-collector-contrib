@@ -274,8 +274,8 @@ receiver/kubeletstatsreceiver/                                   @open-telemetry
 receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @mterhar
 receiver/lokireceiver/                                           @open-telemetry/collector-contrib-approvers @mar4uk
 receiver/memcachedreceiver/                                      @open-telemetry/collector-contrib-approvers @jsirianni
-receiver/mongodbatlasreceiver/                                   @open-telemetry/collector-contrib-approvers @schmikei
-receiver/mongodbreceiver/                                        @open-telemetry/collector-contrib-approvers @schmikei
+receiver/mongodbatlasreceiver/                                   @open-telemetry/collector-contrib-approvers @justinianvoss22
+receiver/mongodbreceiver/                                        @open-telemetry/collector-contrib-approvers @justinianvoss22
 receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers @antonblock
 receiver/namedpipereceiver/                                      @open-telemetry/collector-contrib-approvers @sinkingpoint
 receiver/netflowreceiver/                                        @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
