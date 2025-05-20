@@ -163,6 +163,7 @@ pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
 processor/attributesprocessor processor/attributes
+processor/communityidprocessor processor/communityid
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/datadogsemanticsprocessor processor/datadogsemantics
