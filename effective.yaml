@@ -1,0 +1,35 @@
+exporters:
+    debug:
+        verbosity: basic
+extensions: null
+receivers:
+    otlp:
+        protocols:
+            grpc: null
+            http: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        metrics:
+            exporters:
+                - debug
+            receivers:
+                - otlp
+        traces:
+            exporters:
+                - debug
+            receivers:
+                - otlp
+    telemetry:
+        logs:
+            encoding: json
+            level: debug
+        resource:
+            host.arch: arm64
+            host.name: realejo
+            os.description: macOS 15.4.1
+            os.type: darwin
+            service.instance.id: 0196ed53-0999-778d-a2b0-70dd3a8a30e1
+            service.name: otelcontribcol
+            service.version: 0.126.0-dev
