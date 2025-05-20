@@ -117,6 +117,11 @@ type SignalConfig struct {
 	//  - "otlp_logs" for logs
 	Topic string `mapstructure:"topic"`
 
+	// TopicFromMetadataKey holds the name of the metadata key to use as the
+	// topic name for this signal type. If this is set, it takes precedence
+	// over the topic name set in the topic field.
+	TopicFromMetadataKey string `mapstructure:"topic_from_metadata_key"`
+
 	// Encoding holds the encoding of messages for the signal type.
 	//
 	// Defaults to "otlp_proto".
