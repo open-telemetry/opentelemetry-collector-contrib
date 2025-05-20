@@ -18,7 +18,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return nil, errors.New("cannot get map value without keys")
 	}
 
-	s, err := GetMapKeyName(ctx, tCtx, keys)
+	s, err := GetMapKeyName(ctx, tCtx, keys[0])
 	if err != nil {
 		return nil, fmt.Errorf("cannot get map value: %w", err)
 	}
@@ -36,7 +36,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return errors.New("cannot set map value without keys")
 	}
 
-	s, err := GetMapKeyName(ctx, tCtx, keys)
+	s, err := GetMapKeyName(ctx, tCtx, keys[0])
 	if err != nil {
 		return fmt.Errorf("cannot set map value: %w", err)
 	}
@@ -48,13 +48,13 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	return SetIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 }
 
-func GetMapKeyName[K any](ctx context.Context, tCtx K, keys []ottl.Key[K]) (*string, error) {
-	resolvedKey, err := keys[0].String(ctx, tCtx)
+func GetMapKeyName[K any](ctx context.Context, tCtx K, key ottl.Key[K]) (*string, error) {
+	resolvedKey, err := key.String(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
 	if resolvedKey == nil {
-		resolvedKey, err = FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
+		resolvedKey, err = FetchValueFromExpression[K, string](ctx, tCtx, key)
 		if err != nil {
 			return nil, fmt.Errorf("unable to resolve a string index in map: %w", err)
 		}

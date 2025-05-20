@@ -432,7 +432,7 @@ func Test_GetMapKeyName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resolvedKey, err := ctxutil.GetMapKeyName[any](context.Background(), nil, tt.keys)
+			resolvedKey, err := ctxutil.GetMapKeyName[any](context.Background(), nil, tt.keys[0])
 			if tt.err != nil {
 				assert.Equal(t, tt.err.Error(), err.Error())
 				return
