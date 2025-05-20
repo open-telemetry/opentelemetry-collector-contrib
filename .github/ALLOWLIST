@@ -30,7 +30,6 @@ processor/routingprocessor/
 
 # Start unmaintained components list
 
-confmap/provider/aesprovider
 connector/countconnector
 exporter/carbonexporter
 exporter/kineticaexporter

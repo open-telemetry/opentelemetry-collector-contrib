@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.23.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.149
+	github.com/DataDog/agent-payload/v5 v5.0.152
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.0-devel.0.20250407180930-ebfcfa2817ce
-	github.com/DataDog/datadog-agent/pkg/proto v0.67.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.67.0-rc.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.126.0
@@ -366,7 +366,7 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250414145226-207652e42e2e // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250425173222-7b384671a197 // indirect
 	google.golang.org/grpc v1.72.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
