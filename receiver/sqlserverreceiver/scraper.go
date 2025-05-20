@@ -168,6 +168,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -253,6 +254,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -518,6 +520,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -916,13 +919,14 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
 		record := plog.NewLogRecord()
-		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		record.SetTimestamp(timestamp)
 		record.SetEventName(eventName)
 
 		// Attributes sorted alphabetically by key
