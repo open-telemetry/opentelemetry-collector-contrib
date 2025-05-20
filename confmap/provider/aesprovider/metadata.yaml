@@ -3,8 +3,8 @@ type: aes
 status:
   class: provider
   stability:
-    alpha: [provider]
+    unmaintained: [provider]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
-    emeritus: [shazlehu]
+    emeritus: [djaglowski, shazlehu]
+    seeking_new: true

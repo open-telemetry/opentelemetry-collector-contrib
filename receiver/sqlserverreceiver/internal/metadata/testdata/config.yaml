@@ -95,7 +95,12 @@ all_set:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
+  events:
+    db.server.top_query:
+      enabled: true
   resource_attributes:
+    host.name:
+      enabled: true
     server.address:
       enabled: true
     server.port:
@@ -202,7 +207,12 @@ none_set:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false
+  events:
+    db.server.top_query:
+      enabled: false
   resource_attributes:
+    host.name:
+      enabled: false
     server.address:
       enabled: false
     server.port:
@@ -215,45 +225,77 @@ none_set:
       enabled: false
 filter_set_include:
   resource_attributes:
+    host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     server.address:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     sqlserver.database.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     sqlserver.instance.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    host.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.name-val"
+      events_exclude:
+        - strict: "host.name-val"
     server.address:
       enabled: true
       metrics_exclude:
+        - strict: "server.address-val"
+      events_exclude:
         - strict: "server.address-val"
     server.port:
       enabled: true
       metrics_exclude:
         - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:
+        - strict: "sqlserver.computer.name-val"
+      events_exclude:
         - strict: "sqlserver.computer.name-val"
     sqlserver.database.name:
       enabled: true
       metrics_exclude:
         - strict: "sqlserver.database.name-val"
+      events_exclude:
+        - strict: "sqlserver.database.name-val"
     sqlserver.instance.name:
       enabled: true
       metrics_exclude:
+        - strict: "sqlserver.instance.name-val"
+      events_exclude:
         - strict: "sqlserver.instance.name-val"

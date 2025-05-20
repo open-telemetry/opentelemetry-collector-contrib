@@ -233,14 +233,19 @@ func mockResourceLogs() plog.ResourceLogs {
 func TestEncodeAttributes(t *testing.T) {
 	t.Parallel()
 
-	logRecord := plog.NewLogRecord()
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().Attributes().PutStr("keyStr", "val str")
+	scopeLogs.Scope().Attributes().PutInt("keyInt", 42)
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
 	err := logRecord.Attributes().FromRaw(map[string]any{
 		"s": "baz",
 		"o": map[string]any{
 			"sub_i": 19,
 		},
 	})
-	require.NoError(t, err)
+	require.NoError(t, err, "failed to set attributes on logRecord")
 
 	tests := map[string]struct {
 		mappingMode MappingMode
@@ -253,6 +258,8 @@ func TestEncodeAttributes(t *testing.T) {
 			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
 			  "Scope.name": "",
 			  "Scope.version": "",
+			  "Scope.keyInt": 42,
+			  "Scope.keyStr": "val str",
 			  "SeverityNumber": 0,
 			  "TraceFlags": 0,
 			  "o.sub_i": 19,
@@ -266,6 +273,8 @@ func TestEncodeAttributes(t *testing.T) {
 			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
 			  "Scope.name": "",
 			  "Scope.version": "",
+			  "Scope.keyInt": 42,
+			  "Scope.keyStr": "val str",
 			  "SeverityNumber": 0,
 			  "TraceFlags": 0,
 			  "Attributes.o.sub_i": 19,
@@ -280,6 +289,8 @@ func TestEncodeAttributes(t *testing.T) {
 			  "agent": {
 			    "name": "otlp"
 			  },
+			  "keyInt": 42,
+			  "keyStr": "val str",
 			  "o": {
 			    "sub_i": 19
 			  },
@@ -295,8 +306,8 @@ func TestEncodeAttributes(t *testing.T) {
 
 			var buf bytes.Buffer
 			err = encoder.encodeLog(encodingContext{
-				resource: pcommon.NewResource(),
-				scope:    pcommon.NewInstrumentationScope(),
+				resource: resourceLogs.Resource(),
+				scope:    scopeLogs.Scope(),
 			}, logRecord, elasticsearch.Index{}, &buf)
 			require.NoError(t, err)
 			require.JSONEq(t, test.want, buf.String())

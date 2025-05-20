@@ -449,11 +449,12 @@ func durationAsMicroseconds(start, end time.Time) int64 {
 
 func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	attrs := pcommon.NewMap()
+
+	scope.Attributes().CopyTo(attrs)
+
 	attrs.PutStr("name", scope.Name())
 	attrs.PutStr("version", scope.Version())
-	for k, v := range scope.Attributes().AsRaw() {
-		attrs.PutStr(k, v.(string))
-	}
+
 	return attrs
 }
 
