@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -42,7 +43,7 @@ func contains[K any](target ottl.PSliceGetter[K], itemGetter ottl.Getter[K]) ott
 
 		for i := 0; i < slice.Len(); i++ {
 			val := slice.At(i).AsRaw()
-			if val == item {
+			if reflect.DeepEqual(val, item) {
 				return true, nil
 			}
 		}
