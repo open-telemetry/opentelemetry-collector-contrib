@@ -1041,7 +1041,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								ImageTag:          "1.0.1",
 								ServiceInstanceID: "instance-1",
 								ServiceVersion:    "1.0.1",
-								ServiceName:       "app",
 							},
 						},
 					},
@@ -1058,7 +1057,6 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.ContainerImageTagKey):  "1.0.1",
 				string(conventions.ServiceInstanceIDKey):  "instance-1",
 				string(conventions.ServiceVersionKey):     "1.0.1",
-				string(conventions.ServiceNameKey):        "app",
 			},
 		},
 		{
