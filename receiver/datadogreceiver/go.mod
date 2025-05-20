@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.23.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.149
+	github.com/DataDog/agent-payload/v5 v5.0.152
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.65.1
 	github.com/DataDog/datadog-agent/pkg/proto v0.65.1
 	github.com/DataDog/datadog-agent/pkg/trace v0.65.1
@@ -122,7 +122,7 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250224174004-546df14abb99 // indirect
-	google.golang.org/grpc v1.72.0 // indirect
+	google.golang.org/grpc v1.72.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
