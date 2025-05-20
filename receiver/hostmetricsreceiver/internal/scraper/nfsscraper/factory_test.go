@@ -25,5 +25,5 @@ func TestNfsScraper(t *testing.T) {
 	} else {
 		assert.ErrorIs(t, err, errUnsupportedOS)
 		assert.Nil(t, scraper)
-	}	
+	}
 }

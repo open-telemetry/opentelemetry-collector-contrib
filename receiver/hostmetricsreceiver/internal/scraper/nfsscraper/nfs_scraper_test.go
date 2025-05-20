@@ -21,6 +21,8 @@ func TestScrape(t *testing.T) {
                 t.Skip()
         }
 
+	ctx := context.Background()
+
 	type testCase struct {
 		name		string
 		NfsScraperEnabled	bool
