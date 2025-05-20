@@ -5,6 +5,7 @@ cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
+confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
@@ -313,7 +314,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-confmap/provider/aesprovider confmap/provider/aesprovider
 connector/countconnector connector/count
 exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
