@@ -11,20 +11,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type communityIdProcessor struct{}
+type communityIDProcessor struct{}
 
-func newCommunityIdProcessor() *communityIdProcessor {
-	return &communityIdProcessor{}
+func newCommunityIDProcessor() *communityIDProcessor {
+	return &communityIDProcessor{}
 }
 
-func (g *communityIdProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
+func (g *communityIDProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	return ms, nil
 }
 
-func (g *communityIdProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
+func (g *communityIDProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
 	return ts, nil
 }
 
-func (g *communityIdProcessor) processLogs(_ context.Context, ls plog.Logs) (plog.Logs, error) {
+func (g *communityIDProcessor) processLogs(_ context.Context, ls plog.Logs) (plog.Logs, error) {
 	return ls, nil
 }

@@ -28,13 +28,13 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
-	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, newCommunityIdProcessor().processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, newCommunityIDProcessor().processMetrics, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, newCommunityIdProcessor().processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, newCommunityIDProcessor().processTraces, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
-	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, newCommunityIdProcessor().processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, newCommunityIDProcessor().processLogs, processorhelper.WithCapabilities(processorCapabilities))
 }
