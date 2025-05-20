@@ -51,6 +51,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySample: QuerySample{
 			Enabled:         false,
 			MaxRowsPerQuery: 100,
@@ -77,6 +78,10 @@ func setupQueries(cfg *Config) []string {
 
 	if cfg.Metrics.SqlserverDatabaseCount.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
+	}
+
+	if isWaitStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -267,6 +272,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
+		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
@@ -278,9 +284,18 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverReplicaDataRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
 		metrics.SqlserverUserConnectionCount.Enabled
+}
+
+func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverOsWaitDuration.Enabled
 }
