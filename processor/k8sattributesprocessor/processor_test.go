@@ -802,7 +802,7 @@ func TestAddNamespaceLabels(t *testing.T) {
 		t,
 		func() component.Config {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Extract.Metadata = []string{}
+			cfg.Extract.Metadata = []string{string(conventions.ServiceNamespaceKey)}
 			cfg.Extract.Labels = []FieldExtractConfig{
 				{
 					From: kube.MetadataFromNamespace,
@@ -864,9 +864,10 @@ func TestAddNamespaceLabels(t *testing.T) {
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
 	m.assertResource(0, func(res pcommon.Resource) {
-		assert.Equal(t, 2, res.Attributes().Len())
+		assert.Equal(t, 3, res.Attributes().Len())
 		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
 		assertResourceHasStringAttribute(t, res, "nslabel", "1")
+		assertResourceHasStringAttribute(t, res, "service.namespace", "namespace-1")
 	})
 }
 
@@ -1035,9 +1036,11 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByName: map[string]*kube.Container{
 							"app": {
-								Name:      "app",
-								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								Name:              "app",
+								ImageName:         "test/app",
+								ImageTag:          "1.0.1",
+								ServiceInstanceID: "instance-1",
+								ServiceVersion:    "1.0.1",
 							},
 						},
 					},
@@ -1052,6 +1055,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
+				string(conventions.ServiceInstanceIDKey):  "instance-1",
+				string(conventions.ServiceVersionKey):     "1.0.1",
 			},
 		},
 		{
@@ -1090,6 +1095,56 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
+			},
+		},
+		{
+			name: "automatic-explicit-values-win",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Attributes: map[string]string{
+						string(conventions.ServiceInstanceIDKey): "explicit-instance",
+						string(conventions.ServiceVersionKey):    "explicit-version",
+						string(conventions.ServiceNameKey):       "explicit-name",
+						string(conventions.ServiceNamespaceKey):  "explicit-ns",
+					},
+					Containers: kube.PodContainers{
+						ByID: map[string]*kube.Container{
+							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
+								Name:              "app",
+								ImageName:         "test/app",
+								ImageTag:          "1.0.1",
+								ServiceInstanceID: "instance-1",
+								ServiceVersion:    "version-1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
+			},
+			wantAttrs: map[string]any{
+				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				string(conventions.K8SContainerNameKey):   "app",
+				string(conventions.ContainerImageNameKey): "test/app",
+				string(conventions.ContainerImageTagKey):  "1.0.1",
+				string(conventions.ServiceInstanceIDKey):  "explicit-instance",
+				string(conventions.ServiceVersionKey):     "explicit-version",
+				string(conventions.ServiceNameKey):        "explicit-name",
+				string(conventions.ServiceNamespaceKey):   "explicit-ns",
 			},
 		},
 		{
@@ -1342,31 +1397,39 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		m := newMultiTest(
-			t,
-			NewFactory().CreateDefaultConfig(),
-			nil,
-		)
-		m.kubernetesProcessorOperation(tt.op)
-		m.testConsume(context.Background(),
-			generateTraces(tt.resourceGens...),
-			generateMetrics(tt.resourceGens...),
-			generateLogs(tt.resourceGens...),
-			generateProfiles(tt.resourceGens...),
-			nil,
-		)
+		t.Run(tt.name, func(t *testing.T) {
+			m := newMultiTest(
+				t,
+				NewFactory().CreateDefaultConfig(),
+				nil,
+				withExtractMetadata(
+					string(conventions.ServiceNamespaceKey),
+					string(conventions.ServiceNameKey),
+					string(conventions.ServiceVersionKey),
+					string(conventions.ServiceInstanceIDKey),
+				),
+			)
+			m.kubernetesProcessorOperation(tt.op)
+			m.testConsume(context.Background(),
+				generateTraces(tt.resourceGens...),
+				generateMetrics(tt.resourceGens...),
+				generateLogs(tt.resourceGens...),
+				generateProfiles(tt.resourceGens...),
+				nil,
+			)
 
-		m.assertBatchesLen(1)
-		m.assertResource(0, func(r pcommon.Resource) {
-			require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
-			for k, v := range tt.wantAttrs {
-				switch val := v.(type) {
-				case string:
-					assertResourceHasStringAttribute(t, r, k, val)
-				case []string:
-					assertResourceHasStringSlice(t, r, k, val)
+			m.assertBatchesLen(1)
+			m.assertResource(0, func(r pcommon.Resource) {
+				require.Len(t, r.Attributes().AsRaw(), len(tt.wantAttrs))
+				for k, v := range tt.wantAttrs {
+					switch val := v.(type) {
+					case string:
+						assertResourceHasStringAttribute(t, r, k, val)
+					case []string:
+						assertResourceHasStringSlice(t, r, k, val)
+					}
 				}
-			}
+			})
 		})
 	}
 }

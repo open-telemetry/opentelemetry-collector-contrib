@@ -127,12 +127,11 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 	return unmarshaler, nil
 }
 
-// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
+// encodingToComponentID attempts to parse the encoding string as a component ID.
 func encodingToComponentID(encoding string) (*component.ID, error) {
-	componentType, err := component.NewType(encoding)
-	if err != nil {
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
 		return nil, fmt.Errorf("%w: %w", errInvalidComponentType, err)
 	}
-	id := component.NewID(componentType)
 	return &id, nil
 }

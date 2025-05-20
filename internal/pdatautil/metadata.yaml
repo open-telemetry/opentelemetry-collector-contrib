@@ -1,4 +1,5 @@
 status:
   disable_codecov_badge: true
   codeowners:
-    active: [djaglowski]
+    emeritus: [djaglowski]
+    seeking_new: true

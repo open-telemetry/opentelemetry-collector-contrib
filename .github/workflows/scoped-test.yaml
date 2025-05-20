@@ -55,11 +55,7 @@ jobs:
   scoped-tests:
     needs: changedfiles
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ windows-latest ]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - name: Echo changed files
         shell: bash

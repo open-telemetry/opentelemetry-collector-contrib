@@ -188,10 +188,11 @@ func newLogsAgentExporter(
 	}
 	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
-		Log:         logComponent,
-		Config:      cfgComponent,
-		Hostname:    hostnameComponent,
-		Compression: logscompressionimpl.NewComponent(),
+		Log:          logComponent,
+		Config:       cfgComponent,
+		Hostname:     hostnameComponent,
+		Compression:  logscompressionimpl.NewComponent(),
+		IntakeOrigin: config.OTelCollectorIntakeOrigin,
 	})
 	err := logsAgent.Start(ctx)
 	if err != nil {

@@ -51,6 +51,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySample: QuerySample{
 			Enabled:         false,
 			MaxRowsPerQuery: 100,
@@ -267,6 +268,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
+		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||

@@ -6,4 +6,5 @@ status:
   stability:
     alpha: [ traces, metrics, logs, profiles ]
   codeowners:
-    active: [djaglowski, atoulme]
+    active: [atoulme]
+    emeritus: [djaglowski]

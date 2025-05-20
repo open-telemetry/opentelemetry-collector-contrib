@@ -9,13 +9,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of unrestricted full table or index scans.
             gauge:
               dataPoints:
-                - asDouble: 1.8256656e+07
+                - asDouble: 1341
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.full_scan.rate
@@ -33,37 +33,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
-    scopeMetrics:
-      - metrics:
-          - description: Number of execution errors.
-            gauge:
-              dataPoints:
-                - asInt: "18256656"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.database.execution.errors
-            unit: “{errors}”
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
-        - key: sqlserver.instance.name
-          value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of index searches.
             gauge:
               dataPoints:
-                - asDouble: 1.619118e+06
+                - asDouble: 179630
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.index.search.rate
@@ -81,7 +57,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Throughput rate of replica data.
@@ -109,7 +85,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Throughput rate of replica data.
@@ -137,7 +113,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Pages found in the buffer pool without having to read from disk.
@@ -161,7 +137,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Number of free list stalls.
@@ -185,13 +161,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of page lookups.
             gauge:
               dataPoints:
-                - asDouble: 3.294704e+06
+                - asDouble: 389865
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.lookup.rate
@@ -209,7 +185,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of mirror write transactions.
@@ -233,7 +209,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Time consumed in transaction delays.
@@ -258,7 +234,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -282,7 +258,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -306,7 +282,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -330,7 +306,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -354,7 +330,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -378,7 +354,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -402,7 +378,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -426,7 +402,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of backups/restores.
@@ -450,7 +426,31 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of execution errors.
+            gauge:
+              dataPoints:
+                - asInt: "18256656"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.execution.errors
+            unit: “{errors}”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of tables.
@@ -482,13 +482,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of logins.
             gauge:
               dataPoints:
-                - asDouble: 333
+                - asDouble: 75
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.login.rate
@@ -506,13 +506,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of logouts.
             gauge:
               dataPoints:
-                - asDouble: 330
+                - asDouble: 72
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.logout.rate
@@ -530,7 +530,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of processes that are currently blocked
@@ -554,7 +554,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Number of users connected to the SQL Server.
@@ -578,13 +578,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of lock timeouts.
             gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.timeout.rate
@@ -602,13 +602,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Number of lock requests resulting in a wait.
             gauge:
               dataPoints:
-                - asDouble: 17
+                - asDouble: 15
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.lock.wait.rate
@@ -626,7 +626,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of deadlocks.
@@ -650,7 +650,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of memory grants pending.
@@ -675,7 +675,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total memory in use.
@@ -683,7 +683,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 30960
+                - asDouble: 24944
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: “KB”
@@ -700,7 +700,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of read operations that were throttled in the last second
@@ -724,7 +724,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The rate of operations issued.
@@ -752,7 +752,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of write operations that were throttled in the last second
@@ -776,7 +776,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The rate of operations issued.
@@ -804,7 +804,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The rate of operations issued.
@@ -832,7 +832,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of write operations that were throttled in the last second
@@ -856,7 +856,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The rate of operations issued.
@@ -884,7 +884,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: The number of read operations that were throttled in the last second
@@ -908,7 +908,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total memory in use.
@@ -916,7 +916,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 277608
+                - asDouble: 234720
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: “KB”
@@ -933,13 +933,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Number of batch requests received by SQL Server.
             gauge:
               dataPoints:
-                - asDouble: 3375
+                - asDouble: 431
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.batch.request.rate
@@ -957,13 +957,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Number of SQL compilations needed.
             gauge:
               dataPoints:
-                - asDouble: 413
+                - asDouble: 264
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.batch.sql_compilation.rate
@@ -981,13 +981,13 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Number of SQL recompilations needed.
             gauge:
               dataPoints:
-                - asDouble: 63
+                - asDouble: 25
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.batch.sql_recompilation.rate
@@ -1005,7 +1005,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total free space in temporary DB.
@@ -1034,7 +1034,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: TempDB version store size.
@@ -1045,6 +1045,58 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: sqlserver.database.tempdb.version_store.size
             unit: “KB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Cumulative count of lock waits that occurred.
+            name: sqlserver.lock.wait.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{wait}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Cumulative count of lock waits that occurred.
+            name: sqlserver.lock.wait.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "20"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{wait}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

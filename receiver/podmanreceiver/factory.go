@@ -20,11 +20,11 @@ const (
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
-		createDefaultReceiverConfig,
+		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
-func createDefaultConfig() *Config {
+func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 	cfg.Timeout = 5 * time.Second
@@ -35,8 +35,4 @@ func createDefaultConfig() *Config {
 		APIVersion:           defaultAPIVersion,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-}
-
-func createDefaultReceiverConfig() component.Config {
-	return createDefaultConfig()
 }
