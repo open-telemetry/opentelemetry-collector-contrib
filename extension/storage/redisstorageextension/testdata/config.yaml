@@ -1,7 +1,5 @@
 redis_storage:
   endpoint: localhost:1234
-  tls:
-    insecure: true
 redis_storage/all_settings:
   endpoint: localhost:1234
   password: passwd
