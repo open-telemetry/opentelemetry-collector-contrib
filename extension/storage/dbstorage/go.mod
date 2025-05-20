@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/docker/docker v28.1.1+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.7.5
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/component v1.32.1-0.20250515040533-97a6accbc082
