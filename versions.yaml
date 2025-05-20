@@ -143,6 +143,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
