@@ -40,7 +40,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+			err: errors.New("cannot get map value: unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
@@ -172,7 +172,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+			err: errors.New("cannot set map value: unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
@@ -402,11 +402,6 @@ func Test_GetMapKeyName(t *testing.T) {
 		err  error
 		key  string
 	}{
-		{
-			name: "empty keys",
-			keys: []ottl.Key[any]{},
-			err:  errors.New("empty keys"),
-		},
 		{
 			name: "first key not a string",
 			keys: []ottl.Key[any]{

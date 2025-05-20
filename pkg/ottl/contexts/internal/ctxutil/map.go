@@ -14,9 +14,13 @@ import (
 )
 
 func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K]) (any, error) {
+	if len(keys) == 0 {
+		return nil, errors.New("cannot get map value without keys")
+	}
+
 	s, err := GetMapKeyName(ctx, tCtx, keys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot get map value: %w", err)
 	}
 
 	val, ok := m.Get(*s)
@@ -28,9 +32,13 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 }
 
 func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], val any) error {
+	if len(keys) == 0 {
+		return errors.New("cannot set map value without keys")
+	}
+
 	s, err := GetMapKeyName(ctx, tCtx, keys)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot set map value: %w", err)
 	}
 
 	currentValue, ok := m.Get(*s)
@@ -41,10 +49,6 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 }
 
 func GetMapKeyName[K any](ctx context.Context, tCtx K, keys []ottl.Key[K]) (*string, error) {
-	if len(keys) == 0 {
-		return nil, errors.New("empty keys")
-	}
-
 	resolvedKey, err := keys[0].String(ctx, tCtx)
 	if err != nil {
 		return nil, err
