@@ -279,6 +279,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverMemoryUsage: metricInfo{
 		Name: "sqlserver.memory.usage",
 	},
+	SqlserverOsWaitDuration: metricInfo{
+		Name: "sqlserver.os.wait.duration",
+	},
 	SqlserverPageBufferCacheFreeListStallsRate: metricInfo{
 		Name: "sqlserver.page.buffer_cache.free_list.stalls.rate",
 	},
@@ -379,6 +382,7 @@ type metricsInfo struct {
 	SqlserverLogoutRate                         metricInfo
 	SqlserverMemoryGrantsPendingCount           metricInfo
 	SqlserverMemoryUsage                        metricInfo
+	SqlserverOsWaitDuration                     metricInfo
 	SqlserverPageBufferCacheFreeListStallsRate  metricInfo
 	SqlserverPageBufferCacheHitRatio            metricInfo
 	SqlserverPageCheckpointFlushRate            metricInfo
@@ -1514,6 +1518,60 @@ func (m *metricSqlserverMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverMemoryUsage(cfg MetricConfig) metricSqlserverMemoryUsage {
 	m := metricSqlserverMemoryUsage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverOsWaitDuration struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.os.wait.duration metric with initial data.
+func (m *metricSqlserverOsWaitDuration) init() {
+	m.data.SetName("sqlserver.os.wait.duration")
+	m.data.SetDescription("Total wait time for this wait type")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverOsWaitDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, waitCategoryAttributeValue string, waitTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("wait.category", waitCategoryAttributeValue)
+	dp.Attributes().PutStr("wait.type", waitTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverOsWaitDuration) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverOsWaitDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverOsWaitDuration(cfg MetricConfig) metricSqlserverOsWaitDuration {
+	m := metricSqlserverOsWaitDuration{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2795,6 +2853,7 @@ type MetricsBuilder struct {
 	metricSqlserverLogoutRate                         metricSqlserverLogoutRate
 	metricSqlserverMemoryGrantsPendingCount           metricSqlserverMemoryGrantsPendingCount
 	metricSqlserverMemoryUsage                        metricSqlserverMemoryUsage
+	metricSqlserverOsWaitDuration                     metricSqlserverOsWaitDuration
 	metricSqlserverPageBufferCacheFreeListStallsRate  metricSqlserverPageBufferCacheFreeListStallsRate
 	metricSqlserverPageBufferCacheHitRatio            metricSqlserverPageBufferCacheHitRatio
 	metricSqlserverPageCheckpointFlushRate            metricSqlserverPageCheckpointFlushRate
@@ -2867,6 +2926,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverLogoutRate:                         newMetricSqlserverLogoutRate(mbc.Metrics.SqlserverLogoutRate),
 		metricSqlserverMemoryGrantsPendingCount:           newMetricSqlserverMemoryGrantsPendingCount(mbc.Metrics.SqlserverMemoryGrantsPendingCount),
 		metricSqlserverMemoryUsage:                        newMetricSqlserverMemoryUsage(mbc.Metrics.SqlserverMemoryUsage),
+		metricSqlserverOsWaitDuration:                     newMetricSqlserverOsWaitDuration(mbc.Metrics.SqlserverOsWaitDuration),
 		metricSqlserverPageBufferCacheFreeListStallsRate:  newMetricSqlserverPageBufferCacheFreeListStallsRate(mbc.Metrics.SqlserverPageBufferCacheFreeListStallsRate),
 		metricSqlserverPageBufferCacheHitRatio:            newMetricSqlserverPageBufferCacheHitRatio(mbc.Metrics.SqlserverPageBufferCacheHitRatio),
 		metricSqlserverPageCheckpointFlushRate:            newMetricSqlserverPageCheckpointFlushRate(mbc.Metrics.SqlserverPageCheckpointFlushRate),
@@ -3022,6 +3082,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverLogoutRate.emit(ils.Metrics())
 	mb.metricSqlserverMemoryGrantsPendingCount.emit(ils.Metrics())
 	mb.metricSqlserverMemoryUsage.emit(ils.Metrics())
+	mb.metricSqlserverOsWaitDuration.emit(ils.Metrics())
 	mb.metricSqlserverPageBufferCacheFreeListStallsRate.emit(ils.Metrics())
 	mb.metricSqlserverPageBufferCacheHitRatio.emit(ils.Metrics())
 	mb.metricSqlserverPageCheckpointFlushRate.emit(ils.Metrics())
@@ -3201,6 +3262,11 @@ func (mb *MetricsBuilder) RecordSqlserverMemoryGrantsPendingCountDataPoint(ts pc
 // RecordSqlserverMemoryUsageDataPoint adds a data point to sqlserver.memory.usage metric.
 func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverOsWaitDurationDataPoint adds a data point to sqlserver.os.wait.duration metric.
+func (mb *MetricsBuilder) RecordSqlserverOsWaitDurationDataPoint(ts pcommon.Timestamp, val float64, waitCategoryAttributeValue string, waitTypeAttributeValue string) {
+	mb.metricSqlserverOsWaitDuration.recordDataPoint(mb.startTime, ts, val, waitCategoryAttributeValue, waitTypeAttributeValue)
 }
 
 // RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint adds a data point to sqlserver.page.buffer_cache.free_list.stalls.rate metric.
