@@ -182,16 +182,34 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync metadata accordingly.
-func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindJob)
 	if jobRef != nil {
-		job, exists, err := jobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
-		if err != nil {
-			logError(err, jobRef, pod.UID, logger)
-			return nil
-		} else if !exists {
-			logDebug(jobRef, pod.UID, logger)
-			return nil
+		var job interface{}
+		var err error
+		exists := false
+
+		// first, check if there is a store for all namespaces
+		if jobStore, ok := jobStores[""]; ok {
+			job, exists, err = jobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+			if err != nil {
+				logError(err, jobRef, pod.UID, logger)
+				return nil
+			}
+		}
+		if !exists {
+			// check if there is a store for the namespace of the pod
+			if jobStore, ok := jobStores[pod.Namespace]; ok {
+				job, exists, err = jobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+				if err != nil {
+					logError(err, jobRef, pod.UID, logger)
+					return nil
+				}
+			}
+			if !exists {
+				logDebug(jobRef, pod.UID, logger)
+				return nil
+			}
 		}
 
 		jobObj := job.(*batchv1.Job)
@@ -205,16 +223,33 @@ func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.
 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync metadata accordingly.
-func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindReplicaSet)
 	if rsRef != nil {
-		replicaSet, exists, err := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
-		if err != nil {
-			logError(err, rsRef, pod.UID, logger)
-			return nil
-		} else if !exists {
-			logDebug(rsRef, pod.UID, logger)
-			return nil
+		var replicaSet interface{}
+		var err error
+		exists := false
+
+		if replicaSetStore, ok := replicaSetStores[""]; ok {
+			replicaSet, exists, err = replicaSetStore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
+			if err != nil {
+				logError(err, rsRef, pod.UID, logger)
+				return nil
+			}
+		}
+		if !exists {
+			// check if there is a store for the namespace of the pod
+			if replicaSetStore, ok := replicaSetStores[pod.Namespace]; ok {
+				replicaSet, exists, err = replicaSetStore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
+				if err != nil {
+					logError(err, rsRef, pod.UID, logger)
+					return nil
+				}
+			}
+			if !exists {
+				logDebug(rsRef, pod.UID, logger)
+				return nil
+			}
 		}
 
 		replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
