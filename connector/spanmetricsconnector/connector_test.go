@@ -190,7 +190,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 			dp := callsDps.At(dpi)
 			expectIntValue := numCumulativeConsumptions
 			// this calls init value is 0 for the first Consumption.
-			if numCumulativeConsumptions == 1 {
+			if expectedTemporality == pmetric.AggregationTemporalityCumulative && numCumulativeConsumptions == 1 {
 				expectIntValue = 0
 			}
 			assert.Equal(tb,
