@@ -444,6 +444,10 @@ component_management:
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_communityid
+    name: processor_communityid
+    paths:
+    - processor/communityidprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
