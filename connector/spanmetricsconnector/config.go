@@ -43,11 +43,13 @@ type Config struct {
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
+	CallsDimensions   []Dimension `mapstructure:"calls_dimensions"`
 	ExcludeDimensions []string    `mapstructure:"exclude_dimensions"`
 
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
+	// Deprecated:  Please use AggregationCardinalityLimit instead
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
@@ -97,6 +99,7 @@ type HistogramConfig struct {
 	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
+	Dimensions  []Dimension                 `mapstructure:"dimensions"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -131,13 +134,6 @@ func (c Config) Validate() error {
 	}
 	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
-	}
-
-	if c.DimensionsCacheSize <= 0 {
-		return fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			c.DimensionsCacheSize,
-		)
 	}
 
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {

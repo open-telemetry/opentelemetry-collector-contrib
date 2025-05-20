@@ -7,6 +7,44 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.126.0
+
+### 🛑 Breaking changes 🛑
+
+- `fluentforwardreceiver`: Unexport AckResponse (#39831)
+- `splunkenterprisereceiver`: Unexport InfoEntry and InfoContent (#39830)
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: Add methods to scrape raw values from Windows performance counters. (#39835)
+- `eventlogreceiver`: add raw XML query filtering option (#38517)
+- `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate and configuration to the exporter to send Prometheus remote write 2.0 version. (#33661)
+  WARNING! PRW 2.0 support for the exporter is still under development and not ready for usage.
+
+<!-- previous-version -->
+
+## v0.125.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.WithContextInferenceConditions` option to allow configuring extra context inferrer OTTL conditions (#39455)
+- `awss3exporter`: add configuration field `resource_attrs_to_s3/s3_prefix` to support mapping s3 bucket prefix to OTel resource attributes (#37858)
+  If `resource_attrs_to_s3/s3_prefix` is configured, s3 prefix will be determined based on the specified resource attribute and `s3uploader/s3_prefix` will serve as a fallback.
+- `pkg/golden`: Expose methods to write data to file outside of the scope of a test (#39673)
+  Expose WriteMetricsToFile to write pmetric data to a file outside of the scope of a test.
+  Expose WriteTracesToFile to write ptrace data to a file outside of the scope of a test
+  Expose WriteLogsToFile to write plog data to a file outside of the scope of a test
+  Expose WriteProfilesToFile to write pprofile data to a file outside of the scope of a test
+  
+- `pkg/ottl`: Add PMapGetSetter interface and StandardPMapGetSetter type. (#39657)
+
+### 🧰 Bug fixes 🧰
+
+- `resourcedetectionprocessor`: change the EKS cluster identifier and check the cluster version instead of the existence of aws-auth configmap (#39479)
+- `transformprocessor`: Fix the context inferrer to also take into consideration the global OTTL conditions configuration. (#39455)
+
+<!-- previous-version -->
+
 ## v0.124.1
 
 <!-- previous-version -->

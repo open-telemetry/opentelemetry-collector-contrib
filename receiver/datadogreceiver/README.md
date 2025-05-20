@@ -6,6 +6,7 @@
 | Stability     | [alpha]: traces, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fdatadog) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_datadog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_datadog&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken), [@gouthamve](https://www.github.com/gouthamve), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -23,12 +24,17 @@ Configuration wise is very simple, just need to specify where the Datadog receiv
 
 Then, the receiver must be configured in the pipeline where it will be used.
 
+The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (disabled by default) enables the receiver to 
+reconstruct 128-bit trace ids from spans coming from a datadog instrumented service. This is necessary if a trace is 
+initiated with a 128-bit trace id by a service that then calls a datadog instrumented one. Without this, spans from the
+datadog instrumented service will not correlate with the other spans.
 
 ```yaml
 receivers:
   datadog:
     endpoint: localhost:8126
     read_timeout: 60s
+    trace_id_cache_size: 100
 
 exporters:
   debug:
@@ -47,6 +53,13 @@ service:
 The read timeout of the HTTP Server
 
 Default: 60s
+
+### trace_id_cache_size (Optional)
+
+The size of the LRU cache used to cache 64-bit trace ids and their matching 128-bit trace ids. This only has en effect
+when the feature gate `receiver.datadogreceiver.Enable128BitTraceID` is enabled.
+
+Default: 100
 
 ### HTTP Service Config
 

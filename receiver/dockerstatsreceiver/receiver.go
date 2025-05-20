@@ -12,6 +12,7 @@ import (
 	"time"
 
 	ctypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -50,9 +51,17 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
+func (r *metricsReceiver) clientOptions() []client.Opt {
+	var opts []client.Opt
+	if r.config.Endpoint == "" {
+		opts = append(opts, client.WithHostFromEnv())
+	}
+	return opts
+}
+
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, r.clientOptions()...)
 	if err != nil {
 		return err
 	}

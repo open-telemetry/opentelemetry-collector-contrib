@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -451,7 +451,7 @@ func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
-		tags[conventions.AttributeK8SPodName] = pod.Name
+		tags[string(conventions.K8SPodNameKey)] = pod.Name
 	}
 
 	if c.Rules.PodHostName {
@@ -463,7 +463,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.Namespace {
-		tags[conventions.AttributeK8SNamespaceName] = pod.GetNamespace()
+		tags[string(conventions.K8SNamespaceNameKey)] = pod.GetNamespace()
 	}
 
 	if c.Rules.StartTime {
@@ -479,7 +479,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.PodUID {
 		uid := pod.GetUID()
-		tags[conventions.AttributeK8SPodUID] = string(uid)
+		tags[string(conventions.K8SPodUIDKey)] = string(uid)
 	}
 
 	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName ||
@@ -492,51 +492,51 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 			switch ref.Kind {
 			case "ReplicaSet":
 				if c.Rules.ReplicaSetID {
-					tags[conventions.AttributeK8SReplicaSetUID] = string(ref.UID)
+					tags[string(conventions.K8SReplicaSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.ReplicaSetName {
-					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
+					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
 						if replicaset.Deployment.Name != "" {
-							tags[conventions.AttributeK8SDeploymentName] = replicaset.Deployment.Name
+							tags[string(conventions.K8SDeploymentNameKey)] = replicaset.Deployment.Name
 						}
 					}
 				}
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
 						if replicaset.Deployment.Name != "" {
-							tags[conventions.AttributeK8SDeploymentUID] = replicaset.Deployment.UID
+							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
 					}
 				}
 			case "DaemonSet":
 				if c.Rules.DaemonSetUID {
-					tags[conventions.AttributeK8SDaemonSetUID] = string(ref.UID)
+					tags[string(conventions.K8SDaemonSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.DaemonSetName {
-					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
+					tags[string(conventions.K8SDaemonSetNameKey)] = ref.Name
 				}
 			case "StatefulSet":
 				if c.Rules.StatefulSetUID {
-					tags[conventions.AttributeK8SStatefulSetUID] = string(ref.UID)
+					tags[string(conventions.K8SStatefulSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.StatefulSetName {
-					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
+					tags[string(conventions.K8SStatefulSetNameKey)] = ref.Name
 				}
 			case "Job":
 				if c.Rules.CronJobName {
 					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
 					if len(parts) == 2 {
-						tags[conventions.AttributeK8SCronJobName] = parts[1]
+						tags[string(conventions.K8SCronJobNameKey)] = parts[1]
 					}
 				}
 				if c.Rules.JobUID {
-					tags[conventions.AttributeK8SJobUID] = string(ref.UID)
+					tags[string(conventions.K8SJobUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.JobName {
-					tags[conventions.AttributeK8SJobName] = ref.Name
+					tags[string(conventions.K8SJobNameKey)] = ref.Name
 				}
 			}
 		}
@@ -796,13 +796,13 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 			case ResourceSource:
 				attr := ""
 				switch source.Name {
-				case conventions.AttributeK8SNamespaceName:
+				case string(conventions.K8SNamespaceNameKey):
 					attr = pod.Namespace
-				case conventions.AttributeK8SPodName:
+				case string(conventions.K8SPodNameKey):
 					attr = pod.Name
-				case conventions.AttributeK8SPodUID:
+				case string(conventions.K8SPodUIDKey):
 					attr = pod.PodUID
-				case conventions.AttributeHostName:
+				case string(conventions.HostNameKey):
 					attr = pod.Address
 				// k8s.pod.ip is set by passthrough mode
 				case K8sIPLabelName:
@@ -829,7 +829,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	// Ensure backward compatibility
 	if pod.PodUID != "" {
 		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromResourceAttribute(conventions.AttributeK8SPodUID, pod.PodUID),
+			PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), pod.PodUID),
 		})
 	}
 

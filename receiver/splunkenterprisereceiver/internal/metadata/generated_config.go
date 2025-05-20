@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	SplunkIndexerCPUTime                        MetricConfig `mapstructure:"splunk.indexer.cpu.time"`
 	SplunkIndexerQueueRatio                     MetricConfig `mapstructure:"splunk.indexer.queue.ratio"`
 	SplunkIndexerRawWriteTime                   MetricConfig `mapstructure:"splunk.indexer.raw.write.time"`
+	SplunkIndexerRollingrestartStatus           MetricConfig `mapstructure:"splunk.indexer.rollingrestart.status"`
 	SplunkIndexerThroughput                     MetricConfig `mapstructure:"splunk.indexer.throughput"`
 	SplunkIndexesAvgSize                        MetricConfig `mapstructure:"splunk.indexes.avg.size"`
 	SplunkIndexesAvgUsage                       MetricConfig `mapstructure:"splunk.indexes.avg.usage"`
@@ -57,6 +58,10 @@ type MetricsConfig struct {
 	SplunkSchedulerAvgExecutionLatency          MetricConfig `mapstructure:"splunk.scheduler.avg.execution.latency"`
 	SplunkSchedulerAvgRunTime                   MetricConfig `mapstructure:"splunk.scheduler.avg.run.time"`
 	SplunkSchedulerCompletionRatio              MetricConfig `mapstructure:"splunk.scheduler.completion.ratio"`
+	SplunkSearchDuration                        MetricConfig `mapstructure:"splunk.search.duration"`
+	SplunkSearchInitiation                      MetricConfig `mapstructure:"splunk.search.initiation"`
+	SplunkSearchStatus                          MetricConfig `mapstructure:"splunk.search.status"`
+	SplunkSearchSuccess                         MetricConfig `mapstructure:"splunk.search.success"`
 	SplunkServerIntrospectionQueuesCurrent      MetricConfig `mapstructure:"splunk.server.introspection.queues.current"`
 	SplunkServerIntrospectionQueuesCurrentBytes MetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
 	SplunkServerSearchartifactsAdhoc            MetricConfig `mapstructure:"splunk.server.searchartifacts.adhoc"`
@@ -114,6 +119,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkIndexerRawWriteTime: MetricConfig{
 			Enabled: false,
 		},
+		SplunkIndexerRollingrestartStatus: MetricConfig{
+			Enabled: false,
+		},
 		SplunkIndexerThroughput: MetricConfig{
 			Enabled: false,
 		},
@@ -160,6 +168,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkSchedulerCompletionRatio: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchDuration: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchInitiation: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchStatus: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchSuccess: MetricConfig{
 			Enabled: false,
 		},
 		SplunkServerIntrospectionQueuesCurrent: MetricConfig{

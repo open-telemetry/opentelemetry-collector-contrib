@@ -1,0 +1,9 @@
+type: golden
+
+status:
+  disable_codecov_badge: true
+  class: cmd
+  stability:
+    alpha: [metrics]
+  codeowners:
+    active: [atoulme]
