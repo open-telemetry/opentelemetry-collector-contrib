@@ -6,6 +6,7 @@ status:
     unmaintained: [logs]
   distributions: [contrib]
   codeowners:
+    active: [VihasMakwana]
     emeritus: [djaglowski]
     seeking_new: true
 
