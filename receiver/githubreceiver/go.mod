@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/github
 go 1.23.0
 
 require (
-	github.com/Khan/genqlient v0.8.0
+	github.com/Khan/genqlient v0.8.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v72 v72.0.0
 	github.com/gorilla/mux v1.8.1
