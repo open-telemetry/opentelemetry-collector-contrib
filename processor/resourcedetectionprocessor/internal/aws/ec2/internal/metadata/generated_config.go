@@ -27,19 +27,23 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/ec2 resource attributes.
 type ResourceAttributesConfig struct {
-	CloudAccountID        ResourceAttributeConfig `mapstructure:"cloud.account.id"`
-	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
-	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
-	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
-	CloudRegion           ResourceAttributeConfig `mapstructure:"cloud.region"`
-	HostID                ResourceAttributeConfig `mapstructure:"host.id"`
-	HostImageID           ResourceAttributeConfig `mapstructure:"host.image.id"`
-	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
-	HostType              ResourceAttributeConfig `mapstructure:"host.type"`
+	AwsEc2InstanceLifeCycle ResourceAttributeConfig `mapstructure:"aws.ec2.instance_life_cycle"`
+	CloudAccountID          ResourceAttributeConfig `mapstructure:"cloud.account.id"`
+	CloudAvailabilityZone   ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
+	CloudPlatform           ResourceAttributeConfig `mapstructure:"cloud.platform"`
+	CloudProvider           ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	CloudRegion             ResourceAttributeConfig `mapstructure:"cloud.region"`
+	HostID                  ResourceAttributeConfig `mapstructure:"host.id"`
+	HostImageID             ResourceAttributeConfig `mapstructure:"host.image.id"`
+	HostName                ResourceAttributeConfig `mapstructure:"host.name"`
+	HostType                ResourceAttributeConfig `mapstructure:"host.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		AwsEc2InstanceLifeCycle: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		CloudAccountID: ResourceAttributeConfig{
 			Enabled: true,
 		},

@@ -1,6 +1,8 @@
 default:
 all_set:
   resource_attributes:
+    aws.ec2.instance_life_cycle:
+      enabled: true
     cloud.account.id:
       enabled: true
     cloud.availability_zone:
@@ -21,6 +23,8 @@ all_set:
       enabled: true
 none_set:
   resource_attributes:
+    aws.ec2.instance_life_cycle:
+      enabled: false
     cloud.account.id:
       enabled: false
     cloud.availability_zone:

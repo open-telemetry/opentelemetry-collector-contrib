@@ -3,6 +3,10 @@ type: resourcedetectionprocessor/ec2
 parent: resourcedetection
 
 resource_attributes:
+  aws.ec2.instance_life_cycle:
+    description: The EC2 instance life cycle
+    type: string
+    enabled: true
   host.name:
     description: The hostname
     type: string
