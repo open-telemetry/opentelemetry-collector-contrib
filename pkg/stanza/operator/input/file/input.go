@@ -27,6 +27,7 @@ type Input struct {
 
 	toBody                  toBodyFunc
 	includeFileRecordNumber bool
+	includeFileRecordOffset bool
 }
 
 // Start will start the file monitoring process
@@ -39,9 +40,9 @@ func (i *Input) Stop() error {
 	return i.fileConsumer.Stop()
 }
 
-func (i *Input) emitBatch(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
+func (i *Input) emitBatch(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64, offset int64) error {
 	var errs error
-	entries, err := i.convertTokens(tokens, attributes, lastRecordNumber)
+	entries, err := i.convertTokens(tokens, attributes, lastRecordNumber, offset)
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("convert tokens: %w", err))
 	}
@@ -53,9 +54,10 @@ func (i *Input) emitBatch(ctx context.Context, tokens [][]byte, attributes map[s
 	return errs
 }
 
-func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRecordNumber int64) ([]*entry.Entry, error) {
+func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRecordNumber int64, firstRecordOffset int64) ([]*entry.Entry, error) {
 	entries := make([]*entry.Entry, 0, len(tokens))
 	var errs error
+	currentOffset := firstRecordOffset
 
 	for tokenIndex, token := range tokens {
 		if len(token) == 0 {
@@ -79,6 +81,13 @@ func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRe
 				i.Logger().Error("set record number attribute", zap.Error(err))
 			}
 		}
+
+		if i.includeFileRecordOffset {
+			if err = ent.Set(entry.NewAttributeField(attrs.LogFileRecordOffset), currentOffset); err != nil {
+				i.Logger().Error("set record offset attribute", zap.Error(err))
+			}
+		}
+		currentOffset += int64(len(token))
 
 		entries = append(entries, ent)
 	}

@@ -72,6 +72,49 @@ func TestAddFileResolvedFields(t *testing.T) {
 	}
 }
 
+// AddFileRecordOffset tests that the `log.file.record_offset` is correctly included
+// when IncludeFileRecordOffset is set to true
+func TestAddOffset(t *testing.T) {
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
+		cfg.IncludeFileRecordOffset = true
+	})
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "123456\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	e := waitForOne(t, logReceived)
+	require.NotNil(t, e.Attributes[attrs.LogFileRecordOffset])
+}
+
+// TestOffsetReadExistingLogs tests that the `log.file.record_offset` increments
+// correctly
+func TestOffsetReadExistingLogs(t *testing.T) {
+	t.Parallel()
+	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
+		cfg.IncludeFileRecordOffset = true
+	})
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "testlog1\ntestlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	e := waitForOne(t, logReceived)
+	require.Equal(t, int64(0), e.Attributes[attrs.LogFileRecordOffset])
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, int64(8), e.Attributes[attrs.LogFileRecordOffset])
+}
+
 // AddFileRecordNumber tests that the `log.file.record_number` is correctly included
 // when IncludeFileRecordNumber is set to true
 func TestAddFileRecordNumber(t *testing.T) {

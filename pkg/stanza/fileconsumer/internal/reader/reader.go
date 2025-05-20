@@ -238,7 +238,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, r.Offset)
 				if err != nil {
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
 				}
@@ -258,7 +258,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
-			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum); err != nil {
+			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, r.Offset); err != nil {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			numTokensBatched = 0
