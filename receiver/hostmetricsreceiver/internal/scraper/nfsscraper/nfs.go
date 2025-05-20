@@ -12,21 +12,21 @@ type NfsNetStats struct {
 
 // nfs.rpc.* stats
 type NfsRpcStats struct {
-	RpcCount uint64
-	RetransmitCount uint64
+	RpcCount         uint64
+	RetransmitCount  uint64
 	AuthRefreshCount uint64
 }
 
 // nfs.procedure.count / nfsd.procedure.count stats
 type RPCProcedureStats struct {
-	NFSVersion uint64
+	NFSVersion       uint64
 	NFSProcedureName string
 }
 
 // nfsd.repcache.* stats
 type NfsdRepcacheStats struct {
-	Hits uint64
-	Misses uint64
+	Hits    uint64
+	Misses  uint64
 	Nocache uint64
 }
 
@@ -38,7 +38,7 @@ type NfsdFhStats struct {
 
 // nfsd.io.* stats
 type NfsdIoStats struct {
-	Read uint64
+	Read  uint64
 	Write uint64
 }
 
@@ -56,29 +56,29 @@ type NfsdNetStats struct {
 
 // nfsd.rpc.* stats
 type NfsdRpcStats struct {
-	RPCCount uint64
-	BadCount uint64
-	BadFmtCount uint64
-	BadAuthCount uint64
+	RPCCount       uint64
+	BadCount       uint64
+	BadFmtCount    uint64
+	BadAuthCount   uint64
 	BadClientCount uint64
 }
 
 // 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
 type NfsStats struct {
-	NfsNetStats *NfsNetStats
-	NfsRpcStats *NfsRpcStats
+	NfsNetStats         *NfsNetStats
+	NfsRpcStats         *NfsRpcStats
 	NfsV3ProcedureStats []*RPCProcedureStats
 	NfsV4ProcedureStats []*RPCProcedureStats
 }
 
 // 15 metrics + 22 NFSv3 procedures + 76 NFSv4 procedures = 113 metrics
 type NfsdStats struct {
-	NfsdFhStats *NfsdFhStats
-	NfsdIoStats *NfsdIoStats
-	NfsdNetStats *NfsdNetStats
-	NfsdRepcacheStats *NfsdRepcacheStats
-	NfsdRpcStats *NfsdRpcStats
-	NfsdThreadStats *NfsdThreadStats
+	NfsdFhStats          *NfsdFhStats
+	NfsdIoStats          *NfsdIoStats
+	NfsdNetStats         *NfsdNetStats
+	NfsdRepcacheStats    *NfsdRepcacheStats
+	NfsdRpcStats         *NfsdRpcStats
+	NfsdThreadStats      *NfsdThreadStats
 	NfsdV3ProcedureStats []*RPCProcedureStats
 	NfsdV4ProcedureStats []*RPCProcedureStats
 }

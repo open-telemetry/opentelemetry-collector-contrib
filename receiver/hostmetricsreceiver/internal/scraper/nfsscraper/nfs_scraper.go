@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	nfsMetricsLen	= 97
-	nfsdMetricsLen	= 113
+	nfsMetricsLen  = 97
+	nfsdMetricsLen = 113
 )
 
 // nfsScraper for NFS Metrics
@@ -26,16 +26,16 @@ type nfsScraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking
-	nfsStats		func() (*NfsStats, error)
-	nfsdStats		func() (*NfsdStats, error)
+	nfsStats  func() (*NfsStats, error)
+	nfsdStats func() (*NfsdStats, error)
 }
 
 // newNfsScraper creates an Uptime related metric
 func newNfsScraper(settings scraper.Settings, cfg *Config) (*nfsScraper, error) {
 	return &nfsScraper{
-		settings: settings,
-		config: cfg,
-		nfsStats: getNfsStats,
+		settings:  settings,
+		config:    cfg,
+		nfsStats:  getNfsStats,
 		nfsdStats: getNfsdStats,
 	}, nil
 }
@@ -57,7 +57,6 @@ func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		errs.AddPartial(nfsdMetricsLen, err)
 	}
-
 
 	return s.mb.Emit(), errs.Combine()
 }

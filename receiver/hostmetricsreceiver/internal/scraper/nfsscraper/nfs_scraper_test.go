@@ -5,7 +5,6 @@ package nfsscraper
 
 import (
 	"context"
-	"runtime"
 	"testing"
 
 	//	"github.com/stretchr/testify/assert"
@@ -18,31 +17,31 @@ import (
 
 func TestScrape(t *testing.T) {
 	if !supportedOS {
-                t.Skip()
-        }
+		t.Skip()
+	}
 
 	ctx := context.Background()
 
 	type testCase struct {
-		name		string
-		NfsScraperEnabled	bool
-		NfsdScraperEnabled	bool
+		name               string
+		NfsScraperEnabled  bool
+		NfsdScraperEnabled bool
 	}
 
 	testCases := []testCase{
 		{
-			name: "NFS client metrics",
-			NfsScraperEnabled: true,
+			name:               "NFS client metrics",
+			NfsScraperEnabled:  true,
 			NfsdScraperEnabled: false,
 		},
 		{
-			name: "NFS server metrics",
-			NfsScraperEnabled: true,
+			name:               "NFS server metrics",
+			NfsScraperEnabled:  true,
 			NfsdScraperEnabled: false,
 		},
 		{
-			name: "All metrics",
-			NfsScraperEnabled: true,
+			name:               "All metrics",
+			NfsScraperEnabled:  true,
 			NfsdScraperEnabled: false,
 		},
 	}

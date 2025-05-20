@@ -3,10 +3,6 @@
 
 package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 
-import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
-)
-
 func getNfsStats() (*NfsStats, error) {
 	return nil, nil
 }
@@ -14,4 +10,3 @@ func getNfsStats() (*NfsStats, error) {
 func getNfsdStats() (*NfsdStats, error) {
 	return nil, nil
 }
-

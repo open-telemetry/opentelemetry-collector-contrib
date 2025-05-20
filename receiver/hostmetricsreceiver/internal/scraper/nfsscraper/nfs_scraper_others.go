@@ -12,4 +12,3 @@ func (s *nfsScraper) getNfsStats() (*NfsStats, error) {
 func (s *nfsScraper) getNfsdStats() (*NfsdStats, error) {
 	return nil, nil
 }
-
