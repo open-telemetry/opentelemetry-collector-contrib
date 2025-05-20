@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
@@ -24,6 +25,9 @@ func TestFactory(t *testing.T) {
 			config: func() *Config {
 				return &Config{
 					Endpoint: "localhost:6379",
+					TLS: configtls.ClientConfig{
+						Insecure: true,
+					},
 				}
 			}(),
 		},
