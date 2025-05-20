@@ -28,9 +28,12 @@ const (
 )
 
 type TopQueryCollection struct {
-	Enabled         bool  `mapstructure:"enabled"`
-	MaxRowsPerQuery int64 `mapstructure:"max_rows_per_query"`
-	TopNQuery       int64 `mapstructure:"top_n_query"`
+	Enabled                bool          `mapstructure:"enabled"`
+	MaxRowsPerQuery        int64         `mapstructure:"max_rows_per_query"`
+	TopNQuery              int64         `mapstructure:"top_n_query"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
 }
 
 type QuerySampleCollection struct {

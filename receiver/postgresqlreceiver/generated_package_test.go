@@ -9,5 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"), goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"), goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"), goleak.IgnoreAnyFunction("github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].func1"))
 }

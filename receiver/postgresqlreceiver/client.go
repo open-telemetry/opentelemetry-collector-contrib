@@ -66,11 +66,53 @@ type client interface {
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	explainQuery(query string, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
 	client  *sql.DB
 	closeFn func() error
+}
+
+// explainQuery implements client.
+func (c *postgreSQLClient) explainQuery(query string, queryID string, logger *zap.Logger) (string, error) {
+	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
+	var queryBuilder strings.Builder
+	var nulls []string
+	counter := 1
+
+	for _, ch := range query {
+		if ch == '?' {
+			queryBuilder.WriteString(fmt.Sprintf("$%d", counter))
+			counter++
+			nulls = append(nulls, "null")
+		} else {
+			queryBuilder.WriteRune(ch)
+		}
+	}
+
+	preparedQuery := queryBuilder.String()
+
+	//nolint:errcheck
+	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+
+	// if there is no parameter needed, we can not put an empty bracket
+	nullsString := ""
+	if len(nulls) > 0 {
+		nullsString = "(" + strings.Join(nulls, ", ") + ")"
+	}
+	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
+	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, preparedQuery)
+	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
+
+	result, err := wrappedDb.QueryRows(context.Background())
+	if err != nil {
+		logger.Error("failed to explain statement", zap.Error(err))
+		return "", err
+	}
+	return obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -892,7 +934,7 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 	for _, row := range rows {
 		hasConvention := map[string]string{
 			"datname": "db.namespace",
-			"query":   "db.query.text",
+			"query":   QueryTextAttributeName,
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
