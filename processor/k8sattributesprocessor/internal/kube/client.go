@@ -748,7 +748,8 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.ServiceVersion {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
+		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
@@ -781,9 +782,6 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		}
 		if c.Rules.ServiceInstanceID {
 			container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
-		}
-		if c.Rules.ServiceName {
-			container.ServiceName = containerName
 		}
 		containerID := apiStatus.ContainerID
 		// Remove container runtime prefix
