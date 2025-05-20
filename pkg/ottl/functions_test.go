@@ -939,6 +939,55 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "pslicegetter slice arg",
+			inv: editor{
+				Function: "testing_pslicegetter_slice",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										List: &list{
+											Values: []value{
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(1),
+													},
+												},
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(2),
+													},
+												},
+											},
+										},
+									},
+									{
+										List: &list{
+											Values: []value{
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(1),
+													},
+												},
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(2),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "stringlikegetter slice arg",
 			inv: editor{
 				Function: "testing_stringlikegetter_slice",
@@ -1326,6 +1375,33 @@ func Test_NewFunctionCall(t *testing.T) {
 									Fields: []field{
 										{
 											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "pslicegetter arg",
+			inv: editor{
+				Function: "testing_pslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(1),
+										},
+									},
+									{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(2),
 										},
 									},
 								},
@@ -1873,6 +1949,16 @@ func functionWithPMapGetterSlice(getters []PMapGetter[any]) (ExprFunc[any], erro
 	}, nil
 }
 
+type pSliceGetterSliceArguments struct {
+	PSliceGetter []PSliceGetter[any]
+}
+
+func functionWithPSliceGetterSlice(getters []PSliceGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return len(getters), nil
+	}, nil
+}
+
 type stringLikeGetterSliceArguments struct {
 	StringLikeGetters []StringLikeGetter[any]
 }
@@ -2048,6 +2134,16 @@ type pMapGetterArguments struct {
 }
 
 func functionWithPMapGetter(PMapGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
+type pSliceGetterArguments struct {
+	PSliceArg PSliceGetter[any]
+}
+
+func functionWithPSliceGetter(PSliceGetter[any]) (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
@@ -2260,6 +2356,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithPMapGetterSlice,
 		),
 		createFactory[any](
+			"testing_pslicegetter_slice",
+			&pSliceGetterSliceArguments{},
+			functionWithPSliceGetterSlice,
+		),
+		createFactory[any](
 			"testing_setter",
 			&setterArguments{},
 			functionWithSetter,
@@ -2343,6 +2444,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pmapgetter",
 			&pMapGetterArguments{},
 			functionWithPMapGetter,
+		),
+		createFactory[any](
+			"testing_pslicegetter",
+			&pSliceGetterArguments{},
+			functionWithPSliceGetter,
 		),
 		createFactory[any](
 			"testing_string",
