@@ -1,7 +1,7 @@
-github.com/Azure/azure-kusto-go/azkustodata v1.0.2 h1:4SUtoUTgPFRn0dd6IkS7bdQj048TPu40JfkyOM07AII=
-github.com/Azure/azure-kusto-go/azkustodata v1.0.2/go.mod h1:78h24leam8Qh/qHmboHHW1du6mwtAr/6o5EMB5iOci0=
-github.com/Azure/azure-kusto-go/azkustoingest v1.0.2 h1:zdHrxzVYG5W34s2SYYWWi0gCF7oXmQaRGubsVu7g5D4=
-github.com/Azure/azure-kusto-go/azkustoingest v1.0.2/go.mod h1:jdeDwLZSMyK4rQ2pfvO0SEaCaWqe0Bmuoh4lOLED/Wc=
+github.com/Azure/azure-kusto-go/azkustodata v1.0.3 h1:7RZmg7TsMLqcJHD4Ktzbg5Wx1IOjXqU/2NV6yx5CYKk=
+github.com/Azure/azure-kusto-go/azkustodata v1.0.3/go.mod h1:78h24leam8Qh/qHmboHHW1du6mwtAr/6o5EMB5iOci0=
+github.com/Azure/azure-kusto-go/azkustoingest v1.0.3 h1:nukuK1f/IDrIdu3PHbPBS9zOtUNHuKp7+GXd7W+QuB8=
+github.com/Azure/azure-kusto-go/azkustoingest v1.0.3/go.mod h1:YhgxEcTty1N4AaxeGsCZI6mhTM9LlwSWr+6S81VcqRQ=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0 h1:Gt0j3wceWMwPmiazCa8MzMA0MfhmPIz0Qp0FJ6qcM0U=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0/go.mod h1:Ot/6aikWnKWi4l9QB7qVSwa8iMphQNqkWALMoNT3rzM=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0 h1:OVoM452qUFBrX+URdH3VpR299ma4kfom0yB0URYky9g=
@@ -215,8 +215,8 @@ golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34 h1:h6p3mQqrmT1XkHVTfzLdNz1u7IhINeZkz67/xTbOuWs=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
-google.golang.org/grpc v1.72.0 h1:S7UkcVa60b5AAQTaO6ZKamFp1zMZSU0fGDK2WZLbBnM=
-google.golang.org/grpc v1.72.0/go.mod h1:wH5Aktxcg25y1I3w7H69nHfXdOG3UiadoBtjh3izSDM=
+google.golang.org/grpc v1.72.1 h1:HR03wO6eyZ7lknl75XlxABNVLLFc2PAb6mHlYh756mA=
+google.golang.org/grpc v1.72.1/go.mod h1:wH5Aktxcg25y1I3w7H69nHfXdOG3UiadoBtjh3izSDM=
 google.golang.org/protobuf v1.36.6 h1:z1NpPI8ku2WgiWnf+t9wTPsn6eP1L7ksHUlkfLvd9xY=
 google.golang.org/protobuf v1.36.6/go.mod h1:jduwjTPXsFjZGTmRluh+L6NjiWu7pchiJ2/5YcXBHnY=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
