@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: libhoneyreceiver
+note: Handle paths without slashes at the end by adding them
+issues: [40070]
+subtext: 
+change_logs: [user]
