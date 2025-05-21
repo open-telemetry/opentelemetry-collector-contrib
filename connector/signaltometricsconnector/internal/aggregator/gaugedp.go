@@ -37,11 +37,11 @@ func (dp *gaugeDP) Copy(
 	dest pmetric.NumberDataPoint,
 ) {
 	dp.attrs.CopyTo(dest.Attributes())
-	switch dp.val.(type) {
+	switch v := dp.val.(type) {
 	case float64:
-		dest.SetDoubleValue(dp.val.(float64))
+		dest.SetDoubleValue(v)
 	case int64:
-		dest.SetIntValue(dp.val.(int64))
+		dest.SetIntValue(v)
 	}
 	// TODO determine appropriate start time
 	dest.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))

@@ -327,7 +327,7 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		if strings.Contains(mi.Gauge.Value, "ExtractGrokPatterns") {
 			// Ensure a [key] selector is present after ExtractGrokPatterns
 			if !regexp.MustCompile(`ExtractGrokPatterns\([^)]*\)\s*\[[^\]]+\]`).MatchString(mi.Gauge.Value) {
-				return fmt.Errorf("ExtractGrokPatterns: a single key selector[key] is required for signal to gauge")
+				return errors.New("ExtractGrokPatterns: a single key selector[key] is required for signal to gauge")
 			}
 		}
 	}
