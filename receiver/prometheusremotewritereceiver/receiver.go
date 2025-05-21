@@ -16,6 +16,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
@@ -403,12 +404,6 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
 		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 		dp.SetSum(histogram.Sum)
-		// TODO: Mising steps to finish histogram conversion
-		// Prometheus Native histograms reference https://docs.google.com/document/d/1VhtB_cGnuO2q_zqEMgtoaLDvJ_kFSXRXoE0Wo74JlSY/edit?tab=t.0
-		// OTEL exponential histograms reference https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#exponential-histograms
-		// - Positive and Negative Buckets
-		// - Positive and Negative Spans
-		// - Exemplars
 
 		switch v := histogram.GetCount().(type) {
 		case *writev2.Histogram_CountInt:
@@ -416,7 +411,6 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		case *writev2.Histogram_CountFloat:
 			dp.SetCount(uint64(v.CountFloat))
 		}
-		histogram.
 
 		switch v := histogram.GetZeroCount().(type) {
 		case *writev2.Histogram_ZeroCountInt:
@@ -427,9 +421,77 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 
 		dp.SetZeroThreshold(histogram.ZeroThreshold)
 		dp.SetScale(histogram.Schema)
+		// The difference between float and integer histograms is that float histograms are stored as absolute counts
+		// while integer histograms are stored as deltas.
+		if histogram.IsFloatHistogram() {
+			// Float histograms
+			if value.IsStaleNaN(histogram.Sum) {
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+			}
+			if len(histogram.PositiveSpans) > 0 {
+				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
+			}
+			if len(histogram.NegativeSpans) > 0 {
+				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
+			}
+		} else {
+			// Integer histograms
+			if value.IsStaleNaN(histogram.Sum) {
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+			}
+			if len(histogram.PositiveSpans) > 0 {
+				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts())
+			}
+			if len(histogram.NegativeSpans) > 0 {
+				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts())
+			}
+		}
 
 		attributes := dp.Attributes()
 		extractAttributes(ls).CopyTo(attributes)
+	}
+}
+
+// convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
+	buckets.EnsureCapacity(len(deltas))
+	bucketIdx := 0
+	bucketCount := int64(0)
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			bucketCount += deltas[bucketIdx]
+			bucketIdx++
+			buckets.Append(uint64(bucketCount))
+		}
+	}
+}
+
+// convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
+func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
+	buckets.EnsureCapacity(len(counts))
+	fmt.Println("counts", counts)
+	bucketIdx := 0
+	bucketCount := float64(0)
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			bucketCount += counts[bucketIdx]
+			bucketIdx++
+			buckets.Append(uint64(bucketCount))
+		}
 	}
 }
 
