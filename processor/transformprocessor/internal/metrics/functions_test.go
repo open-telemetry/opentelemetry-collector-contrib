@@ -16,6 +16,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
+type TestMetricFuncArguments[K any] struct{}
+
+func NewTestMetricFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestMetricFunc", &TestMetricFuncArguments[K]{}, createTestMetricFunc[K])
+}
+
+func createTestMetricFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, _ K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+type TestDataPointFuncArguments[K any] struct{}
+
+func NewTestDataPointFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestDataPointFunc", &TestDataPointFuncArguments[K]{}, createTestDataPointFunc[K])
+}
+
+func createTestDataPointFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, _ K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
 func Test_DataPointFunctions(t *testing.T) {
 	type testCase struct {
 		name        string
@@ -50,6 +74,23 @@ func Test_DataPointFunctions(t *testing.T) {
 	}
 }
 
+func Test_DataPointFunctions_AdditionalDataPointFuncs(t *testing.T) {
+	testDataPointFuncFactory := NewTestDataPointFuncFactory[ottldatapoint.TransformContext]()
+
+	expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
+	expected[testDataPointFuncFactory.Name()] = testDataPointFuncFactory
+	expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
+	expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
+
+	additionalDataPointFuncs := []ottl.Factory[ottldatapoint.TransformContext]{testDataPointFuncFactory}
+	actual := DataPointFunctions(additionalDataPointFuncs...)
+
+	require.Len(t, actual, len(expected))
+	for k := range actual {
+		assert.Contains(t, expected, k)
+	}
+}
+
 func Test_MetricFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
 	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
@@ -67,18 +108,6 @@ func Test_MetricFunctions(t *testing.T) {
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}
-}
-
-type TestMetricFuncArguments[K any] struct{}
-
-func NewTestMetricFuncFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("TestMetricFunc", &TestMetricFuncArguments[K]{}, createTestMetricFunc[K])
-}
-
-func createTestMetricFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(_ context.Context, _ K) (any, error) {
-		return nil, nil
-	}, nil
 }
 
 func Test_MetricFunctions_AdditionalMetricFuncs(t *testing.T) {
