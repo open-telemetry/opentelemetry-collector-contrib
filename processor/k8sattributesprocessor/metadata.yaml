@@ -111,6 +111,22 @@ resource_attributes:
     description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  service.namespace:
+    description: The namespace of the service.
+    type: string
+    enabled: false
+  service.name:
+    description: The name of the service.
+    type: string
+    enabled: false
+  service.version:
+    description: The version of the service.
+    type: string
+    enabled: false
+  service.instance.id:
+    description: The instance ID of the service.
+    type: string
+    enabled: false
 
 tests:
   config:

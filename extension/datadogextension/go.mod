@@ -17,14 +17,14 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.65.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.65.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.65.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.1 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
@@ -96,7 +96,7 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250224174004-546df14abb99 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250425173222-7b384671a197 // indirect
 	google.golang.org/grpc v1.72.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -4,110 +4,51 @@
 package coralogixexporter
 
 import (
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func TestProcessError(t *testing.T) {
-	tests := []struct {
-		name     string
-		err      error
-		expected error
-	}{
-		{
-			name:     "nil error returns nil",
-			err:      nil,
-			expected: nil,
-		},
-		{
-			name:     "non-gRPC error returns permanent error",
-			err:      errors.New("some error"),
-			expected: consumererror.NewPermanent(errors.New("some error")),
-		},
-		{
-			name:     "OK status returns nil",
-			err:      status.Error(codes.OK, "ok"),
-			expected: nil,
-		},
-		{
-			name:     "permanent error returns permanent error",
-			err:      status.Error(codes.InvalidArgument, "invalid argument"),
-			expected: consumererror.NewPermanent(status.Error(codes.InvalidArgument, "invalid argument")),
-		},
-		{
-			name:     "retryable error returns original error",
-			err:      status.Error(codes.Unavailable, "unavailable"),
-			expected: status.Error(codes.Unavailable, "unavailable"),
-		},
-		{
-			name: "throttled error returns throttle retry",
-			err:  status.Error(codes.ResourceExhausted, "resource exhausted"),
-			expected: func() error {
-				st := status.New(codes.ResourceExhausted, "resource exhausted")
-				st, _ = st.WithDetails(&errdetails.RetryInfo{
-					RetryDelay: durationpb.New(time.Second),
-				})
-				return exporterhelper.NewThrottleRetry(st.Err(), time.Second)
-			}(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := processError(tt.err)
-			if tt.expected == nil {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-				if consumererror.IsPermanent(err) {
-					assert.True(t, consumererror.IsPermanent(err))
-				} else {
-					assert.Contains(t, err.Error(), tt.expected.Error())
-				}
-			}
-		})
-	}
-}
-
 func TestShouldRetry(t *testing.T) {
 	tests := []struct {
-		name      string
-		code      codes.Code
-		retryInfo *errdetails.RetryInfo
-		expected  bool
+		name             string
+		code             codes.Code
+		retryInfo        *errdetails.RetryInfo
+		expected         bool
+		expectedThrottle bool
 	}{
 		{
-			name:      "Canceled is retryable",
-			code:      codes.Canceled,
-			retryInfo: nil,
-			expected:  true,
+			name:             "Canceled is retryable",
+			code:             codes.Canceled,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "DeadlineExceeded is retryable",
-			code:      codes.DeadlineExceeded,
-			retryInfo: nil,
-			expected:  true,
+			name:             "DeadlineExceeded is retryable",
+			code:             codes.DeadlineExceeded,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "Unavailable is retryable",
-			code:      codes.Unavailable,
-			retryInfo: nil,
-			expected:  true,
+			name:             "Unavailable is retryable",
+			code:             codes.Unavailable,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "ResourceExhausted without retry info is not retryable",
-			code:      codes.ResourceExhausted,
-			retryInfo: nil,
-			expected:  false,
+			name:             "ResourceExhausted without retry info is not retryable",
+			code:             codes.ResourceExhausted,
+			retryInfo:        nil,
+			expected:         false,
+			expectedThrottle: true,
 		},
 		{
 			name: "ResourceExhausted with retry info is retryable",
@@ -115,20 +56,23 @@ func TestShouldRetry(t *testing.T) {
 			retryInfo: &errdetails.RetryInfo{
 				RetryDelay: durationpb.New(time.Second),
 			},
-			expected: true,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "InvalidArgument is not retryable",
-			code:      codes.InvalidArgument,
-			retryInfo: nil,
-			expected:  false,
+			name:             "InvalidArgument is not retryable",
+			code:             codes.InvalidArgument,
+			retryInfo:        nil,
+			expected:         false,
+			expectedThrottle: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := shouldRetry(tt.code, tt.retryInfo)
+			result, isThrottle := shouldRetry(tt.code, tt.retryInfo)
 			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expectedThrottle, isThrottle)
 		})
 	}
 }

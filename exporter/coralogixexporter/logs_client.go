@@ -26,13 +26,13 @@ func newLogsExporter(cfg component.Config, set exp.Settings) (*logsExporter, err
 	}
 
 	return &logsExporter{
-		signalExporter: *signalExporter,
+		signalExporter: signalExporter,
 	}, nil
 }
 
 type logsExporter struct {
 	logExporter plogotlp.GRPCClient
-	signalExporter
+	*signalExporter
 }
 
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
@@ -45,6 +45,10 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		resourceLog := rss.At(i)
@@ -55,7 +59,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 
 	resp, err := e.logExporter.Export(e.enhanceContext(ctx), plogotlp.NewExportRequestFromLogs(ld), e.callOptions...)
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
 	partialSuccess := resp.PartialSuccess()
