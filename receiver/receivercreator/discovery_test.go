@@ -254,11 +254,11 @@ include:
 - /var/log/pod/x/foo.log`
 
 	tests := map[string]struct {
-		inputEndpoint        observer.Endpoint
-		expectedReceiver     receiverTemplate
-		wantError            bool
-		ignoreReceivers      []string
-		defaultLogCollection bool
+		inputEndpoint      observer.Endpoint
+		expectedReceiver   receiverTemplate
+		wantError          bool
+		ignoreReceivers    []string
+		defaultAnnotations map[string]string
 	}{
 		`logs_pod_level_hints_only`: {
 			inputEndpoint: observer.Endpoint{
@@ -372,9 +372,11 @@ include:
 					},
 				}, signals: receiverSignals{metrics: false, logs: true, traces: false},
 			},
-			wantError:            false,
-			ignoreReceivers:      []string{},
-			defaultLogCollection: true,
+			wantError:       false,
+			ignoreReceivers: []string{},
+			defaultAnnotations: map[string]string{
+				otelLogsHints + "/enabled": "true",
+			},
 		}, `logs_pod_level_hints_disable_default_all`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/filelog(redis)",
@@ -391,10 +393,12 @@ include:
 					},
 				},
 			},
-			expectedReceiver:     receiverTemplate{},
-			wantError:            false,
-			ignoreReceivers:      []string{},
-			defaultLogCollection: true,
+			expectedReceiver: receiverTemplate{},
+			wantError:        false,
+			ignoreReceivers:  []string{},
+			defaultAnnotations: map[string]string{
+				otelLogsHints + "/enabled": "true",
+			},
 		}, `logs_container_level_hints`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/filelog(redis)",
@@ -557,9 +561,9 @@ include:
 		t.Run(name, func(t *testing.T) {
 			builder := createK8sHintsBuilder(
 				DiscoveryConfig{
-					Enabled:              true,
-					IgnoreReceivers:      test.ignoreReceivers,
-					DefaultLogCollection: test.defaultLogCollection,
+					Enabled:            true,
+					IgnoreReceivers:    test.ignoreReceivers,
+					DefaultAnnotations: test.defaultAnnotations,
 				},
 				logger)
 			env, err := test.inputEndpoint.Env()

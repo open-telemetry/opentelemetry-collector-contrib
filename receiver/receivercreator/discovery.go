@@ -35,9 +35,9 @@ const (
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
-	logger               *zap.Logger
-	ignoreReceivers      map[string]bool
-	defaultLogCollection bool
+	logger             *zap.Logger
+	ignoreReceivers    map[string]bool
+	defaultAnnotations map[string]string
 }
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
@@ -46,9 +46,9 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 		ignoreReceivers[r] = true
 	}
 	return k8sHintsBuilder{
-		logger:               logger,
-		ignoreReceivers:      ignoreReceivers,
-		defaultLogCollection: config.DefaultLogCollection,
+		logger:             logger,
+		ignoreReceivers:    ignoreReceivers,
+		defaultAnnotations: config.DefaultAnnotations,
 	}
 }
 
@@ -79,11 +79,12 @@ func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.End
 		return nil, nil
 	}
 
+	annotations := mergeAnnotations(pod.Annotations, builder.defaultAnnotations)
 	switch endpointType {
 	case string(observer.PortType):
-		return builder.createScraper(pod.Annotations, env)
+		return builder.createScraper(annotations, env)
 	case string(observer.PodContainerType):
-		return builder.createLogsReceiver(pod.Annotations, env)
+		return builder.createLogsReceiver(annotations, env)
 	default:
 		return nil, nil
 	}
@@ -153,9 +154,7 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 	containerName = c.Name
 	pod := c.Pod
 
-	// Skip if explicitly disabled, or not explicitly enabled and default collection is off
-	if discoveryDisabled(annotations, otelLogsHints, containerName) ||
-		(!discoveryEnabled(annotations, otelLogsHints, containerName) && !builder.defaultLogCollection) {
+	if !discoveryEnabled(annotations, otelLogsHints, containerName) {
 		return nil, nil
 	}
 
@@ -265,14 +264,6 @@ func discoveryEnabled(annotations map[string]string, hintBase string, scopeSuffi
 	return enabledHint == "true"
 }
 
-func discoveryDisabled(annotations map[string]string, hintBase string, scopeSuffix string) bool {
-	enabledHint, found := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
-	if !found {
-		return false
-	}
-	return enabledHint == "false"
-}
-
 func getStringEnv(env observer.EndpointEnv, key string) string {
 	var valString string
 	if val, ok := env[key]; ok {
@@ -304,4 +295,17 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 		return errors.New("configured endpoint should include target Pod's endpoint")
 	}
 	return nil
+}
+
+func mergeAnnotations(podAnnotations, defaultAnnotations map[string]string) map[string]string {
+	annotations := make(map[string]string)
+	// Start with defaultAnnotations (lower priority)
+	for k, v := range defaultAnnotations {
+		annotations[k] = v
+	}
+	// Overwrite with podAnnotations (higher priority)
+	for k, v := range podAnnotations {
+		annotations[k] = v
+	}
+	return annotations
 }
