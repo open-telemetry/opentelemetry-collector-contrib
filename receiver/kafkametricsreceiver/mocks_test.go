@@ -11,7 +11,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 const (
