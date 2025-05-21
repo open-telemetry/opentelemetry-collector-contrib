@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 )
 
@@ -206,12 +209,18 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 
 type mockLogsServer struct {
 	plogotlp.UnimplementedGRPCServer
-	recvCount int
+	recvCount      int
+	partialSuccess *plogotlp.ExportPartialSuccess
 }
 
 func (m *mockLogsServer) Export(_ context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	m.recvCount += req.Logs().LogRecordCount()
-	return plogotlp.NewExportResponse(), nil
+	resp := plogotlp.NewExportResponse()
+	if m.partialSuccess != nil {
+		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
+		resp.PartialSuccess().SetRejectedLogRecords(m.partialSuccess.RejectedLogRecords())
+	}
+	return resp, nil
 }
 
 func startMockOtlpLogsServer(tb testing.TB) (endpoint string, stopFn func(), srv *mockLogsServer) {
@@ -282,4 +291,68 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 		})
 	}
 	b.Logf("Total logs received by mock server: %d", mockSrv.recvCount)
+}
+
+func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpLogsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Logs: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs()
+	rl := resourceLogs.AppendEmpty()
+	resource := rl.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeLogs := rl.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("test-scope")
+
+	log1 := scopeLogs.LogRecords().AppendEmpty()
+	log1.SetSeverityText("INFO")
+	log2 := scopeLogs.LogRecords().AppendEmpty()
+	log2.SetSeverityText("ERROR")
+
+	partialSuccess := plogotlp.NewExportPartialSuccess()
+	partialSuccess.SetErrorMessage("some logs were rejected")
+	partialSuccess.SetRejectedLogRecords(1)
+	mockSrv.partialSuccess = &partialSuccess
+
+	core, observed := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+	exp.settings.Logger = logger
+
+	err = exp.pushLogs(context.Background(), logs)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	found := false
+	for _, entry := range entries {
+		if entry.Message == "Partial success response from Coralogix" &&
+			entry.Level == zapcore.ErrorLevel &&
+			entry.ContextMap()["message"] == "some logs were rejected" &&
+			entry.ContextMap()["rejected_log_records"] == int64(1) {
+			found = true
+		}
+	}
+	assert.True(t, found, "Expected partial success log with correct fields")
 }
