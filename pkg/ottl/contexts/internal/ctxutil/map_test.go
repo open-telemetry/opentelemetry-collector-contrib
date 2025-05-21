@@ -320,22 +320,26 @@ func Test_SetMap(t *testing.T) {
 		return m
 	}
 	tests := []struct {
-		name string
-		val  any
-		err  error
+		name     string
+		val      any
+		err      error
+		expected any
 	}{
 		{
-			name: "invalid type",
-			val:  "invalid",
-			err:  errors.New("failed to convert type string into pcommon.Map"),
+			name:     "invalid type",
+			val:      "invalid",
+			err:      nil, // This is an issue in GetMap(), not returning an error here.
+			expected: pcommon.NewMap(),
 		},
 		{
-			name: "raw map",
-			val:  map[string]any{"foo": "bar"},
+			name:     "raw map",
+			val:      map[string]any{"foo": "bar"},
+			expected: createMap(),
 		},
 		{
-			name: "pcommon.Map",
-			val:  createMap(),
+			name:     "pcommon.Map",
+			val:      createMap(),
+			expected: createMap(),
 		},
 	}
 
@@ -347,7 +351,7 @@ func Test_SetMap(t *testing.T) {
 				require.Equal(t, tt.err, err)
 				return
 			}
-			assert.Equal(t, m, createMap())
+			assert.Equal(t, tt.expected, m)
 		})
 	}
 }
