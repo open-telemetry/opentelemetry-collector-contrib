@@ -1970,8 +1970,8 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				select {
 				case agentIDChan <- message.InstanceUid:
 				default:
@@ -2009,12 +2009,15 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	agentVersion := "0.110.0"
-	agentHash := []byte{0xab, 0x90, 0x7a, 0xe9, 0xce, 0x1, 0xa5, 0x5d, 0xd9, 0x35, 0x6c, 0x79, 0x7e, 0x82, 0x7b, 0x53, 0x1c, 0x72, 0xea, 0x40, 0xd6, 0x44, 0xca, 0xc1, 0xb, 0x73, 0xee, 0x4e, 0x4e, 0x2b, 0x10, 0x4c}
-	agentName := fmt.Sprintf("otelcol-contrib_0.110.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
-	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s", agentName)
-	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.sig", agentName)
-	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.pem", agentName)
+	agentVersion := "0.126.0"
+
+	//agentHash := []byte{0xab, 0x90, 0x7a, 0xe9, 0xce, 0x1, 0xa5, 0x5d, 0xd9, 0x35, 0x6c, 0x79, 0x7e, 0x82, 0x7b, 0x53, 0x1c, 0x72, 0xea, 0x40, 0xd6, 0x44, 0xca, 0xc1, 0xb, 0x73, 0xee, 0x4e, 0x4e, 0x2b, 0x10, 0x4c}
+	agentName := fmt.Sprintf("otelcol-contrib_%s_%s_%s.tar.gz", agentVersion, runtime.GOOS, runtime.GOARCH)
+	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v%s/%s", agentVersion, agentName)
+	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v%s/%s.sig", agentVersion, agentName)
+	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v%s/%s.pem", agentVersion, agentName)
+	data := getFileContents(t, agentURL)
+	agentHash := sha256.Sum256(data)
 
 	cert := getFileContents(t, agentCertURL)
 	sig := getFileContents(t, agentSigURL)
@@ -2035,7 +2038,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 					Hash:    []byte{0x01, 0x02},
 					File: &protobufs.DownloadableFile{
 						DownloadUrl: agentURL,
-						ContentHash: agentHash,
+						ContentHash: agentHash[:],
 						Signature:   signatureField,
 					},
 				},
@@ -2063,6 +2066,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	}, ps)
 
 	ps = <-packageStatusesChan
+	require.Empty(t, ps.GetPackages()[""].ErrorMessage)
 	require.Equal(t, &protobufs.PackageStatuses{
 		Packages: map[string]*protobufs.PackageStatus{
 			"": {
