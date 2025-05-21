@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"reflect"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -24,7 +24,7 @@ func createContainsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	args, ok := oArgs.(*ContainsArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ContainsFactory args must be of type *ContainsArguments[K]")
+		return nil, errors.New("ContainsFactory args must be of type *ContainsArguments[K]")
 	}
 
 	return contains(args.Target, args.Item), nil
