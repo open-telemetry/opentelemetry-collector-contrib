@@ -958,250 +958,95 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
 		record := plog.NewLogRecord()
-		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		record.SetEventName(eventName)
 
-		// Attributes sorted alphabetically by key
-		attributes := []internalAttribute{
-			{
-				key:            "client.port",
-				columnName:     clientPort,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "db.namespace",
-				columnName:     dbName,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        "db.query.text",
-				columnName: statementText,
-				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateSQL(row[columnName])
-				},
-				valueSetter: setString,
-			},
-			{
-				key:            "db.system.name",
-				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
-				valueSetter:    setString,
-			},
-			{
-				key:            "network.peer.address",
-				columnName:     clientAddress,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            "network.peer.port",
-				columnName:     clientPort,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			// the following ones are the attributes that are not in the semantic conventions
-			{
-				key:            dbPrefix + blockingSessionID,
-				columnName:     blockingSessionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + command,
-				columnName:     command,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + cpuTimeMillisecond,
-				columnName: cpuTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + deadlockPriority,
-				columnName:     deadlockPriority,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:        dbPrefix + estimatedCompletionTimeMillisecond,
-				columnName: estimatedCompletionTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:        dbPrefix + lockTimeoutMillisecond,
-				columnName: lockTimeoutMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + logicalReads,
-				columnName:     logicalReads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + openTransactionCount,
-				columnName:     openTransactionCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + percentComplete,
-				columnName:     percentComplete,
-				valueRetriever: retrieveFloat,
-				valueSetter:    setDouble,
-			},
-			{
-				key:            dbPrefix + queryHash,
-				valueRetriever: defaultValueRetriever(queryHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryPlanHash,
-				valueRetriever: defaultValueRetriever(queryPlanHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryStart,
-				columnName:     queryStart,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + reads,
-				columnName:     reads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + requestStatus,
-				columnName:     requestStatus,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + rowCount,
-				columnName:     rowCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + sessionID,
-				columnName:     sessionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + sessionStatus,
-				columnName:     sessionStatus,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + totalElapsedTimeMillisecond,
-				columnName: totalElapsedTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + transactionID,
-				columnName:     transactionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + transactionIsolationLevel,
-				columnName:     transactionIsolationLevel,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "user.name",
-				columnName:     username,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + waitResource,
-				columnName:     waitResource,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + waitTimeMillisecond,
-				columnName: waitTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + waitType,
-				columnName:     waitType,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + writes,
-				columnName:     writes,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-		}
+		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
+		dbNamespaceVal := s.retrieveValue(row, dbName, &errs, vanillaRetriever).(string)
+		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			return obfuscateSQL(row[columnName])
+		}).(string)
+		dbSystemNameVal := "microsoft.sql_server"
+		networkPeerAddressVal := s.retrieveValue(row, clientAddress, &errs, vanillaRetriever).(string)
+		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
+		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
+		commandVal := s.retrieveValue(row, command, &errs, vanillaRetriever).(string)
+		cpuTimeMillisecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		deadlockPriorityVal := s.retrieveValue(row, deadlockPriority, &errs, retrieveInt).(int64)
+		estimatedCompletionTimeMillisecondVal := s.retrieveValue(row, estimatedCompletionTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		lockTimeoutMillisecondVal := s.retrieveValue(row, lockTimeoutMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt).(int64)
+		openTransactionCountVal := s.retrieveValue(row, openTransactionCount, &errs, retrieveInt).(int64)
+		percentCompleteVal := s.retrieveValue(row, percentComplete, &errs, retrieveFloat).(float64)
+		queryStartVal := s.retrieveValue(row, queryStart, &errs, vanillaRetriever).(string)
+		readsVal := s.retrieveValue(row, reads, &errs, retrieveInt).(int64)
+		requestStatusVal := s.retrieveValue(row, requestStatus, &errs, vanillaRetriever).(string)
+		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
+		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
+		sessionStatusVal := s.retrieveValue(row, sessionStatus, &errs, vanillaRetriever).(string)
+		totalElapsedTimeMillisecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		transactionIDVal := s.retrieveValue(row, transactionID, &errs, retrieveInt).(int64)
+		transactionIsolationLevelVal := s.retrieveValue(row, transactionIsolationLevel, &errs, retrieveInt).(int64)
+		usernameVal := s.retrieveValue(row, username, &errs, vanillaRetriever).(string)
+		waitResourceVal := s.retrieveValue(row, waitResource, &errs, vanillaRetriever).(string)
+		waitTimeMillisecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		waitTypeVal := s.retrieveValue(row, waitType, &errs, vanillaRetriever).(string)
+		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 
 		spanContext := trace.SpanContextFromContext(propagator.Extract(context.Background(), propagation.MapCarrier{
 			"traceparent": row[contextInfo],
 		}))
+		contextInfoVal := ""
 
 		if spanContext.IsValid() {
 			record.SetTraceID(pcommon.TraceID(spanContext.TraceID()))
 			record.SetSpanID(pcommon.SpanID(spanContext.SpanID()))
 		} else {
-			attributes = append(attributes, internalAttribute{
-				key:            dbPrefix + contextInfo,
-				valueRetriever: defaultValueRetriever(hex.EncodeToString([]byte(row[contextInfo]))),
-				valueSetter:    setString,
-			})
-		}
-
-		for _, attr := range attributes {
-			value, err := attr.valueRetriever(row, attr.columnName)
-			if err != nil {
-				errs = append(errs, err)
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
-			}
-			attr.valueSetter(record.Attributes(), attr.key, value)
+			contextInfoVal = hex.EncodeToString([]byte(row[contextInfo]))
 		}
 
 		// client.address: use host_name if it has value, if not, use client_net_address.
 		// this value may not be accurate if
 		// - there is proxy in the middle of sql client and sql server. Or
 		// - host_name value is empty or not accurate.
+		clientAddressVal := ""
 		if row[hostName] != "" {
-			record.Attributes().PutStr("client.address", row[hostName])
+			clientAddressVal = row[hostName]
 		} else {
-			record.Attributes().PutStr("client.address", row[clientAddress])
+			clientAddressVal = row[clientAddress]
 		}
 
-		s.lb.AppendLogRecord(record)
+		s.lb.RecordDbServerQuerySampleEvent(
+			timestamp, clientAddressVal, clientPortVal,
+			dbNamespaceVal, queryTextVal, dbSystemNameVal,
+			networkPeerAddressVal, networkPeerPortVal,
+			blockSessionIDVal, contextInfoVal,
+			commandVal, cpuTimeMillisecondVal,
+			deadlockPriorityVal, estimatedCompletionTimeMillisecondVal,
+			lockTimeoutMillisecondVal, logicalReadsVal,
+			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
+			queryStartVal, readsVal,
+			requestStatusVal, rowCountVal,
+			sessionIDVal, sessionStatusVal,
+			totalElapsedTimeMillisecondVal, transactionIDVal, transactionIsolationLevelVal,
+			waitResourceVal, waitTimeMillisecondVal, waitTypeVal, writesVal, usernameVal,
+		)
 
 		if !resourcesAdded {
 			resourceAttributes := resources.Attributes()

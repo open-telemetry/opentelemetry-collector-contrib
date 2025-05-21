@@ -514,7 +514,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			}
 
 			// Uncomment line below to re-generate expected logs.
-			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
+			golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())

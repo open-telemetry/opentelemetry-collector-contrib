@@ -130,91 +130,95 @@ attributes:
   db.server.name:
     description: The name of the server hosting the database.
     type: string
-  ## query sample 
-  client.port:
-    description:
-    type: 
-  db.namespace:
-    description:
-    type: 
-  db.system.name:
-    description:
-    type: 
-  network.peer.address:
-    description:
-    type: 
-  network.peer.port:
-    description:
-    type: 
-  sqlserver.blocking_session_id:
-    description:
-    type: 
-  sqlserver.command:
-    description:
-    type: 
-  sqlserver.cpu_time:
-    description:
-    type: 
-  sqlserver.deadlock_priority:
-    description:
-    type: 
-  sqlserver.estimated_completion_time:
-    description:
-    type: 
-  sqlserver.lock_timeout:
-    description:
-    type: 
-  sqlserver.logical_reads:
-    description:
-    type: 
-  sqlserver.open_transaction_count:
-    description:
-    type: 
-  sqlserver.percent_complete:
-    description:
-    type:  
-  sqlserver.query_start:
-    description:
-    type: 
-  sqlserver.reads:
-    description:
-    type: 
-  sqlserver.request_status:
-    description:
-    type: 
-  sqlserver.row_count:
-    description:
-    type: 
-  sqlserver.session_id:
-    description:
-    type: 
-  sqlserver.session_status:
-    description:
-    type: 
-  sqlserver.transaction_id:
-    description:
-    type: 
-  sqlserver.transaction_isolation_level:
-    description:
-    type: 
-  user.name:
-    description:
-    type: 
-  sqlserver.wait_resource:
-    description:
-    type: 
-  sqlserver.wait_time:
-    description:
-    type: 
-  sqlserver.wait_type:
-    description:
-    type: 
-  sqlserver.writes:
-    description:
-    type: 
+  ## query sample
   client.address:
-    description:
-    type: 
+    description: Hostname or address of the client.
+    type: string 
+  client.port:
+    description: TCP port used by the client.
+    type: int
+  db.namespace:
+    description: The database name.
+    type: string
+  db.system.name:
+    description: The database system name. It will always be microsoft.sql_server.
+    type: string
+  network.peer.address:
+    description: IP address of the peer client.
+    type: string
+  network.peer.port:
+    description: TCP port used by the peer client.
+    type: int
+  sqlserver.blocking_session_id:
+    description: Session ID that is blocking the current session. 0 if none.
+    type: int
+  sqlserver.context_info:
+    description: Context information for the session, represented as a hexadecimal string.
+    type: string
+  sqlserver.command:
+    description: SQL command type being executed.
+    type: string
+  sqlserver.cpu_time:
+    description: CPU time consumed by the query, in seconds.
+    type: double
+  sqlserver.deadlock_priority:
+    description: Deadlock priority value for the session.
+    type: int
+  sqlserver.estimated_completion_time:
+    description: Estimated time remaining for the request to complete, in seconds.
+    type: double
+  sqlserver.lock_timeout:
+    description: Lock timeout value in seconds.
+    type: double
+  sqlserver.logical_reads:
+    description: Number of logical reads (data read from cache/memory).
+    type: int
+  sqlserver.open_transaction_count:
+    description: Number of transactions currently open in the session.
+    type: int
+  sqlserver.percent_complete:
+    description: Percentage of work completed.
+    type: double
+  sqlserver.query_start:
+    description: Timestamp of when the SQL query started (ISO 8601 format).
+    type: string
+  sqlserver.reads:
+    description: Number of physical reads performed by the query.
+    type: int
+  sqlserver.request_status:
+    description: Status of the request (e.g., running, suspended).
+    type: string
+  sqlserver.row_count:
+    description: Number of rows affected or returned by the query.
+    type: int
+  sqlserver.session_id:
+    description: ID of the SQL Server session.
+    type: int
+  sqlserver.session_status:
+    description: Status of the session (e.g., running, sleeping).
+    type: string
+  sqlserver.transaction_id:
+    description: Unique ID of the active transaction.
+    type: int
+  sqlserver.transaction_isolation_level:
+    description: Transaction isolation level used in the session. Represented as numeric constant.
+    type: int
+  sqlserver.wait_resource:
+    description: The resource for which the session is waiting.
+    type: string
+  sqlserver.wait_time:
+    description: Duration in seconds the request has been waiting.
+    type: double
+  sqlserver.wait_type:
+    description: Type of wait encountered by the request. Empty if none.
+    type: string
+  sqlserver.writes:
+    description: Number of writes performed by the query.
+    type: int
+  user.name:
+    description: Login name associated with the SQL Server session.
+    type: string
+
 
 events:
   db.server.top_query:
@@ -236,6 +240,43 @@ events:
       - server.address
       - server.port
       - db.server.name
+  db.server.query_sample:
+    enabled: true
+    description: query sample
+    attributes:
+      - client.address
+      - client.port
+      - db.namespace
+      - db.query.text
+      - db.system.name
+      - network.peer.address
+      - network.peer.port
+      - sqlserver.blocking_session_id
+      - sqlserver.context_info
+      - sqlserver.command
+      - sqlserver.cpu_time
+      - sqlserver.deadlock_priority
+      - sqlserver.estimated_completion_time
+      - sqlserver.lock_timeout
+      - sqlserver.logical_reads
+      - sqlserver.open_transaction_count
+      - sqlserver.percent_complete
+      - sqlserver.query_hash
+      - sqlserver.query_plan_hash
+      - sqlserver.query_start
+      - sqlserver.reads
+      - sqlserver.request_status
+      - sqlserver.row_count
+      - sqlserver.session_id
+      - sqlserver.session_status
+      - sqlserver.total_elapsed_time
+      - sqlserver.transaction_id
+      - sqlserver.transaction_isolation_level
+      - sqlserver.wait_resource
+      - sqlserver.wait_time
+      - sqlserver.wait_type
+      - sqlserver.writes
+      - user.name
 
 metrics:
   sqlserver.user.connection.count:
