@@ -2013,12 +2013,13 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	}
 }
 
-func Test_NewProcessor_AdditionalMetricFuncs(t *testing.T) {
+func Test_NewProcessor_AdditionalFuncs(t *testing.T) {
 	type testCase struct {
-		name                  string
-		statements            []common.ContextStatements
-		wantErrorWith         string
-		additionalMetricFuncs []ottl.Factory[ottlmetric.TransformContext]
+		name                         string
+		statements                   []common.ContextStatements
+		wantErrorWith                string
+		additionalMetricFuncs        []ottl.Factory[ottlmetric.TransformContext]
+		additionalDataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]
 	}
 
 	tests := []testCase{
@@ -2030,7 +2031,8 @@ func Test_NewProcessor_AdditionalMetricFuncs(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			additionalMetricFuncs: []ottl.Factory[ottlmetric.TransformContext]{NewTestMetricFuncFactory[ottlmetric.TransformContext]()},
+			additionalMetricFuncs:        []ottl.Factory[ottlmetric.TransformContext]{NewTestMetricFuncFactory[ottlmetric.TransformContext]()},
+			additionalDataPointFunctions: EmptyAdditionalDataPointFuncs,
 		},
 		{
 			name: "additional metric funcs : statement with missing metric func",
@@ -2040,14 +2042,38 @@ func Test_NewProcessor_AdditionalMetricFuncs(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			wantErrorWith:         `undefined function "TestMetricFunc"`,
-			additionalMetricFuncs: EmptyAdditionalMetricFuncs,
+			wantErrorWith:                `undefined function "TestMetricFunc"`,
+			additionalMetricFuncs:        EmptyAdditionalMetricFuncs,
+			additionalDataPointFunctions: EmptyAdditionalDataPointFuncs,
+		},
+		{
+			name: "additional data point funcs : statement with added data point func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
+				},
+			},
+			additionalMetricFuncs:        EmptyAdditionalMetricFuncs,
+			additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{NewTestDataPointFuncFactory[ottldatapoint.TransformContext]()},
+		},
+		{
+			name: "additional data point funcs : statement with missing data point func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
+				},
+			},
+			wantErrorWith:                `undefined function "TestDataPointFunc"`,
+			additionalMetricFuncs:        EmptyAdditionalMetricFuncs,
+			additionalDataPointFunctions: EmptyAdditionalDataPointFuncs,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.additionalMetricFuncs, EmptyAdditionalDataPointFuncs)
+			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.additionalMetricFuncs, tt.additionalDataPointFunctions)
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
