@@ -267,43 +267,36 @@ exporters:
 
 ### Batching Configuration
 
-This exporter includes a new, experimental `batcher` configuration for
-batching in the `exporterhelper` module, but this mode is disabled by
-default.  This batching support works when combined with
-`queue_sender` functionality.
+This exporter supports built-in `exporterhelper` support for queue and
+batch behavior using the `sending_queue` settings. Note that the
+bytes-based batching is supported, but that the exporterhelper
+estimates batch sizes using the OTLP representation, not considering
+Arrow compression.
 
 ```
 exporters:
   otelarrow:
-    batcher:
-	  enabled: true
     sending_queue:
       enabled: true
-      storage: file_storage/otc
+	  wait_for_result: true
+	  block_on_overflow: true
+	  queue_size: 1000
+	  sizer: items
+      batch:
+	    flush_timeout: 1s
+		min_size: 4000
+		max_size: 5000
+
+	  # (num_consumers / num_streams) is the average number
+	  # of concurrent requests per stream.
+	  num_consumers: 40
+	  arrow:
+	    num_streams: 4
+
+	  # Optional persistent storage
+	  # storage: ...
+	  
 extensions:
   file_storage/otc:
     directory: /var/lib/storage/otc
-```
-
-The built-in batcher is only recommended with a persistent queue,
-otherwise it cannot provide back-pressure to the caller.  If building
-a custom build of the OpenTelemetry Collector, we recommend using the
-[Concurrent Batch
-Processor](https://github.com/open-telemetry/otel-arrow/blob/main/collector/processor/concurrentbatchprocessor/README.md)
-to provide simultaneous back-pressure, concurrency, and batching
-functionality.  See [more discussion on this
-issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10368).
-
-```
-exporters:
-  otelarrow:
-    batcher:
-	  enabled: false
-    sending_queue:
-      enabled: false
-processors:
-  concurrentbatch:
-    send_batch_max_size: 1500
-    send_batch_size: 1000
-    timeout: 1s
 ```

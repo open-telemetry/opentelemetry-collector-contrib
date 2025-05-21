@@ -5,6 +5,7 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"go.opentelemetry.io/collector/component"
@@ -35,14 +36,23 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
-	batcherCfg.Enabled = false
-
+	// These defaults are taken from the experimental setup used
+	// in the blog post covering Phase 1 performance results.  These
+	// were the defaults used in the concurrentbatchprocessor
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.WaitForResult = true
+	queueCfg.BlockOnOverflow = true
+	queueCfg.Sizer = exporterhelper.RequestSizerTypeItems
+	queueCfg.NumConsumers = arrow.DefaultProducersPerStream * arrow.DefaultNumStreams
+	queueCfg.Batch = &exporterhelper.BatchConfig{
+		FlushTimeout: time.Second,
+		MinSize:      1000,
+		MaxSize:      1500,
+	}
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-		BatcherConfig:   batcherCfg,
+		QueueSettings:   queueCfg,
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to zstd compression
@@ -76,7 +86,6 @@ func helperOptions(e exp) []exporterhelper.Option {
 		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(e.start),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 		exporterhelper.WithShutdown(e.shutdown),
 	}
 }
