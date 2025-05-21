@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package configkafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+package configkafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 
 import (
 	"errors"

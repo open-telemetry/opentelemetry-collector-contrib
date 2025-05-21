@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.126.0
@@ -148,3 +149,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka => ../../pkg/kafka/configkafka

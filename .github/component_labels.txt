@@ -139,6 +139,7 @@ pkg/core/xidutils pkg/core/xidutils
 pkg/datadog pkg/datadog
 pkg/experimentalmetricmetadata pkg/experimentalmetricmetadata
 pkg/golden pkg/golden
+pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/pdatatest pkg/pdatatest
