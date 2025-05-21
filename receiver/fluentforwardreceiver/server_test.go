@@ -18,7 +18,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 	cases := []struct {
 		name          string
 		event         func() []byte
-		expectedMode  EventMode
+		expectedMode  eventMode
 		expectedError error
 	}{
 		{
@@ -31,7 +31,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 				b = msgp.AppendInt(b, 5000)
 				return b
 			},
-			MessageMode,
+			messageMode,
 			nil,
 		},
 		{
@@ -44,7 +44,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 				b = msgp.AppendInt(b, 5000)
 				return b
 			},
-			MessageMode,
+			messageMode,
 			nil,
 		},
 		{
@@ -57,7 +57,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 				b = msgp.AppendInt(b, 5000)
 				return b
 			},
-			MessageMode,
+			messageMode,
 			nil,
 		},
 		{
@@ -70,7 +70,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 				b = msgp.AppendInt(b, 5000)
 				return b
 			},
-			MessageMode,
+			messageMode,
 			nil,
 		},
 		{
@@ -83,7 +83,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 				b = msgp.AppendInt(b, 5000)
 				return b
 			},
-			UnknownMode,
+			unknownMode,
 			errors.New("malformed tag field"),
 		},
 		{
@@ -96,7 +96,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 				b = msgp.AppendFloat64(b, 5000.0)
 				return b
 			},
-			UnknownMode,
+			unknownMode,
 			errors.New("unable to determine next event mode for type float64"),
 		},
 	}
