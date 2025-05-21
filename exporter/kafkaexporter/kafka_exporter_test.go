@@ -666,91 +666,142 @@ func TestLogsPusher_partitioning(t *testing.T) {
 
 func Test_GetTopic(t *testing.T) {
 	tests := []struct {
-		name      string
-		cfg       Config
-		ctx       context.Context
-		resource  any
-		wantTopic string
+		name               string
+		topicFromAttribute string
+		signalCfg          SignalConfig
+		ctx                context.Context
+		resource           any
+		wantTopic          string
 	}{
+		// topicFromAttribute tests.
 		{
-			name: "Valid metric attribute, return topic name",
-			cfg: Config{
-				TopicFromAttribute: "resource-attr",
-			},
-			ctx:       topic.WithTopic(context.Background(), "context-topic"),
-			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
-			wantTopic: "resource-attr-val-1",
+			name:               "Valid metric attribute, return topic name",
+			topicFromAttribute: "resource-attr",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                topic.WithTopic(context.Background(), "context-topic"),
+			resource:           testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic:          "resource-attr-val-1",
 		},
 		{
-			name: "Valid trace attribute, return topic name",
-			cfg: Config{
-				TopicFromAttribute: "resource-attr",
-			},
-			ctx:       topic.WithTopic(context.Background(), "context-topic"),
-			resource:  testdata.GenerateTraces(1).ResourceSpans(),
-			wantTopic: "resource-attr-val-1",
+			name:               "Valid trace attribute, return topic name",
+			topicFromAttribute: "resource-attr",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                topic.WithTopic(context.Background(), "context-topic"),
+			resource:           testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic:          "resource-attr-val-1",
 		},
 		{
-			name: "Valid log attribute, return topic name",
-			cfg: Config{
-				TopicFromAttribute: "resource-attr",
-			},
-			ctx:       topic.WithTopic(context.Background(), "context-topic"),
-			resource:  testdata.GenerateLogs(1).ResourceLogs(),
-			wantTopic: "resource-attr-val-1",
+			name:               "Valid log attribute, return topic name",
+			topicFromAttribute: "resource-attr",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                topic.WithTopic(context.Background(), "context-topic"),
+			resource:           testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic:          "resource-attr-val-1",
 		},
 		{
-			name: "Attribute not found",
-			cfg: Config{
-				TopicFromAttribute: "nonexistent_attribute",
-			},
-			ctx:       context.Background(),
-			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
-			wantTopic: "defaultTopic",
+			name:               "Attribute not found",
+			topicFromAttribute: "nonexistent_attribute",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                context.Background(),
+			resource:           testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic:          "defaultTopic",
 		},
-
+		// Nonexistent attribute tests.
 		{
-			name: "Valid metric context, return topic name",
-			cfg: Config{
-				TopicFromAttribute: "nonexistent_attribute",
-			},
-			ctx:       topic.WithTopic(context.Background(), "context-topic"),
-			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
-			wantTopic: "context-topic",
+			name:               "Valid metric context, return topic name",
+			topicFromAttribute: "nonexistent_attribute",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                topic.WithTopic(context.Background(), "context-topic"),
+			resource:           testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic:          "context-topic",
 		},
 		{
-			name: "Valid trace context, return topic name",
-			cfg: Config{
-				TopicFromAttribute: "nonexistent_attribute",
-			},
-			ctx:       topic.WithTopic(context.Background(), "context-topic"),
-			resource:  testdata.GenerateTraces(1).ResourceSpans(),
-			wantTopic: "context-topic",
+			name:               "Valid trace context, return topic name",
+			topicFromAttribute: "nonexistent_attribute",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                topic.WithTopic(context.Background(), "context-topic"),
+			resource:           testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic:          "context-topic",
 		},
 		{
-			name: "Valid log context, return topic name",
-			cfg: Config{
-				TopicFromAttribute: "nonexistent_attribute",
-			},
-			ctx:       topic.WithTopic(context.Background(), "context-topic"),
-			resource:  testdata.GenerateLogs(1).ResourceLogs(),
-			wantTopic: "context-topic",
+			name:               "Valid log context, return topic name",
+			topicFromAttribute: "nonexistent_attribute",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                topic.WithTopic(context.Background(), "context-topic"),
+			resource:           testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic:          "context-topic",
 		},
-
+		// Generic known failure modes.
 		{
-			name: "Attribute not found",
-			cfg: Config{
-				TopicFromAttribute: "nonexistent_attribute",
-			},
-			ctx:       context.Background(),
-			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
-			wantTopic: "defaultTopic",
+			name:               "Attribute not found",
+			topicFromAttribute: "nonexistent_attribute",
+			signalCfg:          SignalConfig{Topic: "defaultTopic"},
+			ctx:                context.Background(),
+			resource:           testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic:          "defaultTopic",
 		},
 		{
 			name:      "TopicFromAttribute, return default topic",
-			cfg:       Config{},
 			ctx:       context.Background(),
+			signalCfg: SignalConfig{Topic: "defaultTopic"},
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+		// topicFromMetadata tests.
+		{
+			name: "Metrics topic from metadata",
+			signalCfg: SignalConfig{
+				Topic:                "defaultTopic",
+				TopicFromMetadataKey: "metrics_topic_metadata",
+			},
+			ctx: client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"metrics_topic_metadata": {"my_metrics_topic"},
+				})},
+			),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "my_metrics_topic",
+		},
+		{
+			name: "Logs topic from metadata",
+			signalCfg: SignalConfig{
+				Topic:                "defaultTopic",
+				TopicFromMetadataKey: "logs_topic_metadata",
+			},
+			ctx: client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"logs_topic_metadata": {"my_logs_topic"},
+				})},
+			),
+			resource:  testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic: "my_logs_topic",
+		},
+		{
+			name: "Traces topic from metadata",
+			signalCfg: SignalConfig{
+				Topic:                "defaultTopic",
+				TopicFromMetadataKey: "traces_topic_metadata",
+			},
+			ctx: client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"traces_topic_metadata": {"my_traces_topic"},
+				})},
+			),
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic: "my_traces_topic",
+		},
+		{
+			name: "metadata key not found uses default topic",
+			signalCfg: SignalConfig{
+				Topic:                "defaultTopic",
+				TopicFromMetadataKey: "key not found",
+			},
+			ctx: client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"traces_topic_metadata": {"my_traces_topic"},
+				})},
+			),
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "defaultTopic",
 		},
 	}
@@ -760,11 +811,11 @@ func Test_GetTopic(t *testing.T) {
 			topic := ""
 			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(tests[i].ctx, &tests[i].cfg, "defaultTopic", r)
+				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(tests[i].ctx, &tests[i].cfg, "defaultTopic", r)
+				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(tests[i].ctx, &tests[i].cfg, "defaultTopic", r)
+				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			}
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})

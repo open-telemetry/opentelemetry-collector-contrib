@@ -55,11 +55,7 @@ jobs:
   scoped-tests:
     needs: changedfiles
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ windows-latest ]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - name: Echo changed files
         shell: bash
@@ -69,7 +65,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.8"
+          go-version: 1.23.9
           cache: false
 
       - name: Try to restore go-cache

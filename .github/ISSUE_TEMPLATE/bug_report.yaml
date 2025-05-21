@@ -137,7 +137,6 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
-      - extension/tpm
       - internal/aws
       - internal/collectd
       - internal/common
@@ -164,6 +163,7 @@ body:
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest

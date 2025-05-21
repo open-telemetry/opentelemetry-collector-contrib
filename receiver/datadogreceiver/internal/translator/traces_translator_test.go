@@ -17,7 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -284,5 +285,284 @@ func TestToTraces64to128bits(t *testing.T) {
 				assert.Equal(t, expectedTraceID64, span.TraceID().String())
 			}
 		}
+	}
+}
+
+func TestToTracesServiceName(t *testing.T) {
+	cases := []struct {
+		name                string
+		expectedServiceName string
+		expectedSpanName    string
+		spans               []pb.Span
+	}{
+		{
+			name:                "check-base-service",
+			expectedServiceName: "my-service",
+			expectedSpanName:    "postgresql",
+			spans: []pb.Span{
+				{
+					Name: "postgresql",
+					Meta: map[string]string{
+						"_dd.base_service": "my-service",
+					},
+				},
+			},
+		},
+		{
+			name:                "check-newspan-has-postprocessing",
+			expectedServiceName: "my-service",
+			expectedSpanName:    "POST",
+			spans: []pb.Span{
+				{
+					Name: "servlet.request",
+					Meta: map[string]string{
+						"http.method":      "POST",
+						"_dd.base_service": "my-service",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := &pb.TracerPayload{
+				Chunks: traceChunksFromSpans(tt.spans),
+			}
+
+			req := &http.Request{
+				Header: http.Header{},
+			}
+
+			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
+			for _, rs := range traces.ResourceSpans().All() {
+				actualServiceName, _ := rs.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+				assert.Equal(t, tt.expectedServiceName, actualServiceName.AsString())
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						assert.Equal(t, tt.expectedSpanName, span.Name())
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestProcessSpanByName(t *testing.T) {
+	cases := []struct {
+		name             string
+		expectedSpanName string
+		span             pb.Span
+	}{
+		{
+			"db-query-summary",
+			"select table",
+			pb.Span{
+				Name: "postgresql.query",
+				Meta: map[string]string{
+					"db.query.summary": "select table",
+					"db.operation":     "select",
+					"db.instance":      "instance",
+					"db.type":          "postgresql",
+					"db.namespace":     "namespace",
+					"peer.hostname":    "localhost",
+				},
+			},
+		},
+		{
+			"db-operation-instance",
+			"select instance",
+			pb.Span{
+				Name: "postgresql.query",
+				Meta: map[string]string{
+					"db.operation":  "select",
+					"db.instance":   "instance",
+					"db.type":       "postgresql",
+					"db.namespace":  "namespace",
+					"peer.hostname": "localhost",
+				},
+			},
+		},
+		{
+			"db-operation-namespace",
+			"select namespace",
+			pb.Span{
+				Name: "postgresql.query",
+				Meta: map[string]string{
+					"db.operation":  "select",
+					"db.type":       "postgresql",
+					"db.namespace":  "namespace",
+					"peer.hostname": "localhost",
+				},
+			},
+		},
+		{
+			"db-operation-hostname",
+			"select localhost",
+			pb.Span{
+				Name: "postgresql.query",
+				Meta: map[string]string{
+					"db.operation":  "select",
+					"db.type":       "postgresql",
+					"peer.hostname": "localhost",
+				},
+			},
+		},
+		{
+			"db-operation",
+			"select",
+			pb.Span{
+				Name: "postgresql.query",
+				Meta: map[string]string{
+					"db.operation": "select",
+					"db.type":      "postgresql",
+				},
+			},
+		},
+		{
+			"db-type",
+			"postgresql",
+			pb.Span{
+				Name: "postgresql.query",
+				Meta: map[string]string{
+					"db.instance":   "instance",
+					"db.type":       "postgresql",
+					"db.namespace":  "namespace",
+					"peer.hostname": "localhost",
+				},
+			},
+		},
+		{
+			"db-redis",
+			"redis",
+			pb.Span{
+				Name: "redis.query",
+				Meta: map[string]string{
+					"db.type": "redis",
+				},
+			},
+		},
+		{
+			"internal-spring-handler",
+			"ShippingController.shipOrder",
+			pb.Span{
+				Name:     "spring.handler",
+				Resource: "ShippingController.shipOrder",
+			},
+		},
+		{
+			"http-servlet-request-no-route",
+			"POST",
+			pb.Span{
+				Name: "servlet.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+				},
+			},
+		},
+		{
+			"http-servlet-request-with-route",
+			"POST /route",
+			pb.Span{
+				Name: "servlet.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+					"http.route":  "/route",
+				},
+			},
+		},
+	}
+
+	//nolint:govet
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			processSpanByName(&tt.span, &span)
+			assert.Equal(t, tt.expectedSpanName, span.Name())
+		})
+	}
+}
+
+func TestToTracesServerAddress(t *testing.T) {
+	cases := []struct {
+		name                  string
+		expectedServerAddress string
+		spans                 []pb.Span
+	}{
+		{
+			name:                  "client-server-address-already-set",
+			expectedServerAddress: "serverAddress",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":      "client",
+						"server.address": "serverAddress",
+						"peer.hostname":  "peerHostname",
+					},
+				},
+			},
+		},
+		{
+			name:                  "client-no-server-address",
+			expectedServerAddress: "peerHostname",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":     "client",
+						"peer.hostname": "peerHostname",
+					},
+				},
+			},
+		},
+		{
+			name:                  "consumer",
+			expectedServerAddress: "peerHostname",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":     "consumer",
+						"peer.hostname": "peerHostname",
+					},
+				},
+			},
+		},
+		{
+			name:                  "producer",
+			expectedServerAddress: "peerHostname",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":     "consumer",
+						"peer.hostname": "peerHostname",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := &pb.TracerPayload{
+				Chunks: traceChunksFromSpans(tt.spans),
+			}
+
+			req := &http.Request{
+				Header: http.Header{},
+			}
+
+			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						val, _ := span.Attributes().Get("server.address")
+						assert.Equal(t, tt.expectedServerAddress, val.Str())
+					}
+				}
+			}
+		})
 	}
 }

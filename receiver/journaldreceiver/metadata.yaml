@@ -6,6 +6,7 @@ status:
     alpha: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [sumo-drosiek, djaglowski]
+    active: [sumo-drosiek]
+    emeritus: [djaglowski]
   unsupported_platforms: [darwin, windows]
 

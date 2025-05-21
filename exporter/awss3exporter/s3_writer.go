@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -28,6 +29,15 @@ func newUploadManager(
 		configOpts = append(configOpts, config.WithRegion(region))
 	}
 
+	switch conf.S3Uploader.RetryMode {
+	case "nop":
+		configOpts = append(configOpts, config.WithRetryer(func() aws.Retryer {
+			return aws.NopRetryer{}
+		}))
+	default:
+		configOpts = append(configOpts, config.WithRetryMode(aws.RetryMode(conf.S3Uploader.RetryMode)))
+	}
+
 	cfg, err := config.LoadDefaultConfig(ctx, configOpts...)
 	if err != nil {
 		return nil, err
@@ -39,12 +49,14 @@ func newUploadManager(
 				DisableHTTPS: conf.S3Uploader.DisableSSL,
 			}
 			o.UsePathStyle = conf.S3Uploader.S3ForcePathStyle
+			o.Retryer = retry.AddWithMaxAttempts(o.Retryer, conf.S3Uploader.RetryMaxAttempts)
+			o.Retryer = retry.AddWithMaxBackoffDelay(o.Retryer, conf.S3Uploader.RetryMaxBackoff)
 		},
 	}
 
 	if conf.S3Uploader.Endpoint != "" {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String((conf.S3Uploader.Endpoint))
+			o.BaseEndpoint = aws.String(conf.S3Uploader.Endpoint)
 		})
 	}
 

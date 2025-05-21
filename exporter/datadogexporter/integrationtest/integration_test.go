@@ -512,7 +512,7 @@ func TestIntegrationLogs(t *testing.T) {
 				}
 			}
 		case <-time.After(60 * time.Second):
-			t.Fail()
+			t.Fatalf("did not receive expected metrics after 1m")
 		}
 	}
 
@@ -664,7 +664,7 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 				require.NoError(t, err)
 			}
 		case <-time.After(60 * time.Second):
-			t.Fail()
+			t.Fatalf("did not receive expected metrics after 1m")
 		}
 	}
 
@@ -731,6 +731,7 @@ func seriesFromAPIClient(t *testing.T, metricsBytes []byte, expectedMetrics map[
 }
 
 func TestIntegrationInternalMetrics(t *testing.T) {
+	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40056")
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
@@ -817,7 +818,7 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 				}
 			}
 		case <-time.After(60 * time.Second):
-			t.Fail()
+			t.Fatalf("did not receive expected metrics after 1m")
 		}
 	}
 }

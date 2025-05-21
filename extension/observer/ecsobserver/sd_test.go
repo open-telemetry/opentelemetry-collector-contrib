@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -50,7 +50,7 @@ func TestNewDiscovery(t *testing.T) {
 	assert.True(t, svcNameFilter("s1"))
 	require.NoError(t, err)
 	c := ecsmock.NewClusterWithName(cfg.ClusterName)
-	fetcher := newTestTaskFetcher(t, c, func(options *taskFetcherOptions) {
+	fetcher := newTestTaskFetcher(t, c, c, func(options *taskFetcherOptions) {
 		options.Cluster = cfg.ClusterName
 		options.serviceNameFilter = svcNameFilter
 	})
@@ -60,38 +60,38 @@ func TestNewDiscovery(t *testing.T) {
 	nTasks := 11
 	nInstances := 2
 	nFargateInstances := 3
-	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("d", 2, 1, func(i int, def *ecs.TaskDefinition) {
+	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("d", 2, 1, func(i int, def *ecstypes.TaskDefinition) {
 		if i == 0 {
-			def.NetworkMode = aws.String(ecs.NetworkModeAwsvpc)
+			def.NetworkMode = ecstypes.NetworkModeAwsvpc
 		} else {
-			def.NetworkMode = aws.String(ecs.NetworkModeBridge)
+			def.NetworkMode = ecstypes.NetworkModeBridge
 		}
-		def.ContainerDefinitions = []*ecs.ContainerDefinition{
+		def.ContainerDefinitions = []ecstypes.ContainerDefinition{
 			{
 				Name: aws.String("c1"),
-				DockerLabels: map[string]*string{
-					"PROMETHEUS_PORT": aws.String("2112"),
-					"MY_JOB_NAME":     aws.String("PROM_JOB_1"),
-					"MY_METRICS_PATH": aws.String("/new/metrics"),
+				DockerLabels: map[string]string{
+					"PROMETHEUS_PORT": "2112",
+					"MY_JOB_NAME":     "PROM_JOB_1",
+					"MY_METRICS_PATH": "/new/metrics",
 				},
-				PortMappings: []*ecs.PortMapping{
+				PortMappings: []ecstypes.PortMapping{
 					{
-						ContainerPort: aws.Int64(2112),
-						HostPort:      aws.Int64(2113), // doesn't matter for matcher test
+						ContainerPort: aws.Int32(2112),
+						HostPort:      aws.Int32(2113), // doesn't matter for matcher test
 					},
 				},
 			},
 		}
 	}))
-	c.SetTasks(ecsmock.GenTasks("t", nTasks, func(i int, task *ecs.Task) {
+	c.SetTasks(ecsmock.GenTasks("t", nTasks, func(i int, task *ecstypes.Task) {
 		if i < nFargateInstances {
 			task.TaskDefinitionArn = aws.String("d0:1")
-			task.LaunchType = aws.String(ecs.LaunchTypeFargate)
+			task.LaunchType = ecstypes.LaunchTypeFargate
 			task.StartedBy = aws.String("deploy0")
-			task.Attachments = []*ecs.Attachment{
+			task.Attachments = []ecstypes.Attachment{
 				{
 					Type: aws.String("ElasticNetworkInterface"),
-					Details: []*ecs.KeyValuePair{
+					Details: []ecstypes.KeyValuePair{
 						{
 							Name:  aws.String("privateIPv4Address"),
 							Value: aws.String(fmt.Sprintf("172.168.1.%d", i)),
@@ -106,16 +106,16 @@ func TestNewDiscovery(t *testing.T) {
 		} else {
 			ins := i % nInstances
 			task.TaskDefinitionArn = aws.String("d1:1")
-			task.LaunchType = aws.String(ecs.LaunchTypeEc2)
+			task.LaunchType = ecstypes.LaunchTypeEc2
 			task.ContainerInstanceArn = aws.String(fmt.Sprintf("ci%d", ins))
 			task.StartedBy = aws.String("deploy1")
-			task.Containers = []*ecs.Container{
+			task.Containers = []ecstypes.Container{
 				{
 					Name: aws.String("c1"),
-					NetworkBindings: []*ecs.NetworkBinding{
+					NetworkBindings: []ecstypes.NetworkBinding{
 						{
-							ContainerPort: aws.Int64(2112),
-							HostPort:      aws.Int64(2114 + int64(i)),
+							ContainerPort: aws.Int32(2112),
+							HostPort:      aws.Int32(2114 + int32(i)),
 						},
 					},
 				},
@@ -123,12 +123,15 @@ func TestNewDiscovery(t *testing.T) {
 		}
 	}))
 	// Setting container instance and ec2 is same as previous sub test
-	c.SetContainerInstances(ecsmock.GenContainerInstances("ci", nInstances, func(i int, ci *ecs.ContainerInstance) {
+	c.SetContainerInstances(ecsmock.GenContainerInstances("ci", nInstances, func(i int, ci *ecstypes.ContainerInstance) {
 		ci.Ec2InstanceId = aws.String(fmt.Sprintf("i-%d", i))
 	}))
-	c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, func(i int, ins *ec2.Instance) {
+	c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, func(i int, ins *ec2types.Instance) {
+		ins.PublicIpAddress = aws.String(fmt.Sprintf("192.168.1.%d", i))
 		ins.PrivateIpAddress = aws.String(fmt.Sprintf("172.168.2.%d", i))
-		ins.Tags = []*ec2.Tag{
+		ins.SubnetId = aws.String(fmt.Sprintf("subnet-%d", i))
+		ins.VpcId = aws.String(fmt.Sprintf("vpc-%d", i))
+		ins.Tags = []ec2types.Tag{
 			{
 				Key:   aws.String("aws:cloudformation:instance"),
 				Value: aws.String(fmt.Sprintf("cfni%d", i)),
@@ -136,18 +139,18 @@ func TestNewDiscovery(t *testing.T) {
 		}
 	}))
 	// Service
-	c.SetServices(ecsmock.GenServices("s", 2, func(i int, s *ecs.Service) {
+	c.SetServices(ecsmock.GenServices("s", 2, func(i int, s *ecstypes.Service) {
 		if i == 0 {
-			s.LaunchType = aws.String(ecs.LaunchTypeEc2)
-			s.Deployments = []*ecs.Deployment{
+			s.LaunchType = ecstypes.LaunchTypeEc2
+			s.Deployments = []ecstypes.Deployment{
 				{
 					Status: aws.String("ACTIVE"),
 					Id:     aws.String("deploy0"),
 				},
 			}
 		} else {
-			s.LaunchType = aws.String(ecs.LaunchTypeFargate)
-			s.Deployments = []*ecs.Deployment{
+			s.LaunchType = ecstypes.LaunchTypeFargate
+			s.Deployments = []ecstypes.Deployment{
 				{
 					Status: aws.String("ACTIVE"),
 					Id:     aws.String("deploy1"),
@@ -184,7 +187,7 @@ func TestNewDiscovery(t *testing.T) {
 	t.Run("critical error in discovery", func(t *testing.T) {
 		cfg2 := cfg
 		cfg2.ClusterName += "not_right_anymore"
-		fetcher2 := newTestTaskFetcher(t, c, func(options *taskFetcherOptions) {
+		fetcher2 := newTestTaskFetcher(t, c, c, func(options *taskFetcherOptions) {
 			options.Cluster = cfg2.ClusterName
 			options.serviceNameFilter = svcNameFilter
 		})
@@ -213,13 +216,13 @@ func newTestTaskFilter(t *testing.T, cfg Config) *taskFilter {
 	return f
 }
 
-func newTestTaskFetcher(t *testing.T, c *ecsmock.Cluster, opts ...func(options *taskFetcherOptions)) *taskFetcher {
+func newTestTaskFetcher(t *testing.T, ecsClient ecsClient, ec2Client ec2Client, opts ...func(options *taskFetcherOptions)) *taskFetcher {
 	opt := taskFetcherOptions{
 		Logger:      zap.NewExample(),
 		Cluster:     "not used",
 		Region:      "not used",
-		ecsOverride: c,
-		ec2Override: c,
+		ecsOverride: ecsClient,
+		ec2Override: ec2Client,
 		serviceNameFilter: func(_ string) bool {
 			return true
 		},
@@ -227,7 +230,7 @@ func newTestTaskFetcher(t *testing.T, c *ecsmock.Cluster, opts ...func(options *
 	for _, m := range opts {
 		m(&opt)
 	}
-	f, err := newTaskFetcher(opt)
+	f, err := newTaskFetcher(context.Background(), opt)
 	require.NoError(t, err)
 	return f
 }

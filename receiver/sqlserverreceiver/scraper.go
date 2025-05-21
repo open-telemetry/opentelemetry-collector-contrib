@@ -31,6 +31,7 @@ import (
 
 const (
 	computerNameKey  = "computer_name"
+	databaseNameKey  = "database_name"
 	instanceNameKey  = "sql_instance"
 	serverAddressKey = "server.address"
 	serverPortKey    = "server.port"
@@ -75,7 +76,7 @@ func newSQLServerScraper(id component.ID,
 		dbProviderFunc:     dbProviderFunc,
 		clientProviderFunc: clientProviderFunc,
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                 metadata.NewLogsBuilder(params),
+		lb:                 metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:              cache,
 	}
 }
@@ -105,6 +106,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabasePerfCounterMetrics(ctx)
 	case getSQLServerPropertiesQuery(s.config.InstanceName):
 		err = s.recordDatabaseStatusMetrics(ctx)
+	case getSQLServerWaitStatsQuery(s.config.InstanceName):
+		err = s.recordDatabaseWaitMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -139,7 +142,6 @@ func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
-	const databaseNameKey = "database_name"
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
@@ -210,7 +212,9 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const bufferCacheHitRatio = "Buffer cache hit ratio"
 	const bytesReceivedFromReplicaPerSec = "Bytes Received from Replica/sec"
 	const bytesSentForReplicaPerSec = "Bytes Sent to Replica/sec"
+	const diskReadIOSec = "Disk Read IO/sec"
 	const diskReadIOThrottled = "Disk Read IO Throttled/sec"
+	const diskWriteIOSec = "Disk Write IO/sec"
 	const diskWriteIOThrottled = "Disk Write IO Throttled/sec"
 	const executionErrors = "Execution Errors"
 	const freeListStalls = "Free list stalls/sec"
@@ -218,6 +222,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const fullScansPerSec = "Full Scans/sec"
 	const indexSearchesPerSec = "Index Searches/sec"
 	const lockTimeoutsPerSec = "Lock Timeouts/sec"
+	const lockWaitCount = "Lock Wait Count"
 	const lockWaits = "Lock Waits/sec"
 	const loginsPerSec = "Logins/sec"
 	const logoutPerSec = "Logouts/sec"
@@ -300,8 +305,24 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val.(float64), metadata.AttributeReplicaDirectionTransmit)
 			}
+		case diskReadIOSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, diskReadIOSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(now, val.(float64), metadata.AttributeDirectionRead)
+			}
 		case diskReadIOThrottled:
 			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint(now, row[valueKey]))
+		case diskWriteIOSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, diskWriteIOSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(now, val.(float64), metadata.AttributeDirectionWrite)
+			}
 		case diskWriteIOThrottled:
 			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledWriteRateDataPoint(now, row[valueKey]))
 		case executionErrors:
@@ -351,6 +372,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLockTimeoutRateDataPoint(now, val.(float64))
+			}
+		case lockWaitCount:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitCount)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64))
 			}
 		case lockWaits:
 			val, err := retrieveFloat(row, valueKey)
@@ -505,11 +534,49 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	return errors.Join(errs...)
 }
 
+func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) error {
+	// Constants are the columns for metrics from query
+	const (
+		waitCategory = "wait_category"
+		waitTimeMs   = "wait_time_ms"
+		waitType     = "wait_type"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val any
+	for i, row := range rows {
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
+
+		val, err = retrieveFloat(row, waitTimeMs)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, waitTimeMs))
+		} else {
+			// The value is divided here because it's stored in SQL Server in ms, need to convert to s
+			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row[waitCategory], row[waitType])
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
-		eventName      = "db.server.top_query"
-		dbPrefix       = "sqlserver."
 		executionCount = "execution_count"
 		logicalReads   = "total_logical_reads"
 		logicalWrites  = "total_logical_writes"
@@ -524,6 +591,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		totalGrant       = "total_grant_kb"
 		// the time returned from mssql is in microsecond
 		totalWorkerTime = "total_worker_time"
+
+		dbSystemNameVal = "microsoft.sql_server"
 	)
 
 	resources := pcommon.NewResource()
@@ -575,139 +644,61 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		if totalElapsedTimeDiffsMicrosecond[i] == 0 {
 			break
 		}
+		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
 
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		record := plog.NewLogRecord()
-		record.SetTimestamp(timestamp)
-		record.SetEventName(eventName)
+		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateSQL(row[columnName]) })
 
-		attributes := []internalAttribute{
-			{
-				key:        "db.query.text",
-				columnName: queryText,
-				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateSQL(row[columnName])
-				},
-				valueSetter: setString,
-			},
-			{
-				key:            dbPrefix + executionCount,
-				columnName:     executionCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + logicalReads,
-				columnName:     logicalReads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + logicalWrites,
-				columnName:     logicalWrites,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + physicalReads,
-				columnName:     physicalReads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + queryHash,
-				valueRetriever: defaultValueRetriever(queryHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + queryPlan,
-				columnName: queryPlan,
-				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateXMLPlan(row[columnName])
-				},
-				valueSetter: setString,
-			},
-			{
-				key:            dbPrefix + queryPlanHash,
-				valueRetriever: defaultValueRetriever(queryPlanHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + rowsReturned,
-				columnName:     rowsReturned,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + totalElapsedTime,
-				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000),
-				valueSetter:    setDouble,
-			},
-			{
-				key:            dbPrefix + totalGrant,
-				columnName:     totalGrant,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "db.system.name",
-				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
-				valueSetter:    setString,
-			},
-			{
-				key:            serverAddressKey,
-				valueRetriever: defaultValueRetriever(s.config.Server),
-				valueSetter:    setString,
-			},
-			{
-				key:            serverPortKey,
-				valueRetriever: defaultValueRetriever((int64(s.config.Port))),
-				valueSetter:    setInt,
-			},
+		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
+		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
+		if !cached {
+			executionCountVal = int64(0)
 		}
 
-		updatedOnly := map[string]bool{
-			rowsReturned:   true,
-			logicalReads:   true,
-			logicalWrites:  true,
-			physicalReads:  true,
-			executionCount: true,
-			totalGrant:     true,
+		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt)
+		cached, logicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, logicalReadsVal.(int64))
+		if !cached {
+			logicalReadsVal = int64(0)
+		}
+
+		logicalWritesVal := s.retrieveValue(row, logicalWrites, &errs, retrieveInt)
+		cached, logicalWritesVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, logicalWritesVal.(int64))
+		if !cached {
+			logicalWritesVal = int64(0)
+		}
+
+		physicalReadsVal := s.retrieveValue(row, physicalReads, &errs, retrieveInt)
+		cached, physicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, physicalReadsVal.(int64))
+		if !cached {
+			physicalReadsVal = int64(0)
+		}
+
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateXMLPlan(row[columnName]) })
+
+		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
+		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
+		if !cached {
+			rowsReturnedVal = int64(0)
+		}
+
+		totalGrantVal := s.retrieveValue(row, totalGrant, &errs, retrieveInt)
+		cached, totalGrantVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, totalGrantVal.(int64))
+		if !cached {
+			totalGrantVal = int64(0)
+		}
+
+		totalWorkerTimeVal := s.retrieveValue(row, totalWorkerTime, &errs, retrieveInt)
+		cached, totalWorkerTimeVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, totalWorkerTimeVal.(int64))
+		totalWorkerTimeInSecVal := float64(0)
+		if cached {
+			totalWorkerTimeInSecVal = float64(totalWorkerTimeVal.(int64)) / 1_000_000
 		}
 
 		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
 
-		// handle `total_worker_time`, storing seconds
-		// it is a little bit tricky to put this to the array based workflow,
-		// as the value need to be divided -> type assertion -> check cache.
-		// hence handle it separately.
-		workerTimeMicrosecond, err := strconv.ParseInt(row[totalWorkerTime], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		} else {
-			if cached, diffMicrosecond := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTimeMicrosecond); cached {
-				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diffMicrosecond)/1_000_000)
-			}
-		}
-
-		for _, attr := range attributes {
-			value, err := attr.valueRetriever(row, attr.columnName)
-			if err != nil {
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
-				errs = append(errs, err)
-			}
-			if _, ok := updatedOnly[attr.columnName]; ok {
-				if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, attr.columnName, value.(int64)); cached {
-					attr.valueSetter(record.Attributes(), attr.key, diff)
-				}
-			} else {
-				attr.valueSetter(record.Attributes(), attr.key, value)
-			}
-		}
 		if !resourcesAdded {
 			resourceAttributes := resources.Attributes()
 			resourceAttributes.PutStr("host.name", s.config.Server)
@@ -716,9 +707,40 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 			resourcesAdded = true
 		}
-		s.lb.AppendLogRecord(record)
+		s.lb.RecordDbServerTopQueryEvent(
+			timestamp,
+			totalWorkerTimeInSecVal,
+			queryTextVal.(string),
+			executionCountVal.(int64),
+			logicalReadsVal.(int64),
+			logicalWritesVal.(int64),
+			physicalReadsVal.(int64),
+			queryHashVal,
+			queryPlanVal.(string),
+			queryPlanHashVal,
+			rowsReturnedVal.(int64),
+			totalElapsedTimeVal,
+			totalGrantVal.(int64),
+			s.config.Server,
+			int64(s.config.Port),
+			dbSystemNameVal)
 	}
 	return resources, errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) retrieveValue(
+	row sqlquery.StringMap,
+	column string,
+	errs *[]error,
+	valueRetriever func(sqlquery.StringMap, string) (any, error),
+) any {
+	value, err := valueRetriever(row, column)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", column, row[column], err))
+		*errs = append(*errs, err)
+	}
+
+	return value
 }
 
 // cacheAndDiff store row(in int) with query hash and query plan hash variables

@@ -31,6 +31,10 @@
 | k8s.replicaset.uid | The UID of the ReplicaSet. | Any Str | false |
 | k8s.statefulset.name | The name of the StatefulSet. | Any Str | false |
 | k8s.statefulset.uid | The UID of the StatefulSet. | Any Str | false |
+| service.instance.id | The instance ID of the service. | Any Str | false |
+| service.name | The name of the service. | Any Str | false |
+| service.namespace | The namespace of the service. | Any Str | false |
+| service.version | The version of the service. | Any Str | false |
 
 ## Internal Telemetry
 

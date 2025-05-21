@@ -27,6 +27,9 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sDeploymentName("k8s.deployment.name-val")
 			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
 			rb.SetK8sHpaName("k8s.hpa.name-val")
+			rb.SetK8sHpaScaletargetrefApiversion("k8s.hpa.scaletargetref.apiversion-val")
+			rb.SetK8sHpaScaletargetrefKind("k8s.hpa.scaletargetref.kind-val")
+			rb.SetK8sHpaScaletargetrefName("k8s.hpa.scaletargetref.name-val")
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
@@ -58,7 +61,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 30, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 37, res.Attributes().Len())
+				assert.Equal(t, 40, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -135,6 +138,21 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "k8s.hpa.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.hpa.scaletargetref.apiversion")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.hpa.scaletargetref.apiversion-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.hpa.scaletargetref.kind")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.hpa.scaletargetref.kind-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.hpa.scaletargetref.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.hpa.scaletargetref.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.hpa.uid")
 			assert.True(t, ok)

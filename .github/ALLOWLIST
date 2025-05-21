@@ -30,11 +30,14 @@ processor/routingprocessor/
 
 # Start unmaintained components list
 
+connector/countconnector
 exporter/carbonexporter
 exporter/kineticaexporter
 exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver
+receiver/tcplogreceiver
+receiver/udplogreceiver
 
 # End unmaintained components list
