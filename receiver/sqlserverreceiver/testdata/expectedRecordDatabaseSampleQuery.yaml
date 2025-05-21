@@ -16,6 +16,9 @@ resourceLogs:
               - key: client.port
                 value:
                   intValue: "59286"
+              - key: sqlserver.context_info
+                value:
+                  stringValue: ""
               - key: db.namespace
                 value:
                   stringValue: master
