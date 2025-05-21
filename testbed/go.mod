@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 go 1.23.7
 
 require (
-	github.com/fluent/fluent-logger-golang v1.9.0
+	github.com/fluent/fluent-logger-golang v1.10.0
 	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.126.0
@@ -113,7 +113,6 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
