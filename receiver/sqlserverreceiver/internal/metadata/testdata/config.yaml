@@ -45,6 +45,8 @@ all_set:
       enabled: true
     sqlserver.memory.usage:
       enabled: true
+    sqlserver.os.wait.duration:
+      enabled: true
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: true
     sqlserver.page.buffer_cache.hit_ratio:
@@ -156,6 +158,8 @@ none_set:
     sqlserver.memory.grants.pending.count:
       enabled: false
     sqlserver.memory.usage:
+      enabled: false
+    sqlserver.os.wait.duration:
       enabled: false
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: false

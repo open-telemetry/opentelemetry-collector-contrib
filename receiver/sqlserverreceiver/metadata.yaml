@@ -76,6 +76,12 @@ attributes:
     description: The status of the tempdb space usage.
     type: string
     enum: [free, used]
+  wait.category:
+    description: Category of the reason for a wait.
+    type: string
+  wait.type:
+    description: Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information.
+    type: string
   # attributes for events
   ## top query
   sqlserver.total_worker_time:
@@ -506,8 +512,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-
-
+  sqlserver.os.wait.duration:
+    enabled: false
+    description: Total wait time for this wait type
+    unit: "s"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    attributes: [wait.category, wait.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 tests:
   config:

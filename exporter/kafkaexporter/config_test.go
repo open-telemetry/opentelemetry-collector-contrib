@@ -87,8 +87,9 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:    configkafka.NewDefaultClientConfig(),
 				Producer:        configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
-					Topic:    "legacy_topic",
-					Encoding: "otlp_proto",
+					Topic:                "legacy_topic",
+					Encoding:             "otlp_proto",
+					TopicFromMetadataKey: "metadata_key",
 				},
 				Metrics: SignalConfig{
 					Topic:    "metrics_topic",
