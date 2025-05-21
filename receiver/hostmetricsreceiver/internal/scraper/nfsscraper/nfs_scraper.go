@@ -58,5 +58,7 @@ func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		errs.AddPartial(nfsdMetricsLen, err)
 	}
 
+	nothing(NfsStats, NfsdStats)
+
 	return s.mb.Emit(), errs.Combine()
 }
