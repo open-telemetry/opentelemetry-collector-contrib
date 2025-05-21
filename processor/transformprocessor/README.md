@@ -726,9 +726,6 @@ transform:
 
 The configuration can be used also with `delete_matching_keys()` to copy the attributes that do not match the regular expression.
 
-## Additional OTTL Functions
-The Factory Options `WithAdditionalMetricFunctions`, `WithAdditionalSpanFunctions` and `WithAdditionalLogFunctions` can be set in the transform processor `NewFactory` to add additional OTTL functions to the resulting processor. The `Config` methods `ValidateMetricStatements`, `ValidateSpanStatements` and `ValidateLogStatements` to receive the additional OTTL functions to validate the context statements. By setting a custom `NewFactory` and a custom `Config`, the user can create custom `transform` processor with any additional OTTL functions.
-
 ## Troubleshooting
 
 When using OTTL you can enable debug logging in the collector to print out useful information,
