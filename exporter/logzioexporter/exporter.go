@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -27,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/cache"
 )
 
 const (
