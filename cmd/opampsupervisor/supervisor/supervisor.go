@@ -152,7 +152,7 @@ type Supervisor struct {
 	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
 	configApplyTimeout time.Duration
 	// lastHealthFromClient is the last health status of the agent received from the client.
-	lastHealthFromClient *protobufs.ComponentHealth
+	lastHealthFromClient atomic.Pointer[protobufs.ComponentHealth]
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -771,7 +771,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 
 	if message.Health != nil {
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
-		s.lastHealthFromClient = message.Health
+		s.lastHealthFromClient.Store(message.Health)
 		err := s.opampClient.SetHealth(message.Health)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
@@ -1328,7 +1328,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.lastHealthFromClient = nil
+			s.lastHealthFromClient.Store(nil)
 			if !configApplyTimeoutTimer.Stop() {
 				select {
 				case <-configApplyTimeoutTimer.C: // Try to drain the channel
@@ -1389,7 +1389,8 @@ func (s *Supervisor) runAgentProcess() {
 			}
 
 		case <-configApplyTimeoutTimer.C:
-			if s.lastHealthFromClient == nil || !s.lastHealthFromClient.Healthy {
+			lastHealth := s.lastHealthFromClient.Load()
+			if lastHealth == nil || !lastHealth.Healthy {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
 			} else {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
