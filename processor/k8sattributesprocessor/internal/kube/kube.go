@@ -135,6 +135,8 @@ type Container struct {
 	ImageTag   string
 	Ports      []int32
 	CPURequest string
+	ServiceInstanceID string
+	ServiceVersion    string
 
 	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
@@ -242,8 +244,13 @@ type ExtractionRules struct {
 	ContainerPorts            bool
 	ContainerCPURequest       bool
 	ClusterUID                bool
-	Annotations               []FieldExtractionRule
-	Labels                    []FieldExtractionRule
+	ServiceNamespace          bool
+	ServiceName               bool
+	ServiceVersion            bool
+	ServiceInstanceID         bool
+
+	Annotations []FieldExtractionRule
+	Labels      []FieldExtractionRule
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -266,7 +273,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return false
+	return rules.ServiceName
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
@@ -380,4 +387,13 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+}
+
+func OtelAnnotations() FieldExtractionRule {
+	return FieldExtractionRule{
+		Name:                 "$1",
+		KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+		HasKeyRegexReference: true,
+		From:                 MetadataFromPod,
+	}
 }

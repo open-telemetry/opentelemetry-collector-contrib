@@ -90,6 +90,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
+				RateLimiter: RateLimiterConfig{
+					Enabled:   false,
+					Threshold: 10,
+					Duration:  time.Minute,
+				},
 			},
 		},
 		{
@@ -146,6 +151,11 @@ func TestLoadConfig(t *testing.T) {
 						"appName":      "APP_NAME",
 					},
 					BalancerName: "",
+				},
+				RateLimiter: RateLimiterConfig{
+					Enabled:   false,
+					Threshold: 10,
+					Duration:  time.Minute,
 				},
 			},
 		},

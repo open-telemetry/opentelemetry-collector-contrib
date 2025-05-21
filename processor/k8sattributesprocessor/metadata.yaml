@@ -119,6 +119,22 @@ resource_attributes:
     description: CPU Request describes the minimum amount of CPU compute resources required.
     type: string
     enabled: false    
+  service.namespace:
+    description: The namespace of the service.
+    type: string
+    enabled: false
+  service.name:
+    description: The name of the service.
+    type: string
+    enabled: false
+  service.version:
+    description: The version of the service.
+    type: string
+    enabled: false
+  service.instance.id:
+    description: The instance ID of the service.
+    type: string
+    enabled: false
 
 tests:
   config:

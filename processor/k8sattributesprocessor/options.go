@@ -141,6 +141,18 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sStatefulsetUID.Enabled {
 		attributes = append(attributes, string(conventions.K8SStatefulSetUIDKey))
 	}
+	if defaultConfig.ServiceNamespace.Enabled {
+		attributes = append(attributes, string(conventions.ServiceNamespaceKey))
+	}
+	if defaultConfig.ServiceName.Enabled {
+		attributes = append(attributes, string(conventions.ServiceNameKey))
+	}
+	if defaultConfig.ServiceVersion.Enabled {
+		attributes = append(attributes, string(conventions.ServiceVersionKey))
+	}
+	if defaultConfig.ServiceInstanceID.Enabled {
+		attributes = append(attributes, string(conventions.ServiceInstanceIDKey))
+	}
 	return
 }
 
@@ -204,6 +216,14 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerPorts = true
 			case containerCPURequest:
 				p.rules.ContainerCPURequest = true
+			case string(conventions.ServiceNamespaceKey):
+				p.rules.ServiceNamespace = true
+			case string(conventions.ServiceNameKey):
+				p.rules.ServiceName = true
+			case string(conventions.ServiceVersionKey):
+				p.rules.ServiceVersion = true
+			case string(conventions.ServiceInstanceIDKey):
+				p.rules.ServiceInstanceID = true
 			}
 		}
 		return nil
@@ -213,12 +233,7 @@ func withExtractMetadata(fields ...string) option {
 func withOtelAnnotations(enabled bool) option {
 	return func(p *kubernetesprocessor) error {
 		if enabled {
-			p.rules.Annotations = append(p.rules.Annotations, kube.FieldExtractionRule{
-				Name:                 "$1",
-				KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
-				HasKeyRegexReference: true,
-				From:                 kube.MetadataFromPod,
-			})
+			p.rules.Annotations = append(p.rules.Annotations, kube.OtelAnnotations())
 		}
 		return nil
 	}

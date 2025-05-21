@@ -54,6 +54,10 @@ type ResourceAttributesConfig struct {
 	K8sReplicasetUID          ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
 	K8sStatefulsetName        ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID         ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
+	ServiceInstanceID         ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	ServiceName               ResourceAttributeConfig `mapstructure:"service.name"`
+	ServiceNamespace          ResourceAttributeConfig `mapstructure:"service.namespace"`
+	ServiceVersion            ResourceAttributeConfig `mapstructure:"service.version"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -137,6 +141,18 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceNamespace: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceVersion: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}
