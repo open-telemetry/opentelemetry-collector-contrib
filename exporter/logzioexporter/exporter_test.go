@@ -66,19 +66,6 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap.PutDouble("number", 499)
 }
 
-func fillLogTwo(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberInfo)
-	log.SetSeverityText("Info")
-	attrs := log.Attributes()
-	attrs.PutStr("customer", "acme")
-	attrs.PutDouble("number", 64)
-	attrs.PutBool("bool", true)
-	attrs.PutStr("env", "dev")
-	log.Body().SetStr("something happened")
-}
-
 func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)

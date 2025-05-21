@@ -14,22 +14,19 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
-	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-
 	"github.com/hashicorp/go-hclog"
-	"github.com/jaegertracing/jaeger-idl/model/v1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/cache"
 )
 
 const (
@@ -132,7 +129,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	return exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
+	return exporter.export(ctx, exporter.config.Endpoint, request)
 }
 
 func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
@@ -171,7 +168,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	return exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
+	return exporter.export(ctx, exporter.config.Endpoint, request)
 }
 
 // export is similar to otlphttp export method with changes in log messages + Permanent error for `StatusUnauthorized` and `StatusForbidden`
@@ -258,15 +255,4 @@ func readResponse(resp *http.Response) *status.Status {
 	}
 
 	return respStatus
-}
-
-func (exporter *logzioExporter) dropEmptyTags(tags []model.KeyValue) []model.KeyValue {
-	for i, tag := range tags {
-		if tag.Key == "" {
-			tags[i] = tags[len(tags)-1] // Copy last element to index i.
-			tags = tags[:len(tags)-1]   // Truncate slice.
-			exporter.logger.Warn(fmt.Sprintf("Found tag empty key: %s, dropping tag..", tag.String()))
-		}
-	}
-	return tags
 }
