@@ -78,13 +78,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func helperOptions(e exp) []exporterhelper.Option {
+func helperOptions(e exp, qbs exporterhelper.QueueBatchSettings) []exporterhelper.Option {
 	cfg := e.getConfig().(*Config)
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.RetryConfig),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueueBatch(cfg.QueueSettings, qbs),
 		exporterhelper.WithStart(e.start),
 		exporterhelper.WithShutdown(e.shutdown),
 	}
@@ -115,7 +115,7 @@ func createTracesExporter(
 	}
 	return exporterhelper.NewTraces(ctx, e.getSettings(), e.getConfig(),
 		e.pushTraces,
-		helperOptions(e)...,
+		helperOptions(e, exporterhelper.NewTracesQueueBatchSettings())...,
 	)
 }
 
@@ -134,7 +134,7 @@ func createMetricsExporter(
 	}
 	return exporterhelper.NewMetrics(ctx, e.getSettings(), e.getConfig(),
 		e.pushMetrics,
-		helperOptions(e)...,
+		helperOptions(e, exporterhelper.NewMetricsQueueBatchSettings())...,
 	)
 }
 
@@ -153,6 +153,6 @@ func createLogsExporter(
 	}
 	return exporterhelper.NewLogs(ctx, e.getSettings(), e.getConfig(),
 		e.pushLogs,
-		helperOptions(e)...,
+		helperOptions(e, exporterhelper.NewLogsQueueBatchSettings())...,
 	)
 }
