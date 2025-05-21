@@ -7,7 +7,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ffilelog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ffilelog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ffilelog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ffilelog) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_filelog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_filelog&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski), [@andrzej-stencel](https://www.github.com/andrzej-stencel) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel) \| Seeking more code owners! |
+| Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -87,14 +88,15 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 ### Supported encodings
 
-| Key        | Description
-| ---        | ---                                                              |
-| `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
-| `utf-8`    | UTF-8 encoding                                                   |
-| `utf-16le` | UTF-16 encoding with little-endian byte order                    |
-| `utf-16be` | UTF-16 encoding with big-endian byte order                       |
-| `ascii`    | ASCII encoding                                                   |
-| `big5`     | The Big5 Chinese character encoding                              |
+| Key         | Description
+| ---         | ---                                                              |
+| `nop`       | No encoding validation. Treats the file as a stream of raw bytes |
+| `utf-8`     | UTF-8 encoding                                                   |
+| `utf-8-raw` | UTF-8 encoding without replacing invalid UTF-8 bytes             |
+| `utf-16le`  | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be`  | UTF-16 encoding with big-endian byte order                       |
+| `ascii`     | ASCII encoding                                                   |
+| `big5`      | The Big5 Chinese character encoding                              |
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
 

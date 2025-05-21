@@ -5,15 +5,23 @@ package coralogixexporter
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"google.golang.org/grpc"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
@@ -135,4 +143,149 @@ func TestMetricsExporter_PushMetrics(t *testing.T) {
 
 	err = exp.pushMetrics(context.Background(), metrics)
 	assert.Error(t, err)
+}
+
+func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
+	tests := []struct {
+		description string
+		enabled     bool
+	}{
+		{
+			description: "Rate limit exceeded config enabled",
+			enabled:     true,
+		},
+		{
+			description: "Rate limit exceeded config disabled",
+			enabled:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			cfg := &Config{
+				Domain:     "test.domain.com",
+				PrivateKey: "test-key",
+				Metrics: configgrpc.ClientConfig{
+					Headers: map[string]configopaque.String{},
+				},
+				RateLimiter: RateLimiterConfig{
+					Enabled:   tt.enabled,
+					Threshold: 1,
+					Duration:  time.Minute,
+				},
+			}
+
+			exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+			require.NoError(t, err)
+
+			err = exp.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() {
+				err = exp.shutdown(context.Background())
+				require.NoError(t, err)
+			}()
+
+			rateLimitErr := errors.New("rate limit exceeded")
+			exp.EnableRateLimit(rateLimitErr)
+			exp.EnableRateLimit(rateLimitErr)
+
+			metrics := pmetric.NewMetrics()
+			resourceMetrics := metrics.ResourceMetrics()
+			rm := resourceMetrics.AppendEmpty()
+			resource := rm.Resource()
+			resource.Attributes().PutStr("service.name", "test-service")
+
+			err = exp.pushMetrics(context.Background(), metrics)
+			assert.Error(t, err)
+			if tt.enabled {
+				assert.Contains(t, err.Error(), "rate limit exceeded")
+			} else {
+				assert.Contains(t, err.Error(), "no such host")
+			}
+		})
+	}
+}
+
+type mockMetricsServer struct {
+	pmetricotlp.UnimplementedGRPCServer
+	recvCount int
+}
+
+func (m *mockMetricsServer) Export(_ context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
+	m.recvCount += req.Metrics().MetricCount()
+	return pmetricotlp.NewExportResponse(), nil
+}
+
+func startMockOtlpMetricsServer(tb testing.TB) (endpoint string, stopFn func(), srv *mockMetricsServer) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		tb.Fatalf("failed to listen: %v", err)
+	}
+	grpcServer := grpc.NewServer()
+	srv = &mockMetricsServer{}
+	pmetricotlp.RegisterGRPCServer(grpcServer, srv)
+	go func() {
+		_ = grpcServer.Serve(ln)
+	}()
+	return ln.Addr().String(), func() {
+		grpcServer.Stop()
+		ln.Close()
+	}, srv
+}
+
+func BenchmarkMetricsExporter_PushMetrics(b *testing.B) {
+	endpoint, stopFn, mockSrv := startMockOtlpMetricsServer(b)
+	defer stopFn()
+
+	cfg := &Config{
+		Metrics: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	if err != nil {
+		b.Fatalf("failed to create metrics exporter: %v", err)
+	}
+	if err := exp.start(context.Background(), componenttest.NewNopHost()); err != nil {
+		b.Fatalf("failed to start metrics exporter: %v", err)
+	}
+	defer func() {
+		_ = exp.shutdown(context.Background())
+	}()
+
+	testCases := []int{
+		100000,
+		500000,
+		1000000,
+		5000000,
+		10000000,
+		50000000,
+	}
+	for _, numMetrics := range testCases {
+		b.Run("numMetrics="+fmt.Sprint(numMetrics), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "benchmark-service")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				for j := 0; j < numMetrics; j++ {
+					metric := sm.Metrics().AppendEmpty()
+					metric.SetName("benchmark_metric")
+					metric.SetUnit("1")
+					metric.SetEmptyGauge()
+					dp := metric.Gauge().DataPoints().AppendEmpty()
+					dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+					dp.SetDoubleValue(float64(j))
+				}
+				_ = exp.pushMetrics(context.Background(), metrics)
+			}
+		})
+	}
+	b.Logf("Total metrics received by mock server: %d", mockSrv.recvCount)
 }
