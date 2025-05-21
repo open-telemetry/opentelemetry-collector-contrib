@@ -486,6 +486,15 @@ receiver_creator/metrics:
      enabled: true
      # Define which receivers should be ignored when provided through annotations
      # ignore_receivers: []
+receiver_creator/logs:
+  watch_observers: [ k8s_observer ]
+  discovery:
+    enabled: true
+     # Enable log collection for all discovered Pods/containers unless they are explicitly
+     # annotated with `io.opentelemetry.discovery.logs/enabled: "false"`. To avoid collecting Collector's
+     # own logs make sure that Collector Pods are properly annotated
+     # with `io.opentelemetry.discovery.logs/enabled: "false"`
+     # default_log_collection: true
 ```
 
 See below for the supported annotations that user can define to automatically enable receivers to start

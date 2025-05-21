@@ -35,8 +35,9 @@ const (
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
-	logger          *zap.Logger
-	ignoreReceivers map[string]bool
+	logger               *zap.Logger
+	ignoreReceivers      map[string]bool
+	defaultLogCollection bool
 }
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
@@ -45,8 +46,9 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 		ignoreReceivers[r] = true
 	}
 	return k8sHintsBuilder{
-		logger:          logger,
-		ignoreReceivers: ignoreReceivers,
+		logger:               logger,
+		ignoreReceivers:      ignoreReceivers,
+		defaultLogCollection: config.DefaultLogCollection,
 	}
 }
 
@@ -151,7 +153,9 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 	containerName = c.Name
 	pod := c.Pod
 
-	if !discoveryEnabled(annotations, otelLogsHints, containerName) {
+	// Skip if explicitly disabled, or not explicitly enabled and default collection is off
+	if discoveryDisabled(annotations, otelLogsHints, containerName) ||
+		(!discoveryEnabled(annotations, otelLogsHints, containerName) && !builder.defaultLogCollection) {
 		return nil, nil
 	}
 
@@ -242,7 +246,7 @@ func createLogsConfig(
 
 func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
 	// try to scope the hint more on container level by suffixing
-	// with .<port> in case of Port event or # TODO: .<container_name> in case of Pod Container event
+	// with .<port> in case of Port event or .<container_name> in case of Pod Container event
 	containerLevelHint, ok := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
 	if ok {
 		return containerLevelHint, ok
@@ -259,6 +263,14 @@ func discoveryEnabled(annotations map[string]string, hintBase string, scopeSuffi
 		return false
 	}
 	return enabledHint == "true"
+}
+
+func discoveryDisabled(annotations map[string]string, hintBase string, scopeSuffix string) bool {
+	enabledHint, found := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
+	if !found {
+		return false
+	}
+	return enabledHint == "false"
 }
 
 func getStringEnv(env observer.EndpointEnv, key string) string {
