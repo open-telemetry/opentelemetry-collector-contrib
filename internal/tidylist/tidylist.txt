@@ -120,6 +120,7 @@ exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
 internal/kafka
+internal/marshaler
 pkg/batchpersignal
 pkg/kafka/topic
 exporter/kafkaexporter
