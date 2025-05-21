@@ -408,7 +408,6 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		// OTEL exponential histograms reference https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#exponential-histograms
 		// - Positive and Negative Buckets
 		// - Positive and Negative Spans
-		// - Scale
 		// - Exemplars
 
 		switch v := histogram.GetCount().(type) {
@@ -417,6 +416,7 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		case *writev2.Histogram_CountFloat:
 			dp.SetCount(uint64(v.CountFloat))
 		}
+		histogram.
 
 		switch v := histogram.GetZeroCount().(type) {
 		case *writev2.Histogram_ZeroCountInt:
@@ -426,6 +426,7 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		}
 
 		dp.SetZeroThreshold(histogram.ZeroThreshold)
+		dp.SetScale(histogram.Schema)
 
 		attributes := dp.Attributes()
 		extractAttributes(ls).CopyTo(attributes)

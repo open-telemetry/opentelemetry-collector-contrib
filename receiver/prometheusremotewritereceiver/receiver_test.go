@@ -504,6 +504,7 @@ func TestTranslateV2(t *testing.T) {
 								ZeroCount: &writev2.Histogram_ZeroCountInt{
 									ZeroCountInt: 2,
 								},
+								Schema: -4,
 							},
 						},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -530,6 +531,7 @@ func TestTranslateV2(t *testing.T) {
 				dp := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
 				dp.SetSum(30)
 				dp.SetCount(20)
 				dp.SetZeroCount(2)
