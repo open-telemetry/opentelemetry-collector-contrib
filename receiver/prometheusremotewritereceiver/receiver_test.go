@@ -504,9 +504,9 @@ func TestTranslateV2(t *testing.T) {
 								},
 								Schema:         -4,
 								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
-								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
-								PositiveDeltas: []int64{33, -30, 26},
-								NegativeDeltas: []int64{1},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
+								PositiveDeltas: []int64{100, 244, -221},
+								NegativeDeltas: []int64{1, 2},
 							},
 						},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -539,9 +539,10 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.Positive().SetOffset(0)
-				dp.Positive().BucketCounts().FromRaw([]uint64{33, 3, 0, 0, 0, 29})
-				dp.Negative().SetOffset(-1)
+				dp.Positive().BucketCounts().FromRaw([]uint64{100, 344, 0, 0, 0, 123})
 				dp.Negative().BucketCounts().FromRaw([]uint64{1})
+				dp.Negative().SetOffset(-1)
+				dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 3})
 				dp.Attributes().PutStr("attr1", "attr1")
 				return metrics
 			}(),
@@ -576,10 +577,13 @@ func TestTranslateV2(t *testing.T) {
 									ZeroCountFloat: 2,
 								},
 								Schema:         -4,
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}, {Offset: 5, Length: 1}},
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
 								NegativeCounts: []float64{1},
-								PositiveCounts: []float64{33, -30, 26},
+								// As we are passing the second positive counts as a negative value(-30),
+								// On the translation it must be replaced with 0. Because positive bucket just stores 0 or positive values.
+								// The same for the last value(-100)
+								PositiveCounts: []float64{33, -30, 26, -100},
 							},
 						},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -611,7 +615,8 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.Positive().SetOffset(0)
-				dp.Positive().BucketCounts().FromRaw([]uint64{33, 3, 0, 0, 0, 29})
+				dp.Positive().BucketCounts().FromRaw([]uint64{33, 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0})
+				dp.Negative().BucketCounts().FromRaw([]uint64{1})
 				dp.Negative().SetOffset(-1)
 				dp.Negative().BucketCounts().FromRaw([]uint64{1})
 				dp.Attributes().PutStr("attr1", "attr1")
