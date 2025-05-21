@@ -328,7 +328,7 @@ func Test_SetMap(t *testing.T) {
 		{
 			name:     "invalid type",
 			val:      "invalid",
-			err:      nil, // This is an issue in GetMap(), not returning an error here.
+			err:      nil, // This is an issue in SetMap(), not returning an error here.
 			expected: pcommon.NewMap(),
 		},
 		{
