@@ -22,12 +22,13 @@ const (
 	Metric    ContextID = "metric"
 	DataPoint ContextID = "datapoint"
 	Log       ContextID = "log"
+	Profile   ContextID = "profile"
 )
 
 func (c *ContextID) UnmarshalText(text []byte) error {
 	str := ContextID(strings.ToLower(string(text)))
 	switch str {
-	case Resource, Scope, Span, SpanEvent, Metric, DataPoint, Log:
+	case Resource, Scope, Span, SpanEvent, Metric, DataPoint, Log, Profile:
 		*c = str
 		return nil
 	default:
