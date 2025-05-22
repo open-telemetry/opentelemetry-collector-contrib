@@ -45,18 +45,20 @@ func TestGenerateUrl(t *testing.T) {
 	type generateURLTest struct {
 		endpoint string
 		region   string
+		dataType string
 		expected string
 	}
 	generateURLTests := []generateURLTest{
-		{"", "us", "https://listener.logz.io:8071/?token=token"},
-		{"", "", "https://listener.logz.io:8071/?token=token"},
-		{"https://nonexistent.com", "", "https://nonexistent.com"},
-		{"https://nonexistent.com", "us", "https://nonexistent.com"},
-		{"https://nonexistent.com", "not-valid", "https://nonexistent.com"},
-		{"", "not-valid", "https://listener.logz.io:8071/?token=token"},
-		{"", "US", "https://listener.logz.io:8071/?token=token"},
-		{"", "Us", "https://listener.logz.io:8071/?token=token"},
-		{"", "EU", "https://listener-eu.logz.io:8071/?token=token"},
+		{"", "us", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"", "us", "traces", "https://otlp-listener.logz.io/v1/traces"},
+		{"", "", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"https://nonexistent.com", "", "logs", "https://nonexistent.com"},
+		{"https://nonexistent.com", "us", "traces", "https://nonexistent.com"},
+		{"https://nonexistent.com", "not-valid", "traces", "https://nonexistent.com"},
+		{"", "not-valid", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"", "US", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"", "Us", "traces", "https://otlp-listener.logz.io/v1/traces"},
+		{"", "EU", "traces", "https://otlp-listener-eu.logz.io/v1/traces"},
 	}
 	for _, test := range generateURLTests {
 		clientConfig := confighttp.NewDefaultClientConfig()
@@ -66,31 +68,31 @@ func TestGenerateUrl(t *testing.T) {
 			Token:        "token",
 			ClientConfig: clientConfig,
 		}
-		output, _ := generateEndpoint(cfg)
+		output, _ := generateEndpoint(cfg, test.dataType)
 		require.Equal(t, test.expected, output)
 	}
 }
 
 func TestGetListenerURL(t *testing.T) {
 	type getListenerURLTest struct {
-		arg1     string
+		region   string
+		dataType string
 		expected string
 	}
 	getListenerURLTests := []getListenerURLTest{
-		{"us", "https://listener.logz.io:8071"},
-		{"eu", "https://listener-eu.logz.io:8071"},
-		{"au", "https://listener-au.logz.io:8071"},
-		{"ca", "https://listener-ca.logz.io:8071"},
-		{"nl", "https://listener-nl.logz.io:8071"},
-		{"uk", "https://listener-uk.logz.io:8071"},
-		{"wa", "https://listener-wa.logz.io:8071"},
-		{"not-valid", "https://listener.logz.io:8071"},
-		{"", "https://listener.logz.io:8071"},
-		{"US", "https://listener.logz.io:8071"},
-		{"Us", "https://listener.logz.io:8071"},
+		{"us", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"eu", "logs", "https://otlp-listener-eu.logz.io/v1/logs"},
+		{"au", "logs", "https://otlp-listener-au.logz.io/v1/logs"},
+		{"ca", "logs", "https://otlp-listener-ca.logz.io/v1/logs"},
+		{"uk", "logs", "https://otlp-listener-uk.logz.io/v1/logs"},
+		{"not-valid", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"US", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"Us", "logs", "https://otlp-listener.logz.io/v1/logs"},
+		{"UK", "traces", "https://otlp-listener-uk.logz.io/v1/traces"},
 	}
 	for _, test := range getListenerURLTests {
-		output := getListenerURL(test.arg1)
+		output := getListenerURL(test.region, test.dataType)
 		require.Equal(t, test.expected, output)
 	}
 }
