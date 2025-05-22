@@ -26,7 +26,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Endpoint: "localhost:6379",
 		TLS: configtls.ClientConfig{
-			Insecure: true,
+			Insecure: false,
 		},
 	}
 }
