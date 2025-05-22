@@ -8,6 +8,7 @@ type NfsNetStats struct {
 	NetCount uint64
 	UdpCount uint64
 	TcpCount uint64
+	TcpConnectionCount uint64
 }
 
 // nfs.rpc.* stats
