@@ -1262,6 +1262,13 @@ func TestSupervisorRestartCommand(t *testing.T) {
 		},
 	})
 
+	// Here we will wait for the supervisor connection to go away and come back.
+	// This helps us check that the restart logic is actually restarting the agent.
+	// Note: this also helps the data race detector confirm that access to the
+	// [Supervisor.lastHealthFromClient] has to be synchronized to prevent races.
+	waitForSupervisorConnection(server.supervisorConnected, false)
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
 	})
