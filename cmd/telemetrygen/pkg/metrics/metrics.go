@@ -45,7 +45,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		return err
 	}
 
-	if c.TotalDuration > 0 {
+	if c.TotalDuration > 0 || c.Continuous {
 		c.NumMetrics = 0
 	}
 
@@ -94,7 +94,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 
 		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
 	}
-	if c.TotalDuration > 0 {
+	if c.TotalDuration > 0 || c.Continuous {
 		time.Sleep(c.TotalDuration)
 		running.Store(false)
 	}

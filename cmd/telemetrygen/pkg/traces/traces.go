@@ -106,7 +106,7 @@ func run(c *Config, logger *zap.Logger) error {
 		return err
 	}
 
-	if c.TotalDuration > 0 {
+	if c.TotalDuration > 0 || c.Continuous {
 		c.NumTraces = 0
 	}
 
@@ -156,7 +156,7 @@ func run(c *Config, logger *zap.Logger) error {
 
 		go w.simulateTraces(telemetryAttributes)
 	}
-	if c.TotalDuration > 0 {
+	if c.TotalDuration > 0 || c.Continuous {
 		time.Sleep(c.TotalDuration)
 		running.Store(false)
 	}
