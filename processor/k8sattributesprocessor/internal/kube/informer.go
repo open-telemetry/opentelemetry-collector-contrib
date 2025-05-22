@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"time"
 
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -15,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const kubeSystemNamespace = "kube-system"
@@ -26,18 +29,24 @@ type InformerProvider func(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
-) cache.SharedInformer
+	transformFunc cache.TransformFunc,
+	stopCh chan struct{},
+) (cache.SharedInformer, error)
 
 // InformerProviderNamespace defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client for fetching namespace objects.
 type InformerProviderNamespace func(
 	client kubernetes.Interface,
+	stopCh chan struct{},
 ) cache.SharedInformer
 
 // InformerProviderNode defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client for fetching node objects.
 type InformerProviderNode func(
 	client kubernetes.Interface,
+	nodeName string,
+	watchSyncPeriod time.Duration,
+	stopCh chan struct{},
 ) cache.SharedInformer
 
 // InformerProviderReplicaSet defines a function type that returns a new SharedInformer. It is used to
@@ -45,14 +54,18 @@ type InformerProviderNode func(
 type InformerProviderReplicaSet func(
 	client kubernetes.Interface,
 	namespace string,
-) cache.SharedInformer
+	transformFunc cache.TransformFunc,
+	stopCh chan struct{},
+) (cache.SharedInformer, error)
 
 func newSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
 	ls labels.Selector,
 	fs fields.Selector,
-) cache.SharedInformer {
+	transformFunc cache.TransformFunc,
+	stopCh chan struct{},
+) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
 			ListFunc:  informerListFuncWithSelectors(client, namespace, ls, fs),
@@ -61,7 +74,11 @@ func newSharedInformer(
 		&api_v1.Pod{},
 		watchSyncPeriod,
 	)
-	return informer
+	if err := informer.SetTransform(transformFunc); err != nil {
+		return nil, err
+	}
+	go informer.Run(stopCh)
+	return informer, nil
 }
 
 func informerListFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.ListFunc {
@@ -83,6 +100,7 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 // newKubeSystemSharedInformer watches only kube-system namespace
 func newKubeSystemSharedInformer(
 	client kubernetes.Interface,
+	stopCh chan struct{},
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -98,11 +116,13 @@ func newKubeSystemSharedInformer(
 		&api_v1.Namespace{},
 		watchSyncPeriod,
 	)
+	go informer.Run(stopCh)
 	return informer
 }
 
 func newNamespaceSharedInformer(
 	client kubernetes.Interface,
+	stopCh chan struct{},
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -112,6 +132,7 @@ func newNamespaceSharedInformer(
 		&api_v1.Namespace{},
 		watchSyncPeriod,
 	)
+	go informer.Run(stopCh)
 	return informer
 }
 
@@ -130,7 +151,9 @@ func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
 func newReplicaSetSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
-) cache.SharedInformer {
+	transformFunc cache.TransformFunc,
+	stopCh chan struct{},
+) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
 			ListFunc:  replicasetListFuncWithSelectors(client, namespace),
@@ -139,7 +162,11 @@ func newReplicaSetSharedInformer(
 		&apps_v1.ReplicaSet{},
 		watchSyncPeriod,
 	)
-	return informer
+	if err := informer.SetTransform(transformFunc); err != nil {
+		return nil, err
+	}
+	go informer.Run(stopCh)
+	return informer, nil
 }
 
 func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
@@ -152,4 +179,15 @@ func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace str
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
 	}
+}
+
+func newNodeSharedInformer(
+	client kubernetes.Interface,
+	nodeName string,
+	watchSyncPeriod time.Duration,
+	stopCh chan struct{},
+) cache.SharedInformer {
+	informer := k8sconfig.NewNodeSharedInformer(client, nodeName, watchSyncPeriod)
+	go informer.Run(stopCh)
+	return informer
 }
