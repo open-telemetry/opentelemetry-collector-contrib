@@ -69,6 +69,7 @@ processor/transformprocessor
 internal/docker
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
+internal/gopsutilenv
 pkg/winperfcounters
 receiver/hostmetricsreceiver
 internal/datadog
@@ -198,7 +199,6 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
-internal/gopsutilenv
 internal/kubelet
 internal/sqlquery
 internal/tools
