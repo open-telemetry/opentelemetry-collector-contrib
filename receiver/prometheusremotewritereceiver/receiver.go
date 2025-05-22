@@ -14,7 +14,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
-	lru "github.com/hashicorp/golang-lru/v2/expirable"
+	lru "github.com/hashicorp/golang-lru/v2"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -31,8 +31,10 @@ import (
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	cache := lru.NewLRU[uint64, pmetric.ResourceMetrics](1000, nil, time.Minute*5)
-
+	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
+	}
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -52,7 +54,7 @@ type prometheusRemoteWriteReceiver struct {
 	server *http.Server
 	wg     sync.WaitGroup
 
-	rmCache *lru.LRU[uint64, pmetric.ResourceMetrics]
+	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric

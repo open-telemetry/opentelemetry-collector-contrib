@@ -64,6 +64,12 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
 	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+
+	// Add cleanup to ensure LRU cache is properly purged
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
 	return writeReceiver
 }
 
@@ -473,7 +479,6 @@ func TestTranslateV2(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
 			prwReceiver.rmCache.Purge()
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
 			if tc.expectError != "" {
