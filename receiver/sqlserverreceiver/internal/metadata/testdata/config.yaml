@@ -101,10 +101,6 @@ all_set:
   resource_attributes:
     host.name:
       enabled: true
-    server.address:
-      enabled: true
-    server.port:
-      enabled: true
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
@@ -213,10 +209,6 @@ none_set:
   resource_attributes:
     host.name:
       enabled: false
-    server.address:
-      enabled: false
-    server.port:
-      enabled: false
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
@@ -226,18 +218,6 @@ none_set:
 filter_set_include:
   resource_attributes:
     host.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    server.address:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -269,18 +249,6 @@ filter_set_exclude:
         - strict: "host.name-val"
       events_exclude:
         - strict: "host.name-val"
-    server.address:
-      enabled: true
-      metrics_exclude:
-        - strict: "server.address-val"
-      events_exclude:
-        - strict: "server.address-val"
-    server.port:
-      enabled: true
-      metrics_exclude:
-        - regexp: ".*"
-      events_exclude:
-        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:

@@ -87,18 +87,6 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
 	}
-	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
-	}
-	if lbc.ResourceAttributes.ServerAddress.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsExclude)
-	}
-	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
-	}
-	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
-	}
 	if lbc.ResourceAttributes.SqlserverComputerName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsInclude)
 	}

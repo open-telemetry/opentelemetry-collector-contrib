@@ -23,14 +23,6 @@ resource_attributes:
     description: The name of the SQL Server instance being monitored.
     enabled: false
     type: string
-  server.address:
-    description: Name of the database host.
-    enabled: false
-    type: string
-  server.port:
-    description: Server port number.
-    enabled: false
-    type: int
   host.name:
     description: The host name of SQL Server
     enabled: true
