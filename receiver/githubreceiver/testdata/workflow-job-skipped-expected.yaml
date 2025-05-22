@@ -1,0 +1,77 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: opentelemetry-collector-contrib
+        - key: vcs.repository.name
+          value:
+            stringValue: opentelemetry-collector-contrib
+        - key: vcs.vendor.name
+          value:
+            stringValue: github
+        - key: vcs.ref.head
+          value:
+            stringValue: main
+        - key: vcs.ref.head.type
+          value:
+            stringValue: branch
+        - key: vcs.ref.head.revision
+          value:
+            stringValue: 51eb1fb55541bf4856a7a24afd15bb3e90eea0ff
+        - key: cicd.pipeline.worker.id
+          value:
+            intValue: "0"
+        - key: cicd.pipeline.worker.group.id
+          value:
+            intValue: "0"
+        - key: cicd.pipeline.worker.name
+          value:
+            stringValue: ""
+        - key: cicd.pipeline.worker.group.name
+          value:
+            stringValue: ""
+        - key: cicd.pipeline.worker.node.id
+          value:
+            stringValue: CR_kwDOOjaRi88AAAAJrFr5Eg
+        - key: cicd.pipeline.name
+          value:
+            stringValue: build
+        - key: cicd.pipeline.task.run.sender.login
+          value:
+            stringValue: adrielp
+        - key: cicd.pipeline.task.run.url.full
+          value:
+            stringValue: https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/runs/14796710445/job/41546348818
+        - key: cicd.pipeline.task.run.id
+          value:
+            intValue: "41546348818"
+        - key: cicd.pipeline.run.task.status
+          value:
+            stringValue: skip
+    scopeSpans:
+      - scope: {}
+        spans:
+          - endTimeUnixNano: "1746195354000000000"
+            kind: 2
+            name: build
+            parentSpanId: 3b54c768f3ef27e1
+            spanId: 84e27971417e5249
+            startTimeUnixNano: "1746195355000000000"
+            status:
+              message: skipped
+            traceId: 0b0cff7305ff68eb7d1bb72c7fdbe277
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.run.queue.duration
+                value:
+                  doubleValue: 0
+            endTimeUnixNano: "1746195354000000000"
+            kind: 2
+            name: queue-build
+            parentSpanId: 84e27971417e5249
+            spanId: 750687c67fcd26a3
+            startTimeUnixNano: "1746195354000000000"
+            status: {}
+            traceId: 0b0cff7305ff68eb7d1bb72c7fdbe277
