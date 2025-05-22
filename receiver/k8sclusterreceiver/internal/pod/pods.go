@@ -185,7 +185,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindJob)
 	if jobRef != nil {
-		var job interface{}
+		var job any
 		var err error
 		exists := false
 
@@ -226,7 +226,7 @@ func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, 
 func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindReplicaSet)
 	if rsRef != nil {
-		var replicaSet interface{}
+		var replicaSet any
 		var err error
 		exists := false
 

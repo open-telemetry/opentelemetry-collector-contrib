@@ -163,7 +163,8 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 func (rw *resourceWatcher) getInformerFactories() map[string]informers.SharedInformerFactory {
 	factories := map[string]informers.SharedInformerFactory{}
 
-	if len(rw.config.Namespaces) > 0 {
+	switch {
+	case len(rw.config.Namespaces) > 0:
 		rw.logger.Info("Namespaces filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespaces", strings.Join(rw.config.Namespaces, ",")))
 		for _, ns := range rw.config.Namespaces {
 			factories[ns] = informers.NewSharedInformerFactoryWithOptions(
@@ -172,19 +173,20 @@ func (rw *resourceWatcher) getInformerFactories() map[string]informers.SharedInf
 				informers.WithNamespace(ns),
 			)
 		}
-	} else if rw.config.Namespace != "" {
+	case rw.config.Namespace != "":
 		rw.logger.Info("Namespace filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespace", rw.config.Namespace))
 		factories[rw.config.Namespace] = informers.NewSharedInformerFactoryWithOptions(
 			rw.client,
 			rw.config.MetadataCollectionInterval,
 			informers.WithNamespace(rw.config.Namespace),
 		)
-	} else {
+	default:
 		factories[""] = informers.NewSharedInformerFactoryWithOptions(
 			rw.client,
 			rw.config.MetadataCollectionInterval,
 		)
 	}
+
 	return factories
 }
 

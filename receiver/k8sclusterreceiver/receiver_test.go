@@ -5,7 +5,6 @@ package k8sclusterreceiver
 
 import (
 	"context"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"slices"
 	"sync/atomic"
 	"testing"
@@ -20,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
