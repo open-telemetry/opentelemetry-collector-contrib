@@ -206,9 +206,9 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(metricKind metric.MetricD
 
 		// Set sum and range values
 		dp.SetSum(float64(distValue.Mean) * float64(distValue.Count))
-		if range_ := distValue.GetRange(); range_ != nil {
-			dp.SetMin(float64(range_.Min))
-			dp.SetMax(float64(range_.Max))
+		if rangeValue := distValue.GetRange(); rangeValue != nil {
+			dp.SetMin(float64(rangeValue.Min))
+			dp.SetMax(float64(rangeValue.Max))
 		}
 	}
 
