@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -120,7 +121,7 @@ func createAddScraperOptions(
 ) ([]scraperhelper.ControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(cfg.Scrapers))
 
-	envMap := setGoPsutilEnvVars(cfg.RootPath)
+	envMap := gopsutilenv.SetGoPsutilEnvVars(cfg.RootPath)
 
 	for key, cfg := range cfg.Scrapers {
 		factory, err := getFactory(key, factories)

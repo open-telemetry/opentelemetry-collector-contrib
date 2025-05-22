@@ -22,49 +22,49 @@ const tagAttributeKey = "fluent.tag"
 // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1,
 // which describes the fields in much greater detail.
 
-type Event interface {
+type event interface {
 	DecodeMsg(dc *msgp.Reader) error
 	LogRecords() plog.LogRecordSlice
 	Chunk() string
 	Compressed() string
 }
 
-type OptionsMap map[string]any
+type optionsMap map[string]any
 
 // Chunk returns the `chunk` option or blank string if it was not set.
-func (om OptionsMap) Chunk() string {
+func (om optionsMap) Chunk() string {
 	c, _ := om["chunk"].(string)
 	return c
 }
 
-func (om OptionsMap) Compressed() string {
+func (om optionsMap) Compressed() string {
 	compressed, _ := om["compressed"].(string)
 	return compressed
 }
 
-type EventMode int
+type eventMode int
 
-type Peeker interface {
+type peeker interface {
 	Peek(n int) ([]byte, error)
 }
 
-// Values for enum EventMode.
+// Values for enum eventMode.
 const (
-	UnknownMode EventMode = iota
-	MessageMode
-	ForwardMode
-	PackedForwardMode
+	unknownMode eventMode = iota
+	messageMode
+	forwardMode
+	packedForwardMode
 )
 
-func (em EventMode) String() string {
+func (em eventMode) String() string {
 	switch em {
-	case UnknownMode:
+	case unknownMode:
 		return "unknown"
-	case MessageMode:
+	case messageMode:
 		return "message"
-	case ForwardMode:
+	case forwardMode:
 		return "forward"
-	case PackedForwardMode:
+	case packedForwardMode:
 		return "packedforward"
 	default:
 		panic("programmer bug")
@@ -179,16 +179,16 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	return nil
 }
 
-type MessageEventLogRecord struct {
+type messageEventLogRecord struct {
 	plog.LogRecordSlice
-	OptionsMap
+	optionsMap
 }
 
-func (melr *MessageEventLogRecord) LogRecords() plog.LogRecordSlice {
+func (melr *messageEventLogRecord) LogRecords() plog.LogRecordSlice {
 	return melr.LogRecordSlice
 }
 
-func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
+func (melr *messageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 	melr.LogRecordSlice = plog.NewLogRecordSlice()
 	var arrLen uint32
 	var err error
@@ -215,19 +215,19 @@ func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	if arrLen == 4 {
-		melr.OptionsMap, err = parseOptions(dc)
+		melr.optionsMap, err = parseOptions(dc)
 		return err
 	}
 	return nil
 }
 
-func parseOptions(dc *msgp.Reader) (OptionsMap, error) {
+func parseOptions(dc *msgp.Reader) (optionsMap, error) {
 	var optionLen uint32
 	optionLen, err := dc.ReadMapHeader()
 	if err != nil {
 		return nil, msgp.WrapError(err, "Option")
 	}
-	out := make(OptionsMap, optionLen)
+	out := make(optionsMap, optionLen)
 
 	for optionLen > 0 {
 		optionLen--
@@ -244,16 +244,16 @@ func parseOptions(dc *msgp.Reader) (OptionsMap, error) {
 	return out, nil
 }
 
-type ForwardEventLogRecords struct {
+type forwardEventLogRecords struct {
 	plog.LogRecordSlice
-	OptionsMap
+	optionsMap
 }
 
-func (fe *ForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
+func (fe *forwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 	return fe.LogRecordSlice
 }
 
-func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
+func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	fe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
@@ -286,7 +286,7 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	if arrLen == 3 {
-		fe.OptionsMap, err = parseOptions(dc)
+		fe.optionsMap, err = parseOptions(dc)
 		return err
 	}
 
@@ -304,18 +304,18 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	return parseRecordToLogRecord(dc, lr)
 }
 
-type PackedForwardEventLogRecords struct {
+type packedForwardEventLogRecords struct {
 	plog.LogRecordSlice
-	OptionsMap
+	optionsMap
 }
 
-func (pfe *PackedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
+func (pfe *packedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
 	return pfe.LogRecordSlice
 }
 
 // DecodeMsg implements msgp.Decodable.  This was originally code generated but
 // then manually copied here in order to handle the optional Options field.
-func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
+func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	pfe.LogRecordSlice = plog.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
@@ -361,7 +361,7 @@ func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	if arrLen == 3 {
-		pfe.OptionsMap, err = parseOptions(dc)
+		pfe.optionsMap, err = parseOptions(dc)
 		if err != nil {
 			return err
 		}
@@ -375,7 +375,7 @@ func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	return nil
 }
 
-func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipped bool, tag string) error {
+func (pfe *packedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipped bool, tag string) error {
 	var reader io.Reader
 	reader = bytes.NewReader(entriesRaw)
 

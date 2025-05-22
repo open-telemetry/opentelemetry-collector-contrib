@@ -31,25 +31,27 @@ import (
 
 const (
 	computerNameKey  = "computer_name"
+	databaseNameKey  = "database_name"
 	instanceNameKey  = "sql_instance"
 	serverAddressKey = "server.address"
 	serverPortKey    = "server.port"
 )
 
 type sqlServerScraperHelper struct {
-	id                 component.ID
-	config             *Config
-	sqlQuery           string
-	instanceName       string
-	clientProviderFunc sqlquery.ClientProviderFunc
-	dbProviderFunc     sqlquery.DbProviderFunc
-	logger             *zap.Logger
-	telemetry          sqlquery.TelemetryConfig
-	client             sqlquery.DbClient
-	db                 *sql.DB
-	mb                 *metadata.MetricsBuilder
-	lb                 *metadata.LogsBuilder
-	cache              *lru.Cache[string, int64]
+	id                     component.ID
+	config                 *Config
+	sqlQuery               string
+	instanceName           string
+	clientProviderFunc     sqlquery.ClientProviderFunc
+	dbProviderFunc         sqlquery.DbProviderFunc
+	logger                 *zap.Logger
+	telemetry              sqlquery.TelemetryConfig
+	client                 sqlquery.DbClient
+	db                     *sql.DB
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	cache                  *lru.Cache[string, int64]
+	lastExecutionTimestamp time.Time
 }
 
 var (
@@ -67,16 +69,17 @@ func newSQLServerScraper(id component.ID,
 	cache *lru.Cache[string, int64],
 ) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
-		id:                 id,
-		config:             cfg,
-		sqlQuery:           query,
-		logger:             params.Logger,
-		telemetry:          telemetry,
-		dbProviderFunc:     dbProviderFunc,
-		clientProviderFunc: clientProviderFunc,
-		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                 metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:              cache,
+		id:                     id,
+		config:                 cfg,
+		sqlQuery:               query,
+		logger:                 params.Logger,
+		telemetry:              telemetry,
+		dbProviderFunc:         dbProviderFunc,
+		clientProviderFunc:     clientProviderFunc,
+		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:                  cache,
+		lastExecutionTimestamp: time.Unix(0, 0),
 	}
 }
 
@@ -105,6 +108,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabasePerfCounterMetrics(ctx)
 	case getSQLServerPropertiesQuery(s.config.InstanceName):
 		err = s.recordDatabaseStatusMetrics(ctx)
+	case getSQLServerWaitStatsQuery(s.config.InstanceName):
+		err = s.recordDatabaseWaitMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -121,6 +126,10 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
+		if s.lastExecutionTimestamp.Add(s.config.TopQueryCollection.CollectionInterval).After(time.Now()) {
+			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
@@ -139,7 +148,6 @@ func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
-	const databaseNameKey = "database_name"
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
@@ -532,6 +540,46 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	return errors.Join(errs...)
 }
 
+func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) error {
+	// Constants are the columns for metrics from query
+	const (
+		waitCategory = "wait_category"
+		waitTimeMs   = "wait_time_ms"
+		waitType     = "wait_type"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val any
+	for i, row := range rows {
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
+
+		val, err = retrieveFloat(row, waitTimeMs)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, waitTimeMs))
+		} else {
+			// The value is divided here because it's stored in SQL Server in ms, need to convert to s
+			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row[waitCategory], row[waitType])
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
@@ -596,7 +644,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
 
 	resourcesAdded := false
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	s.lastExecutionTimestamp = now
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
 		if totalElapsedTimeDiffsMicrosecond[i] == 0 {
