@@ -314,6 +314,7 @@ rules:
       - pods/status
       - replicationcontrollers
       - replicationcontrollers/status
+      - resourcequotas
       - services
     verbs:
       - get
