@@ -5,3 +5,5 @@ deltatocumulative/set-valid-max_stale:
   max_stale: 2m
 deltatocumulative/set-valid-max_streams:
   max_streams: 20
+deltatocumulative/set-valid-accumulate_summaries:
+  accumulate_summaries: true

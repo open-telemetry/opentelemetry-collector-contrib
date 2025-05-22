@@ -31,7 +31,7 @@ func (e ErrOutOfOrder) Error() string {
 }
 
 type Type[Self any] interface {
-	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint
+	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint | pmetric.SummaryDataPoint
 
 	StartTimestamp() pcommon.Timestamp
 	Timestamp() pcommon.Timestamp
@@ -75,4 +75,8 @@ func (aggr Aggregator) Histograms(state, dp pmetric.HistogramDataPoint) error {
 
 func (aggr Aggregator) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) error {
 	return Aggregate(state, dp, aggr.Aggregator.Exponential)
+}
+
+func (aggr Aggregator) Summary(state, dp pmetric.SummaryDataPoint) error {
+    return Aggregate(state, dp, aggr.Aggregator.Summary)
 }

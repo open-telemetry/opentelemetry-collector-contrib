@@ -18,8 +18,9 @@ import (
 var _ xconfmap.Validator = (*Config)(nil)
 
 type Config struct {
-	MaxStale   time.Duration `mapstructure:"max_stale"`
-	MaxStreams int           `mapstructure:"max_streams"`
+	MaxStale            time.Duration `mapstructure:"max_stale"`
+	MaxStreams          int           `mapstructure:"max_streams"`
+	AccumulateSummaries bool          `mapstructure:"accumulate_summaries"`
 }
 
 func (c *Config) Validate() error {
@@ -39,6 +40,7 @@ func createDefaultConfig() component.Config {
 		// TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
 		MaxStreams: math.MaxInt,
+		AccumulateSummaries: false,
 	}
 }
 
