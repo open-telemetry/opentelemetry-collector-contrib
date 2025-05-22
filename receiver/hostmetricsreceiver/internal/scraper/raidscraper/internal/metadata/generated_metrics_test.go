@@ -61,31 +61,31 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdBlocksSyncedDataPoint(ts, 1, "device-val")
+			mb.RecordSystemLinuxMdraidBlocksSyncedDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdBlocksTotalDataPoint(ts, 1, "device-val")
+			mb.RecordSystemLinuxMdraidBlocksTotalDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdDisksDataPoint(ts, 1, "device-val", "state-val")
+			mb.RecordSystemLinuxMdraidDegradedRaidDisksDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdDisksRequiredDataPoint(ts, 1, "device-val")
+			mb.RecordSystemLinuxMdraidDisksDataPoint(ts, 1, "device-val", "state-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdRaidDegradedDataPoint(ts, 1, "device-val")
+			mb.RecordSystemLinuxMdraidDisksRequiredDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdRaidDisksDataPoint(ts, 1, "device-val")
+			mb.RecordSystemLinuxMdraidRaidDisksDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMdStateDataPoint(ts, 1, "device-val", "state-val")
+			mb.RecordSystemLinuxMdraidStateDataPoint(ts, 1, "device-val", "state-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -109,9 +109,9 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "md.blocks.synced":
-					assert.False(t, validatedMetrics["md.blocks.synced"], "Found a duplicate in the metrics slice: md.blocks.synced")
-					validatedMetrics["md.blocks.synced"] = true
+				case "system.linux.mdraid.blocks.synced":
+					assert.False(t, validatedMetrics["system.linux.mdraid.blocks.synced"], "Found a duplicate in the metrics slice: system.linux.mdraid.blocks.synced")
+					validatedMetrics["system.linux.mdraid.blocks.synced"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of synced blocks on device", ms.At(i).Description())
@@ -124,9 +124,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
 					assert.Equal(t, "device-val", attrVal.Str())
-				case "md.blocks.total":
-					assert.False(t, validatedMetrics["md.blocks.total"], "Found a duplicate in the metrics slice: md.blocks.total")
-					validatedMetrics["md.blocks.total"] = true
+				case "system.linux.mdraid.blocks.total":
+					assert.False(t, validatedMetrics["system.linux.mdraid.blocks.total"], "Found a duplicate in the metrics slice: system.linux.mdraid.blocks.total")
+					validatedMetrics["system.linux.mdraid.blocks.total"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of blocks on device", ms.At(i).Description())
@@ -139,9 +139,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
 					assert.Equal(t, "device-val", attrVal.Str())
-				case "md.disks":
-					assert.False(t, validatedMetrics["md.disks"], "Found a duplicate in the metrics slice: md.disks")
-					validatedMetrics["md.disks"] = true
+				case "system.linux.mdraid.degraded_raid_disks":
+					assert.False(t, validatedMetrics["system.linux.mdraid.degraded_raid_disks"], "Found a duplicate in the metrics slice: system.linux.mdraid.degraded_raid_disks")
+					validatedMetrics["system.linux.mdraid.degraded_raid_disks"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of degraded raid disks on device", ms.At(i).Description())
+					assert.Equal(t, "disks", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device")
+					assert.True(t, ok)
+					assert.Equal(t, "device-val", attrVal.Str())
+				case "system.linux.mdraid.disks":
+					assert.False(t, validatedMetrics["system.linux.mdraid.disks"], "Found a duplicate in the metrics slice: system.linux.mdraid.disks")
+					validatedMetrics["system.linux.mdraid.disks"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of active/failed/spare disks of device.", ms.At(i).Description())
@@ -157,9 +172,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
 					assert.Equal(t, "state-val", attrVal.Str())
-				case "md.disks.required":
-					assert.False(t, validatedMetrics["md.disks.required"], "Found a duplicate in the metrics slice: md.disks.required")
-					validatedMetrics["md.disks.required"] = true
+				case "system.linux.mdraid.disks.required":
+					assert.False(t, validatedMetrics["system.linux.mdraid.disks.required"], "Found a duplicate in the metrics slice: system.linux.mdraid.disks.required")
+					validatedMetrics["system.linux.mdraid.disks.required"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of disks of device.", ms.At(i).Description())
@@ -172,12 +187,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
 					assert.Equal(t, "device-val", attrVal.Str())
-				case "md.raid.degraded":
-					assert.False(t, validatedMetrics["md.raid.degraded"], "Found a duplicate in the metrics slice: md.raid.degraded")
-					validatedMetrics["md.raid.degraded"] = true
+				case "system.linux.mdraid.raid_disks":
+					assert.False(t, validatedMetrics["system.linux.mdraid.raid_disks"], "Found a duplicate in the metrics slice: system.linux.mdraid.raid_disks")
+					validatedMetrics["system.linux.mdraid.raid_disks"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of degraded raid disks on device", ms.At(i).Description())
+					assert.Equal(t, "Number of raid disks in a fully functional array", ms.At(i).Description())
 					assert.Equal(t, "disks", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -187,24 +202,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
 					assert.Equal(t, "device-val", attrVal.Str())
-				case "md.raid.disks":
-					assert.False(t, validatedMetrics["md.raid.disks"], "Found a duplicate in the metrics slice: md.raid.disks")
-					validatedMetrics["md.raid.disks"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of raid disks on device", ms.At(i).Description())
-					assert.Equal(t, "disks", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-				case "md.state":
-					assert.False(t, validatedMetrics["md.state"], "Found a duplicate in the metrics slice: md.state")
-					validatedMetrics["md.state"] = true
+				case "system.linux.mdraid.state":
+					assert.False(t, validatedMetrics["system.linux.mdraid.state"], "Found a duplicate in the metrics slice: system.linux.mdraid.state")
+					validatedMetrics["system.linux.mdraid.state"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Indicates the state of md-device", ms.At(i).Description())

@@ -9,63 +9,63 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 var MetricsInfo = metricsInfo{
-	MdBlocksSynced: metricInfo{
-		Name: "md.blocks.synced",
+	SystemLinuxMdraidBlocksSynced: metricInfo{
+		Name: "system.linux.mdraid.blocks.synced",
 	},
-	MdBlocksTotal: metricInfo{
-		Name: "md.blocks.total",
+	SystemLinuxMdraidBlocksTotal: metricInfo{
+		Name: "system.linux.mdraid.blocks.total",
 	},
-	MdDisks: metricInfo{
-		Name: "md.disks",
+	SystemLinuxMdraidDegradedRaidDisks: metricInfo{
+		Name: "system.linux.mdraid.degraded_raid_disks",
 	},
-	MdDisksRequired: metricInfo{
-		Name: "md.disks.required",
+	SystemLinuxMdraidDisks: metricInfo{
+		Name: "system.linux.mdraid.disks",
 	},
-	MdRaidDegraded: metricInfo{
-		Name: "md.raid.degraded",
+	SystemLinuxMdraidDisksRequired: metricInfo{
+		Name: "system.linux.mdraid.disks.required",
 	},
-	MdRaidDisks: metricInfo{
-		Name: "md.raid.disks",
+	SystemLinuxMdraidRaidDisks: metricInfo{
+		Name: "system.linux.mdraid.raid_disks",
 	},
-	MdState: metricInfo{
-		Name: "md.state",
+	SystemLinuxMdraidState: metricInfo{
+		Name: "system.linux.mdraid.state",
 	},
 }
 
 type metricsInfo struct {
-	MdBlocksSynced  metricInfo
-	MdBlocksTotal   metricInfo
-	MdDisks         metricInfo
-	MdDisksRequired metricInfo
-	MdRaidDegraded  metricInfo
-	MdRaidDisks     metricInfo
-	MdState         metricInfo
+	SystemLinuxMdraidBlocksSynced      metricInfo
+	SystemLinuxMdraidBlocksTotal       metricInfo
+	SystemLinuxMdraidDegradedRaidDisks metricInfo
+	SystemLinuxMdraidDisks             metricInfo
+	SystemLinuxMdraidDisksRequired     metricInfo
+	SystemLinuxMdraidRaidDisks         metricInfo
+	SystemLinuxMdraidState             metricInfo
 }
 
 type metricInfo struct {
 	Name string
 }
 
-type metricMdBlocksSynced struct {
+type metricSystemLinuxMdraidBlocksSynced struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills md.blocks.synced metric with initial data.
-func (m *metricMdBlocksSynced) init() {
-	m.data.SetName("md.blocks.synced")
+// init fills system.linux.mdraid.blocks.synced metric with initial data.
+func (m *metricSystemLinuxMdraidBlocksSynced) init() {
+	m.data.SetName("system.linux.mdraid.blocks.synced")
 	m.data.SetDescription("Number of synced blocks on device")
 	m.data.SetUnit("blocks")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMdBlocksSynced) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidBlocksSynced) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -77,14 +77,14 @@ func (m *metricMdBlocksSynced) recordDataPoint(start pcommon.Timestamp, ts pcomm
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdBlocksSynced) updateCapacity() {
+func (m *metricSystemLinuxMdraidBlocksSynced) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdBlocksSynced) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemLinuxMdraidBlocksSynced) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -92,8 +92,8 @@ func (m *metricMdBlocksSynced) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMdBlocksSynced(cfg MetricConfig) metricMdBlocksSynced {
-	m := metricMdBlocksSynced{config: cfg}
+func newMetricSystemLinuxMdraidBlocksSynced(cfg MetricConfig) metricSystemLinuxMdraidBlocksSynced {
+	m := metricSystemLinuxMdraidBlocksSynced{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -101,22 +101,22 @@ func newMetricMdBlocksSynced(cfg MetricConfig) metricMdBlocksSynced {
 	return m
 }
 
-type metricMdBlocksTotal struct {
+type metricSystemLinuxMdraidBlocksTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills md.blocks.total metric with initial data.
-func (m *metricMdBlocksTotal) init() {
-	m.data.SetName("md.blocks.total")
+// init fills system.linux.mdraid.blocks.total metric with initial data.
+func (m *metricSystemLinuxMdraidBlocksTotal) init() {
+	m.data.SetName("system.linux.mdraid.blocks.total")
 	m.data.SetDescription("Number of blocks on device")
 	m.data.SetUnit("blocks")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMdBlocksTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidBlocksTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -128,14 +128,14 @@ func (m *metricMdBlocksTotal) recordDataPoint(start pcommon.Timestamp, ts pcommo
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdBlocksTotal) updateCapacity() {
+func (m *metricSystemLinuxMdraidBlocksTotal) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdBlocksTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemLinuxMdraidBlocksTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -143,8 +143,8 @@ func (m *metricMdBlocksTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMdBlocksTotal(cfg MetricConfig) metricMdBlocksTotal {
-	m := metricMdBlocksTotal{config: cfg}
+func newMetricSystemLinuxMdraidBlocksTotal(cfg MetricConfig) metricSystemLinuxMdraidBlocksTotal {
+	m := metricSystemLinuxMdraidBlocksTotal{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -152,125 +152,22 @@ func newMetricMdBlocksTotal(cfg MetricConfig) metricMdBlocksTotal {
 	return m
 }
 
-type metricMdDisks struct {
+type metricSystemLinuxMdraidDegradedRaidDisks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills md.disks metric with initial data.
-func (m *metricMdDisks) init() {
-	m.data.SetName("md.disks")
-	m.data.SetDescription("Number of active/failed/spare disks of device.")
-	m.data.SetUnit("blocks")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricMdDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
-	dp.Attributes().PutStr("state", stateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdDisks) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdDisks) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMdDisks(cfg MetricConfig) metricMdDisks {
-	m := metricMdDisks{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMdDisksRequired struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills md.disks.required metric with initial data.
-func (m *metricMdDisksRequired) init() {
-	m.data.SetName("md.disks.required")
-	m.data.SetDescription("Total number of disks of device.")
-	m.data.SetUnit("blocks")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricMdDisksRequired) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdDisksRequired) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdDisksRequired) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMdDisksRequired(cfg MetricConfig) metricMdDisksRequired {
-	m := metricMdDisksRequired{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMdRaidDegraded struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills md.raid.degraded metric with initial data.
-func (m *metricMdRaidDegraded) init() {
-	m.data.SetName("md.raid.degraded")
+// init fills system.linux.mdraid.degraded_raid_disks metric with initial data.
+func (m *metricSystemLinuxMdraidDegradedRaidDisks) init() {
+	m.data.SetName("system.linux.mdraid.degraded_raid_disks")
 	m.data.SetDescription("Number of degraded raid disks on device")
 	m.data.SetUnit("disks")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMdRaidDegraded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidDegradedRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -282,14 +179,14 @@ func (m *metricMdRaidDegraded) recordDataPoint(start pcommon.Timestamp, ts pcomm
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdRaidDegraded) updateCapacity() {
+func (m *metricSystemLinuxMdraidDegradedRaidDisks) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdRaidDegraded) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemLinuxMdraidDegradedRaidDisks) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -297,8 +194,8 @@ func (m *metricMdRaidDegraded) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMdRaidDegraded(cfg MetricConfig) metricMdRaidDegraded {
-	m := metricMdRaidDegraded{config: cfg}
+func newMetricSystemLinuxMdraidDegradedRaidDisks(cfg MetricConfig) metricSystemLinuxMdraidDegradedRaidDisks {
+	m := metricSystemLinuxMdraidDegradedRaidDisks{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -306,73 +203,22 @@ func newMetricMdRaidDegraded(cfg MetricConfig) metricMdRaidDegraded {
 	return m
 }
 
-type metricMdRaidDisks struct {
+type metricSystemLinuxMdraidDisks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills md.raid.disks metric with initial data.
-func (m *metricMdRaidDisks) init() {
-	m.data.SetName("md.raid.disks")
-	m.data.SetDescription("Number of raid disks on device")
-	m.data.SetUnit("disks")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricMdRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdRaidDisks) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdRaidDisks) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMdRaidDisks(cfg MetricConfig) metricMdRaidDisks {
-	m := metricMdRaidDisks{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMdState struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills md.state metric with initial data.
-func (m *metricMdState) init() {
-	m.data.SetName("md.state")
-	m.data.SetDescription("Indicates the state of md-device")
+// init fills system.linux.mdraid.disks metric with initial data.
+func (m *metricSystemLinuxMdraidDisks) init() {
+	m.data.SetName("system.linux.mdraid.disks")
+	m.data.SetDescription("Number of active/failed/spare disks of device.")
 	m.data.SetUnit("blocks")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMdState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemLinuxMdraidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -385,14 +231,14 @@ func (m *metricMdState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Time
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMdState) updateCapacity() {
+func (m *metricSystemLinuxMdraidDisks) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMdState) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemLinuxMdraidDisks) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -400,8 +246,162 @@ func (m *metricMdState) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMdState(cfg MetricConfig) metricMdState {
-	m := metricMdState{config: cfg}
+func newMetricSystemLinuxMdraidDisks(cfg MetricConfig) metricSystemLinuxMdraidDisks {
+	m := metricSystemLinuxMdraidDisks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemLinuxMdraidDisksRequired struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.linux.mdraid.disks.required metric with initial data.
+func (m *metricSystemLinuxMdraidDisksRequired) init() {
+	m.data.SetName("system.linux.mdraid.disks.required")
+	m.data.SetDescription("Total number of disks of device.")
+	m.data.SetUnit("blocks")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemLinuxMdraidDisksRequired) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemLinuxMdraidDisksRequired) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemLinuxMdraidDisksRequired) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemLinuxMdraidDisksRequired(cfg MetricConfig) metricSystemLinuxMdraidDisksRequired {
+	m := metricSystemLinuxMdraidDisksRequired{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemLinuxMdraidRaidDisks struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.linux.mdraid.raid_disks metric with initial data.
+func (m *metricSystemLinuxMdraidRaidDisks) init() {
+	m.data.SetName("system.linux.mdraid.raid_disks")
+	m.data.SetDescription("Number of raid disks in a fully functional array")
+	m.data.SetUnit("disks")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemLinuxMdraidRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemLinuxMdraidRaidDisks) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemLinuxMdraidRaidDisks) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemLinuxMdraidRaidDisks(cfg MetricConfig) metricSystemLinuxMdraidRaidDisks {
+	m := metricSystemLinuxMdraidRaidDisks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemLinuxMdraidState struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.linux.mdraid.state metric with initial data.
+func (m *metricSystemLinuxMdraidState) init() {
+	m.data.SetName("system.linux.mdraid.state")
+	m.data.SetDescription("Indicates the state of md-device")
+	m.data.SetUnit("blocks")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemLinuxMdraidState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemLinuxMdraidState) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemLinuxMdraidState) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemLinuxMdraidState(cfg MetricConfig) metricSystemLinuxMdraidState {
+	m := metricSystemLinuxMdraidState{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -412,18 +412,18 @@ func newMetricMdState(cfg MetricConfig) metricMdState {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                MetricsBuilderConfig // config of the metrics builder.
-	startTime             pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity       int                  // maximum observed number of metrics per resource.
-	metricsBuffer         pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo             component.BuildInfo  // contains version information.
-	metricMdBlocksSynced  metricMdBlocksSynced
-	metricMdBlocksTotal   metricMdBlocksTotal
-	metricMdDisks         metricMdDisks
-	metricMdDisksRequired metricMdDisksRequired
-	metricMdRaidDegraded  metricMdRaidDegraded
-	metricMdRaidDisks     metricMdRaidDisks
-	metricMdState         metricMdState
+	config                                   MetricsBuilderConfig // config of the metrics builder.
+	startTime                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                          int                  // maximum observed number of metrics per resource.
+	metricsBuffer                            pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                component.BuildInfo  // contains version information.
+	metricSystemLinuxMdraidBlocksSynced      metricSystemLinuxMdraidBlocksSynced
+	metricSystemLinuxMdraidBlocksTotal       metricSystemLinuxMdraidBlocksTotal
+	metricSystemLinuxMdraidDegradedRaidDisks metricSystemLinuxMdraidDegradedRaidDisks
+	metricSystemLinuxMdraidDisks             metricSystemLinuxMdraidDisks
+	metricSystemLinuxMdraidDisksRequired     metricSystemLinuxMdraidDisksRequired
+	metricSystemLinuxMdraidRaidDisks         metricSystemLinuxMdraidRaidDisks
+	metricSystemLinuxMdraidState             metricSystemLinuxMdraidState
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -445,17 +445,17 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                mbc,
-		startTime:             pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:         pmetric.NewMetrics(),
-		buildInfo:             settings.BuildInfo,
-		metricMdBlocksSynced:  newMetricMdBlocksSynced(mbc.Metrics.MdBlocksSynced),
-		metricMdBlocksTotal:   newMetricMdBlocksTotal(mbc.Metrics.MdBlocksTotal),
-		metricMdDisks:         newMetricMdDisks(mbc.Metrics.MdDisks),
-		metricMdDisksRequired: newMetricMdDisksRequired(mbc.Metrics.MdDisksRequired),
-		metricMdRaidDegraded:  newMetricMdRaidDegraded(mbc.Metrics.MdRaidDegraded),
-		metricMdRaidDisks:     newMetricMdRaidDisks(mbc.Metrics.MdRaidDisks),
-		metricMdState:         newMetricMdState(mbc.Metrics.MdState),
+		config:                                   mbc,
+		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                            pmetric.NewMetrics(),
+		buildInfo:                                settings.BuildInfo,
+		metricSystemLinuxMdraidBlocksSynced:      newMetricSystemLinuxMdraidBlocksSynced(mbc.Metrics.SystemLinuxMdraidBlocksSynced),
+		metricSystemLinuxMdraidBlocksTotal:       newMetricSystemLinuxMdraidBlocksTotal(mbc.Metrics.SystemLinuxMdraidBlocksTotal),
+		metricSystemLinuxMdraidDegradedRaidDisks: newMetricSystemLinuxMdraidDegradedRaidDisks(mbc.Metrics.SystemLinuxMdraidDegradedRaidDisks),
+		metricSystemLinuxMdraidDisks:             newMetricSystemLinuxMdraidDisks(mbc.Metrics.SystemLinuxMdraidDisks),
+		metricSystemLinuxMdraidDisksRequired:     newMetricSystemLinuxMdraidDisksRequired(mbc.Metrics.SystemLinuxMdraidDisksRequired),
+		metricSystemLinuxMdraidRaidDisks:         newMetricSystemLinuxMdraidRaidDisks(mbc.Metrics.SystemLinuxMdraidRaidDisks),
+		metricSystemLinuxMdraidState:             newMetricSystemLinuxMdraidState(mbc.Metrics.SystemLinuxMdraidState),
 	}
 
 	for _, op := range options {
@@ -522,13 +522,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricMdBlocksSynced.emit(ils.Metrics())
-	mb.metricMdBlocksTotal.emit(ils.Metrics())
-	mb.metricMdDisks.emit(ils.Metrics())
-	mb.metricMdDisksRequired.emit(ils.Metrics())
-	mb.metricMdRaidDegraded.emit(ils.Metrics())
-	mb.metricMdRaidDisks.emit(ils.Metrics())
-	mb.metricMdState.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidBlocksSynced.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidBlocksTotal.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidDegradedRaidDisks.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidDisks.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidDisksRequired.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidRaidDisks.emit(ils.Metrics())
+	mb.metricSystemLinuxMdraidState.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -550,39 +550,39 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
-// RecordMdBlocksSyncedDataPoint adds a data point to md.blocks.synced metric.
-func (mb *MetricsBuilder) RecordMdBlocksSyncedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricMdBlocksSynced.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+// RecordSystemLinuxMdraidBlocksSyncedDataPoint adds a data point to system.linux.mdraid.blocks.synced metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidBlocksSyncedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	mb.metricSystemLinuxMdraidBlocksSynced.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
-// RecordMdBlocksTotalDataPoint adds a data point to md.blocks.total metric.
-func (mb *MetricsBuilder) RecordMdBlocksTotalDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricMdBlocksTotal.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+// RecordSystemLinuxMdraidBlocksTotalDataPoint adds a data point to system.linux.mdraid.blocks.total metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidBlocksTotalDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	mb.metricSystemLinuxMdraidBlocksTotal.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
-// RecordMdDisksDataPoint adds a data point to md.disks metric.
-func (mb *MetricsBuilder) RecordMdDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricMdDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+// RecordSystemLinuxMdraidDegradedRaidDisksDataPoint adds a data point to system.linux.mdraid.degraded_raid_disks metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidDegradedRaidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	mb.metricSystemLinuxMdraidDegradedRaidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
-// RecordMdDisksRequiredDataPoint adds a data point to md.disks.required metric.
-func (mb *MetricsBuilder) RecordMdDisksRequiredDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricMdDisksRequired.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+// RecordSystemLinuxMdraidDisksDataPoint adds a data point to system.linux.mdraid.disks metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
+	mb.metricSystemLinuxMdraidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
 }
 
-// RecordMdRaidDegradedDataPoint adds a data point to md.raid.degraded metric.
-func (mb *MetricsBuilder) RecordMdRaidDegradedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricMdRaidDegraded.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+// RecordSystemLinuxMdraidDisksRequiredDataPoint adds a data point to system.linux.mdraid.disks.required metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidDisksRequiredDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	mb.metricSystemLinuxMdraidDisksRequired.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
-// RecordMdRaidDisksDataPoint adds a data point to md.raid.disks metric.
-func (mb *MetricsBuilder) RecordMdRaidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricMdRaidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+// RecordSystemLinuxMdraidRaidDisksDataPoint adds a data point to system.linux.mdraid.raid_disks metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidRaidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+	mb.metricSystemLinuxMdraidRaidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
-// RecordMdStateDataPoint adds a data point to md.state metric.
-func (mb *MetricsBuilder) RecordMdStateDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricMdState.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+// RecordSystemLinuxMdraidStateDataPoint adds a data point to system.linux.mdraid.state metric.
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidStateDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
+	mb.metricSystemLinuxMdraidState.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

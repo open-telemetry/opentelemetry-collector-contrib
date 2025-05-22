@@ -19,49 +19,49 @@ attributes:
     type: string
 
 metrics:
-  md.blocks.total:
+  system.linux.mdraid.blocks.total:
     enabled: true
     description: Number of blocks on device
     unit: blocks
     gauge:
       value_type: int
     attributes: [device]
-  md.blocks.synced:
+  system.linux.mdraid.blocks.synced:
     enabled: true
     description: Number of synced blocks on device
     unit: blocks
     gauge:
       value_type: int
     attributes: [device]
-  md.disks:
+  system.linux.mdraid.disks:
     enabled: true
     description: Number of active/failed/spare disks of device.
     unit: blocks
     gauge:
       value_type: int
     attributes: [device,state]
-  md.disks.required:
+  system.linux.mdraid.disks.required:
     enabled: true
     description: Total number of disks of device.
     unit: blocks
     gauge:
       value_type: int
     attributes: [device]
-  md.state:
+  system.linux.mdraid.state:
     enabled: true
     description: Indicates the state of md-device
     unit: blocks
     gauge:
       value_type: int
     attributes: [device, state]
-  md.raid.disks:
+  system.linux.mdraid.raid_disks:
     enabled: true
-    description: Number of raid disks on device
+    description: Number of raid disks in a fully functional array
     unit: disks
     gauge:
       value_type: int
     attributes: [device]
-  md.raid.degraded:
+  system.linux.mdraid.degraded_raid_disks:
     enabled: true
     description: Number of degraded raid disks on device
     unit: disks

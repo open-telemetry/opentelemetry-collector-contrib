@@ -135,17 +135,17 @@ func (s *raidScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			stateVals := make(map[string]int64)
 			stateVals[mdStat.ActivityState] = 1
 
-			s.mb.RecordMdBlocksTotalDataPoint(now, mdStat.BlocksTotal, mdStat.Name)
-			s.mb.RecordMdBlocksSyncedDataPoint(now, mdStat.BlocksSynced, mdStat.Name)
-			s.mb.RecordMdDisksRequiredDataPoint(now, mdStat.DisksTotal, mdStat.Name)
-			s.mb.RecordMdDisksDataPoint(now, mdStat.DisksActive, mdStat.Name, "active")
-			s.mb.RecordMdDisksDataPoint(now, mdStat.DisksFailed, mdStat.Name, "failed")
-			s.mb.RecordMdDisksDataPoint(now, mdStat.DisksSpare, mdStat.Name, "spare")
-			s.mb.RecordMdStateDataPoint(now, stateVals["active"], mdStat.Name, "active")
-			s.mb.RecordMdStateDataPoint(now, stateVals["inactive"], mdStat.Name, "inactive")
-			s.mb.RecordMdStateDataPoint(now, stateVals["recovering"], mdStat.Name, "recovering")
-			s.mb.RecordMdStateDataPoint(now, stateVals["resyncing"], mdStat.Name, "resync")
-			s.mb.RecordMdStateDataPoint(now, stateVals["checking"], mdStat.Name, "check")
+			s.mb.RecordSystemLinuxMdraidBlocksTotalDataPoint(now, mdStat.BlocksTotal, mdStat.Name)
+			s.mb.RecordSystemLinuxMdraidBlocksSyncedDataPoint(now, mdStat.BlocksSynced, mdStat.Name)
+			s.mb.RecordSystemLinuxMdraidDisksRequiredDataPoint(now, mdStat.DisksTotal, mdStat.Name)
+			s.mb.RecordSystemLinuxMdraidDisksDataPoint(now, mdStat.DisksActive, mdStat.Name, "active")
+			s.mb.RecordSystemLinuxMdraidDisksDataPoint(now, mdStat.DisksFailed, mdStat.Name, "failed")
+			s.mb.RecordSystemLinuxMdraidDisksDataPoint(now, mdStat.DisksSpare, mdStat.Name, "spare")
+			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["active"], mdStat.Name, "active")
+			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["inactive"], mdStat.Name, "inactive")
+			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["recovering"], mdStat.Name, "recovering")
+			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["resyncing"], mdStat.Name, "resync")
+			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["checking"], mdStat.Name, "check")
 		}
 	}
 
@@ -158,8 +158,8 @@ func (s *raidScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		mdRaids = s.filterMdraidsByDevice(mdRaids)
 
 		for _, mdRaid := range mdRaids {
-			s.mb.RecordMdRaidDisksDataPoint(now, int64(mdRaid.Disks), mdRaid.Device)
-			s.mb.RecordMdRaidDegradedDataPoint(now, int64(mdRaid.DegradedDisks), mdRaid.Device)
+			s.mb.RecordSystemLinuxMdraidRaidDisksDataPoint(now, int64(mdRaid.Disks), mdRaid.Device)
+			s.mb.RecordSystemLinuxMdraidDegradedRaidDisksDataPoint(now, int64(mdRaid.DegradedDisks), mdRaid.Device)
 		}
 	}
 

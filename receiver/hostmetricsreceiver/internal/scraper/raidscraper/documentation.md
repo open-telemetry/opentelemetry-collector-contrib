@@ -12,7 +12,7 @@ metrics:
     enabled: false
 ```
 
-### md.blocks.synced
+### system.linux.mdraid.blocks.synced
 
 Number of synced blocks on device
 
@@ -26,7 +26,7 @@ Number of synced blocks on device
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 
-### md.blocks.total
+### system.linux.mdraid.blocks.total
 
 Number of blocks on device
 
@@ -40,7 +40,21 @@ Number of blocks on device
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 
-### md.disks
+### system.linux.mdraid.degraded_raid_disks
+
+Number of degraded raid disks on device
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| disks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+
+### system.linux.mdraid.disks
 
 Number of active/failed/spare disks of device.
 
@@ -55,7 +69,7 @@ Number of active/failed/spare disks of device.
 | device | Name of the disk. | Any Str |
 | state | State of the disk | Any Str |
 
-### md.disks.required
+### system.linux.mdraid.disks.required
 
 Total number of disks of device.
 
@@ -69,23 +83,9 @@ Total number of disks of device.
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 
-### md.raid.degraded
+### system.linux.mdraid.raid_disks
 
-Number of degraded raid disks on device
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| disks | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
-
-### md.raid.disks
-
-Number of raid disks on device
+Number of raid disks in a fully functional array
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -97,7 +97,7 @@ Number of raid disks on device
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 
-### md.state
+### system.linux.mdraid.state
 
 Indicates the state of md-device
 

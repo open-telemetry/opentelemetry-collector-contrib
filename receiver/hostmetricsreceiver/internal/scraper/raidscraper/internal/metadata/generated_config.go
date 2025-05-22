@@ -27,36 +27,36 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for raid metrics.
 type MetricsConfig struct {
-	MdBlocksSynced  MetricConfig `mapstructure:"md.blocks.synced"`
-	MdBlocksTotal   MetricConfig `mapstructure:"md.blocks.total"`
-	MdDisks         MetricConfig `mapstructure:"md.disks"`
-	MdDisksRequired MetricConfig `mapstructure:"md.disks.required"`
-	MdRaidDegraded  MetricConfig `mapstructure:"md.raid.degraded"`
-	MdRaidDisks     MetricConfig `mapstructure:"md.raid.disks"`
-	MdState         MetricConfig `mapstructure:"md.state"`
+	SystemLinuxMdraidBlocksSynced      MetricConfig `mapstructure:"system.linux.mdraid.blocks.synced"`
+	SystemLinuxMdraidBlocksTotal       MetricConfig `mapstructure:"system.linux.mdraid.blocks.total"`
+	SystemLinuxMdraidDegradedRaidDisks MetricConfig `mapstructure:"system.linux.mdraid.degraded_raid_disks"`
+	SystemLinuxMdraidDisks             MetricConfig `mapstructure:"system.linux.mdraid.disks"`
+	SystemLinuxMdraidDisksRequired     MetricConfig `mapstructure:"system.linux.mdraid.disks.required"`
+	SystemLinuxMdraidRaidDisks         MetricConfig `mapstructure:"system.linux.mdraid.raid_disks"`
+	SystemLinuxMdraidState             MetricConfig `mapstructure:"system.linux.mdraid.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		MdBlocksSynced: MetricConfig{
+		SystemLinuxMdraidBlocksSynced: MetricConfig{
 			Enabled: true,
 		},
-		MdBlocksTotal: MetricConfig{
+		SystemLinuxMdraidBlocksTotal: MetricConfig{
 			Enabled: true,
 		},
-		MdDisks: MetricConfig{
+		SystemLinuxMdraidDegradedRaidDisks: MetricConfig{
 			Enabled: true,
 		},
-		MdDisksRequired: MetricConfig{
+		SystemLinuxMdraidDisks: MetricConfig{
 			Enabled: true,
 		},
-		MdRaidDegraded: MetricConfig{
+		SystemLinuxMdraidDisksRequired: MetricConfig{
 			Enabled: true,
 		},
-		MdRaidDisks: MetricConfig{
+		SystemLinuxMdraidRaidDisks: MetricConfig{
 			Enabled: true,
 		},
-		MdState: MetricConfig{
+		SystemLinuxMdraidState: MetricConfig{
 			Enabled: true,
 		},
 	}

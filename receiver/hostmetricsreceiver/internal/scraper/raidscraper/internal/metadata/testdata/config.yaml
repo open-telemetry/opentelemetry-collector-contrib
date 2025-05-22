@@ -1,33 +1,33 @@
 default:
 all_set:
   metrics:
-    md.blocks.synced:
+    system.linux.mdraid.blocks.synced:
       enabled: true
-    md.blocks.total:
+    system.linux.mdraid.blocks.total:
       enabled: true
-    md.disks:
+    system.linux.mdraid.degraded_raid_disks:
       enabled: true
-    md.disks.required:
+    system.linux.mdraid.disks:
       enabled: true
-    md.raid.degraded:
+    system.linux.mdraid.disks.required:
       enabled: true
-    md.raid.disks:
+    system.linux.mdraid.raid_disks:
       enabled: true
-    md.state:
+    system.linux.mdraid.state:
       enabled: true
 none_set:
   metrics:
-    md.blocks.synced:
+    system.linux.mdraid.blocks.synced:
       enabled: false
-    md.blocks.total:
+    system.linux.mdraid.blocks.total:
       enabled: false
-    md.disks:
+    system.linux.mdraid.degraded_raid_disks:
       enabled: false
-    md.disks.required:
+    system.linux.mdraid.disks:
       enabled: false
-    md.raid.degraded:
+    system.linux.mdraid.disks.required:
       enabled: false
-    md.raid.disks:
+    system.linux.mdraid.raid_disks:
       enabled: false
-    md.state:
+    system.linux.mdraid.state:
       enabled: false

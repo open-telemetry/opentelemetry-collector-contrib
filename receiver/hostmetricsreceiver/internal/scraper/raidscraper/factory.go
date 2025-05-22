@@ -36,7 +36,8 @@ func createMetricsScraper(
 	cfg component.Config,
 ) (scraper.Metrics, error) {
 
-	if runtime.GOOS != "linux" {
+	// left darwin as supported OS for unit testing on mac - it is mocked
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		return nil, errors.New("process scraper only available on Linux, Windows, macOS, or FreeBSD")
 	}
 

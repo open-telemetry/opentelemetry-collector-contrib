@@ -20,7 +20,7 @@ func TestCreateRaidScraper(t *testing.T) {
 
 	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 		assert.Equal(t, defaultSysDeviceFilesystem, cfg.SysDeviceFilesystem)
 		assert.NoError(t, err)
 		assert.NotNil(t, scraper)
