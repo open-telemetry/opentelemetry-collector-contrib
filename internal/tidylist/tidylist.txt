@@ -28,6 +28,7 @@ exporter/sapmexporter
 pkg/experimentalmetricmetadata
 pkg/translator/signalfx
 exporter/signalfxexporter
+exporter/stefexporter
 exporter/syslogexporter
 pkg/translator/zipkin
 receiver/zipkinreceiver
@@ -43,6 +44,7 @@ receiver/signalfxreceiver
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
+receiver/stefreceiver
 receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
@@ -67,6 +69,7 @@ processor/transformprocessor
 internal/docker
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
+internal/gopsutilenv
 pkg/winperfcounters
 receiver/hostmetricsreceiver
 internal/datadog
@@ -117,6 +120,7 @@ exporter/googlecloudpubsubexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
+pkg/kafka/configkafka
 internal/kafka
 pkg/batchpersignal
 pkg/kafka/topic
@@ -142,7 +146,6 @@ internal/rabbitmq
 exporter/rabbitmqexporter
 exporter/sematextexporter
 exporter/sentryexporter
-exporter/stefexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
@@ -190,7 +193,6 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
-extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -309,7 +311,6 @@ receiver/sqlqueryreceiver
 receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
-receiver/stefreceiver
 receiver/systemdreceiver
 receiver/tcpcheckreceiver
 receiver/tcplogreceiver
