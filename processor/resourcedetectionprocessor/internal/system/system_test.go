@@ -465,8 +465,8 @@ func TestHostInterfaces(t *testing.T) {
 
 	fmt.Println("res.Attributes().AsRaw()", res.Attributes().AsRaw())
 	expected := map[string]any{
-		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "linux",
+		string(conventions.HostNameKey): "hostname",
+		string(conventions.OSTypeKey):   "linux",
 		"host.interface":              testInterfacesAttribute,
 	}
 
