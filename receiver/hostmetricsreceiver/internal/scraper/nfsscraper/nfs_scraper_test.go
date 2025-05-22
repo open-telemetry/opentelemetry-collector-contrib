@@ -58,6 +58,9 @@ func TestScrape(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
+			nothing(md)
 		})
 	}
+
+	nothing(ctx)
 }
