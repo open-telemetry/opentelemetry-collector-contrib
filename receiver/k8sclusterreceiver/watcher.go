@@ -213,13 +213,13 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 			rw.setupInformer(kind, ns, factory.Core().V1().Pods().Informer())
 		}
 	case gvk.Node:
-		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 0 {
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
 			if factory, ok := factories[""]; ok {
 				rw.setupInformer(kind, "", factory.Core().V1().Nodes().Informer())
 			}
 		}
 	case gvk.Namespace:
-		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 0 {
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
 			if factory, ok := factories[""]; ok {
 				rw.setupInformer(kind, "", factory.Core().V1().Namespaces().Informer())
 			}
