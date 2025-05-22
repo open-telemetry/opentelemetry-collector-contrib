@@ -287,6 +287,7 @@ func TestE2ENamespaceScopedMultipleNamespaces(t *testing.T) {
 				"k8s.job.failed_pods",
 				"k8s.job.max_parallel_pods",
 				"k8s.hpa.current_replicas",
+				"k8s.node.name",
 				"k8s.job.successful_pods"),
 			pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
