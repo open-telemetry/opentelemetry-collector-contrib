@@ -392,7 +392,7 @@ func TestValidate(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name: "No duration or NumMetrics",
+			name: "No duration, NumMetrics, or Continuous",
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
@@ -400,7 +400,18 @@ func TestValidate(t *testing.T) {
 				MetricType: MetricTypeSum,
 				TraceID:    "123",
 			},
-			wantErrMessage: "either `metrics` or `duration` must be greater than 0",
+			wantErrMessage: "either `metrics` or `duration` must be greater than 0 or continuous must be set",
+		},
+		{
+			name: "Duration and Continuous both set",
+			cfg: &Config{
+				Config: common.Config{
+					TotalDuration: 1 * time.Second,
+					Continuous:    true,
+				},
+				MetricType: MetricTypeSum,
+			},
+			wantErrMessage: "duration and continuous cannot both be set",
 		},
 		{
 			name: "TraceID invalid",
