@@ -116,8 +116,8 @@ func (f *transformProcessorFactory) createLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
-
-	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.AdditionalLogFunctions)
+	logFunctions := mergeAdditionalFunctions(DefaultLogFunctions(), f.AdditionalLogFunctions, set.Logger)
+	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, logFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -137,8 +137,9 @@ func (f *transformProcessorFactory) createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-
-	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.AdditionalSpanFunctions, f.AdditionalSpanEventFunctions)
+	spanFunctions := mergeAdditionalFunctions(DefaultSpanFunctions(), f.AdditionalSpanFunctions, set.Logger)
+	spanEventFunctions := mergeAdditionalFunctions(DefaultSpanEventFunctions(), f.AdditionalSpanEventFunctions, set.Logger)
+	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, spanFunctions, spanEventFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -159,8 +160,9 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
-
-	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.AdditionalMetricFunctions, f.AdditionalDataPointFunctions)
+	metricFunctions := mergeAdditionalFunctions(DefaultMetricFunctions(), f.AdditionalMetricFunctions, set.Logger)
+	dataPointFunctions := mergeAdditionalFunctions(DefaultDataPointFunctions(), f.AdditionalDataPointFunctions, set.Logger)
+	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, metricFunctions, dataPointFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

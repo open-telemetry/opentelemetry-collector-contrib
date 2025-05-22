@@ -22,8 +22,8 @@ type Processor struct {
 	logger   *zap.Logger
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, additionalSpanFuncs []ottl.Factory[ottlspan.TransformContext], additionalSpanEventFuncs []ottl.Factory[ottlspanevent.TransformContext]) (*Processor, error) {
-	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions(additionalSpanFuncs...)), common.WithSpanEventParser(SpanEventFunctions(additionalSpanEventFuncs...)), common.WithTraceErrorMode(errorMode))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]) (*Processor, error) {
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}

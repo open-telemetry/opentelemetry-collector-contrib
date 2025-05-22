@@ -4,46 +4,17 @@
 package logs
 
 import (
-	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_LogFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
 	actual := LogFunctions()
-	require.Len(t, actual, len(expected))
-	for k := range actual {
-		assert.Contains(t, expected, k)
-	}
-}
-
-type TestLogFuncArguments[K any] struct{}
-
-func NewTestLogFuncFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("TestLogFunc", &TestLogFuncArguments[K]{}, createTestLogFunc[K])
-}
-
-func createTestLogFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(_ context.Context, _ K) (any, error) {
-		return nil, nil
-	}, nil
-}
-
-func Test_LogFunctions_AdditionalLogFuncs(t *testing.T) {
-	testLogFuncFactory := NewTestLogFuncFactory[ottllog.TransformContext]()
-	expected := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
-	expected[testLogFuncFactory.Name()] = testLogFuncFactory
-
-	additionalLogFuncs := []ottl.Factory[ottllog.TransformContext]{testLogFuncFactory}
-	actual := LogFunctions(additionalLogFuncs...)
-
 	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
