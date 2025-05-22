@@ -11,3 +11,10 @@ metricstarttime/negative_interval:
 
 metricstarttime/invalid_strategy:
   strategy: bad
+
+metricstarttime/offset-default:
+  strategy: offset
+
+metricstarttime/offset-manual:
+  strategy: offset
+  offset: 15s
