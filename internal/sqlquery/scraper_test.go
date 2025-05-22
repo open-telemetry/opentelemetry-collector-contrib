@@ -768,3 +768,53 @@ func TestBpConnectionStringBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildSQLServerString(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   DataSourceConfig
+		expected string
+		wantErr  bool
+	}{
+		{
+			name: "SQL Server with instance name",
+			config: DataSourceConfig{
+				Host:     "bp-qa-ub-wintoo\\sqlexpress",
+				Port:     1433,
+				Database: "AdventureWorks2022",
+				Username: "test",
+				Password: "password#!",
+			},
+			expected: "sqlserver://test:password%23%21@bp-qa-ub-wintoo/sqlexpress:1433?database=AdventureWorks2022",
+			wantErr:  false,
+		},
+		{
+			name: "SQL Server with additional parameters",
+			config: DataSourceConfig{
+				Host:     "bp-qa-ub-wintoo\\sqlexpress",
+				Port:     1433,
+				Database: "AdventureWorks2022",
+				Username: "test",
+				Password: "password#!",
+				AdditionalParams: map[string]any{
+					"encrypt":                true,
+					"trustServerCertificate": true,
+				},
+			},
+			expected: "sqlserver://test:password%23%21@bp-qa-ub-wintoo/sqlexpress:1433?database=AdventureWorks2022&encrypt=true&trustServerCertificate=true",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := buildSQLServerString(tt.config)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}

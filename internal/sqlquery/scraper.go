@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -191,7 +192,7 @@ func buildSnowflakeString(conn DataSourceConfig) (string, error) {
 }
 
 func buildSQLServerString(conn DataSourceConfig) (string, error) {
-	// SQL Server connection string format: sqlserver://user:pass@host:port?database=db&param1=value1&param2=value2
+	// SQL Server connection string format: sqlserver://user:pass@host/instance?param1=value1&param2=value2
 	var auth string
 	if conn.Username != "" {
 		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
@@ -203,7 +204,9 @@ func buildSQLServerString(conn DataSourceConfig) (string, error) {
 		query.Set(k, fmt.Sprintf("%v", v))
 	}
 
-	connStr := fmt.Sprintf("sqlserver://%s%s:%d", auth, conn.Host, conn.Port)
+	// Replace backslashes with forward slashes in hostname
+	host := strings.ReplaceAll(conn.Host, "\\", "/")
+	connStr := fmt.Sprintf("sqlserver://%s%s:%d", auth, host, conn.Port)
 	if len(query) > 0 {
 		connStr += "?" + query.Encode()
 	}
