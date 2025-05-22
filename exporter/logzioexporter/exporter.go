@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/cache"
 )
 
 const (
@@ -39,11 +37,10 @@ const (
 
 // logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
 type logzioExporter struct {
-	config       *Config
-	client       *http.Client
-	logger       hclog.Logger
-	settings     component.TelemetrySettings
-	serviceCache cache.Cache
+	config   *Config
+	client   *http.Client
+	logger   hclog.Logger
+	settings component.TelemetrySettings
 }
 
 func newLogzioExporter(cfg *Config, params exporter.Settings) (*logzioExporter, error) {
@@ -58,12 +55,6 @@ func newLogzioExporter(cfg *Config, params exporter.Settings) (*logzioExporter, 
 		config:   cfg,
 		logger:   &logger,
 		settings: params.TelemetrySettings,
-		serviceCache: cache.NewLRUWithOptions(
-			100000,
-			&cache.Options{
-				TTL: 24 * time.Hour,
-			},
-		),
 	}, nil
 }
 
