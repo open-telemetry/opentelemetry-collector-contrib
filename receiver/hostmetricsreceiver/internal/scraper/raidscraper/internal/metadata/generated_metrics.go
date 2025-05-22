@@ -65,7 +65,7 @@ func (m *metricSystemLinuxMdraidActivityState) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidActivityState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, activityStateAttributeValue string) {
+func (m *metricSystemLinuxMdraidActivityState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string, linuxMdraidDeviceActivityStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -73,8 +73,8 @@ func (m *metricSystemLinuxMdraidActivityState) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
-	dp.Attributes().PutStr("activity_state", activityStateAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.activity_state", linuxMdraidDeviceActivityStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -117,7 +117,7 @@ func (m *metricSystemLinuxMdraidBlocksSynced) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidBlocksSynced) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidBlocksSynced) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -125,7 +125,7 @@ func (m *metricSystemLinuxMdraidBlocksSynced) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -168,7 +168,7 @@ func (m *metricSystemLinuxMdraidBlocksTotal) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidBlocksTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidBlocksTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -176,7 +176,7 @@ func (m *metricSystemLinuxMdraidBlocksTotal) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -219,7 +219,7 @@ func (m *metricSystemLinuxMdraidDegradedRaidDisks) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidDegradedRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidDegradedRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -227,7 +227,7 @@ func (m *metricSystemLinuxMdraidDegradedRaidDisks) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -270,7 +270,7 @@ func (m *metricSystemLinuxMdraidDisks) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemLinuxMdraidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string, linuxMdraidDeviceStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -278,8 +278,8 @@ func (m *metricSystemLinuxMdraidDisks) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.state", linuxMdraidDeviceStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -322,7 +322,7 @@ func (m *metricSystemLinuxMdraidDisksRequired) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidDisksRequired) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidDisksRequired) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -330,7 +330,7 @@ func (m *metricSystemLinuxMdraidDisksRequired) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -373,7 +373,7 @@ func (m *metricSystemLinuxMdraidRaidDisks) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemLinuxMdraidRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemLinuxMdraidRaidDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -381,7 +381,7 @@ func (m *metricSystemLinuxMdraidRaidDisks) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("linux.mdraid.device.name", linuxMdraidDeviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -551,38 +551,38 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSystemLinuxMdraidActivityStateDataPoint adds a data point to system.linux.mdraid.activity_state metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidActivityStateDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, activityStateAttributeValue string) {
-	mb.metricSystemLinuxMdraidActivityState.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, activityStateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidActivityStateDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string, linuxMdraidDeviceActivityStateAttributeValue string) {
+	mb.metricSystemLinuxMdraidActivityState.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue, linuxMdraidDeviceActivityStateAttributeValue)
 }
 
 // RecordSystemLinuxMdraidBlocksSyncedDataPoint adds a data point to system.linux.mdraid.blocks.synced metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidBlocksSyncedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemLinuxMdraidBlocksSynced.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidBlocksSyncedDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
+	mb.metricSystemLinuxMdraidBlocksSynced.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue)
 }
 
 // RecordSystemLinuxMdraidBlocksTotalDataPoint adds a data point to system.linux.mdraid.blocks.total metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidBlocksTotalDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemLinuxMdraidBlocksTotal.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidBlocksTotalDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
+	mb.metricSystemLinuxMdraidBlocksTotal.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue)
 }
 
 // RecordSystemLinuxMdraidDegradedRaidDisksDataPoint adds a data point to system.linux.mdraid.degraded_raid_disks metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidDegradedRaidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemLinuxMdraidDegradedRaidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidDegradedRaidDisksDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
+	mb.metricSystemLinuxMdraidDegradedRaidDisks.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue)
 }
 
 // RecordSystemLinuxMdraidDisksDataPoint adds a data point to system.linux.mdraid.disks metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemLinuxMdraidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidDisksDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string, linuxMdraidDeviceStateAttributeValue string) {
+	mb.metricSystemLinuxMdraidDisks.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue, linuxMdraidDeviceStateAttributeValue)
 }
 
 // RecordSystemLinuxMdraidDisksRequiredDataPoint adds a data point to system.linux.mdraid.disks.required metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidDisksRequiredDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemLinuxMdraidDisksRequired.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidDisksRequiredDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
+	mb.metricSystemLinuxMdraidDisksRequired.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue)
 }
 
 // RecordSystemLinuxMdraidRaidDisksDataPoint adds a data point to system.linux.mdraid.raid_disks metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMdraidRaidDisksDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemLinuxMdraidRaidDisks.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemLinuxMdraidRaidDisksDataPoint(ts pcommon.Timestamp, val int64, linuxMdraidDeviceNameAttributeValue string) {
+	mb.metricSystemLinuxMdraidRaidDisks.recordDataPoint(mb.startTime, ts, val, linuxMdraidDeviceNameAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

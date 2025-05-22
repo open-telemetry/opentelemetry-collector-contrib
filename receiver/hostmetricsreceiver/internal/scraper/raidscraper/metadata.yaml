@@ -11,13 +11,13 @@ status:
 sem_conv_version: 1.9.0
 
 attributes:
-  device:
+  linux.mdraid.device.name:
     description: Name of the disk.
     type: string
-  state:
+  linux.mdraid.device.state:
     description: State of the disk
     type: string
-  activity_state:
+  linux.mdraid.device.activity_state:
     description: Activity state of the device
     type: string
 
@@ -28,46 +28,46 @@ metrics:
     unit: blocks
     gauge:
       value_type: int
-    attributes: [device]
+    attributes: [linux.mdraid.device.name]
   system.linux.mdraid.blocks.synced:
     enabled: true
     description: Number of synced blocks on device
     unit: blocks
     gauge:
       value_type: int
-    attributes: [device]
+    attributes: [linux.mdraid.device.name]
   system.linux.mdraid.disks:
     enabled: true
     description: Number of active/failed/spare disks of device.
     unit: blocks
     gauge:
       value_type: int
-    attributes: [device,state]
+    attributes: [linux.mdraid.device.name,linux.mdraid.device.state]
   system.linux.mdraid.disks.required:
     enabled: true
     description: Total number of disks of device.
     unit: blocks
     gauge:
       value_type: int
-    attributes: [device]
+    attributes: [linux.mdraid.device.name]
   system.linux.mdraid.activity_state:
     enabled: true
     description: Indicates the activity state of md-device
     unit: blocks
     gauge:
       value_type: int
-    attributes: [device, activity_state]
+    attributes: [linux.mdraid.device.name, linux.mdraid.device.activity_state]
   system.linux.mdraid.raid_disks:
     enabled: true
     description: Number of raid disks in a fully functional array
     unit: disks
     gauge:
       value_type: int
-    attributes: [device]
+    attributes: [linux.mdraid.device.name]
   system.linux.mdraid.degraded_raid_disks:
     enabled: true
     description: Number of degraded raid disks on device
     unit: disks
     gauge:
       value_type: int
-    attributes: [device]
+    attributes: [linux.mdraid.device.name]

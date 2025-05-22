@@ -24,8 +24,8 @@ Indicates the activity state of md-device
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
-| activity_state | Activity state of the device | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
+| linux.mdraid.device.activity_state | Activity state of the device | Any Str |
 
 ### system.linux.mdraid.blocks.synced
 
@@ -39,7 +39,7 @@ Number of synced blocks on device
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
 
 ### system.linux.mdraid.blocks.total
 
@@ -53,7 +53,7 @@ Number of blocks on device
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
 
 ### system.linux.mdraid.degraded_raid_disks
 
@@ -67,7 +67,7 @@ Number of degraded raid disks on device
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
 
 ### system.linux.mdraid.disks
 
@@ -81,8 +81,8 @@ Number of active/failed/spare disks of device.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
-| state | State of the disk | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
+| linux.mdraid.device.state | State of the disk | Any Str |
 
 ### system.linux.mdraid.disks.required
 
@@ -96,7 +96,7 @@ Total number of disks of device.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
 
 ### system.linux.mdraid.raid_disks
 
@@ -110,4 +110,4 @@ Number of raid disks in a fully functional array
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
+| linux.mdraid.device.name | Name of the disk. | Any Str |
