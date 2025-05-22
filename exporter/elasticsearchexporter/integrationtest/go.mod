@@ -348,3 +348,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefe
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver => ../../../receiver/stefreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../../processor/deltatocumulativeprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../../internal/gopsutilenv
