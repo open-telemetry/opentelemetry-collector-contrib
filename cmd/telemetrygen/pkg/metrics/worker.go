@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -24,7 +25,7 @@ type worker struct {
 	aggregationTemporality AggregationTemporality       // Temporality type to use
 	exemplars              []metricdata.Exemplar[int64] // exemplars to attach to the metric
 	numMetrics             int                          // how many metrics the worker has to generate (only when duration==0)
-	totalDuration          time.Duration                // how long to run the test for (overrides `numMetrics`)
+	totalDuration          common.DurationWithInf       // how long to run the test for (overrides `numMetrics`)
 	limitPerSecond         rate.Limit                   // how many metrics per second to generate
 	wg                     *sync.WaitGroup              // notify when done
 	logger                 *zap.Logger                  // logger
