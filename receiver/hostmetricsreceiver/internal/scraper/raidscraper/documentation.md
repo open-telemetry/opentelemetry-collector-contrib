@@ -12,6 +12,21 @@ metrics:
     enabled: false
 ```
 
+### system.linux.mdraid.activity_state
+
+Indicates the activity state of md-device
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| blocks | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| activity_state | Activity state of the device | Any Str |
+
 ### system.linux.mdraid.blocks.synced
 
 Number of synced blocks on device
@@ -96,18 +111,3 @@ Number of raid disks in a fully functional array
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
-
-### system.linux.mdraid.state
-
-Indicates the state of md-device
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| blocks | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the disk. | Any Str |
-| state | State of the disk | Any Str |

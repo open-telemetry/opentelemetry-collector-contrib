@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    system.linux.mdraid.activity_state:
+      enabled: true
     system.linux.mdraid.blocks.synced:
       enabled: true
     system.linux.mdraid.blocks.total:
@@ -12,11 +14,11 @@ all_set:
     system.linux.mdraid.disks.required:
       enabled: true
     system.linux.mdraid.raid_disks:
-      enabled: true
-    system.linux.mdraid.state:
       enabled: true
 none_set:
   metrics:
+    system.linux.mdraid.activity_state:
+      enabled: false
     system.linux.mdraid.blocks.synced:
       enabled: false
     system.linux.mdraid.blocks.total:
@@ -28,6 +30,4 @@ none_set:
     system.linux.mdraid.disks.required:
       enabled: false
     system.linux.mdraid.raid_disks:
-      enabled: false
-    system.linux.mdraid.state:
       enabled: false

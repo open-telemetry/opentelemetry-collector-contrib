@@ -17,6 +17,9 @@ attributes:
   state:
     description: State of the disk
     type: string
+  activity_state:
+    description: Activity state of the device
+    type: string
 
 metrics:
   system.linux.mdraid.blocks.total:
@@ -47,13 +50,13 @@ metrics:
     gauge:
       value_type: int
     attributes: [device]
-  system.linux.mdraid.state:
+  system.linux.mdraid.activity_state:
     enabled: true
-    description: Indicates the state of md-device
+    description: Indicates the activity state of md-device
     unit: blocks
     gauge:
       value_type: int
-    attributes: [device, state]
+    attributes: [device, activity_state]
   system.linux.mdraid.raid_disks:
     enabled: true
     description: Number of raid disks in a fully functional array

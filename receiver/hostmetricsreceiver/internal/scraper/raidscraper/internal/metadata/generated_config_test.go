@@ -27,13 +27,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemLinuxMdraidActivityState:     MetricConfig{Enabled: true},
 					SystemLinuxMdraidBlocksSynced:      MetricConfig{Enabled: true},
 					SystemLinuxMdraidBlocksTotal:       MetricConfig{Enabled: true},
 					SystemLinuxMdraidDegradedRaidDisks: MetricConfig{Enabled: true},
 					SystemLinuxMdraidDisks:             MetricConfig{Enabled: true},
 					SystemLinuxMdraidDisksRequired:     MetricConfig{Enabled: true},
 					SystemLinuxMdraidRaidDisks:         MetricConfig{Enabled: true},
-					SystemLinuxMdraidState:             MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -41,13 +41,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					SystemLinuxMdraidActivityState:     MetricConfig{Enabled: false},
 					SystemLinuxMdraidBlocksSynced:      MetricConfig{Enabled: false},
 					SystemLinuxMdraidBlocksTotal:       MetricConfig{Enabled: false},
 					SystemLinuxMdraidDegradedRaidDisks: MetricConfig{Enabled: false},
 					SystemLinuxMdraidDisks:             MetricConfig{Enabled: false},
 					SystemLinuxMdraidDisksRequired:     MetricConfig{Enabled: false},
 					SystemLinuxMdraidRaidDisks:         MetricConfig{Enabled: false},
-					SystemLinuxMdraidState:             MetricConfig{Enabled: false},
 				},
 			},
 		},

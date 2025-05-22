@@ -141,11 +141,11 @@ func (s *raidScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			s.mb.RecordSystemLinuxMdraidDisksDataPoint(now, mdStat.DisksActive, mdStat.Name, "active")
 			s.mb.RecordSystemLinuxMdraidDisksDataPoint(now, mdStat.DisksFailed, mdStat.Name, "failed")
 			s.mb.RecordSystemLinuxMdraidDisksDataPoint(now, mdStat.DisksSpare, mdStat.Name, "spare")
-			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["active"], mdStat.Name, "active")
-			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["inactive"], mdStat.Name, "inactive")
-			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["recovering"], mdStat.Name, "recovering")
-			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["resyncing"], mdStat.Name, "resync")
-			s.mb.RecordSystemLinuxMdraidStateDataPoint(now, stateVals["checking"], mdStat.Name, "check")
+			s.mb.RecordSystemLinuxMdraidActivityStateDataPoint(now, stateVals["active"], mdStat.Name, "active")
+			s.mb.RecordSystemLinuxMdraidActivityStateDataPoint(now, stateVals["inactive"], mdStat.Name, "inactive")
+			s.mb.RecordSystemLinuxMdraidActivityStateDataPoint(now, stateVals["recovering"], mdStat.Name, "recovering")
+			s.mb.RecordSystemLinuxMdraidActivityStateDataPoint(now, stateVals["resyncing"], mdStat.Name, "resync")
+			s.mb.RecordSystemLinuxMdraidActivityStateDataPoint(now, stateVals["checking"], mdStat.Name, "check")
 		}
 	}
 

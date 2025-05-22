@@ -27,17 +27,20 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for raid metrics.
 type MetricsConfig struct {
+	SystemLinuxMdraidActivityState     MetricConfig `mapstructure:"system.linux.mdraid.activity_state"`
 	SystemLinuxMdraidBlocksSynced      MetricConfig `mapstructure:"system.linux.mdraid.blocks.synced"`
 	SystemLinuxMdraidBlocksTotal       MetricConfig `mapstructure:"system.linux.mdraid.blocks.total"`
 	SystemLinuxMdraidDegradedRaidDisks MetricConfig `mapstructure:"system.linux.mdraid.degraded_raid_disks"`
 	SystemLinuxMdraidDisks             MetricConfig `mapstructure:"system.linux.mdraid.disks"`
 	SystemLinuxMdraidDisksRequired     MetricConfig `mapstructure:"system.linux.mdraid.disks.required"`
 	SystemLinuxMdraidRaidDisks         MetricConfig `mapstructure:"system.linux.mdraid.raid_disks"`
-	SystemLinuxMdraidState             MetricConfig `mapstructure:"system.linux.mdraid.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SystemLinuxMdraidActivityState: MetricConfig{
+			Enabled: true,
+		},
 		SystemLinuxMdraidBlocksSynced: MetricConfig{
 			Enabled: true,
 		},
@@ -54,9 +57,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SystemLinuxMdraidRaidDisks: MetricConfig{
-			Enabled: true,
-		},
-		SystemLinuxMdraidState: MetricConfig{
 			Enabled: true,
 		},
 	}
