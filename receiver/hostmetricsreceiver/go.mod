@@ -6,6 +6,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.0.0-20250521232020-84161c26078b
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.126.0
@@ -139,3 +140,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../../pkg/winperfcounters
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../internal/gopsutilenv

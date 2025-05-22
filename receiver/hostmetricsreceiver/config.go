@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
@@ -43,7 +44,7 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		err = errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
-	return multierr.Append(err, validateRootPath(cfg.RootPath))
+	return multierr.Append(err, gopsutilenv.ValidateRootPath(cfg.RootPath))
 }
 
 // Unmarshal a config.Parser into the config struct.

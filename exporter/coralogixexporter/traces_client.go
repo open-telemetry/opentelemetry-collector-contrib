@@ -26,13 +26,13 @@ func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExpo
 	}
 
 	return &tracesExporter{
-		signalExporter: *signalExporter,
+		signalExporter: signalExporter,
 	}, nil
 }
 
 type tracesExporter struct {
 	traceExporter ptraceotlp.GRPCClient
-	signalExporter
+	*signalExporter
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
@@ -45,6 +45,10 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		resourceSpan := rss.At(i)
@@ -55,7 +59,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 
 	resp, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
 	partialSuccess := resp.PartialSuccess()
