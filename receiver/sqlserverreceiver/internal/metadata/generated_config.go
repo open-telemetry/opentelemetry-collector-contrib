@@ -50,6 +50,7 @@ type MetricsConfig struct {
 	SqlserverLogoutRate                         MetricConfig `mapstructure:"sqlserver.logout.rate"`
 	SqlserverMemoryGrantsPendingCount           MetricConfig `mapstructure:"sqlserver.memory.grants.pending.count"`
 	SqlserverMemoryUsage                        MetricConfig `mapstructure:"sqlserver.memory.usage"`
+	SqlserverOsWaitDuration                     MetricConfig `mapstructure:"sqlserver.os.wait.duration"`
 	SqlserverPageBufferCacheFreeListStallsRate  MetricConfig `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
 	SqlserverPageBufferCacheHitRatio            MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
 	SqlserverPageCheckpointFlushRate            MetricConfig `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
@@ -143,6 +144,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverMemoryUsage: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverOsWaitDuration: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverPageBufferCacheFreeListStallsRate: MetricConfig{
