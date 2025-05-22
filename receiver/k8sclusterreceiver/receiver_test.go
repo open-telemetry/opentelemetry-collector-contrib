@@ -197,7 +197,7 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 	// Setup k8s resources.
 	numPods := 3
 	numNodes := 1
-	numQuotas := 2
+	numQuotas := 1
 
 	createPods(t, client, numPods, true)
 	createNodes(t, client, numNodes)

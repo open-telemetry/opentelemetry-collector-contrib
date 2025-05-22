@@ -4,10 +4,12 @@
 package metadata
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
-	"github.com/stretchr/testify/require"
 	"slices"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 )
 
 func TestStore_GetFromEmptyStore(t *testing.T) {
@@ -54,19 +56,19 @@ type mockStore struct {
 	testObjs []any
 }
 
-func (mockStore) Add(obj interface{}) error {
+func (mockStore) Add(_ any) error {
 	return nil
 }
 
-func (mockStore) Update(obj interface{}) error {
+func (mockStore) Update(_ any) error {
 	return nil
 }
 
-func (mockStore) Delete(obj interface{}) error {
+func (mockStore) Delete(_ any) error {
 	return nil
 }
 
-func (m mockStore) List() []interface{} {
+func (m mockStore) List() []any {
 	return m.testObjs
 }
 
@@ -74,15 +76,15 @@ func (mockStore) ListKeys() []string {
 	return []string{}
 }
 
-func (mockStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (mockStore) Get(_ any) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
-func (mockStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (mockStore) GetByKey(_ string) (item any, exists bool, err error) {
 	return nil, false, nil
 }
 
-func (mockStore) Replace(i []interface{}, s string) error {
+func (mockStore) Replace(_ []any, _ string) error {
 	return nil
 }
 
