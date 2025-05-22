@@ -16,7 +16,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
@@ -403,31 +402,11 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		dp := datapoints.AppendEmpty()
 		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
 		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
-		dp.SetSum(histogram.Sum)
 
-		switch v := histogram.GetCount().(type) {
-		case *writev2.Histogram_CountInt:
-			dp.SetCount(v.CountInt)
-		case *writev2.Histogram_CountFloat:
-			dp.SetCount(uint64(v.CountFloat))
-		}
-
-		switch v := histogram.GetZeroCount().(type) {
-		case *writev2.Histogram_ZeroCountInt:
-			dp.SetZeroCount(v.ZeroCountInt)
-		case *writev2.Histogram_ZeroCountFloat:
-			dp.SetZeroCount(uint64(v.ZeroCountFloat))
-		}
-
-		dp.SetZeroThreshold(histogram.ZeroThreshold)
-		dp.SetScale(histogram.Schema)
 		// The difference between float and integer histograms is that float histograms are stored as absolute counts
 		// while integer histograms are stored as deltas.
 		if histogram.IsFloatHistogram() {
 			// Float histograms
-			if value.IsStaleNaN(histogram.Sum) {
-				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-			}
 			if len(histogram.PositiveSpans) > 0 {
 				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
@@ -436,11 +415,16 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
 			}
+
+			dp.SetScale(histogram.Schema)
+			dp.SetZeroThreshold(histogram.ZeroThreshold)
+			zeroCountFloat := histogram.GetZeroCountFloat()
+			dp.SetZeroCount(uint64(zeroCountFloat))
+			dp.SetSum(histogram.Sum)
+			countFloat := histogram.GetCountFloat()
+			dp.SetCount(uint64(countFloat))
 		} else {
 			// Integer histograms
-			if value.IsStaleNaN(histogram.Sum) {
-				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-			}
 			if len(histogram.PositiveSpans) > 0 {
 				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts())
@@ -449,6 +433,14 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts())
 			}
+
+			dp.SetScale(histogram.Schema)
+			dp.SetZeroThreshold(histogram.ZeroThreshold)
+			zeroCountInt := histogram.GetZeroCountInt()
+			dp.SetZeroCount(zeroCountInt)
+			dp.SetSum(histogram.Sum)
+			countInt := histogram.GetCountInt()
+			dp.SetCount(countInt)
 		}
 
 		attributes := dp.Attributes()
