@@ -502,6 +502,12 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
+	// verify that the supervisor reports the remote config as applied and the correct hash
+	require.Eventually(t, func() bool {
+		status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return status != nil && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, hash)
+	}, 20*time.Second, 500*time.Millisecond, "Remote config status never became applied")
+
 	for _, port := range []int{healthcheckPort, secondHealthcheckPort} {
 		require.Eventually(t, func() bool {
 			resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", port))
@@ -529,12 +535,6 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 		return n != 0
 	}, 20*time.Second, 500*time.Millisecond, "Log never appeared in output")
-
-	// verify that the supervisor reports the remote config as applied and the correct hash
-	require.Eventually(t, func() bool {
-		status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-		return status != nil && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, hash)
-	}, 20*time.Second, 500*time.Millisecond, "Remote config status never became applied")
 }
 
 func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
