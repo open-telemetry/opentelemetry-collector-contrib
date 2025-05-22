@@ -85,7 +85,6 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
@@ -103,8 +102,6 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetrics(cfg, true)
@@ -157,7 +154,6 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 
 	assert.NoError(t, cfg.Validate())
 
