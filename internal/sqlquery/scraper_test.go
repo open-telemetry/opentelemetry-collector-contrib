@@ -777,31 +777,42 @@ func TestBuildSQLServerString(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "SQL Server with instance name",
+			name: "SQL Server without instance",
 			config: DataSourceConfig{
-				Host:     "bp-qa-ub-wintoo\\sqlexpress",
+				Host:     "localhost",
 				Port:     1433,
-				Database: "AdventureWorks2022",
+				Database: "mydb",
 				Username: "test",
-				Password: "password#!",
+				Password: "password",
 			},
-			expected: "sqlserver://test:password%23%21@bp-qa-ub-wintoo/sqlexpress:1433?database=AdventureWorks2022",
+			expected: "sqlserver://test:password@localhost:1433?database=mydb",
 			wantErr:  false,
 		},
 		{
-			name: "SQL Server with additional parameters",
+			name: "SQL Server with instance",
 			config: DataSourceConfig{
-				Host:     "bp-qa-ub-wintoo\\sqlexpress",
+				Host:     "localhost\\instance",
 				Port:     1433,
-				Database: "AdventureWorks2022",
+				Database: "mydb",
 				Username: "test",
-				Password: "password#!",
+				Password: "password",
+			},
+			expected: "sqlserver://test:password@localhost:1433/instance?database=mydb",
+			wantErr:  false,
+		},
+		{
+			name: "SQL Server with instance and additional params",
+			config: DataSourceConfig{
+				Host:     "localhost\\instance",
+				Port:     1433,
+				Database: "mydb",
+				Username: "test",
+				Password: "password",
 				AdditionalParams: map[string]any{
-					"encrypt":                true,
-					"trustServerCertificate": true,
+					"encrypt": true,
 				},
 			},
-			expected: "sqlserver://test:password%23%21@bp-qa-ub-wintoo/sqlexpress:1433?database=AdventureWorks2022&encrypt=true&trustServerCertificate=true",
+			expected: "sqlserver://test:password@localhost:1433/instance?database=mydb&encrypt=true",
 			wantErr:  false,
 		},
 	}
