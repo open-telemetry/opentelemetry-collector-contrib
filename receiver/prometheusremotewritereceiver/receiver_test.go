@@ -489,8 +489,6 @@ func TestTranslateV2(t *testing.T) {
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
-						// Timeseries must not include both samples and histograms.
-						// Reference: https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#:~:text=At%20least%20one%20element%20in,TimeSeries%20message%20MUST%20be%20used
 						Histograms: []writev2.Histogram{
 							{
 								Count: &writev2.Histogram_CountInt{
