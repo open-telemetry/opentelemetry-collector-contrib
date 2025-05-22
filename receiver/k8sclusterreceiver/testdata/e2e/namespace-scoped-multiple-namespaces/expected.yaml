@@ -9,7 +9,7 @@ resourceMetrics:
             stringValue: ae24e998-d795-43da-95fb-4351733907b3
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -34,7 +34,7 @@ resourceMetrics:
             stringValue: ca52f89a-e211-4fce-a798-e620773a6808
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -59,7 +59,7 @@ resourceMetrics:
             stringValue: 2bfe6157-e7f2-45a8-8d67-5653c583dd94
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -92,7 +92,7 @@ resourceMetrics:
             stringValue: 29b23972-851a-4fe6-9c2b-c7a2a23a96b5
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -141,7 +141,7 @@ resourceMetrics:
             stringValue: c4490236-2244-411f-adc1-9d86b6a1d0b2
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -190,7 +190,7 @@ resourceMetrics:
             stringValue: 23db335d-6ef7-4790-a542-ddb0abf47fdc
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -247,7 +247,7 @@ resourceMetrics:
             stringValue: ac251b24-1aed-4b9b-9b42-16be72df8706
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -304,7 +304,7 @@ resourceMetrics:
             stringValue: 23b21c05-527b-4b2f-ab53-e27e013a7042
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -361,7 +361,7 @@ resourceMetrics:
             stringValue: 325c6f5c-2add-4e28-84ee-630bbd2ad36a
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -412,7 +412,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.replicaset.name
           value:
             stringValue: otelcol-751183ea-7599f87469
@@ -445,7 +445,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.statefulset.name
           value:
             stringValue: test-k8scluster-receiver-statefulset
@@ -494,7 +494,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.statefulset.name
           value:
             stringValue: test-k8scluster-receiver-statefulset
@@ -543,7 +543,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -570,7 +570,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -597,7 +597,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -624,7 +624,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -651,7 +651,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -678,7 +678,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -705,7 +705,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -744,7 +744,7 @@ resourceMetrics:
             stringValue: opentelemetry-collector
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -823,7 +823,7 @@ resourceMetrics:
             stringValue: nginx
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -870,7 +870,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -917,7 +917,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -964,7 +964,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -1011,7 +1011,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: my-namespace
+            stringValue: my-namespace-1
         - key: k8s.node.name
           value:
             stringValue: kind-worker
@@ -1058,7 +1058,7 @@ resourceMetrics:
             stringValue: nginx
         - key: k8s.namespace.name
           value:
-            stringValue: my-other-namespace
+            stringValue: my-namespace-2
         - key: k8s.node.name
           value:
             stringValue: kind-worker

@@ -2,7 +2,7 @@ kind: CronJob
 apiVersion: batch/v1
 metadata:
   name: test-k8scluster-receiver-cronjob
-  namespace: my-other-namespace
+  namespace: my-namespace-2
 spec:
   schedule: "*/1 * * * *"
   # ensure that only one job/pod is active for the lifetime of the test

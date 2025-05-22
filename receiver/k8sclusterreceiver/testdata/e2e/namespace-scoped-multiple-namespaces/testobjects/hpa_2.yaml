@@ -2,7 +2,7 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: test-k8scluster-receiver-hpa
-  namespace: my-other-namespace
+  namespace: my-namespace-2
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

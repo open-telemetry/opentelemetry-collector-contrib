@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: test-k8scluster-receiver-job
-  namespace: my-other-namespace
+  namespace: my-namespace-2
 spec:
   template:
     spec:

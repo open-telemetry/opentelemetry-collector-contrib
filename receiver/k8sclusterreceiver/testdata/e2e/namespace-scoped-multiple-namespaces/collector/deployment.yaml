@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Name }}
-  namespace: my-namespace
+  namespace: my-namespace-1
 spec:
   replicas: 1
   selector:

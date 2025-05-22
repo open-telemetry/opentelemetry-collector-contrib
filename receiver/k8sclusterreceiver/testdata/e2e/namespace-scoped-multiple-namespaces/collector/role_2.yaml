@@ -4,7 +4,7 @@ metadata:
   name: {{ .Name }}
   labels:
     app: {{ .Name }}
-  namespace: my-other-namespace
+  namespace: my-namespace-2
 rules:
   - apiGroups:
       - ""

@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: my-other-namespace
+  name: my-namespace-1-2
