@@ -249,14 +249,23 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 			return v.Slice(), nil
 		}
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %v", v.Type()))
-	case []any:
-		s := pcommon.NewSlice()
-		err := s.FromRaw(v)
-		if err != nil {
-			return pcommon.Slice{}, err
-		}
-		return s, nil
 	default:
+		reflectVal := reflect.ValueOf(val)
+		if reflectVal.Kind() == reflect.Slice {
+			s := pcommon.NewSlice()
+			anySlice := make([]any, reflectVal.Len())
+
+			for i := 0; i < reflectVal.Len(); i++ {
+				anySlice[i] = reflectVal.Index(i).Interface()
+			}
+
+			err := s.FromRaw(anySlice)
+			if err != nil {
+				return pcommon.Slice{}, err
+			}
+			return s, nil
+		}
+
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
 	}
 }
