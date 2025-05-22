@@ -21,9 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 var (
@@ -144,7 +141,9 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(c.additionalSpanFunctions...)), common.WithSpanEventParser(traces.SpanEventFunctions(c.additionalSpanEventFunctions...)))
+		spanFunctions := mergeAdditionalFunctions(DefaultSpanFunctions(), c.additionalSpanFunctions, zap.NewNop())
+		spanEventFunctions := mergeAdditionalFunctions(DefaultSpanEventFunctions(), c.additionalSpanEventFunctions, zap.NewNop())
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions))
 		if err != nil {
 			return err
 		}
@@ -157,7 +156,9 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions(c.additionalMetricFunctions...)), common.WithDataPointParser(metrics.DataPointFunctions(c.additionalDataPointFunctions...)))
+		metricFunctions := mergeAdditionalFunctions(DefaultMetricFunctions(), c.additionalMetricFunctions, zap.NewNop())
+		dataPointFunctions := mergeAdditionalFunctions(DefaultDataPointFunctions(), c.additionalDataPointFunctions, zap.NewNop())
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metricFunctions), common.WithDataPointParser(dataPointFunctions))
 		if err != nil {
 			return err
 		}
@@ -170,7 +171,8 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(c.additionalLogFunctions...)))
+		logFunctions := mergeAdditionalFunctions(DefaultLogFunctions(), c.additionalLogFunctions, zap.NewNop())
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logFunctions))
 		if err != nil {
 			return err
 		}
