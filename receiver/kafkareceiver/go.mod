@@ -10,6 +10,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.126.0
@@ -44,7 +45,7 @@ require (
 
 require (
 	github.com/apache/thrift v0.21.0 // indirect
-	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.3 // indirect
+	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.28.2 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
@@ -148,3 +149,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka => ../../pkg/kafka/configkafka
