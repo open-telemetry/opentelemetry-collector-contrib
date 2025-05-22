@@ -19,7 +19,7 @@ var UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().Mus
 	featuregate.WithRegisterToVersion("v0.114.0"),
 )
 
-func DataPointFunctions(additionalDataPointFuncs ...ottl.Factory[ottldatapoint.TransformContext]) map[string]ottl.Factory[ottldatapoint.TransformContext] {
+func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 
 	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
@@ -31,14 +31,10 @@ func DataPointFunctions(additionalDataPointFuncs ...ottl.Factory[ottldatapoint.T
 		functions[k] = v
 	}
 
-	for _, fn := range additionalDataPointFuncs {
-		functions[fn.Name()] = fn
-	}
-
 	return functions
 }
 
-func MetricFunctions(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) map[string]ottl.Factory[ottlmetric.TransformContext] {
+func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
 
 	metricFunctions := ottl.CreateFactoryMap(
@@ -55,10 +51,6 @@ func MetricFunctions(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformC
 
 	for k, v := range metricFunctions {
 		functions[k] = v
-	}
-
-	for _, fn := range additionalMetricFuncs {
-		functions[fn.Name()] = fn
 	}
 
 	return functions

@@ -23,8 +23,8 @@ type Processor struct {
 	flatMode bool
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, additionalLogFuncs []ottl.Factory[ottllog.TransformContext]) (*Processor, error) {
-	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions(additionalLogFuncs...)), common.WithLogErrorMode(errorMode))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[ottllog.TransformContext]) (*Processor, error) {
+	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(logFunctions), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
