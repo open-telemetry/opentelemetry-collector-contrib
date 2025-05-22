@@ -163,6 +163,12 @@ func TestNewLogsUnmarshalerExtension(t *testing.T) {
 	})
 	assert.Equal(t, &customLogsUnmarshalerExtension, u)
 
+	// Verify extensions can be named.
+	u = mustNewLogsUnmarshaler(t, "otlp_proto/alice", extensionsHost{
+		component.MustNewIDWithName("otlp_proto", "alice"): &customLogsUnmarshalerExtension,
+	})
+	assert.Equal(t, &customLogsUnmarshalerExtension, u)
+
 	// Specifying an extension for a different type should fail fast.
 	u, err := newLogsUnmarshaler("not_logs", settings, extensionsHost{
 		component.MustNewID("not_logs"): &customTracesUnmarshalerExtension,
