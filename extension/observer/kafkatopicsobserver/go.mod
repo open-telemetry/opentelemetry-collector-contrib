@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.126.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.32.1-0.20250515040533-97a6accbc082
 	go.opentelemetry.io/collector/component/componenttest v0.126.1-0.20250515040533-97a6accbc082
@@ -18,7 +19,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.3 // indirect
+	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
@@ -94,5 +95,7 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../../internal/kafka
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka => ../../../pkg/kafka/configkafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../

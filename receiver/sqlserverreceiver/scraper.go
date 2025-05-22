@@ -38,19 +38,20 @@ const (
 )
 
 type sqlServerScraperHelper struct {
-	id                 component.ID
-	config             *Config
-	sqlQuery           string
-	instanceName       string
-	clientProviderFunc sqlquery.ClientProviderFunc
-	dbProviderFunc     sqlquery.DbProviderFunc
-	logger             *zap.Logger
-	telemetry          sqlquery.TelemetryConfig
-	client             sqlquery.DbClient
-	db                 *sql.DB
-	mb                 *metadata.MetricsBuilder
-	lb                 *metadata.LogsBuilder
-	cache              *lru.Cache[string, int64]
+	id                     component.ID
+	config                 *Config
+	sqlQuery               string
+	instanceName           string
+	clientProviderFunc     sqlquery.ClientProviderFunc
+	dbProviderFunc         sqlquery.DbProviderFunc
+	logger                 *zap.Logger
+	telemetry              sqlquery.TelemetryConfig
+	client                 sqlquery.DbClient
+	db                     *sql.DB
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	cache                  *lru.Cache[string, int64]
+	lastExecutionTimestamp time.Time
 }
 
 var (
@@ -68,16 +69,17 @@ func newSQLServerScraper(id component.ID,
 	cache *lru.Cache[string, int64],
 ) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
-		id:                 id,
-		config:             cfg,
-		sqlQuery:           query,
-		logger:             params.Logger,
-		telemetry:          telemetry,
-		dbProviderFunc:     dbProviderFunc,
-		clientProviderFunc: clientProviderFunc,
-		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                 metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:              cache,
+		id:                     id,
+		config:                 cfg,
+		sqlQuery:               query,
+		logger:                 params.Logger,
+		telemetry:              telemetry,
+		dbProviderFunc:         dbProviderFunc,
+		clientProviderFunc:     clientProviderFunc,
+		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:                  cache,
+		lastExecutionTimestamp: time.Unix(0, 0),
 	}
 }
 
@@ -124,6 +126,10 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
+		if s.lastExecutionTimestamp.Add(s.config.TopQueryCollection.CollectionInterval).After(time.Now()) {
+			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
@@ -638,7 +644,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
 
 	resourcesAdded := false
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	s.lastExecutionTimestamp = now
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
 		if totalElapsedTimeDiffsMicrosecond[i] == 0 {
