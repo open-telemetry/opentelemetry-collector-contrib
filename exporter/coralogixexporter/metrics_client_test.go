@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 )
 
@@ -208,12 +211,18 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 
 type mockMetricsServer struct {
 	pmetricotlp.UnimplementedGRPCServer
-	recvCount int
+	recvCount      int
+	partialSuccess *pmetricotlp.ExportPartialSuccess
 }
 
 func (m *mockMetricsServer) Export(_ context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	m.recvCount += req.Metrics().MetricCount()
-	return pmetricotlp.NewExportResponse(), nil
+	resp := pmetricotlp.NewExportResponse()
+	if m.partialSuccess != nil {
+		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
+		resp.PartialSuccess().SetRejectedDataPoints(m.partialSuccess.RejectedDataPoints())
+	}
+	return resp, nil
 }
 
 func startMockOtlpMetricsServer(tb testing.TB) (endpoint string, stopFn func(), srv *mockMetricsServer) {
@@ -288,4 +297,81 @@ func BenchmarkMetricsExporter_PushMetrics(b *testing.B) {
 		})
 	}
 	b.Logf("Total metrics received by mock server: %d", mockSrv.recvCount)
+}
+
+func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpMetricsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Metrics: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	metrics := pmetric.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics()
+	rm := resourceMetrics.AppendEmpty()
+	resource := rm.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+	scopeMetrics.Scope().SetName("test-scope")
+
+	metric1 := scopeMetrics.Metrics().AppendEmpty()
+	metric1.SetName("metric1")
+	metric2 := scopeMetrics.Metrics().AppendEmpty()
+	metric2.SetName("metric2")
+
+	partialSuccess := pmetricotlp.NewExportPartialSuccess()
+	partialSuccess.SetErrorMessage("some metrics were rejected")
+	partialSuccess.SetRejectedDataPoints(1)
+	mockSrv.partialSuccess = &partialSuccess
+
+	core, observed := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+	exp.settings.Logger = logger
+
+	err = exp.pushMetrics(context.Background(), metrics)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	found := false
+	for _, entry := range entries {
+		if entry.Message == "Partial success response from Coralogix" &&
+			entry.Level == zapcore.ErrorLevel &&
+			entry.ContextMap()["message"] == "some metrics were rejected" &&
+			entry.ContextMap()["rejected_data_points"] == int64(1) {
+			fields := entry.ContextMap()
+			var names []string
+			if arr, ok := fields["metric_names"].([]string); ok {
+				names = arr
+			} else if arr, ok := fields["metric_names"].([]any); ok {
+				for _, v := range arr {
+					if s, ok := v.(string); ok {
+						names = append(names, s)
+					}
+				}
+			}
+			assert.Contains(t, names, "metric1")
+			assert.Contains(t, names, "metric2")
+			found = true
+		}
+	}
+	assert.True(t, found, "Expected partial success log with correct fields and metric names")
 }

@@ -64,9 +64,23 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
+		var metricNames []string
+		rss := md.ResourceMetrics()
+		for i := 0; i < rss.Len(); i++ {
+			rm := rss.At(i)
+			sm := rm.ScopeMetrics()
+			for j := 0; j < sm.Len(); j++ {
+				metrics := sm.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					metricNames = append(metricNames, metrics.At(k).Name())
+				}
+			}
+		}
+
 		e.settings.Logger.Error("Partial success response from Coralogix",
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_data_points", partialSuccess.RejectedDataPoints()),
+			zap.Strings("metric_names", metricNames),
 		)
 	}
 
