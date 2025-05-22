@@ -192,10 +192,22 @@ func buildSnowflakeString(conn DataSourceConfig) (string, error) {
 }
 
 func buildSQLServerString(conn DataSourceConfig) (string, error) {
-	// SQL Server connection string format: sqlserver://user:pass@host/instance?param1=value1&param2=value2
+	// SQL Server connection string format: sqlserver://username:password@host:port/instance
 	var auth string
+
 	if conn.Username != "" {
 		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	}
+
+	// replace all backslashes with forward slashes
+	host := strings.ReplaceAll(conn.Host, "\\", "/")
+
+	// if host contains a "/", split it into hostname and instance
+	parts := strings.SplitN(host, "/", 2)
+	hostname := parts[0]
+	var instance string
+	if len(parts) > 1 {
+		instance = parts[1]
 	}
 
 	query := url.Values{}
@@ -204,9 +216,12 @@ func buildSQLServerString(conn DataSourceConfig) (string, error) {
 		query.Set(k, fmt.Sprintf("%v", v))
 	}
 
-	// Replace backslashes with forward slashes in hostname
-	host := strings.ReplaceAll(conn.Host, "\\", "/")
-	connStr := fmt.Sprintf("sqlserver://%s%s:%d", auth, host, conn.Port)
+	var connStr string
+	if instance != "" {
+		connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, conn.Port, instance)
+	} else {
+		connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, conn.Port)
+	}
 	if len(query) > 0 {
 		connStr += "?" + query.Encode()
 	}
