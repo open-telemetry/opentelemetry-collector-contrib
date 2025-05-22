@@ -73,7 +73,7 @@ func (c *Config) SetDefaults() {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumMetrics <= 0 {
+	if !c.TotalDuration.IsInf() && c.TotalDuration.Duration() <= 0 && c.NumMetrics <= 0 {
 		return errors.New("either `metrics` or `duration` must be greater than 0")
 	}
 

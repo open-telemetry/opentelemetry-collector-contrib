@@ -62,10 +62,48 @@ func (*KeyValue) Type() string {
 	return "map[string]any"
 }
 
+// DurationWithInf is a custom type that can handle both regular durations and "inf" value
+type DurationWithInf time.Duration
+
+func (d *DurationWithInf) String() string {
+	if *d == DurationWithInf(-1) {
+		return "inf"
+	}
+	return time.Duration(*d).String()
+}
+
+func (d *DurationWithInf) Set(s string) error {
+	if strings.EqualFold(s, "inf") {
+		*d = DurationWithInf(-1)
+		return nil
+	}
+	duration, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+	*d = DurationWithInf(duration)
+	return nil
+}
+
+func (d *DurationWithInf) Type() string {
+	return "duration|inf"
+}
+
+func (d *DurationWithInf) IsInf() bool {
+	return *d == DurationWithInf(-1)
+}
+
+func (d *DurationWithInf) Duration() time.Duration {
+	if d.IsInf() {
+		return 0
+	}
+	return time.Duration(*d)
+}
+
 type Config struct {
 	WorkerCount           int
 	Rate                  float64
-	TotalDuration         time.Duration
+	TotalDuration         DurationWithInf
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
 
@@ -162,7 +200,7 @@ func (c *Config) GetHeaders() map[string]string {
 func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.WorkerCount, "workers", c.WorkerCount, "Number of workers (goroutines) to run")
 	fs.Float64Var(&c.Rate, "rate", c.Rate, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
-	fs.DurationVar(&c.TotalDuration, "duration", c.TotalDuration, "For how long to run the test")
+	fs.Var(&c.TotalDuration, "duration", "For how long to run the test. Use 'inf' for infinite duration.")
 	fs.DurationVar(&c.ReportingInterval, "interval", c.ReportingInterval, "Reporting interval")
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", c.CustomEndpoint, "Destination endpoint for exporting logs, metrics and traces")

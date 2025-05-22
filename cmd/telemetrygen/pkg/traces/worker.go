@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -22,16 +23,16 @@ import (
 )
 
 type worker struct {
-	running          *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
-	numTraces        int             // how many traces the worker has to generate (only when duration==0)
-	numChildSpans    int             // how many child spans the worker has to generate per trace
-	propagateContext bool            // whether the worker needs to propagate the trace context via HTTP headers
-	statusCode       codes.Code      // the status code set for the child and parent spans
-	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
-	limitPerSecond   rate.Limit      // how many spans per second to generate
-	wg               *sync.WaitGroup // notify when done
-	loadSize         int             // desired minimum size in MB of string data for each generated trace
-	spanDuration     time.Duration   // duration of generated spans
+	running          *atomic.Bool           // pointer to shared flag that indicates it's time to stop the test
+	numTraces        int                    // how many traces the worker has to generate (only when duration==0)
+	numChildSpans    int                    // how many child spans the worker has to generate per trace
+	propagateContext bool                   // whether the worker needs to propagate the trace context via HTTP headers
+	statusCode       codes.Code             // the status code set for the child and parent spans
+	totalDuration    common.DurationWithInf // how long to run the test for (overrides `numTraces`)
+	limitPerSecond   rate.Limit             // how many spans per second to generate
+	wg               *sync.WaitGroup        // notify when done
+	loadSize         int                    // desired minimum size in MB of string data for each generated trace
+	spanDuration     time.Duration          // duration of generated spans
 	logger           *zap.Logger
 }
 
