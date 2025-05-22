@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_Contains(t *testing.T) {
+func Test_SliceContains(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   ottl.StandardPSliceGetter[any]
@@ -154,10 +154,24 @@ func Test_Contains(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			name: "Target is []string",
+			target: ottl.StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []string{"test1", "test2"}, nil
+				},
+			},
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewValueStr("test1").AsRaw(), nil
+				},
+			},
+			expected: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := contains(tt.target, tt.item)
+			exprFunc := sliceContains(tt.target, tt.item)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -165,7 +179,7 @@ func Test_Contains(t *testing.T) {
 	}
 }
 
-func Test_Contains_Error(t *testing.T) {
+func Test_SliceContains_Error(t *testing.T) {
 	target := &ottl.StandardPSliceGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return make(chan int), nil
@@ -177,7 +191,7 @@ func Test_Contains_Error(t *testing.T) {
 		},
 	}
 
-	exprFunc := contains(target, item)
+	exprFunc := sliceContains(target, item)
 	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }
