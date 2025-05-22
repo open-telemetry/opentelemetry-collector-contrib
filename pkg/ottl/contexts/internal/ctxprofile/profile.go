@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,6 +28,7 @@ func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], erro
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
+	fmt.Printf("PathGetterSetter: %v\n", path.Name())
 	switch path.Name() {
 	case "sample_type":
 		return accessSampleType[K](), nil
@@ -80,6 +83,11 @@ func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], erro
 		return accessOriginalPayloadFormat[K](), nil
 	case "original_payload":
 		return accessOriginalPayload[K](), nil
+	case "attributes":
+		if path.Keys() == nil {
+			return accessAttributes[K](), nil
+		}
+		return accessAttributesKey(path.Keys()), nil
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
@@ -418,4 +426,123 @@ func accessOriginalPayload[K ProfileContext]() ottl.StandardGetSetter[K] {
 			return nil
 		},
 	}
+}
+
+func accessAttributes[K ProfileContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			return pprofile.FromAttributeIndices(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile()), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			m, ok := val.(pcommon.Map)
+			if !ok {
+				return fmt.Errorf("expected pcommon.Map, got %T", val)
+			}
+			tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
+			for k, v := range m.All() {
+				if err := PutAttribute(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile(), k, v); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+}
+
+func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
+			return ctxutil.GetMapValue[K](ctx, tCtx, pprofile.FromAttributeIndices(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile()), key)
+		},
+		Setter: func(ctx context.Context, tCtx K, val any) error {
+			newKey, err := key[0].String(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			v := pcommon.NewValueEmpty()
+			if err = ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
+				return err
+			}
+			return PutAttribute(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile(), *newKey, v)
+		},
+	}
+}
+
+type attributable interface {
+	AttributeIndices() pcommon.Int32Slice
+}
+
+var errTooManyTableEntries = errors.New("too many entries in AttributeTable")
+
+// PutAttribute updates an AttributeTable and a record's AttributeIndices to
+// add a new attribute.
+// The record can be any struct that implements an `AttributeIndices` method.
+func PutAttribute(table pprofile.AttributeTableSlice, record attributable, key string, value pcommon.Value) error {
+	for i := range record.AttributeIndices().Len() {
+		idx := int(record.AttributeIndices().At(i))
+		if idx < 0 || idx >= table.Len() {
+			return fmt.Errorf("index value %d out of range in AttributeIndices[%d]", idx, i)
+		}
+		attr := table.At(idx)
+		if attr.Key() == key {
+			if attr.Value().Equal(value) {
+				// Attribute already exists, nothing to do.
+				return nil
+			}
+
+			// If the attribute table already contains the key/value pair, just update the index.
+			for j := range table.Len() {
+				a := table.At(j)
+				if a.Key() == key && a.Value().Equal(value) {
+					if j > math.MaxInt32 {
+						return errTooManyTableEntries
+					}
+					record.AttributeIndices().SetAt(i, int32(j))
+					return nil
+				}
+			}
+
+			if table.Len() >= math.MaxInt32 {
+				return errTooManyTableEntries
+			}
+
+			// Add the key/value pair as a new attribute to the table...
+			entry := table.AppendEmpty()
+			entry.SetKey(key)
+			value.CopyTo(entry.Value())
+
+			// ...and update the existing index.
+			record.AttributeIndices().SetAt(i, int32(table.Len()-1))
+			return nil
+		}
+	}
+
+	if record.AttributeIndices().Len() >= math.MaxInt32 {
+		return errors.New("too many entries in AttributeIndices")
+	}
+
+	for j := range table.Len() {
+		a := table.At(j)
+		if a.Key() == key && a.Value().Equal(value) {
+			if j > math.MaxInt32 {
+				return errTooManyTableEntries
+			}
+			// Add the index of the existing attribute to the indices.
+			record.AttributeIndices().Append(int32(j))
+			return nil
+		}
+	}
+
+	if table.Len() >= math.MaxInt32 {
+		return errTooManyTableEntries
+	}
+
+	// Add the key/value pair as a new attribute to the table...
+	entry := table.AppendEmpty()
+	entry.SetKey(key)
+	value.CopyTo(entry.Value())
+
+	// ...and add a new index to the indices.
+	record.AttributeIndices().Append(int32(table.Len() - 1))
+	return nil
 }

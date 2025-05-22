@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,9 +18,16 @@ func Test_MergeMaps(t *testing.T) {
 	input := pcommon.NewMap()
 	input.PutStr("attr1", "value1")
 
-	targetGetter := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
+	targetGetter := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
 			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			if v, ok := m.(pcommon.Map); ok {
+				v.CopyTo(tCtx)
+				return nil
+			}
+			return errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -146,9 +154,12 @@ func Test_MergeMaps_bad_target(t *testing.T) {
 			return tCtx, nil
 		},
 	}
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return 1, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -164,9 +175,12 @@ func Test_MergeMaps_bad_input(t *testing.T) {
 			return 1, nil
 		},
 	}
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
