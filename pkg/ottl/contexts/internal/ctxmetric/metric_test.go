@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -20,6 +21,9 @@ func TestPathGetSetter(t *testing.T) {
 
 	newMetric := pmetric.NewMetric()
 	newMetric.SetName("new name")
+
+	newMetadata := pcommon.NewMap()
+	newMetadata.PutStr("new_k", "new_v")
 
 	newDataPoints := pmetric.NewNumberDataPointSlice()
 	dataPoint := newDataPoints.AppendEmpty()
@@ -106,6 +110,17 @@ func TestPathGetSetter(t *testing.T) {
 			newVal: newDataPoints,
 			modified: func(metric pmetric.Metric) {
 				newDataPoints.CopyTo(metric.Sum().DataPoints())
+			},
+		},
+		{
+			name: "metric metadata",
+			path: &pathtest.Path[*testContext]{
+				N: "metadata",
+			},
+			orig:   pcommon.NewMap(),
+			newVal: newMetadata,
+			modified: func(metric pmetric.Metric) {
+				newMetadata.CopyTo(metric.Metadata())
 			},
 		},
 	}
