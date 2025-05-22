@@ -631,6 +631,15 @@ func (s *Supervisor) startOpAMPClient() error {
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
+		RemoteConfigStatus: func() *protobufs.RemoteConfigStatus {
+			if s.remoteConfig != nil {
+				return &protobufs.RemoteConfigStatus{
+					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+					LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
+				}
+			}
+			return nil
+		}(),
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
 				s.telemetrySettings.Logger.Debug("Connected to the server.")
