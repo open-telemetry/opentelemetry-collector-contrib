@@ -90,7 +90,8 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.EqualValues(t, 1, sink.StopCount.Load())
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
-	assert.EqualValues(t, 0, *got.BackendConnectionErrors.HTTPCode4XXCount)
+	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
+	assert.EqualValues(t, 0, *got.BackendConnectionErrors.OtherCount)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
