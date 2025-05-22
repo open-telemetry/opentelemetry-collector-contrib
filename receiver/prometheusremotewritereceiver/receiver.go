@@ -14,6 +14,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
+	lru "github.com/hashicorp/golang-lru/v2/expirable"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -30,7 +31,7 @@ import (
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	cache := newCache(5 * time.Minute)
+	cache := lru.NewLRU[uint64, pmetric.ResourceMetrics](1000, nil, time.Minute*5)
 
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
@@ -51,7 +52,7 @@ type prometheusRemoteWriteReceiver struct {
 	server *http.Server
 	wg     sync.WaitGroup
 
-	rmCache *rmCache
+	rmCache *lru.LRU[uint64, pmetric.ResourceMetrics]
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric
@@ -94,70 +95,6 @@ func (mi MetricIdentity) Hash() uint64 {
 	return xxhash.Sum64String(combined)
 }
 
-// rmCache is exclusive to write and read operations over a map of resource hashes to ResourceMetrics.
-type rmCache struct {
-	// TODO(@perebaj) create a mechanism to clean up the cache based on a max size
-	// data is a map of resource hashes to ResourceMetrics
-	data map[uint64]pmetric.ResourceMetrics
-	// CleanupInterval is the interval at which the cache will be cleaned up
-	CleanupInterval time.Duration
-	// To avoid race conditions between r/w operations and the cleanup goroutine, we need to use a mutex.
-	// With that we are able to block the cache when accessing it.
-	// The RWMutex has been chosen because readers don't block each other, but writers block readers.
-	mutex sync.RWMutex
-	// stopChan works as signal to stop the cleanup goroutine if something happens in the receiver server
-	stopChan chan struct{}
-}
-
-func newCache(cleanupInterval time.Duration) *rmCache {
-	c := &rmCache{
-		data:            make(map[uint64]pmetric.ResourceMetrics),
-		CleanupInterval: cleanupInterval,
-		stopChan:        make(chan struct{}),
-	}
-
-	go c.startCleanup()
-
-	return c
-}
-
-func (c *rmCache) startCleanup() {
-	ticker := time.NewTicker(c.CleanupInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			c.cleanupAll()
-		case <-c.stopChan:
-			return
-		}
-	}
-}
-
-func (c *rmCache) Stop() {
-	close(c.stopChan)
-}
-
-func (c *rmCache) cleanupAll() {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.data = make(map[uint64]pmetric.ResourceMetrics)
-}
-
-func (c *rmCache) get(key uint64) (pmetric.ResourceMetrics, bool) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	rm, ok := c.data[key]
-	return rm, ok
-}
-
-func (c *rmCache) set(key uint64, rm pmetric.ResourceMetrics) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.data[key] = rm
-}
-
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
@@ -175,7 +112,6 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	prw.wg.Add(1)
 	go func() {
 		defer prw.wg.Done()
-		defer prw.rmCache.Stop()
 		if err := prw.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting prometheus remote-write receiver: %w", err)))
 		}
@@ -305,7 +241,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
-			if existingRM, ok := prw.rmCache.get(hashedLabels); ok {
+			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
 				rm = existingRM
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
@@ -320,21 +256,20 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(l.Name, l.Value)
 				}
 			}
-			prw.rmCache.set(hashedLabels, rm)
+			prw.rmCache.Add(hashedLabels, rm)
 			continue
 		}
 
 		// For metrics other than target_info, we need to follow the standard process of creating a metric.
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		existingRM, ok := prw.rmCache.get(hashedLabels)
-
+		existingRM, ok := prw.rmCache.Get(hashedLabels)
 		if ok {
 			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.rmCache.set(hashedLabels, rm)
+			prw.rmCache.Add(hashedLabels, rm)
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
