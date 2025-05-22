@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -81,7 +81,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultEndpoint)
+		exporter := newTestLogsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 
@@ -97,7 +97,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestLogsExporter(t, defaultEndpoint)
+		exporter := newTestLogsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushLogsData(t, exporter, simpleLogs(1))
 	})
 	t.Run("test check scope metadata", func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestLogsExporter(t, defaultEndpoint)
+		exporter := newTestLogsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushLogsData(t, exporter, simpleLogs(1))
 	})
 	t.Run("test with only observed timestamp", func(t *testing.T) {
@@ -123,7 +123,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultEndpoint)
+		exporter := newTestLogsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushLogsData(t, exporter, simpleLogsWithNoTimestamp(1))
 	})
 	t.Run("test with 2 log records with different service.name", func(t *testing.T) {
@@ -139,13 +139,14 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultEndpoint)
+		exporter := newTestLogsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushLogsData(t, exporter, multipleLogsWithDifferentServiceName(1))
 	})
 }
 
 func TestLogsClusterConfig(t *testing.T) {
 	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		fns = append(fns, withDriverName(t.Name()))
 		exporter := newTestLogsExporter(t, dsn, fns...)
 		clusterTest.verifyConfig(t, exporter.cfg)
 	})
@@ -153,6 +154,7 @@ func TestLogsClusterConfig(t *testing.T) {
 
 func TestLogsTableEngineConfig(t *testing.T) {
 	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		fns = append(fns, withDriverName(t.Name()))
 		exporter := newTestLogsExporter(t, dsn, fns...)
 		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
 	})
@@ -196,7 +198,7 @@ func simpleLogs(count int) plog.Logs {
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
 		r.Body().SetStr("error message")
-		r.Attributes().PutStr(conventions.AttributeServiceNamespace, "default")
+		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
@@ -221,7 +223,7 @@ func simpleLogsWithNoTimestamp(count int) plog.Logs {
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
 		r.Body().SetStr("error message")
-		r.Attributes().PutStr(conventions.AttributeServiceNamespace, "default")
+		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
@@ -245,7 +247,7 @@ func multipleLogsWithDifferentServiceName(count int) plog.Logs {
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
 		r.Body().SetStr("empty ServiceName")
-		r.Attributes().PutStr(conventions.AttributeServiceNamespace, "default")
+		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
@@ -259,7 +261,6 @@ func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
 }
 
 func initClickhouseTestServer(t *testing.T, recorder recorder) {
-	driverName = t.Name()
 	sql.Register(t.Name(), &testClickhouseDriver{
 		recorder: recorder,
 	})

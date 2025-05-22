@@ -253,6 +253,9 @@ type ResourceAttributesConfig struct {
 	K8sDeploymentName                      ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
 	K8sDeploymentUID                       ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
 	K8sHpaName                             ResourceAttributeConfig `mapstructure:"k8s.hpa.name"`
+	K8sHpaScaletargetrefApiversion         ResourceAttributeConfig `mapstructure:"k8s.hpa.scaletargetref.apiversion"`
+	K8sHpaScaletargetrefKind               ResourceAttributeConfig `mapstructure:"k8s.hpa.scaletargetref.kind"`
+	K8sHpaScaletargetrefName               ResourceAttributeConfig `mapstructure:"k8s.hpa.scaletargetref.name"`
 	K8sHpaUID                              ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
 	K8sJobName                             ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobUID                              ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
@@ -321,6 +324,15 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sHpaName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sHpaScaletargetrefApiversion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sHpaScaletargetrefKind: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sHpaScaletargetrefName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sHpaUID: ResourceAttributeConfig{
 			Enabled: true,

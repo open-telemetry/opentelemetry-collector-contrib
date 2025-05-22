@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	awsP "github.com/aws/aws-sdk-go/aws"
+	awsP "github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -306,7 +306,7 @@ func MakeDocumentFromSegment(segment *awsxray.Segment) (string, error) {
 
 func isAwsSdkSpan(span ptrace.Span) bool {
 	attributes := span.Attributes()
-	if rpcSystem, ok := attributes.Get(conventionsv112.AttributeRPCSystem); ok {
+	if rpcSystem, ok := attributes.Get(string(conventionsv112.RPCSystemKey)); ok {
 		return rpcSystem.Str() == awsAPIRPCSystem
 	}
 	return false
@@ -379,14 +379,14 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	// peer.service should always be prioritized for segment names when it set by users and
 	// the new x-ray specific service name attributes are not found
 	if name == "" {
-		if peerService, ok := attributes.Get(conventionsv112.AttributePeerService); ok {
+		if peerService, ok := attributes.Get(string(conventionsv112.PeerServiceKey)); ok {
 			name = peerService.Str()
 		}
 	}
 
 	if namespace == "" {
 		if isAwsSdkSpan(span) {
-			namespace = conventionsv112.AttributeCloudProviderAWS
+			namespace = conventionsv112.CloudProviderAWS.Value.AsString()
 		}
 	}
 
@@ -397,16 +397,16 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 			name = awsService.Str()
 
 			if namespace == "" {
-				namespace = conventionsv112.AttributeCloudProviderAWS
+				namespace = conventionsv112.CloudProviderAWS.Value.AsString()
 			}
 		}
 	}
 
 	if name == "" {
-		if dbInstance, ok := attributes.Get(conventionsv112.AttributeDBName); ok {
+		if dbInstance, ok := attributes.Get(string(conventionsv112.DBNameKey)); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.Str()
-			if dbURL, ok := attributes.Get(conventionsv112.AttributeDBConnectionString); ok {
+			if dbURL, ok := attributes.Get(string(conventionsv112.DBConnectionStringKey)); ok {
 				// Trim JDBC connection string if starts with "jdbc:", otherwise no change
 				// jdbc:mysql://db.dev.example.com:3306
 				dbURLStr := strings.TrimPrefix(dbURL.Str(), "jdbc:")
@@ -421,25 +421,25 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	if name == "" && span.Kind() == ptrace.SpanKindServer {
 		// Only for a server span, we can use the resource.
-		if service, ok := resource.Attributes().Get(conventionsv112.AttributeServiceName); ok {
+		if service, ok := resource.Attributes().Get(string(conventionsv112.ServiceNameKey)); ok {
 			name = service.Str()
 		}
 	}
 
 	if name == "" {
-		if rpcservice, ok := attributes.Get(conventionsv112.AttributeRPCService); ok {
+		if rpcservice, ok := attributes.Get(string(conventionsv112.RPCServiceKey)); ok {
 			name = rpcservice.Str()
 		}
 	}
 
 	if name == "" {
-		if host, ok := attributes.Get(conventionsv112.AttributeHTTPHost); ok {
+		if host, ok := attributes.Get(string(conventionsv112.HTTPHostKey)); ok {
 			name = host.Str()
 		}
 	}
 
 	if name == "" {
-		if peer, ok := attributes.Get(conventionsv112.AttributeNetPeerName); ok {
+		if peer, ok := attributes.Get(string(conventionsv112.NetPeerNameKey)); ok {
 			name = peer.Str()
 		}
 	}
@@ -492,34 +492,34 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 		return ""
 	}
 
-	if provider, ok := resource.Attributes().Get(conventionsv112.AttributeCloudProvider); ok {
-		if provider.Str() != conventionsv112.AttributeCloudProviderAWS {
+	if provider, ok := resource.Attributes().Get(string(conventionsv112.CloudProviderKey)); ok {
+		if provider.Str() != conventionsv112.CloudProviderAWS.Value.AsString() {
 			return ""
 		}
 	}
 
-	if is, present := resource.Attributes().Get(conventionsv112.AttributeCloudPlatform); present {
+	if is, present := resource.Attributes().Get(string(conventionsv112.CloudPlatformKey)); present {
 		switch is.Str() {
-		case conventionsv112.AttributeCloudPlatformAWSAppRunner:
+		case conventionsv112.CloudPlatformAWSAppRunner.Value.AsString():
 			return OriginAppRunner
-		case conventionsv112.AttributeCloudPlatformAWSEKS:
+		case conventionsv112.CloudPlatformAWSEKS.Value.AsString():
 			return OriginEKS
-		case conventionsv112.AttributeCloudPlatformAWSElasticBeanstalk:
+		case conventionsv112.CloudPlatformAWSElasticBeanstalk.Value.AsString():
 			return OriginEB
-		case conventionsv112.AttributeCloudPlatformAWSECS:
-			lt, present := resource.Attributes().Get(conventionsv112.AttributeAWSECSLaunchtype)
+		case conventionsv112.CloudPlatformAWSECS.Value.AsString():
+			lt, present := resource.Attributes().Get(string(conventionsv112.AWSECSLaunchtypeKey))
 			if !present {
 				return OriginECS
 			}
 			switch lt.Str() {
-			case conventionsv112.AttributeAWSECSLaunchtypeEC2:
+			case conventionsv112.AWSECSLaunchtypeEC2.Value.AsString():
 				return OriginECSEC2
-			case conventionsv112.AttributeAWSECSLaunchtypeFargate:
+			case conventionsv112.AWSECSLaunchtypeFargate.Value.AsString():
 				return OriginECSFargate
 			default:
 				return OriginECS
 			}
-		case conventionsv112.AttributeCloudPlatformAWSEC2:
+		case conventionsv112.CloudPlatformAWSEC2.Value.AsString():
 			return OriginEC2
 
 		// If cloud_platform is defined with a non-AWS value, we should not assign it an AWS origin
@@ -608,10 +608,10 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		metadata    = map[string]map[string]any{}
 		user        string
 	)
-	userid, ok := attributes[conventionsv112.AttributeEnduserID]
+	userid, ok := attributes[string(conventionsv112.EnduserIDKey)]
 	if ok {
 		user = userid.Str()
-		delete(attributes, conventionsv112.AttributeEnduserID)
+		delete(attributes, string(conventionsv112.EnduserIDKey))
 	}
 
 	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {

@@ -7,6 +7,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -34,9 +35,6 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherConfig := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
-	batcherConfig.Enabled = false
-
 	return &Config{
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
@@ -62,9 +60,13 @@ func createDefaultConfig() component.Config {
 			Endpoint:    "https://",
 			Compression: configcompression.TypeGzip,
 		},
-		PrivateKey:    "",
-		AppName:       "",
-		BatcherConfig: batcherConfig,
+		PrivateKey: "",
+		AppName:    "",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   false,
+			Threshold: 10,
+			Duration:  time.Minute,
+		},
 	}
 }
 
@@ -74,10 +76,6 @@ func createTraceExporter(
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
-
-	if cfg.BatcherConfig.Enabled {
-		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
-	}
 
 	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
@@ -95,7 +93,6 @@ func createTraceExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
@@ -105,10 +102,6 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-
-	if cfg.BatcherConfig.Enabled {
-		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
-	}
 
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
@@ -126,7 +119,6 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
@@ -136,10 +128,6 @@ func createLogsExporter(
 	config component.Config,
 ) (exporter.Logs, error) {
 	cfg := config.(*Config)
-
-	if cfg.BatcherConfig.Enabled {
-		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
-	}
 
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
@@ -157,7 +145,6 @@ func createLogsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
@@ -167,10 +154,6 @@ func createProfilesExporter(
 	config component.Config,
 ) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
-
-	if cfg.BatcherConfig.Enabled {
-		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
-	}
 
 	oce, err := newProfilesExporter(cfg, set)
 	if err != nil {
@@ -188,6 +171,5 @@ func createProfilesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }

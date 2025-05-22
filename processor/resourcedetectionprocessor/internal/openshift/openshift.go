@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -62,20 +62,20 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	switch strings.ToLower(infra.Status.PlatformStatus.Type) {
 	case "aws":
-		d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSOpenshift)
+		d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformAWSOpenshift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Aws.Region))
 	case "azure":
-		d.rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
-		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureOpenshift)
+		d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformAzureOpenshift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName))
 	case "gcp":
-		d.rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
-		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPOpenshift)
+		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPOpenshift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.GCP.Region))
 	case "ibmcloud":
-		d.rb.SetCloudProvider(conventions.AttributeCloudProviderIbmCloud)
-		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformIbmCloudOpenshift)
+		d.rb.SetCloudProvider(conventions.CloudProviderIbmCloud.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformIbmCloudOpenshift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.IBMCloud.Location))
 	case "openstack":
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName))

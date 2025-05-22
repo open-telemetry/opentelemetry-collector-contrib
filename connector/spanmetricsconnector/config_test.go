@@ -53,7 +53,6 @@ func TestLoadConfig(t *testing.T) {
 					{Name: "http.status_code", Default: (*string)(nil)},
 				},
 				Namespace:                DefaultNamespace,
-				DimensionsCacheSize:      1500,
 				ResourceMetricsCacheSize: 1600,
 				MetricsFlushInterval:     30 * time.Second,
 				Exemplars: ExemplarsConfig{
@@ -76,7 +75,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Namespace:                DefaultNamespace,
 				AggregationTemporality:   cumulative,
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
@@ -103,7 +101,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -115,7 +112,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled_with_max_per_datapoint"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -127,7 +123,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "resource_metrics_key_attributes"),
 			expected: &Config{
 				AggregationTemporality:       "AGGREGATION_TEMPORALITY_CUMULATIVE",
-				DimensionsCacheSize:          defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize:     defaultResourceMetricsCacheSize,
 				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
 				MetricsFlushInterval:         60 * time.Second,
@@ -140,7 +135,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
 				TimestampCacheSize:       &customTimestampCacheSize,
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -151,7 +145,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "default_delta_timestamp_cache_size"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
@@ -164,6 +157,22 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_delta_timestamp_cache_size"),
 			errorMessage: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "separate_calls_and_duration_dimensions"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit, Dimensions: []Dimension{{Name: "http.status_code", Default: (*string)(nil)}}},
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+				},
+				CallsDimensions: []Dimension{
+					{Name: "http.url", Default: (*string)(nil)},
+				},
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Namespace:                DefaultNamespace,
+			},
 		},
 	}
 
@@ -282,6 +291,112 @@ func TestValidateEventDimensions(t *testing.T) {
 			err := validateEventDimensions(tc.enabled, tc.dimensions)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      Config
+		expectedErr string
+	}{
+		{
+			name: "valid config",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram: HistogramConfig{
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{10 * time.Millisecond},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid metrics flush interval",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     -1 * time.Second,
+			},
+			expectedErr: "invalid metrics_flush_interval: -1s, the duration should be positive",
+		},
+		{
+			name: "invalid metrics expiration",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				MetricsExpiration:        -1 * time.Second,
+			},
+			expectedErr: "invalid metrics_expiration: -1s, the duration should be positive",
+		},
+		{
+			name: "invalid delta timestamp cache size",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				AggregationTemporality:   delta,
+				TimestampCacheSize:       new(int), // zero value
+			},
+			expectedErr: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
+		},
+		{
+			name: "invalid aggregation cardinality limit",
+			config: Config{
+				ResourceMetricsCacheSize:    1000,
+				MetricsFlushInterval:        60 * time.Second,
+				AggregationCardinalityLimit: -1,
+			},
+			expectedErr: "invalid aggregation_cardinality_limit: -1, the limit should be positive",
+		},
+		{
+			name: "both explicit and exponential histogram",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram: HistogramConfig{
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{10 * time.Millisecond},
+					},
+					Exponential: &ExponentialHistogramConfig{
+						MaxSize: 10,
+					},
+				},
+			},
+			expectedErr: "use either `explicit` or `exponential` buckets histogram",
+		},
+		{
+			name: "duplicate dimension name",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Dimensions: []Dimension{
+					{Name: "service.name"},
+				},
+			},
+			expectedErr: "failed validating dimensions: duplicate dimension name service.name",
+		},
+		{
+			name: "events enabled with no dimensions",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Events: EventsConfig{
+					Enabled: true,
+				},
+			},
+			expectedErr: "failed validating event dimensions: no dimensions configured for events",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr != "" {
+				assert.ErrorContains(t, err, tt.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}

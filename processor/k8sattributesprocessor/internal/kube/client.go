@@ -12,8 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/otel/attribute"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -76,6 +78,8 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+
+var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
 // New initializes a new k8s Client.
 func New(
@@ -451,7 +455,10 @@ func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
-		tags[conventions.AttributeK8SPodName] = pod.Name
+		tags[string(conventions.K8SPodNameKey)] = pod.Name
+	}
+	if c.Rules.ServiceName {
+		tags[string(conventions.ServiceNameKey)] = pod.Name
 	}
 
 	if c.Rules.PodHostName {
@@ -463,7 +470,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.Namespace {
-		tags[conventions.AttributeK8SNamespaceName] = pod.GetNamespace()
+		tags[string(conventions.K8SNamespaceNameKey)] = pod.GetNamespace()
 	}
 
 	if c.Rules.StartTime {
@@ -479,7 +486,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.PodUID {
 		uid := pod.GetUID()
-		tags[conventions.AttributeK8SPodUID] = string(uid)
+		tags[string(conventions.K8SPodUIDKey)] = string(uid)
 	}
 
 	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName ||
@@ -487,56 +494,82 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName {
+		c.Rules.CronJobName || c.Rules.ServiceName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
 				if c.Rules.ReplicaSetID {
-					tags[conventions.AttributeK8SReplicaSetUID] = string(ref.UID)
+					tags[string(conventions.K8SReplicaSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.ReplicaSetName {
-					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
+					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
-				if c.Rules.DeploymentName {
+				if c.Rules.ServiceName {
+					tags[string(conventions.ServiceNameKey)] = ref.Name
+				}
+				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
-						if replicaset.Deployment.Name != "" {
-							tags[conventions.AttributeK8SDeploymentName] = replicaset.Deployment.Name
+						name := replicaset.Deployment.Name
+						if name != "" {
+							if c.Rules.DeploymentName {
+								tags[string(conventions.K8SDeploymentNameKey)] = name
+							}
+							if c.Rules.ServiceName {
+								// deployment name wins over replicaset name
+								tags[string(conventions.ServiceNameKey)] = name
+							}
 						}
 					}
 				}
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
 						if replicaset.Deployment.Name != "" {
-							tags[conventions.AttributeK8SDeploymentUID] = replicaset.Deployment.UID
+							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
 					}
 				}
 			case "DaemonSet":
 				if c.Rules.DaemonSetUID {
-					tags[conventions.AttributeK8SDaemonSetUID] = string(ref.UID)
+					tags[string(conventions.K8SDaemonSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.DaemonSetName {
-					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
+					tags[string(conventions.K8SDaemonSetNameKey)] = ref.Name
+				}
+				if c.Rules.ServiceName {
+					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 			case "StatefulSet":
 				if c.Rules.StatefulSetUID {
-					tags[conventions.AttributeK8SStatefulSetUID] = string(ref.UID)
+					tags[string(conventions.K8SStatefulSetUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.StatefulSetName {
-					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
+					tags[string(conventions.K8SStatefulSetNameKey)] = ref.Name
+				}
+				if c.Rules.ServiceName {
+					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 			case "Job":
-				if c.Rules.CronJobName {
-					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						tags[conventions.AttributeK8SCronJobName] = parts[1]
-					}
-				}
 				if c.Rules.JobUID {
-					tags[conventions.AttributeK8SJobUID] = string(ref.UID)
+					tags[string(conventions.K8SJobUIDKey)] = string(ref.UID)
 				}
 				if c.Rules.JobName {
-					tags[conventions.AttributeK8SJobName] = ref.Name
+					tags[string(conventions.K8SJobNameKey)] = ref.Name
+				}
+				if c.Rules.ServiceName {
+					tags[string(conventions.ServiceNameKey)] = ref.Name
+				}
+				if c.Rules.CronJobName || c.Rules.ServiceName {
+					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+					if len(parts) == 2 {
+						name := parts[1]
+						if c.Rules.CronJobName {
+							tags[string(conventions.K8SCronJobNameKey)] = name
+						}
+						if c.Rules.ServiceName {
+							// cronjob name wins over job name
+							tags[string(conventions.ServiceNameKey)] = name
+						}
+					}
 				}
 			}
 		}
@@ -558,10 +591,26 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		r.extractFromPodMetadata(pod.Labels, tags, "k8s.pod.labels.%s")
 	}
 
+	if c.Rules.ServiceName {
+		copyLabel(pod, tags, "app.kubernetes.io/name", conventions.ServiceNameKey)
+		// app.kubernetes.io/instance has a higher precedence than app.kubernetes.io/name
+		copyLabel(pod, tags, "app.kubernetes.io/instance", conventions.ServiceNameKey)
+	}
+
+	if c.Rules.ServiceVersion {
+		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
+	}
+
 	for _, r := range c.Rules.Annotations {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
 	return tags
+}
+
+func copyLabel(pod *api_v1.Pod, tags map[string]string, labelKey string, key attribute.Key) {
+	if val, ok := pod.Labels[labelKey]; ok {
+		tags[string(key)] = val
+	}
 }
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
@@ -626,7 +675,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.ServiceVersion {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -644,7 +693,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		}
 	}
 
-	if len(rules.Labels) > 0 {
+	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
 		transformedPod.Labels = pod.Labels
 	}
 
@@ -659,6 +708,38 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	return &transformedPod
 }
 
+// parseServiceVersionFromImage parses the service version for differently-formatted image names
+// according to https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-serviceversion-should-be-calculated
+func parseServiceVersionFromImage(image string) (string, error) {
+	ref, err := reference.Parse(image)
+	if err != nil {
+		return "", err
+	}
+
+	namedRef, ok := ref.(reference.Named)
+	if !ok {
+		return "", errCannotRetrieveImage
+	}
+	var tag, digest string
+	if taggedRef, ok := namedRef.(reference.Tagged); ok {
+		tag = taggedRef.Tag()
+	}
+	if digestedRef, ok := namedRef.(reference.Digested); ok {
+		digest = digestedRef.Digest().String()
+	}
+	if digest != "" {
+		if tag != "" {
+			return fmt.Sprintf("%s@%s", tag, digest), nil
+		}
+		return digest, nil
+	}
+	if tag != "" {
+		return tag, nil
+	}
+
+	return "", errCannotRetrieveImage
+}
+
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
 	containers := PodContainers{
 		ByID:   map[string]*Container{},
@@ -667,7 +748,8 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
+		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
@@ -678,18 +760,28 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageTag {
 					container.ImageTag = imageRef.Tag
 				}
+				if c.Rules.ServiceVersion {
+					serviceVersion, err := parseServiceVersionFromImage(spec.Image)
+					if err == nil {
+						container.ServiceVersion = serviceVersion
+					}
+				}
 			}
 			containers.ByName[spec.Name] = container
 		}
 	}
 	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
-		container, ok := containers.ByName[apiStatus.Name]
+		containerName := apiStatus.Name
+		container, ok := containers.ByName[containerName]
 		if !ok {
 			container = &Container{}
-			containers.ByName[apiStatus.Name] = container
+			containers.ByName[containerName] = container
 		}
 		if c.Rules.ContainerName {
-			container.Name = apiStatus.Name
+			container.Name = containerName
+		}
+		if c.Rules.ServiceInstanceID {
+			container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
 		}
 		containerID := apiStatus.ContainerID
 		// Remove container runtime prefix
@@ -796,13 +888,13 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 			case ResourceSource:
 				attr := ""
 				switch source.Name {
-				case conventions.AttributeK8SNamespaceName:
+				case string(conventions.K8SNamespaceNameKey):
 					attr = pod.Namespace
-				case conventions.AttributeK8SPodName:
+				case string(conventions.K8SPodNameKey):
 					attr = pod.Name
-				case conventions.AttributeK8SPodUID:
+				case string(conventions.K8SPodUIDKey):
 					attr = pod.PodUID
-				case conventions.AttributeHostName:
+				case string(conventions.HostNameKey):
 					attr = pod.Address
 				// k8s.pod.ip is set by passthrough mode
 				case K8sIPLabelName:
@@ -829,7 +921,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	// Ensure backward compatibility
 	if pod.PodUID != "" {
 		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromResourceAttribute(conventions.AttributeK8SPodUID, pod.PodUID),
+			PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), pod.PodUID),
 		})
 	}
 
@@ -1022,7 +1114,9 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
-		rules.ContainerID
+		rules.ContainerID ||
+		rules.ServiceVersion ||
+		rules.ServiceInstanceID
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
@@ -1126,4 +1220,9 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 		return obj.Obj
 	}
 	return obj
+}
+
+func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
+	resNames := []string{pod.Namespace, pod.Name, containerName}
+	return strings.Join(resNames, ".")
 }

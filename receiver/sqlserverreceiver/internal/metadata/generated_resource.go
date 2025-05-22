@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetHostName sets provided value as "host.name" attribute.
+func (rb *ResourceBuilder) SetHostName(val string) {
+	if rb.config.HostName.Enabled {
+		rb.res.Attributes().PutStr("host.name", val)
+	}
+}
+
 // SetServerAddress sets provided value as "server.address" attribute.
 func (rb *ResourceBuilder) SetServerAddress(val string) {
 	if rb.config.ServerAddress.Enabled {
