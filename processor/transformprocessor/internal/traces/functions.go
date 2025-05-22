@@ -15,13 +15,10 @@ func SpanFunctions() map[string]ottl.Factory[ottlspan.TransformContext] {
 	m := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
 	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 	m[isRootSpanFactory.Name()] = isRootSpanFactory
-
 	return m
 }
 
 func SpanEventFunctions() map[string]ottl.Factory[ottlspanevent.TransformContext] {
 	// No trace-only functions yet.
-	m := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
-
-	return m
+	return ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
 }

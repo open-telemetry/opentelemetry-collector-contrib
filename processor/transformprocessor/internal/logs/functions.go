@@ -11,6 +11,5 @@ import (
 
 func LogFunctions() map[string]ottl.Factory[ottllog.TransformContext] {
 	// No logs-only functions yet.
-	logFunctions := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
-	return logFunctions
+	return ottlfuncs.StandardFuncs[ottllog.TransformContext]()
 }
