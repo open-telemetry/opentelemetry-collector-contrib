@@ -102,6 +102,12 @@ The following configuration options can also be configured:
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.name` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `root_path`: Used by the host metadata to identify the root filesystem.
+  This is needed when running in a containerized environment and the host root
+  filesystem is not `/`. Example: if the root filesystem is mounted under `/hostfs`, set
+  `root_path` to `/hostfs`.
+  Note: all components using `root_path` must have the same value; this currently applies
+  to hostmetrics receiver and signalfx exporter.
 - `exclude_properties`: A list of property filters to limit dimension update content.
   Property filters can contain any number of the following fields, supporting (negated)
   string literals, re2 `/regex/`, and [glob](https://github.com/gobwas/glob) syntax values:
