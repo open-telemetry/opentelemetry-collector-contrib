@@ -43,12 +43,18 @@ type libhoneyReceiver struct {
 // TeamInfo is part of the AuthInfo struct that stores the team slug
 type TeamInfo struct {
 	Slug string `json:"slug"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // EnvironmentInfo is part of the AuthInfo struct that stores the environment slug and name
 type EnvironmentInfo struct {
 	Slug string `json:"slug"`
 	Name string `json:"name"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AuthInfo is used by Libhoney to validate team and environment information against Honeycomb's Auth API
@@ -56,6 +62,9 @@ type AuthInfo struct {
 	APIKeyAccess map[string]bool `json:"api_key_access"`
 	Team         TeamInfo        `json:"team"`
 	Environment  EnvironmentInfo `json:"environment"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func newLibhoneyReceiver(cfg *Config, set *receiver.Settings) (*libhoneyReceiver, error) {
