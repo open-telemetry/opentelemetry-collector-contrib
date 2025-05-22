@@ -113,6 +113,8 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
 			spanAttrs := span.Attributes()
