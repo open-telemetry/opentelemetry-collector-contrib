@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
@@ -33,14 +32,6 @@ func TestPathGetSetter(t *testing.T) {
 			val:  createSampleSlice(),
 		},
 		{
-			path: "mapping_table",
-			val:  createMappingSlice(),
-		},
-		{
-			path: "location_table",
-			val:  createLocationSlice(),
-		},
-		{
 			path: "location_indices",
 			val:  []int64{5},
 		},
@@ -48,26 +39,6 @@ func TestPathGetSetter(t *testing.T) {
 			path:     "location_indices error",
 			val:      []string{"x"},
 			setFails: true,
-		},
-		{
-			path: "function_table",
-			val:  createFunctionSlice(),
-		},
-		{
-			path: "attribute_table",
-			val:  createAttributeTableSlice(),
-		},
-		{
-			path: "attribute_units",
-			val:  createAttributeUnitSlice(),
-		},
-		{
-			path: "link_table",
-			val:  createLinkSlice(),
-		},
-		{
-			path: "string_table",
-			val:  []string{"", "string"},
 		},
 		{
 			path: "time_unix_nano",
@@ -200,99 +171,6 @@ func createSampleSlice() pprofile.SampleSlice {
 	sample := sl.AppendEmpty()
 	sample.CopyTo(createSample())
 	return sl
-}
-
-func createMappingSlice() pprofile.MappingSlice {
-	sl := pprofile.NewMappingSlice()
-	mapping := sl.AppendEmpty()
-	mapping.CopyTo(createMapping())
-	return sl
-}
-
-func createMapping() pprofile.Mapping {
-	mapping := pprofile.NewMapping()
-	mapping.SetFilenameStrindex(2)
-	mapping.SetFileOffset(1)
-	mapping.SetHasFilenames(true)
-	mapping.SetHasFunctions(true)
-	mapping.SetHasInlineFrames(true)
-	mapping.SetHasLineNumbers(true)
-	mapping.SetMemoryLimit(3)
-	mapping.SetMemoryStart(4)
-	return mapping
-}
-
-func createLocationSlice() pprofile.LocationSlice {
-	sl := pprofile.NewLocationSlice()
-	location := sl.AppendEmpty()
-	location.CopyTo(createLocation())
-	return sl
-}
-
-func createLocation() pprofile.Location {
-	location := pprofile.NewLocation()
-	location.SetAddress(1)
-	location.SetIsFolded(true)
-	location.SetMappingIndex(2)
-	return location
-}
-
-func createFunctionSlice() pprofile.FunctionSlice {
-	sl := pprofile.NewFunctionSlice()
-	function := sl.AppendEmpty()
-	function.CopyTo(createFunction())
-	return sl
-}
-
-func createFunction() pprofile.Function {
-	function := pprofile.NewFunction()
-	function.SetFilenameStrindex(1)
-	function.SetNameStrindex(2)
-	function.SetStartLine(3)
-	function.SetSystemNameStrindex(4)
-	return function
-}
-
-func createAttributeTableSlice() pprofile.AttributeTableSlice {
-	sl := pprofile.NewAttributeTableSlice()
-	attribute := sl.AppendEmpty()
-	attribute.CopyTo(createAttributeTable())
-	return sl
-}
-
-func createAttributeTable() pprofile.Attribute {
-	attribute := pprofile.NewAttribute()
-	attribute.SetKey("key")
-	attribute.Value().SetStr("value")
-	return attribute
-}
-
-func createAttributeUnitSlice() pprofile.AttributeUnitSlice {
-	sl := pprofile.NewAttributeUnitSlice()
-	attributeUnit := sl.AppendEmpty()
-	attributeUnit.CopyTo(createAttributeUnit())
-	return sl
-}
-
-func createAttributeUnit() pprofile.AttributeUnit {
-	attributeUnit := pprofile.NewAttributeUnit()
-	attributeUnit.SetUnitStrindex(1)
-	attributeUnit.SetAttributeKeyStrindex(2)
-	return attributeUnit
-}
-
-func createLinkSlice() pprofile.LinkSlice {
-	sl := pprofile.NewLinkSlice()
-	link := sl.AppendEmpty()
-	link.CopyTo(createLink())
-	return sl
-}
-
-func createLink() pprofile.Link {
-	link := pprofile.NewLink()
-	link.SetSpanID(pcommon.SpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	link.SetTraceID(pcommon.TraceID([]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}))
-	return link
 }
 
 func createProfileID() pprofile.ProfileID {
