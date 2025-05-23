@@ -28,7 +28,7 @@ type mockAccumulator struct {
 	resourceAttributes pcommon.Map // Same attributes for all metrics.
 	scopeNames         []string
 	scopeVersions      []string
-	scopeSchemaUrls    []string
+	scopeSchemaURLs    []string
 	scopeAttributes    []pcommon.Map
 }
 
@@ -40,17 +40,17 @@ func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, 
 	rAttrs := make([]pcommon.Map, len(a.metrics))
 	scopeNames := make([]string, len(a.metrics))
 	scopeVersions := make([]string, len(a.metrics))
-	scopeSchemaUrls := make([]string, len(a.metrics))
+	scopeSchemaURLs := make([]string, len(a.metrics))
 	scopeAttributes := make([]pcommon.Map, len(a.metrics))
 	for i := range rAttrs {
 		rAttrs[i] = a.resourceAttributes
 		scopeNames[i] = a.scopeNames[i]
 		scopeVersions[i] = a.scopeVersions[i]
-		scopeSchemaUrls[i] = a.scopeSchemaUrls[i]
+		scopeSchemaURLs[i] = a.scopeSchemaURLs[i]
 		scopeAttributes[i] = a.scopeAttributes[i]
 	}
 
-	return a.metrics, rAttrs, scopeNames, scopeVersions, scopeSchemaUrls, scopeAttributes
+	return a.metrics, rAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
 }
 
 func TestConvertInvalidDataType(t *testing.T) {
