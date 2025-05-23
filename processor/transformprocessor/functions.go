@@ -4,6 +4,9 @@
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -13,44 +16,52 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-	"go.uber.org/zap"
 )
 
-func DefaultLogFunctions() map[string]ottl.Factory[ottllog.TransformContext] {
+func DefaultLogFunctions() []ottl.Factory[ottllog.TransformContext] {
+	return slices.Collect(maps.Values(defaultLogFunctionsMap()))
+}
+
+func DefaultMetricFunctions() []ottl.Factory[ottlmetric.TransformContext] {
+	return slices.Collect(maps.Values(defaultMetricFunctionsMap()))
+}
+
+func DefaultDataPointFunctions() []ottl.Factory[ottldatapoint.TransformContext] {
+	return slices.Collect(maps.Values(defaultDataPointFunctionsMap()))
+}
+
+func DefaultSpanFunctions() []ottl.Factory[ottlspan.TransformContext] {
+	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
+}
+
+func DefaultSpanEventFunctions() []ottl.Factory[ottlspanevent.TransformContext] {
+	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
+}
+
+func defaultLogFunctionsMap() map[string]ottl.Factory[ottllog.TransformContext] {
 	return logs.LogFunctions()
 }
 
-func DefaultMetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
+func defaultMetricFunctionsMap() map[string]ottl.Factory[ottlmetric.TransformContext] {
 	return metrics.MetricFunctions()
 }
 
-func DefaultDataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
+func defaultDataPointFunctionsMap() map[string]ottl.Factory[ottldatapoint.TransformContext] {
 	return metrics.DataPointFunctions()
 }
 
-func DefaultSpanFunctions() map[string]ottl.Factory[ottlspan.TransformContext] {
+func defaultSpanFunctionsMap() map[string]ottl.Factory[ottlspan.TransformContext] {
 	return traces.SpanFunctions()
 }
 
-func DefaultSpanEventFunctions() map[string]ottl.Factory[ottlspanevent.TransformContext] {
+func defaultSpanEventFunctionsMap() map[string]ottl.Factory[ottlspanevent.TransformContext] {
 	return traces.SpanEventFunctions()
 }
 
-func mergeAdditionalFunctions[T any](defaultFunctions map[string]ottl.Factory[T], additionalFunctions []ottl.Factory[T], logger *zap.Logger) map[string]ottl.Factory[T] {
-	mergeResult := make(map[string]ottl.Factory[T], len(defaultFunctions))
-
-	for name, fn := range defaultFunctions {
-		mergeResult[name] = fn
+func createFunctionsMap[K any](functions []ottl.Factory[K]) map[string]ottl.Factory[K] {
+	functionMap := make(map[string]ottl.Factory[K], len(functions))
+	for _, function := range functions {
+		functionMap[function.Name()] = function
 	}
-
-	for _, fn := range additionalFunctions {
-		if _, ok := defaultFunctions[fn.Name()]; ok {
-			logger.Sugar().Warnf("default function %s is overridden by custom function", fn.Name())
-		} else {
-			logger.Sugar().Infof("custom function %s is added", fn.Name())
-		}
-		mergeResult[fn.Name()] = fn
-	}
-
-	return mergeResult
+	return functionMap
 }

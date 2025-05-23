@@ -48,11 +48,11 @@ type Config struct {
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
 
-	additionalLogFunctions       []ottl.Factory[ottllog.TransformContext]
-	additionalSpanFunctions      []ottl.Factory[ottlspan.TransformContext]
-	additionalSpanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]
-	additionalMetricFunctions    []ottl.Factory[ottlmetric.TransformContext]
-	additionalDataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]
+	dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
+	logFunctions       map[string]ottl.Factory[ottllog.TransformContext]
+	metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
+	spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]
+	spanFunctions      map[string]ottl.Factory[ottlspan.TransformContext]
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -141,9 +141,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		spanFunctions := mergeAdditionalFunctions(DefaultSpanFunctions(), c.additionalSpanFunctions, zap.NewNop())
-		spanEventFunctions := mergeAdditionalFunctions(DefaultSpanEventFunctions(), c.additionalSpanEventFunctions, zap.NewNop())
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions))
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(c.spanFunctions), common.WithSpanEventParser(c.spanEventFunctions))
 		if err != nil {
 			return err
 		}
@@ -156,9 +154,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		metricFunctions := mergeAdditionalFunctions(DefaultMetricFunctions(), c.additionalMetricFunctions, zap.NewNop())
-		dataPointFunctions := mergeAdditionalFunctions(DefaultDataPointFunctions(), c.additionalDataPointFunctions, zap.NewNop())
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metricFunctions), common.WithDataPointParser(dataPointFunctions))
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(c.metricFunctions), common.WithDataPointParser(c.dataPointFunctions))
 		if err != nil {
 			return err
 		}
@@ -171,8 +167,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		logFunctions := mergeAdditionalFunctions(DefaultLogFunctions(), c.additionalLogFunctions, zap.NewNop())
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logFunctions))
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(c.logFunctions))
 		if err != nil {
 			return err
 		}
