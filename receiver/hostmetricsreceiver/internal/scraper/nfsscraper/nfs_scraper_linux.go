@@ -262,17 +262,19 @@ func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
 	}, nil
 }
 
-func parseNfsV3ProcedureStats(values []uint64) ([]*RPCProcedureStats, error) {
+func parseNfsV3ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
 	procedurecnt := values[0]
 
 	if len(values)-1 != int(procedurecnt) {
 		return nil, errors.New("parsing nfsv3 client procedure stats: unexpected field count")
 	}
 
+	
+
 	return nil, nil
 }
 
-func parseNfsV4ProcedureStats(values []uint64) ([]*RPCProcedureStats, error) {
+func parseNfsV4ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
 	procedurecnt := values[0]
 
 	if len(values)-1 != int(procedurecnt) {
