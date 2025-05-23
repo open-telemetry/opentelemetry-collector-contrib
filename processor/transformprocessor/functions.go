@@ -58,10 +58,12 @@ func defaultSpanEventFunctionsMap() map[string]ottl.Factory[ottlspanevent.Transf
 	return traces.SpanEventFunctions()
 }
 
-func createFunctionsMap[K any](functions []ottl.Factory[K]) map[string]ottl.Factory[K] {
+func createFunctionsMap[K any](functions [][]ottl.Factory[K]) map[string]ottl.Factory[K] {
 	functionMap := make(map[string]ottl.Factory[K], len(functions))
-	for _, function := range functions {
-		functionMap[function.Name()] = function
+	for _, slice := range functions {
+		for _, f := range slice {
+			functionMap[f.Name()] = f
+		}
 	}
 	return functionMap
 }
