@@ -5,6 +5,7 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -238,7 +239,7 @@ func getNfsStats() (*NfsStats, error) {
 
 func parseNfsNetStats(values []uint64) (*NfsNetStats, error) {
 	if len(values) != 4 {
-		return nil, fmt.Errorf("parsing nfs client network stats: unexpected field count")
+		return nil, errors.New("parsing nfs client network stats: unexpected field count")
 	}
 
 	return &NfsNetStats{
@@ -251,7 +252,7 @@ func parseNfsNetStats(values []uint64) (*NfsNetStats, error) {
 
 func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
 	if len(values) != 3 {
-		return nil, fmt.Errorf("parsing nfs client RPC stats: unexpected field count")
+		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
 	}
 
 	return &NfsRPCStats{
@@ -265,7 +266,7 @@ func parseNfsV3ProcedureStats(values []uint64) ([]*RPCProcedureStats, error) {
 	procedurecnt := values[0]
 
 	if len(values)-1 != int(procedurecnt) {
-		return nil, fmt.Errorf("parsing nfsv3 client procedure stats: unexpected field count")
+		return nil, errors.New("parsing nfsv3 client procedure stats: unexpected field count")
 	}
 
 	return nil, nil
@@ -275,7 +276,7 @@ func parseNfsV4ProcedureStats(values []uint64) ([]*RPCProcedureStats, error) {
 	procedurecnt := values[0]
 
 	if len(values)-1 != int(procedurecnt) {
-		return nil, fmt.Errorf("parsing nfsv3 client procedure stats: unexpected field count")
+		return nil, errors.New("parsing nfsv3 client procedure stats: unexpected field count")
 	}
 
 	return nil, nil

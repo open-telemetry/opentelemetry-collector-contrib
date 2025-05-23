@@ -23,5 +23,5 @@ func parseStringsToUint64s(strSlice []string) ([]uint64, error) {
 	return uint64Slice, nil
 }
 
-func nothing(args ...any) {
+func nothing(_ ...any) {
 }
