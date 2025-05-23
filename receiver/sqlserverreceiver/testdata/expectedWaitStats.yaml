@@ -1,12 +1,6 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -37,12 +31,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -73,12 +61,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -109,12 +91,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -145,12 +121,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -181,12 +151,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -217,12 +181,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -253,12 +211,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -289,12 +241,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -325,12 +271,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -361,12 +301,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -397,12 +331,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -433,12 +361,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -469,12 +391,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -505,12 +421,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -541,12 +451,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -577,12 +481,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -613,12 +511,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -649,12 +541,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -685,12 +571,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -721,12 +601,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -757,12 +631,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -793,12 +661,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -829,12 +691,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master

@@ -554,8 +554,6 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {
