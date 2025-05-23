@@ -567,9 +567,16 @@ func (pc *ParserCollection[R]) ParseConditionsWithContext(context string, condit
 // If parsing the expressions fails, it returns the underlying [ottl.Parser.ParseValueExpressions] error.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpressionsGetter) (R, error) {
+func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpressionsGetter, options ...ParserCollectionContextInferenceOption) (R, error) {
 	expressionStrings := expressions.GetValueExpressions()
-	inferredContext, err := pc.contextInferrer.inferFromValueExpressions(expressionStrings)
+
+	parseStatementsOpts := parseCollectionContextInferenceOptions{}
+	for _, opt := range options {
+		opt(&parseStatementsOpts)
+	}
+	conditionsValues := parseStatementsOpts.conditions
+
+	inferredContext, err := pc.contextInferrer.infer(nil, conditionsValues, expressionStrings)
 	if err != nil {
 		return *new(R), err
 	}
