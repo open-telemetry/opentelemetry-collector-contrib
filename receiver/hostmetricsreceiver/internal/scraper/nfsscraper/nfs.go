@@ -6,14 +6,14 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 // nfs.net.* stats
 type NfsNetStats struct {
 	NetCount uint64
-	UdpCount uint64
-	TcpCount uint64
-	TcpConnectionCount uint64
+	UDPCount uint64
+	TCPCount uint64
+	TCPConnectionCount uint64
 }
 
 // nfs.rpc.* stats
-type NfsRpcStats struct {
-	RpcCount         uint64
+type NfsRPCStats struct {
+	RPCCount         uint64
 	RetransmitCount  uint64
 	AuthRefreshCount uint64
 }
@@ -51,12 +51,12 @@ type NfsdThreadStats struct {
 // nfsd.net.* stats
 type NfsdNetStats struct {
 	NetCount uint64
-	UdpCount uint64
-	TcpCount uint64
+	UDPCount uint64
+	TCPCount uint64
 }
 
 // nfsd.rpc.* stats
-type NfsdRpcStats struct {
+type NfsdRPCStats struct {
 	RPCCount       uint64
 	BadCount       uint64
 	BadFmtCount    uint64
@@ -67,7 +67,7 @@ type NfsdRpcStats struct {
 // 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
 type NfsStats struct {
 	NfsNetStats         *NfsNetStats
-	NfsRpcStats         *NfsRpcStats
+	NfsRPCStats         *NfsRPCStats
 	NfsV3ProcedureStats []*RPCProcedureStats
 	NfsV4ProcedureStats []*RPCProcedureStats
 }
@@ -78,7 +78,7 @@ type NfsdStats struct {
 	NfsdIoStats          *NfsdIoStats
 	NfsdNetStats         *NfsdNetStats
 	NfsdRepcacheStats    *NfsdRepcacheStats
-	NfsdRpcStats         *NfsdRpcStats
+	NfsdRPCStats         *NfsdRPCStats
 	NfsdThreadStats      *NfsdThreadStats
 	NfsdV3ProcedureStats []*RPCProcedureStats
 	NfsdV4ProcedureStats []*RPCProcedureStats

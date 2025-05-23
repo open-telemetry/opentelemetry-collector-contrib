@@ -48,12 +48,11 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNfsScraper(scrapertest.NewNopSettings(metadata.Type), &Config{
+			scraper := newNfsScraper(scrapertest.NewNopSettings(metadata.Type), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
-			require.NoError(t, err, "Failed to create NFS scraper: %v", err)
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			md, err := scraper.scrape(context.Background())

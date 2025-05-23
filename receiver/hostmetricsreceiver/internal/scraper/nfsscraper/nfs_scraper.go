@@ -30,14 +30,14 @@ type nfsScraper struct {
 	nfsdStats func() (*NfsdStats, error)
 }
 
-// newNfsScraper creates an Uptime related metric
-func newNfsScraper(settings scraper.Settings, cfg *Config) (*nfsScraper, error) {
+// newNfsScraper creates an NFS Scraper related metric
+func newNfsScraper(settings scraper.Settings, cfg *Config) (*nfsScraper) {
 	return &nfsScraper{
 		settings:  settings,
 		config:    cfg,
 		nfsStats:  getNfsStats,
 		nfsdStats: getNfsdStats,
-	}, nil
+	}
 }
 
 func (s *nfsScraper) start(_ context.Context, _ component.Host) error {

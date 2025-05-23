@@ -41,10 +41,7 @@ func createMetricsScraper(
 		return nil, errUnsupportedOS
 	}
 
-	nfsScraper, err := newNfsScraper(settings, cfg.(*Config))
-	if err != nil {
-		return nil, err
-	}
+	nfsScraper := newNfsScraper(settings, cfg.(*Config))
 
 	return scraper.NewMetrics(
 		nfsScraper.scrape,
