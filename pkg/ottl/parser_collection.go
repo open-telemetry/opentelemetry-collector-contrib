@@ -127,7 +127,7 @@ type ParsedStatementsConverter[K any, R any] func(collection *ParserCollection[R
 // ParsedConditionsConverter is a function that converts the parsed ottl.Condition[K] into
 // a common representation to all parser collection contexts passed through WithParserCollectionContext.
 // Given each parser has its own transform context type, they must agree on a common type [R]
-// so it can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
+// so it can be returned by the ParserCollection.ParseConditions and ParserCollection.ParseConditionsWithContext
 // functions.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
