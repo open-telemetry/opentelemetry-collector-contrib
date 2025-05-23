@@ -11,7 +11,7 @@ signaltometrics:
     - name: logs.foo.memory_mb
       description: Extract memory_mb from log records with attribute foo
       gauge:
-        value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:long}MB", true)["memory_mb"]
+        value: Int(ExtractPatterns(body, "Memory usage (?P<memory_mb>\\d+(?:\\.\\d+)?)MB")["memory_mb"])
       include_resource_attributes:
         - key: resource.foo
       attributes:
