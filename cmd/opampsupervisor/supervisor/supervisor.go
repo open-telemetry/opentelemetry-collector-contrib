@@ -306,15 +306,14 @@ func (s *Supervisor) Start() error {
 	var err error
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath())
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
 
-	if err = s.getBootstrapInfo(ctx); err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not get bootstrap info from the Collector: %s", err.Error()))
+	if err = s.getBootstrapInfo(); err != nil {
+		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
 	s.telemetrySettings.Logger.Info("Supervisor starting",
@@ -649,7 +648,7 @@ func (s *Supervisor) startOpAMPClient() error {
 				go s.onOpampConnectionSettings(ctx, settings)
 				return nil
 			},
-			OnCommand: func(ctx context.Context, command *protobufs.ServerToAgentCommand) error {
+			OnCommand: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
 					return s.handleRestartCommand()
@@ -1118,9 +1117,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
-func (s *Supervisor) createEffectiveConfigMsg(ctx context.Context) *protobufs.EffectiveConfig {
-	_, span := s.getTracer().Start(ctx, "createEffectiveConfigMsg")
-	defer span.End()
+func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	cfgStr, ok := s.effectiveConfig.Load().(string)
 	if !ok {
 		cfgState, ok := s.cfgState.Load().(*configState)
@@ -1284,18 +1281,14 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	return configChanged, nil
 }
 
-func (s *Supervisor) handleRestartCommand(ctx context.Context) error {
-	_, span := s.getTracer().Start(ctx, "handleRestartCommand")
-	defer span.End()
+func (s *Supervisor) handleRestartCommand() error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 	s.telemetrySettings.Logger.Debug("Received restart command")
 	err := s.commander.Restart(context.Background())
 	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not restart agent process: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
-	span.SetStatus(codes.Ok, "")
 	return err
 }
 
@@ -1551,7 +1544,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
 
 	if msg.AgentIdentification != nil {
-		configChanged = s.processAgentIdentificationMessage(ctx, msg.AgentIdentification) || configChanged
+		configChanged = s.processAgentIdentificationMessage(msg.AgentIdentification) || configChanged
 	}
 
 	if msg.RemoteConfig != nil {
@@ -1642,18 +1635,14 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 
 // processOwnTelemetryConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
 func (s *Supervisor) processOwnTelemetryConnSettingsMessage(ctx context.Context, msg *protobufs.ConnectionSettingsOffers) bool {
-	ctx, span := s.getTracer().Start(ctx, "processOwnTelemetryConnSettingsMessage")
-	defer span.End()
 	if err := s.saveLastReceivedOwnTelemetrySettings(msg, lastRecvOwnTelemetryConfigFile); err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received own telemetry settings: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Could not save last received own telemetry settings", zap.Error(err))
 	}
-	span.SetStatus(codes.Ok, "")
 	return s.setupOwnTelemetry(ctx, msg)
 }
 
 // processAgentIdentificationMessage processes an AgentIdentification message, returning true if the agent config has changed.
-func (s *Supervisor) processAgentIdentificationMessage(ctx context.Context, msg *protobufs.AgentIdentification) bool {
+func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdentification) bool {
 	newInstanceID, err := uuid.FromBytes(msg.NewInstanceUid)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Failed to parse instance UUID", zap.Error(err))
