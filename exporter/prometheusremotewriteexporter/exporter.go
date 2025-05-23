@@ -135,7 +135,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	if err := config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
+	if err = config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
 		return nil, err
 	}
 
@@ -177,7 +177,10 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 
-	prwe.wal = newWAL(cfg.WAL, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL, set, prwe.export)
+	if err != nil {
+		return nil, err
+	}
 	return prwe, nil
 }
 
@@ -288,8 +291,10 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
-	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
-	if err = prwe.wal.persistToWAL(requests); err != nil {
+	prwe.wal.telemetry.recordWALWrites(ctx)
+	err = prwe.wal.persistToWAL(requests)
+	if err != nil {
+		prwe.wal.telemetry.recordWALWritesFailures(ctx)
 		return consumererror.NewPermanent(err)
 	}
 	return nil

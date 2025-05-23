@@ -78,4 +78,7 @@ func ConvertEntryToLogRecord(entry *push.Entry, lr *plog.LogRecord, labelSet mod
 	for key, value := range labelSet {
 		lr.Attributes().PutStr(string(key), string(value))
 	}
+	for _, metadata := range entry.StructuredMetadata {
+		lr.Attributes().PutStr(metadata.Name, metadata.Value)
+	}
 }
