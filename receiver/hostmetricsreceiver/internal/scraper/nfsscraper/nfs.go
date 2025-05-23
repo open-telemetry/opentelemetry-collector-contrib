@@ -20,8 +20,9 @@ type NfsRPCStats struct {
 
 // nfs.procedure.count / nfsd.procedure.count stats
 type RPCProcedureStats struct {
-	NFSVersion       uint64
-	NFSProcedureName string
+	NFSVersion        uint64
+	NFSProcedureName  string
+	NFSProcedureCalls uint64
 }
 
 // nfsd.repcache.* stats

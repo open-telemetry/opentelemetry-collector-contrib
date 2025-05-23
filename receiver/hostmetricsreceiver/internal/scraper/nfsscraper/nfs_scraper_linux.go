@@ -263,25 +263,48 @@ func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
 }
 
 func parseNfsV3ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
-	procedurecnt := values[0]
-
-	if len(values)-1 != int(procedurecnt) {
-		return nil, errors.New("parsing nfsv3 client procedure stats: unexpected field count")
+	if len(values) < 2 {
+		return nil, errors.New("found empty NFSv3 procedure stats line")
 	}
 
-	
+	stats := make([]RPCProcedureStats, len(values)-1)
+	numprocedures := values[0]
 
-	return nil, nil
+	if len(values)-1 != int(numprocedures) {
+		return nil, errors.New("parsing NFSv3 client procedure stats: unexpected field count")
+	}
+
+	for i, procedurecalls := range values {
+		if i == 0 {
+			continue
+		}
+
+		if i-1 > len(nfsV3Procedures)-1 {
+			// found yet-to-be-supported procedures
+			break
+		}
+
+		stats[i-1].NFSVersion = 3
+		stats[i-1].NFSProcedureName = nfsV3Procedures[i-1]
+		stats[i-1].NFSProcedureCalls = procedurecalls
+	}
+
+	return &stats, nil
 }
 
 func parseNfsV4ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
+	if len(values) < 2 {
+		return nil, errors.New("found empty NFSv4 procedure stats line")
+	}
+
+	stats := make([]RPCProcedureStats, len(values)-1)
 	procedurecnt := values[0]
 
 	if len(values)-1 != int(procedurecnt) {
-		return nil, errors.New("parsing nfsv3 client procedure stats: unexpected field count")
+		return nil, errors.New("parsing NFSv4 client procedure stats: unexpected field count")
 	}
 
-	return nil, nil
+	return &stats, nil
 }
 
 func parseNfsStats(f io.Reader) (*NfsStats, error) {
