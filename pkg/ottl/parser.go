@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -259,48 +260,75 @@ func (p *Parser[K]) prependContextToConditionPaths(context string, condition str
 }
 
 var (
-	parser                = newParser[parsedStatement]()
-	conditionParser       = newParser[booleanExpression]()
-	valueExpressionParser = newParser[value]()
+	parserOnce                sync.Once
+	conditionParserOnce       sync.Once
+	valueExpressionParserOnce sync.Once
+
+	parserInstance                *participle.Parser[parsedStatement]
+	conditionParserInstance       *participle.Parser[booleanExpression]
+	valueExpressionParserInstance *participle.Parser[value]
 )
 
+func getParser[G any]() *participle.Parser[G] {
+	var zero G
+	switch any(zero).(type) {
+	case parsedStatement:
+		parserOnce.Do(func() {
+			parserInstance = newParser[parsedStatement]()
+		})
+		return any(parserInstance).(*participle.Parser[G])
+	case booleanExpression:
+		conditionParserOnce.Do(func() {
+			conditionParserInstance = newParser[booleanExpression]()
+		})
+		return any(conditionParserInstance).(*participle.Parser[G])
+	case value:
+		valueExpressionParserOnce.Do(func() {
+			valueExpressionParserInstance = newParser[value]()
+		})
+		return any(valueExpressionParserInstance).(*participle.Parser[G])
+	default:
+		return newParser[G]()
+	}
+}
+
 func parseStatement(raw string) (*parsedStatement, error) {
-	parsed, err := parser.ParseString("", raw)
+	parser := getParser[parsedStatement]()
+	statement, err := parser.ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
 	}
-	err = parsed.checkForCustomError()
+	err = statement.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
-
-	return parsed, nil
+	return statement, nil
 }
 
 func parseCondition(raw string) (*booleanExpression, error) {
-	parsed, err := conditionParser.ParseString("", raw)
+	parser := getParser[booleanExpression]()
+	condition, err := parser.ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
-	err = parsed.checkForCustomError()
+	err = condition.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
-
-	return parsed, nil
+	return condition, nil
 }
 
 func parseValueExpression(raw string) (*value, error) {
-	parsed, err := valueExpressionParser.ParseString("", raw)
+	parser := getParser[value]()
+	val, err := parser.ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("expression has invalid syntax: %w", err)
 	}
-	err = parsed.checkForCustomError()
+	err = val.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
-
-	return parsed, nil
+	return val, nil
 }
 
 func insertContextIntoPathsOffsets(context string, statement string, offsets []int) (string, error) {
