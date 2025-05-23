@@ -77,6 +77,20 @@ func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	}
 }
 
+// SetK8sNodeAnnotation sets provided attribute key with template prefix "k8s.node.annotation".
+func (rb *ResourceBuilder) SetK8sNodeAnnotation(key, val string) {
+	if rb.config.K8sNodeAnnotation.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.annotation."+key, val)
+	}
+}
+
+// SetK8sNodeLabel sets provided attribute key with template prefix "k8s.node.label".
+func (rb *ResourceBuilder) SetK8sNodeLabel(key, val string) {
+	if rb.config.K8sNodeLabel.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.label."+key, val)
+	}
+}
+
 // SetK8sNodeName sets provided value as "k8s.node.name" attribute.
 func (rb *ResourceBuilder) SetK8sNodeName(val string) {
 	if rb.config.K8sNodeName.Enabled {
