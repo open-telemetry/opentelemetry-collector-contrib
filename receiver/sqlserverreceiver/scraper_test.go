@@ -350,6 +350,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	configureAllScraperMetrics(cfg, false)
 	cfg.TopQueryCollection.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
