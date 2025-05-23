@@ -735,7 +735,7 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 
 	processes, err := process.Processes()
 	if err != nil {
-		return pl, fmt.Errorf("process discovery failed: %s", err)
+		return pl, fmt.Errorf("process discovery failed: %w", err)
 	}
 
 	for _, v := range processes {
