@@ -33,11 +33,16 @@ func newRedisStorage(logger *zap.Logger, config *Config) (extension.Extension, e
 }
 
 // Start runs cleanup if configured
-func (rs *redisStorage) Start(context.Context, component.Host) error {
+func (rs *redisStorage) Start(ctx context.Context, _ component.Host) error {
+	tlsConfig, err := rs.cfg.TLS.LoadTLSConfig(ctx)
+	if err != nil {
+		return err
+	}
 	c := redis.NewClient(&redis.Options{
-		Addr:     rs.cfg.Endpoint,
-		Password: string(rs.cfg.Password),
-		DB:       rs.cfg.DB,
+		Addr:      rs.cfg.Endpoint,
+		Password:  string(rs.cfg.Password),
+		DB:        rs.cfg.DB,
+		TLSConfig: tlsConfig,
 	})
 	rs.client = c
 	return nil
