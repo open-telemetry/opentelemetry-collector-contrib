@@ -33,7 +33,7 @@ func newRedisStorage(logger *zap.Logger, config *Config) (extension.Extension, e
 }
 
 // Start runs cleanup if configured
-func (rs *redisStorage) Start(ctx context.Context, host component.Host) error {
+func (rs *redisStorage) Start(ctx context.Context, _ component.Host) error {
 	tlsConfig, err := rs.cfg.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
