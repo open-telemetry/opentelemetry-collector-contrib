@@ -436,6 +436,9 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.deployment.name | The name of the Deployment. | Any Str | true |
 | k8s.deployment.uid | The UID of the Deployment. | Any Str | true |
 | k8s.hpa.name | The k8s hpa name. | Any Str | true |
+| k8s.hpa.scaletargetref.apiversion | The API version of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false |
+| k8s.hpa.scaletargetref.kind | The kind of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false |
+| k8s.hpa.scaletargetref.name | The name of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false |
 | k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
 | k8s.job.name | The k8s pod name. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |

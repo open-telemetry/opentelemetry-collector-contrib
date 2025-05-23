@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -253,7 +253,7 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "issaTest")
 	rs.Resource().Attributes().PutBool("bool", true)
 	rs.Resource().Attributes().PutStr("string", "yes")
 	rs.Resource().Attributes().PutInt("int64", 10000000)
@@ -306,8 +306,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1,
 					Duration:      d1,
 					Tags: []model.KeyValue{
-						model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
-						model.Int64(conventions.AttributeOTelStatusCode, int64(ptrace.StatusCodeError)),
+						model.String(string(conventions.OTelStatusDescriptionKey), "Stale indices"),
+						model.Int64(string(conventions.OTelStatusCodeKey), int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 					References: []model.SpanRef{
@@ -325,8 +325,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1.Add(d1),
 					Duration:      d2,
 					Tags: []model.KeyValue{
-						model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
-						model.Int64(conventions.AttributeOTelStatusCode, int64(ptrace.StatusCodeError)),
+						model.String(string(conventions.OTelStatusDescriptionKey), "Frontend crash"),
+						model.Int64(string(conventions.OTelStatusCodeKey), int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 				},

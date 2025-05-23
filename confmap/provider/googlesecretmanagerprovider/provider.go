@@ -24,7 +24,7 @@ type secretsManagerClient interface {
 }
 
 const (
-	schemeName = "googlesecretmanagerprovider"
+	schemeName = "googlesecretmanager"
 )
 
 var (

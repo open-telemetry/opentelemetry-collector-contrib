@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -171,6 +171,10 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		for key, val := range attrsToAdd {
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
+
+		if kp.rules.ServiceNamespace {
+			resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), namespace)
+		}
 	}
 
 	nodeName := getNodeName(pod, resource.Attributes())
@@ -181,7 +185,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 		nodeUID := kp.getUIDForPodsNode(nodeName)
 		if nodeUID != "" {
-			setResourceAttribute(resource.Attributes(), conventions.AttributeK8SNodeUID, nodeUID)
+			setResourceAttribute(resource.Attributes(), string(conventions.K8SNodeUIDKey), nodeUID)
 		}
 	}
 }
@@ -197,20 +201,20 @@ func getNamespace(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.Namespace != "" {
 		return pod.Namespace
 	}
-	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNamespaceName)
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SNamespaceNameKey))
 }
 
 func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.NodeName != "" {
 		return pod.NodeName
 	}
-	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNodeName)
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SNodeNameKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
 func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *kube.Pod) {
-	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
-	containerID := stringAttributeFromMap(attrs, conventions.AttributeContainerID)
+	containerName := stringAttributeFromMap(attrs, string(conventions.K8SContainerNameKey))
+	containerID := stringAttributeFromMap(attrs, string(conventions.ContainerIDKey))
 	var (
 		containerSpec *kube.Container
 		ok            bool
@@ -239,17 +243,23 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		return
 	}
 	if containerSpec.Name != "" {
-		setResourceAttribute(attrs, conventions.AttributeK8SContainerName, containerSpec.Name)
+		setResourceAttribute(attrs, string(conventions.K8SContainerNameKey), containerSpec.Name)
 	}
 	if containerSpec.ImageName != "" {
-		setResourceAttribute(attrs, conventions.AttributeContainerImageName, containerSpec.ImageName)
+		setResourceAttribute(attrs, string(conventions.ContainerImageNameKey), containerSpec.ImageName)
 	}
 	if containerSpec.ImageTag != "" {
-		setResourceAttribute(attrs, conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+		setResourceAttribute(attrs, string(conventions.ContainerImageTagKey), containerSpec.ImageTag)
+	}
+	if containerSpec.ServiceInstanceID != "" {
+		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
+	}
+	if containerSpec.ServiceVersion != "" {
+		setResourceAttribute(attrs, string(conventions.ServiceVersionKey), containerSpec.ServiceVersion)
 	}
 	// attempt to get container ID from restart count
 	runID := -1
-	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
+	runIDAttr, ok := attrs.Get(string(conventions.K8SContainerRestartCountKey))
 	if ok {
 		containerRunID, err := intFromAttribute(runIDAttr)
 		if err != nil {
@@ -267,8 +277,8 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	}
 	if runID != -1 {
 		if containerStatus, ok := containerSpec.Statuses[runID]; ok {
-			if _, found := attrs.Get(conventions.AttributeContainerID); !found && containerStatus.ContainerID != "" {
-				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+			if _, found := attrs.Get(string(conventions.ContainerIDKey)); !found && containerStatus.ContainerID != "" {
+				attrs.PutStr(string(conventions.ContainerIDKey), containerStatus.ContainerID)
 			}
 			if _, found := attrs.Get(containerImageRepoDigests); !found && containerStatus.ImageRepoDigest != "" {
 				attrs.PutEmptySlice(containerImageRepoDigests).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)

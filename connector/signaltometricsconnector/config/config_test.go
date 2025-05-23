@@ -100,6 +100,12 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
+			path: "invalid_grok_type_map",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: a single key selector[key] is required for signal to gauge"),
+			},
+		},
+		{
 			path: "invalid_ottl_value_expression",
 			errorMsgs: []string{
 				fullErrorForSignal(t, "spans", "failed to parse value OTTL expression"),

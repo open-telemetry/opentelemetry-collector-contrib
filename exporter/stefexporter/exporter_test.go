@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -335,22 +333,23 @@ func TestStartServerAfterClient(t *testing.T) {
 	// Trying sending with server down.
 	md := testdata.GenerateMetrics(1)
 	pointCount := int64(md.DataPointCount())
+
+	go func() {
+		// Sleep a tiny bit to have more chance to hit race conditions.
+		time.Sleep(time.Millisecond)
+		// Now start the server.
+		mockSrv.start()
+	}()
+
+	// This likely executes before the server is up
+	// (but can also be before, which is good, we want to test the races).
 	err := exp.exportMetrics(context.Background(), md)
 
-	// Sending must fail.
-	require.Error(t, err)
+	// Sending must succeed since exportMetrics() waits until the server is up
+	// and connection can be established.
+	require.NoError(t, err)
 
-	// Now start the server.
-	mockSrv.start()
 	defer mockSrv.stop()
-
-	// Try sending until it succeeds. The gRPC connection may not succeed immediately.
-	assert.Eventually(
-		t, func() bool {
-			err = exp.exportMetrics(context.Background(), md)
-			return err == nil
-		}, 5*time.Second, 200*time.Millisecond,
-	)
 
 	// Ensure data is received.
 	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
@@ -405,11 +404,8 @@ func TestCancelBlockedExport(t *testing.T) {
 		go func() { cancel() }()
 		err = exp.exportMetrics(ctx, md)
 
-		// Sending must fail with Cancelled code.
-		require.Error(t, err)
-		stat, ok := status.FromError(err)
-		assert.True(t, ok)
-		assert.Equal(t, codes.Canceled, stat.Code())
+		// Sending must fail with context cancellation.
+		require.ErrorIs(t, err, context.Canceled)
 	}
 }
 

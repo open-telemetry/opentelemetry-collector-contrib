@@ -2,4 +2,6 @@ status:
   disable_codecov_badge: true
   class: pkg
   codeowners:
-    active: [djaglowski]
+    active: [andrzej-stencel]
+    emeritus: [djaglowski]
+    seeking_new: true

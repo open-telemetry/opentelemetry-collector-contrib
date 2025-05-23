@@ -1,0 +1,38 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Last gauge as per datapoint.bar attribute
+            name: datapoint.bar.gauge
+            gauge:
+              dataPoints:
+                - asDouble: 1.23
+                  attributes:
+                    - key: datapoint.bar
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1000000"
+                - asDouble: 4.56
+                  attributes:
+                    - key: datapoint.bar
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

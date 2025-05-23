@@ -31,8 +31,13 @@ resource_attributes:
     description: Server port number.
     enabled: false
     type: int
+  host.name:
+    description: The host name of SQL Server
+    enabled: true
+    type: string
 
 attributes:
+  # attributes for metrics
   page.operations:
     name_override: type
     description: The page operation types.
@@ -71,6 +76,80 @@ attributes:
     description: The status of the tempdb space usage.
     type: string
     enum: [free, used]
+  wait.category:
+    description: Category of the reason for a wait.
+    type: string
+  wait.type:
+    description: Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information.
+    type: string
+  # attributes for events
+  ## top query
+  sqlserver.total_worker_time:
+    description: Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds.
+    type: double
+  db.query.text:
+    description: The text of the database query being executed.
+    type: string
+  sqlserver.execution_count:
+    description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
+    type: int
+  sqlserver.total_logical_reads:
+    description: Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value.
+    type: int
+  sqlserver.total_logical_writes:
+    description: Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value.
+    type: int
+  sqlserver.total_physical_reads:
+    description: Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value.
+    type: int
+  sqlserver.query_hash:
+    description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
+    type: string
+  sqlserver.query_plan:
+    description: The query execution plan used by the SQL Server.
+    type: string
+  sqlserver.query_plan_hash:
+    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    type: string
+  sqlserver.total_rows:
+    description: Total number of rows returned by the query, reported in delta value.
+    type: int
+  sqlserver.total_elapsed_time:
+    description: Total elapsed time for completed executions of this plan, reported in delta seconds.
+    type: double
+  sqlserver.total_grant_kb:
+    description: The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value.
+    type: int
+  server.address:
+    description: The network address of the server hosting the database.
+    type: string
+  server.port:
+    description: The port number on which the server is listening.
+    type: int
+  db.server.name:
+    description: The name of the server hosting the database.
+    type: string
+
+events:
+  db.server.top_query:
+    enabled: true
+    description: top query
+    attributes:
+      - sqlserver.total_worker_time
+      - db.query.text
+      - sqlserver.execution_count
+      - sqlserver.total_logical_reads
+      - sqlserver.total_logical_writes
+      - sqlserver.total_physical_reads
+      - sqlserver.query_hash
+      - sqlserver.query_plan
+      - sqlserver.query_plan_hash
+      - sqlserver.total_rows
+      - sqlserver.total_elapsed_time
+      - sqlserver.total_grant_kb
+      - server.address
+      - server.port
+      - db.server.name
 
 metrics:
   sqlserver.user.connection.count:
@@ -86,6 +165,15 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.lock.wait.count:
+    enabled: false
+    description: Cumulative count of lock waits that occurred.
+    unit: "{wait}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
     description: Number of lock requests resulting in a wait.
@@ -243,6 +331,14 @@ metrics:
       value_type: int
       input_type: string
     attributes: [ physical_filename, logical_filename, file_type, direction ]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.operations:
+    enabled: false
+    description: The rate of operations issued.
+    unit: "{operations}/s"
+    gauge:
+      value_type: double
+    attributes: [ direction ]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.resource_pool.disk.throttled.read.rate:
     enabled: false
@@ -415,7 +511,17 @@ metrics:
     unit: “KB”
     gauge:
       value_type: double
-    attributes: []  
+    attributes: []
+  sqlserver.os.wait.duration:
+    enabled: false
+    description: Total wait time for this wait type
+    unit: "s"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    attributes: [wait.category, wait.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 tests:
   config:

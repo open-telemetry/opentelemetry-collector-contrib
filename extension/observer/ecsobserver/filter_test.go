@@ -6,8 +6,8 @@ package ecsobserver
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
@@ -33,10 +33,10 @@ func TestFilter(t *testing.T) {
 	})
 
 	emptyTask := &taskAnnotated{
-		Task: &ecs.Task{TaskDefinitionArn: aws.String("arn:that:never:matches")},
-		Definition: &ecs.TaskDefinition{
+		Task: types.Task{TaskDefinitionArn: aws.String("arn:that:never:matches")},
+		Definition: &types.TaskDefinition{
 			TaskDefinitionArn: aws.String("arn:that:never:matches"),
-			ContainerDefinitions: []*ecs.ContainerDefinition{
+			ContainerDefinitions: []types.ContainerDefinition{
 				{
 					Name: aws.String("I got nothing, just to trigger the for loop ~~for coverage~~"),
 				},
@@ -47,28 +47,28 @@ func TestFilter(t *testing.T) {
 	genTasks := func() []*taskAnnotated {
 		return []*taskAnnotated{
 			{
-				Task: &ecs.Task{
+				Task: types.Task{
 					TaskDefinitionArn: aws.String("arn:alike:nginx-latest"),
 				},
-				Service: &ecs.Service{ServiceName: aws.String("nginx-service")},
-				Definition: &ecs.TaskDefinition{
+				Service: &types.Service{ServiceName: aws.String("nginx-service")},
+				Definition: &types.TaskDefinition{
 					TaskDefinitionArn: aws.String("arn:alike:nginx-latest"),
-					ContainerDefinitions: []*ecs.ContainerDefinition{
+					ContainerDefinitions: []types.ContainerDefinition{
 						{
 							Name: aws.String("port-2112"),
-							PortMappings: []*ecs.PortMapping{
+							PortMappings: []types.PortMapping{
 								{
-									ContainerPort: aws.Int64(2112),
-									HostPort:      aws.Int64(2113), // doesn't matter for matcher test
+									ContainerPort: aws.Int32(2112),
+									HostPort:      aws.Int32(2113), // doesn't matter for matcher test
 								},
 							},
 						},
 						{
 							Name: aws.String("port-2114"),
-							PortMappings: []*ecs.PortMapping{
+							PortMappings: []types.PortMapping{
 								{
-									ContainerPort: aws.Int64(2113 + 1), // a different port
-									HostPort:      aws.Int64(2113),     // doesn't matter for matcher test
+									ContainerPort: aws.Int32(2113 + 1), // a different port
+									HostPort:      aws.Int32(2113),     // doesn't matter for matcher test
 								},
 							},
 						},
@@ -76,15 +76,15 @@ func TestFilter(t *testing.T) {
 				},
 			},
 			{
-				Task: &ecs.Task{
+				Task: types.Task{
 					TaskDefinitionArn: aws.String("not used"),
 				},
-				Definition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{
+				Definition: &types.TaskDefinition{
+					ContainerDefinitions: []types.ContainerDefinition{
 						{
 							Name: aws.String("port-label"),
-							DockerLabels: map[string]*string{
-								portLabelWithInvalidValue: aws.String("not a numeric string"),
+							DockerLabels: map[string]string{
+								portLabelWithInvalidValue: "not a numeric string",
 							},
 						},
 					},

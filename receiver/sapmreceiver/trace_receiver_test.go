@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
@@ -45,7 +45,7 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "issaTest")
 	rs.Resource().Attributes().PutBool("bool", true)
 	rs.Resource().Attributes().PutStr("string", "yes")
 	rs.Resource().Attributes().PutInt("int64", 10000000)
@@ -96,8 +96,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1,
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
-					model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
-					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
+					model.String(string(conventions.OTelStatusDescriptionKey), "Stale indices"),
+					model.String(string(conventions.OTelStatusCodeKey), "ERROR"),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -115,8 +115,8 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				StartTime:     t1.Add(10 * time.Minute),
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
-					model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
-					model.String(conventions.AttributeOTelStatusCode, "ERROR"),
+					model.String(string(conventions.OTelStatusDescriptionKey), "Frontend crash"),
+					model.String(string(conventions.OTelStatusCodeKey), "ERROR"),
 					model.Bool("error", true),
 				},
 			},

@@ -17,7 +17,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -178,7 +178,7 @@ func AttributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
 
 func GetServiceName(resAttr pcommon.Map) string {
 	var serviceName string
-	if v, ok := resAttr.Get(conventions.AttributeServiceName); ok {
+	if v, ok := resAttr.Get(string(conventions.ServiceNameKey)); ok {
 		serviceName = v.AsString()
 	}
 

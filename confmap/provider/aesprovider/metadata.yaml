@@ -6,5 +6,5 @@ status:
     alpha: [provider]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
-    emeritus: [shazlehu]
+    active: [kuiperda]
+    emeritus: [djaglowski, shazlehu]

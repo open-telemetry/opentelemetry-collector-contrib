@@ -305,6 +305,9 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, dbClient client
 				row[dbAttributePrefix+columnName] = finalValue
 			}
 		}
+		if row[dbAttributePrefix+totalExecTimeColumnName] == 0.0 {
+			continue
+		}
 		item := Item{
 			row:      row,
 			priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),

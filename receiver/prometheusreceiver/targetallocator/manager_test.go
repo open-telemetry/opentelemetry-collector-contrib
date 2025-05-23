@@ -67,9 +67,10 @@ type expectedMetricRelabelConfigTestResult struct {
 }
 
 type expectedTestResultJobMap struct {
-	Targets             []string
-	Labels              model.LabelSet
-	MetricRelabelConfig *expectedMetricRelabelConfigTestResult
+	Targets                []string
+	Labels                 model.LabelSet
+	MetricRelabelConfig    *expectedMetricRelabelConfigTestResult
+	ScrapeFallbackProtocol promconfig.ScrapeProtocol
 }
 
 type expectedTestResult struct {
@@ -284,14 +285,15 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					"/scrape_configs": {
 						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
-								"job_name":               "job1",
-								"scrape_interval":        "30s",
-								"scrape_timeout":         "30s",
-								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-								"metrics_path":           "/metrics",
-								"scheme":                 "http",
-								"relabel_configs":        nil,
-								"metric_relabel_configs": nil,
+								"job_name":                 "job1",
+								"scrape_interval":          "30s",
+								"scrape_timeout":           "30s",
+								"scrape_protocols":         []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":             "/metrics",
+								"scheme":                   "http",
+								"relabel_configs":          nil,
+								"metric_relabel_configs":   nil,
+								"fallback_scrape_protocol": promconfig.PrometheusText1_0_0,
 							},
 							"job2": {
 								"job_name":               "job2",
@@ -369,6 +371,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "node",
 						},
+						ScrapeFallbackProtocol: promconfig.PrometheusText1_0_0,
 					},
 					"job2": {
 						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
@@ -376,6 +379,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "alertmanager",
 						},
+						ScrapeFallbackProtocol: promconfig.PrometheusText0_0_4, // Tests default value
 					},
 				},
 			},
@@ -778,6 +782,15 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								}
 							}
 						}
+
+						if s.ScrapeFallbackProtocol != "" {
+							for _, sc := range manager.promCfg.ScrapeConfigs {
+								if sc.JobName == job {
+									require.Equal(t, sc.ScrapeFallbackProtocol, s.ScrapeFallbackProtocol)
+								}
+							}
+						}
+
 						found = true
 					}
 					require.True(t, found, "Returned job is not defined in expected values", group)

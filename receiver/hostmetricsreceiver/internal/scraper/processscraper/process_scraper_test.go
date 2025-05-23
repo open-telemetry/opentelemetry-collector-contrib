@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -189,15 +189,15 @@ func TestScrape(t *testing.T) {
 // resource attributes defined by the process scraper metadata.yaml/Process Semantic Conventions.
 func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
 	requiredResourceAttributes := []string{
-		conventions.AttributeProcessPID,
+		string(conventions.ProcessPIDKey),
 	}
 	permissibleResourceAttributes := []string{
-		conventions.AttributeProcessPID,
-		conventions.AttributeProcessExecutableName,
-		conventions.AttributeProcessExecutablePath,
-		conventions.AttributeProcessCommand,
-		conventions.AttributeProcessCommandLine,
-		conventions.AttributeProcessOwner,
+		string(conventions.ProcessPIDKey),
+		string(conventions.ProcessExecutableNameKey),
+		string(conventions.ProcessExecutablePathKey),
+		string(conventions.ProcessCommandKey),
+		string(conventions.ProcessCommandLineKey),
+		string(conventions.ProcessOwnerKey),
 		"process.parent_pid", // TODO: use this from conventions when it is available
 	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
@@ -705,7 +705,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
 			for i, expectedName := range test.expectedNames {
 				rm := md.ResourceMetrics().At(i)
-				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
+				name, _ := rm.Resource().Attributes().Get(string(conventions.ProcessExecutableNameKey))
 				assert.Equal(t, expectedName, name.Str())
 			}
 		})

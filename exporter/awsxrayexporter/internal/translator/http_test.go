@@ -13,15 +13,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -37,9 +37,9 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 
 func TestClientSpanWithURLAttributeStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLFullKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -55,11 +55,11 @@ func TestClientSpanWithURLAttributeStable(t *testing.T) {
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "api.example.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "https"
+	attributes[string(conventionsv112.HTTPHostKey)] = "api.example.com"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
 
@@ -76,11 +76,11 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = "GET"
-	attributes[conventions.AttributeURLScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "api.example.com"
-	attributes[conventions.AttributeURLQuery] = "/users/junit"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = "GET"
+	attributes[string(conventions.URLSchemeKey)] = "https"
+	attributes[string(conventionsv112.HTTPHostKey)] = "api.example.com"
+	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
 
@@ -97,13 +97,13 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "http"
-	attributes[conventionsv112.AttributeNetPeerName] = "kb234.example.com"
-	attributes[conventionsv112.AttributeNetPeerPort] = 8080
-	attributes[conventionsv112.AttributeNetPeerIP] = "10.8.17.36"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "http"
+	attributes[string(conventionsv112.NetPeerNameKey)] = "kb234.example.com"
+	attributes[string(conventionsv112.NetPeerPortKey)] = 8080
+	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -123,13 +123,13 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLScheme] = "http"
-	attributes[conventionsv112.AttributeNetPeerName] = "kb234.example.com"
-	attributes[conventionsv112.AttributeNetPeerPort] = 8080
-	attributes[conventionsv112.AttributeNetPeerIP] = "10.8.17.36"
-	attributes[conventions.AttributeURLQuery] = "/users/junit"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLSchemeKey)] = "http"
+	attributes[string(conventionsv112.NetPeerNameKey)] = "kb234.example.com"
+	attributes[string(conventionsv112.NetPeerPortKey)] = 8080
+	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -148,8 +148,8 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPClientIP] = "1.2.3.4"
-	attributes[conventionsv112.AttributeNetPeerIP] = "10.8.17.36"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "1.2.3.4"
+	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -162,9 +162,9 @@ func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 
 func TestClientSpanWithHttpPeerAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeClientAddress] = "1.2.3.4"
-	attributes[conventions.AttributeNetworkPeerAddress] = "10.8.17.36"
+	attributes[string(conventions.URLFullKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "1.2.3.4"
+	attributes[string(conventions.NetworkPeerAddressKey)] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -177,11 +177,11 @@ func TestClientSpanWithHttpPeerAttributesStable(t *testing.T) {
 
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "http"
-	attributes[conventionsv112.AttributeNetPeerIP] = "10.8.17.36"
-	attributes[conventionsv112.AttributeNetPeerPort] = "8080"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "http"
+	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
+	attributes[string(conventionsv112.NetPeerPortKey)] = "8080"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -196,11 +196,11 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeNetPeerIP] = "2001:db8:85a3::8a2e:370:7334"
-	attributes[conventionsv112.AttributeNetPeerPort] = "443"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "https"
+	attributes[string(conventionsv112.NetPeerIPKey)] = "2001:db8:85a3::8a2e:370:7334"
+	attributes[string(conventionsv112.NetPeerPortKey)] = "443"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -215,11 +215,11 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 
 func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
+	attributes[string(conventionsv112.HTTPUserAgentKey)] = "PostmanRuntime/7.21.0"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -235,11 +235,11 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 
 func TestServerSpanWithURLAttributeStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventions.AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLFullKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventions.UserAgentOriginalKey)] = "PostmanRuntime/7.21.0"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -255,12 +255,12 @@ func TestServerSpanWithURLAttributeStable(t *testing.T) {
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "api.example.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "https"
+	attributes[string(conventionsv112.HTTPHostKey)] = "api.example.com"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -276,12 +276,12 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLScheme] = "https"
-	attributes[conventions.AttributeServerAddress] = "api.example.com"
-	attributes[conventions.AttributeURLQuery] = "/users/junit"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLSchemeKey)] = "https"
+	attributes[string(conventions.ServerAddressKey)] = "api.example.com"
+	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -297,13 +297,13 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPServerName] = "api.example.com"
-	attributes[conventionsv112.AttributeNetHostPort] = 443
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "https"
+	attributes[string(conventionsv112.HTTPServerNameKey)] = "api.example.com"
+	attributes[string(conventionsv112.NetHostPortKey)] = 443
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -319,13 +319,13 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLScheme] = "https"
-	attributes[conventions.AttributeServerAddress] = "api.example.com"
-	attributes[conventions.AttributeServerPort] = 443
-	attributes[conventions.AttributeURLQuery] = "/users/junit"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLSchemeKey)] = "https"
+	attributes[string(conventions.ServerAddressKey)] = "api.example.com"
+	attributes[string(conventions.ServerPortKey)] = 443
+	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -341,13 +341,13 @@ func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) 
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "http"
-	attributes[conventionsv112.AttributeHostName] = "kb234.example.com"
-	attributes[conventionsv112.AttributeNetHostPort] = 8080
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "http"
+	attributes[string(conventionsv112.HostNameKey)] = "kb234.example.com"
+	attributes[string(conventionsv112.NetHostPortKey)] = 8080
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -365,13 +365,13 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLScheme] = "http"
-	attributes[conventions.AttributeServerAddress] = "kb234.example.com"
-	attributes[conventions.AttributeServerPort] = 8080
-	attributes[conventions.AttributeURLPath] = "/users/junit"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLSchemeKey)] = "http"
+	attributes[string(conventions.ServerAddressKey)] = "kb234.example.com"
+	attributes[string(conventions.ServerPortKey)] = 8080
+	attributes[string(conventions.URLPathKey)] = "/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -389,14 +389,14 @@ func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "http"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventionsv112.AttributeNetHostPort] = 443
-	attributes[conventionsv112.AttributeNetPeerPort] = 8080
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "http"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
+	attributes[string(conventionsv112.HTTPUserAgentKey)] = "PostmanRuntime/7.21.0"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventionsv112.NetHostPortKey)] = 443
+	attributes[string(conventionsv112.NetPeerPortKey)] = 8080
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -415,13 +415,13 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventions.AttributeURLScheme] = "http"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventions.AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
-	attributes[conventions.AttributeURLPath] = "/users/junit"
-	attributes[conventions.AttributeServerPort] = 443
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.URLSchemeKey)] = "http"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventions.UserAgentOriginalKey)] = "PostmanRuntime/7.21.0"
+	attributes[string(conventions.URLPathKey)] = "/users/junit"
+	attributes[string(conventions.ServerPortKey)] = 443
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -440,21 +440,21 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributesStable(t *testing.T) {
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributesDuplicated(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventions.AttributeHTTPRequestMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "http"
-	attributes[conventions.AttributeURLScheme] = "http"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
-	attributes[conventions.AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventions.AttributeURLPath] = "/users/junit"
-	attributes[conventionsv112.AttributeNetHostPort] = 443
-	attributes[conventions.AttributeServerPort] = 443
-	attributes[conventionsv112.AttributeNetPeerPort] = 8080
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
-	attributes[conventions.AttributeHTTPResponseStatusCode] = 200
+	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventionsv112.HTTPSchemeKey)] = "http"
+	attributes[string(conventions.URLSchemeKey)] = "http"
+	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventionsv112.HTTPUserAgentKey)] = "PostmanRuntime/7.21.0"
+	attributes[string(conventions.UserAgentOriginalKey)] = "PostmanRuntime/7.21.0"
+	attributes[string(conventionsv112.HTTPTargetKey)] = "/users/junit"
+	attributes[string(conventions.URLPathKey)] = "/users/junit"
+	attributes[string(conventionsv112.NetHostPortKey)] = 443
+	attributes[string(conventions.ServerPortKey)] = 443
+	attributes[string(conventionsv112.NetPeerPortKey)] = 8080
+	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -473,8 +473,8 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributesDuplicated(t *testing.T) {
 
 func TestSpanWithClientAddrWithoutNetworkPeerAddr(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
+	attributes[string(conventions.URLFullKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
 	span := constructHTTPServerSpan(attributes)
 
 	_, httpData := makeHTTP(span)
@@ -484,9 +484,9 @@ func TestSpanWithClientAddrWithoutNetworkPeerAddr(t *testing.T) {
 
 func TestSpanWithClientAddrAndNetworkPeerAddr(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeClientAddress] = "192.168.15.32"
-	attributes[conventions.AttributeNetworkPeerAddress] = "192.168.15.32"
+	attributes[string(conventions.URLFullKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
+	attributes[string(conventions.NetworkPeerAddressKey)] = "192.168.15.32"
 	span := constructHTTPServerSpan(attributes)
 
 	_, httpData := makeHTTP(span)
@@ -497,9 +497,9 @@ func TestSpanWithClientAddrAndNetworkPeerAddr(t *testing.T) {
 
 func TestSpanWithClientAddrNotIP(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeURLFull] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeClientAddress] = "api.example.com"
-	attributes[conventions.AttributeNetworkPeerAddress] = "api.example.com"
+	attributes[string(conventions.URLFullKey)] = "https://api.example.com/users/junit"
+	attributes[string(conventions.ClientAddressKey)] = "api.example.com"
+	attributes[string(conventions.NetworkPeerAddressKey)] = "api.example.com"
 	span := constructHTTPServerSpan(attributes)
 
 	_, httpData := makeHTTP(span)

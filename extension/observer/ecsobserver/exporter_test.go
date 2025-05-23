@@ -6,9 +6,9 @@ package ecsobserver
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
@@ -21,21 +21,25 @@ func TestTaskExporter(t *testing.T) {
 
 	t.Run("invalid ip", func(t *testing.T) {
 		_, err := exp.exportTask(&taskAnnotated{
-			Task:       &ecs.Task{},
-			Definition: &ecs.TaskDefinition{},
+			Task: ecstypes.Task{
+				TaskArn: aws.String("arn"),
+			},
+			Definition: &ecstypes.TaskDefinition{
+				NetworkMode: ecstypes.NetworkModeNone,
+			},
 		})
 		assert.Error(t, err)
 		v := &errPrivateIPNotFound{}
 		assert.ErrorAs(t, err, &v)
 	})
 
-	awsVpcTask := &ecs.Task{
+	awsVpcTask := ecstypes.Task{
 		TaskArn:           aws.String("arn:task:t2"),
 		TaskDefinitionArn: aws.String("t2"),
-		Attachments: []*ecs.Attachment{
+		Attachments: []ecstypes.Attachment{
 			{
 				Type: aws.String("ElasticNetworkInterface"),
-				Details: []*ecs.KeyValuePair{
+				Details: []ecstypes.KeyValuePair{
 					{
 						Name:  aws.String("privateIPv4Address"),
 						Value: aws.String("172.168.1.1"),
@@ -43,24 +47,28 @@ func TestTaskExporter(t *testing.T) {
 				},
 			},
 		},
-		Containers: []*ecs.Container{
+		Containers: []ecstypes.Container{
 			{
 				Name: aws.String("c1"),
 			},
 		},
+		Group:     aws.String("group"),
+		StartedBy: aws.String("started-by"),
 	}
-	awsVpcTaskDef := &ecs.TaskDefinition{
-		ContainerDefinitions: []*ecs.ContainerDefinition{
+	awsVpcTaskDef := &ecstypes.TaskDefinition{
+		ContainerDefinitions: []ecstypes.ContainerDefinition{
 			{
-				PortMappings: []*ecs.PortMapping{
+				Name: aws.String("c1"),
+				PortMappings: []ecstypes.PortMapping{
 					{
-						ContainerPort: aws.Int64(2112),
-						HostPort:      aws.Int64(2113),
+						ContainerPort: aws.Int32(2112),
+						HostPort:      aws.Int32(2113),
 					},
 				},
 			},
 		},
-		NetworkMode: aws.String(ecs.NetworkModeAwsvpc),
+		Family:      aws.String("family"),
+		NetworkMode: ecstypes.NetworkModeAwsvpc,
 	}
 	t.Run("single target", func(t *testing.T) {
 		task := &taskAnnotated{
@@ -89,7 +97,7 @@ func TestTaskExporter(t *testing.T) {
 		task := &taskAnnotated{
 			Task:       awsVpcTask,
 			Definition: awsVpcTaskDef,
-			Service:    &ecs.Service{ServiceName: aws.String("svc-1")},
+			Service:    &ecstypes.Service{ServiceName: aws.String("svc-1")},
 			Matched: []matchedContainer{
 				{
 					Targets: []matchedTarget{
@@ -123,35 +131,44 @@ func TestTaskExporter(t *testing.T) {
 
 	t.Run("ec2", func(t *testing.T) {
 		task := &taskAnnotated{
-			Task: &ecs.Task{
+			Task: ecstypes.Task{
 				TaskArn:           aws.String("arn:task:t2"),
 				TaskDefinitionArn: aws.String("t2"),
-				Containers: []*ecs.Container{
+				Containers: []ecstypes.Container{
 					{
 						Name: aws.String("c1"),
-						NetworkBindings: []*ecs.NetworkBinding{
+						NetworkBindings: []ecstypes.NetworkBinding{
 							{
-								ContainerPort: aws.Int64(2112),
-								HostPort:      aws.Int64(2114),
+								ContainerPort: aws.Int32(2112),
+								HostPort:      aws.Int32(2114),
 							},
 						},
 					},
 				},
+				Group:     aws.String("group"),
+				StartedBy: aws.String("started-by"),
 			},
-			Definition: &ecs.TaskDefinition{
-				ContainerDefinitions: []*ecs.ContainerDefinition{
+			Definition: &ecstypes.TaskDefinition{
+				ContainerDefinitions: []ecstypes.ContainerDefinition{
 					{
 						Name: aws.String("c1"),
-						PortMappings: []*ecs.PortMapping{
+						PortMappings: []ecstypes.PortMapping{
 							{
-								ContainerPort: aws.Int64(2112),
+								ContainerPort: aws.Int32(2112),
 							},
 						},
 					},
 				},
-				NetworkMode: aws.String(ecs.NetworkModeBridge),
+				Family:      aws.String("family"),
+				NetworkMode: ecstypes.NetworkModeBridge,
 			},
-			EC2: &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.2")},
+			EC2: &ec2types.Instance{
+				InstanceId:       aws.String("id"),
+				PrivateIpAddress: aws.String("172.168.1.2"),
+				PublicIpAddress:  aws.String("172.168.1.2"),
+				SubnetId:         aws.String("subnet-id"),
+				VpcId:            aws.String("vpc-id"),
+			},
 			Matched: []matchedContainer{
 				{
 					Targets: []matchedTarget{
@@ -209,8 +226,8 @@ func TestTaskExporter(t *testing.T) {
 		Matched:    invalidMatched,
 	}
 	invalidIPTask := &taskAnnotated{
-		Task:       &ecs.Task{TaskArn: aws.String("invalid task's invalid arn")},
-		Definition: &ecs.TaskDefinition{},
+		Task:       ecstypes.Task{TaskArn: aws.String("invalid task's invalid arn")},
+		Definition: &ecstypes.TaskDefinition{},
 	}
 	t.Run("all valid tasks", func(t *testing.T) {
 		// Just make sure the for loop is right, done care about the content, they are tested in previous cases

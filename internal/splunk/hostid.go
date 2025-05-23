@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 // HostIDKey represents a host identifier.
@@ -22,7 +22,7 @@ const (
 	// HostIDKeyAzure Azure HostIDKey.
 	HostIDKeyAzure HostIDKey = "azure_resource_id"
 	// HostIDKeyHost Host HostIDKey.
-	HostIDKeyHost HostIDKey = conventions.AttributeHostName
+	HostIDKeyHost HostIDKey = "host.name"
 )
 
 // HostID is a unique key and value (usually used as a dimension) to uniquely identify a host
@@ -45,22 +45,22 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 		return HostID{}, false
 	}
 
-	if attr, ok := attrs.Get(conventions.AttributeCloudAccountID); ok {
+	if attr, ok := attrs.Get(string(conventions.CloudAccountIDKey)); ok {
 		cloudAccount = attr.Str()
 	}
 
-	if attr, ok := attrs.Get(conventions.AttributeHostID); ok {
+	if attr, ok := attrs.Get(string(conventions.HostIDKey)); ok {
 		hostID = attr.Str()
 	}
 
-	if attr, ok := attrs.Get(conventions.AttributeCloudProvider); ok {
+	if attr, ok := attrs.Get(string(conventions.CloudProviderKey)); ok {
 		provider = attr.Str()
 	}
 
 	switch provider {
-	case conventions.AttributeCloudProviderAWS:
+	case conventions.CloudProviderAWS.Value.AsString():
 		var region string
-		if attr, ok := attrs.Get(conventions.AttributeCloudRegion); ok {
+		if attr, ok := attrs.Get(string(conventions.CloudRegionKey)); ok {
 			region = attr.Str()
 		}
 		if hostID == "" || region == "" || cloudAccount == "" {
@@ -70,7 +70,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 			Key: HostIDKeyAWS,
 			ID:  fmt.Sprintf("%s_%s_%s", hostID, region, cloudAccount),
 		}, true
-	case conventions.AttributeCloudProviderGCP:
+	case conventions.CloudProviderGCP.Value.AsString():
 		if cloudAccount == "" || hostID == "" {
 			break
 		}
@@ -78,7 +78,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 			Key: HostIDKeyGCP,
 			ID:  fmt.Sprintf("%s_%s", cloudAccount, hostID),
 		}, true
-	case conventions.AttributeCloudProviderAzure:
+	case conventions.CloudProviderAzure.Value.AsString():
 		if cloudAccount == "" {
 			break
 		}
@@ -92,7 +92,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 		}, true
 	}
 
-	if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
+	if attr, ok := attrs.Get(string(conventions.HostNameKey)); ok {
 		return HostID{
 			Key: HostIDKeyHost,
 			ID:  attr.Str(),

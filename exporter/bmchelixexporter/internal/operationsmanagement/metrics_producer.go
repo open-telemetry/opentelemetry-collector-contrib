@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -183,10 +183,10 @@ func (mp *MetricsProducer) processDatapoint(samples []BMCHelixOMSample, dp pmetr
 // Update the entity information for the BMC Helix Operations Management payload
 func (mp *MetricsProducer) updateEntityInformation(labels map[string]string, metricName string, resourceAttrs map[string]string, dpAttributes map[string]any) error {
 	// Try to get the hostname from resource attributes first
-	hostname, found := resourceAttrs[conventions.AttributeHostName]
+	hostname, found := resourceAttrs[string(conventions.HostNameKey)]
 	if !found || hostname == "" {
 		// Fallback to metric attributes if not found or empty in resource attributes
-		maybeHostname, ok := dpAttributes[conventions.AttributeHostName].(string)
+		maybeHostname, ok := dpAttributes[string(conventions.HostNameKey)].(string)
 		if !ok || maybeHostname == "" {
 			return fmt.Errorf("the hostname is required for the BMC Helix Operations Management payload but not set for metric %s. Metric datapoint will be skipped", metricName)
 		}

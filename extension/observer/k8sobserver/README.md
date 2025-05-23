@@ -68,14 +68,15 @@ This spec-determined value would then be available via the `${env:K8S_NODE_NAME}
 
 All fields are optional.
 
-| Name | Type | Default | Docs |
-| ---- | ---- | ------- | ---- |
-| auth_type | string | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
-| node | string | <no value> | The node name to limit the discovery of pod, port, and node endpoints. Providing no value (the default) results in discovering endpoints for all available nodes. |
-| observe_pods | bool | `true` | Whether to report observer pod and port endpoints. If `true` and `node` is specified it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and `node` isn't specified, it will discover all available pod and port endpoints. Please note that Collector connectivity to pods from other nodes is dependent on your cluster configuration and isn't guaranteed. | 
-| observe_nodes | bool | `false` | Whether to report observer k8s.node endpoints. If `true` and `node` is specified it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and `node` isn't specified, it will discover all available node endpoints. Please note that Collector connectivity to nodes is dependent on your cluster configuration and isn't guaranteed.| 
-| observe_services | bool | `false` | Whether to report observer k8s.service endpoints.|
-| observe_ingresses | bool | `false` | Whether to report observer k8s.ingress endpoints.|  
+| Name              | Type      | Default          | Docs |
+|-------------------|-----------|------------------| ---- |
+| auth_type         | string    | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
+| node              | string    | <no value>       | The node name to limit the discovery of pod, port, and node endpoints. Providing no value (the default) results in discovering endpoints for all available nodes. |
+| observe_pods      | bool      | `true`           | Whether to report observer pod and port endpoints. If `true` and `node` is specified it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and `node` isn't specified, it will discover all available pod and port endpoints. Please note that Collector connectivity to pods from other nodes is dependent on your cluster configuration and isn't guaranteed. | 
+| observe_nodes     | bool      | `false`          | Whether to report observer k8s.node endpoints. If `true` and `node` is specified it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and `node` isn't specified, it will discover all available node endpoints. Please note that Collector connectivity to nodes is dependent on your cluster configuration and isn't guaranteed.| 
+| observe_services  | bool      | `false`          | Whether to report observer k8s.service endpoints.|
+| observe_ingresses | bool      | `false`          | Whether to report observer k8s.ingress endpoints.|
+| namespaces        | []string  | `[]`             | List of namespaces to retrieve resources from. If not set, all namespaces will be observed. Does not apply for nodes, as those are not namespaced resources. |
 
 More complete configuration examples on how to use this observer along with the `receiver_creator`,
 can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
@@ -244,3 +245,79 @@ spec:
             name: otelcontribcol
 EOF
 ```
+
+#### Namespace scoped RBAC permissions
+
+If you intend to deploy the collector with the `k8sobserver` extension in a restricted environment, where it is not possible/allowed
+to give the collector cluster-wide permissions, you can limit the observer to watch a list of specific namespaces, using the `namespaces`
+attribute:
+
+```yaml
+extensions:
+  k8s_observer:
+    auth_type: serviceAccount
+    node: ${env:K8S_NODE_NAME}
+    observe_pods: true
+    observe_services: true
+    observe_ingresses: true
+    namespaces:
+      - my-namespace
+```
+
+Note however, that observing nodes still requires cluster-scoped RBAC permissions, as these are not namespaced resources.
+
+For pods, services and ingresses, you can use the following commands to set up the `Role` and `RoleBinding`:
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otelcontribcol
+  namespace: my-namespace
+  labels:
+    app: otelcontribcol
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - services
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: 
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - watch
+  - list
+EOF
+```
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otelcontribcol
+  namespace: my-namespace
+  labels:
+    app: otelcontribcol
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: otelcontribcol
+subjects:
+- kind: ServiceAccount
+  name: otelcontribcol
+  namespace: default
+EOF
+```
+
+This will give the collector, running as the `otelcontribcol` service account in the `default` namespace the permission to read
+pods, ingresses and services from the `my-namespace` namespace.

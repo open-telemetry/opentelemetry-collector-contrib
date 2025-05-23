@@ -14,9 +14,9 @@ import (
 	"github.com/Showmax/go-fqdn"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -171,11 +171,11 @@ func (p systemMetadataProvider) fromOption(ctx context.Context, opt resource.Opt
 }
 
 func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
-	return p.fromOption(ctx, resource.WithHostID(), conventions.AttributeHostID)
+	return p.fromOption(ctx, resource.WithHostID(), string(conventions.HostIDKey))
 }
 
 func (p systemMetadataProvider) OSDescription(ctx context.Context) (string, error) {
-	return p.fromOption(ctx, resource.WithOSDescription(), conventions.AttributeOSDescription)
+	return p.fromOption(ctx, resource.WithOSDescription(), string(conventions.OSDescriptionKey))
 }
 
 func (systemMetadataProvider) HostArch() (string, error) {

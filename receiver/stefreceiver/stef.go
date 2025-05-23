@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync/atomic"
+	"time"
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
@@ -32,11 +34,14 @@ type stefReceiver struct {
 	nextMetricsConsumer consumer.Metrics
 	settings            receiver.Settings
 
-	eg errgroup.Group
+	stopping atomic.Bool
+	eg       errgroup.Group
 }
 
 // Start runs the STEF gRPC receiver.
 func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
+	r.stopping.Store(false)
+
 	var err error
 	if r.serverGRPC, err = r.cfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
 		return err
@@ -75,8 +80,22 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown is a method to turn off receiving.
 func (r *stefReceiver) Shutdown(_ context.Context) error {
+	r.stopping.Store(true)
+
 	if r.serverGRPC != nil {
+		r.settings.Logger.Info("Stopping STEF/gRPC server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
+
+		// Give graceful stop a second to finish.
+		timer := time.AfterFunc(
+			1*time.Second, func() {
+				r.settings.Logger.Info("STEF/gRPC server couldn't stop gracefully in time. Doing force stop.")
+				r.serverGRPC.Stop()
+			},
+		)
+		defer timer.Stop()
+
 		r.serverGRPC.GracefulStop()
+		r.settings.Logger.Debug("STEF/gRPC server stopped.")
 	}
 
 	return r.eg.Wait()
@@ -100,6 +119,12 @@ func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.
 
 	// Read, decode, convert the incoming data and push it to the next consumer.
 	for {
+		if r.stopping.Load() {
+			// The receiver is shutting down. Close the connection.
+			r.settings.Logger.Debug("Shutdown requested. Closing STEF/gRPC connection.")
+			return nil
+		}
+
 		respError := resp.LastError()
 		if respError != nil {
 			// We had problem sending responses. Can't continue using this connection since

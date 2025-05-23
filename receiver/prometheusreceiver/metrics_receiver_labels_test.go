@@ -6,13 +6,12 @@ package prometheusreceiver
 import (
 	"testing"
 
-	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const targetExternalLabels = `
@@ -250,10 +249,6 @@ test_counter0{label1="value1",label2="value2"} 1
 `
 
 func TestLabelNameLimitConfig(t *testing.T) {
-	scheme := model.NameValidationScheme
-	model.NameValidationScheme = model.UTF8Validation
-	defer func() { model.NameValidationScheme = scheme }()
-
 	targets := []*testData{
 		{
 			name: "target1",
@@ -637,7 +632,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	var scrapeConfigResourceMetrics pmetric.ResourceMetrics
 	gotScrapeConfigMetrics, gotResourceMetrics := false, false
 	for _, rm := range rms {
-		serviceInstance, ok := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		serviceInstance, ok := rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
 		require.True(t, ok)
 		if serviceInstance.AsString() == "hostname:8080" {
 			resourceMetric = rm

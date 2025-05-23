@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
@@ -140,7 +140,7 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 	// Then, try "environment" attribute (SignalFx schema).
 	// Otherwise, use the same fallback value as set on the backend.
 	var environment string
-	if env, ok := attrs.Get(conventions.AttributeDeploymentEnvironment); ok {
+	if env, ok := attrs.Get(string(conventions.DeploymentEnvironmentKey)); ok {
 		environment = env.Str()
 	} else if env, ok = attrs.Get("environment"); ok {
 		environment = env.Str()
@@ -199,7 +199,7 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 
 func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Time) {
 	// Can't do anything if the spans don't have a local service name
-	serviceNameAttr, ok := res.Attributes().Get(conventions.AttributeServiceName)
+	serviceNameAttr, ok := res.Attributes().Get(string(conventions.ServiceNameKey))
 	service := serviceNameAttr.Str()
 	if !ok || service == "" {
 		return

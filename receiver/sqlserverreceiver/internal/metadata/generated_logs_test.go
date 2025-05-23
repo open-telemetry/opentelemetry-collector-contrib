@@ -3,25 +3,35 @@
 package metadata
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+)
+
+type eventsTestDataSet int
+
+const (
+	eventTestDataSetDefault eventsTestDataSet = iota
+	eventTestDataSetAll
+	eventTestDataSetNone
 )
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
 	settings.Logger = zap.New(observedZapCore)
-	lb := NewLogsBuilder(settings)
+	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetHostName("host.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
@@ -69,4 +79,146 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
+}
+func TestLogsBuilder(t *testing.T) {
+	tests := []struct {
+		name        string
+		eventsSet   eventsTestDataSet
+		resAttrsSet eventsTestDataSet
+		expectEmpty bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:        "all_set",
+			eventsSet:   eventTestDataSetAll,
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "none_set",
+			eventsSet:   eventTestDataSetNone,
+			resAttrsSet: eventTestDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: eventTestDataSetAll,
+			expectEmpty: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			timestamp := pcommon.Timestamp(1_000_001_000)
+			traceID := [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			spanID := [8]byte{0, 1, 2, 3, 4, 5, 6, 7}
+			ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID(traceID),
+				SpanID:     trace.SpanID(spanID),
+				TraceFlags: trace.FlagsSampled,
+			}))
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopSettings(receivertest.NopType)
+			settings.Logger = zap.New(observedZapCore)
+			lb := NewLogsBuilder(loadLogsBuilderConfig(t, tt.name), settings)
+
+			expectedWarnings := 0
+
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultEventsCount := 0
+			allEventsCount := 0
+			defaultEventsCount++
+			allEventsCount++
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "server.address-val", 11, "db.server.name-val")
+
+			rb := lb.NewResourceBuilder()
+			rb.SetHostName("host.name-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
+			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
+			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
+			res := rb.Emit()
+			logs := lb.Emit(WithLogsResource(res))
+
+			if tt.expectEmpty {
+				assert.Equal(t, 0, logs.ResourceLogs().Len())
+				return
+			}
+
+			assert.Equal(t, 1, logs.ResourceLogs().Len())
+			rl := logs.ResourceLogs().At(0)
+			assert.Equal(t, res, rl.Resource())
+			assert.Equal(t, 1, rl.ScopeLogs().Len())
+			lrs := rl.ScopeLogs().At(0).LogRecords()
+			if tt.eventsSet == eventTestDataSetDefault {
+				assert.Equal(t, defaultEventsCount, lrs.Len())
+			}
+			if tt.eventsSet == eventTestDataSetAll {
+				assert.Equal(t, allEventsCount, lrs.Len())
+			}
+			validatedEvents := make(map[string]bool)
+			for i := 0; i < lrs.Len(); i++ {
+				switch lrs.At(i).EventName() {
+				case "db.server.top_query":
+					assert.False(t, validatedEvents["db.server.top_query"], "Found a duplicate in the events slice: db.server.top_query")
+					validatedEvents["db.server.top_query"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("sqlserver.total_worker_time")
+					assert.True(t, ok)
+					assert.Equal(t, 27.100000, attrVal.Double())
+					attrVal, ok = lr.Attributes().Get("db.query.text")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.execution_count")
+					assert.True(t, ok)
+					assert.EqualValues(t, 25, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("sqlserver.total_logical_reads")
+					assert.True(t, ok)
+					assert.EqualValues(t, 29, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("sqlserver.total_logical_writes")
+					assert.True(t, ok)
+					assert.EqualValues(t, 30, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("sqlserver.total_physical_reads")
+					assert.True(t, ok)
+					assert.EqualValues(t, 30, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("sqlserver.query_hash")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.query_hash-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.query_plan")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.query_plan-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.query_plan_hash")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.query_plan_hash-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.total_rows")
+					assert.True(t, ok)
+					assert.EqualValues(t, 20, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("sqlserver.total_elapsed_time")
+					assert.True(t, ok)
+					assert.Equal(t, 28.100000, attrVal.Double())
+					attrVal, ok = lr.Attributes().Get("sqlserver.total_grant_kb")
+					assert.True(t, ok)
+					assert.EqualValues(t, 24, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("server.address")
+					assert.True(t, ok)
+					assert.Equal(t, "server.address-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("server.port")
+					assert.True(t, ok)
+					assert.EqualValues(t, 11, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("db.server.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.server.name-val", attrVal.Str())
+				}
+			}
+		})
+	}
 }

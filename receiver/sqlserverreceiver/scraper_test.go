@@ -32,42 +32,51 @@ func configureAllScraperMetrics(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
-
+	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseCount.Enabled = enabled
+	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
+	cfg.Metrics.SqlserverDatabaseFullScanRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseIo.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseLatency.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseOperations.Enabled = enabled
-
-	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
-
-	cfg.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
-
-	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
-
-	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
-	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
-
-	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
-	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
-
-	cfg.Metrics.SqlserverTableCount.Enabled = enabled
-	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
-	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseFullScanRate.Enabled = enabled
+	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
+	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
+	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
+	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
+	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
 	cfg.Metrics.SqlserverLoginRate.Enabled = enabled
 	cfg.Metrics.SqlserverLogoutRate.Enabled = enabled
-	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = enabled
-	cfg.Metrics.SqlserverPageLookupRate.Enabled = enabled
-	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
+	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
+	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageBufferCacheHitRatio.Enabled = enabled
+	cfg.Metrics.SqlserverPageCheckpointFlushRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageLazyWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageLifeExpectancy.Enabled = enabled
+	cfg.Metrics.SqlserverPageLookupRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageOperationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPageSplitRate.Enabled = enabled
+	cfg.Metrics.SqlserverProcessesBlocked.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaDataRate.Enabled = enabled
+	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
+	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
+	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverTableCount.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionLogFlushRate.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionLogFlushWaitRate.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionLogGrowthCount.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionLogShrinkCount.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionLogUsage.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionRate.Enabled = enabled
+	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
 
 	cfg.TopQueryCollection.Enabled = enabled
 	cfg.QuerySample.Enabled = enabled
@@ -79,8 +88,8 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
@@ -97,9 +106,9 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributes.ServerAddress.Enabled = true
-	cfg.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetrics(cfg, true)
@@ -130,6 +139,8 @@ func TestSuccessfulScrape(t *testing.T) {
 			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
 		case getSQLServerPropertiesQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
+		case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
+			expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
 		}
 
 		// Uncomment line below to re-generate expected metrics.
@@ -151,8 +162,8 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 
 	assert.NoError(t, cfg.Validate())
 
@@ -182,7 +193,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 	cfg.TopQueryCollection.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -296,6 +307,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
+	case getSQLServerWaitStatsQuery(mc.instanceName):
+		queryResults, err = readFile("waitStatsQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -335,12 +348,13 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 	cfg.TopQueryCollection.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetrics(cfg, false)
 	cfg.TopQueryCollection.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
@@ -479,7 +493,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			cfg.Password = "password"
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
-			cfg.ResourceAttributes.SqlserverInstanceName.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetrics(cfg, false)

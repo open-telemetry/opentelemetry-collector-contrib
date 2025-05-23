@@ -41,36 +41,53 @@ func TestIntegration(t *testing.T) {
 	}
 
 	for _, c := range testCase {
-		t.Run(c.name, func(t *testing.T) {
-			port := randPort()
-			req := testcontainers.ContainerRequest{
-				Image:        c.image,
-				ExposedPorts: []string{fmt.Sprintf("%s:9000", port)},
-				WaitingFor: wait.ForListeningPort("9000").
-					WithStartupTimeout(2 * time.Minute),
-			}
-			c := getContainer(t, req)
-			defer func() {
-				err := c.Terminate(context.Background())
-				require.NoError(t, err)
-			}()
-
-			host, err := c.Host(context.Background())
-			require.NoError(t, err)
-			endpoint := fmt.Sprintf("tcp://%s:%s", host, port)
-
+		// Container creation is slow, so create it once per test
+		endpoint := createTestClickhouseContainer(t, c.image)
+		t.Run(c.name+" exporting", func(t *testing.T) {
 			logExporter := newTestLogsExporter(t, endpoint)
 			verifyExportLog(t, logExporter)
 
 			traceExporter := newTestTracesExporter(t, endpoint)
-			require.NoError(t, err)
 			verifyExporterTrace(t, traceExporter)
 
 			metricExporter := newTestMetricsExporter(t, endpoint)
-			require.NoError(t, err)
 			verifyExporterMetric(t, metricExporter)
 		})
+		t.Run(c.name+" database creation", func(t *testing.T) {
+			// Verify that start function returns no error
+			logExporter := newTestLogsExporter(t, endpoint, func(c *Config) { c.Database = "otel" })
+			// Verify that the table was created
+			verifyLogTable(t, logExporter)
+
+			traceExporter := newTestTracesExporter(t, endpoint, func(c *Config) { c.Database = "otel" })
+			verifyTraceTable(t, traceExporter)
+
+			metricsExporter := newTestMetricsExporter(t, endpoint, func(c *Config) { c.Database = "otel" })
+			verifyMetricTable(t, metricsExporter)
+		})
 	}
+}
+
+// returns endpoint
+func createTestClickhouseContainer(t *testing.T, image string) string {
+	port := randPort()
+	req := testcontainers.ContainerRequest{
+		Image:        image,
+		ExposedPorts: []string{fmt.Sprintf("%s:9000", port)},
+		WaitingFor: wait.ForListeningPort("9000").
+			WithStartupTimeout(2 * time.Minute),
+	}
+	c := getContainer(t, req)
+	t.Cleanup(func() {
+		err := c.Terminate(context.Background())
+		require.NoError(t, err)
+	})
+
+	host, err := c.Host(context.Background())
+	require.NoError(t, err)
+	endpoint := fmt.Sprintf("tcp://%s:%s", host, port)
+
+	return endpoint
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
@@ -601,6 +618,24 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 	err := db.Get(&actualSummary, "select * from default.otel_metrics_summary")
 	require.NoError(t, err)
 	require.Equal(t, expectSummary, actualSummary)
+}
+
+func verifyLogTable(t *testing.T, logExporter *logsExporter) {
+	db := sqlx.NewDb(logExporter.client, clickhouseDriverName)
+	_, err := db.Query("select * from otel.otel_logs")
+	require.NoError(t, err)
+}
+
+func verifyTraceTable(t *testing.T, traceExporter *tracesExporter) {
+	db := sqlx.NewDb(traceExporter.client, clickhouseDriverName)
+	_, err := db.Query("select * from otel.otel_traces")
+	require.NoError(t, err)
+}
+
+func verifyMetricTable(t *testing.T, metricExporter *metricsExporter) {
+	db := sqlx.NewDb(metricExporter.client, clickhouseDriverName)
+	_, err := db.Query("select * from otel.otel_metrics_gauge")
+	require.NoError(t, err)
 }
 
 func randPort() string {

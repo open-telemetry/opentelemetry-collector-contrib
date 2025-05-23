@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
@@ -147,12 +147,12 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 // setResourceAttributes based on the resourceKey
 func (v *vpcFlowLogUnmarshaler) setResourceAttributes(key *resourceKey, logs plog.ResourceLogs) {
 	attr := logs.Resource().Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	if key.accountID != "" {
-		attr.PutStr(conventions.AttributeCloudAccountID, key.accountID)
+		attr.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
 	}
 	if key.region != "" {
-		attr.PutStr(conventions.AttributeCloudRegion, key.region)
+		attr.PutStr(string(conventions.CloudRegionKey), key.region)
 	}
 }
 
@@ -235,12 +235,12 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 	if addr.pktSource == "" && addr.source != "" {
 		// there is no middle layer, assume "srcaddr" field
 		// corresponds to the original source address.
-		record.Attributes().PutStr(conventions.AttributeSourceAddress, addr.source)
+		record.Attributes().PutStr(string(conventions.SourceAddressKey), addr.source)
 	} else if addr.pktSource != "" && addr.source != "" {
-		record.Attributes().PutStr(conventions.AttributeSourceAddress, addr.pktSource)
+		record.Attributes().PutStr(string(conventions.SourceAddressKey), addr.pktSource)
 		if addr.pktSource != addr.source {
 			// srcaddr is the middle layer
-			record.Attributes().PutStr(conventions.AttributeNetworkLocalAddress, addr.source)
+			record.Attributes().PutStr(string(conventions.NetworkLocalAddressKey), addr.source)
 			localAddrSet = true
 		}
 	}
@@ -248,15 +248,15 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 	if addr.pktDestination == "" && addr.destination != "" {
 		// there is no middle layer, assume "dstaddr" field
 		// corresponds to the original destination address.
-		record.Attributes().PutStr(conventions.AttributeDestinationAddress, addr.destination)
+		record.Attributes().PutStr(string(conventions.DestinationAddressKey), addr.destination)
 	} else if addr.pktDestination != "" && addr.destination != "" {
-		record.Attributes().PutStr(conventions.AttributeDestinationAddress, addr.pktDestination)
+		record.Attributes().PutStr(string(conventions.DestinationAddressKey), addr.pktDestination)
 		if addr.pktDestination != addr.destination {
 			if localAddrSet {
 				v.logger.Warn("unexpected: srcaddr, dstaddr, pkt-srcaddr and pkt-dstaddr are all different")
 			}
 			// dstaddr is the middle layer
-			record.Attributes().PutStr(conventions.AttributeNetworkLocalAddress, addr.destination)
+			record.Attributes().PutStr(string(conventions.NetworkLocalAddressKey), addr.destination)
 		}
 	}
 }
@@ -313,18 +313,18 @@ func handleField(
 	case "subnet-id":
 		record.Attributes().PutStr("aws.vpc.subnet.id", value)
 	case "instance-id":
-		record.Attributes().PutStr(conventions.AttributeHostID, value)
+		record.Attributes().PutStr(string(conventions.HostIDKey), value)
 	case "az-id":
 		record.Attributes().PutStr("aws.az.id", value)
 	case "interface-id":
 		// TODO Replace with conventions variable once it becomes available
 		record.Attributes().PutStr("network.interface.name", value)
 	case "srcport":
-		if err := addNumber(field, value, conventions.AttributeSourcePort); err != nil {
+		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
 			return false, err
 		}
 	case "dstport":
-		if err := addNumber(field, value, conventions.AttributeDestinationPort); err != nil {
+		if err := addNumber(field, value, string(conventions.DestinationPortKey)); err != nil {
 			return false, err
 		}
 	case "protocol":
@@ -336,17 +336,17 @@ func handleField(
 		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
 			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
 		}
-		record.Attributes().PutStr(conventions.AttributeNetworkProtocolName, protocolNames[protocolNumber])
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
 	case "type":
-		record.Attributes().PutStr(conventions.AttributeNetworkType, strings.ToLower(value))
+		record.Attributes().PutStr(string(conventions.NetworkTypeKey), strings.ToLower(value))
 	case "region":
 		key.region = value
 	case "flow-direction":
 		switch value {
 		case "ingress":
-			record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "receive")
+			record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
 		case "egress":
-			record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "transmit")
+			record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
 		default:
 			return true, fmt.Errorf("value %s not valid for field %s", value, field)
 		}
@@ -390,7 +390,7 @@ func handleField(
 	case "traffic-path":
 		record.Attributes().PutStr("aws.vpc.flow.traffic_path", value)
 	case "ecs-cluster-arn":
-		record.Attributes().PutStr(conventions.AttributeAWSECSClusterARN, value)
+		record.Attributes().PutStr(string(conventions.AWSECSClusterARNKey), value)
 	case "ecs-cluster-name":
 		record.Attributes().PutStr("aws.ecs.cluster.name", value)
 	case "ecs-container-instance-arn":
@@ -406,9 +406,9 @@ func handleField(
 	case "ecs-task-definition-arn":
 		record.Attributes().PutStr("aws.ecs.task.definition.arn", value)
 	case "ecs-task-arn":
-		record.Attributes().PutStr(conventions.AttributeAWSECSTaskARN, value)
+		record.Attributes().PutStr(string(conventions.AWSECSTaskARNKey), value)
 	case "ecs-task-id":
-		record.Attributes().PutStr(conventions.AttributeAWSECSTaskID, value)
+		record.Attributes().PutStr(string(conventions.AWSECSTaskIDKey), value)
 	case "reject-reason":
 		record.Attributes().PutStr("aws.vpc.flow.reject_reason", value)
 	default:

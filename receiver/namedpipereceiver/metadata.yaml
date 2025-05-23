@@ -6,7 +6,8 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [sinkingpoint, djaglowski]
+    active: [sinkingpoint]
+    emeritus: [djaglowski]
   unsupported_platforms: [windows, darwin]
 
 tests:

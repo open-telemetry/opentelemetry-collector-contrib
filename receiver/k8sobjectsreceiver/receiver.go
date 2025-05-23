@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -75,7 +76,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 	}, nil
 }
 
-func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
 	client, err := kr.config.getDynamicClient()
 	if err != nil {
 		return err
@@ -96,7 +97,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 			for k := range validObjects {
 				availableResource = append(availableResource, k)
 			}
-			err := fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
+			err = fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
 			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
 				return handlerErr
 			}
@@ -116,17 +117,46 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 	}
 
 	if len(validConfigs) == 0 {
-		err := errors.New("no valid Kubernetes objects found to watch")
+		err = errors.New("no valid Kubernetes objects found to watch")
 		return err
 	}
 
-	kr.setting.Logger.Info("Object Receiver started")
-	cctx, cancel := context.WithCancel(ctx)
-	kr.cancel = cancel
+	if kr.config.K8sLeaderElector != nil {
+		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
+		if k8sLeaderElector == nil {
+			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
+		}
 
-	for _, object := range validConfigs {
-		kr.start(cctx, object)
+		kr.setting.Logger.Info("registering the receiver in leader election")
+		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
+		if !ok {
+			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
+		}
+
+		elector.SetCallBackFuncs(
+			func(ctx context.Context) {
+				cctx, cancel := context.WithCancel(ctx)
+				kr.cancel = cancel
+				for _, object := range validConfigs {
+					kr.start(cctx, object)
+				}
+				kr.setting.Logger.Info("Object Receiver started as leader")
+			},
+			func() {
+				kr.setting.Logger.Info("no longer leader, stopping")
+				err = kr.Shutdown(context.Background())
+				if err != nil {
+					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
+				}
+			})
+	} else {
+		cctx, cancel := context.WithCancel(ctx)
+		kr.cancel = cancel
+		for _, object := range validConfigs {
+			kr.start(cctx, object)
+		}
 	}
+
 	return nil
 }
 

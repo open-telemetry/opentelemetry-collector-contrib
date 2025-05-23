@@ -30,7 +30,7 @@ make update-otel OTEL_VERSION="" OTEL_STABLE_VERSION=""
 
 make update-core-module-list
 git add internal/buildscripts/modules
-git commit -m "update core modules list"
+git commit -m "update core modules list" --allow-empty
 
 make chlog-update VERSION="v${CANDIDATE_BETA}"
 git add --all

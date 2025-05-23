@@ -9,12 +9,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 )
 
 func TestRootPathNotAllowedOnOS(t *testing.T) {
-	assert.Error(t, validateRootPath("testdata"))
+	assert.Error(t, gopsutilenv.ValidateRootPath("testdata"))
 }
 
 func TestRootPathUnset(t *testing.T) {
-	assert.NoError(t, validateRootPath(""))
+	assert.NoError(t, gopsutilenv.ValidateRootPath(""))
 }

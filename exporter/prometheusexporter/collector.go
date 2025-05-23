@@ -16,7 +16,7 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -340,7 +340,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		rAttributes.CopyTo(attributes)
 		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
 			switch k {
-			case conventions.AttributeServiceName, conventions.AttributeServiceNamespace, conventions.AttributeServiceInstanceID:
+			case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
 				// Remove resource attributes used for job + instance
 				return true
 			default:

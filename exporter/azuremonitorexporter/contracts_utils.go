@@ -6,7 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon" // Applies resource attributes values to data properties
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (
@@ -26,17 +26,17 @@ func applyResourcesToDataProperties(dataProperties map[string]string, resourceAt
 func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
 	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
-	if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
+	if serviceName, serviceNameExists := resourceAttributes.Get(string(conventions.ServiceNameKey)); serviceNameExists {
 		cloudRole := serviceName.Str()
 
-		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(conventions.AttributeServiceNamespace); serviceNamespaceExists {
+		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(string(conventions.ServiceNamespaceKey)); serviceNamespaceExists {
 			cloudRole = serviceNamespace.Str() + "." + cloudRole
 		}
 
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
-	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
+	if serviceInstance, exists := resourceAttributes.Get(string(conventions.ServiceInstanceIDKey)); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
 

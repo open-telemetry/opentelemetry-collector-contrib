@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
@@ -253,8 +253,8 @@ func TestPushTraceData(tester *testing.T) {
 	defer server.Close()
 	td := newTestTraces()
 	res := td.ResourceSpans().At(0).Resource()
-	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
-	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
+	res.Attributes().PutStr(string(conventions.ServiceNameKey), testService)
+	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
 	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
 	var newSpan logzioSpan
@@ -286,8 +286,8 @@ func TestPushLogsData(tester *testing.T) {
 	defer server.Close()
 	ld := generateLogsOneEmptyTimestamp()
 	res := ld.ResourceLogs().At(0).Resource()
-	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
-	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
+	res.Attributes().PutStr(string(conventions.ServiceNameKey), testService)
+	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
 	err := testLogsExporter(tester, ld, &cfg)
 	require.NoError(tester, err)
 	var jsonLog map[string]any

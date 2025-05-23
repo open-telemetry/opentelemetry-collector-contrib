@@ -7,14 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.uber.org/zap"
 )
 
-type s3Reader struct {
+type s3TimeBasedReader struct {
 	logger *zap.Logger
 
 	listObjectsClient ListObjectsAPI
@@ -28,9 +27,7 @@ type s3Reader struct {
 	notifier          statusNotifier
 }
 
-type s3ReaderDataCallback func(context.Context, string, []byte) error
-
-func newS3Reader(ctx context.Context, notifier statusNotifier, logger *zap.Logger, cfg *Config) (*s3Reader, error) {
+func newS3TimeBasedReader(ctx context.Context, notifier statusNotifier, logger *zap.Logger, cfg *Config) (*s3TimeBasedReader, error) {
 	listObjectsClient, getObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
 	if err != nil {
 		return nil, err
@@ -47,7 +44,7 @@ func newS3Reader(ctx context.Context, notifier statusNotifier, logger *zap.Logge
 		return nil, errors.New("s3_partition must be either 'hour' or 'minute'")
 	}
 
-	return &s3Reader{
+	return &s3TimeBasedReader{
 		logger:            logger,
 		listObjectsClient: listObjectsClient,
 		getObjectClient:   getObjectClient,
@@ -61,8 +58,8 @@ func newS3Reader(ctx context.Context, notifier statusNotifier, logger *zap.Logge
 	}, nil
 }
 
-//nolint:golint
-func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dataCallback s3ReaderDataCallback) error {
+// readAll implements the s3Reader interface
+func (s3Reader *s3TimeBasedReader) readAll(ctx context.Context, telemetryType string, dataCallback s3ObjectCallback) error {
 	var timeStep time.Duration
 	if s3Reader.s3Partition == "hour" {
 		timeStep = time.Hour
@@ -118,7 +115,7 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 	return nil
 }
 
-func (s3Reader *s3Reader) readTelemetryForTime(ctx context.Context, t time.Time, telemetryType string, dataCallback s3ReaderDataCallback) error {
+func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t time.Time, telemetryType string, dataCallback s3ObjectCallback) error {
 	params := &s3.ListObjectsV2Input{
 		Bucket: &s3Reader.s3Bucket,
 	}
@@ -137,7 +134,7 @@ func (s3Reader *s3Reader) readTelemetryForTime(ctx context.Context, t time.Time,
 			s3Reader.logger.Info("No telemetry found for time", zap.String("prefix", prefix), zap.Time("time", t))
 		} else {
 			for _, obj := range page.Contents {
-				data, err := s3Reader.retrieveObject(ctx, *obj.Key)
+				data, err := retrieveS3Object(ctx, s3Reader.getObjectClient, s3Reader.s3Bucket, *obj.Key)
 				if err != nil {
 					return err
 				}
@@ -152,7 +149,7 @@ func (s3Reader *s3Reader) readTelemetryForTime(ctx context.Context, t time.Time,
 	return nil
 }
 
-func (s3Reader *s3Reader) getObjectPrefixForTime(t time.Time, telemetryType string) string {
+func (s3Reader *s3TimeBasedReader) getObjectPrefixForTime(t time.Time, telemetryType string) string {
 	var timeKey string
 	switch s3Reader.s3Partition {
 	case S3PartitionMinute:
@@ -166,24 +163,7 @@ func (s3Reader *s3Reader) getObjectPrefixForTime(t time.Time, telemetryType stri
 	return fmt.Sprintf("%s/%s%s_", timeKey, s3Reader.filePrefix, telemetryType)
 }
 
-func (s3Reader *s3Reader) retrieveObject(ctx context.Context, key string) ([]byte, error) {
-	params := s3.GetObjectInput{
-		Bucket: &s3Reader.s3Bucket,
-		Key:    &key,
-	}
-	output, err := s3Reader.getObjectClient.GetObject(ctx, &params)
-	if err != nil {
-		return nil, err
-	}
-	defer output.Body.Close()
-	contents, err := io.ReadAll(output.Body)
-	if err != nil {
-		return nil, err
-	}
-	return contents, nil
-}
-
-func (s3Reader *s3Reader) sendStatus(ctx context.Context, status statusNotification) {
+func (s3Reader *s3TimeBasedReader) sendStatus(ctx context.Context, status statusNotification) {
 	if s3Reader.notifier != nil {
 		s3Reader.notifier.SendStatus(ctx, status)
 	}

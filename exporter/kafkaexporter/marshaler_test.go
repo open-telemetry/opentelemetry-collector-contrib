@@ -34,6 +34,17 @@ func TestGetLogsMarshaler(t *testing.T) {
 	require.Len(t, messages, 1)
 	assert.Equal(t, "overridden", string(messages[0].Value))
 
+	// Verify named extensions are supported.
+	m = mustGetLogsMarshaler(t, "otlp_proto/alice", extensionsHost{
+		component.MustNewIDWithName("otlp_proto", "alice"): plogMarshalerFuncExtension(func(plog.Logs) ([]byte, error) {
+			return []byte("bob"), nil
+		}),
+	})
+	messages, err = m.MarshalLogs(plog.NewLogs())
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "bob", string(messages[0].Value))
+
 	// Specifying an extension for a different type should fail fast.
 	m, err = getLogsMarshaler("otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): struct{ component.Component }{},

@@ -17,16 +17,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
-// WavefrontParser converts metrics in the Wavefront format, see
+// wavefrontParser converts metrics in the Wavefront format, see
 // https://docs.wavefront.com/wavefront_data_format.html#metrics-data-format-syntax,
 // into the internal format of the Collector
-type WavefrontParser struct {
+type wavefrontParser struct {
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
-	_ protocol.Parser       = (*WavefrontParser)(nil)
-	_ protocol.ParserConfig = (*WavefrontParser)(nil)
+	_ protocol.Parser       = (*wavefrontParser)(nil)
+	_ protocol.ParserConfig = (*wavefrontParser)(nil)
 )
 
 // Only two chars can be escaped per Wavefront SDK, see
@@ -37,7 +40,7 @@ var escapedCharReplacer = strings.NewReplacer(
 )
 
 // BuildParser creates a new Parser instance that receives Wavefront metric data.
-func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
+func (wp *wavefrontParser) BuildParser() (protocol.Parser, error) {
 	return wp, nil
 }
 
@@ -50,7 +53,7 @@ func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
 //	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
-func (wp *WavefrontParser) Parse(line string) (pmetric.Metric, error) {
+func (wp *wavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 3 {
 		return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]", line)
@@ -113,7 +116,7 @@ func (wp *WavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	return metric, nil
 }
 
-func (wp *WavefrontParser) injectCollectDLabels(
+func (wp *wavefrontParser) injectCollectDLabels(
 	metricName string,
 	attributes pcommon.Map,
 ) string {

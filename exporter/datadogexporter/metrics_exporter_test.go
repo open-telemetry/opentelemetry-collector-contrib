@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -147,8 +147,8 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
+		string(conventions.DeploymentEnvironmentKey): "dev",
+		"custom_attribute":                           "custom_value",
 	}
 	tests := []struct {
 		metrics               pmetric.Metrics
@@ -233,7 +233,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				string(conventions127.DeploymentEnvironmentNameKey): "new_env",
 				"custom_attribute": "custom_value",
 			}),
 			source: source.Source{
@@ -554,8 +554,8 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
+		string(conventions.DeploymentEnvironmentKey): "dev",
+		"custom_attribute":                           "custom_value",
 	}
 	tests := []struct {
 		metrics               pmetric.Metrics
@@ -633,7 +633,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				string(conventions127.DeploymentEnvironmentNameKey): "new_env",
 				"custom_attribute": "custom_value",
 			}),
 			source: source.Source{
@@ -807,8 +807,8 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				conventions.AttributeDeploymentEnvironment: "dev",
-				"custom_attribute":                         "custom_value",
+				string(conventions.DeploymentEnvironmentKey): "dev",
+				"custom_attribute":                           "custom_value",
 			}),
 			source: source.Source{
 				Kind:       source.HostnameKind,

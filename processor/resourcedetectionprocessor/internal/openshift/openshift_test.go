@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap/zaptest"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -118,10 +118,10 @@ func TestDetect(t *testing.T) {
 			expectedResource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attrs := res.Attributes()
-				attrs.PutStr(conventions.AttributeK8SClusterName, "test-d-bm4rt")
-				attrs.PutStr(conventions.AttributeCloudProvider, "aws")
-				attrs.PutStr(conventions.AttributeCloudPlatform, "aws_openshift")
-				attrs.PutStr(conventions.AttributeCloudRegion, "us-east-1")
+				attrs.PutStr(string(conventions.K8SClusterNameKey), "test-d-bm4rt")
+				attrs.PutStr(string(conventions.CloudProviderKey), "aws")
+				attrs.PutStr(string(conventions.CloudPlatformKey), "aws_openshift")
+				attrs.PutStr(string(conventions.CloudRegionKey), "us-east-1")
 				return res
 			}(),
 			expectedSchemaURL: conventions.SchemaURL,

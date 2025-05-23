@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -218,12 +218,12 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 		{
 			attrs: map[string]any{
-				semconv.AttributeCloudProvider:      semconv.AttributeCloudProviderAWS,
-				semconv.AttributeCloudPlatform:      semconv.AttributeCloudPlatformAWSECS,
-				semconv.AttributeAWSECSTaskARN:      "example-task-ARN",
-				semconv.AttributeAWSECSTaskFamily:   "example-task-family",
-				semconv.AttributeAWSECSTaskRevision: "example-task-revision",
-				semconv.AttributeAWSECSLaunchtype:   semconv.AttributeAWSECSLaunchtypeFargate,
+				string(semconv.CloudProviderKey):      semconv.CloudProviderAWS.Value.AsString(),
+				string(semconv.CloudPlatformKey):      semconv.CloudPlatformAWSECS.Value.AsString(),
+				string(semconv.AWSECSTaskARNKey):      "example-task-ARN",
+				string(semconv.AWSECSTaskFamilyKey):   "example-task-family",
+				string(semconv.AWSECSTaskRevisionKey): "example-task-revision",
+				string(semconv.AWSECSLaunchtypeKey):   semconv.AWSECSLaunchtypeFargate.Value.AsString(),
 			},
 			host: "",
 			tags: []string{"version:latest", "command:otelcol", "task_arn:example-task-ARN"},
@@ -429,7 +429,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindInternal))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -487,7 +487,7 @@ func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationA
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindServer))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindServer))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
