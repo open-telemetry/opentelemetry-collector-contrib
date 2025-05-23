@@ -47,8 +47,8 @@ func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], erro
 		return accessPeriod[K](), nil
 	case "comment_string_indices":
 		return accessCommentStringIndices[K](), nil
-	case "default_sample_type_string_index":
-		return accessDefaultSampleTypeStringIndex[K](), nil
+	case "default_sample_type_index":
+		return accessDefaultSampleTypeIndex[K](), nil
 	case "profile_id":
 		nextPath := path.Next()
 		if nextPath != nil {
@@ -205,14 +205,14 @@ func accessCommentStringIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDefaultSampleTypeStringIndex[K ProfileContext]() ottl.StandardGetSetter[K] {
+func accessDefaultSampleTypeIndex[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return int64(tCtx.GetProfile().DefaultSampleTypeStrindex()), nil
+			return int64(tCtx.GetProfile().DefaultSampleTypeIndex()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if i, ok := val.(int64); ok {
-				tCtx.GetProfile().SetDefaultSampleTypeStrindex(int32(i))
+				tCtx.GetProfile().SetDefaultSampleTypeIndex(int32(i))
 			}
 			return nil
 		},
