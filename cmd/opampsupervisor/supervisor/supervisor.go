@@ -625,12 +625,24 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
+	// load the remote config, this is needed for start settings
+	s.loadRemoteConfig()
+
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
+		RemoteConfigStatus: func() *protobufs.RemoteConfigStatus {
+			if s.remoteConfig != nil {
+				return &protobufs.RemoteConfigStatus{
+					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+					LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
+				}
+			}
+			return nil
+		}(),
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
 				s.telemetrySettings.Logger.Debug("Connected to the server.")
@@ -1046,8 +1058,8 @@ func (s *Supervisor) composeAgentConfigFiles() []byte {
 	return b
 }
 
-func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	var lastRecvRemoteConfig, lastRecvOwnTelemetryConfig []byte
+func (s *Supervisor) loadRemoteConfig() {
+	var lastRecvRemoteConfig []byte
 	var err error
 
 	if s.config.Capabilities.AcceptsRemoteConfig {
@@ -1070,6 +1082,11 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	} else {
 		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
+}
+
+func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
+	var lastRecvOwnTelemetryConfig []byte
+	var err error
 
 	if s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs {
 		// Try to load the last received own metrics config if it exists.
