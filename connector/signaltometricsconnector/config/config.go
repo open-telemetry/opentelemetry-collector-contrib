@@ -37,6 +37,9 @@ var defaultHistogramBuckets = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
+// Regex for [key] selector after ExtractGrokPatterns
+var grokPatternKey = regexp.MustCompile(`ExtractGrokPatterns\([^)]*\)\s*\[[^\]]+\]`)
+
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config for the connector. Each configuration field describes the metrics
@@ -326,7 +329,7 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		// if ExtractGrokPatterns is used, validate the key selector
 		if strings.Contains(mi.Gauge.Value, "ExtractGrokPatterns") {
 			// Ensure a [key] selector is present after ExtractGrokPatterns
-			if !regexp.MustCompile(`ExtractGrokPatterns\([^)]*\)\s*\[[^\]]+\]`).MatchString(mi.Gauge.Value) {
+			if !grokPatternKey.MatchString(mi.Gauge.Value) {
 				return errors.New("ExtractGrokPatterns: a single key selector[key] is required for signal to gauge")
 			}
 		}
