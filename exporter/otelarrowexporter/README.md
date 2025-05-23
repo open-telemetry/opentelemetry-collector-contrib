@@ -129,12 +129,12 @@ limits the decision to a random subset of `N` streams.
 
 ### Matching Metadata Per Stream
 
-The following configuration values allow for separate streams per unique 
+The following configuration values allow for separate streams per unique
 metadata combinations:
 - `metadata_keys` (default = empty): When set, this exporter will create one
-  arrow exporter instance per distinct combination of values in the 
+  arrow exporter instance per distinct combination of values in the
   client.Metadata.
-- `metadata_cardinality_limit` (default = 1000): When metadata_keys is not empty, 
+- `metadata_cardinality_limit` (default = 1000): When metadata_keys is not empty,
   this setting limits the number of unique combinations of metadata key values
   that will be processed over the lifetime of the exporter.
 
@@ -267,36 +267,70 @@ exporters:
 
 ### Batching Configuration
 
-This exporter supports built-in `exporterhelper` support for queue and
-batch behavior using the `sending_queue` settings. Note that the
-bytes-based batching is supported, but that the exporterhelper
+This exporter supports built-in `exporterhelper` support for combined
+queue and batch behavior via the `sending_queue` settings. Note that
+the bytes-based batching is supported, but that the exporterhelper
 estimates batch sizes using the OTLP representation, not considering
 Arrow compression.
+
+In the default configuration, without a persistent storage extension,
+the exporter uses an in-memory queue and will respond to the caller
+before the export completes. 
+
+In the `sending_queue` structure, the default settings set by this
+component are:
+
+- `block_on_overflow: true`
+- `wait_for_result: false`
+- `sizer: items`
+- `queue_size: 100_000`
+- `batch::flush_timeout: 1s`
+- `batch::min_size: 1_000`
+- `batch::max_size: 1_500`
+- `num_consumers: 100`
+
+This indicates to use the in-memory queue, to return success to the
+client on acceptance and block when full, to allow 100 thousand items
+to export concurrently in up to 100 concurrent batches of 1000 to 1500
+items each.
+
+For additional safety in the event of a Collector crash, set
+`wait_for_result: true`. The example below demonstrates how to use the
+in-memory queue for batching with this additional level of safety:
 
 ```
 exporters:
   otelarrow:
+    # ...
     sending_queue:
       enabled: true
+
+	  # Use wait_for_result: true for additional safety, otherwise
+	  # a collector crash will cause loss of data.
 	  wait_for_result: true
+
+	  # This is the default setting, it ensures the exporter will
+	  # block the pipeline (subject to deadline) instead of failing
+	  # fast when overflow data arrives.
 	  block_on_overflow: true
-	  queue_size: 1000
+	  
+	  # The queue will admit 1 million items into the queue and return
+	  # success before blocking new requests.
 	  sizer: items
+	  queue_size: 1_000_000
+
+	  # Use relatively large batches, improves compression.
       batch:
 	    flush_timeout: 1s
-		min_size: 4000
-		max_size: 5000
+		min_size: 4_000
+		max_size: 5_000
 
-	  # (num_consumers / num_streams) is the average number
-	  # of concurrent requests per stream.
-	  num_consumers: 40
-	  arrow:
-	    num_streams: 4
+      # With max-size batches, we need 200 consumers to keep the
+	  # OTel-Arrow streams busy. There will be (num_consumers / 
+	  # num_streams) pending requests per stream on average.
+	  num_consumers: 200
 
-	  # Optional persistent storage
-	  # storage: ...
-	  
-extensions:
-  file_storage/otc:
-    directory: /var/lib/storage/otc
+	  # Optional persistent storage. If this is set, you
+	  # can safely use wait_for_result: false above.
+	  # storage: name_of_extension
 ```

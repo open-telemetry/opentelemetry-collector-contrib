@@ -38,17 +38,25 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	// These defaults are taken from the experimental setup used
 	// in the blog post covering Phase 1 performance results.  These
-	// were the defaults used in the concurrentbatchprocessor
+	// were the defaults used in the concurrentbatchprocessor, too.
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.WaitForResult = true
 	queueCfg.BlockOnOverflow = true
 	queueCfg.Sizer = exporterhelper.RequestSizerTypeItems
-	queueCfg.NumConsumers = arrow.DefaultProducersPerStream * arrow.DefaultNumStreams
 	queueCfg.Batch = &exporterhelper.BatchConfig{
 		FlushTimeout: time.Second,
 		MinSize:      1000,
 		MaxSize:      1500,
 	}
+	// The default is configured in items, this value represents
+	// 60-100 concurrent batches.
+	queueCfg.QueueSize = 100000
+	// This enables by default an appropriate number of consumers
+	// Note for this exporter the consumer's role is to take from
+	// the queue and call into an Arrow stream. When the exporter
+	// falls back to OTLP, this is the number of concurrent OTLP
+	// exports.
+	queueCfg.NumConsumers = int(queueCfg.QueueSize / queueCfg.Batch.MinSize)
+
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),

@@ -483,17 +483,17 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			// Ensure that initially there is no data in the receiver.
 			assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-			// Send empty trace.
-			td := ptrace.NewTraces()
+			// Send 2 spans.
+			td := testdata.GenerateTraces(2)
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
-			// Wait until it is received.
+			// Wait until received.
 			assert.Eventually(t, func() bool {
 				return rcv.requestCount.Load() > 0
 			}, 10*time.Second, 5*time.Millisecond)
 
-			// Ensure it was received empty.
-			assert.EqualValues(t, 0, rcv.totalItems.Load())
+			// Ensure all were received.
+			assert.EqualValues(t, 2, rcv.totalItems.Load())
 		})
 	}
 }
@@ -748,7 +748,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-	td := ptrace.NewTraces()
+	td := testdata.GenerateTraces(2)
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	assert.Never(t, func() bool {
@@ -934,7 +934,6 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	cfg.QueueSettings.Enabled = false
 
 	set := exportertest.NewNopSettings(factory.Type())
-	set.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)

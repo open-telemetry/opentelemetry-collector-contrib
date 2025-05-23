@@ -62,7 +62,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				NumConsumers:    2,
 				QueueSize:       10,
 				Sizer:           exporterhelper.RequestSizerTypeItems,
-				WaitForResult:   true,
 				BlockOnOverflow: true,
 				Batch: &exporterhelper.BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
