@@ -36,7 +36,7 @@ resource_attributes:
     type: slice
     enabled: false
   host.interface:
-    description: Interfaces for the host
+    description: Network interfaces for the host
     type: slice
     enabled: false
   host.cpu.vendor.id:
