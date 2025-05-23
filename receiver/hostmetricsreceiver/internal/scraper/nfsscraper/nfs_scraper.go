@@ -31,7 +31,7 @@ type nfsScraper struct {
 }
 
 // newNfsScraper creates an NFS Scraper related metric
-func newNfsScraper(settings scraper.Settings, cfg *Config) (*nfsScraper) {
+func newNfsScraper(settings scraper.Settings, cfg *Config) *nfsScraper {
 	return &nfsScraper{
 		settings:  settings,
 		config:    cfg,

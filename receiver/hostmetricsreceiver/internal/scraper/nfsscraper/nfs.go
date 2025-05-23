@@ -5,9 +5,9 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 // nfs.net.* stats
 type NfsNetStats struct {
-	NetCount uint64
-	UDPCount uint64
-	TCPCount uint64
+	NetCount           uint64
+	UDPCount           uint64
+	TCPCount           uint64
 	TCPConnectionCount uint64
 }
 

@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	nfsProcFile	= "/proc/net/rpc/nfs"
-	nfsdProcFile	= "/proc/net/rpc/nfsd"
+	nfsProcFile  = "/proc/net/rpc/nfs"
+	nfsdProcFile = "/proc/net/rpc/nfsd"
 )
 
 // from linux/fs/nfs/nfs3xdr.c:nfs3_procedures v6.12
@@ -225,14 +225,13 @@ var nfsdV4Ops = []string{
 	"REMOVEXATTR",
 }
 
-
 func getNfsStats() (*NfsStats, error) {
 	f, err := os.Open(nfsProcFile)
-        if err != nil {
-                return nil, err
-        }
-	
-        defer f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
 
 	return parseNfsStats(f)
 }
@@ -242,10 +241,10 @@ func parseNfsNetStats(values []uint64) (*NfsNetStats, error) {
 		return nil, fmt.Errorf("parsing nfs client network stats: unexpected field count")
 	}
 
-	return &NfsNetStats {
-		NetCount: values[0],
-		UDPCount: values[1],
-		TCPCount: values[2],
+	return &NfsNetStats{
+		NetCount:           values[0],
+		UDPCount:           values[1],
+		TCPCount:           values[2],
 		TCPConnectionCount: values[3],
 	}, nil
 }
@@ -255,16 +254,16 @@ func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
 		return nil, fmt.Errorf("parsing nfs client RPC stats: unexpected field count")
 	}
 
-	return &NfsRPCStats {
-		RPCCount: values[0],
-		RetransmitCount: values[1],
+	return &NfsRPCStats{
+		RPCCount:         values[0],
+		RetransmitCount:  values[1],
 		AuthRefreshCount: values[2],
 	}, nil
 }
 
 func parseNfsV3ProcedureStats(values []uint64) ([]*RPCProcedureStats, error) {
 	procedurecnt := values[0]
-	
+
 	if len(values)-1 != int(procedurecnt) {
 		return nil, fmt.Errorf("parsing nfsv3 client procedure stats: unexpected field count")
 	}
@@ -300,10 +299,14 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		}
 
 		switch stattype := fields[0]; stattype {
-		case "net": nfsStats.NfsNetStats, err = parseNfsNetStats(values)
-		case "rpc": nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
-		case "proc3": nfsStats.NfsV3ProcedureStats, err = parseNfsV3ProcedureStats(values)
-		case "proc4": nfsStats.NfsV4ProcedureStats, err = parseNfsV4ProcedureStats(values)
+		case "net":
+			nfsStats.NfsNetStats, err = parseNfsNetStats(values)
+		case "rpc":
+			nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
+		case "proc3":
+			nfsStats.NfsV3ProcedureStats, err = parseNfsV3ProcedureStats(values)
+		case "proc4":
+			nfsStats.NfsV4ProcedureStats, err = parseNfsV4ProcedureStats(values)
 		}
 
 		if err != nil {
