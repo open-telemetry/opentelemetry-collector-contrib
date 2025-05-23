@@ -59,6 +59,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["copy_metric"] = newCopyMetricFactory()
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
+	expected["split_on_attribute"] = newSplitOnAttributeFactory()
 
 	actual := MetricFunctions()
 	require.Len(t, actual, len(expected))
