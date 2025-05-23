@@ -167,7 +167,7 @@ resourceMetrics:
           - description: Time a page will stay in the buffer pool.
             gauge:
               dataPoints:
-                - asInt: "433208"
+                - asInt: "16771"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.life_expectancy
@@ -185,7 +185,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of page lookups.
@@ -215,7 +215,7 @@ resourceMetrics:
           - description: Time a page will stay in the buffer pool.
             gauge:
               dataPoints:
-                - asInt: "433208"
+                - asInt: "16771"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.life_expectancy
@@ -233,7 +233,7 @@ resourceMetrics:
             intValue: "1433"
         - key: sqlserver.instance.name
           value:
-            stringValue: 8cac97ac9b8f
+            stringValue: d26d40521426
     scopeMetrics:
       - metrics:
           - description: Total number of mirror write transactions.
