@@ -3,11 +3,10 @@ type: count
 status:
   class: connector
   stability:
-    alpha: [traces_to_metrics, metrics_to_metrics, logs_to_metrics, profiles_to_metrics]
+    unmaintained: [traces_to_metrics, metrics_to_metrics, logs_to_metrics, profiles_to_metrics]
   distributions: [contrib, k8s]
   codeowners:
-    active: [djaglowski]
-    emeritus: [jpkrohling]
+    emeritus: [djaglowski, jpkrohling]
     seeking_new: true
 
 tests:
