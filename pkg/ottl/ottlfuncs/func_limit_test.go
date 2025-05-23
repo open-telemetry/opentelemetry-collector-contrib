@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,15 +20,22 @@ func Test_limit(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
 			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			if v, ok := m.(pcommon.Map); ok {
+				v.CopyTo(tCtx)
+				return nil
+			}
+			return errors.New("expected pcommon.Map")
 		},
 	}
 
 	tests := []struct {
 		name   string
-		target ottl.PMapGetter[pcommon.Map]
+		target ottl.PMapGetSetter[pcommon.Map]
 		limit  int64
 		keep   []string
 		want   func(pcommon.Map)
@@ -131,18 +139,18 @@ func Test_limit(t *testing.T) {
 func Test_limit_validation(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.PMapGetter[any]
+		target ottl.PMapGetSetter[any]
 		keep   []string
 		limit  int64
 	}{
 		{
 			name:   "limit less than zero",
-			target: &ottl.StandardPMapGetter[any]{},
+			target: &ottl.StandardPMapGetSetter[any]{},
 			limit:  int64(-1),
 		},
 		{
 			name:   "limit less than # of keep attrs",
-			target: &ottl.StandardPMapGetter[any]{},
+			target: &ottl.StandardPMapGetSetter[any]{},
 			keep:   []string{"test", "test"},
 			limit:  int64(1),
 		},
@@ -157,9 +165,12 @@ func Test_limit_validation(t *testing.T) {
 
 func Test_limit_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -170,9 +181,12 @@ func Test_limit_bad_input(t *testing.T) {
 }
 
 func Test_limit_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
