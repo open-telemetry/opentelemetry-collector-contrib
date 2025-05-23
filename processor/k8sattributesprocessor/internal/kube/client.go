@@ -32,6 +32,10 @@ import (
 )
 
 const (
+	// From historical reasons some of workloads are using `*.labels.*` and `*.annotations.*` instead of
+	// `*.label.*` and `*.annotation.*`
+	// Sematic conventions define `*.label.*` and `*.annotation.*`
+	// More information - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37957
 	K8sPodLabels            = "k8s.pod.labels.%s"
 	K8sPodAnnotations       = "k8s.pod.annotations.%s"
 	K8sNodeLabels           = "k8s.node.labels.%s"
