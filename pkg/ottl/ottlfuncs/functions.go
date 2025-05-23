@@ -40,6 +40,7 @@ func converters[K any]() []ottl.Factory[K] {
 		// Converters
 		NewBase64DecodeFactory[K](),
 		NewDecodeFactory[K](),
+		NewCommunityIDFactory[K](),
 		NewConcatFactory[K](),
 		NewConvertCaseFactory[K](),
 		NewConvertAttributesToElementsXMLFactory[K](),
