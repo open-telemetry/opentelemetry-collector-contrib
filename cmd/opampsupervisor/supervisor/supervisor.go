@@ -44,6 +44,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.14.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -126,6 +127,9 @@ type Supervisor struct {
 	// Supervisor's persistent state
 	persistentState *persistentState
 
+	// Supervisor's package manager
+	packageManager *packageManager
+
 	noopPipelineTemplate         *template.Template
 	opampextensionTemplate       *template.Template
 	extraTelemetryConfigTemplate *template.Template
@@ -159,8 +163,9 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	doneChan chan struct{}
-	agentWG  sync.WaitGroup
+	doneChan      chan struct{}
+	agentWG       sync.WaitGroup
+	agentStopChan chan agentStopRequest
 
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
@@ -202,6 +207,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		agentDescription:               &atomic.Value{},
 		availableComponents:            &atomic.Value{},
 		doneChan:                       make(chan struct{}),
+		agentStopChan:                  make(chan agentStopRequest),
 		customMessageToServer:          make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                      &atomic.Value{},
 		featureGates:                   map[string]struct{}{},
@@ -342,8 +348,23 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
 
-	if err = s.getBootstrapInfo(); err != nil {
+	agentVersion, err := s.getBootstrapInfo()
+	if err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
+	}
+
+	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
+		s.packageManager, err = newPackageManager(
+			s.config.Agent.Executable,
+			s.config.Storage.Directory,
+			agentVersion,
+			s.persistentState,
+			s.config.Agent.Signature,
+			s,
+		)
+		if err != nil {
+			return fmt.Errorf("error creating package state manager: %w", err)
+		}
 	}
 
 	s.telemetrySettings.Logger.Info("Supervisor starting",
@@ -449,26 +470,26 @@ func (s *Supervisor) createTemplates() error {
 // an OpAMP extension, obtains the agent description, then
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
-func (s *Supervisor) getBootstrapInfo() (err error) {
+func (s *Supervisor) getBootstrapInfo() (agentVersion string, err error) {
 	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
 	defer span.End()
 
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
-		return err
+		return "", err
 	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
-		return err
+		return "", err
 	}
 
 	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
-		return fmt.Errorf("failed to write agent config: %w", err)
+		return "", fmt.Errorf("failed to write agent config: %w", err)
 	}
 
 	srv := server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
@@ -497,7 +518,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				identAttr := message.AgentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
-					if attr.Key == string(conventions.ServiceInstanceIDKey) {
+					switch attr.Key {
+					case string(conventions.ServiceInstanceIDKey):
+						// TODO: Consider whether to attempt restarting the Collector.
+						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
@@ -508,6 +532,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 							return response
 						}
 						instanceIDSeen = true
+					case string(conventions.ServiceVersionKey):
+						agentVersion = attr.Value.GetStringValue()
 					}
 				}
 
@@ -550,7 +576,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}.toServerSettings())
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
-		return err
+		return "", err
 	}
 
 	defer func() {
@@ -574,12 +600,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
-		return err
+		return "", err
 	}
 
 	if err = cmd.Start(s.runCtx); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
-		return err
+		return "", err
 	}
 
 	defer func() {
@@ -593,11 +619,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		if connected.Load() {
 			msg := "collector connected but never responded with an AgentDescription message"
 			span.SetStatus(codes.Error, msg)
-			return errors.New(msg)
+			return "", errors.New(msg)
 		} else {
 			msg := "collector's OpAMP client never connected to the Supervisor"
 			span.SetStatus(codes.Error, msg)
-			return errors.New(msg)
+			return "", errors.New(msg)
 		}
 	case err = <-done:
 		if errors.Is(err, errNonMatchingInstanceUID) {
@@ -621,7 +647,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		} else {
 			span.SetStatus(codes.Ok, "")
 		}
-		return err
+		return agentVersion, err
 	}
 }
 
@@ -661,12 +687,19 @@ func (s *Supervisor) startOpAMPClient() error {
 	}
 
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.OpaqueHeaders()))
+
+	var pkgStateProvider types.PackagesStateProvider
+	if s.packageManager != nil {
+		pkgStateProvider = s.packageManager
+	}
+
 	settings := types.StartSettings{
-		OpAMPServerURL:     s.config.Server.Endpoint,
-		Header:             s.config.Server.Headers,
-		TLSConfig:          tlsConfig,
-		InstanceUid:        types.InstanceUid(s.persistentState.InstanceID),
-		RemoteConfigStatus: s.persistentState.GetLastRemoteConfigStatus(),
+		OpAMPServerURL:        s.config.Server.Endpoint,
+		Header:                s.config.Server.Headers,
+		TLSConfig:             tlsConfig,
+		InstanceUid:           types.InstanceUid(s.persistentState.InstanceID),
+		RemoteConfigStatus:    s.persistentState.GetLastRemoteConfigStatus(),
+		PackagesStateProvider: pkgStateProvider,
 		Callbacks: types.Callbacks{
 			OnConnect: func(context.Context) {
 				s.telemetrySettings.Logger.Info("Connected to the server.")
@@ -806,18 +839,11 @@ func (nopHost) GetExtensions() map[component.ID]component.Component {
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
-
-	var err error
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		return err
-	}
-
 	s.telemetrySettings.Logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
 
-	err = s.opampServer.Start(flattenedSettings{
+	err := s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnecting: func(*http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
@@ -937,6 +963,13 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
 	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
 	s.agentDescription.Store(ad)
+
+	if s.opampClient != nil {
+		err := s.opampClient.SetAgentDescription(ad)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Failed to set agent description.", zap.Error(err))
+		}
+	}
 }
 
 // setAvailableComponents sets the available components of the OpAMP agent
@@ -1175,6 +1208,12 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	resourceAttrs := map[string]string{}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	for _, attr := range ad.IdentifyingAttributes {
+		if attr.Key == string(semconv.ServiceVersionKey) {
+			// Allow the agent to report its own version.
+			// We do this since the version may change if an agent upgrade is pushed.
+			continue
+		}
+
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
 	for _, attr := range ad.NonIdentifyingAttributes {
@@ -1484,7 +1523,7 @@ func (s *Supervisor) handleRestartCommand() error {
 	return err
 }
 
-func (s *Supervisor) startAgent() (agentStartStatus, error) {
+func (s *Supervisor) startAgentCommand() (agentStartStatus, error) {
 	if s.cfgState.Load().(*configState).configMapIsEmpty {
 		// Don't start the agent if there is no config to run
 		s.telemetrySettings.Logger.Info("No config present, not starting agent.")
@@ -1509,11 +1548,38 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	return agentStarting, nil
 }
 
+// stopAgentProcess stops the agent process. The process can be started again by closing the returned channel.
+func (s *Supervisor) stopAgentProcess(ctx context.Context) (chan struct{}, error) {
+	start := make(chan struct{})
+	processStopped := make(chan struct{})
+
+	s.agentStopChan <- agentStopRequest{
+		processStopped: processStopped,
+		start:          start,
+	}
+
+	select {
+	case <-processStopped:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	return start, nil
+}
+
+// agentStopRequest is a request to the agent goroutine to stop the agent.
+type agentStopRequest struct {
+	// processStopped is closed by the agent goroutine when the agent process has been shutdown.
+	processStopped chan struct{}
+	// start is closed by the requester in order to signal to the agent goroutine to start the agent again.
+	start chan struct{}
+}
+
 func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
-		_, err := s.startAgent()
+		_, err := s.startAgentCommand()
 		if err != nil {
 			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
 			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1555,7 +1621,7 @@ func (s *Supervisor) runAgentProcess() {
 			// and the HUP one. It takes care of not starting the agent if the config
 			// is empty and also of starting it when the config changes from empty
 			// to non-empty.
-			status, err := s.startAgent()
+			status, err := s.startAgentCommand()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1624,7 +1690,7 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-restartTimer.C:
 			s.telemetrySettings.Logger.Debug("Agent starting after start backoff")
-			_, err := s.startAgent()
+			_, err := s.startAgentCommand()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("restarting agent failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1644,6 +1710,29 @@ func (s *Supervisor) runAgentProcess() {
 				s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 			}
 			return
+
+		case stopRequest := <-s.agentStopChan:
+			err := s.commander.Stop(context.Background())
+			if err != nil {
+				s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
+			}
+
+			close(stopRequest.processStopped)
+
+			select {
+			case <-stopRequest.start:
+				// need to get bootstrap info after updating agent binary
+				_, err := s.getBootstrapInfo()
+				if err != nil {
+					s.telemetrySettings.Logger.Error("Could not get bootstrap info", zap.Error(err))
+				}
+				// now restart the agent
+				_, err = s.startAgentCommand()
+				if err != nil {
+					s.telemetrySettings.Logger.Error("Could not start agent process", zap.Error(err))
+				}
+			case <-s.doneChan:
+			}
 		}
 	}
 }
@@ -1930,6 +2019,13 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			OwnTraces:  msg.OwnTracesConnSettings,
 			OwnLogs:    msg.OwnLogsConnSettings,
 		}) || configChanged
+	}
+
+	if msg.PackagesAvailable != nil {
+		err := msg.PackageSyncer.Sync(context.Background())
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
+		}
 	}
 
 	// Update the agent config if any messages have touched the config
