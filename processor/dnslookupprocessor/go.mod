@@ -5,7 +5,8 @@ go 1.23.0
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/cespare/xxhash v1.1.0
+	github.com/elastic/go-freelru v0.16.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
 	github.com/stretchr/testify v1.10.0

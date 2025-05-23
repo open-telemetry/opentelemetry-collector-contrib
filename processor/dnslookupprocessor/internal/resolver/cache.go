@@ -8,7 +8,8 @@ import (
 	"errors"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/cespare/xxhash"
+	lru "github.com/elastic/go-freelru"
 	"go.uber.org/zap"
 )
 
@@ -17,8 +18,8 @@ type CacheResolver struct {
 	name string
 	// nextResolver is the chain resolver to use if the cache misses
 	nextResolver Resolver
-	hitCache     *lru.LRU[string, string]
-	missCache    *lru.LRU[string, struct{}]
+	hitCache     *lru.ShardedLRU[string, string]
+	missCache    *lru.ShardedLRU[string, struct{}]
 	logger       *zap.Logger
 }
 
@@ -43,7 +44,8 @@ func NewCacheResolver(
 
 	// Initialize hit cache
 	if hitCacheSize > 0 {
-		r.hitCache = lru.NewLRU[string, string](hitCacheSize, nil, hitCacheTTL)
+		r.hitCache, _ = lru.NewSharded[string, string](uint32(hitCacheSize), stringHashFn)
+		r.hitCache.SetLifetime(hitCacheTTL)
 		r.logger.Debug("Initialized hit cache",
 			zap.Int("size", hitCacheSize),
 			zap.Duration("ttl", hitCacheTTL))
@@ -53,7 +55,8 @@ func NewCacheResolver(
 
 	// Initialize miss cache
 	if missCacheSize > 0 {
-		r.missCache = lru.NewLRU[string, struct{}](missCacheSize, nil, missCacheTTL)
+		r.missCache, _ = lru.NewSharded[string, struct{}](uint32(missCacheSize), stringHashFn)
+		r.missCache.SetLifetime(missCacheTTL)
 		r.logger.Debug("Initialized miss cache",
 			zap.Int("size", missCacheSize),
 			zap.Duration("ttl", missCacheTTL))
@@ -79,16 +82,12 @@ func (r *CacheResolver) Name() string {
 }
 
 // Close releases resources used by the cache and the underlying chain resolver
-// Known issue: The deleteExpired goroutinue of LRU cache never exits. The Close() method is not called.
-// https://github.com/hashicorp/golang-lru/issues/159
 func (r *CacheResolver) Close() error {
 	if r.hitCache != nil {
 		r.hitCache.Purge()
-		// r.hitCache.Close()
 	}
 	if r.missCache != nil {
 		r.missCache.Purge()
-		// r.missCache.Close()
 	}
 
 	if r.nextResolver != nil {
@@ -147,4 +146,9 @@ func (r *CacheResolver) resolveWithCache(
 	}
 
 	return result, nil
+}
+
+// stringHashFn calculates a hash value from the keys for the LRU cache.
+func stringHashFn(s string) uint32 {
+	return uint32(xxhash.Sum64String(s))
 }
