@@ -573,6 +573,22 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			},
 			expected: "metric",
 		},
+		{
+			name: "with statements, conditions, and value expressions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			expressions: []string{
+				`resource.attributes["foo"]`,
+			},
+			conditions: []string{
+				`IsMatch(metric.name, "^bar.*")`,
+				`IsMatch(metric.name, "^foo.*")`,
+			},
+			expected: "metric",
+		},
 	}
 
 	for _, tt := range tests {
