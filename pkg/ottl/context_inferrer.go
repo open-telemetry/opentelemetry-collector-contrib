@@ -137,9 +137,9 @@ func (s *priorityContextInferrer) infer(statements, conditions, valueExprs []str
 func (s *priorityContextInferrer) inferFromHints(hints []priorityContextInferrerHints) (inferredContext string, err error) {
 	defer func() {
 		if inferredContext != "" {
-			s.telemetrySettings.Logger.Debug(fmt.Sprintf(`Inferred context: "%s"`, inferredContext))
+			s.telemetrySettings.Logger.Debug(fmt.Sprintf(`Inferred OTTL context: "%s"`, inferredContext))
 		} else {
-			s.telemetrySettings.Logger.Debug("Unable to infer context from statements", zap.Error(err))
+			s.telemetrySettings.Logger.Debug("Unable to infer OTTL context", zap.Error(err))
 		}
 	}()
 
