@@ -35,16 +35,11 @@ func TestFactory_Type(t *testing.T) {
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &Config{
-		ErrorMode:                    ottl.PropagateError,
-		TraceStatements:              []common.ContextStatements{},
-		MetricStatements:             []common.ContextStatements{},
-		LogStatements:                []common.ContextStatements{},
-		additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-		additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
-		additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-		additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-		additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
+	assert.EqualExportedValues(t, &Config{
+		ErrorMode:        ottl.PropagateError,
+		TraceStatements:  []common.ContextStatements{},
+		MetricStatements: []common.ContextStatements{},
+		LogStatements:    []common.ContextStatements{},
 	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
@@ -775,71 +770,67 @@ func createTestFuncFactory[K any](name string) ottl.Factory[K] {
 	return ottl.NewFactory(name, &TestFuncArguments[K]{}, createFunc)
 }
 
-func Test_FactoryWithAdditionalFunctions_CreateTraces(t *testing.T) {
+func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 	type testCase struct {
-		name                         string
-		statements                   []common.ContextStatements
-		additionalSpanFunctions      []ottl.Factory[ottlspan.TransformContext]
-		additionalSpanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]
-		wantErrorWith                string
+		name               string
+		statements         []common.ContextStatements
+		spanFunctions      []ottl.Factory[ottlspan.TransformContext]
+		spanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]
+		wantErrorWith      string
 	}
 
 	tests := []testCase{
 		{
-			name: "with additional span functions : statement with added span func",
+			name: "with span functions : statement with added span func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("span"),
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
-			additionalSpanFunctions: []ottl.Factory[ottlspan.TransformContext]{
-				createTestFuncFactory[ottlspan.TransformContext]("TestSpanFunc"),
-			},
-			additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
+			spanFunctions:      append(DefaultSpanFunctions(), createTestFuncFactory[ottlspan.TransformContext]("TestSpanFunc")),
+			spanEventFunctions: DefaultSpanEventFunctions(),
 		},
 		{
-			name: "with additional span functions : statement with missing span func",
+			name: "with span functions : statement with missing span func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("span"),
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
-			wantErrorWith:                `undefined function "TestSpanFunc"`,
-			additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-			additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
+			wantErrorWith:      `undefined function "TestSpanFunc"`,
+			spanFunctions:      DefaultSpanFunctions(),
+			spanEventFunctions: DefaultSpanEventFunctions(),
 		},
 		{
-			name: "with additional span event functions : statement with added span event func",
+			name: "with span event functions : statement with added span event func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("spanevent"),
 					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
 				},
 			},
-			additionalSpanFunctions: []ottl.Factory[ottlspan.TransformContext]{},
-			additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{
-				createTestFuncFactory[ottlspanevent.TransformContext]("TestSpanEventFunc"),
-			},
+			spanFunctions:      DefaultSpanFunctions(),
+			spanEventFunctions: append(DefaultSpanEventFunctions(), createTestFuncFactory[ottlspanevent.TransformContext]("TestSpanEventFunc")),
 		},
 		{
-			name: "with additional span event functions : statement with missing span event func",
+			name: "with span event functions : statement with missing span event func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("spanevent"),
 					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
 				},
 			},
-			wantErrorWith:                `undefined function "TestSpanEventFunc"`,
-			additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-			additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
+			wantErrorWith:      `undefined function "TestSpanEventFunc"`,
+			spanFunctions:      DefaultSpanFunctions(),
+			spanEventFunctions: DefaultSpanEventFunctions(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory(WithAdditionalSpanFunctions(tt.additionalSpanFunctions), WithAdditionalSpanEventFunctions(tt.additionalSpanEventFunctions))
+			factory := NewFactory(WithSpanFunctions(tt.spanFunctions...), WithSpanEventFunctions(tt.spanEventFunctions...))
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
@@ -858,43 +849,41 @@ func Test_FactoryWithAdditionalFunctions_CreateTraces(t *testing.T) {
 	}
 }
 
-func Test_FactoryWithAdditionalFunctions_CreateLogs(t *testing.T) {
+func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 	type testCase struct {
-		name                   string
-		statements             []common.ContextStatements
-		additionalLogFunctions []ottl.Factory[ottllog.TransformContext]
-		wantErrorWith          string
+		name          string
+		statements    []common.ContextStatements
+		logFunctions  []ottl.Factory[ottllog.TransformContext]
+		wantErrorWith string
 	}
 
 	tests := []testCase{
 		{
-			name: "with additional log functions : statement with added log func",
+			name: "with log functions : statement with added log func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
-			additionalLogFunctions: []ottl.Factory[ottllog.TransformContext]{
-				createTestFuncFactory[ottllog.TransformContext]("TestLogFunc"),
-			},
+			logFunctions: append(DefaultLogFunctions(), createTestFuncFactory[ottllog.TransformContext]("TestLogFunc")),
 		},
 		{
-			name: "with additional log functions : statement with missing log func",
+			name: "with log functions : statement with missing log func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
-			wantErrorWith:          `undefined function "TestLogFunc"`,
-			additionalLogFunctions: []ottl.Factory[ottllog.TransformContext]{},
+			wantErrorWith: `undefined function "TestLogFunc"`,
+			logFunctions:  DefaultLogFunctions(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory(WithAdditionalLogFunctions(tt.additionalLogFunctions))
+			factory := NewFactory(WithLogFunctions(tt.logFunctions...))
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
@@ -913,71 +902,67 @@ func Test_FactoryWithAdditionalFunctions_CreateLogs(t *testing.T) {
 	}
 }
 
-func Test_FactoryWithAdditionalFunctions_CreateMetrics(t *testing.T) {
+func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 	type testCase struct {
-		name                         string
-		statements                   []common.ContextStatements
-		additionalMetricFunctions    []ottl.Factory[ottlmetric.TransformContext]
-		additionalDataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]
-		wantErrorWith                string
+		name               string
+		statements         []common.ContextStatements
+		metricFunctions    []ottl.Factory[ottlmetric.TransformContext]
+		dataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]
+		wantErrorWith      string
 	}
 
 	tests := []testCase{
 		{
-			name: "with additional metric functions : statement with added metric func",
+			name: "with metric functions : statement with added metric func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("metric"),
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			additionalMetricFunctions: []ottl.Factory[ottlmetric.TransformContext]{
-				createTestFuncFactory[ottlmetric.TransformContext]("TestMetricFunc"),
-			},
-			additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
+			metricFunctions:    append(DefaultMetricFunctions(), createTestFuncFactory[ottlmetric.TransformContext]("TestMetricFunc")),
+			dataPointFunctions: DefaultDataPointFunctions(),
 		},
 		{
-			name: "with additional metric functions : statement with missing metric func",
+			name: "with metric functions : statement with missing metric func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("metric"),
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			wantErrorWith:                `undefined function "TestMetricFunc"`,
-			additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
-			additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
+			wantErrorWith:      `undefined function "TestMetricFunc"`,
+			metricFunctions:    DefaultMetricFunctions(),
+			dataPointFunctions: DefaultDataPointFunctions(),
 		},
 		{
-			name: "with additional datapoint functions : statement with added datapoint func",
+			name: "with datapoint functions : statement with added datapoint func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("datapoint"),
 					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
 				},
 			},
-			additionalMetricFunctions: []ottl.Factory[ottlmetric.TransformContext]{},
-			additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{
-				createTestFuncFactory[ottldatapoint.TransformContext]("TestDataPointFunc"),
-			},
+			metricFunctions:    DefaultMetricFunctions(),
+			dataPointFunctions: append(DefaultDataPointFunctions(), createTestFuncFactory[ottldatapoint.TransformContext]("TestDataPointFunc")),
 		},
 		{
-			name: "with additional datapoint functions : statement with missing datapoint func",
+			name: "with datapoint functions : statement with missing datapoint func",
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("datapoint"),
 					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
 				},
 			},
-			wantErrorWith:                `undefined function "TestDataPointFunc"`,
-			additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
-			additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
+			wantErrorWith:      `undefined function "TestDataPointFunc"`,
+			metricFunctions:    DefaultMetricFunctions(),
+			dataPointFunctions: DefaultDataPointFunctions(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory(WithAdditionalMetricFunctions(tt.additionalMetricFunctions), WithAdditionalDataPointFunctions(tt.additionalDataPointFunctions))
+			factory := NewFactory(WithMetricFunctions(tt.metricFunctions...), WithDataPointFunctions(tt.dataPointFunctions...))
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError

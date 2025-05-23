@@ -14,11 +14,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
@@ -80,11 +75,6 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
 			},
 		},
 		{
@@ -118,11 +108,6 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
 			},
 		},
 		{
@@ -137,13 +122,8 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements:             []common.ContextStatements{},
-				LogStatements:                []common.ContextStatements{},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
+				MetricStatements: []common.ContextStatements{},
+				LogStatements:    []common.ContextStatements{},
 			},
 		},
 		{
@@ -194,11 +174,6 @@ func TestLoadConfig(t *testing.T) {
 						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
 					},
 				},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
 			},
 		},
 		{
@@ -229,11 +204,6 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
 			},
 		},
 		{
@@ -264,11 +234,6 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
 			},
 		},
 		{
@@ -305,11 +270,6 @@ func TestLoadConfig(t *testing.T) {
 						ErrorMode:  "",
 					},
 				},
-				additionalSpanFunctions:      []ottl.Factory[ottlspan.TransformContext]{},
-				additionalSpanEventFunctions: []ottl.Factory[ottlspanevent.TransformContext]{},
-				additionalDataPointFunctions: []ottl.Factory[ottldatapoint.TransformContext]{},
-				additionalLogFunctions:       []ottl.Factory[ottllog.TransformContext]{},
-				additionalMetricFunctions:    []ottl.Factory[ottlmetric.TransformContext]{},
 			},
 		},
 	}
@@ -336,7 +296,7 @@ func TestLoadConfig(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
-				assert.Equal(t, tt.expected, cfg)
+				assert.EqualExportedValues(t, tt.expected, cfg)
 			}
 		})
 	}
