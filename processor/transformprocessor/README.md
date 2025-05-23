@@ -256,8 +256,8 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
-- [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
+- [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
@@ -357,27 +357,7 @@ Examples:
 
 - `convert_summary_count_val_to_sum("delta", true)`
 
-
 - `convert_summary_count_val_to_sum("cumulative", false)`
-
-### convert_summary_sum_val_to_sum
-
-`convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)`
-
-The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Summary's sum value.
-
-`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
-
-The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
-
-**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
-
-Examples:
-
-- `convert_summary_sum_val_to_sum("delta", true)`
-
-
-- `convert_summary_sum_val_to_sum("cumulative", false)`
 
 ### convert_summary_quantile_val_to_gauge
 
@@ -397,6 +377,24 @@ Examples:
 - `convert_summary_quantile_val_to_gauge("custom_quantile")`
 
 - `convert_summary_quantile_val_to_gauge()`
+
+### convert_summary_sum_val_to_sum
+
+`convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)`
+
+The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Summary's sum value.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+Examples:
+
+- `convert_summary_sum_val_to_sum("delta", true)`
+
+- `convert_summary_sum_val_to_sum("cumulative", false)`
 
 ### copy_metric
 
