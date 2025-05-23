@@ -106,6 +106,7 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetrics(cfg, true)
