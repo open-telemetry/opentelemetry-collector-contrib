@@ -5,6 +5,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -23,16 +24,18 @@ type TopQueryCollection struct {
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	Enabled             bool `mapstructure:"enabled"`
-	LookbackTime        uint `mapstructure:"lookback_time"`
-	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
-	TopQueryCount       uint `mapstructure:"top_query_count"`
+	Enabled             bool          `mapstructure:"enabled"`
+	LookbackTime        uint          `mapstructure:"lookback_time"`
+	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint          `mapstructure:"top_query_count"`
+	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
 }
 
 // Config defines configuration for a sqlserver receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	metadata.LogsBuilderConfig     `mapstructure:",squash"`
 	// EnableTopQueryCollection enables the collection of the top queries by the execution time.
 	// It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval.
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
@@ -69,6 +72,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.TopQueryCount > cfg.MaxQuerySampleCount {
 		return errors.New("`top_query_count` must be less than or equal to `max_query_sample_count`")
+	}
+
+	if cfg.TopQueryCollection.CollectionInterval < 0 {
+		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
 	}
 
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)

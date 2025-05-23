@@ -159,7 +159,7 @@ tidylist: $(CROSSLINK)
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $?; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0 && $(GOCMD) get toolchain@none) || exit $?; \
 	done
 
 .PHONY: remove-toolchain
@@ -386,6 +386,10 @@ gencodecov: $(CODECOVGEN)
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
+
+.PHONY: gencodeowners
+gencodeowners: install-tools
+	$(GITHUBGEN) -skipgithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
