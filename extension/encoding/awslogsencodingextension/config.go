@@ -83,10 +83,5 @@ func (cfg *Config) Validate() error {
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
-	for _, format := range supportedLogFormats {
-		if cfg.Format == format {
-			return nil
-		}
-	}
-	return fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats)
+	return nil
 }
