@@ -44,7 +44,7 @@ type transformProcessorFactory struct {
 type FactoryOption func(factory *transformProcessorFactory)
 
 // WithDataPointFunctions set ottl datapoint functions in resulting processor.
-func WithDataPointFunctions(dataPointFunctions ...ottl.Factory[ottldatapoint.TransformContext]) FactoryOption {
+func WithDataPointFunctions(dataPointFunctions ...[]ottl.Factory[ottldatapoint.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		factory.dataPointFunctions = createFunctionsMap(dataPointFunctions)
 		factory.defaultDataPointFunctionsOverriden = true
@@ -52,7 +52,7 @@ func WithDataPointFunctions(dataPointFunctions ...ottl.Factory[ottldatapoint.Tra
 }
 
 // WithLogFunctions set ottl log functions in resulting processor.
-func WithLogFunctions(logFunctions ...ottl.Factory[ottllog.TransformContext]) FactoryOption {
+func WithLogFunctions(logFunctions ...[]ottl.Factory[ottllog.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		factory.logFunctions = createFunctionsMap(logFunctions)
 		factory.defaultLogFunctionsOverriden = true
@@ -60,7 +60,7 @@ func WithLogFunctions(logFunctions ...ottl.Factory[ottllog.TransformContext]) Fa
 }
 
 // WithMetricFunctions set ottl metric functions in resulting processor.
-func WithMetricFunctions(metricFunctions ...ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
+func WithMetricFunctions(metricFunctions ...[]ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		factory.metricFunctions = createFunctionsMap(metricFunctions)
 		factory.defaultMetricFunctionsOverriden = true
@@ -68,7 +68,7 @@ func WithMetricFunctions(metricFunctions ...ottl.Factory[ottlmetric.TransformCon
 }
 
 // WithSpanEventFunctions set ottl span event functions in resulting processor.
-func WithSpanEventFunctions(spanEventFunctions ...ottl.Factory[ottlspanevent.TransformContext]) FactoryOption {
+func WithSpanEventFunctions(spanEventFunctions ...[]ottl.Factory[ottlspanevent.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		factory.spanEventFunctions = createFunctionsMap(spanEventFunctions)
 		factory.defaultSpanEventFunctionsOverriden = true
@@ -76,14 +76,14 @@ func WithSpanEventFunctions(spanEventFunctions ...ottl.Factory[ottlspanevent.Tra
 }
 
 // WithSpanFunctions set ottl span functions in resulting processor.
-func WithSpanFunctions(spanFunctions ...ottl.Factory[ottlspan.TransformContext]) FactoryOption {
+func WithSpanFunctions(spanFunctions ...[]ottl.Factory[ottlspan.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		factory.spanFunctions = createFunctionsMap(spanFunctions)
 		factory.defaultSpanFunctionsOverriden = true
 	}
 }
 
-// NewFactory can receive FactoryOption like With*Functions to set ottl functions of the resulting processor.
+// NewFactory can receive FactoryOption like With*Functions to set ottl functions in the resulting processor.
 func NewFactory(options ...FactoryOption) processor.Factory {
 	f := &transformProcessorFactory{
 		dataPointFunctions:                 defaultDataPointFunctionsMap(),
