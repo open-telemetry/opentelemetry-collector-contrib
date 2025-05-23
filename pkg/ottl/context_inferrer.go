@@ -33,7 +33,7 @@ type contextInferrer interface {
 	inferFromStatements(statements []string) (string, error)
 	// inferFromConditions returns the OTTL context inferred from the given conditions.
 	inferFromConditions(conditions []string) (string, error)
-	// inferFromValueExpressions returns the OTTL context inferred from the given conditions.
+	// inferFromValueExpressions returns the OTTL context inferred from the given value expressions.
 	inferFromValueExpressions(expressions []string) (string, error)
 	// infer returns the OTTL context inferred from the given statements, conditions,
 	// and value expressions.
@@ -123,7 +123,7 @@ func (s *priorityContextInferrer) infer(statements, conditions, valueExprs []str
 		}
 	}
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-		s.telemetrySettings.Logger.Debug("Inferring context from statements and conditions",
+		s.telemetrySettings.Logger.Debug("Inferring OTTL context",
 			zap.Strings("candidates", maps.Keys(s.contextCandidate)),
 			zap.Any("priority", s.contextPriority),
 			zap.Strings("statements", statements),
@@ -299,7 +299,7 @@ func (s *priorityContextInferrer) getStatementsHints(statements []string) ([]pri
 }
 
 // getValueExpressionsHints extracts all path, function (converter) names, and enumSymbol
-// from the given value expression. These values are used by the context inferrer as hints to
+// from the given value expressions. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
 func (s *priorityContextInferrer) getValueExpressionsHints(exprs []string) ([]priorityContextInferrerHints, error) {
 	hints := make([]priorityContextInferrerHints, 0, len(exprs))

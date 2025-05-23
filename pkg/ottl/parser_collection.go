@@ -136,7 +136,7 @@ type ParsedConditionsConverter[K any, R any] func(collection *ParserCollection[R
 // ParsedValueExpressionsConverter is a function that converts the parsed ottl.ValueExpression[K] into
 // a common representation to all parser collection contexts passed through WithParserCollectionContext.
 // Given each parser has its own transform context type, they must agree on a common type [R]
-// so it can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
+// so it can be returned by the ParserCollection.ParseValueExpressions and ParserCollection.ParseValueExpressionsWithContext
 // functions.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
@@ -609,10 +609,10 @@ func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpression
 func (pc *ParserCollection[R]) ParseValueExpressionsWithContext(context string, expressions ValueExpressionsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
-		return *new(R), fmt.Errorf(`unknown context "%s" for expressions: %v`, context, expressions.GetValueExpressions())
+		return *new(R), fmt.Errorf(`unknown context "%s" for value expressions: %v`, context, expressions.GetValueExpressions())
 	}
 	if contextParser.parseValueExpressions == nil {
-		return *new(R), fmt.Errorf(`context "%s" has no configured converter for expressions: %v`, context, expressions.GetValueExpressions())
+		return *new(R), fmt.Errorf(`context "%s" has no configured converter for value expressions: %v`, context, expressions.GetValueExpressions())
 	}
 
 	return contextParser.parseValueExpressions(

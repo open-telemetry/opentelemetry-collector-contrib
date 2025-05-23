@@ -525,7 +525,7 @@ func (p *Parser[K]) ParseValueExpressions(expressions []string) ([]*ValueExpress
 	for _, expression := range expressions {
 		ps, err := p.ParseValueExpression(expression)
 		if err != nil {
-			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL expression %q: %w", expression, err))
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL value expression %q: %w", expression, err))
 			continue
 		}
 		parsedValueExpressions = append(parsedValueExpressions, ps)
