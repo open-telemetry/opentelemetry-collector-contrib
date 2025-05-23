@@ -66,9 +66,8 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
-	config := eCfg.Config
 	if customMonitoredResourcesGate.IsEnabled() {
-		config.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
+		eCfg.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
 	}
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
@@ -122,11 +121,10 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	config := eCfg.Config
 	if customMonitoredResourcesGate.IsEnabled() {
-		config.MetricConfig.MapMonitoredResource = resourcemapping.CustomMetricMonitoredResourceMapping
+		eCfg.MetricConfig.MapMonitoredResource = resourcemapping.CustomMetricMonitoredResourceMapping
 	}
-	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, config, params, eCfg.TimeoutSettings.Timeout)
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}

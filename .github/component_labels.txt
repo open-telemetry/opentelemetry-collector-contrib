@@ -9,7 +9,6 @@ confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
-connector/countconnector connector/count
 connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
 connector/failoverconnector connector/failover
@@ -114,7 +113,6 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
-extension/tpmextension extension/tpm
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -141,6 +139,7 @@ pkg/core/xidutils pkg/core/xidutils
 pkg/datadog pkg/datadog
 pkg/experimentalmetricmetadata pkg/experimentalmetricmetadata
 pkg/golden pkg/golden
+pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/pdatatest pkg/pdatatest
@@ -317,6 +316,7 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+connector/countconnector connector/count
 exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
 exporter/opensearchexporter exporter/opensearch

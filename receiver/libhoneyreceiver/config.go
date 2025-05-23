@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -21,6 +22,9 @@ type Config struct {
 	AuthAPI        string                       `mapstructure:"auth_api"`
 	Wrapper        string                       `mapstructure:"wrapper"`
 	FieldMapConfig libhoneyevent.FieldMapConfig `mapstructure:"fields"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // HTTPConfig defines the configuration for the HTTP server receiving traces.
@@ -29,6 +33,9 @@ type HTTPConfig struct {
 
 	// The URL path to receive traces on. If omitted "/" will be used.
 	TracesURLPaths []string `mapstructure:"traces_url_paths,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate ensures the HTTP configuration is set.
@@ -76,5 +83,10 @@ func sanitizeURLPath(urlPath string) (string, error) {
 	if !path.IsAbs(u.Path) {
 		u.Path = "/" + u.Path
 	}
+
+	if !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
+	}
+
 	return u.Path, nil
 }

@@ -170,6 +170,54 @@ agent:
   # OpAmp extension will connect to
   opamp_server_port: 
 
+# Supervisor's internal telemetry settings.
+telemetry:
+  # Logs configuration.
+  logs:
+    # Minimum enabled logging level.
+    # Defaults to info.
+    level: debug
+    # URLs or file paths to write logging output to.
+    # Defaults to stderr.
+    output_paths:
+      - stderr
+      - supervisor.log
+    # Log processors to emit logs.
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4318
+  # Metrics configuration.
+  metrics:
+    # Verbosity of the metrics output.
+    level: detailed
+    # Metric readers to emit metrics.
+    readers:
+      - periodic:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4318
+  # Traces configuration.
+  traces:
+    # Verbosity of the spans emitted.
+    level: detailed
+    # Enabled context propagators.
+    propagators:
+      - tracecontext
+    # Span processors to emit spans.
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4318
+  # Resource attributes.
+  resource:
+    service.namespace: otel-demo
+
 ```
 
 **Note:**

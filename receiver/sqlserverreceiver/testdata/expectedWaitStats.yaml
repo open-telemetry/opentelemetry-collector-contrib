@@ -1,0 +1,865 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.176
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Other Disk IO
+                    - key: wait.type
+                      value:
+                        stringValue: ASYNC_IO_COMPLETION
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 180.853
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: OTHER
+                    - key: wait.type
+                      value:
+                        stringValue: AZURE_IMDS_VERSIONS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 2.102
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Memory
+                    - key: wait.type
+                      value:
+                        stringValue: CMEMTHREAD
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.307
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Lock
+                    - key: wait.type
+                      value:
+                        stringValue: LCK_M_S
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.587
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Lock
+                    - key: wait.type
+                      value:
+                        stringValue: LCK_M_U
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.614
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: OTHER
+                    - key: wait.type
+                      value:
+                        stringValue: MSQL_XP
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 7.177
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_AUTHENTICATIONOPS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.267
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_CLOSEHANDLE
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 3.08
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_DELETESECURITYCONTEXT
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.29
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_FILEOPS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.013
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_FLUSHFILEBUFFERS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.284
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_LOADLIBRARY
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.421
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_LOOKUPACCOUNTSID
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.607
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_NETVALIDATEPASSWORDPOLICY
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 40.971
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_QUERYREGISTRY
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.324
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Preemptive
+                    - key: wait.type
+                      value:
+                        stringValue: PREEMPTIVE_OS_WRITEFILE
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 194761.474
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: OTHER
+                    - key: wait.type
+                      value:
+                        stringValue: PWAIT_EXTENSIBILITY_CLEANUP_TASK
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.387
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Compilation
+                    - key: wait.type
+                      value:
+                        stringValue: RESOURCE_SEMAPHORE_QUERY_COMPILE
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.91
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: OTHER
+                    - key: wait.type
+                      value:
+                        stringValue: SLEEP_PHYSMASTERDBREADY
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 31.124
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: CPU
+                    - key: wait.type
+                      value:
+                        stringValue: SOS_SCHEDULER_YIELD
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 5.256
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: OTHER
+                    - key: wait.type
+                      value:
+                        stringValue: STARTUP_DEPENDENCY_MANAGER
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.561
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Worker Thread
+                    - key: wait.type
+                      value:
+                        stringValue: THREADPOOL
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.402
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: OTHER
+                    - key: wait.type
+                      value:
+                        stringValue: WAIT_ON_SYNC_STATISTICS_REFRESH
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total wait time for this wait type
+            name: sqlserver.os.wait.duration
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.466
+                  attributes:
+                    - key: wait.category
+                      value:
+                        stringValue: Tran Log IO
+                    - key: wait.type
+                      value:
+                        stringValue: WRITELOG
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

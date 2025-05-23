@@ -6,7 +6,8 @@ status:
   stability:
     beta: [logs]
   codeowners:
-    active: [djaglowski, andrzej-stencel]
+    active: [andrzej-stencel]
+    emeritus: [djaglowski]
 
 telemetry:
   metrics:

@@ -86,12 +86,15 @@ func getMetricsQueryResponseMockData() []QueryResourcesResponseMock {
 									{
 										Data: []azmetrics.MetricValue{
 											{
+												// Send only timestamp with all other values nil is a case that can
+												// happen in the Azure responses.
 												TimeStamp: to.Ptr(time.Now()),
-												Average:   to.Ptr(1.),
-												Count:     to.Ptr(1.),
-												Maximum:   to.Ptr(1.),
-												Minimum:   to.Ptr(1.),
-												Total:     to.Ptr(1.),
+											},
+											{
+												TimeStamp: to.Ptr(time.Now()),
+												// Keep only Total to make sure that all values are considered.
+												// Not only Average
+												Total: to.Ptr(1.),
 											},
 										},
 									},

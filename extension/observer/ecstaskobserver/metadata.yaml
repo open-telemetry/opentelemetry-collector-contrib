@@ -8,6 +8,7 @@ status:
   codeowners:
     active: []
     emeritus: [rmfitzpatrick]
+    seeking_new: true
 
 # TODO: Update the extension to make the tests pass
 tests:

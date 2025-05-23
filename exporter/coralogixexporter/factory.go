@@ -7,6 +7,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -61,6 +62,11 @@ func createDefaultConfig() component.Config {
 		},
 		PrivateKey: "",
 		AppName:    "",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   false,
+			Threshold: 10,
+			Duration:  time.Minute,
+		},
 	}
 }
 

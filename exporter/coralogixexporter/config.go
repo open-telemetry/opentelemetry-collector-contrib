@@ -6,6 +6,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -59,6 +60,14 @@ type Config struct {
 	// Default Coralogix application and subsystem name values.
 	AppName   string `mapstructure:"application_name"`
 	SubSystem string `mapstructure:"subsystem_name"`
+
+	RateLimiter RateLimiterConfig `mapstructure:"rate_limiter"`
+}
+
+type RateLimiterConfig struct {
+	Enabled   bool          `mapstructure:"enabled"`
+	Threshold int           `mapstructure:"threshold"`
+	Duration  time.Duration `mapstructure:"duration"`
 }
 
 func isEmpty(endpoint string) bool {
@@ -89,6 +98,15 @@ func (c *Config) Validate() error {
 	}
 	c.Headers["ACCESS_TOKEN"] = c.PrivateKey
 	c.Headers["appName"] = configopaque.String(c.AppName)
+
+	if c.RateLimiter.Enabled {
+		if c.RateLimiter.Threshold <= 0 {
+			return errors.New("`rate_limiter.threshold` must be greater than 0")
+		}
+		if c.RateLimiter.Duration <= 0 {
+			return errors.New("`rate_limiter.duration` must be greater than 0")
+		}
+	}
 	return nil
 }
 

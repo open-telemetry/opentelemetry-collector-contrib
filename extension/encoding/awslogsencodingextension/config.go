@@ -36,6 +36,9 @@ type Config struct {
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpc_flow_log"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type VPCFlowLogConfig struct {
@@ -45,6 +48,8 @@ type VPCFlowLogConfig struct {
 	//
 	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
 	FileFormat string `mapstructure:"file_format"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Validate() error {

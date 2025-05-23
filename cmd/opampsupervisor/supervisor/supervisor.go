@@ -319,13 +319,13 @@ func (s *Supervisor) Start() error {
 	s.telemetrySettings.Logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
+	if err = s.startOpAMP(); err != nil {
+		return fmt.Errorf("cannot start OpAMP client: %w", err)
+	}
+
 	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
 		return fmt.Errorf("failed loading initial config: %w", err)
-	}
-
-	if err = s.startOpAMP(); err != nil {
-		return fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(

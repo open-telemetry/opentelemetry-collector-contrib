@@ -31,6 +31,11 @@ func NewHPA(id string) *autoscalingv2.HorizontalPodAutoscaler {
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 			MinReplicas: &minReplicas,
 			MaxReplicas: 10,
+			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
+				Kind:       "Deployment",
+				Name:       "test-deployment",
+				APIVersion: "apps/v1",
+			},
 		},
 	}
 }

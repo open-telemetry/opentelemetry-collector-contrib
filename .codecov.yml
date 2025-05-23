@@ -436,10 +436,6 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
-  - component_id: extension_tpm
-    name: extension_tpm
-    paths:
-    - extension/tpmextension/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:

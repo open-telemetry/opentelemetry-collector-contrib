@@ -38,6 +38,10 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
+			rb.SetServiceVersion("service.version-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -46,7 +50,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 25, res.Attributes().Len())
+				assert.Equal(t, 29, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -178,6 +182,26 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "k8s.statefulset.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("service.instance.id")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("service.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("service.namespace")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("service.version")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.version-val", val.Str())
 			}
 		})
 	}

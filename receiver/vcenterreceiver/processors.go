@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-type DatacenterStats struct {
+type datacenterStats struct {
 	ClusterStatusCounts map[types.ManagedEntityStatus]int64
 	HostStats           map[string]map[types.ManagedEntityStatus]int64
 	VMStats             map[string]map[types.ManagedEntityStatus]int64
@@ -30,7 +30,7 @@ type DatacenterStats struct {
 func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	now := pcommon.NewTimestampFromTime(time.Now())
-	dcStats := &DatacenterStats{
+	dcStats := &datacenterStats{
 		ClusterStatusCounts: make(map[types.ManagedEntityStatus]int64),
 		HostStats:           make(map[string]map[types.ManagedEntityStatus]int64),
 		VMStats:             make(map[string]map[types.ManagedEntityStatus]int64),
@@ -47,7 +47,7 @@ func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *sc
 func (v *vcenterMetricScraper) buildDatacenterMetrics(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
-	dcStats *DatacenterStats,
+	dcStats *datacenterStats,
 ) {
 	// Create Datacenter resource builder
 	rb := v.createDatacenterResourceBuilder(dc)
@@ -62,7 +62,7 @@ func (v *vcenterMetricScraper) buildDatacenterMetrics(
 func (v *vcenterMetricScraper) processDatastores(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
-	dcStats *DatacenterStats,
+	dcStats *datacenterStats,
 ) {
 	for _, ds := range v.scrapeData.datastores {
 		v.buildDatastoreMetrics(ts, dc, ds)
@@ -136,7 +136,7 @@ func (v *vcenterMetricScraper) buildResourcePoolMetrics(
 func (v *vcenterMetricScraper) processHosts(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
-	dcStats *DatacenterStats,
+	dcStats *datacenterStats,
 	errs *scrapererror.ScrapeErrors,
 ) map[string]*types.ManagedObjectReference {
 	vmRefToComputeRef := map[string]*types.ManagedObjectReference{}
@@ -220,7 +220,7 @@ func (v *vcenterMetricScraper) processVMs(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
 	vmRefToComputeRef map[string]*types.ManagedObjectReference,
-	dcStats *DatacenterStats,
+	dcStats *datacenterStats,
 	errs *scrapererror.ScrapeErrors,
 ) map[string]*vmGroupInfo {
 	vmGroupInfoByComputeRef := map[string]*vmGroupInfo{}
@@ -347,7 +347,7 @@ func (v *vcenterMetricScraper) processClusters(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
 	vmStatesByComputeRef map[string]*vmGroupInfo,
-	dcStats *DatacenterStats,
+	dcStats *datacenterStats,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	for crRef, cr := range v.scrapeData.computesByRef {

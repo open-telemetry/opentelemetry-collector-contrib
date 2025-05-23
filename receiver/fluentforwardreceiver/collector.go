@@ -14,20 +14,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
-// Collector acts as an aggregator of LogRecords so that we don't have to
+// collector acts as an aggregator of LogRecords so that we don't have to
 // generate as many plog.Logs instances...we can pre-batch the LogRecord
 // instances from several Forward events into one to hopefully reduce
 // allocations and GC overhead.
-type Collector struct {
+type collector struct {
 	nextConsumer     consumer.Logs
-	eventCh          <-chan Event
+	eventCh          <-chan event
 	logger           *zap.Logger
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *Collector {
-	return &Collector{
+func newCollector(eventCh <-chan event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *collector {
+	return &collector{
 		nextConsumer:     next,
 		eventCh:          eventCh,
 		logger:           logger,
@@ -36,11 +36,11 @@ func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, 
 	}
 }
 
-func (c *Collector) Start(ctx context.Context) {
+func (c *collector) Start(ctx context.Context) {
 	go c.processEvents(ctx)
 }
 
-func (c *Collector) processEvents(ctx context.Context) {
+func (c *collector) processEvents(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -64,7 +64,7 @@ func (c *Collector) processEvents(ctx context.Context) {
 	}
 }
 
-func (c *Collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice) {
+func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice) {
 	for {
 		select {
 		case e := <-c.eventCh:

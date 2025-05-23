@@ -15,6 +15,8 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	// Traces defines the Traces specific configuration
 	Traces datadogconfig.TracesConnectorConfig `mapstructure:"traces"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks if the configuration is valid

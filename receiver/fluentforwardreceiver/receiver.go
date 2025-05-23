@@ -22,7 +22,7 @@ import (
 const eventChannelLength = 100
 
 type fluentReceiver struct {
-	collector *Collector
+	collector *collector
 	listener  net.Listener
 	conf      *Config
 	logger    *zap.Logger
@@ -45,7 +45,7 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 		return nil, err
 	}
 
-	eventCh := make(chan Event, eventChannelLength)
+	eventCh := make(chan event, eventChannelLength)
 	collector := newCollector(eventCh, next, set.Logger, obsrecv, telemetryBuilder)
 
 	server := newServer(eventCh, set.Logger, telemetryBuilder)

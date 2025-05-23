@@ -1,0 +1,42 @@
+azuremonitor/valid_subscription_ids:
+  subscription_ids:
+    - test
+  credentials: default_credentials
+
+azuremonitor/valid_discover_subscription:
+  discover_subscriptions: true
+  credentials: default_credentials
+
+azuremonitor/missing_subscriptions:
+  subscription_ids: []
+  discover_subscriptions: false
+  credentials: default_credentials
+
+azuremonitor/invalid_cloud:
+  discover_subscriptions: true
+  cloud: invalid
+  credentials: default_credentials
+
+azuremonitor/missing_service_principal:
+  discover_subscriptions: true
+  credentials: service_principal
+
+azuremonitor/missing_workload_identity:
+  discover_subscriptions: true
+  credentials: workload_identity
+
+azuremonitor/invalid_credentials:
+  discover_subscriptions: true
+  credentials: invalid
+
+azuremonitor/valid_authenticator:
+  discover_subscriptions: true
+  auth:
+    authenticator: azureauth/monitor
+  credentials: does-not-matter
+
+azuremonitor/valid_authenticator_2:
+  discover_subscriptions: true
+  auth:
+    authenticator: azureauth
+  credentials: does-not-matter

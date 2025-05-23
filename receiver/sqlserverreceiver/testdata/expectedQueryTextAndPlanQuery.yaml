@@ -49,15 +49,15 @@ resourceLogs:
               - key: sqlserver.total_grant_kb
                 value:
                   intValue: "3095"
-              - key: db.system.name
-                value:
-                  stringValue: microsoft.sql_server
               - key: server.address
                 value:
                   stringValue: 0.0.0.0
               - key: server.port
                 value:
                   intValue: "1433"
+              - key: db.server.name
+                value:
+                  stringValue: microsoft.sql_server
             body: {}
             eventName: db.server.top_query
             spanId: ""
