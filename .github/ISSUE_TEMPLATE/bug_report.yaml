@@ -75,6 +75,7 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/oracleobservability
       - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
