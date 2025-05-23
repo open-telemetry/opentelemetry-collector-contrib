@@ -716,6 +716,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			resourcesAdded = true
 		}
 		s.lb.RecordDbServerTopQueryEvent(
+			context.Background(),
 			timestamp,
 			totalWorkerTimeInSecVal,
 			queryTextVal.(string),
