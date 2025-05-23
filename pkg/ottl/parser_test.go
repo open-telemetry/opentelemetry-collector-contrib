@@ -2277,7 +2277,7 @@ func Test_ParseValueExpressions_Error(t *testing.T) {
 		assert.Len(t, uw, len(expressions), "ParseValueExpressions didn't return an error per expression")
 
 		for i, exprErr := range uw {
-			assert.ErrorContains(t, exprErr, fmt.Sprintf("unable to parse OTTL expression %q", expressions[i]))
+			assert.ErrorContains(t, exprErr, fmt.Sprintf("unable to parse OTTL value expression %q", expressions[i]))
 		}
 	} else {
 		assert.Fail(t, "ParseValueExpressions didn't return an error per expression")
