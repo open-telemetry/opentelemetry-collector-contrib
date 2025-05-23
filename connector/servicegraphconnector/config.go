@@ -62,4 +62,7 @@ type StoreConfig struct {
 	MaxItems int `mapstructure:"max_items"`
 	// TTL is the time to live for items in the store.
 	TTL time.Duration `mapstructure:"ttl"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

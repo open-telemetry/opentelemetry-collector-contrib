@@ -27,4 +27,7 @@ func createDefaultConfig() component.Config {
 type WindowsLogConfig struct {
 	InputConfig        windows.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

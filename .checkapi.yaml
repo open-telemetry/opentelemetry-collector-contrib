@@ -67,3 +67,7 @@ ignored_functions:
   - ^Test.*
   - ^Benchmark.*
   - ^Fuzz.*
+
+unkeyed_literal_initialization:
+  enabled: true
+  limit: 1 # this limit will increase over time to 5.

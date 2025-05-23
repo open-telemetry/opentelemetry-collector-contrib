@@ -55,12 +55,13 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 		PrometheusConfig:         cfg,
 		UseStartTimeMetric:       false,
 		StartTimeMetricRegex:     "",
 		ReportExtraScrapeMetrics: reportExtraScrapeMetrics,
 	}, cms)
+	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called

@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 )
 
@@ -208,12 +211,18 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 
 type mockTracesServer struct {
 	ptraceotlp.UnimplementedGRPCServer
-	recvCount int
+	recvCount      int
+	partialSuccess *ptraceotlp.ExportPartialSuccess
 }
 
 func (m *mockTracesServer) Export(_ context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
-	m.recvCount += req.Traces().ResourceSpans().Len()
-	return ptraceotlp.NewExportResponse(), nil
+	m.recvCount += req.Traces().SpanCount()
+	resp := ptraceotlp.NewExportResponse()
+	if m.partialSuccess != nil {
+		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
+		resp.PartialSuccess().SetRejectedSpans(m.partialSuccess.RejectedSpans())
+	}
+	return resp, nil
 }
 
 func startMockOtlpTracesServer(tb testing.TB) (endpoint string, stopFn func(), srv *mockTracesServer) {
@@ -231,6 +240,70 @@ func startMockOtlpTracesServer(tb testing.TB) (endpoint string, stopFn func(), s
 		grpcServer.Stop()
 		ln.Close()
 	}, srv
+}
+
+func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Traces: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	rs := resourceSpans.AppendEmpty()
+	resource := rs.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeSpans := rs.ScopeSpans().AppendEmpty()
+	scopeSpans.Scope().SetName("test-scope")
+
+	span1 := scopeSpans.Spans().AppendEmpty()
+	span1.SetName("span1")
+	span2 := scopeSpans.Spans().AppendEmpty()
+	span2.SetName("span2")
+
+	partialSuccess := ptraceotlp.NewExportPartialSuccess()
+	partialSuccess.SetErrorMessage("some spans were rejected")
+	partialSuccess.SetRejectedSpans(1)
+	mockSrv.partialSuccess = &partialSuccess
+
+	core, observed := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+	exp.settings.Logger = logger
+
+	err = exp.pushTraces(context.Background(), traces)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	found := false
+	for _, entry := range entries {
+		if entry.Message == "Partial success response from Coralogix" &&
+			entry.Level == zapcore.ErrorLevel &&
+			entry.ContextMap()["message"] == "some spans were rejected" &&
+			entry.ContextMap()["rejected_spans"] == int64(1) {
+			found = true
+		}
+	}
+	assert.True(t, found, "Expected partial success log with correct fields")
 }
 
 func BenchmarkTracesExporter_PushTraces(b *testing.B) {
