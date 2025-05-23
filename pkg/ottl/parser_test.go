@@ -3182,3 +3182,140 @@ func Test_prependContextToConditionPaths_Success(t *testing.T) {
 		})
 	}
 }
+
+func Test_prependContextToValueExpressionPaths_InvalidValueExpression(t *testing.T) {
+	ps, err := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"foo", "bar"}),
+	)
+	require.NoError(t, err)
+	_, err = ps.prependContextToValueExpressionPaths("foo", "this is invalid")
+	require.ErrorContains(t, err, `expression has invalid syntax`)
+}
+
+func Test_prependContextToValueExpressionPaths_InvalidContext(t *testing.T) {
+	ps, err := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"foo", "bar"}),
+	)
+	require.NoError(t, err)
+	_, err = ps.prependContextToValueExpressionPaths("foobar", "set(foo, 1)")
+	require.ErrorContains(t, err, `unknown context "foobar" for parser`)
+}
+
+func Test_prependContextToValueExpressionPaths_Success(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	mockSetFactory := NewFactory("set", &mockSetArguments[any]{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(_ context.Context, _ any) (any, error) {
+			return nil, nil
+		}, nil
+	})
+
+	tests := []struct {
+		name             string
+		expression       string
+		context          string
+		pathContextNames []string
+		expected         string
+	}{
+		{
+			name:             "no paths",
+			expression:       `"foo"`,
+			context:          "bar",
+			pathContextNames: []string{"bar"},
+			expected:         `"foo"`,
+		},
+		{
+			name:             "single path with context",
+			expression:       `span.value`,
+			context:          "span",
+			pathContextNames: []string{"span"},
+			expected:         `span.value`,
+		},
+		{
+			name:             "single path without context",
+			expression:       "value",
+			context:          "span",
+			pathContextNames: []string{"span"},
+			expected:         "span.value",
+		},
+		{
+			name:             "single path with context - multiple context names",
+			expression:       "span.value",
+			context:          "spanevent",
+			pathContextNames: []string{"spanevent", "span"},
+			expected:         "span.value",
+		},
+		{
+			name:             "multiple paths with the same context",
+			expression:       `span.attributes["foo"] + span.id`,
+			context:          "another",
+			pathContextNames: []string{"another", "span"},
+			expected:         `span.attributes["foo"] + span.id`,
+		},
+		{
+			name:             "multiple paths with different contexts",
+			expression:       `another.value + span.attributes["foo"] + another.id`,
+			context:          "another",
+			pathContextNames: []string{"another", "span"},
+			expected:         `another.value + span.attributes["foo"] + another.id`,
+		},
+		{
+			name:             "multiple paths with and without contexts",
+			expression:       `value + span.attributes["foo"] + id`,
+			context:          "spanevent",
+			pathContextNames: []string{"spanevent", "span"},
+			expected:         `spanevent.value + span.attributes["foo"] + spanevent.id`,
+		},
+		{
+			name:             "multiple paths without context",
+			expression:       `value + name + attributes["foo.name"]`,
+			context:          "span",
+			pathContextNames: []string{"span"},
+			expected:         `span.value + span.name + span.attributes["foo.name"]`,
+		},
+		{
+			name:             "function path parameter without context",
+			expression:       `attributes["test"] + IsMatch(name, "operation[AC]")`,
+			context:          "log",
+			pathContextNames: []string{"log"},
+			expected:         `log.attributes["test"] + IsMatch(log.name, "operation[AC]")`,
+		},
+		{
+			name:             "function path parameter with context",
+			expression:       `attributes["test"] + IsMatch(resource.name, "operation[AC]")`,
+			context:          "log",
+			pathContextNames: []string{"log", "resource"},
+			expected:         `log.attributes["test"] + IsMatch(resource.name, "operation[AC]")`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ps, err := NewParser(
+				CreateFactoryMap[any](mockSetFactory),
+				testParsePath[any],
+				componenttest.NewNopTelemetrySettings(),
+				WithEnumParser[any](testParseEnum),
+				WithPathContextNames[any](tt.pathContextNames),
+			)
+
+			require.NoError(t, err)
+			require.NotNil(t, ps)
+
+			result, err := ps.prependContextToValueExpressionPaths(tt.context, tt.expression)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
