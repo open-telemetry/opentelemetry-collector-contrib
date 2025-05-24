@@ -20,7 +20,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
-		labels := createAttributes(
+		labels := NewPrometheusConverter().createAttributes(
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
@@ -52,7 +52,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls := createAttributes(
+		lbls := NewPrometheusConverter().createAttributes(
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
