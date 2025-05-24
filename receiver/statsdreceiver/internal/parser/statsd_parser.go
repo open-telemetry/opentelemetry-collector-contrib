@@ -30,13 +30,14 @@ var (
 type MetricType string // From the statsd line e.g., "c", "g", "h"
 
 const (
-	tagMetricType = "metric_type"
-
 	CounterType      MetricType = "c"
 	GaugeType        MetricType = "g"
 	HistogramType    MetricType = "h"
 	TimingType       MetricType = "ms"
 	DistributionType MetricType = "d"
+
+	defaultTypeAttribute  = "metric_type"
+	disabledTypeAttribute = ""
 
 	receiverName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 )
@@ -54,10 +55,10 @@ var defaultObserverCategory = ObserverCategory{
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
 	instrumentsByAddress    map[netAddr]*instruments
-	enableMetricType        bool
 	enableSimpleTags        bool
 	isMonotonicCounter      bool
 	enableIPOnlyAggregation bool
+	metricTypeAttribute     string
 	timerEvents             ObserverCategory
 	histogramEvents         ObserverCategory
 	lastIntervalTime        time.Time
@@ -136,12 +137,12 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping, metricTypeAttribute string) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
 	p.timerEvents = defaultObserverCategory
-	p.enableMetricType = enableMetricType
+	p.metricTypeAttribute = metricTypeAttribute
 	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
 	p.enableIPOnlyAggregation = enableIPOnlyAggregation
@@ -258,7 +259,7 @@ func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 
 // Aggregate for each metric line.
 func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
-	parsedMetric, err := parseMessageToMetric(line, p.enableMetricType, p.enableSimpleTags)
+	parsedMetric, err := parseMessageToMetric(line, p.metricTypeAttribute, p.enableSimpleTags)
 	if err != nil {
 		return err
 	}
@@ -343,7 +344,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	return nil
 }
 
-func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags bool) (statsDMetric, error) {
+func parseMessageToMetric(line string, metricTypeAttribute string, enableSimpleTags bool) (statsDMetric, error) {
 	result := statsDMetric{}
 
 	nameValue, rest, foundName := strings.Cut(line, "|")
@@ -449,10 +450,10 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 	}
 
 	// add metric_type dimension for all metrics
-	if enableMetricType {
+	if metricTypeAttribute != disabledTypeAttribute {
 		metricType := string(result.description.metricType.FullName())
 
-		kvs = append(kvs, attribute.String(tagMetricType, metricType))
+		kvs = append(kvs, attribute.String(metricTypeAttribute, metricType))
 	}
 
 	if len(kvs) != 0 {
