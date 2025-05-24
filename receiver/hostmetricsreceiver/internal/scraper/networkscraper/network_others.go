@@ -8,6 +8,10 @@ import (
 	"context"
 )
 
+const (
+	conntrackMetricsLen = 0
+)
+
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSED",
