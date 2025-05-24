@@ -24,6 +24,7 @@ type Config struct {
 	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
 	EnableSimpleTags        bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
+	MetricTypeAttribute     string                           `mapstructure:"metric_type_attribute"`
 	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 	// Will only be used when transport set to 'unixgram'.
 	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
@@ -34,6 +35,10 @@ func (c *Config) Validate() error {
 
 	if c.AggregationInterval <= 0 {
 		errs = multierr.Append(errs, errors.New("aggregation_interval must be a positive duration"))
+	}
+
+	if c.EnableMetricType && c.MetricTypeAttribute == "" {
+		errs = multierr.Append(errs, errors.New("metric_type_attribute cannot be set to empty when enable_metric_type is true"))
 	}
 
 	var TimerHistogramMappingMissingObjectName bool

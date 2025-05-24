@@ -34,6 +34,8 @@ The Following settings are optional:
 
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
+- `metric_type_attribute`: The name of the attribute that will be added to the metrics if `enable_metric_type` is true. If not set "metric_type" will be used as the attribute name.
+
 - `enable_ip_only_aggregation` (default value is false): Enables metric aggregation on `Client+IP` only. Normally, aggregation is performed on `Client+IP+Port`. This setting is useful when the client sends metrics from a random ports or the receiver should aggregate metrics from the same client but different ports.
 
 - `enable_simple_tags: true`(default value is false): Enable parsing tags that do not have a value, e.g. `#mykey` instead of `#mykey:myvalue`. DogStatsD supports such tagging.
