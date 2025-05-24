@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -736,23 +735,22 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 
 	processes, err := process.Processes()
 	if err != nil {
-		return pl, err
+		return pl, fmt.Errorf("process discovery failed: %w", err)
 	}
 
 	for _, v := range processes {
 		e, err := v.Name()
 		if err != nil {
-			if runtime.GOOS == "windows" {
-				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
-				se.logger.Warn(
-					"Failed to get executable name, it is likely a zombie process, skipping it",
-					zap.Int32("pid", v.Pid),
-					zap.Error(err))
-				continue
-			}
-
-			return nil, fmt.Errorf("Error getting executable name: %w", err)
+			// If we can't get a process name, it may be a zombie process.
+			// We do not want to error out here, as it's not worth disrupting
+			// the startup process of the collector.
+			se.logger.Warn(
+				"process discovery: failed to get executable name (is it a zombie?)",
+				zap.Int32("pid", v.Pid),
+				zap.Error(err))
+			continue
 		}
+
 		e = strings.ToLower(e)
 
 		if a, i := sumoAppProcesses[e]; i {
@@ -768,7 +766,11 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 		if e == "java" {
 			cmdline, err := v.Cmdline()
 			if err != nil {
-				return nil, fmt.Errorf("error getting executable name for PID %d: %w", v.Pid, err)
+				se.logger.Warn(
+					"process discovery: failed to get process arguments",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
+				continue
 			}
 
 			switch {
