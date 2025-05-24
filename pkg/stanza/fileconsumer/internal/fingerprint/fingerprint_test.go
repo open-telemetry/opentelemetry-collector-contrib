@@ -4,12 +4,15 @@
 package fingerprint
 
 import (
+	"compress/gzip"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math/rand/v2"
 	"os"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -307,4 +310,29 @@ func TestMarshalUnmarshal(t *testing.T) {
 	require.NoError(t, fp2.UnmarshalJSON(b))
 
 	require.Equal(t, fp, fp2)
+}
+
+// Test compressed and uncompressed file with same content have equal fingerprint
+func TestCompressionFingerprint(t *testing.T) {
+	tmp := t.TempDir()
+	compressedFile := filetest.OpenTempWithPattern(t, tmp, "*.gz")
+	gzipWriter := gzip.NewWriter(compressedFile)
+	defer gzipWriter.Close()
+
+	data := []byte("this is a first test line")
+	// Write data
+	n, err := gzipWriter.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+	require.NotZero(t, n, "gzip file should not be empty")
+
+	// set seek to the start of the file
+	_, err = compressedFile.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	compressedFP, err := NewFromFile(compressedFile, len(data))
+	require.NoError(t, err)
+
+	uncompressedFP := New(data)
+	uncompressedFP.Equal(compressedFP)
 }
