@@ -78,8 +78,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostName:              ResourceAttributeConfig{Enabled: true},
-					ServerAddress:         ResourceAttributeConfig{Enabled: true},
-					ServerPort:            ResourceAttributeConfig{Enabled: true},
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
 					SqlserverDatabaseName: ResourceAttributeConfig{Enabled: true},
 					SqlserverInstanceName: ResourceAttributeConfig{Enabled: true},
@@ -141,8 +139,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostName:              ResourceAttributeConfig{Enabled: false},
-					ServerAddress:         ResourceAttributeConfig{Enabled: false},
-					ServerPort:            ResourceAttributeConfig{Enabled: false},
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: false},
 					SqlserverDatabaseName: ResourceAttributeConfig{Enabled: false},
 					SqlserverInstanceName: ResourceAttributeConfig{Enabled: false},
@@ -192,8 +188,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				HostName:              ResourceAttributeConfig{Enabled: true},
-				ServerAddress:         ResourceAttributeConfig{Enabled: true},
-				ServerPort:            ResourceAttributeConfig{Enabled: true},
 				SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
 				SqlserverDatabaseName: ResourceAttributeConfig{Enabled: true},
 				SqlserverInstanceName: ResourceAttributeConfig{Enabled: true},
@@ -203,8 +197,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				HostName:              ResourceAttributeConfig{Enabled: false},
-				ServerAddress:         ResourceAttributeConfig{Enabled: false},
-				ServerPort:            ResourceAttributeConfig{Enabled: false},
 				SqlserverComputerName: ResourceAttributeConfig{Enabled: false},
 				SqlserverDatabaseName: ResourceAttributeConfig{Enabled: false},
 				SqlserverInstanceName: ResourceAttributeConfig{Enabled: false},
