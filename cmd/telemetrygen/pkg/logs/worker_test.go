@@ -236,14 +236,24 @@ func TestValidate(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name: "No duration or NumLogs",
+			name: "No duration, NumLogs, or Continuous",
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
 				},
 				TraceID: "123",
 			},
-			wantErrMessage: "either `logs` or `duration` must be greater than 0",
+			wantErrMessage: "either `logs` or `duration` must be greater than 0 or continuous must be set",
+		},
+		{
+			name: "Duration and Continuous both set",
+			cfg: &Config{
+				Config: common.Config{
+					TotalDuration: 1 * time.Second,
+					Continuous:    true,
+				},
+			},
+			wantErrMessage: "duration and continuous cannot both be set",
 		},
 		{
 			name: "TraceID invalid",

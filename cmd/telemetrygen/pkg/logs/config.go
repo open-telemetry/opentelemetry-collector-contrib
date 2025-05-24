@@ -58,8 +58,12 @@ func (c *Config) SetDefaults() {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumLogs <= 0 {
-		return errors.New("either `logs` or `duration` must be greater than 0")
+	if c.TotalDuration <= 0 && c.NumLogs <= 0 && !c.Continuous {
+		return errors.New("either `logs` or `duration` must be greater than 0 or continuous must be set")
+	}
+
+	if c.TotalDuration > 0 && c.Continuous {
+		return errors.New("duration and continuous cannot both be set")
 	}
 
 	if c.TraceID != "" {

@@ -66,6 +66,7 @@ type Config struct {
 	WorkerCount           int
 	Rate                  float64
 	TotalDuration         time.Duration
+	Continuous            bool
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
 
@@ -163,6 +164,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.WorkerCount, "workers", c.WorkerCount, "Number of workers (goroutines) to run")
 	fs.Float64Var(&c.Rate, "rate", c.Rate, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
 	fs.DurationVar(&c.TotalDuration, "duration", c.TotalDuration, "For how long to run the test")
+	fs.BoolVar(&c.Continuous, "continuous", c.Continuous, "Whether to run the test continuously")
 	fs.DurationVar(&c.ReportingInterval, "interval", c.ReportingInterval, "Reporting interval")
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", c.CustomEndpoint, "Destination endpoint for exporting logs, metrics and traces")
@@ -202,6 +204,7 @@ func (c *Config) SetDefaults() {
 	c.WorkerCount = 1
 	c.Rate = 0
 	c.TotalDuration = 0
+	c.Continuous = false
 	c.ReportingInterval = 1 * time.Second
 	c.CustomEndpoint = ""
 	c.Insecure = false
