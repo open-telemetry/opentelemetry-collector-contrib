@@ -80,6 +80,78 @@ func TestCreateMetrics(t *testing.T) {
 	require.NoError(t, receiver.Shutdown(ctx))
 }
 
+func TestCreateLogsDatasourceConfig(t *testing.T) {
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
+	ctx := context.Background()
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
+				},
+				Driver: "postgres",
+				DataSourceConfig: sqlquery.DataSourceConfig{
+					Host:     "localhost",
+					Port:     5432,
+					Database: "my-datasource",
+					Username: "user",
+					Password: "pass",
+				},
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{
+						{},
+					},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.NoError(t, receiver.Shutdown(ctx))
+}
+
+func TestCreateMetricsDatasourceConfig(t *testing.T) {
+	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
+	ctx := context.Background()
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				Driver: "mysql",
+				DataSourceConfig: sqlquery.DataSourceConfig{
+					Host:     "localhost",
+					Port:     3306,
+					Database: "my-datasource",
+					Username: "user",
+					Password: "pass",
+				},
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Metrics: []sqlquery.MetricCfg{{
+						MetricName:  "my-metric",
+						ValueColumn: "my-column",
+					}},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.NoError(t, receiver.Shutdown(ctx))
+}
+
 func fakeDBConnect(string, string) (*sql.DB, error) {
 	return nil, nil
 }
