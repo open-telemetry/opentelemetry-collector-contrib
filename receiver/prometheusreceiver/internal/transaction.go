@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	"github.com/prometheus/common/model"
@@ -66,7 +67,7 @@ type transaction struct {
 	enableNativeHistograms bool
 	addingNativeHistogram  bool // true if the last sample was a native histogram.
 	ctx                    context.Context
-	families               map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily
+	families               map[resourceKey]map[string]map[metricFamilyKey]*metricFamily
 	mc                     scrape.MetricMetadataStore
 	sink                   consumer.Metrics
 	externalLabels         labels.Labels
@@ -93,6 +94,68 @@ func (s *scopeID) isEmpty() bool {
 	return s.name == "" && s.version == "" && s.schemaURL == "" && s.attributes.Len() == 0
 }
 
+// String returns a comparable string representation of the scopeID.
+// Since it contains a pcommon.Map, which is a pointer reference,
+// we need to convert it to a string representation that is comparable.
+//
+// If feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is enabled,
+// the comparable string is name+version+schemaURL+attributes.
+// Otherwise, the comparable string is name+version.
+func (s *scopeID) String() string {
+	if s.isEmpty() {
+		return ""
+	}
+	if !removeScopeInfo.IsEnabled() {
+		return fmt.Sprintf("%s:%s", s.name, s.version)
+	}
+
+	attrKeys := make([]string, 0, s.attributes.Len())
+	for k, v := range s.attributes.All() {
+		attrKeys = append(attrKeys, fmt.Sprintf("%s=%v", k, v.AsString()))
+	}
+	sort.Strings(attrKeys) // ensure determinism
+	return fmt.Sprintf("%s:%s:%s:%s", s.name, s.version, s.schemaURL, strings.Join(attrKeys, ","))
+}
+
+// parseScopeID parses a scopeID from a string representation.
+// If feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is enabled,
+// the string representation is name+version+schemaURL+attributes.
+// Otherwise, the string representation is name+version.
+func parseScopeID(scopeKey string) (scopeID, error) {
+	parts := strings.Split(scopeKey, ":")
+
+	switch removeScopeInfo.IsEnabled() {
+	case false: // Return name+version
+		if len(parts) != 2 {
+			return scopeID{}, fmt.Errorf("invalid scope key: %s", scopeKey)
+		}
+		return scopeID{
+			name:    parts[0],
+			version: parts[1],
+		}, nil
+	case true: // Return name+version+schemaURL+attributes
+		if len(parts) != 4 {
+			return scopeID{}, fmt.Errorf("invalid scope key: %s", scopeKey)
+		}
+		attributes := pcommon.NewMap()
+		for _, attr := range strings.Split(parts[3], ",") {
+			keyValue := strings.SplitN(attr, "=", 2)
+			if len(keyValue) != 2 {
+				return scopeID{}, fmt.Errorf("invalid attribute: %s", attr)
+			}
+			attributes.PutStr(keyValue[0], keyValue[1])
+		}
+		return scopeID{
+			name:       parts[0],
+			version:    parts[1],
+			schemaURL:  parts[2],
+			attributes: attributes,
+		}, nil
+	}
+
+	return scopeID{}, fmt.Errorf("invalid scope key: %s", scopeKey)
+}
+
 func newTransaction(
 	ctx context.Context,
 	metricAdjuster MetricsAdjuster,
@@ -105,7 +168,7 @@ func newTransaction(
 ) *transaction {
 	return &transaction{
 		ctx:                    ctx,
-		families:               make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
+		families:               make(map[resourceKey]map[string]map[metricFamilyKey]*metricFamily),
 		isNew:                  true,
 		trimSuffixes:           trimSuffixes,
 		enableNativeHistograms: enableNativeHistograms,
@@ -239,15 +302,17 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *re
 // and true if an existing family was found.
 func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn string) *metricFamily {
 	if _, ok := t.families[key]; !ok {
-		t.families[key] = make(map[scopeID]map[metricFamilyKey]*metricFamily)
+		t.families[key] = make(map[string]map[metricFamilyKey]*metricFamily)
 	}
-	if _, ok := t.families[key][scope]; !ok {
-		t.families[key][scope] = make(map[metricFamilyKey]*metricFamily)
+
+	scopeKey := scope.String()
+	if _, ok := t.families[key][scopeKey]; !ok {
+		t.families[key][scopeKey] = make(map[metricFamilyKey]*metricFamily)
 	}
 
 	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
 
-	curMf, ok := t.families[key][scope][mfKey]
+	curMf, ok := t.families[key][scopeKey][mfKey]
 
 	if !ok {
 		fn := mn
@@ -255,13 +320,13 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 			fn = normalizeMetricName(mn)
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
-		mf, ok := t.families[key][scope][fnKey]
+		mf, ok := t.families[key][scopeKey][fnKey]
 		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger)
 			if curMf.mtype == pmetric.MetricTypeHistogram && mfKey.isExponentialHistogram {
 				curMf.mtype = pmetric.MetricTypeExponentialHistogram
 			}
-			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
+			t.families[key][scopeKey][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 			return curMf
 		}
 		curMf = mf
@@ -441,14 +506,20 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 		rms := md.ResourceMetrics().AppendEmpty()
 		resource.CopyTo(rms.Resource())
 
-		for scope, mfs := range families {
+		for scopeKey, mfs := range families {
 			ils := rms.ScopeMetrics().AppendEmpty()
 			// If metrics don't include otel_scope_name or otel_scope_version
 			// labels, use the receiver name and version.
-			if scope.isEmpty() {
+			if scopeKey == "" {
 				ils.Scope().SetName(mdata.ScopeName)
 				ils.Scope().SetVersion(t.buildInfo.Version)
 			} else {
+				scope, err := parseScopeID(scopeKey)
+				if err != nil {
+					// This should never happen! If it does, the component is completely broken.
+					t.logger.Fatal("failed to parse scope key", zap.Error(err), zap.String("scope_key", scopeKey))
+					continue
+				}
 				// Otherwise, use the scope that was provided with the metrics.
 				ils.Scope().SetName(scope.name)
 				ils.Scope().SetVersion(scope.version)
@@ -456,14 +527,13 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 				if !removeScopeInfo.IsEnabled() {
 					// Get full Scope from cache.
 					if scopeAttributes, ok := t.scopeAttributes[rKey]; ok {
-						scopeKey := fmt.Sprintf("%s:%s", scope.name, scope.version)
 						if attributes, ok := scopeAttributes[scopeKey]; ok {
 							attributes.CopyTo(ils.Scope().Attributes())
 						}
 					}
 				} else {
 					// If we're not parsing the otel_scope_info metric, we get scope
-					// from the pre-populated scope.
+					// attributes from the pre-populated scope.
 					scope.attributes.CopyTo(ils.Scope().Attributes())
 				}
 			}
@@ -629,11 +699,7 @@ func (t *transaction) cacheScopeFromScopeInfo(key resourceKey, ls labels.Labels)
 		t.scopeAttributes[key] = make(map[string]pcommon.Map)
 	}
 
-	// Only scope name and version are used to match otel_scope_info
-	// with all other metrics. So the cache key will be a concatenation
-	// of these two values.
-	scopeKey := fmt.Sprintf("%s:%s", scope.name, scope.version)
-	t.scopeAttributes[key][scopeKey] = scope.attributes
+	t.scopeAttributes[key][scope.String()] = scope.attributes
 }
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
