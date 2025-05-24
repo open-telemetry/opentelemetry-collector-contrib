@@ -53,8 +53,8 @@ func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, erro
 
 	expConfig.logger = params.Logger
 
-	// create AWS session
-	awsConfig, err := awsutil.GetAWSConfig(params.Logger, &expConfig.AWSSessionSettings)
+	ctx := context.TODO()
+	awsConfig, err := awsutil.GetAWSConfig(ctx, params.Logger, &expConfig.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
