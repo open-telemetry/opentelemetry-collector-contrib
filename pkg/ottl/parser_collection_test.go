@@ -28,11 +28,15 @@ func (s mockGetter) GetConditions() []string {
 	return s.values
 }
 
+func (s mockGetter) GetValueExpressions() []string {
+	return s.values
+}
+
 type mockFailingContextInferrer struct {
 	err error
 }
 
-func (r *mockFailingContextInferrer) infer(_ []string, _ []string) (string, error) {
+func (r *mockFailingContextInferrer) infer(_, _, _ []string) (string, error) {
 	return "", r.err
 }
 
@@ -44,11 +48,15 @@ func (r *mockFailingContextInferrer) inferFromConditions(_ []string) (string, er
 	return "", r.err
 }
 
+func (r *mockFailingContextInferrer) inferFromValueExpressions(_ []string) (string, error) {
+	return "", r.err
+}
+
 type mockStaticContextInferrer struct {
 	value string
 }
 
-func (r *mockStaticContextInferrer) infer(_ []string, _ []string) (string, error) {
+func (r *mockStaticContextInferrer) infer(_, _, _ []string) (string, error) {
 	return r.value, nil
 }
 
@@ -57,6 +65,10 @@ func (r *mockStaticContextInferrer) inferFromStatements(_ []string) (string, err
 }
 
 func (r *mockStaticContextInferrer) inferFromConditions(_ []string) (string, error) {
+	return r.value, nil
+}
+
+func (r *mockStaticContextInferrer) inferFromValueExpressions(_ []string) (string, error) {
 	return r.value, nil
 }
 
@@ -672,6 +684,230 @@ func Test_NewConditionsGetter(t *testing.T) {
 	conditionsGetter := NewConditionsGetter(conditions)
 	assert.Implements(t, (*ConditionsGetter)(nil), conditionsGetter)
 	assert.Equal(t, conditions, conditionsGetter.GetConditions())
+}
+
+func Test_ParseValueExpressions_Success(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"foo"}))
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("foo", ps, WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+	)
+	require.NoError(t, err)
+
+	expressions := mockGetter{values: []string{`foo.attributes["bar"]`, `foo.attributes["bar"]`}}
+	result, err := pc.ParseValueExpressions(expressions)
+	require.NoError(t, err)
+
+	assert.IsType(t, []*ValueExpression[any]{}, result)
+	assert.Len(t, result.([]*ValueExpression[any]), 2)
+	assert.NotNil(t, result)
+}
+
+func Test_ParseValueExpressions_MultipleContexts_Success(t *testing.T) {
+	fooParser := mockParser(t, WithPathContextNames[any]([]string{"foo"}))
+	barParser := mockParser(t, WithPathContextNames[any]([]string{"bar"}))
+	failingConverter := func(
+		_ *ParserCollection[any],
+		_ ValueExpressionsGetter,
+		_ []*ValueExpression[any],
+	) (any, error) {
+		return nil, errors.New("failing converter")
+	}
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("foo", fooParser, WithValueExpressionConverter(failingConverter)),
+		WithParserCollectionContext("bar", barParser, WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+	)
+	require.NoError(t, err)
+
+	// The `foo` context is never used, so these expressions will successfully parse.
+	expressions := mockGetter{values: []string{`bar.attributes["foo"]`, `bar.attributes["bar"]`}}
+	result, err := pc.ParseValueExpressions(expressions)
+	require.NoError(t, err)
+
+	assert.IsType(t, []*ValueExpression[any]{}, result)
+	assert.Len(t, result.([]*ValueExpression[any]), 2)
+	assert.NotNil(t, result)
+}
+
+func Test_ParseValueExpressions_NoContextInferredError(t *testing.T) {
+	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	pc.contextInferrer = &mockStaticContextInferrer{""}
+
+	expressions := mockGetter{values: []string{`bar.attributes["foo"]`}}
+	_, err = pc.ParseValueExpressions(expressions)
+
+	assert.ErrorContains(t, err, "unable to infer context from expressions")
+}
+
+func Test_ParseValueExpressions_ContextInferenceError(t *testing.T) {
+	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	pc.contextInferrer = &mockFailingContextInferrer{err: errors.New("inference error")}
+
+	expressions := mockGetter{values: []string{`bar.attributes["foo"]`}}
+	_, err = pc.ParseValueExpressions(expressions)
+
+	assert.EqualError(t, err, "inference error")
+}
+
+func Test_ParseValueExpressions_UnknownContextError(t *testing.T) {
+	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+	)
+	require.NoError(t, err)
+
+	expressions := mockGetter{values: []string{`foo.attributes["foo"]`}}
+	_, err = pc.ParseValueExpressions(expressions)
+
+	assert.ErrorContains(t, err, `context "foo" inferred from the expressions`)
+	assert.ErrorContains(t, err, "is not a supported context")
+}
+
+func Test_ParseValueExpressions_ParseValueExpressionsError(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"foo"}))
+	ps.pathParser = func(_ Path[any]) (GetSetter[any], error) {
+		return nil, errors.New("parse expressions error")
+	}
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("foo", ps, WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+	)
+	require.NoError(t, err)
+
+	expressions := mockGetter{values: []string{`foo.attributes["bar"]`}}
+	_, err = pc.ParseValueExpressions(expressions)
+	assert.ErrorContains(t, err, "parse expressions error")
+}
+
+func Test_ParseValueExpressions_ConverterError(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
+	conv := func(_ *ParserCollection[any], _ ValueExpressionsGetter, _ []*ValueExpression[any]) (any, error) {
+		return nil, errors.New("converter error")
+	}
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("dummy", ps, WithValueExpressionConverter(conv)),
+	)
+	require.NoError(t, err)
+
+	expressions := mockGetter{values: []string{`dummy.attributes["bar"]`}}
+	_, err = pc.ParseValueExpressions(expressions)
+
+	assert.EqualError(t, err, "converter error")
+}
+
+func Test_ParseValueExpressions_ConverterNilReturn(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
+	conv := func(_ *ParserCollection[any], _ ValueExpressionsGetter, _ []*ValueExpression[any]) (any, error) {
+		return nil, nil
+	}
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("dummy", ps, WithValueExpressionConverter(conv)),
+	)
+	require.NoError(t, err)
+
+	expressions := mockGetter{values: []string{`dummy.attributes["bar"]`}}
+	result, err := pc.ParseValueExpressions(expressions)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+}
+
+func Test_ParseValueExpressions_ValueExpressionsConverterGetterType(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
+	expressions := mockGetter{values: []string{`dummy.attributes["bar"]`}}
+	conv := func(_ *ParserCollection[any], expressionsGetter ValueExpressionsGetter, _ []*ValueExpression[any]) (any, error) {
+		switch expressionsGetter.(type) {
+		case mockGetter:
+			return expressions, nil
+		default:
+			return nil, fmt.Errorf("invalid ValueExpressionsGetter type, expected: mockGetter, got: %T", expressionsGetter)
+		}
+	}
+
+	pc, err := NewParserCollection(componenttest.NewNopTelemetrySettings(), WithParserCollectionContext("dummy", ps, WithValueExpressionConverter(conv)))
+	require.NoError(t, err)
+
+	_, err = pc.ParseValueExpressions(expressions)
+	require.NoError(t, err)
+}
+
+func Test_ParseValueExpressions_WithContextInferenceConditions(t *testing.T) {
+	metricParser := mockParser(t, WithPathContextNames[any]([]string{"metric", "resource"}))
+	resourceParser := mockParser(t, WithPathContextNames[any]([]string{"resource"}))
+
+	failingConverter := func(
+		_ *ParserCollection[any],
+		_ ValueExpressionsGetter,
+		_ []*ValueExpression[any],
+	) (any, error) {
+		return nil, errors.New(`invalid context inferred, got: "resource", expected: "metric"`)
+	}
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("metric", metricParser, WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+		WithParserCollectionContext("resource", resourceParser, WithValueExpressionConverter(failingConverter)),
+	)
+
+	require.NoError(t, err)
+
+	result, err := pc.ParseValueExpressions(
+		NewValueExpressionsGetter([]string{`resource.attributes["bar"]`}),
+		WithContextInferenceConditions([]string{`metric.attributes["foo"] == "foo"`}),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+}
+
+func Test_ParseValueExpressionsWithContext_UnknownContextError(t *testing.T) {
+	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	expressions := mockGetter{[]string{`attributes["bar"]`}}
+	_, err = pc.ParseValueExpressionsWithContext("bar", expressions, false)
+
+	assert.ErrorContains(t, err, `unknown context "bar"`)
+}
+
+func Test_ParseValueExpressionsWithContext_PrependPathContext(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("dummy", ps, WithValueExpressionConverter(newNopParsedValueExpressionsConverter[any]())),
+	)
+	require.NoError(t, err)
+
+	result, err := pc.ParseValueExpressionsWithContext(
+		"dummy",
+		mockGetter{[]string{
+			`attributes["foo"]`,
+			`attributes["bar"]`,
+		}},
+		true,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+	parsedValueExpressions := result.([]*ValueExpression[any])
+	assert.Equal(t, `dummy.attributes["foo"]`, parsedValueExpressions[0].origText)
+	assert.Equal(t, `dummy.attributes["bar"]`, parsedValueExpressions[1].origText)
+}
+
+func Test_NewValueExpressionsGetter(t *testing.T) {
+	expressions := []string{`foo`, `bar`}
+	expressionsGetter := NewValueExpressionsGetter(expressions)
+	assert.Implements(t, (*ValueExpressionsGetter)(nil), expressionsGetter)
+	assert.Equal(t, expressions, expressionsGetter.GetValueExpressions())
 }
 
 func mockParser(t *testing.T, options ...Option[any]) *Parser[any] {
