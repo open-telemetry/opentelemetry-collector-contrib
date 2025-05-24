@@ -90,16 +90,12 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
-					QueueSize:    10,
+					QueueSize:    1000,
 					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
-				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-					Enabled:      true,
-					FlushTimeout: time.Second,
-					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-						Sizer:   exporterhelper.RequestSizerTypeItems,
-						MinSize: 1,
-						MaxSize: 10,
+					Batch: &exporterhelper.BatchConfig{
+						FlushTimeout: time.Second,
+						MinSize:      10,
+						MaxSize:      100,
 					},
 				},
 				OtelAttrsToHec: splunk.HecToOtelAttrs{
