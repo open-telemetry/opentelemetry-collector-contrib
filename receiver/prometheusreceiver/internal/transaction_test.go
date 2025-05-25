@@ -499,6 +499,7 @@ func TestTransactionScopeHandling(t *testing.T) {
 			model.MetricNameLabel:   "otel_scope_info",
 			"otel_scope_name":       "test",
 			"otel_scope_version":    "1.0.0",
+			"otel_scope_schema_url": "http://localhost:8080/schema",
 			"otel_scope_test":       "test",
 		}),
 		labels.FromMap(map[string]string{
@@ -611,8 +612,11 @@ func TestTransactionScopeHandling(t *testing.T) {
 
 	metrics = ils.At(0).Metrics()
 	require.Equal(t, 2, metrics.Len())
-	require.Equal(t, "otel_scope_info", metrics.At(0).Name())
-	require.Equal(t, "counter_test", metrics.At(1).Name())
+	for _, metric := range metrics.All() { // Order is not guaranteed, therefore we're looping and checking for both names.
+		if metric.Name() != "otel_scope_info" && metric.Name() != "counter_test" {
+			t.Fatalf("unexpected metric name: %s", metric.Name())
+		}
+	}
 }
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
