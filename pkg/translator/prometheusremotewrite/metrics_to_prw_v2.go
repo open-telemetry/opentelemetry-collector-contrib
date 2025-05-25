@@ -45,6 +45,12 @@ func newPrometheusConverterV2() *prometheusConverterV2 {
 	}
 }
 
+// Define the structure we need for V2 bucket bounds data
+type bucketBoundsDataV2 struct {
+	signature uint64
+	bound     float64
+}
+
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
@@ -90,7 +96,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
 					}
 				case pmetric.MetricTypeHistogram:
-					// TODO implement
+					dataPoints := metric.Histogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					c.addHistogramDataPoints(dataPoints, resource, settings, promName)
 				case pmetric.MetricTypeExponentialHistogram:
 					// TODO implement
 				case pmetric.MetricTypeSummary:
@@ -136,4 +146,46 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 		Samples:    []writev2.Sample{*sample},
 	}
 	c.unique[timeSeriesSignature(lbls)] = &ts
+}
+
+// addExemplars adds exemplars for the dataPoint to the appropriate time series
+func (c *prometheusConverterV2) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsDataV2) {
+	if len(bucketBounds) == 0 {
+		return
+	}
+
+	promExemplars := getPromExemplars(dataPoint)
+	if len(promExemplars) == 0 {
+		return
+	}
+
+	// Sort by bound value to ensure we place exemplars in the correct bucket
+	sort.Slice(bucketBounds, func(i, j int) bool {
+		return bucketBounds[i].bound < bucketBounds[j].bound
+	})
+
+	for _, promExemplar := range promExemplars {
+		for _, bound := range bucketBounds {
+			ts, ok := c.unique[bound.signature]
+			if ok && len(ts.Samples) > 0 && promExemplar.Value <= bound.bound {
+				// Convert prompb.Exemplar to writev2.Exemplar
+				writev2Exemplar := writev2.Exemplar{
+					Value:     promExemplar.Value,
+					Timestamp: promExemplar.Timestamp,
+				}
+
+				// Handle label conversion using symbolTable
+				labelRefs := make([]uint32, 0, len(promExemplar.Labels)*2)
+				for _, label := range promExemplar.Labels {
+					nameRef := c.symbolTable.Symbolize(label.Name)
+					valueRef := c.symbolTable.Symbolize(label.Value)
+					labelRefs = append(labelRefs, nameRef, valueRef)
+				}
+				writev2Exemplar.LabelsRefs = labelRefs
+
+				ts.Exemplars = append(ts.Exemplars, writev2Exemplar)
+				break
+			}
+		}
+	}
 }
