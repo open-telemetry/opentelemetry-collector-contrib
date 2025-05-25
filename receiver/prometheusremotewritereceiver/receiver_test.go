@@ -729,7 +729,8 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		},
 	}
 
-	// Metric 1_1. Same job/instance as metric 1. As it will be inserted after cache eviction, it should not be cached. And should generate a new resource metric/metric.
+	// Metric 1_1. Same job/instance as metric 1. As it will be inserted after cache eviction, it should not be cached.
+	// And should generate a new resource metric/metric even having the same job/instance than the metric1.
 	metric1_1 := &writev2.Request{
 		Symbols: []string{
 			"",
