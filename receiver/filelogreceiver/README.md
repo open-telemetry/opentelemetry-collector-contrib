@@ -88,14 +88,15 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 ### Supported encodings
 
-| Key        | Description
-| ---        | ---                                                              |
-| `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
-| `utf-8`    | UTF-8 encoding                                                   |
-| `utf-16le` | UTF-16 encoding with little-endian byte order                    |
-| `utf-16be` | UTF-16 encoding with big-endian byte order                       |
-| `ascii`    | ASCII encoding                                                   |
-| `big5`     | The Big5 Chinese character encoding                              |
+| Key         | Description
+| ---         | ---                                                              |
+| `nop`       | No encoding validation. Treats the file as a stream of raw bytes |
+| `utf-8`     | UTF-8 encoding                                                   |
+| `utf-8-raw` | UTF-8 encoding without replacing invalid UTF-8 bytes             |
+| `utf-16le`  | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be`  | UTF-16 encoding with big-endian byte order                       |
+| `ascii`     | ASCII encoding                                                   |
+| `big5`      | The Big5 Chinese character encoding                              |
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
 
