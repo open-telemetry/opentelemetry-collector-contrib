@@ -231,7 +231,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestWAL_Telemetry(t *testing.T) {
+func TestWALWrite_Telemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
 		require.NoError(t, tel.Shutdown(context.Background()))
@@ -288,6 +288,51 @@ func TestWAL_Telemetry(t *testing.T) {
 	err = prw.handleExport(context.Background(), metrics, nil)
 	require.Error(t, err)
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestWALRead_Telemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background()))
+	})
+	set := metadatatest.NewSettings(tel)
+
+	cfg := &Config{
+		WAL: &WALConfig{
+			Directory: t.TempDir(),
+		},
+		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		// Do nothing
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prw, err := newPRWExporter(cfg, set)
+	require.NotNil(t, prw)
+	require.NoError(t, err)
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, prw.Shutdown(context.Background()))
+	})
+
+	// When the WAL starts, it tries to read from WAL, which is empty.
+	// So, the read should return an errNotFound error.
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalReads(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalReadsFailures(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 }
