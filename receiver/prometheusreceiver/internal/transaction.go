@@ -106,15 +106,15 @@ func (s *scopeID) String() string {
 		return ""
 	}
 	if !removeScopeInfo.IsEnabled() {
-		return fmt.Sprintf("%s:%s", s.name, s.version)
+		return fmt.Sprintf("%s\\0%s", s.name, s.version)
 	}
 
 	attrKeys := make([]string, 0, s.attributes.Len())
 	for k, v := range s.attributes.All() {
-		attrKeys = append(attrKeys, fmt.Sprintf("%s=%v", k, v.AsString()))
+		attrKeys = append(attrKeys, fmt.Sprintf("%s\\xf%v", k, v.AsString()))
 	}
 	sort.Strings(attrKeys) // ensure determinism
-	return fmt.Sprintf("%s:%s:%s:%s", s.name, s.version, s.schemaURL, strings.Join(attrKeys, ","))
+	return fmt.Sprintf("%s\\0%s\\0%s\\0%s", s.name, s.version, s.schemaURL, strings.Join(attrKeys, "\\x00"))
 }
 
 // parseScopeID parses a scopeID from a string representation.
@@ -122,7 +122,7 @@ func (s *scopeID) String() string {
 // the string representation is name+version+schemaURL+attributes.
 // Otherwise, the string representation is name+version.
 func parseScopeID(scopeKey string) (scopeID, error) {
-	parts := strings.Split(scopeKey, ":")
+	parts := strings.Split(scopeKey, "\\0")
 
 	switch removeScopeInfo.IsEnabled() {
 	case false: // Return name+version
@@ -138,8 +138,8 @@ func parseScopeID(scopeKey string) (scopeID, error) {
 			return scopeID{}, fmt.Errorf("invalid scope key: %s", scopeKey)
 		}
 		attributes := pcommon.NewMap()
-		for _, attr := range strings.Split(parts[3], ",") {
-			keyValue := strings.SplitN(attr, "=", 2)
+		for _, attr := range strings.Split(parts[3], "\\x00") {
+			keyValue := strings.SplitN(attr, "\\xf", 2)
 			if len(keyValue) != 2 {
 				return scopeID{}, fmt.Errorf("invalid attribute: %s", attr)
 			}
@@ -523,6 +523,7 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 				// Otherwise, use the scope that was provided with the metrics.
 				ils.Scope().SetName(scope.name)
 				ils.Scope().SetVersion(scope.version)
+				ils.SetSchemaUrl(scope.schemaURL)
 
 				if !removeScopeInfo.IsEnabled() {
 					// Get full Scope from cache.

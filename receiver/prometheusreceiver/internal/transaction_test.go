@@ -486,18 +486,20 @@ func TestTransactionScopeHandling(t *testing.T) {
 	* First test: Ingest otel_scope_info metric and a counter metric with matching scope name and version.
 	* The counter metric should have the scope attributes from the otel_scope_info metric.
 	*
+	* Schema URL is not included in the scope key, so it is not included in the output.
+	*
 	* Feature gate 'receiver.prometheusreceiver.RemoveScopeInfo' is disabled.
 	 */
 	testutil.SetFeatureGateForTest(t, removeScopeInfo, false)
 	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
 	for _, lbls := range []labels.Labels{
 		labels.FromMap(map[string]string{
-			model.InstanceLabel:   "localhost:8080",
-			model.JobLabel:        "test",
-			model.MetricNameLabel: "otel_scope_info",
-			"otel_scope_name":     "test",
-			"otel_scope_version":  "1.0.0",
-			"otel_scope_test":     "test",
+			model.InstanceLabel:     "localhost:8080",
+			model.JobLabel:          "test",
+			model.MetricNameLabel:   "otel_scope_info",
+			"otel_scope_name":       "test",
+			"otel_scope_version":    "1.0.0",
+			"otel_scope_test":       "test",
 		}),
 		labels.FromMap(map[string]string{
 			model.InstanceLabel:   "localhost:8080",
@@ -520,6 +522,8 @@ func TestTransactionScopeHandling(t *testing.T) {
 	attr, ok := ils.At(0).Scope().Attributes().Get("test")
 	require.True(t, ok)
 	require.Equal(t, "test", attr.AsString())
+	require.Empty(t, ils.At(0).SchemaUrl())
+
 	metrics := ils.At(0).Metrics()
 	require.Equal(t, 1, metrics.Len()) // otel_scope_info metric is not included in the output
 	require.Equal(t, "counter_test", metrics.At(0).Name())
@@ -534,12 +538,13 @@ func TestTransactionScopeHandling(t *testing.T) {
 	testutil.SetFeatureGateForTest(t, removeScopeInfo, true)
 	tr = newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
 	lbls := labels.FromMap(map[string]string{
-		model.InstanceLabel:   "localhost:8080",
-		model.JobLabel:        "test",
-		model.MetricNameLabel: "counter_test",
-		"otel_scope_name":     "test",
-		"otel_scope_version":  "1.0.0",
-		"otel_scope_test":     "test",
+		model.InstanceLabel:     "localhost:8080",
+		model.JobLabel:          "test",
+		model.MetricNameLabel:   "counter_test",
+		"otel_scope_name":       "test",
+		"otel_scope_version":    "1.0.0",
+		"otel_scope_schema_url": "http://localhost:8080/schema",
+		"otel_scope_test":       "test",
 	})
 	_, err := tr.Append(0, lbls, 1, 1.0)
 	require.NoError(t, err)
@@ -552,6 +557,7 @@ func TestTransactionScopeHandling(t *testing.T) {
 	attr, ok = ils.At(0).Scope().Attributes().Get("test")
 	require.True(t, ok)
 	require.Equal(t, "test", attr.AsString())
+	require.Equal(t, "http://localhost:8080/schema", ils.At(0).SchemaUrl())
 
 	metrics = ils.At(0).Metrics()
 	require.Equal(t, 1, metrics.Len())
@@ -570,21 +576,23 @@ func TestTransactionScopeHandling(t *testing.T) {
 	tr = newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, false)
 	for _, lbls := range []labels.Labels{
 		labels.FromMap(map[string]string{
-			model.InstanceLabel:   "localhost:8080",
-			model.JobLabel:        "test",
-			model.MetricNameLabel: "otel_scope_info",
-			"otel_scope_name":     "test",
-			"otel_scope_version":  "1.0.0",
-			"otel_scope_test":     "test",
+			model.InstanceLabel:     "localhost:8080",
+			model.JobLabel:          "test",
+			model.MetricNameLabel:   "otel_scope_info",
+			"otel_scope_name":       "test",
+			"otel_scope_version":    "1.0.0",
+			"otel_scope_schema_url": "http://localhost:8080/schema",
+			"otel_scope_test":       "test",
 		}),
 		labels.FromMap(map[string]string{
 			model.InstanceLabel:   "localhost:8080",
 			model.JobLabel:        "test",
 			model.MetricNameLabel: "counter_test",
 			// Matching scope name and version with scope info
-			"otel_scope_name":    "test",
-			"otel_scope_version": "1.0.0",
-			"otel_scope_test":    "test",
+			"otel_scope_name":       "test",
+			"otel_scope_version":    "1.0.0",
+			"otel_scope_schema_url": "http://localhost:8080/schema",
+			"otel_scope_test":       "test",
 		}),
 	} {
 		_, err := tr.Append(0, lbls, 1, 1.0)
@@ -599,6 +607,7 @@ func TestTransactionScopeHandling(t *testing.T) {
 	attr, ok = ils.At(0).Scope().Attributes().Get("test")
 	require.True(t, ok)
 	require.Equal(t, "test", attr.AsString())
+	require.Equal(t, "http://localhost:8080/schema", ils.At(0).SchemaUrl())
 
 	metrics = ils.At(0).Metrics()
 	require.Equal(t, 2, metrics.Len())
