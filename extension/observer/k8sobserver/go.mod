@@ -156,3 +156,5 @@ retract (
 )
 
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250218202821-56aae31c358a
+
+exclude github.com/envoyproxy/go-control-plane/envoy v1.32.3

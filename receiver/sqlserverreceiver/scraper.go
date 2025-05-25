@@ -235,6 +235,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const numberOfDeadlocksPerSec = "Number of Deadlocks/sec"
 	const mirrorWritesTransactionPerSec = "Mirrored Write Transactions/sec"
 	const memoryGrantsPending = "Memory Grants Pending"
+	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
 	const processesBlocked = "Processes blocked"
 	const sqlCompilationRate = "SQL Compilations/sec"
@@ -434,6 +435,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDeadlockRateDataPoint(now, val.(float64))
+			}
+		case pageLifeExpectancy:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageLifeExpectancy)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageLifeExpectancyDataPoint(now, val.(int64))
 			}
 		case pageLookupsPerSec:
 			val, err := retrieveFloat(row, valueKey)

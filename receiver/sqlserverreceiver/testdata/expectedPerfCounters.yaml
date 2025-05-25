@@ -164,6 +164,30 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
+          - description: Time a page will stay in the buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "16771"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.life_expectancy
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
           - description: Total number of page lookups.
             gauge:
               dataPoints:
@@ -172,6 +196,30 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: sqlserver.page.lookup.rate
             unit: “{lookups}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Time a page will stay in the buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "16771"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.life_expectancy
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

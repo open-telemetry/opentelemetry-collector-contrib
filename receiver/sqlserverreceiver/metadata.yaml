@@ -210,7 +210,6 @@ metrics:
     unit: s
     gauge:
       value_type: int
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.split.rate:
     enabled: true
     description: Number of pages split as a result of overflowing index pages.
