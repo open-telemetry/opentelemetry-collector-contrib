@@ -16,7 +16,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -81,7 +81,7 @@ func spanToEnvelopes(
 
 	data := contracts.NewData()
 
-	if userID, exists := attributeMap.Get(conventions.AttributeEnduserID); exists {
+	if userID, exists := attributeMap.Get(string(conventions.EnduserIDKey)); exists {
 		envelope.Tags[contracts.UserId] = userID.Str()
 	}
 
@@ -686,26 +686,26 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 	}
 
 	// RPC
-	if _, exists := attributeMap.Get(conventions.AttributeRPCSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemKey)); exists {
 		return rpcSpanType
 	}
 
 	// HTTP
-	if _, exists := attributeMap.Get(conventions.AttributeHTTPMethod); exists {
+	if _, exists := attributeMap.Get(string(conventions.HTTPMethodKey)); exists {
 		return httpSpanType
 	}
 
 	// Database
-	if _, exists := attributeMap.Get(conventions.AttributeDBSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.DBSystemKey)); exists {
 		return databaseSpanType
 	}
 
 	// Messaging
-	if _, exists := attributeMap.Get(conventions.AttributeMessagingSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.MessagingSystemKey)); exists {
 		return messagingSpanType
 	}
 
-	if _, exists := attributeMap.Get(conventions.AttributeFaaSTrigger); exists {
+	if _, exists := attributeMap.Get(string(conventions.FaaSTriggerKey)); exists {
 		return faasSpanType
 	}
 

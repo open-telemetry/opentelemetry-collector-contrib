@@ -104,6 +104,7 @@ components:
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -117,6 +118,7 @@ components:
         - transform
     provider:
         - aes
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:
@@ -205,6 +207,7 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
         - tcpcheck
         - tcplog

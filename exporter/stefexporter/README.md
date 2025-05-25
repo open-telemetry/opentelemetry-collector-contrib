@@ -58,6 +58,10 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 - [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
-- [Queuing, timeout and retry settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
-  Note that `timeout` setting controls how long the exporter waits for ACK of a data sent
-  over STEF/gRPC stream.
+- Queuing, timeout and retry settings, particularly:
+  - The `timeout` setting controls how long the exporter waits for ACK of a data sent
+    over STEF/gRPC stream.
+  - The `num_consumers` setting defines how many unacknowledged batches can be in-flight.
+    If the destination is slow to acknowledge then increasing this
+    number can help increase the throughput.
+  - For the rest of settings [see here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).

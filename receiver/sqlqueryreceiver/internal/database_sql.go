@@ -7,6 +7,16 @@ import (
 	"database/sql"
 	"sync"
 
+	// register Db drivers
+	_ "github.com/SAP/go-hdb/driver"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	_ "github.com/microsoft/go-mssqldb"
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
+	_ "github.com/sijms/go-ora/v2"
+	_ "github.com/snowflakedb/gosnowflake"
+	_ "github.com/thda/tds"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 

@@ -13,7 +13,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
@@ -37,30 +37,37 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 		otelres := rspan.Resource()
 		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
-			if service := traceutil.GetOTelService(otelres, true); service != "" {
-				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", service); err != nil {
-					return ptrace.Traces{}, err
-				}
+			// Note: default value from GetOTelService is "otlpresourcenoservicename"
+			if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", traceutil.GetOTelService(otelres, true)); err != nil {
+				return ptrace.Traces{}, err
 			}
-			if serviceVersion, ok := otelres.Attributes().Get(semconv.AttributeServiceVersion); ok {
-				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion.AsString()); err != nil {
-					return ptrace.Traces{}, err
-				}
+
+			serviceVersion := ""
+			if serviceVersionAttr, ok := otelres.Attributes().Get(string(semconv.ServiceVersionKey)); ok {
+				serviceVersion = serviceVersionAttr.AsString()
 			}
-			if env := traceutil.GetOTelEnv(otelres); env != "" {
-				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env); err != nil {
-					return ptrace.Traces{}, err
-				}
+			if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion); err != nil {
+				return ptrace.Traces{}, err
+			}
+
+			env := "default"
+			if envFromAttr := traceutil.GetOTelEnv(otelres); envFromAttr != "" {
+				env = envFromAttr
+			}
+			if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env); err != nil {
+				return ptrace.Traces{}, err
 			}
 
 			if tp.overrideIncomingDatadogFields {
 				rattr.Remove("datadog.host.name")
 			}
 
+			datadogHostName := ""
 			if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet, nil); ok && src.Kind == source.HostnameKind {
-				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.host.name", src.Identifier); err != nil {
-					return ptrace.Traces{}, err
-				}
+				datadogHostName = src.Identifier
+			}
+			if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.host.name", datadogHostName); err != nil {
+				return ptrace.Traces{}, err
 			}
 
 			libspans := rspan.ScopeSpans().At(j)
@@ -92,17 +99,13 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error", ddError); err != nil {
 					return ptrace.Traces{}, err
 				}
-				if metaMap["error.msg"] != "" {
+				if ddError == 1 {
 					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.msg", metaMap["error.msg"]); err != nil {
 						return ptrace.Traces{}, err
 					}
-				}
-				if metaMap["error.type"] != "" {
 					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.type", metaMap["error.type"]); err != nil {
 						return ptrace.Traces{}, err
 					}
-				}
-				if metaMap["error.stack"] != "" {
 					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.stack", metaMap["error.stack"]); err != nil {
 						return ptrace.Traces{}, err
 					}
@@ -126,13 +129,13 @@ func status2Error(status ptrace.Status, events ptrace.SpanEventSlice, metaMap ma
 			continue
 		}
 		attrs := e.Attributes()
-		if v, ok := attrs.Get(semconv.AttributeExceptionMessage); ok {
+		if v, ok := attrs.Get(string(semconv.ExceptionMessageKey)); ok {
 			metaMap["error.msg"] = v.AsString()
 		}
-		if v, ok := attrs.Get(semconv.AttributeExceptionType); ok {
+		if v, ok := attrs.Get(string(semconv.ExceptionTypeKey)); ok {
 			metaMap["error.type"] = v.AsString()
 		}
-		if v, ok := attrs.Get(semconv.AttributeExceptionStacktrace); ok {
+		if v, ok := attrs.Get(string(semconv.ExceptionStacktraceKey)); ok {
 			metaMap["error.stack"] = v.AsString()
 		}
 	}

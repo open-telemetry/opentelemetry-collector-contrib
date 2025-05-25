@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -127,7 +127,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.
-	span.Attributes().PutStr(conventions.AttributeFaaSTrigger, "http")
+	span.Attributes().PutStr(string(conventions.FaaSTriggerKey), "http")
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

@@ -32,6 +32,10 @@ component_management:
     name: confmap_provider_aesprovider
     paths:
     - confmap/provider/aesprovider/**
+  - component_id: confmap_provider_googlesecretmanagerprovider
+    name: confmap_provider_googlesecretmanagerprovider
+    paths:
+    - confmap/provider/googlesecretmanagerprovider/**
   - component_id: confmap_provider_s3provider
     name: confmap_provider_s3provider
     paths:
@@ -432,10 +436,6 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
-  - component_id: extension_tpm
-    name: extension_tpm
-    paths:
-    - extension/tpmextension/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:

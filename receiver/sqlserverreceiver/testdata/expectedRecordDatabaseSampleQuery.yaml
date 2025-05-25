@@ -91,7 +91,7 @@ resourceLogs:
               - key: sqlserver.transaction_isolation_level
                 value:
                   intValue: "2"
-              - key: sqlserver.username
+              - key: user.name
                 value:
                   stringValue: sa
               - key: sqlserver.wait_resource
@@ -109,9 +109,8 @@ resourceLogs:
               - key: client.address
                 value:
                   stringValue: DESKTOP-GHAEGRD
-            body:
-              stringValue: sample
-            eventName: query sample
+            body: {}
+            eventName: db.server.query_sample
             spanId: a7ad6a7169203331
             timeUnixNano: "1746443501202499000"
             traceId: 0af7651916cd43dd8448eb211c80319c

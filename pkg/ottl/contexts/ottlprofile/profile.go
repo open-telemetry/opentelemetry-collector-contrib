@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logprofile"
 )
 
+// ContextName is the name of the context for profiles.
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxprofile.Name
 
@@ -32,6 +33,7 @@ var (
 	_ zapcore.ObjectMarshaler = TransformContext{}
 )
 
+// MarshalLogObject serializes the profile into a zapcore.ObjectEncoder for logging.
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
@@ -40,6 +42,7 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	return err
 }
 
+// TransformContext represents a profile and its associated hierarchy.
 type TransformContext struct {
 	profile              pprofile.Profile
 	instrumentationScope pcommon.InstrumentationScope
@@ -49,8 +52,10 @@ type TransformContext struct {
 	resourceProfiles     pprofile.ResourceProfiles
 }
 
+// TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
+// NewTransformContext creates a new TransformContext with the provided parameters.
 func NewTransformContext(profile pprofile.Profile, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeProfiles pprofile.ScopeProfiles, resourceProfiles pprofile.ResourceProfiles, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		profile:              profile,
@@ -66,6 +71,7 @@ func NewTransformContext(profile pprofile.Profile, instrumentationScope pcommon.
 	return tc
 }
 
+// WithCache sets the cache for the TransformContext.
 // Experimental: *NOTE* this option is subject to change or removal in the future.
 func WithCache(cache *pcommon.Map) TransformContextOption {
 	return func(p *TransformContext) {
@@ -75,26 +81,32 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
+// GetProfile returns the profile from the TransformContext.
 func (tCtx TransformContext) GetProfile() pprofile.Profile {
 	return tCtx.profile
 }
 
+// GetInstrumentationScope returns the instrumentation scope from the TransformContext.
 func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return tCtx.instrumentationScope
 }
 
+// GetResource returns the resource from the TransformContext.
 func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
 }
 
+// GetScopeSchemaURLItem returns the scope schema URL item from the TransformContext.
 func (tCtx TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.scopeProfiles
 }
 
+// GetResourceSchemaURLItem returns the resource schema URL item from the TransformContext.
 func (tCtx TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.resourceProfiles
 }
 
+// NewParser creates a new profile parser with the provided functions and options.
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...ottl.Option[TransformContext]) (ottl.Parser[TransformContext], error) {
 	return ctxcommon.NewParser(
 		functions,
@@ -105,7 +117,7 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	)
 }
 
-// EnablePathContextNames enables the support to path's context names on statements.
+// EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
 //
@@ -120,14 +132,17 @@ func EnablePathContextNames() ottl.Option[TransformContext] {
 	}
 }
 
+// StatementSequenceOption represents an option for configuring a statement sequence.
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
 
+// WithStatementSequenceErrorMode sets the error mode for a statement sequence.
 func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceOption {
 	return func(s *ottl.StatementSequence[TransformContext]) {
 		ottl.WithStatementSequenceErrorMode[TransformContext](errorMode)(s)
 	}
 }
 
+// NewStatementSequence creates a new statement sequence with the provided statements and options.
 func NewStatementSequence(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementSequenceOption) ottl.StatementSequence[TransformContext] {
 	s := ottl.NewStatementSequence(statements, telemetrySettings)
 	for _, op := range options {
@@ -136,14 +151,17 @@ func NewStatementSequence(statements []*ottl.Statement[TransformContext], teleme
 	return s
 }
 
+// ConditionSequenceOption represents an option for configuring a condition sequence.
 type ConditionSequenceOption func(*ottl.ConditionSequence[TransformContext])
 
+// WithConditionSequenceErrorMode sets the error mode for a condition sequence.
 func WithConditionSequenceErrorMode(errorMode ottl.ErrorMode) ConditionSequenceOption {
 	return func(c *ottl.ConditionSequence[TransformContext]) {
 		ottl.WithConditionSequenceErrorMode[TransformContext](errorMode)(c)
 	}
 }
 
+// NewConditionSequence creates a new condition sequence with the provided conditions and options.
 func NewConditionSequence(conditions []*ottl.Condition[TransformContext], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption) ottl.ConditionSequence[TransformContext] {
 	c := ottl.NewConditionSequence(conditions, telemetrySettings)
 	for _, op := range options {
