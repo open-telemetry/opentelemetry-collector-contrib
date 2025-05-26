@@ -283,7 +283,7 @@ service:
 			})
 			s.agentDescription = agentDesc
 
-			s.loadRemoteConfig()
+			s.loadLastRecvdRemoteConfig()
 			require.NoError(t, s.createTemplates())
 			require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
@@ -1586,7 +1586,7 @@ service:
 
 		s.agentDescription = agentDesc
 
-		s.loadRemoteConfig()
+		s.loadLastRecvdRemoteConfig()
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 

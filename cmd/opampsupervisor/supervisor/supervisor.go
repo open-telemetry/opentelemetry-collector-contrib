@@ -625,8 +625,8 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
-	// load the remote config, this is needed for start settings
-	s.loadRemoteConfig()
+	// load the last received remote config, this is needed for start settings
+	s.loadLastRecvdRemoteConfig()
 
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
@@ -1058,7 +1058,7 @@ func (s *Supervisor) composeAgentConfigFiles() []byte {
 	return b
 }
 
-func (s *Supervisor) loadRemoteConfig() {
+func (s *Supervisor) loadLastRecvdRemoteConfig() {
 	var lastRecvRemoteConfig []byte
 	var err error
 
