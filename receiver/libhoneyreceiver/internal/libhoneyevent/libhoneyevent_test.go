@@ -167,14 +167,12 @@ func TestLibHoneyEvent_ToPLogRecord(t *testing.T) {
 				assert.Equal(t, want.Body().AsString(), newLog.Body().AsString())
 
 				// Check each attribute has correct type and value
-				want.Attributes().Range(func(k string, v pcommon.Value) bool {
+				for k, v := range want.Attributes().All() {
 					got, ok := newLog.Attributes().Get(k)
 					assert.True(t, ok, "missing attribute %s", k)
 					assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
 					assert.Equal(t, v, got, "wrong value for attribute %s", k)
-
-					return true
-				})
+				}
 
 				// Verify no extra attributes
 				assert.Equal(t, want.Attributes().Len(), newLog.Attributes().Len())
@@ -385,13 +383,12 @@ func TestToPTraceSpan(t *testing.T) {
 				assert.Equal(t, want.Status().Message(), span.Status().Message())
 
 				// Check attributes
-				want.Attributes().Range(func(k string, v pcommon.Value) bool {
+				for k, v := range want.Attributes().All() {
 					got, ok := span.Attributes().Get(k)
 					assert.True(t, ok, "missing attribute %s", k)
 					assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
 					assert.Equal(t, v, got, "wrong value for attribute %s", k)
-					return true
-				})
+				}
 
 				// Verify no fewer attributes, extras are expected
 				assert.LessOrEqual(t, want.Attributes().Len(), span.Attributes().Len())

@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -59,6 +59,7 @@ func NewConfig() *Config {
 		MaxConcurrentFiles: defaultMaxConcurrentFiles,
 		StartAt:            "end",
 		FingerprintSize:    fingerprint.DefaultSize,
+		InitialBufferSize:  scanner.DefaultBufferSize,
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
@@ -77,6 +78,7 @@ type Config struct {
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
@@ -95,17 +97,12 @@ type HeaderConfig struct {
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
-// Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(set, emit, WithSplitFunc(splitFunc))
-}
-
 func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
 	if emit == nil {
-		return nil, fmt.Errorf("must provide emit function")
+		return nil, errors.New("must provide emit function")
 	}
 
 	o := new(options)
@@ -113,7 +110,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		opt(o)
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find encoding: %w", err)
 	}
@@ -155,11 +152,11 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
-	readerFactory := reader.Factory{
+	readerFactory := &reader.Factory{
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
-		InitialBufferSize:       scanner.DefaultBufferSize,
+		InitialBufferSize:       int(c.InitialBufferSize),
 		MaxLogSize:              int(c.MaxLogSize),
 		Encoding:                enc,
 		SplitFunc:               splitFunc,
@@ -178,12 +175,18 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	if err != nil {
 		return nil, err
 	}
+
+	maxBatchFiles := c.MaxConcurrentFiles / 2
+	if maxBatchFiles == 0 {
+		maxBatchFiles = 1
+	}
+
 	return &Manager{
 		set:              set,
 		readerFactory:    readerFactory,
 		fileMatcher:      fileMatcher,
 		pollInterval:     c.PollInterval,
-		maxBatchFiles:    c.MaxConcurrentFiles / 2,
+		maxBatchFiles:    maxBatchFiles,
 		maxBatches:       c.MaxBatches,
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
@@ -200,18 +203,18 @@ func (c Config) validate() error {
 	}
 
 	if c.MaxLogSize <= 0 {
-		return fmt.Errorf("'max_log_size' must be positive")
+		return errors.New("'max_log_size' must be positive")
 	}
 
 	if c.MaxConcurrentFiles < 1 {
-		return fmt.Errorf("'max_concurrent_files' must be positive")
+		return errors.New("'max_concurrent_files' must be positive")
 	}
 
 	if c.MaxBatches < 0 {
 		return errors.New("'max_batches' must not be negative")
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}
@@ -221,7 +224,7 @@ func (c Config) validate() error {
 			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", allowFileDeletion.ID())
 		}
 		if c.StartAt == "end" {
-			return fmt.Errorf("'delete_after_read' cannot be used with 'start_at: end'")
+			return errors.New("'delete_after_read' cannot be used with 'start_at: end'")
 		}
 	}
 
@@ -230,7 +233,7 @@ func (c Config) validate() error {
 			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
 		}
 		if c.StartAt == "end" {
-			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
+			return errors.New("'header' cannot be specified with 'start_at: end'")
 		}
 		set := component.TelemetrySettings{Logger: zap.NewNop()}
 		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
@@ -238,7 +241,7 @@ func (c Config) validate() error {
 		}
 	}
 
-	if runtime.GOOS == "windows" && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileOwnerGroupName) {
+	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
 		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 

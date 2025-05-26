@@ -24,5 +24,5 @@ func TestGoldenDataProvider(t *testing.T) {
 		}
 		ms = append(ms, m)
 	}
-	require.Equal(t, len(dp.(*goldenDataProvider).metricsGenerated), len(ms))
+	require.Len(t, ms, len(dp.(*goldenDataProvider).metricsGenerated))
 }

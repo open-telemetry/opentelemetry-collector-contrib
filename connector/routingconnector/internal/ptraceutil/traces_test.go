@@ -16,12 +16,12 @@ import (
 
 func TestMoveResourcesIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(ptrace.ResourceSpans) bool
 		from       ptrace.Traces
 		to         ptrace.Traces
 		expectFrom ptrace.Traces
 		expectTo   ptrace.Traces
+		moveIf     func(ptrace.ResourceSpans) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -83,12 +83,12 @@ func TestMoveResourcesIf(t *testing.T) {
 
 func TestMoveSpansWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool
 		from       ptrace.Traces
 		to         ptrace.Traces
 		expectFrom ptrace.Traces
 		expectTo   ptrace.Traces
+		moveIf     func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -262,5 +262,18 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 			assert.NoError(t, ptracetest.CompareTraces(tt.expectFrom, tt.from), "from not modified as expected")
 			assert.NoError(t, ptracetest.CompareTraces(tt.expectTo, tt.to), "to not as expected")
 		})
+	}
+}
+
+func BenchmarkMoveResourcesIfTraces(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		from := ptraceutiltest.NewTraces("AB", "CD", "EF", "GH")
+		to := ptrace.NewTraces()
+		ptraceutil.MoveResourcesIf(from, to, func(ptrace.ResourceSpans) bool {
+			return true
+		})
+		assert.Equal(b, 0, from.SpanCount())
+		assert.Equal(b, 8, to.SpanCount())
 	}
 }

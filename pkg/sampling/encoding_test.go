@@ -5,8 +5,8 @@ package sampling
 
 import (
 	"encoding/binary"
-	"fmt"
-	"math/rand"
+	"errors"
+	"math/rand/v2"
 	"strconv"
 	"testing"
 
@@ -43,7 +43,7 @@ func must[T any](t T, err error) T {
 //	require.Error(t, value)
 func mustNot[T any](_ T, err error) error {
 	if err == nil {
-		return fmt.Errorf("expected an error, got nil")
+		return errors.New("expected an error, got nil")
 	}
 	return err
 }
@@ -200,15 +200,15 @@ func TestRValueSyntax(t *testing.T) {
 					// This explicitly constructs a TraceID from 9 random
 					// bytes plus the 7 lowest bytes of the input value.
 					pcommon.TraceID{
-						byte(rand.Intn(256)),   // 0
-						byte(rand.Intn(256)),   // 1
-						byte(rand.Intn(256)),   // 2
-						byte(rand.Intn(256)),   // 3
-						byte(rand.Intn(256)),   // 4
-						byte(rand.Intn(256)),   // 5
-						byte(rand.Intn(256)),   // 6
-						byte(rand.Intn(256)),   // 7
-						byte(rand.Intn(256)),   // 8
+						byte(rand.IntN(256)),   // 0
+						byte(rand.IntN(256)),   // 1
+						byte(rand.IntN(256)),   // 2
+						byte(rand.IntN(256)),   // 3
+						byte(rand.IntN(256)),   // 4
+						byte(rand.IntN(256)),   // 5
+						byte(rand.IntN(256)),   // 6
+						byte(rand.IntN(256)),   // 7
+						byte(rand.IntN(256)),   // 8
 						byte(val >> 48 & 0xff), // 9
 						byte(val >> 40 & 0xff), // 10
 						byte(val >> 32 & 0xff), // 11

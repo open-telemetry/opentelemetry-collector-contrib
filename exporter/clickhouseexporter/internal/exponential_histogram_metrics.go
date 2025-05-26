@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -191,7 +192,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 func (e *expHistogramMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	expHistogram, ok := metrics.(pmetric.ExponentialHistogram)
 	if !ok {
-		return fmt.Errorf("metrics param is not type of ExponentialHistogram")
+		return errors.New("metrics param is not type of ExponentialHistogram")
 	}
 	e.count += expHistogram.DataPoints().Len()
 	e.expHistogramModels = append(e.expHistogramModels, &expHistogramModel{

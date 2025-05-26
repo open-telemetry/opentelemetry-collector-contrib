@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -111,8 +110,8 @@ func TestFetchingTimeouts(t *testing.T) {
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		context.Background(),
 		Container{
-			ContainerJSON: &dtypes.ContainerJSON{
-				ContainerJSONBase: &dtypes.ContainerJSONBase{
+			ContainerJSON: &ctypes.InspectResponse{
+				ContainerJSONBase: &ctypes.ContainerJSONBase{
 					ID: "notARealContainerId",
 				},
 			},
@@ -150,8 +149,8 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	assert.NoError(t, err)
 
 	dc := &Container{
-		ContainerJSON: &dtypes.ContainerJSON{
-			ContainerJSONBase: &dtypes.ContainerJSONBase{
+		ContainerJSON: &ctypes.InspectResponse{
+			ContainerJSONBase: &ctypes.ContainerJSONBase{
 				ID: "notARealContainerId",
 			},
 		},

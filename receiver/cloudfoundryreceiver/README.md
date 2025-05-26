@@ -7,6 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fcloudfoundry%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fcloudfoundry) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fcloudfoundry%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fcloudfoundry) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_cloudfoundry)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_cloudfoundry&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@crobert-1](https://www.github.com/crobert-1) \| Seeking more code owners! |
 | Emeritus      | [@agoallikmaa](https://www.github.com/agoallikmaa), [@pellared](https://www.github.com/pellared) |
 
@@ -72,8 +73,8 @@ receivers:
       password: "changeit"
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ## Telemetry common Attributes
 
@@ -143,7 +144,7 @@ The receiver maps the envelope attribute tags to the following OpenTelemetry att
 The `cloudfoundry.resourceAttributes.allow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) allows the envelope tags being copied to the metrics as resource attributes instead of datapoint attributes (default `false`).
 Therefore all `org.cloudfoundry.*` datapoint attributes won't be present anymore on metrics datapoint level, but on resource level instead, since the attributes describe the resource and not the datapoints itself.
 
-The `cloudfoundry.resourceAttributes.allow` feature gate is available since version `v0.117.0` and will be held at least for 2 versions (`v0.119.0`) until promoting to `beta` and another 2 vesions (`v0.121.0`) until promoting to `stable`.
+The `cloudfoundry.resourceAttributes.allow` feature gate is available since version `v0.117.0` and will be held at least for 2 versions (`v0.119.0`) until promoting to `beta` and another 2 versions (`v0.121.0`) until promoting to `stable`.
 
 Below you can see the list of attributes that are present the resource level instead of datapoint level (when `cloudfoundry.resourceAttributes.allow` feature gate is enabled):
 

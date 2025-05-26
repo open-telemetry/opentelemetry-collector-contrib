@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -51,11 +52,14 @@ var (
 )
 
 func mustMakeFactories(factories ...scraper.Factory) map[component.Type]scraper.Factory {
-	factoriesMap, err := scraper.MakeFactoryMap(factories...)
-	if err != nil {
-		panic(err)
+	fMap := map[component.Type]scraper.Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			panic(fmt.Errorf("duplicate scraper factory %q", f.Type()))
+		}
+		fMap[f.Type()] = f
 	}
-	return factoriesMap
+	return fMap
 }
 
 // NewFactory creates a new factory for host metrics receiver.
@@ -117,7 +121,7 @@ func createAddScraperOptions(
 ) ([]scraperhelper.ControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(cfg.Scrapers))
 
-	envMap := setGoPsutilEnvVars(cfg.RootPath)
+	envMap := gopsutilenv.SetGoPsutilEnvVars(cfg.RootPath)
 
 	for key, cfg := range cfg.Scrapers {
 		factory, err := getFactory(key, factories)

@@ -26,6 +26,9 @@ type Config struct {
 	//
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
@@ -34,7 +37,7 @@ var (
 	errInvalidValue = errors.New("invalid value")
 )
 
-func newDefaultCongfig() component.Config {
+func newDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.Timeout = 10 * time.Second
 	return &Config{

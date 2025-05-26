@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package s3provider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -14,7 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -53,28 +56,7 @@ func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 	return &provider{client: nil}
 }
 
-// New returns a new confmap.Provider that reads the configuration from a file.
-//
-// This Provider supports "s3" scheme, and can be called with a "uri" that follows:
-//
-//	s3-uri : s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
-//
-// One example for s3-uri be like: s3://doc-example-bucket.s3.us-west-2.amazonaws.com/photos/puppy.jpg
-// References: https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
-//
-// Examples:
-// `s3://DOC-EXAMPLE-BUCKET.s3.us-west-2.amazonaws.com/photos/puppy.jpg` - (unix, windows)
-//
-// Deprecated: [v0.100.0] Use NewFactory() instead.
-func New() confmap.Provider {
-	return &provider{client: nil}
-}
-
 func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	if !strings.HasPrefix(uri, schemeName+":") {
-		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
-	}
-
 	// initialize the s3 client in the first call of Retrieve
 	if fmp.client == nil {
 		cfg, err := config.LoadDefaultConfig(context.Background())
@@ -147,7 +129,7 @@ func s3URISplit(uri string) (string, string, string, error) {
 	// check empty fields
 	if bucket == "" || region == "" || key == "" {
 		// This error should never happen because of the regexp pattern
-		return "", "", "", fmt.Errorf("invalid s3-uri with empty fields")
+		return "", "", "", errors.New("invalid s3-uri with empty fields")
 	}
 
 	return bucket, region, key, nil

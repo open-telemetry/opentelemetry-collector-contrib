@@ -21,7 +21,7 @@ func TestHPAMetrics(t *testing.T) {
 	hpa := testutils.NewHPA("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, hpa, ts)
 	m := mb.Emit()
 
@@ -45,4 +45,33 @@ func TestHPAMetrics(t *testing.T) {
 	testutils.AssertMetricInt(t, sms.Metrics().At(1), "k8s.hpa.desired_replicas", pmetric.MetricTypeGauge, 7)
 	testutils.AssertMetricInt(t, sms.Metrics().At(2), "k8s.hpa.max_replicas", pmetric.MetricTypeGauge, 10)
 	testutils.AssertMetricInt(t, sms.Metrics().At(3), "k8s.hpa.min_replicas", pmetric.MetricTypeGauge, 2)
+}
+
+func TestHPAResAttrs(t *testing.T) {
+	hpa := testutils.NewHPA("1")
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+
+	// Enable additional attributes
+	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg.ResourceAttributes.K8sHpaScaletargetrefKind.Enabled = true
+	cfg.ResourceAttributes.K8sHpaScaletargetrefName.Enabled = true
+	cfg.ResourceAttributes.K8sHpaScaletargetrefApiversion.Enabled = true
+
+	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(mb, hpa, ts)
+	m := mb.Emit()
+
+	require.Equal(t, 1, m.ResourceMetrics().Len())
+	rm := m.ResourceMetrics().At(0)
+	assert.Equal(t,
+		map[string]any{
+			"k8s.hpa.uid":                       "test-hpa-1-uid",
+			"k8s.hpa.name":                      "test-hpa-1",
+			"k8s.namespace.name":                "test-namespace",
+			"k8s.hpa.scaletargetref.kind":       "Deployment",
+			"k8s.hpa.scaletargetref.name":       "test-deployment",
+			"k8s.hpa.scaletargetref.apiversion": "apps/v1",
+		},
+		rm.Resource().Attributes().AsRaw())
 }

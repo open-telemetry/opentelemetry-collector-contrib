@@ -28,9 +28,9 @@ const (
 )
 
 func TestNewClient(t *testing.T) {
-	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
-	clientConfigNonExistandCA.Endpoint = defaultEndpoint
-	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNonexistentCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonexistentCA.Endpoint = defaultEndpoint
+	clientConfigNonexistentCA.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -47,7 +47,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				ClientConfig: clientConfigNonExistandCA,
+				ClientConfig: clientConfigNonexistentCA,
 			},
 			expectError: errors.New("failed to create HTTP Client"),
 		},

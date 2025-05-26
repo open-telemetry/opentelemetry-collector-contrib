@@ -7,6 +7,7 @@
 |               | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlquery%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsqlquery) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlquery%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsqlquery) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sqlquery)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sqlquery&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1) |
 | Emeritus      | [@pmcollins](https://www.github.com/pmcollins) |
 
@@ -25,17 +26,22 @@ The SQL Query Receiver uses custom SQL queries to generate metrics from a databa
 The configuration supports the following top-level fields:
 
 - `driver`(required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
-  HANA), or _oracle_ (Oracle DB).
+  HANA), _oracle_ (Oracle DB),  _tds_ (SapASE/Sybase).
 - `datasource`(required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This is
   a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
-  referred to as the "connection string" in driver documentation.
-  e.g. _host=localhost port=5432 user=me password=s3cr3t sslmode=disable_
+  referred to as the "connection string" in driver documentation. Examples:
+  - [postgres](https://github.com/lib/pq) - `host=localhost port=5432 user=username password=user_password sslmode=disable`
+  - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
+  - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
+  - [sqlserver](https://github.com/go-sql-driver/mysql) - `sqlserver://username:user_password@localhost:1433?database=db_name`
+  - [sapAse](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
 - `telemetry` (optional) Defines settings for the component's own telemetry - logs, metrics or traces.
   - `telemetry.logs` (optional) Defines settings for the component's own logs.
     - `telemetry.logs.query` (optional, default `false`) If set to `true`, every time a SQL query is run, the text of the query and the values of its parameters will be logged together with the debug log `"Running query"`.
+- `max_open_conn` (optional, default `0`): The maximumn number of open connections to the sql server. <= 0 means unlimited
 
 [storage_extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
 

@@ -39,37 +39,37 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("bigip.node.ip_address")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.node.ip_address-val", val.Str())
+				assert.Equal(t, "bigip.node.ip_address-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("bigip.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.node.name-val", val.Str())
+				assert.Equal(t, "bigip.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("bigip.pool.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.pool.name-val", val.Str())
+				assert.Equal(t, "bigip.pool.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("bigip.pool_member.ip_address")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.pool_member.ip_address-val", val.Str())
+				assert.Equal(t, "bigip.pool_member.ip_address-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("bigip.pool_member.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.pool_member.name-val", val.Str())
+				assert.Equal(t, "bigip.pool_member.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("bigip.virtual_server.destination")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.virtual_server.destination-val", val.Str())
+				assert.Equal(t, "bigip.virtual_server.destination-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("bigip.virtual_server.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "bigip.virtual_server.name-val", val.Str())
+				assert.Equal(t, "bigip.virtual_server.name-val", val.Str())
 			}
 		})
 	}

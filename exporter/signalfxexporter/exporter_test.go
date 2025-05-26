@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,6 +39,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
+	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/utils"
@@ -87,7 +89,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
+			got, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -121,7 +123,7 @@ func TestConsumeMetrics(t *testing.T) {
 		wantErr              bool
 		wantPermanentErr     bool
 		wantThrottleErr      bool
-		expectedErrorMsg     string
+		wantStatusCode       int
 	}{
 		{
 			name:             "happy_path",
@@ -134,7 +136,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusForbidden,
 			numDroppedTimeSeries: 1,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_bad_request",
@@ -142,7 +144,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusBadRequest,
 			numDroppedTimeSeries: 1,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_throttle",
@@ -150,6 +152,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusTooManyRequests,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       429,
 		},
 		{
 			name:                 "response_throttle_with_header",
@@ -158,6 +161,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusServiceUnavailable,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       503,
 		},
 		{
 			name:             "large_batch",
@@ -188,7 +192,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -206,27 +210,31 @@ func TestConsumeMetrics(t *testing.T) {
 				converter: c,
 			}
 
+			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
+				tt.wantStatusCode,
+				http.StatusText(tt.wantStatusCode),
+			)
+
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.expectedErrorMsg)
+				assert.EqualError(t, err, errMsg)
 				return
 			}
 
 			if tt.wantPermanentErr {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
-				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.ErrorContains(t, err, "response content")
+				assert.ErrorContains(t, err, errMsg)
 				return
 			}
 
 			if tt.wantThrottleErr {
-				expected := fmt.Errorf("HTTP %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
+				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 
@@ -538,15 +546,15 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -661,15 +669,16 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+			cfg.QueueSettings.Enabled = false
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			ctx := context.Background()
 			if tt.inContext {
@@ -768,7 +777,8 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			cfg.QueueSettings.Enabled = false
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -797,11 +807,11 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	got, err := newEventExporter(nil, exportertest.NewNopSettings())
+	got, err := newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	got, err = newEventExporter(nil, exportertest.NewNopSettings())
+	got, err = newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.Error(t, err)
 	assert.Nil(t, got)
 
@@ -811,7 +821,7 @@ func TestNewEventExporter(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, exportertest.NewNopSettings())
+	got, err = newEventExporter(cfg, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
@@ -928,7 +938,7 @@ func TestConsumeEventData(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1022,7 +1032,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -1489,7 +1499,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), rCfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
@@ -1560,7 +1570,7 @@ func TestTLSExporterInit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			defer func() { require.NoError(t, sfx.shutdown(context.Background())) }()
@@ -1631,7 +1641,7 @@ func TestTLSIngestConnection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
@@ -1889,8 +1899,8 @@ func TestConsumeMixedMetrics(t *testing.T) {
 		wantErr               bool
 		wantPermanentErr      bool
 		wantThrottleErr       bool
-		expectedErrorMsg      string
 		wantPartialMetricsErr bool
+		wantStatusCode        int
 	}{
 		{
 			name:                 "happy_path",
@@ -1909,7 +1919,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusForbidden,
 			numDroppedTimeSeries: 1,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_forbidden_otlp",
@@ -1917,7 +1927,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusForbidden,
 			numDroppedTimeSeries: 2,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_forbidden_mixed",
@@ -1926,7 +1936,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusForbidden,
 			numDroppedTimeSeries: 2,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_bad_request_sfx",
@@ -1934,7 +1944,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusBadRequest,
 			numDroppedTimeSeries: 1,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_bad_request_otlp",
@@ -1942,7 +1952,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusBadRequest,
 			numDroppedTimeSeries: 2,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_bad_request_mixed",
@@ -1951,7 +1961,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusBadRequest,
 			numDroppedTimeSeries: 2,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_throttle_sfx",
@@ -1959,6 +1969,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusTooManyRequests,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       429,
 		},
 		{
 			name:                  "response_throttle_mixed",
@@ -1968,6 +1979,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        429,
 		},
 		{
 			name:                  "response_throttle_otlp",
@@ -1976,6 +1988,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        429,
 		},
 		{
 			name:                 "response_throttle_with_header_sfx",
@@ -1984,6 +1997,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusServiceUnavailable,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       503,
 		},
 		{
 			name:                  "response_throttle_with_header_otlp",
@@ -1993,6 +2007,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        503,
 		},
 		{
 			name:                  "response_throttle_with_header_mixed",
@@ -2003,6 +2018,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        503,
 		},
 		{
 			name:                 "large_batch",
@@ -2040,7 +2056,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
@@ -2062,33 +2078,38 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries, err := sfxClient.pushMetricsData(context.Background(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
+			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
+				tt.wantStatusCode,
+				http.StatusText(tt.wantStatusCode),
+			)
+
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.expectedErrorMsg)
+				assert.EqualError(t, err, errMsg)
 				return
 			}
 
 			if tt.wantPermanentErr {
+				errMsg = "Permanent error: " + errMsg
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
-				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.ErrorContains(t, err, "response content")
+				assert.EqualError(t, err, errMsg)
 				return
 			}
 
 			if tt.wantThrottleErr {
 				if tt.wantPartialMetricsErr {
 					partialMetrics, _ := utils.GetHistograms(smallBatch)
-					throttleErr := fmt.Errorf("HTTP %d %q", tt.otlpHTTPResponseCode, http.StatusText(tt.otlpHTTPResponseCode))
+					throttleErr := errors.New(errMsg)
 					throttleErr = exporterhelper.NewThrottleRetry(throttleErr, time.Duration(tt.retryAfter)*time.Second)
 					testErr := consumererror.NewMetrics(throttleErr, partialMetrics)
-					assert.EqualValues(t, testErr, err)
+					assert.Equal(t, testErr, err)
 					return
 				}
 
-				expected := fmt.Errorf("HTTP %d %q", tt.sfxHTTPResponseCode, http.StatusText(tt.sfxHTTPResponseCode))
+				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 

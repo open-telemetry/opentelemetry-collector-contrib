@@ -15,6 +15,7 @@
 | Stability     | [beta]  |
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fhealthcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fhealthcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fhealthcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fhealthcheck) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_health_check)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_health_check&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    |  |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -27,11 +28,13 @@ Health Check extension enables an HTTP url that can be probed to check the
 status of the OpenTelemetry Collector. This extension can be used as a
 liveness and/or readiness probe on Kubernetes.
 
-The following settings are required:
+The following settings are available:
 
-- `endpoint` (default = localhost:13133): Address to publish the health check status. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
+- `endpoint` (default = localhost:13133): Address to publish the health check status. You can review the [full list of `ServerConfig`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 - `path` (default = "/"): Specifies the path to be configured for the health check server.
-- `response_body` (default = ""): Specifies a static body that overrides the default response returned by the health check service. 
+- `response_body` (default = `{}`): Specifies a static body that overrides the default response returned by the health check service.
+  - `response_body::healthy`: Specifies the body returned when service is healthy.
+  - `response_body::unhealthy`: Specifies the body returned when service is unhealthy.
 
 Example:
 
@@ -45,7 +48,10 @@ extensions:
       cert_file: "/path/to/cert.crt"
       key_file: "/path/to/key.key"
     path: "/health/status"
+    response_body:
+      healthy: I'm good
+      unhealthy: I'm bad!
 ```
 
-The full list of settings exposed for this exporter is documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this exporter is documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

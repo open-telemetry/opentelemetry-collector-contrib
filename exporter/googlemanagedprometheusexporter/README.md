@@ -6,7 +6,8 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fgooglemanagedprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fgooglemanagedprometheus) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aabmass](https://www.github.com/aabmass), [@dashpole](https://www.github.com/dashpole), [@jsuereth](https://www.github.com/jsuereth), [@punya](https://www.github.com/punya), [@psx95](https://www.github.com/psx95) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_googlemanagedprometheus)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_googlemanagedprometheus&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aabmass](https://www.github.com/aabmass), [@dashpole](https://www.github.com/dashpole), [@braydonk](https://www.github.com/braydonk), [@jsuereth](https://www.github.com/jsuereth), [@psx95](https://www.github.com/psx95), [@ridwanmsharif](https://www.github.com/ridwanmsharif) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -219,6 +220,12 @@ This will delete all existing data for the metric, but will allow it to be
 written as a double going forward. The simplest way to do this is by using the
 "Try this method" tab in the API reference for
 [DeleteMetricDescriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/delete).
+
+Alternatively, you can run this
+[Go program](https://github.com/GoogleCloudPlatform/prometheus-engine/blob/v0.13.0/examples/scripts/delete_metric_descriptors/delete_metric_descriptors.go)
+that accepts your project ID and a [RE2](https://github.com/google/re2/wiki/syntax) regular expression to match multiple metric descriptors and delete them
+simulataneously.\
+This is useful if the conflicting value type errors are across multiple descriptors, especially with similar names.
 
 ### Points Written Too Frequently
 

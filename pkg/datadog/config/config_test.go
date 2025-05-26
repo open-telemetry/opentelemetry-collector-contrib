@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -30,7 +31,7 @@ func TestValidate(t *testing.T) {
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
-	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
+	auth := configauth.Config{AuthenticatorID: component.NewID(ty)}
 
 	tests := []struct {
 		name string
@@ -117,6 +118,9 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					HistConfig: HistogramConfig{
 						Mode:             HistogramModeNoBuckets,
 						SendAggregations: false,
@@ -166,10 +170,10 @@ func TestValidate(t *testing.T) {
 					ReadBufferSize:      100,
 					WriteBufferSize:     200,
 					Timeout:             10 * time.Second,
-					IdleConnTimeout:     &idleConnTimeout,
-					MaxIdleConns:        &maxIdleConn,
-					MaxIdleConnsPerHost: &maxIdleConnPerHost,
-					MaxConnsPerHost:     &maxConnPerHost,
+					IdleConnTimeout:     idleConnTimeout,
+					MaxIdleConns:        maxIdleConn,
+					MaxIdleConnsPerHost: maxIdleConnPerHost,
+					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
 					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
 				},
@@ -223,10 +227,10 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.ReadBufferSize = 100
 	cfgWithHTTPConfigs.WriteBufferSize = 200
 	cfgWithHTTPConfigs.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.MaxIdleConns = &maxIdleConn
-	cfgWithHTTPConfigs.MaxIdleConnsPerHost = &maxIdleConnPerHost
-	cfgWithHTTPConfigs.MaxConnsPerHost = &maxConnPerHost
-	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
+	cfgWithHTTPConfigs.MaxIdleConns = maxIdleConn
+	cfgWithHTTPConfigs.MaxIdleConnsPerHost = maxIdleConnPerHost
+	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
+	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
 	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil
@@ -418,6 +422,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Metrics: MetricsConfig{
+			ExporterConfig: MetricsExporterConfig{
+				InstrumentationScopeMetadataAsTags: true,
+			},
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
@@ -491,6 +498,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
@@ -550,6 +560,9 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: true,
 				},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.eu",
 					},
@@ -614,6 +627,9 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: false,
 				},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.test",
 					},
@@ -674,6 +690,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
@@ -728,7 +747,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

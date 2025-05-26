@@ -4,8 +4,6 @@
 package state
 
 import (
-	"context"
-	"sync"
 	"testing"
 	"time"
 
@@ -13,74 +11,65 @@ import (
 )
 
 func TestSelectPipeline(t *testing.T) {
+	done := make(chan struct{})
+	retryChan := make(chan struct{}, 1)
 	constants := PSConstants{
 		RetryInterval: 50 * time.Millisecond,
-		RetryGap:      10 * time.Millisecond,
-		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants)
+	pS := NewPipelineSelector(retryChan, done, constants)
 
-	idx, ch := pS.SelectedPipeline()
+	idx := pS.CurrentPipeline()
 
 	require.Equal(t, 0, idx)
-	require.Equal(t, 0, pS.ChannelIndex(ch))
 }
 
 func TestHandlePipelineError(t *testing.T) {
-	var wg sync.WaitGroup
 	done := make(chan struct{})
+	retryChan := make(chan struct{}, 1)
 	constants := PSConstants{
 		RetryInterval: 50 * time.Millisecond,
-		RetryGap:      10 * time.Millisecond,
-		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants)
+	pS := NewPipelineSelector(retryChan, done, constants)
 
-	wg.Add(1)
-	go pS.ListenToChannels(done, &wg)
 	defer func() {
 		close(done)
-		wg.Wait()
 	}()
 
-	idx, ch := pS.SelectedPipeline()
+	idx := pS.CurrentPipeline()
 	require.Equal(t, 0, idx)
-	ch <- false
+
+	pS.HandleError(0)
 
 	require.Eventually(t, func() bool {
-		idx, _ = pS.SelectedPipeline()
+		idx = pS.CurrentPipeline()
 		return idx == 1
 	}, 3*time.Minute, 5*time.Millisecond)
 }
 
-func TestCurrentPipelineWithRetry(t *testing.T) {
+func TestCurrentPipelineWithReset(t *testing.T) {
+	done := make(chan struct{})
+	retryChan := make(chan struct{}, 1)
 	constants := PSConstants{
 		RetryInterval: 50 * time.Millisecond,
-		RetryGap:      10 * time.Millisecond,
-		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants)
+	pS := NewPipelineSelector(retryChan, done, constants)
 
-	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
-		cancel()
+		close(done)
 	}()
 
-	pS.TestSetStableIndex(2)
-	pS.TestRetryPipelines(ctx, constants.RetryInterval, constants.RetryGap)
+	pS.TestSetCurrentPipeline(2)
+	pS.ResetHealthyPipeline(1)
 
 	require.Eventually(t, func() bool {
-		idx, _ := pS.SelectedPipeline()
-		return idx == 0
-	}, 3*time.Second, 5*time.Millisecond)
-
-	require.Eventually(t, func() bool {
-		idx, _ := pS.SelectedPipeline()
+		idx := pS.CurrentPipeline()
 		return idx == 1
 	}, 3*time.Second, 5*time.Millisecond)
 
+	pS.ResetHealthyPipeline(0)
+
 	require.Eventually(t, func() bool {
-		idx, _ := pS.SelectedPipeline()
+		idx := pS.CurrentPipeline()
 		return idx == 0
 	}, 3*time.Second, 5*time.Millisecond)
 }

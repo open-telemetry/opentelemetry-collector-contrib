@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
@@ -20,6 +21,13 @@ import (
 
 const (
 	scrapersKey = "scrapers"
+
+	// GitHub Delivery Headers: https://docs.github.com/en/webhooks/webhook-events-and-payloads#delivery-headers
+	defaultGitHubHookIDHeader       = "X-GitHub-Hook-ID"    // Unique identifier of the webhook.
+	defaultGitHubEventHeader        = "X-GitHub-Event"      // The name of the event that triggered the delivery.
+	defaultGitHubDeliveryHeader     = "X-GitHub-Delivery"   // A globally unique identifier (GUID) to identify the event.
+	defaultGitHubSignature256Header = "X-Hub-Signature-256" // The HMAC hex digest of the request body; generated using the SHA-256 hash function and the secret as the HMAC key.
+	defaultUserAgentHeader          = "User-Agent"          // Value always prefixed with "GitHub-Hookshot/"
 )
 
 // Config that is exposed to this github receiver through the OTEL config.yaml
@@ -31,16 +39,18 @@ type Config struct {
 }
 
 type WebHook struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	Path                    string                   `mapstructure:"path"`            // path for data collection. Default is /events
-	HealthPath              string                   `mapstructure:"health_path"`     // path for health check api. Default is /health_check
-	RequiredHeader          RequiredHeader           `mapstructure:"required_header"` // optional setting to set a required header for all requests to have
-	Secret                  string                   `mapstructure:"secret"`          // secret for webhook
+	confighttp.ServerConfig `mapstructure:",squash"`       // squash ensures fields are correctly decoded in embedded struct
+	Path                    string                         `mapstructure:"path"`             // path for data collection. Default is /events
+	HealthPath              string                         `mapstructure:"health_path"`      // path for health check api. Default is /health_check
+	RequiredHeaders         map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
+	GitHubHeaders           GitHubHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
+	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
+	ServiceName             string                         `mapstructure:"service_name"`
 }
 
-type RequiredHeader struct {
-	Key   string `mapstructure:"key"`
-	Value string `mapstructure:"value"`
+type GitHubHeaders struct {
+	Customizable map[string]string `mapstructure:","` // can be overwritten via required_headers
+	Fixed        map[string]string `mapstructure:","` // are not allowed to be overwritten
 }
 
 var (
@@ -52,6 +62,7 @@ var (
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 	errRequireOneScraper           = errors.New("must specify at least one scraper")
+	errGitHubHeader                = errors.New("github default headers [X-GitHub-Event, X-GitHub-Delivery, X-GitHub-Hook-ID, X-Hub-Signature-256] cannot be configured")
 )
 
 // Validate the configuration passed through the OTEL config.yaml
@@ -66,20 +77,26 @@ func (cfg *Config) Validate() error {
 
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
-	if cfg.WebHook.ServerConfig.Endpoint == "" {
+	if cfg.WebHook.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 
-	if cfg.WebHook.ServerConfig.ReadTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.ReadTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	}
 
-	if cfg.WebHook.ServerConfig.WriteTimeout > maxReadWriteTimeout {
+	if cfg.WebHook.WriteTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	}
 
-	if (cfg.WebHook.RequiredHeader.Key != "" && cfg.WebHook.RequiredHeader.Value == "") || (cfg.WebHook.RequiredHeader.Value != "" && cfg.WebHook.RequiredHeader.Key == "") {
-		errs = multierr.Append(errs, errRequiredHeader)
+	for key, value := range cfg.WebHook.RequiredHeaders {
+		if key == "" || value == "" {
+			errs = multierr.Append(errs, errRequiredHeader)
+		}
+
+		if _, exists := cfg.WebHook.GitHubHeaders.Fixed[key]; exists {
+			errs = multierr.Append(errs, errGitHubHeader)
+		}
 	}
 
 	return errs

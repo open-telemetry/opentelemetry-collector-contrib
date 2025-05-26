@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	ProcessPagingFaults        MetricConfig `mapstructure:"process.paging.faults"`
 	ProcessSignalsPending      MetricConfig `mapstructure:"process.signals_pending"`
 	ProcessThreads             MetricConfig `mapstructure:"process.threads"`
+	ProcessUptime              MetricConfig `mapstructure:"process.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -82,6 +83,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ProcessThreads: MetricConfig{
+			Enabled: false,
+		},
+		ProcessUptime: MetricConfig{
 			Enabled: false,
 		},
 	}

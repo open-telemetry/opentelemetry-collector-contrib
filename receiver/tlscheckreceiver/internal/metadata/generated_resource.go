@@ -21,10 +21,10 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetTlscheckURL sets provided value as "tlscheck.url" attribute.
-func (rb *ResourceBuilder) SetTlscheckURL(val string) {
-	if rb.config.TlscheckURL.Enabled {
-		rb.res.Attributes().PutStr("tlscheck.url", val)
+// SetTlscheckTarget sets provided value as "tlscheck.target" attribute.
+func (rb *ResourceBuilder) SetTlscheckTarget(val string) {
+	if rb.config.TlscheckTarget.Enabled {
+		rb.res.Attributes().PutStr("tlscheck.target", val)
 	}
 }
 

@@ -69,7 +69,7 @@ func Test_IsDouble(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_IsDouble_Error(t *testing.T) {
 	exprFunc := isDouble[any](&ottl.StandardFloatGetter[any]{
 		Getter: func(context.Context, any) (any, error) {

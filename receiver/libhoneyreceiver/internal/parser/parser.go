@@ -5,7 +5,7 @@ package parser // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"net/url"
 	"slices"
 	"time"
@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 	trc "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -23,7 +23,7 @@ import (
 // GetDatasetFromRequest extracts the dataset name from the request path
 func GetDatasetFromRequest(path string) (string, error) {
 	if path == "" {
-		return "", fmt.Errorf("missing dataset name")
+		return "", errors.New("missing dataset name")
 	}
 	dataset, err := url.PathUnescape(path)
 	if err != nil {
@@ -113,7 +113,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 		if ss.ScopeLogs.Len() > 0 {
 			lr := resultLogs.ResourceLogs().AppendEmpty()
 			lr.SetSchemaUrl(semconv.SchemaURL)
-			lr.Resource().Attributes().PutStr(semconv.AttributeServiceName, ss.ServiceName)
+			lr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), ss.ServiceName)
 
 			ls := lr.ScopeLogs().AppendEmpty()
 			ls.Scope().SetName(ss.LibraryName)
@@ -123,7 +123,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 		if ss.ScopeSpans.Len() > 0 {
 			tr := resultTraces.ResourceSpans().AppendEmpty()
 			tr.SetSchemaUrl(semconv.SchemaURL)
-			tr.Resource().Attributes().PutStr(semconv.AttributeServiceName, ss.ServiceName)
+			tr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), ss.ServiceName)
 
 			ts := tr.ScopeSpans().AppendEmpty()
 			ts.Scope().SetName(ss.LibraryName)

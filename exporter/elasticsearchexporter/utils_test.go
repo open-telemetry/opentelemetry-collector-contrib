@@ -38,12 +38,12 @@ func itemRequestsSortFunc(a, b itemRequest) int {
 	return comp
 }
 
-func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { // nolint:unparam
+func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { //nolint:unparam
 	recorder.WaitItems(len(expected))
 	assertItemRequests(t, expected, recorder.Items(), assertOrder)
 }
 
-func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrder bool) { // nolint:unparam
+func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrder bool) {
 	expectedItems := expected
 	actualItems := actual
 	if !assertOrder {
@@ -56,7 +56,7 @@ func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrde
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
 
-	require.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	require.Len(t, actualItems, len(expectedItems), "want %d items, got %d", len(expectedItems), len(actualItems))
 	for i, want := range expectedItems {
 		got := actualItems[i]
 		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
@@ -128,12 +128,13 @@ func (r *bulkRecorder) Record(bulk []itemRequest) {
 	r.cond.Broadcast()
 }
 
-func (r *bulkRecorder) WaitItems(n int) {
+func (r *bulkRecorder) WaitItems(n int) []itemRequest {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for n > r.countItems() {
 		r.cond.Wait()
 	}
+	return r.items()
 }
 
 func (r *bulkRecorder) Requests() [][]itemRequest {
@@ -143,7 +144,13 @@ func (r *bulkRecorder) Requests() [][]itemRequest {
 }
 
 func (r *bulkRecorder) Items() (docs []itemRequest) {
-	for _, rec := range r.Requests() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.items()
+}
+
+func (r *bulkRecorder) items() (docs []itemRequest) {
+	for _, rec := range r.recordings {
 		docs = append(docs, rec...)
 	}
 	return docs
@@ -322,6 +329,7 @@ func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
 func TestGetSuffixTime(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.LogstashFormat.Enabled = true
+	defaultCfg.LogsIndex = "logs-generic-default"
 	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
 	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)

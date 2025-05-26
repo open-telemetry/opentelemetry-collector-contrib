@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 // NewFactory returns a new factory for the Tail Sampling processor.
@@ -26,8 +27,9 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50000,
+		DecisionWait:       30 * time.Second,
+		NumTraces:          50000,
+		SampleOnFirstMatch: false,
 	}
 }
 
@@ -38,5 +40,9 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	tCfg := cfg.(*Config)
+
+	if telemetry.IsRecordPolicyEnabled() {
+		tCfg.Options = append(tCfg.Options, withRecordPolicy())
+	}
 	return newTracesProcessor(ctx, params, nextConsumer, *tCfg)
 }

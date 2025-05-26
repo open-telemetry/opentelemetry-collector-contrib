@@ -98,7 +98,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 
 	// Check the first event.
 	attrs := records.At(0).Attributes().AsRaw()
-	assert.EqualValues(
+	assert.Equal(
 		t, map[string]any{
 			semconvOtelEntityEventName:  semconvEventEntityEventState,
 			semconvOtelEntityType:       "k8s.pod",
@@ -109,7 +109,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 
 	// Check the second event.
 	attrs = records.At(1).Attributes().AsRaw()
-	assert.EqualValues(
+	assert.Equal(
 		t, map[string]any{
 			semconvOtelEntityEventName: semconvEventEntityEventDelete,
 			semconvOtelEntityID:        map[string]any{"k8s.node.uid": "abc"},
@@ -129,7 +129,7 @@ func Test_EntityEventType(t *testing.T) {
 func Test_EntityTypeEmpty(t *testing.T) {
 	lr := plog.NewLogRecord()
 	e := EntityStateDetails{lr}
-	assert.Equal(t, "", e.EntityType())
+	assert.Empty(t, e.EntityType())
 }
 
 func Test_EntityEventTimestamp(t *testing.T) {
@@ -137,6 +137,6 @@ func Test_EntityEventTimestamp(t *testing.T) {
 	e := EntityEvent{lr}
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	e.SetTimestamp(ts)
-	assert.EqualValues(t, ts, e.Timestamp())
-	assert.EqualValues(t, ts, lr.Timestamp())
+	assert.Equal(t, ts, e.Timestamp())
+	assert.Equal(t, ts, lr.Timestamp())
 }

@@ -4,11 +4,12 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"go.uber.org/zap"
 )
 
@@ -17,7 +18,7 @@ import (
 // NOTE: it's possible to make DockerLabelConfig part of CommonExporterConfig
 // and use it both ServiceConfig and TaskDefinitionConfig.
 // However, based on existing users, few people mix different types of filters.
-// If that usecase arises in the future, we can rewrite the top level docker lable filter
+// If that usecase arises in the future, we can rewrite the top level docker label filter
 // using a task definition filter with arn_pattern:*.
 type DockerLabelConfig struct {
 	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`
@@ -40,7 +41,7 @@ func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, e
 		return nil, fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
 	}
 	if d.PortLabel == "" {
-		return nil, fmt.Errorf("port_label is empty")
+		return nil, errors.New("port_label is empty")
 	}
 	expSetting, err := d.newExportSetting()
 	if err != nil {
@@ -78,7 +79,7 @@ func (d *dockerLabelMatcher) matcherType() matcherType {
 // MatchTargets first checks the port label to find the expected port value.
 // Then it checks if that port is specified in container definition.
 // It only returns match target when both conditions are met.
-func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c ecstypes.ContainerDefinition) ([]matchedTarget, error) {
 	portLabel := d.cfg.PortLabel
 
 	// Only check port label
@@ -88,17 +89,16 @@ func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c *ecs.ContainerDefi
 	}
 
 	// Convert port
-	s := aws.StringValue(ps)
-	port, err := strconv.Atoi(s)
+	port, err := strconv.ParseInt(ps, 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("invalid port_label value, container=%s labelKey=%s labelValue=%s: %w",
-			aws.StringValue(c.Name), d.cfg.PortLabel, s, err)
+			aws.ToString(c.Name), d.cfg.PortLabel, ps, err)
 	}
 
 	// Checks if the task does have the container port
 	portExists := false
 	for _, portMapping := range c.PortMappings {
-		if aws.Int64Value(portMapping.ContainerPort) == int64(port) {
+		if aws.ToInt32(portMapping.ContainerPort) == int32(port) {
 			portExists = true
 			break
 		}
@@ -109,13 +109,13 @@ func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c *ecs.ContainerDefi
 
 	// Export only one target based on docker port label.
 	target := matchedTarget{
-		Port: port,
+		Port: int(port),
 	}
 	if v, ok := c.DockerLabels[d.cfg.MetricsPathLabel]; ok {
-		target.MetricsPath = aws.StringValue(v)
+		target.MetricsPath = v
 	}
 	if v, ok := c.DockerLabels[d.cfg.JobNameLabel]; ok {
-		target.Job = aws.StringValue(v)
+		target.Job = v
 	}
 	// NOTE: we only override job name but keep port and metrics from docker label instead of using common export config.
 	if d.cfg.JobName != "" {

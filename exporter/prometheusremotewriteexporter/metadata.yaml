@@ -6,10 +6,15 @@ status:
     beta: [metrics]
   distributions: [core, contrib]
   codeowners:
-    active: [Aneurysm9, rapphil, dashpole, ArthurSens]
+    active: [Aneurysm9, rapphil, dashpole, ArthurSens, ywwg]
 
 tests:
   expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"
 
 telemetry:
   metrics:
@@ -23,6 +28,34 @@ telemetry:
     exporter_prometheusremotewrite_translated_time_series:
       enabled: true
       description: Number of Prometheus time series that were translated from OTel metrics
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_consumers:
+      enabled: true
+      description: Number of configured workers to use to fan out the outgoing requests
+      unit: "{consumer}"
+      sum:
+        value_type: int
+        monotonic: false
+    exporter_prometheusremotewrite_sent_batches:
+      enabled: true
+      description: Number of remote write request batches sent to the remote write endpoint regardless of success or failure
+      unit: "{batch}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes:
+      enabled: true
+      description: Number of WAL writes
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes_failures:
+      enabled: true
+      description: Number of WAL writes that failed
       unit: "1"
       sum:
         value_type: int

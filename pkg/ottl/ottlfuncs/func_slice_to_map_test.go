@@ -304,7 +304,7 @@ func Test_SliceToMap(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.EqualValues(t, tt.want().AsRaw(), result.(pcommon.Map).AsRaw())
+			require.Equal(t, tt.want().AsRaw(), result.(pcommon.Map).AsRaw())
 		})
 	}
 }

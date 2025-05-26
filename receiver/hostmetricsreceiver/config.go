@@ -10,9 +10,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
@@ -32,8 +34,8 @@ type Config struct {
 }
 
 var (
-	_ component.ConfigValidator = (*Config)(nil)
-	_ confmap.Unmarshaler       = (*Config)(nil)
+	_ xconfmap.Validator  = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
 )
 
 // Validate checks the receiver configuration is valid
@@ -42,7 +44,7 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		err = errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
-	return multierr.Append(err, validateRootPath(cfg.RootPath))
+	return multierr.Append(err, gopsutilenv.ValidateRootPath(cfg.RootPath))
 }
 
 // Unmarshal a config.Parser into the config struct.

@@ -8,24 +8,27 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
-	DefaultMaxLogSize  = 1024 * 1024
-	DefaultFlushPeriod = 500 * time.Millisecond
+	DefaultMaxLogSize   = 1024 * 1024
+	DefaultFlushPeriod  = 500 * time.Millisecond
+	DefaultMaxBatchSize = 100
 )
 
 type Factory struct {
@@ -33,6 +36,7 @@ type Factory struct {
 	HeaderConfig            *header.Config
 	FromBeginning           bool
 	FingerprintSize         int
+	BufPool                 sync.Pool
 	InitialBufferSize       int
 	MaxLogSize              int
 	Encoding                encoding.Encoding
@@ -56,27 +60,39 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	if err != nil {
 		return nil, err
 	}
-	m := &Metadata{Fingerprint: fp, FileAttributes: attributes}
-	if f.FlushTimeout > 0 {
-		m.FlushState = &flush.State{LastDataChange: time.Now()}
+	var filetype string
+	if filepath.Ext(file.Name()) == gzipExtension {
+		filetype = gzipExtension
+	}
+
+	m := &Metadata{
+		Fingerprint:    fp,
+		FileAttributes: attributes,
+		TokenLenState:  tokenlen.State{},
+		FlushState: flush.State{
+			LastDataChange: time.Now(),
+		},
+		FileType: filetype,
 	}
 	return f.NewReaderFromMetadata(file, m)
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
-		Metadata:             m,
-		set:                  f.TelemetrySettings,
-		file:                 file,
-		fileName:             file.Name(),
-		fingerprintSize:      f.FingerprintSize,
-		initialBufferSize:    f.InitialBufferSize,
-		maxLogSize:           f.MaxLogSize,
-		decoder:              decode.New(f.Encoding),
-		deleteAtEOF:          f.DeleteAtEOF,
-		includeFileRecordNum: f.IncludeFileRecordNumber,
-		compression:          f.Compression,
-		acquireFSLock:        f.AcquireFSLock,
+		Metadata:          m,
+		set:               f.TelemetrySettings,
+		file:              file,
+		fileName:          file.Name(),
+		fingerprintSize:   f.FingerprintSize,
+		bufPool:           &f.BufPool,
+		initialBufferSize: f.InitialBufferSize,
+		maxLogSize:        f.MaxLogSize,
+		decoder:           f.Encoding.NewDecoder(),
+		deleteAtEOF:       f.DeleteAtEOF,
+		compression:       f.Compression,
+		acquireFSLock:     f.AcquireFSLock,
+		maxBatchSize:      DefaultMaxBatchSize,
+		emitFunc:          f.EmitFunc,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
@@ -100,9 +116,10 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.Offset = info.Size()
 	}
 
-	flushFunc := m.FlushState.Func(f.SplitFunc, f.FlushTimeout)
+	tokenLenFunc := m.TokenLenState.Func(f.SplitFunc)
+	flushFunc := m.FlushState.Func(tokenLenFunc, f.FlushTimeout)
 	r.contentSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
-	r.emitFunc = f.EmitFunc
+
 	if f.HeaderConfig != nil && !m.HeaderFinalized {
 		r.headerSplitFunc = f.HeaderConfig.SplitFunc
 		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)

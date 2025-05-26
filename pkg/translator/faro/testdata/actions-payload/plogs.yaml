@@ -1,0 +1,56 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: testapp
+        - key: service.version
+          value:
+            stringValue: abcdefg
+        - key: deployment.environment
+          value:
+            stringValue: production
+        - key: service.namespace
+          value:
+            stringValue: testnamespace
+        - key: app_bundle_id
+          value:
+            stringValue: testBundleId
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: kind
+                value:
+                  stringValue: log
+            body:
+              stringValue: timestamp=2021-09-30T10:46:17.68Z kind=log message="loading price list" level=trace context_component=AppRoot context_page=Pricing traceID=abcd spanID=ghj action_name=click-checkout action_parent_id=123 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar
+            spanId: ""
+            traceId: ""
+          - attributes:
+              - key: kind
+                value:
+                  stringValue: exception
+              - key: hash
+                value:
+                  stringValue: "17187077909215573004"
+            body:
+              stringValue: 'timestamp=2021-09-30T10:46:17.68Z kind=exception type=Error value="Exception related to user action" stacktrace="Error: Exception related to user action\n  at ? (http://fe:3002/static/js/vendors~main.chunk.js:8639:42)" traceID=abcd spanID=def action_name=click-checkout action_parent_id=123 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar'
+            spanId: ""
+            traceId: ""
+          - attributes:
+              - key: kind
+                value:
+                  stringValue: measurement
+            body:
+              stringValue: timestamp=2021-09-30T10:46:17.68Z kind=measurement type="page load" my-measurement=20.120000 traceID=abcd spanID=def value_my-measurement=20.12 action_name=click-checkout action_parent_id=123 sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar
+            spanId: ""
+            traceId: ""
+          - attributes:
+              - key: kind
+                value:
+                  stringValue: event
+            body:
+              stringValue: timestamp=2023-11-16T10:00:55.995Z kind=event event_name=user-action-event event_domain=browser event_data_userActionDuration=124 event_data_userActionEndTime=1742203289645 event_data_userActionEventType=pointerdown event_data_userActionStartTime=1742203289521 action_id=123 action_name=click-checkout sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production user_email=geralt@kaermorhen.org user_id=123 user_username=testuser user_attr_foo=bar session_id=abcd session_attr_time_elapsed=100s page_url=https://example.com/page browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false view_name=foobar
+            spanId: ""
+            traceId: ""
+        scope: {}

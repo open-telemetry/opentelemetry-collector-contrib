@@ -43,12 +43,18 @@ type libhoneyReceiver struct {
 // TeamInfo is part of the AuthInfo struct that stores the team slug
 type TeamInfo struct {
 	Slug string `json:"slug"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // EnvironmentInfo is part of the AuthInfo struct that stores the environment slug and name
 type EnvironmentInfo struct {
 	Slug string `json:"slug"`
 	Name string `json:"name"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AuthInfo is used by Libhoney to validate team and environment information against Honeycomb's Auth API
@@ -56,6 +62,9 @@ type AuthInfo struct {
 	APIKeyAccess map[string]bool `json:"api_key_access"`
 	Team         TeamInfo        `json:"team"`
 	Environment  EnvironmentInfo `json:"environment"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func newLibhoneyReceiver(cfg *Config, set *receiver.Settings) (*libhoneyReceiver, error) {
@@ -86,7 +95,7 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 
 	httpMux := http.NewServeMux()
 
-	r.settings.Logger.Info("r.nextTraces is not null so httpTracesReciever was added", zap.Int("paths", len(r.cfg.HTTP.TracesURLPaths)))
+	r.settings.Logger.Info("r.nextTraces is not null so httpTracesReceiver was added", zap.Int("paths", len(r.cfg.HTTP.TracesURLPaths)))
 	for _, path := range r.cfg.HTTP.TracesURLPaths {
 		httpMux.HandleFunc(path, func(resp http.ResponseWriter, req *http.Request) {
 			r.handleEvent(resp, req)
@@ -105,9 +114,9 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = r.cfg.HTTP.ToListener(ctx); err != nil {
 		return err
 	}
 
@@ -193,7 +202,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	dataset, err := parser.GetDatasetFromRequest(req.RequestURI)
 	if err != nil {
-		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequstURI", req.RequestURI))
+		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequestURI", req.RequestURI))
 	}
 
 	for _, p := range r.cfg.HTTP.TracesURLPaths {
@@ -253,7 +262,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	}
 
 	noErrors := []byte(`{"errors":[]}`)
-	writeResponse(resp, enc.ContentType(), http.StatusAccepted, noErrors)
+	writeResponse(resp, enc.ContentType(), http.StatusOK, noErrors)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {

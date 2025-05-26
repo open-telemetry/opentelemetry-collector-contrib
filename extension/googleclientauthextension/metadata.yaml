@@ -5,7 +5,7 @@ status:
   stability:
     alpha: [extension]
   codeowners:
-    active: [dashpole, aabmass, jsuereth, punya, psx95]
+    active: [dashpole, aabmass, braydonk, jsuereth, psx95, ridwanmsharif]
 
 tests:
   skip_lifecycle: true

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
@@ -33,7 +34,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
-				require.ErrorIs(t, component.ValidateConfig(cfg), errPasswordNotSpecified)
+				require.ErrorIs(t, xconfmap.Validate(cfg), errPasswordNotSpecified)
 			},
 		},
 		{
@@ -43,7 +44,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Password = "pass"
-				require.ErrorIs(t, component.ValidateConfig(cfg), errUsernameNotSpecified)
+				require.ErrorIs(t, xconfmap.Validate(cfg), errUsernameNotSpecified)
 			},
 		},
 		{
@@ -54,7 +55,7 @@ func TestValidateCredentials(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
 				cfg.Password = "pass"
-				require.NoError(t, component.ValidateConfig(cfg))
+				require.NoError(t, xconfmap.Validate(cfg))
 			},
 		},
 		{
@@ -63,7 +64,7 @@ func TestValidateCredentials(t *testing.T) {
 				t.Parallel()
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				require.NoError(t, component.ValidateConfig(cfg))
+				require.NoError(t, xconfmap.Validate(cfg))
 			},
 		},
 	}
@@ -124,7 +125,7 @@ func TestValidateEndpoint(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
 			cfg.Endpoint = testCase.rawURL
 
-			err := component.ValidateConfig(cfg)
+			err := xconfmap.Validate(cfg)
 
 			switch {
 			case testCase.expectedErr != nil:
@@ -187,7 +188,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}

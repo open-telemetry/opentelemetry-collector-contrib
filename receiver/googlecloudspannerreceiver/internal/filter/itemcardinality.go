@@ -4,12 +4,12 @@
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 
 import (
-	"errors"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
-	"github.com/ReneKroon/ttlcache/v2"
+	"github.com/jellydator/ttlcache/v3"
 	"go.uber.org/zap"
 )
 
@@ -19,7 +19,7 @@ type Item struct {
 }
 
 type ItemFilter interface {
-	Filter(source []*Item) ([]*Item, error)
+	Filter(source []*Item) []*Item
 	Shutdown() error
 	TotalLimit() int
 	LimitByTimestamp() int
@@ -36,7 +36,8 @@ type itemCardinalityFilter struct {
 	limitByTimestamp   int
 	itemActivityPeriod time.Duration
 	logger             *zap.Logger
-	cache              *ttlcache.Cache
+	cache              *ttlcache.Cache[string, struct{}]
+	stopOnce           sync.Once
 }
 
 type currentLimitByTimestamp struct {
@@ -58,10 +59,11 @@ func NewItemCardinalityFilter(metricName string, totalLimit int, limitByTimestam
 		return nil, fmt.Errorf("total limit %q is lower or equal to limit by timestamp %q", totalLimit, limitByTimestamp)
 	}
 
-	cache := ttlcache.NewCache()
-
-	cache.SetCacheSizeLimit(totalLimit)
-	cache.SkipTTLExtensionOnHit(true)
+	cache := ttlcache.New[string, struct{}](
+		ttlcache.WithCapacity[string, struct{}](uint64(totalLimit)),
+		ttlcache.WithDisableTouchOnHit[string, struct{}](),
+	)
+	go cache.Start()
 
 	return &itemCardinalityFilter{
 		metricName:         metricName,
@@ -81,72 +83,58 @@ func (f *itemCardinalityFilter) LimitByTimestamp() int {
 	return f.limitByTimestamp
 }
 
-func (f *itemCardinalityFilter) Filter(sourceItems []*Item) ([]*Item, error) {
+func (f *itemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
 	var filteredItems []*Item
 	groupedItems := groupByTimestamp(sourceItems)
 	sortedItemKeys := sortedKeys(groupedItems)
 
 	for _, key := range sortedItemKeys {
-		filteredGroupedItems, err := f.filterItems(groupedItems[key])
-		if err != nil {
-			return nil, err
-		}
-
-		filteredItems = append(filteredItems, filteredGroupedItems...)
+		filteredItems = append(filteredItems, f.filterItems(groupedItems[key])...)
 	}
 
-	return filteredItems, nil
+	return filteredItems
 }
 
-func (f *itemCardinalityFilter) filterItems(items []*Item) ([]*Item, error) {
+func (f *itemCardinalityFilter) filterItems(items []*Item) []*Item {
 	limit := currentLimitByTimestamp{
 		limitByTimestamp: f.limitByTimestamp,
 	}
 
 	var filteredItems []*Item
 	for _, item := range items {
-		if included, err := f.includeItem(item, &limit); err != nil {
-			return nil, err
-		} else if included {
+		if f.includeItem(item, &limit) {
 			filteredItems = append(filteredItems, item)
 		}
 	}
 
-	return filteredItems, nil
+	return filteredItems
 }
 
-func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTimestamp) (bool, error) {
-	if _, err := f.cache.Get(item.SeriesKey); err == nil {
-		return true, nil
-	} else if !errors.Is(err, ttlcache.ErrNotFound) {
-		return false, err
+func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTimestamp) bool {
+	if f.cache.Get(item.SeriesKey) != nil {
+		return true
 	}
-
 	if !f.canIncludeNewItem(limit.get()) {
 		f.logger.Debug("Skip item", zap.String("seriesKey", item.SeriesKey), zap.Time("timestamp", item.Timestamp))
-		return false, nil
+		return false
 	}
 
-	if err := f.cache.SetWithTTL(item.SeriesKey, struct{}{}, f.itemActivityPeriod); err != nil {
-		if errors.Is(err, ttlcache.ErrClosed) {
-			err = fmt.Errorf("set item from cache failed for metric %q because cache has been already closed: %w", f.metricName, err)
-		}
-		return false, err
-	}
+	_ = f.cache.Set(item.SeriesKey, struct{}{}, f.itemActivityPeriod)
 
 	f.logger.Debug("Added item to cache", zap.String("seriesKey", item.SeriesKey), zap.Time("timestamp", item.Timestamp))
 
 	limit.dec()
 
-	return true, nil
+	return true
 }
 
 func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) bool {
-	return f.cache.Count() < f.totalLimit && currentLimitByTimestamp > 0
+	return f.cache.Len() < f.totalLimit && currentLimitByTimestamp > 0
 }
 
 func (f *itemCardinalityFilter) Shutdown() error {
-	return f.cache.Close()
+	f.stopOnce.Do(func() { f.cache.Stop() })
+	return nil
 }
 
 func groupByTimestamp(items []*Item) map[time.Time][]*Item {

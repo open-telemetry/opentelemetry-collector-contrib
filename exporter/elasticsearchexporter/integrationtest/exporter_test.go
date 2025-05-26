@@ -86,7 +86,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
 	collector := newRecreatableOtelCol(t)
-	cleanup, err := collector.PrepareConfig(cfg)
+	cleanup, err := collector.PrepareConfig(t, cfg)
 	require.NoError(t, err)
 	defer cleanup()
 

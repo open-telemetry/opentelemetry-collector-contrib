@@ -8,7 +8,7 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -158,7 +158,7 @@ func Scenario10kItemsPerSecond(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -217,7 +217,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 	fmt.Println(configStr)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -265,7 +265,7 @@ type TestCase struct {
 func genRandByteString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = byte(rand.Intn(128))
+		b[i] = byte(rand.IntN(128))
 	}
 	return string(b)
 }
@@ -289,7 +289,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 
 			// Prepare config.
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-			configCleanup, err := agentProc.PrepareConfig(configStr)
+			configCleanup, err := agentProc.PrepareConfig(t, configStr)
 			require.NoError(t, err)
 			defer configCleanup()
 
@@ -345,7 +345,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -391,7 +391,7 @@ func ScenarioSendingQueuesFull(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -473,7 +473,7 @@ func ScenarioSendingQueuesNotFull(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -524,7 +524,7 @@ func ScenarioLong(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -570,7 +570,7 @@ func ScenarioMemoryLimiterHit(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -649,8 +649,8 @@ func constructLoadOptions(test TestCase) testbed.LoadOptions {
 
 	// Generate attributes.
 	for i := 0; i < test.attrCount; i++ {
-		attrName := genRandByteString(rand.Intn(199) + 1)
-		options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
+		attrName := genRandByteString(rand.IntN(199) + 1)
+		options.Attributes[attrName] = genRandByteString(rand.IntN(test.attrSizeByte*2-1) + 1)
 	}
 	return options
 }

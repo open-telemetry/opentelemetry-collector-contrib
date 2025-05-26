@@ -13,10 +13,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
@@ -34,6 +35,8 @@ type samplingProvider struct {
 	cancelFunc context.CancelFunc
 
 	options Options
+
+	wg sync.WaitGroup
 }
 
 type storedStrategies struct {
@@ -77,6 +80,7 @@ func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
 	}
 
 	if options.ReloadInterval > 0 {
+		h.wg.Add(1)
 		go h.autoUpdateStrategies(ctx, options.ReloadInterval, loadFn)
 	}
 	return h, nil
@@ -96,6 +100,7 @@ func (h *samplingProvider) GetSamplingStrategy(_ context.Context, serviceName st
 // Close stops updating the strategies
 func (h *samplingProvider) Close() error {
 	h.cancelFunc()
+	h.wg.Wait()
 	return nil
 }
 
@@ -156,6 +161,7 @@ func (h *samplingProvider) samplingStrategyLoader(strategiesFile string) strateg
 }
 
 func (h *samplingProvider) autoUpdateStrategies(ctx context.Context, interval time.Duration, loader strategyLoader) {
+	defer h.wg.Done()
 	lastValue := string(nullJSON)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -215,11 +221,8 @@ func (h *samplingProvider) parseStrategiesDeprecated(strategies *strategies) {
 		newStore.defaultStrategy = h.parseServiceStrategies(strategies.DefaultStrategy)
 	}
 
-	merge := true
-	if newStore.defaultStrategy.OperationSampling == nil ||
-		newStore.defaultStrategy.OperationSampling.PerOperationStrategies == nil {
-		merge = false
-	}
+	merge := newStore.defaultStrategy.OperationSampling != nil &&
+		newStore.defaultStrategy.OperationSampling.PerOperationStrategies != nil
 
 	for _, s := range strategies.ServiceStrategies {
 		newStore.serviceStrategies[s.Service] = h.parseServiceStrategies(s)

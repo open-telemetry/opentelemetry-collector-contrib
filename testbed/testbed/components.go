@@ -37,12 +37,12 @@ func Components() (
 ) {
 	var errs error
 
-	extensions, err := extension.MakeFactoryMap(
+	extensions, err := otelcol.MakeFactoryMap[extension.Factory](
 		zpagesextension.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
-	receivers, err := receiver.MakeFactoryMap(
+	receivers, err := otelcol.MakeFactoryMap[receiver.Factory](
 		jaegerreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
@@ -51,7 +51,7 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	exporters, err := exporter.MakeFactoryMap(
+	exporters, err := otelcol.MakeFactoryMap[exporter.Factory](
 		debugexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
 		otlpexporter.NewFactory(),
@@ -61,13 +61,13 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	processors, err := processor.MakeFactoryMap(
+	processors, err := otelcol.MakeFactoryMap[processor.Factory](
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
-	connectors, err := connector.MakeFactoryMap(
+	connectors, err := otelcol.MakeFactoryMap[connector.Factory](
 		spanmetricsconnector.NewFactory(),
 		routingconnector.NewFactory(),
 	)

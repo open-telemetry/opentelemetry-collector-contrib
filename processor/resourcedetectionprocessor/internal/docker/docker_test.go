@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
@@ -37,7 +37,7 @@ func TestDetect(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 
-	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -46,8 +46,8 @@ func TestDetect(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "darwin",
+		string(conventions.HostNameKey): "hostname",
+		string(conventions.OSTypeKey):   "darwin",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

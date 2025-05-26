@@ -10,12 +10,11 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -99,7 +98,7 @@ func TestConvertMetric(t *testing.T) {
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
 						Name: proto.String("testgauge"),
-						Type: dto.MetricType_COUNTER.Enum(),
+						Type: io_prometheus_client.MetricType_COUNTER.Enum(),
 					},
 				},
 			},
@@ -113,7 +112,7 @@ func TestConvertMetric(t *testing.T) {
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
 						Name: proto.String("testgauge"),
-						Type: dto.MetricType_GAUGE.Enum(),
+						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
 						Help: proto.String("test help value"),
 					},
 				},
@@ -514,9 +513,9 @@ func TestCollectMetrics(t *testing.T) {
 			}
 
 			rAttrs := pcommon.NewMap()
-			rAttrs.PutStr(conventions.AttributeServiceInstanceID, "localhost:9090")
-			rAttrs.PutStr(conventions.AttributeServiceName, "testapp")
-			rAttrs.PutStr(conventions.AttributeServiceNamespace, "prod")
+			rAttrs.PutStr(string(conventions.ServiceInstanceIDKey), "localhost:9090")
+			rAttrs.PutStr(string(conventions.ServiceNameKey), "testapp")
+			rAttrs.PutStr(string(conventions.ServiceNamespaceKey), "prod")
 
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
@@ -689,7 +688,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					h := pbMetric.Histogram
 					require.Equal(t, tt.histogramCount, h.GetSampleCount())
 					require.Equal(t, tt.histogramSum, h.GetSampleSum())
-					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
+					require.Len(t, h.Bucket, len(tt.histogramPoints))
 
 					for _, b := range h.Bucket {
 						require.Equal(t, tt.histogramPoints[(*b).GetUpperBound()], b.GetCumulativeCount())

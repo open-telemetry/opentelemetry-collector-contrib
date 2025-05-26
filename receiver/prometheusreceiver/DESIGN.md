@@ -56,7 +56,7 @@ undocumented metrics types, including:
 
 * Gaugehistogram
 * Info
-* Statset
+* Stateset
 
 More details can be found from the
 [prometheus text parser source code](https://github.com/prometheus/prometheus/blob/afdd1357e008375e693a1b4c096f81b2358cb46f/model/textparse/interface.go#L25)
@@ -156,7 +156,7 @@ type ExemplarAppender interface {
 }
 ```
 
-*Note: the above code belongs to the Prometheus project, its license can be found [here](https://github.com/prometheus/prometheus/blob/v2.26.0/LICENSE)*
+*Note: the above code belongs to the Prometheus project, and is covered by the [Prometheus license](https://github.com/prometheus/prometheus/blob/v2.26.0/LICENSE)*
 
 One can see that the interface is very simple, it only has 4 methods (once we
 account for the embedded `ExemplarAppender` interface): `Append`, `AppendExemplar`,
@@ -357,12 +357,12 @@ metrics := []*metricspb.Metric{
 
 
 ### Gauge
-Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#guage),
+Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#gauge),
 > is a metric that represents a single numerical value that can arbitrarily go up and down
 
 ```
 # HELP gauge_test some test gauges.
-# TYPE gauge_test gague
+# TYPE gauge_test gauge
 gauge_test{id="1",foo="bar"} 1.0
 gauge_test{id="2",foo=""}    2.0
 
@@ -555,7 +555,7 @@ bucket that, bucket counts from Prometheus are cumulative, to transform this
 into OpenTelemetry format, one needs to apply the following formula:
 
 ```
-CurrentOCBucketVlaue = CurrentPrometheusBucketValue - PrevPrometheusBucketValue
+CurrentOCBucketValue = CurrentPrometheusBucketValue - PrevPrometheusBucketValue
 ```
 
 OpenTelemetry does not use `+inf` as an explicit bound, one needs to remove it to generate

@@ -21,8 +21,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 )
+
+func newTestExtension(t *testing.T, cfg *Config) extension.Extension {
+	t.Helper()
+	return newExtension(cfg, zap.NewNop())
+}
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	// prepare
@@ -36,7 +43,7 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 		Audience:    "unit-test",
 		GroupsClaim: "memberships",
 	}
-	p := newExtension(config, zap.NewNop())
+	p := newTestExtension(t, config)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -52,21 +59,94 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	token, err := oidcServer.token(payload)
 	require.NoError(t, err)
 
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
 	// test, upper-case header
-	ctx, err = p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err = srvAuth.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
 	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
+}
+
+func TestOIDCAuthenticationSucceededIgnoreAudienceMismatch(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		IssuerURL:      oidcServer.URL,
+		Audience:       "unit-test",
+		IgnoreAudience: true,
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"iss": oidcServer.URL,
+		"aud": "not-unit-test",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	// test
+	ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
+func TestOIDCAuthenticationFailAudienceMismatch(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		IssuerURL: oidcServer.URL,
+		Audience:  "unit-test",
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"iss": oidcServer.URL,
+		"aud": "not-unit-test",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	// test
+	_, err = srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.Error(t, err)
 }
 
 func TestOIDCProviderForConfigWithTLS(t *testing.T) {
@@ -200,10 +280,11 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 
 func TestOIDCInvalidAuthHeader(t *testing.T) {
 	// prepare
-	p := newExtension(&Config{
+	p, ok := newTestExtension(t, &Config{
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com",
-	}, zap.NewNop())
+	}).(extensionauth.Server)
+	require.True(t, ok)
 
 	// test
 	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
@@ -215,10 +296,11 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 
 func TestOIDCNotAuthenticated(t *testing.T) {
 	// prepare
-	p := newExtension(&Config{
+	p, ok := newTestExtension(t, &Config{
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com",
-	}, zap.NewNop())
+	}).(extensionauth.Server)
+	require.True(t, ok)
 
 	// test
 	ctx, err := p.Authenticate(context.Background(), make(map[string][]string))
@@ -228,12 +310,12 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 	assert.NotNil(t, ctx)
 }
 
-func TestProviderNotReacheable(t *testing.T) {
+func TestProviderNotReachable(t *testing.T) {
 	// prepare
-	p := newExtension(&Config{
+	p := newTestExtension(t, &Config{
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com",
-	}, zap.NewNop())
+	})
 
 	// test
 	err := p.Start(context.Background(), componenttest.NewNopHost())
@@ -252,16 +334,19 @@ func TestFailedToVerifyToken(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	p := newExtension(&Config{
+	p := newTestExtension(t, &Config{
 		IssuerURL: oidcServer.URL,
 		Audience:  "unit-test",
-	}, zap.NewNop())
+	})
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
+	ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
 
 	// verify
 	assert.Error(t, err)
@@ -309,7 +394,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			p := newExtension(tt.config, zap.NewNop())
+			p := newTestExtension(t, tt.config)
 
 			err = p.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
@@ -323,8 +408,11 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			token, err := oidcServer.token(payload)
 			require.NoError(t, err)
 
+			srvAuth, ok := p.(extensionauth.Server)
+			require.True(t, ok)
+
 			// test
-			ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 			// verify
 			assert.ErrorIs(t, err, tt.expectedError)
@@ -423,6 +511,20 @@ func TestMissingClient(t *testing.T) {
 	assert.Equal(t, errNoAudienceProvided, err)
 }
 
+func TestIgnoreMissingClient(t *testing.T) {
+	// prepare
+	config := &Config{
+		IssuerURL:      "http://example.com/",
+		IgnoreAudience: true,
+	}
+
+	// test
+	err := config.Validate()
+
+	// verify
+	assert.NoError(t, err)
+}
+
 func TestMissingIssuerURL(t *testing.T) {
 	// prepare
 	config := &Config{
@@ -442,7 +544,7 @@ func TestShutdown(t *testing.T) {
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com/",
 	}
-	p := newExtension(config, zap.NewNop())
+	p := newTestExtension(t, config)
 	require.NotNil(t, p)
 
 	// test

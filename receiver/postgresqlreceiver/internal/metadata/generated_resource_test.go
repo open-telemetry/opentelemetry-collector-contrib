@@ -36,22 +36,22 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("postgresql.database.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "postgresql.database.name-val", val.Str())
+				assert.Equal(t, "postgresql.database.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("postgresql.index.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "postgresql.index.name-val", val.Str())
+				assert.Equal(t, "postgresql.index.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("postgresql.schema.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "postgresql.schema.name-val", val.Str())
+				assert.Equal(t, "postgresql.schema.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("postgresql.table.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "postgresql.table.name-val", val.Str())
+				assert.Equal(t, "postgresql.table.name-val", val.Str())
 			}
 		})
 	}

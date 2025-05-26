@@ -5,7 +5,7 @@ package sigv4authextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -14,12 +14,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
-	grpcCredentials "google.golang.org/grpc/credentials"
 )
 
-// sigv4Auth is a struct that implements the auth.Client interface.
+// sigv4Auth is a struct that implements the extensionauth.HTTPClient interface.
 // It provides the implementation for providing Sigv4 authentication for HTTP requests only.
 type sigv4Auth struct {
 	cfg                    *Config
@@ -29,8 +29,11 @@ type sigv4Auth struct {
 	component.ShutdownFunc // embedded default behavior to do nothing with Shutdown()
 }
 
-// compile time check that the sigv4Auth struct satisfies the auth.Client interface
-var _ auth.Client = (*sigv4Auth)(nil)
+// compile time check that the sigv4Auth struct satisfies the extensionauth.HTTPClient interface
+var (
+	_ extension.Extension      = (*sigv4Auth)(nil)
+	_ extensionauth.HTTPClient = (*sigv4Auth)(nil)
+)
 
 // RoundTripper() returns a custom signingRoundTripper.
 func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
@@ -50,11 +53,6 @@ func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 	}
 
 	return &rt, nil
-}
-
-// PerRPCCredentials is implemented to satisfy the auth.Client interface but will not be implemented.
-func (sa *sigv4Auth) PerRPCCredentials() (grpcCredentials.PerRPCCredentials, error) {
-	return nil, errors.New("Not Implemented")
 }
 
 // newSigv4Extension() is called by createExtension() in factory.go and
@@ -87,6 +85,35 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return &awscfg.Credentials, nil
+}
+
+func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvider, error) {
+	tokenRetriever := stscreds.IdentityTokenRetriever(
+		stscreds.IdentityTokenFile(cfg.AssumeRole.WebIdentityTokenFile),
+	)
+	_, err := tokenRetriever.GetIdentityToken()
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve token file: %w", err)
+	}
+
+	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithWebIdentityRoleCredentialOptions(
+			func(options *stscreds.WebIdentityRoleOptions) {
+				options.TokenRetriever = tokenRetriever
+				options.RoleARN = cfg.AssumeRole.ARN
+			},
+		),
+		awsconfig.WithRegion(cfg.AssumeRole.STSRegion),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load AWS configuration: %w", err)
+	}
+	stsSvc := sts.NewFromConfig(awscfg)
+
+	provider := stscreds.NewWebIdentityRoleProvider(stsSvc, cfg.AssumeRole.ARN, tokenRetriever)
+	awscfg.Credentials = aws.NewCredentialsCache(provider)
 
 	return &awscfg.Credentials, nil
 }

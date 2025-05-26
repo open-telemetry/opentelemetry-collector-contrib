@@ -113,7 +113,7 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	wg := sync.WaitGroup{}
 	for _, c := range containerList {
 		wg.Add(1)
-		go func(container dtypes.Container) {
+		go func(container ctypes.Summary) {
 			if !dc.shouldBeExcluded(container.Image) {
 				dc.InspectAndPersistContainer(ctx, container.ID)
 			} else {
@@ -276,7 +276,7 @@ EVENT_LOOP:
 // InspectAndPersistContainer queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
 // nil and false otherwise. Persists the container in the cache if container is
 // running and not excluded.
-func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
+func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*ctypes.InspectResponse, bool) {
 	if container, ok := dc.inspectedContainerIsOfInterest(ctx, cid); ok {
 		dc.persistContainer(container)
 		return container, ok
@@ -286,7 +286,7 @@ func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*
 
 // Queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
 // nil and false otherwise.
-func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
+func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*ctypes.InspectResponse, bool) {
 	inspectCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	container, err := dc.client.ContainerInspect(inspectCtx, cid)
 	defer cancel()
@@ -302,7 +302,7 @@ func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string
 	return nil, false
 }
 
-func (dc *Client) persistContainer(containerJSON *dtypes.ContainerJSON) {
+func (dc *Client) persistContainer(containerJSON *ctypes.InspectResponse) {
 	if containerJSON == nil {
 		return
 	}

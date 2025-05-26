@@ -29,15 +29,17 @@ type logAggregator struct {
 	logCountAttribute string
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
+	dedupFields       []string
 }
 
 // newLogAggregator creates a new LogCounter.
-func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder) *logAggregator {
+func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder, dedupFields []string) *logAggregator {
 	return &logAggregator{
 		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
 		telemetryBuilder:  telemetryBuilder,
+		dedupFields:       dedupFields,
 	}
 }
 
@@ -83,7 +85,7 @@ func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.Instrumenta
 	key := getResourceKey(resource)
 	resourceAggregator, ok := l.resources[key]
 	if !ok {
-		resourceAggregator = newResourceAggregator(resource)
+		resourceAggregator = newResourceAggregator(resource, l.dedupFields)
 		l.resources[key] = resourceAggregator
 	}
 	resourceAggregator.Add(scope, logRecord)
@@ -98,13 +100,15 @@ func (l *logAggregator) Reset() {
 type resourceAggregator struct {
 	resource      pcommon.Resource
 	scopeCounters map[uint64]*scopeAggregator
+	dedupFields   []string
 }
 
 // newResourceAggregator creates a new ResourceCounter.
-func newResourceAggregator(resource pcommon.Resource) *resourceAggregator {
+func newResourceAggregator(resource pcommon.Resource, dedupFields []string) *resourceAggregator {
 	return &resourceAggregator{
 		resource:      resource,
 		scopeCounters: make(map[uint64]*scopeAggregator),
+		dedupFields:   dedupFields,
 	}
 }
 
@@ -113,7 +117,7 @@ func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord p
 	key := getScopeKey(scope)
 	scopeAggregator, ok := r.scopeCounters[key]
 	if !ok {
-		scopeAggregator = newScopeAggregator(scope)
+		scopeAggregator = newScopeAggregator(scope, r.dedupFields)
 		r.scopeCounters[key] = scopeAggregator
 	}
 	scopeAggregator.Add(logRecord)
@@ -123,19 +127,21 @@ func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord p
 type scopeAggregator struct {
 	scope       pcommon.InstrumentationScope
 	logCounters map[uint64]*logCounter
+	dedupFields []string
 }
 
 // newScopeAggregator creates a new ScopeCounter.
-func newScopeAggregator(scope pcommon.InstrumentationScope) *scopeAggregator {
+func newScopeAggregator(scope pcommon.InstrumentationScope, dedupFields []string) *scopeAggregator {
 	return &scopeAggregator{
 		scope:       scope,
 		logCounters: make(map[uint64]*logCounter),
+		dedupFields: dedupFields,
 	}
 }
 
 // Add increments the counter that the logRecord matches.
 func (s *scopeAggregator) Add(logRecord plog.LogRecord) {
-	key := getLogKey(logRecord)
+	key := getLogKey(logRecord, s.dedupFields)
 	lc, ok := s.logCounters[key]
 	if !ok {
 		lc = newLogCounter(logRecord)
@@ -184,12 +190,62 @@ func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
 	)
 }
 
-// getLogKey creates a unique hash for the log record to use as a map key
-func getLogKey(logRecord plog.LogRecord) uint64 {
+// getLogKey creates a unique hash for the log record to use as a map key.
+// If dedupFields is non-empty, it is used to determine the fields whose values are hashed.
+func getLogKey(logRecord plog.LogRecord, dedupFields []string) uint64 {
+	if len(dedupFields) > 0 {
+		var opts []pdatautil.HashOption
+
+		for _, field := range dedupFields {
+			parts := splitField(field)
+			var m pcommon.Map
+			switch parts[0] {
+			case bodyField:
+				if logRecord.Body().Type() == pcommon.ValueTypeMap {
+					m = logRecord.Body().Map()
+				}
+			case attributeField:
+				m = logRecord.Attributes()
+			}
+
+			value, ok := getKeyValue(m, parts[1:])
+			if ok {
+				opts = append(opts, pdatautil.WithString(value.AsString()))
+			}
+		}
+
+		if len(opts) > 0 {
+			return pdatautil.Hash64(opts...)
+		}
+	}
+
 	return pdatautil.Hash64(
 		pdatautil.WithMap(logRecord.Attributes()),
 		pdatautil.WithValue(logRecord.Body()),
 		pdatautil.WithString(logRecord.SeverityNumber().String()),
 		pdatautil.WithString(logRecord.SeverityText()),
 	)
+}
+
+func getKeyValue(valueMap pcommon.Map, keyParts []string) (pcommon.Value, bool) {
+	nextKeyPart, remainingParts := keyParts[0], keyParts[1:]
+
+	// Look for the value associated with the next key part.
+	// If we don't find it then return
+	value, ok := valueMap.Get(nextKeyPart)
+	if !ok {
+		return pcommon.NewValueEmpty(), false
+	}
+
+	// No more key parts that means we have found the value
+	if len(remainingParts) == 0 {
+		return valueMap.Get(nextKeyPart)
+	}
+
+	// If the value is a map then recurse through with the remaining parts
+	if value.Type() == pcommon.ValueTypeMap {
+		return getKeyValue(value.Map(), remainingParts)
+	}
+
+	return pcommon.NewValueEmpty(), false
 }

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -19,7 +19,7 @@ type targetMatcher interface {
 	matcherType() matcherType
 	// matchTargets returns targets fond from the specific container.
 	// One container can have multiple targets because it may have multiple ports.
-	matchTargets(task *taskAnnotated, container *ecs.ContainerDefinition) ([]matchedTarget, error)
+	matchTargets(task *taskAnnotated, container ecstypes.ContainerDefinition) ([]matchedTarget, error)
 }
 
 // matcherConfig should be implemented by all the matcher config structs
@@ -131,7 +131,7 @@ func newMatchers(c Config, mOpt matcherOptions) (map[matcherType][]targetMatcher
 		}
 	}
 	if matcherCount == 0 {
-		return nil, fmt.Errorf("no matcher specified in config")
+		return nil, errors.New("no matcher specified in config")
 	}
 	return matchers, nil
 }
@@ -139,7 +139,7 @@ func newMatchers(c Config, mOpt matcherOptions) (map[matcherType][]targetMatcher
 // a global instance because it's expected and we don't care about why the container didn't match (for now).
 // In the future we might add a debug flag for each matcher config and return typed error with more detail
 // to help user debug. e.g. type ^ngix-*$ does not match nginx-service.
-var errNotMatched = fmt.Errorf("container not matched")
+var errNotMatched = errors.New("container not matched")
 
 // matchContainers apply one matcher to a list of tasks and returns matchResult.
 // It does not modify the task in place, the attaching match result logic is
@@ -186,15 +186,15 @@ func matchContainers(tasks []*taskAnnotated, matcher targetMatcher, matcherIndex
 
 // matchContainerByName is used by taskDefinitionMatcher and serviceMatcher.
 // The only exception is DockerLabelMatcher because it get ports from docker label.
-func matchContainerByName(nameRegex *regexp.Regexp, expSetting *commonExportSetting, container *ecs.ContainerDefinition) ([]matchedTarget, error) {
-	if nameRegex != nil && !nameRegex.MatchString(aws.StringValue(container.Name)) {
+func matchContainerByName(nameRegex *regexp.Regexp, expSetting *commonExportSetting, container ecstypes.ContainerDefinition) ([]matchedTarget, error) {
+	if nameRegex != nil && !nameRegex.MatchString(aws.ToString(container.Name)) {
 		return nil, errNotMatched
 	}
 	// Match based on port
 	var targets []matchedTarget
 	// Only export container if it has at least one matching port.
 	for _, portMapping := range container.PortMappings {
-		port := int(aws.Int64Value(portMapping.ContainerPort))
+		port := int(aws.ToInt32(portMapping.ContainerPort))
 		if expSetting.hasContainerPort(port) {
 			targets = append(targets, matchedTarget{
 				Port:        port,

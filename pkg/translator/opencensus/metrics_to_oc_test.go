@@ -13,7 +13,7 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -23,11 +23,11 @@ import (
 func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.PutStr(conventions.AttributeHostName, "host1")
-	attrs.PutInt(conventions.AttributeProcessPID, 123)
+	attrs.PutStr(string(conventions.HostNameKey), "host1")
+	attrs.PutInt(string(conventions.ProcessPIDKey), 123)
 	attrs.PutStr(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
-	attrs.PutStr(conventions.AttributeTelemetrySDKLanguage, "cpp")
-	attrs.PutStr(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
+	attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), "cpp")
+	attrs.PutStr(string(conventions.TelemetrySDKVersionKey), "v2.0.1")
 	attrs.PutStr(occonventions.AttributeExporterVersion, "v1.2.0")
 
 	tests := []struct {
@@ -93,9 +93,9 @@ func TestMetricsToOC(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			gotNode, gotResource, gotMetrics := ResourceMetricsToOC(test.internal.ResourceMetrics().At(0))
-			assert.EqualValues(t, test.oc.Node, gotNode)
-			assert.EqualValues(t, test.oc.Resource, gotResource)
-			assert.EqualValues(t, test.oc.Metrics, gotMetrics)
+			assert.Equal(t, test.oc.Node, gotNode)
+			assert.Equal(t, test.oc.Resource, gotResource)
+			assert.Equal(t, test.oc.Metrics, gotMetrics)
 		})
 	}
 }
@@ -119,9 +119,9 @@ func TestMetricsToOC_InvalidDataType(t *testing.T) {
 		},
 	}
 	gotNode, gotResource, gotMetrics := ResourceMetricsToOC(internal.ResourceMetrics().At(0))
-	assert.EqualValues(t, want.Node, gotNode)
-	assert.EqualValues(t, want.Resource, gotResource)
-	assert.EqualValues(t, want.Metrics, gotMetrics)
+	assert.Equal(t, want.Node, gotNode)
+	assert.Equal(t, want.Resource, gotResource)
+	assert.Equal(t, want.Metrics, gotMetrics)
 }
 
 func generateOCTestData() *agentmetricspb.ExportMetricsServiceRequest {

@@ -17,7 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/daemonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
@@ -88,7 +88,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		replicaset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.ReplicaSet), ts)
 	})
 	dc.metadataStore.ForEach(gvk.DaemonSet, func(o any) {
-		demonset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.DaemonSet), ts)
+		daemonset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.DaemonSet), ts)
 	})
 	dc.metadataStore.ForEach(gvk.StatefulSet, func(o any) {
 		statefulset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.StatefulSet), ts)

@@ -175,7 +175,7 @@ func TestGetNodeStats(t *testing.T) {
 
 		actualStats, err := couchdbClient.GetStats("_local")
 		require.NoError(t, err)
-		require.EqualValues(t, expectedStats, actualStats)
+		require.Equal(t, expectedStats, actualStats)
 	})
 }
 

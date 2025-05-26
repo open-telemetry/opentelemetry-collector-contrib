@@ -32,7 +32,7 @@ func TestScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	scraper := newIisReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -61,7 +61,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopSettings()
+	rcvrSettings := receivertest.NewNopSettings(metadata.Type)
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -97,7 +97,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopSettings()
+	rcvrSettings := receivertest.NewNopSettings(metadata.Type)
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -128,7 +128,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	rcvrSettings := receivertest.NewNopSettings()
+	rcvrSettings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newIisReceiver(
 		rcvrSettings,
@@ -173,6 +173,16 @@ func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (w
 	return func(_ string) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
+}
+
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (mpc *mockPerfCounter) ScrapeRawValue(_ *int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (mpc *mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
 }
 
 // Path

@@ -6,6 +6,7 @@
 | Stability     | [beta]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fecsobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fecsobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fecsobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fecsobserver) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_ecs_observer)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_ecs_observer&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
@@ -201,7 +202,7 @@ NOTE: name of the service is **added** as label value with key `ServiceName`.
 name_pattern: ^retail-.*$
 ---
 # Example 2: Matches all container with name java-api in cash-app service 
-name_pattnern: ^cash-app$
+name_pattern: ^cash-app$
 container_name_pattern: ^java-api$
 ---
 # Example 3: Override default metrics_path (i.e. /metrics)
@@ -329,7 +330,7 @@ Additional information from ECS and EC2.
 - Labels, all the label value are encoded as string. (e.g. strconv.Itoa(123)).
 - Go struct, all the non string types are converted. labels and tags are passed as `map[string]string`
   instead of `[]KeyValue`
-- Prometheus target, each `taget`
+- Prometheus target, each `target`
 
 ```go
 // PrometheusECSTarget contains address and labels extracted from a running ECS task 
@@ -392,22 +393,22 @@ The pseudocode showing the overall flow.
 
 ```
 NewECSSD() {
-  session := awsconfig.NewSssion()
+  session := awsconfig.NewSession()
   ecsClient := awsecs.NewClient(session)
-  filters := config.NewFileters()
+  filters := config.NewFilters()
   decorator := awsec2.NewClient(session)
   for {
     select {
     case <- timer:
       // Fetch ALL
-      tasks := ecsClient.FaetchAll()
+      tasks := ecsClient.FetchAll()
       // Filter
-      filteredTasks := fileters.Apply(tasks)
+      filteredTasks := filters.Apply(tasks)
       // Add EC2 info
       decorator.Apply(filteredTask)
       // Generate output
       if writeResultFile {
-         writeFile(fileteredTasks, /etc/ecs_sd.yaml)
+         writeFile(filteredTasks, /etc/ecs_sd.yaml)
       } else {
           notifyObserver()
       }
@@ -424,7 +425,7 @@ otel's own /metrics.
 | Name                                 | Type | Description                                                                                                                                                     |
 |--------------------------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `discovered_targets`                 | int  | Number of targets exported                                                                                                                                      |
-| `discovered_taskss`                  | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                           |
+| `discovered_tasks`                   | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                           |
 | `ignored_tasks`                      | int  | Tasks ignored by filter, `discovered_tasks` and  `ignored_tasks` should add up to `api_ecs_list_task_results`, one exception is API paging failed in the middle |
 | `targets_matched_by_service`         | int  | ECS Service name based filter                                                                                                                                   |
 | `targets_matched_by_task_definition` | int  | ECS TaskDefinition based filter                                                                                                                                 |

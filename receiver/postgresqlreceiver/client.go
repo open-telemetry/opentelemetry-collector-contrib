@@ -4,10 +4,13 @@
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
+	"html/template"
 	"net"
 	"strconv"
 	"strings"
@@ -17,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
 const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
@@ -58,6 +64,8 @@ type client interface {
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
+	getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
 }
 
 type postgreSQLClient struct {
@@ -734,4 +742,203 @@ func tableKey(database, schema, table string) tableIdentifier {
 
 func indexKey(database, schema, table, index string) indexIdentifer {
 	return indexIdentifer(fmt.Sprintf("%s|%s|%s|%s", database, schema, table, index))
+}
+
+//go:embed templates/querySampleTemplate.tmpl
+var querySampleTemplate string
+
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+	buf := bytes.Buffer{}
+
+	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
+	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
+	// in this query, we should only gather query after 8:15
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit": limit,
+	}); err != nil {
+		logger.Error("failed to execute template", zap.Error(err))
+		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
+
+	rows, err := wrappedDb.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			logger.Error("failed getting log rows", zap.Error(err))
+			return []map[string]any{}, fmt.Errorf("getQuerySamples failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	errs := make([]error, 0)
+	finalAttributes := make([]map[string]any, 0)
+	dbPrefix := "postgresql."
+	for _, row := range rows {
+		if row["query"] == "<insufficient privilege>" {
+			logger.Warn("skipping query sample due to insufficient privileges")
+			errs = append(errs, errors.New("skipping query sample due to insufficient privileges"))
+			continue
+		}
+		currentAttributes := make(map[string]any)
+		simpleColumns := []string{
+			"client_hostname",
+			"query_start",
+			"wait_event_type",
+			"wait_event",
+			"query_id",
+			"state",
+			"application_name",
+		}
+
+		for _, col := range simpleColumns {
+			currentAttributes[dbPrefix+col] = row[col]
+		}
+
+		clientPort := 0
+		if row["client_port"] != "" {
+			clientPort, err = strconv.Atoi(row["client_port"])
+			if err != nil {
+				logger.Warn("failed to convert client_port to int", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		pid := 0
+		if row["pid"] != "" {
+			pid, err = strconv.Atoi(row["pid"])
+			if err != nil {
+				logger.Warn("failed to convert pid to int", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		// TODO: check if the query is truncated.
+		obfuscated, err := obfuscateSQL(row["query"])
+		if err != nil {
+			logger.Warn("failed to obfuscate query", zap.String("query", row["query"]))
+			obfuscated = ""
+		}
+		currentAttributes[dbPrefix+"pid"] = pid
+		currentAttributes["network.peer.port"] = clientPort
+		currentAttributes["network.peer.address"] = row["client_addrs"]
+		currentAttributes["db.query.text"] = obfuscated
+		currentAttributes["db.namespace"] = row["datname"]
+		currentAttributes["user.name"] = row["usename"]
+		currentAttributes["db.system.name"] = "postgresql"
+		finalAttributes = append(finalAttributes, currentAttributes)
+	}
+
+	return finalAttributes, errors.Join(errs...)
+}
+
+func convertMillisecondToSecond(column string, value string, logger *zap.Logger) (any, error) {
+	result := float64(0)
+	var err error
+	if value != "" {
+		result, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			logger.Error("failed to parse float", zap.String("column", column), zap.String("value", value), zap.Error(err))
+		}
+	}
+	return result / 1000.0, err
+}
+
+func convertToInt(column string, value string, logger *zap.Logger) (any, error) {
+	result := 0
+	var err error
+	if value != "" {
+		result, err = strconv.Atoi(value)
+		if err != nil {
+			logger.Error("failed to parse int", zap.String("column", column), zap.String("value", value), zap.Error(err))
+		}
+	}
+	return int64(result), err
+}
+
+//go:embed templates/topQueryTemplate.tmpl
+var topQueryTemplate string
+
+// getTopQuery implements client.
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+	buf := bytes.Buffer{}
+
+	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
+	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
+	// in this query, we should only gather query after 8:15
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit": limit,
+	}); err != nil {
+		logger.Error("failed to execute template", zap.Error(err))
+		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
+
+	rows, err := wrappedDb.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			logger.Error("failed getting log rows", zap.Error(err))
+			return []map[string]any{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	errs := make([]error, 0)
+	finalAttributes := make([]map[string]any, 0)
+
+	for _, row := range rows {
+		hasConvention := map[string]string{
+			"datname": "db.namespace",
+			"query":   "db.query.text",
+		}
+
+		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
+			callsColumnName:             convertToInt,
+			rowsColumnName:              convertToInt,
+			sharedBlksDirtiedColumnName: convertToInt,
+			sharedBlksHitColumnName:     convertToInt,
+			sharedBlksReadColumnName:    convertToInt,
+			sharedBlksWrittenColumnName: convertToInt,
+			tempBlksReadColumnName:      convertToInt,
+			tempBlksWrittenColumnName:   convertToInt,
+			totalExecTimeColumnName:     convertMillisecondToSecond,
+			totalPlanTimeColumnName:     convertMillisecondToSecond,
+			"query": func(_ string, val string, logger *zap.Logger) (any, error) {
+				// TODO: check if it is truncated.
+				result, err := obfuscateSQL(val)
+				if err != nil {
+					logger.Error("failed to obfuscate query", zap.String("query", val))
+					return "", err
+				}
+				return result, nil
+			},
+		}
+		currentAttributes := make(map[string]any)
+
+		for col := range row {
+			var val any
+			var err error
+			converter, ok := needConversion[col]
+			if ok {
+				val, err = converter(col, row[col], logger)
+				if err != nil {
+					logger.Warn("failed to convert column to int", zap.String("column", col), zap.Error(err))
+					errs = append(errs, err)
+				}
+			} else {
+				val = row[col]
+			}
+			if hasConvention[col] != "" {
+				currentAttributes[hasConvention[col]] = val
+			} else {
+				currentAttributes[dbAttributePrefix+col] = val
+			}
+		}
+		finalAttributes = append(finalAttributes, currentAttributes)
+	}
+
+	return finalAttributes, errors.Join(errs...)
 }

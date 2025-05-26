@@ -28,11 +28,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	integrationtestutils "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/integrationtestutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -165,7 +166,7 @@ func prepareLogs() plog.Logs {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("test log")
 	logRecord.Attributes().PutStr(splunk.DefaultNameLabel, "test- label")
-	logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+	logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(ts)
 	return logs
@@ -184,7 +185,7 @@ func prepareLogsNonDefaultParams(index string, source string, sourcetype string,
 	logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, source)
 	logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, sourcetype)
 	logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, index)
-	logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+	logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(ts)
 	return logs
@@ -236,7 +237,7 @@ type testCfg struct {
 }
 
 func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettings()
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newLogsClient(settings, config)
 	var logs plog.Logs
 	if test.config.index != "main" {
@@ -264,7 +265,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettings()
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newMetricsClient(settings, config)
 	metricData := prepareMetricsData(test.config.event)
 
@@ -280,7 +281,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettings()
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newTracesClient(settings, config)
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
@@ -363,7 +364,7 @@ func TestSplunkHecExporter(t *testing.T) {
 			// Endpoint and Token do not have a default value so set them directly.
 			config := NewFactory().CreateDefaultConfig().(*Config)
 			config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-			config.ClientConfig.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
+			config.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
 			config.Source = "otel"
 			config.SourceType = "st-otel"
 

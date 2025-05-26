@@ -4,13 +4,12 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -25,8 +24,14 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                                             metric.Meter
+	mu                                                sync.Mutex
+	registrations                                     []metric.Registration
+	ExporterPrometheusremotewriteConsumers            metric.Int64UpDownCounter
 	ExporterPrometheusremotewriteFailedTranslations   metric.Int64Counter
+	ExporterPrometheusremotewriteSentBatches          metric.Int64Counter
 	ExporterPrometheusremotewriteTranslatedTimeSeries metric.Int64Counter
+	ExporterPrometheusremotewriteWalWrites            metric.Int64Counter
+	ExporterPrometheusremotewriteWalWritesFailures    metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -40,6 +45,15 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
@@ -49,24 +63,41 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ExporterPrometheusremotewriteFailedTranslations, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterPrometheusremotewriteConsumers, err = builder.meter.Int64UpDownCounter(
+		"otelcol_exporter_prometheusremotewrite_consumers",
+		metric.WithDescription("Number of configured workers to use to fan out the outgoing requests"),
+		metric.WithUnit("{consumer}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteFailedTranslations, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_failed_translations",
 		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ExporterPrometheusremotewriteSentBatches, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_sent_batches",
+		metric.WithDescription("Number of remote write request batches sent to the remote write endpoint regardless of success or failure"),
+		metric.WithUnit("{batch}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_translated_time_series",
 		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalWrites, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_writes",
+		metric.WithDescription("Number of WAL writes"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalWritesFailures, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_writes_failures",
+		metric.WithDescription("Number of WAL writes that failed"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }

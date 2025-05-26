@@ -29,7 +29,7 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to OpenSearch.
 
-// nolint:errcheck
+//nolint:errcheck
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
 
 import (
@@ -493,10 +493,9 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 }
 
 func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
-	am.Range(func(k string, val pcommon.Value) bool {
+	for k, val := range am.All() {
 		fields = appendAttributeValue(fields, path, k, val)
-		return true
-	})
+	}
 	return fields
 }
 

@@ -11,6 +11,28 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	HttpcheckDuration: metricInfo{
+		Name: "httpcheck.duration",
+	},
+	HttpcheckError: metricInfo{
+		Name: "httpcheck.error",
+	},
+	HttpcheckStatus: metricInfo{
+		Name: "httpcheck.status",
+	},
+}
+
+type metricsInfo struct {
+	HttpcheckDuration metricInfo
+	HttpcheckError    metricInfo
+	HttpcheckStatus   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricHttpcheckDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -273,7 +295,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricHttpcheckDuration.emit(ils.Metrics())

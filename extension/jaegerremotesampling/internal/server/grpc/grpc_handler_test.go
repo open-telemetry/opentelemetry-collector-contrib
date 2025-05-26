@@ -9,7 +9,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,9 +17,10 @@ import (
 type mockSamplingStore struct{}
 
 func (mockSamplingStore) GetSamplingStrategy(_ context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
-	if serviceName == "error" {
+	switch serviceName {
+	case "error":
 		return nil, errors.New("some error")
-	} else if serviceName == "nil" {
+	case "nil":
 		return nil, nil
 	}
 	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC}, nil

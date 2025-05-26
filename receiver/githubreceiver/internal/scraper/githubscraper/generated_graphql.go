@@ -508,6 +508,12 @@ const (
 	PullRequestStateMerged PullRequestState = "MERGED"
 )
 
+var AllPullRequestState = []PullRequestState{
+	PullRequestStateOpen,
+	PullRequestStateClosed,
+	PullRequestStateMerged,
+}
+
 // SearchNode includes the requested fields of the GraphQL interface SearchResultItem.
 //
 // SearchNode is implemented by the following types:
@@ -1218,7 +1224,7 @@ func (v *getRepoDataBySearchSearchSearchResultItemConnectionPageInfo) GetEndCurs
 	return v.EndCursor
 }
 
-// The query or mutation executed by checkLogin.
+// The query executed by checkLogin.
 const checkLogin_Operation = `
 query checkLogin ($login: String!) {
 	user(login: $login) {
@@ -1234,7 +1240,7 @@ func checkLogin(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	login string,
-) (*checkLoginResponse, error) {
+) (data_ *checkLoginResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "checkLogin",
 		Query:  checkLogin_Operation,
@@ -1242,10 +1248,9 @@ func checkLogin(
 			Login: login,
 		},
 	}
-	var err_ error
 
-	var data_ checkLoginResponse
-	resp_ := &graphql.Response{Data: &data_}
+	data_ = &checkLoginResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
 		ctx_,
@@ -1253,10 +1258,10 @@ func checkLogin(
 		resp_,
 	)
 
-	return &data_, err_
+	return data_, err_
 }
 
-// The query or mutation executed by getBranchData.
+// The query executed by getBranchData.
 const getBranchData_Operation = `
 query getBranchData ($name: String!, $owner: String!, $branchFirst: Int!, $targetBranch: String!, $branchCursor: String) {
 	repository(name: $name, owner: $owner) {
@@ -1292,7 +1297,7 @@ func getBranchData(
 	branchFirst int,
 	targetBranch string,
 	branchCursor *string,
-) (*getBranchDataResponse, error) {
+) (data_ *getBranchDataResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getBranchData",
 		Query:  getBranchData_Operation,
@@ -1304,10 +1309,9 @@ func getBranchData(
 			BranchCursor: branchCursor,
 		},
 	}
-	var err_ error
 
-	var data_ getBranchDataResponse
-	resp_ := &graphql.Response{Data: &data_}
+	data_ = &getBranchDataResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
 		ctx_,
@@ -1315,10 +1319,10 @@ func getBranchData(
 		resp_,
 	)
 
-	return &data_, err_
+	return data_, err_
 }
 
-// The query or mutation executed by getCommitData.
+// The query executed by getCommitData.
 const getCommitData_Operation = `
 query getCommitData ($name: String!, $owner: String!, $branchFirst: Int!, $commitFirst: Int!, $commitCursor: String, $branchName: String!) {
 	repository(name: $name, owner: $owner) {
@@ -1356,7 +1360,7 @@ func getCommitData(
 	commitFirst int,
 	commitCursor *string,
 	branchName string,
-) (*getCommitDataResponse, error) {
+) (data_ *getCommitDataResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getCommitData",
 		Query:  getCommitData_Operation,
@@ -1369,10 +1373,9 @@ func getCommitData(
 			BranchName:   branchName,
 		},
 	}
-	var err_ error
 
-	var data_ getCommitDataResponse
-	resp_ := &graphql.Response{Data: &data_}
+	data_ = &getCommitDataResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
 		ctx_,
@@ -1380,10 +1383,10 @@ func getCommitData(
 		resp_,
 	)
 
-	return &data_, err_
+	return data_, err_
 }
 
-// The query or mutation executed by getPullRequestData.
+// The query executed by getPullRequestData.
 const getPullRequestData_Operation = `
 query getPullRequestData ($name: String!, $owner: String!, $prFirst: Int!, $prCursor: String, $prStates: [PullRequestState!]) {
 	repository(name: $name, owner: $owner) {
@@ -1429,7 +1432,7 @@ func getPullRequestData(
 	prFirst int,
 	prCursor *string,
 	prStates []PullRequestState,
-) (*getPullRequestDataResponse, error) {
+) (data_ *getPullRequestDataResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getPullRequestData",
 		Query:  getPullRequestData_Operation,
@@ -1441,10 +1444,9 @@ func getPullRequestData(
 			PrStates: prStates,
 		},
 	}
-	var err_ error
 
-	var data_ getPullRequestDataResponse
-	resp_ := &graphql.Response{Data: &data_}
+	data_ = &getPullRequestDataResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
 		ctx_,
@@ -1452,10 +1454,10 @@ func getPullRequestData(
 		resp_,
 	)
 
-	return &data_, err_
+	return data_, err_
 }
 
-// The query or mutation executed by getRepoDataBySearch.
+// The query executed by getRepoDataBySearch.
 const getRepoDataBySearch_Operation = `
 query getRepoDataBySearch ($searchQuery: String!, $repoCursor: String) {
 	search(query: $searchQuery, type: REPOSITORY, first: 100, after: $repoCursor) {
@@ -1484,7 +1486,7 @@ func getRepoDataBySearch(
 	client_ graphql.Client,
 	searchQuery string,
 	repoCursor *string,
-) (*getRepoDataBySearchResponse, error) {
+) (data_ *getRepoDataBySearchResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getRepoDataBySearch",
 		Query:  getRepoDataBySearch_Operation,
@@ -1493,10 +1495,9 @@ func getRepoDataBySearch(
 			RepoCursor:  repoCursor,
 		},
 	}
-	var err_ error
 
-	var data_ getRepoDataBySearchResponse
-	resp_ := &graphql.Response{Data: &data_}
+	data_ = &getRepoDataBySearchResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
 		ctx_,
@@ -1504,5 +1505,5 @@ func getRepoDataBySearch(
 		resp_,
 	)
 
-	return &data_, err_
+	return data_, err_
 }

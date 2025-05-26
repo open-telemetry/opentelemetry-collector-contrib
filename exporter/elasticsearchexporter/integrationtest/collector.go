@@ -134,17 +134,17 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 		err       error
 		factories otelcol.Factories
 	)
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		otlpreceiver.NewFactory(),
 	)
 	require.NoError(tb, err)
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		filestorage.NewFactory(),
 	)
 	require.NoError(tb, err)
-	factories.Processors, err = processor.MakeFactoryMap()
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory]()
 	require.NoError(tb, err)
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		elasticsearchexporter.NewFactory(),
 		debugexporter.NewFactory(),
 	)
@@ -155,7 +155,7 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 	}
 }
 
-func (c *recreatableOtelCol) PrepareConfig(configStr string) (func(), error) {
+func (c *recreatableOtelCol) PrepareConfig(_ *testing.T, configStr string) (func(), error) {
 	configCleanup := func() {
 		// NoOp
 	}

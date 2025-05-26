@@ -51,20 +51,18 @@ func TestHistoAdd(t *testing.T) {
 
 	for _, cs := range cases {
 		t.Run(cs.name, func(t *testing.T) {
+			var add Adder
 			is := datatest.New(t)
 
 			var (
-				dp   = Histogram{cs.dp.Into()}
-				in   = Histogram{cs.in.Into()}
-				want = Histogram{cs.want.Into()}
+				dp   = cs.dp.Into()
+				in   = cs.in.Into()
+				want = cs.want.Into()
 			)
 
-			dp.SetTimestamp(0)
-			in.SetTimestamp(1)
-			want.SetTimestamp(1)
-
-			got := dp.Add(in)
-			is.Equal(got, want)
+			err := add.Histograms(dp, in)
+			is.Equal(nil, err)
+			is.Equal(want, dp)
 		})
 	}
 }

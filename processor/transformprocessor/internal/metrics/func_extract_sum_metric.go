@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,7 +29,7 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	args, ok := oArgs.(*extractSumMetricArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("extractSumMetricFactory args must be of type *extractSumMetricArguments")
+		return nil, errors.New("extractSumMetricFactory args must be of type *extractSumMetricArguments")
 	}
 
 	return extractSumMetric(args.Monotonic)

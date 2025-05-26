@@ -7,7 +7,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -154,7 +153,9 @@ func GetUnitForMetric(metric string) string {
 	return metricToUnitMap[metric]
 }
 
-// ConvertToOTLPMetrics converts a field containing metric values and a tag containing the relevant labels to OTLP metrics
+// ConvertToOTLPMetrics converts a field containing metric values and tags containing the relevant labels to OTLP metrics.
+// For legacy reasons, the timestamp is stored in the tags map with the key "Timestamp", but, unlike other tags,
+// it is not added as a resource attribute to avoid high-cardinality metrics.
 func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
@@ -166,8 +167,9 @@ func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger 
 		if tagKey == Timestamp {
 			timeNs, _ := strconv.ParseUint(tagValue, 10, 64)
 			timestamp = pcommon.Timestamp(timeNs)
-			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
-			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
+
+			// Do not add Timestamp as a resource attribute to avoid high-cardinality.
+			continue
 		}
 		resource.Attributes().PutStr(tagKey, tagValue)
 	}

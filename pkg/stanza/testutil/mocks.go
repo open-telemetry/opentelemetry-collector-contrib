@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -82,6 +83,14 @@ func (f *FakeOutput) Stop() error { return nil }
 
 // Type always return `fake_output` for a fake output
 func (f *FakeOutput) Type() string { return "fake_output" }
+
+func (f *FakeOutput) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs error
+	for i := range entries {
+		errs = multierr.Append(errs, f.Process(ctx, entries[i]))
+	}
+	return errs
+}
 
 // Process will place all incoming entries on the Received channel of a fake output
 func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {

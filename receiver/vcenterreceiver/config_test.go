@@ -50,7 +50,7 @@ func TestConfigValidation(t *testing.T) {
 			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
-			desc: "unparseable URL",
+			desc: "unparsable URL",
 			cfg: Config{
 				Endpoint:         "h" + string(rune(0x7f)),
 				ClientConfig:     configtls.ClientConfig{},
@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otelu"
 	expected.Password = "${env:VCENTER_PASSWORD}"
 	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
-	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {

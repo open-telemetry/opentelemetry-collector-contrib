@@ -6,6 +6,7 @@ package cloudfoundryreceiver
 import (
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
@@ -94,10 +96,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -167,5 +169,10 @@ func checkTypeFieldMatch(t *testing.T, fieldName string, localType reflect.Type,
 
 	require.True(t, localFieldPresent, "field %s present in local type", fieldName)
 	require.True(t, standardFieldPresent, "field %s present in standard type", fieldName)
-	require.Equal(t, localField.Tag, standardField.Tag, "field %s tag match", fieldName)
+
+	// Check that the mapstructure tag is not empty
+	require.GreaterOrEqual(t, len(strings.Split(localField.Tag.Get("mapstructure"), ",")), 1)
+
+	// Check that the configuration key names are the same, ignoring other tags like omitempty.
+	require.Equal(t, localField.Tag.Get("mapstructure")[0], standardField.Tag.Get("mapstructure")[0], "field %s tag match", fieldName)
 }

@@ -129,7 +129,7 @@ func TestScrape(t *testing.T) {
 			name: "Connections metrics is disabled",
 			config: func() *Config {
 				cfg := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
-				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
+				cfg.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),
 			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
@@ -141,7 +141,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
+			scraper, err := newNetworkScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

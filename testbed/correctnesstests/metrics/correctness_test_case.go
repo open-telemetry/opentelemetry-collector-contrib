@@ -34,7 +34,7 @@ func newCorrectnessTestCase(
 
 func (tc *correctnessTestCase) startCollector() {
 	tc.collector = testbed.NewInProcessCollector(componentFactories(tc.t))
-	_, err := tc.collector.PrepareConfig(correctnesstests.CreateConfigYaml(tc.t, tc.sender, tc.receiver, nil, nil))
+	_, err := tc.collector.PrepareConfig(tc.t, correctnesstests.CreateConfigYaml(tc.t, tc.sender, tc.receiver, nil, nil))
 	require.NoError(tc.t, err)
 	rd, err := newResultsDir(tc.t.Name())
 	require.NoError(tc.t, err)

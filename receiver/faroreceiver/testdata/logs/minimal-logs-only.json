@@ -1,0 +1,35 @@
+{
+    "logs": [
+        {
+            "context": {
+                "app": "foo"
+            },
+            "level": "info",
+            "message": "Hello world",
+            "timestamp": "2025-03-01T15:42:14Z"
+        }
+    ],
+    "traces": null,
+    "meta": {
+        "session": {
+            "id": "ABCD1234"
+        },
+        "sdk": {
+            "name": "@grafana/faro-core",
+            "version": "1.0.0",
+            "integrations": []
+        },
+        "app": {
+            "name": "example.com",
+            "version": "1.0.0",
+            "environment": "prod"
+        },
+        "view": {
+            "name": "default"
+        },
+        "browser": {},
+        "page": {
+            "url": "https://example.com/"
+        }
+    }
+  }

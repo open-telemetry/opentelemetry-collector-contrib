@@ -5,16 +5,16 @@ package exceptionsconnector // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 const (
-	serviceNameKey         = conventions.AttributeServiceName
-	exceptionTypeKey       = conventions.AttributeExceptionType
-	exceptionMessageKey    = conventions.AttributeExceptionMessage
-	exceptionStacktraceKey = conventions.AttributeExceptionStacktrace
+	serviceNameKey         = string(conventions.ServiceNameKey)
+	exceptionTypeKey       = string(conventions.ExceptionTypeKey)
+	exceptionMessageKey    = string(conventions.ExceptionMessageKey)
+	exceptionStacktraceKey = string(conventions.ExceptionStacktraceKey)
 	// TODO(marctc): formalize these constants in the OpenTelemetry specification.
 	spanKindKey   = "span.kind"   // OpenTelemetry non-standard constant.
 	spanNameKey   = "span.name"   // OpenTelemetry non-standard constant.

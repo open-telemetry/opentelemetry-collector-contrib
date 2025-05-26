@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeStatus specifies the value status attribute.
@@ -80,6 +80,24 @@ var MapAttributeStatus = map[string]AttributeStatus{
 	"system":   AttributeStatusSystem,
 	"unknown":  AttributeStatusUnknown,
 	"zombies":  AttributeStatusZombies,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemProcessesCount: metricInfo{
+		Name: "system.processes.count",
+	},
+	SystemProcessesCreated: metricInfo{
+		Name: "system.processes.created",
+	},
+}
+
+type metricsInfo struct {
+	SystemProcessesCount   metricInfo
+	SystemProcessesCreated metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemProcessesCount struct {
@@ -286,7 +304,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemProcessesCount.emit(ils.Metrics())

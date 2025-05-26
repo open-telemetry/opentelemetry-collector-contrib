@@ -658,7 +658,7 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.ClientConfig.Compression = ""
+	config.Compression = ""
 	return config.ToClient(ctx, host, telemetrySettings)
 }
 

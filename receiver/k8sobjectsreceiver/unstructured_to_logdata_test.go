@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -49,7 +49,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		for i, namespace := range namespaces {
 			rl := resourceLogs.At(i)
 			resourceAttributes := rl.Resource().Attributes()
-			ns, _ := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
+			ns, _ := resourceAttributes.Get(string(semconv.K8SNamespaceNameKey))
 			assert.Equal(t, ns.AsString(), namespace)
 			assert.Equal(t, 1, rl.ScopeLogs().Len())
 			assert.Equal(t, 2, rl.ScopeLogs().At(0).LogRecords().Len())
@@ -84,7 +84,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		rl := resourceLogs.At(0)
 		resourceAttributes := rl.Resource().Attributes()
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		_, ok := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
+		_, ok := resourceAttributes.Get(string(semconv.K8SNamespaceNameKey))
 		assert.False(t, ok)
 		assert.Equal(t, 1, rl.ScopeLogs().Len())
 		assert.Equal(t, 3, logRecords.Len())
@@ -170,15 +170,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		// verify the event.type, event.domain and k8s.resource.name attributes have been added
 
 		watchEventResourceAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).Resource().Attributes()
-		k8sNamespace, ok := watchEventResourceAttrs.Get(semconv.AttributeK8SNamespaceName)
+		k8sNamespace, ok := watchEventResourceAttrs.Get(string(semconv.K8SNamespaceNameKey))
 		assert.True(t, ok)
 		assert.Equal(t,
 			"my-namespace",
 			k8sNamespace.Str(),
 		)
 
-		watchEvenLogRecordtAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-		eventType, ok := watchEvenLogRecordtAttrs.Get("event.name")
+		watchEvenLogRecordAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+		eventType, ok := watchEvenLogRecordAttrs.Get("event.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -186,7 +186,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			eventType.AsString(),
 		)
 
-		eventDomain, ok := watchEvenLogRecordtAttrs.Get("event.domain")
+		eventDomain, ok := watchEvenLogRecordAttrs.Get("event.domain")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -194,7 +194,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			eventDomain.AsString(),
 		)
 
-		k8sResourceName, ok := watchEvenLogRecordtAttrs.Get("k8s.resource.name")
+		k8sResourceName, ok := watchEvenLogRecordAttrs.Get("k8s.resource.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -206,7 +206,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.NotNil(t, logEntryFromPulledEvent)
 
 		pullEventResourceAttrs := logEntryFromPulledEvent.ResourceLogs().At(0).Resource().Attributes()
-		k8sNamespace, ok = pullEventResourceAttrs.Get(semconv.AttributeK8SNamespaceName)
+		k8sNamespace, ok = pullEventResourceAttrs.Get(string(semconv.K8SNamespaceNameKey))
 		assert.True(t, ok)
 		assert.Equal(
 			t,

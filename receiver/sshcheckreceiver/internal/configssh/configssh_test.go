@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -24,7 +24,7 @@ type mockHost struct {
 func TestAllSSHClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -92,7 +92,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "invalid_settings_non-existent_keyfile_path",
+			name: "invalid_settings_nonexistent_keyfile_path",
 			settings: SSHClientSettings{
 				Endpoint: endpoint,
 				Timeout:  timeout,
@@ -115,10 +115,10 @@ func TestAllSSHClientSettings(t *testing.T) {
 			}
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, client.ClientConfig.User, test.settings.Username)
+			assert.Equal(t, client.User, test.settings.Username)
 
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
-				assert.Len(t, client.ClientConfig.Auth, 1)
+				assert.Len(t, client.Auth, 1)
 			}
 		})
 	}
@@ -127,7 +127,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 func Test_Client_Dial(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -182,17 +182,17 @@ func Test_Client_Dial(t *testing.T) {
 			err = client.Dial("localhost:2222")
 			if test.shouldError {
 				assert.Error(t, err)
-				assert.EqualValues(t, (*ssh.Client)(nil), client.Client)
+				assert.Equal(t, (*ssh.Client)(nil), client.Client)
 			} else {
 				assert.NoError(t, err)
-				assert.EqualValues(t, &ssh.Client{}, client.Client)
+				assert.Equal(t, &ssh.Client{}, client.Client)
 			}
 
 			if test.settings.IgnoreHostKey {
-				assert.EqualValues(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
+				assert.Equal(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
 			}
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
-				assert.Len(t, client.ClientConfig.Auth, 1)
+				assert.Len(t, client.Auth, 1)
 			}
 		})
 	}
@@ -201,7 +201,7 @@ func Test_Client_Dial(t *testing.T) {
 func Test_Client_ToSFTPClient(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -256,7 +256,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 			if test.shouldError {
 				err := client.Dial("localhost:2222")
 				assert.Error(t, err)
-				assert.EqualValues(t, (*ssh.Client)(nil), client.Client)
+				assert.Equal(t, (*ssh.Client)(nil), client.Client)
 			} else {
 				err := client.Dial("localhost:2222")
 				assert.NoError(t, err)

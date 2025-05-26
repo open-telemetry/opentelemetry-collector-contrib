@@ -19,6 +19,17 @@ var (
 	ErrInvalidVersion = errors.New("invalid schema version")
 )
 
+// The following status values define whether the transformer
+// has to revert changes or update changes to the signal being modified
+// These values match the Version.Compare out when performing:
+//
+//	from.Compare(to) // ie: (1.0.0).Compare(1.2.1)
+const (
+	Update   int = -1 // From is less than To
+	NoChange int = 0  // From equals To
+	Revert   int = 1  // From is greater than To
+)
+
 // Version is a machine readable version of the string
 // schema identifier that can assist in making indexing easier
 type Version struct {
@@ -59,6 +70,15 @@ func GetFamilyAndVersion(schemaURL string) (family string, version *Version, err
 	}
 
 	return u.String(), version, err
+}
+
+func joinSchemaFamilyAndVersion(family string, version *Version) string {
+	u, err := url.Parse(family)
+	if err != nil {
+		return ""
+	}
+	u.Path = path.Join(u.Path, version.String())
+	return u.String()
 }
 
 // NewVersion converts a near semver like string (ie 1.4.0) into

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	jaegerproto "github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -48,7 +48,7 @@ func NewJaegerGRPCDataSender(host string, port int) testbed.TraceDataSender {
 }
 
 func (je *jaegerGRPCDataSender) Start() error {
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(exportertest.NopType)
 	params.Logger = zap.L()
 
 	exp, err := je.newTracesExporter(params)
@@ -74,8 +74,8 @@ func (je *jaegerGRPCDataSender) ProtocolName() string {
 
 // Config defines configuration for Jaeger gRPC exporter.
 type jaegerConfig struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -174,7 +174,7 @@ func (s *protoGRPCSender) shutdown(context.Context) error {
 
 func (s *protoGRPCSender) start(ctx context.Context, host component.Host) error {
 	if s.clientSettings == nil {
-		return fmt.Errorf("client settings not found")
+		return errors.New("client settings not found")
 	}
 	conn, err := s.clientSettings.ToClientConn(ctx, host, s.settings)
 	if err != nil {

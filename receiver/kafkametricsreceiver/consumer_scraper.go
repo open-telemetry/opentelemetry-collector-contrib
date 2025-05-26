@@ -26,7 +26,6 @@ type consumerScraper struct {
 	groupFilter  *regexp.Regexp
 	topicFilter  *regexp.Regexp
 	clusterAdmin sarama.ClusterAdmin
-	saramaConfig *sarama.Config
 	config       Config
 	mb           *metadata.MetricsBuilder
 }
@@ -45,19 +44,22 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 
 func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
 		}
-		clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		s.client = client
+	}
+
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.client)
 		if err != nil {
-			if client != nil {
-				_ = client.Close()
+			if s.client != nil {
+				_ = s.client.Close()
 			}
 			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
 		}
-		s.client = client
-		s.clusterAdmin = clusterAdmin
+		s.clusterAdmin = admin
 	}
 
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
@@ -163,9 +165,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeError
 }
 
-func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings,
-) (scraper.Metrics, error) {
+func createConsumerScraper(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
@@ -175,11 +175,10 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
 	s := consumerScraper{
-		settings:     settings,
-		groupFilter:  groupFilter,
-		topicFilter:  topicFilter,
-		config:       cfg,
-		saramaConfig: saramaConfig,
+		settings:    settings,
+		groupFilter: groupFilter,
+		topicFilter: topicFilter,
+		config:      cfg,
 	}
 	return scraper.NewMetrics(
 		s.scrape,

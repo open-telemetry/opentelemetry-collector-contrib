@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, logs, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglecloudpubsub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglecloudpubsub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglecloudpubsub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglecloudpubsub) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_googlecloudpubsub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_googlecloudpubsub&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@alexvanboxel](https://www.github.com/alexvanboxel) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -30,6 +31,9 @@ The following configuration options are supported:
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
 * `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
    emulator instance. Only has effect if Endpoint is not ""
+* `ignore_encoding_error` (Optional): Ignore errors when the configured encoder fails to decoding a PubSub messages.
+  It's advised to set this to `true` when using a custom encoder, and use `receiver.googlecloudpubsub.encoding_error`
+  metric to monitor the number of errors. Ignoring the error will cause the receiver to drop the message.
 
 ```yaml
 receivers:
@@ -41,29 +45,54 @@ receivers:
 
 ## Encoding
 
-You should not need to set the encoding of the subscription as the receiver will try to discover the type of the data
-by looking at the `ce-type` and `content-type` attributes of the message. Only when those attributes are not set 
-must the `encoding` field in the configuration be set. 
+The `encoding` options allows you to specify Encoding Extensions for decoding messages on the subscription. An
+extension need to be configured in the `extensions` section, and added to pipeline in the collectors configuration file.
+
+The following example shows how to use the text encoding extension for ingesting arbitrary text message on a 
+subscription, wrapping them in OTLP Log messages. Note that not all extensions support all signals.
+
+```yaml
+extensions:
+  text_encoding:
+    encoding: utf8
+    unmarshaling_separator: "\r?\n"
+
+service:
+  extensions: [text_encoding]
+  pipelines:
+    logs:
+      receivers: [googlecloudpubsub]
+      processors: []
+      exporters: [debug]
+```
+
+The receiver also supports build in encodings for the native OTLP encodings, without the need to specify an Encoding 
+Extensions. The non OTLP build in encodings will be deprecated as soon as extensions for the formats are available.
+
+| encoding          | description                                    |
+|-------------------|------------------------------------------------|
+| otlp_proto_trace  | Decode OTLP trace message                      |
+| otlp_proto_metric | Decode OTLP trace message                      |
+| otlp_proto_log    | Decode OTLP trace message                      |
+| cloud_logging     | Decode [Cloud Logging] [LogEntry] message type |
+| raw_text          | Wrap in an OTLP log message                    |
+
+With `cloud_logging`, the receiver can be used to bring Cloud Logging messages into an OpenTelemetry pipeline. You'll
+first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. The build-in encoding is
+**deprecated** and will be removed in v0.132.0: Use the `googlecloudlogentry` encoding extension instead.
+
+With `raw_text`, the receiver can be used for ingesting arbitrary text message on a Pubsub subscription, wrapping them
+in OTLP Log messages.  The build-in encoding is **deprecated** and will be removed in v0.132.0: Use the `text` encoding
+extension instead.
+
+When no encoding is specified, the receiver will try to discover the type of the data by looking at the `ce-type` and
+`content-type` attributes of the message. These message attributes are set by the `googlepubsubexporter`.
 
 | ce-type                           | ce-datacontenttype   | encoding          | description                                    |
 |-----------------------------------|----------------------|-------------------|------------------------------------------------|
 | org.opentelemetry.otlp.traces.v1  | application/protobuf |                   | Decode OTLP trace message                      |
 | org.opentelemetry.otlp.metrics.v1 | application/protobuf |                   | Decode OTLP metric message                     |
-| org.opentelemetry.otlp.logs.v1    | application/json     |                   | Decode OTLP log message                        |
-| -                                 | -                    | otlp_proto_trace  | Decode OTLP trace message                      |
-| -                                 | -                    | otlp_proto_metric | Decode OTLP trace message                      |
-| -                                 | -                    | otlp_proto_log    | Decode OTLP trace message                      |
-| -                                 | -                    | cloud_logging     | Decode [Cloud Logging] [LogEntry] message type |
-| -                                 | -                    | raw_text          | Wrap in an OTLP log message                    |
-
-When the `encoding` configuration is set, the attributes on the message are ignored.
-
-With `cloud_logging`, the receiver can be used to bring Cloud Logging messages into an OpenTelemetry pipeline. You'll
-first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. Note that the `cloud_logging`
-integration is considered **alpha** as the semantic convention on some of the conversion are not stabilized yet.
-
-With `raw_text`, the receiver can be used for ingesting arbitrary text message on a Pubsub subscription, wrapping them
-in OTLP Log messages, making it a convenient way to ingest raw log lines from Pubsub.
+| org.opentelemetry.otlp.logs.v1    | application/protobuf |                   | Decode OTLP log message                        |
 
 [Cloud Logging]: https://cloud.google.com/logging
 [LogEntry]: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry

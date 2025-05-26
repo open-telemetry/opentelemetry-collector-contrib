@@ -6,7 +6,9 @@
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ffilelog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ffilelog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ffilelog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ffilelog) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_filelog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_filelog&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel) \| Seeking more code owners! |
+| Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -37,6 +39,7 @@ Tails and parses logs from files.
 | `include_file_record_number`          | `false`                              | Whether to add the record number in the file as the attribute `log.file.record_number`.                                                                                                                                                                         |
 | `poll_interval`                       | 200ms                                | The [duration](#time-parameters) between filesystem polls.                                                                                                                                                                                                      |
 | `fingerprint_size`                    | `1kb`                                | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
+| `initial_buffer_size`                 | `16KiB`                              | The initial size of the to read buffer for headers and logs, the buffer will be grown as necessary. Larger values may lead to unnecessary large buffer allocations, and smaller values may lead to lots of copies while growing the buffer.                     |
 | `max_log_size`                        | `1MiB`                               | The maximum size of a log entry to read. A log entry will be truncated if it is larger than `max_log_size`. Protects against reading large amounts of data into memory.                                                                                         |
 | `max_concurrent_files`                | 1024                                 | The maximum number of log files from which logs will be read concurrently. If the number of files matched in the `include` pattern exceeds this number, then files will be processed in batches.                                                                |
 | `max_batches`                         | 0                                    | Only applicable when files must be batched in order to respect `max_concurrent_files`. This value limits the number of batches that will be processed during a single poll interval. A value of 0 indicates no limit.                                           |
@@ -54,13 +57,14 @@ Tails and parses logs from files.
 | `retry_on_failure.max_interval`       | `30s`                                | Upper bound on retry backoff [interval](#time-parameters). Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                        |
 | `retry_on_failure.max_elapsed_time`   | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                               |
 | `ordering_criteria.regex`             |                                      | Regular expression used for sorting, should contain a named capture groups that are to be used in `regex_key`.                                                                                                                                                  |
-| `ordering_criteria.gropup_by`         |                                      | Regular expression used for grouping, which is done pre-sorting. Should contain a named capture groups.                                                                                                                                                         |
+| `ordering_criteria.group_by`          |                                      | Regular expression used for grouping, which is done pre-sorting. Should contain a named capture groups.                                                                                                                                                         |
 | `ordering_criteria.top_n`             | 1                                    | The number of files to track when using file ordering. The top N files are tracked after applying the ordering criteria.                                                                                                                                        |
+| `ordering_criteria.sort_by.regex_key` |                                      | Regular expression named capture group defined in `ordering_criteria.regex` to use for sorting.                                                                                                                                                                         |
 | `ordering_criteria.sort_by.sort_type` |                                      | Type of sorting to be performed (e.g., `numeric`, `alphabetical`, `timestamp`, `mtime`)                                                                                                                                                                         |
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
-| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are `` or `gzip`                                                                          |
+| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.                                                          |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -84,14 +88,15 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 ### Supported encodings
 
-| Key        | Description
-| ---        | ---                                                              |
-| `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
-| `utf-8`    | UTF-8 encoding                                                   |
-| `utf-16le` | UTF-16 encoding with little-endian byte order                    |
-| `utf-16be` | UTF-16 encoding with big-endian byte order                       |
-| `ascii`    | ASCII encoding                                                   |
-| `big5`     | The Big5 Chinese character encoding                              |
+| Key         | Description
+| ---         | ---                                                              |
+| `nop`       | No encoding validation. Treats the file as a stream of raw bytes |
+| `utf-8`     | UTF-8 encoding                                                   |
+| `utf-8-raw` | UTF-8 encoding without replacing invalid UTF-8 bytes             |
+| `utf-16le`  | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be`  | UTF-16 encoding with big-endian byte order                       |
+| `ascii`     | ASCII encoding                                                   |
+| `big5`      | The Big5 Chinese character encoding                              |
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
 

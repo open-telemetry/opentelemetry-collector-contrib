@@ -130,9 +130,11 @@ type PodContainers struct {
 
 // Container stores resource attributes for a specific container defined by k8s pod spec.
 type Container struct {
-	Name      string
-	ImageName string
-	ImageTag  string
+	Name              string
+	ImageName         string
+	ImageTag          string
+	ServiceInstanceID string
+	ServiceVersion    string
 
 	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
@@ -176,7 +178,7 @@ type Filters struct {
 	Node      string
 	Namespace string
 	Fields    []FieldFilter
-	Labels    []FieldFilter
+	Labels    []LabelFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.
@@ -189,6 +191,24 @@ type FieldFilter struct {
 	// Currently only two operations are supported,
 	//  - Equals
 	//  - NotEquals
+	Op selection.Operator
+}
+
+// LabelFilter represents exactly one filter by label rule.
+type LabelFilter struct {
+	// Key matches the label name.
+	Key string
+	// Value matches the label value.
+	Value string
+	// Op determines the matching operation.
+	// The following operations are supported,
+	//	- Exists
+	// 	- DoesNotExist
+	//	- Equals
+	//	- DoubleEquals
+	//	- NotEquals
+	//	- GreaterThan
+	//	- LessThan
 	Op selection.Operator
 }
 
@@ -220,6 +240,10 @@ type ExtractionRules struct {
 	ContainerImageRepoDigests bool
 	ContainerImageTag         bool
 	ClusterUID                bool
+	ServiceNamespace          bool
+	ServiceName               bool
+	ServiceVersion            bool
+	ServiceInstanceID         bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
@@ -245,7 +269,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return false
+	return rules.ServiceName
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
@@ -359,4 +383,13 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+}
+
+func OtelAnnotations() FieldExtractionRule {
+	return FieldExtractionRule{
+		Name:                 "$1",
+		KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+		HasKeyRegexReference: true,
+		From:                 MetadataFromPod,
+	}
 }

@@ -28,6 +28,16 @@ type mockPerfCounterWatcher struct {
 	mock.Mock
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (_m *mockPerfCounterWatcher) ScrapeRawValue(_ *int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (_m *mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Close provides a mock function with given fields:
 func (_m *mockPerfCounterWatcher) Close() error {
 	ret := _m.Called()
@@ -85,7 +95,7 @@ func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(logger)
 	s := newSQLServerPCScraper(settings, cfg)
 
@@ -119,7 +129,7 @@ func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
@@ -163,7 +173,7 @@ func TestScrape(t *testing.T) {
 		cfg.ComputerName = "CustomServer"
 		cfg.InstanceName = "CustomInstance"
 
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {

@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 )
 
 // Tests observer with real connections on system.
@@ -173,7 +174,7 @@ func startAndStopObserver(
 	require.NotNil(t, ml.getProcess)
 	require.NotNil(t, ml.collectProcessDetails)
 
-	h := &hostObserver{EndpointsWatcher: observer.NewEndpointsWatcher(ml, 10*time.Second, zaptest.NewLogger(t))}
+	h := &hostObserver{EndpointsWatcher: endpointswatcher.New(ml, 10*time.Second, zaptest.NewLogger(t))}
 
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 

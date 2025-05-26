@@ -12,11 +12,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 // Time to wait before restarting, when the stream stopped
@@ -27,7 +31,7 @@ type StreamHandler struct {
 	pushMessage func(ctx context.Context, message *pubsubpb.ReceivedMessage) error
 	acks        []string
 	mutex       sync.Mutex
-	client      *pubsub.SubscriberClient
+	client      SubscriberClient
 
 	clientID     string
 	subscription string
@@ -37,7 +41,8 @@ type StreamHandler struct {
 	streamWaitGroup sync.WaitGroup
 	// wait group for the handler
 	handlerWaitGroup sync.WaitGroup
-	logger           *zap.Logger
+	settings         receiver.Settings
+	telemetryBuilder *metadata.TelemetryBuilder
 	// time that acknowledge loop waits before acknowledging messages
 	ackBatchWait time.Duration
 
@@ -52,19 +57,21 @@ func (handler *StreamHandler) ack(ackID string) {
 
 func NewHandler(
 	ctx context.Context,
-	logger *zap.Logger,
-	client *pubsub.SubscriberClient,
+	settings receiver.Settings,
+	telemetryBuilder *metadata.TelemetryBuilder,
+	client SubscriberClient,
 	clientID string,
 	subscription string,
 	callback func(ctx context.Context, message *pubsubpb.ReceivedMessage) error,
 ) (*StreamHandler, error) {
 	handler := StreamHandler{
-		logger:       logger,
-		client:       client,
-		clientID:     clientID,
-		subscription: subscription,
-		pushMessage:  callback,
-		ackBatchWait: 10 * time.Second,
+		settings:         settings,
+		telemetryBuilder: telemetryBuilder,
+		client:           client,
+		clientID:         clientID,
+		subscription:     subscription,
+		pushMessage:      callback,
+		ackBatchWait:     10 * time.Second,
 	}
 	return &handler, handler.initStream(ctx)
 }
@@ -86,6 +93,11 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 		_ = handler.stream.CloseSend()
 		return err
 	}
+	handler.telemetryBuilder.ReceiverGooglecloudpubsubStreamRestarts.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("otelcol.component.kind", "receiver"),
+			attribute.String("otelcol.component.id", handler.settings.ID.String()),
+		))
 	return nil
 }
 
@@ -103,7 +115,7 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 		var loopCtx context.Context
 		loopCtx, cancel := context.WithCancel(ctx)
 
-		handler.logger.Info("Starting Streaming Pull")
+		handler.settings.Logger.Debug("Starting Streaming Pull")
 		handler.streamWaitGroup.Add(2)
 		go handler.requestStream(loopCtx, cancel)
 		go handler.responseStream(loopCtx, cancel)
@@ -118,13 +130,13 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 		if handler.isRunning.Load() {
 			err := handler.initStream(ctx)
 			if err != nil {
-				handler.logger.Error("Failed to recovery stream.")
+				handler.settings.Logger.Error("Failed to recovery stream.")
 			}
 		}
-		handler.logger.Warn("End of recovery loop, restarting.")
+		handler.settings.Logger.Debug("End of recovery loop, restarting.")
 		time.Sleep(streamRecoveryBackoffPeriod)
 	}
-	handler.logger.Warn("Shutting down recovery loop.")
+	handler.settings.Logger.Warn("Shutting down recovery loop.")
 	handler.handlerWaitGroup.Done()
 }
 
@@ -158,15 +170,15 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 	for {
 		if err := handler.acknowledgeMessages(); err != nil {
 			if errors.Is(err, io.EOF) {
-				handler.logger.Warn("EOF reached")
+				handler.settings.Logger.Warn("EOF reached")
 				break
 			}
-			handler.logger.Error(fmt.Sprintf("Failed in acknowledge messages with error %v", err))
+			handler.settings.Logger.Error(fmt.Sprintf("Failed in acknowledge messages with error %v", err))
 			break
 		}
 		select {
 		case <-ctx.Done():
-			handler.logger.Warn("requestStream <-ctx.Done()")
+			handler.settings.Logger.Debug("requestStream <-ctx.Done()")
 		case <-timer.C:
 			timer.Reset(handler.ackBatchWait)
 		}
@@ -177,7 +189,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 		}
 	}
 	cancel()
-	handler.logger.Warn("Request Stream loop ended.")
+	handler.settings.Logger.Debug("Request Stream loop ended.")
 	_ = handler.stream.CloseSend()
 	handler.streamWaitGroup.Done()
 }
@@ -203,18 +215,18 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 			case errors.Is(err, io.EOF):
 				activeStreaming = false
 			case !grpcStatus:
-				handler.logger.Warn("response stream breaking on error",
+				handler.settings.Logger.Warn("response stream breaking on error",
 					zap.Error(err))
 				activeStreaming = false
 			case s.Code() == codes.Unavailable:
-				handler.logger.Info("response stream breaking on gRPC s 'Unavailable'")
+				handler.settings.Logger.Debug("response stream breaking on gRPC s 'Unavailable'")
 				activeStreaming = false
 			case s.Code() == codes.NotFound:
-				handler.logger.Error("resource doesn't exist, wait 60 seconds, and restarting stream")
+				handler.settings.Logger.Error("resource doesn't exist, wait 60 seconds, and restarting stream")
 				time.Sleep(time.Second * 60)
 				activeStreaming = false
 			default:
-				handler.logger.Warn("response stream breaking on gRPC s "+s.Message(),
+				handler.settings.Logger.Warn("response stream breaking on gRPC s "+s.Message(),
 					zap.String("s", s.Message()),
 					zap.Error(err))
 				activeStreaming = false
@@ -222,11 +234,11 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 		}
 		if errors.Is(ctx.Err(), context.Canceled) {
 			// Canceling the loop, collector is probably stopping
-			handler.logger.Warn("response stream ctx.Err() == context.Canceled")
+			handler.settings.Logger.Warn("response stream ctx.Err() == context.Canceled")
 			break
 		}
 	}
 	cancel()
-	handler.logger.Warn("Response Stream loop ended.")
+	handler.settings.Logger.Debug("Response Stream loop ended.")
 	handler.streamWaitGroup.Done()
 }

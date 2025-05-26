@@ -109,12 +109,10 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 			settings := Settings{
-				Namespace:           "",
-				ExternalLabels:      nil,
-				DisableTargetInfo:   false,
-				ExportCreatedMetric: false,
-				AddMetricSuffixes:   false,
-				SendMetadata:        false,
+				Namespace:         "",
+				ExternalLabels:    nil,
+				DisableTargetInfo: false,
+				SendMetadata:      false,
 			}
 			converter := newPrometheusConverterV2()
 			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name())
@@ -158,12 +156,10 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	}
 
 	settings := Settings{
-		Namespace:           "",
-		ExternalLabels:      nil,
-		DisableTargetInfo:   false,
-		ExportCreatedMetric: false,
-		AddMetricSuffixes:   false,
-		SendMetadata:        false,
+		Namespace:         "",
+		ExternalLabels:    nil,
+		DisableTargetInfo: false,
+		SendMetadata:      false,
 	}
 
 	converter := newPrometheusConverterV2()

@@ -4,13 +4,14 @@
 package entry
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func testMap() map[string]any {
@@ -347,7 +348,9 @@ func TestBodyFieldUnmarshal(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy BodyField
-			err := yaml.UnmarshalStrict([]byte(tc.jsonDot), &fy)
+			decoder := yaml.NewDecoder(bytes.NewReader([]byte(tc.jsonDot)))
+			decoder.KnownFields(true)
+			err := decoder.Decode(&fy)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 
@@ -385,7 +388,9 @@ func TestBodyFieldUnmarshalFailure(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy BodyField
-			err := yaml.UnmarshalStrict(tc.invalid, &fy)
+			decoder := yaml.NewDecoder(bytes.NewReader(tc.invalid))
+			decoder.KnownFields(true)
+			err := decoder.Decode(&fy)
 			require.ErrorContains(t, err, tc.expectedErr)
 
 			var fj BodyField

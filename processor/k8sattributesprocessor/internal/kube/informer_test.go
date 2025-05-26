@@ -49,7 +49,7 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 				Op:    selection.Equals,
 			},
 		},
-		Labels: []FieldFilter{
+		Labels: []LabelFilter{
 			{
 				Key:   "lk1",
 				Value: "lv1",
@@ -86,7 +86,7 @@ func Test_informerWatchFuncWithSelectors(t *testing.T) {
 				Op:    selection.Equals,
 			},
 		},
-		Labels: []FieldFilter{
+		Labels: []LabelFilter{
 			{
 				Key:   "lk1",
 				Value: "lv1",

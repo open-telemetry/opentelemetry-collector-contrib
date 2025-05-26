@@ -15,13 +15,18 @@ import (
 
 func TestNewCommonExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings())
+	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings(), "")
 	require.NotNil(t, exporter)
 }
 
 func TestCommonExporter_FormatTime(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings())
+	cfg.Endpoint = "http://localhost:8030"
+	cfg.CreateSchema = false
+	err := cfg.Validate()
+	require.NoError(t, err)
+
+	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings(), "")
 	require.NotNil(t, exporter)
 
 	now := time.Date(2024, 1, 1, 0, 0, 0, 1000, time.Local)
@@ -62,7 +67,7 @@ func findRandomPort() (int, error) {
 	return port, nil
 }
 
-func TestToJsonLines(t *testing.T) {
+func TestToJSONLines(t *testing.T) {
 	logs, err := toJSONLines([]*dLog{
 		{}, {},
 	})

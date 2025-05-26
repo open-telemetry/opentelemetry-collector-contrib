@@ -9,27 +9,33 @@ import (
 )
 
 type Config struct {
+	Auth        Auth          `mapstructure:"auth"`
 	DSN         string        `mapstructure:"dsn"`
-	Port        int           `mapstructure:"port"`
-	Timeout     time.Duration `mapstructure:"timeout"`
 	Keyspace    string        `mapstructure:"keyspace"`
 	TraceTable  string        `mapstructure:"trace_table"`
 	LogsTable   string        `mapstructure:"logs_table"`
-	Replication Replication   `mapstructure:"replication"`
 	Compression Compression   `mapstructure:"compression"`
-	Auth        Auth          `mapstructure:"auth"`
+	Replication Replication   `mapstructure:"replication"`
+	Port        int           `mapstructure:"port"`
+	Timeout     time.Duration `mapstructure:"timeout"`
 }
 
 type Replication struct {
 	Class             string `mapstructure:"class"`
 	ReplicationFactor int    `mapstructure:"replication_factor"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Compression struct {
 	Algorithm string `mapstructure:"algorithm"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Auth struct {
 	UserName string              `mapstructure:"username"`
 	Password configopaque.String `mapstructure:"password"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

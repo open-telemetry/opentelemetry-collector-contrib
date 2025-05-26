@@ -14,12 +14,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	scraper := newMemcachedScraper(receivertest.NewNopSettings(), cfg)
+	scraper := newMemcachedScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	scraper.newClient = func(string, time.Duration) (client, error) {
 		return &fakeClient{}, nil
 	}

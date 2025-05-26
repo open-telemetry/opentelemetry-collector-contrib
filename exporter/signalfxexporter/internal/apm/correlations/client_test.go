@@ -30,7 +30,7 @@ var (
 	deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
 )
 
-func waitForCors(corCh <-chan *request, count, waitSeconds int) []*request { // nolint: unparam
+func waitForCors(corCh <-chan *request, count, waitSeconds int) []*request { //nolint:unparam
 	cors := make([]*request, 0, count)
 	timeout := time.After(time.Duration(waitSeconds) * time.Second)
 

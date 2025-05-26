@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeContextSwitchType specifies the value context_switch_type attribute.
@@ -119,6 +119,72 @@ var MapAttributeState = map[string]AttributeState{
 	"system": AttributeStateSystem,
 	"user":   AttributeStateUser,
 	"wait":   AttributeStateWait,
+}
+
+var MetricsInfo = metricsInfo{
+	ProcessContextSwitches: metricInfo{
+		Name: "process.context_switches",
+	},
+	ProcessCPUTime: metricInfo{
+		Name: "process.cpu.time",
+	},
+	ProcessCPUUtilization: metricInfo{
+		Name: "process.cpu.utilization",
+	},
+	ProcessDiskIo: metricInfo{
+		Name: "process.disk.io",
+	},
+	ProcessDiskOperations: metricInfo{
+		Name: "process.disk.operations",
+	},
+	ProcessHandles: metricInfo{
+		Name: "process.handles",
+	},
+	ProcessMemoryUsage: metricInfo{
+		Name: "process.memory.usage",
+	},
+	ProcessMemoryUtilization: metricInfo{
+		Name: "process.memory.utilization",
+	},
+	ProcessMemoryVirtual: metricInfo{
+		Name: "process.memory.virtual",
+	},
+	ProcessOpenFileDescriptors: metricInfo{
+		Name: "process.open_file_descriptors",
+	},
+	ProcessPagingFaults: metricInfo{
+		Name: "process.paging.faults",
+	},
+	ProcessSignalsPending: metricInfo{
+		Name: "process.signals_pending",
+	},
+	ProcessThreads: metricInfo{
+		Name: "process.threads",
+	},
+	ProcessUptime: metricInfo{
+		Name: "process.uptime",
+	},
+}
+
+type metricsInfo struct {
+	ProcessContextSwitches     metricInfo
+	ProcessCPUTime             metricInfo
+	ProcessCPUUtilization      metricInfo
+	ProcessDiskIo              metricInfo
+	ProcessDiskOperations      metricInfo
+	ProcessHandles             metricInfo
+	ProcessMemoryUsage         metricInfo
+	ProcessMemoryUtilization   metricInfo
+	ProcessMemoryVirtual       metricInfo
+	ProcessOpenFileDescriptors metricInfo
+	ProcessPagingFaults        metricInfo
+	ProcessSignalsPending      metricInfo
+	ProcessThreads             metricInfo
+	ProcessUptime              metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricProcessContextSwitches struct {
@@ -393,7 +459,7 @@ type metricProcessHandles struct {
 // init fills process.handles metric with initial data.
 func (m *metricProcessHandles) init() {
 	m.data.SetName("process.handles")
-	m.data.SetDescription("Number of handles held by the process.")
+	m.data.SetDescription("Number of open handles held by the process.")
 	m.data.SetUnit("{count}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -792,6 +858,55 @@ func newMetricProcessThreads(cfg MetricConfig) metricProcessThreads {
 	return m
 }
 
+type metricProcessUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.uptime metric with initial data.
+func (m *metricProcessUptime) init() {
+	m.data.SetName("process.uptime")
+	m.data.SetDescription("The time the process has been running.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricProcessUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessUptime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessUptime(cfg MetricConfig) metricProcessUptime {
+	m := metricProcessUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -815,6 +930,7 @@ type MetricsBuilder struct {
 	metricProcessPagingFaults        metricProcessPagingFaults
 	metricProcessSignalsPending      metricProcessSignalsPending
 	metricProcessThreads             metricProcessThreads
+	metricProcessUptime              metricProcessUptime
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -853,6 +969,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricProcessPagingFaults:        newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
 		metricProcessSignalsPending:      newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
 		metricProcessThreads:             newMetricProcessThreads(mbc.Metrics.ProcessThreads),
+		metricProcessUptime:              newMetricProcessUptime(mbc.Metrics.ProcessUptime),
 		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
 	}
@@ -971,7 +1088,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricProcessContextSwitches.emit(ils.Metrics())
@@ -987,6 +1104,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
+	mb.metricProcessUptime.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -1081,6 +1199,11 @@ func (mb *MetricsBuilder) RecordProcessSignalsPendingDataPoint(ts pcommon.Timest
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.
 func (mb *MetricsBuilder) RecordProcessThreadsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordProcessUptimeDataPoint adds a data point to process.uptime metric.
+func (mb *MetricsBuilder) RecordProcessUptimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricProcessUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var (
@@ -276,7 +277,8 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
-			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
+			rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
+			require.NoError(t, e)
 			tc.setup(rcvr)
 
 			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
@@ -313,7 +315,8 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), config, logSink)
+	rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), config, logSink)
+	require.NoError(t, e)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil

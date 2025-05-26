@@ -21,8 +21,8 @@ type mockFilter struct {
 	mock.Mock
 }
 
-func (f *mockFilter) Filter(source []*filter.Item) ([]*filter.Item, error) {
-	return source, nil
+func (f *mockFilter) Filter(source []*filter.Item) []*filter.Item {
+	return source
 }
 
 func (f *mockFilter) Shutdown() error {

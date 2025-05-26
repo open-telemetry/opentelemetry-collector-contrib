@@ -146,13 +146,13 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	// set up the ack API handler if the ack extension is present
-	if r.config.Ack.Extension != nil {
-		if ext, found := host.GetExtensions()[*r.config.Ack.Extension]; found {
-			r.ackExt = ext.(ackextension.AckExtension)
-			mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
-		} else {
-			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Ack.Extension)
+	if r.config.Extension != nil {
+		ext, found := host.GetExtensions()[*r.config.Extension]
+		if !found {
+			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Extension)
 		}
+		r.ackExt = ext.(ackextension.AckExtension)
+		mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
 	}
 
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
@@ -162,12 +162,12 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 	// set up the listener
-	ln, err := r.config.ServerConfig.ToListener(ctx)
+	ln, err := r.config.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
 
-	r.server, err = r.config.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ToServer(ctx, host, r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
@@ -227,13 +227,13 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannel(req); extracted {
-		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
-			r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
-			return
-		}
-	} else {
+	channelID, extracted = r.extractChannel(req)
+	if !extracted {
 		r.failRequest(resp, http.StatusBadRequest, requiredDataChannelHeader, nil)
+		return
+	}
+	if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
+		r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
 		return
 	}
 
@@ -427,22 +427,13 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		if msg.Event == nil {
-			r.failRequest(resp, http.StatusBadRequest, eventRequiredRespBody, nil)
-			return
-		}
-
-		if msg.Event == "" {
-			r.failRequest(resp, http.StatusBadRequest, eventBlankRespBody, nil)
-			return
-		}
-
 		for _, v := range msg.Fields {
 			if !isFlatJSONField(v) {
 				r.failRequest(resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events)+len(metricEvents))), nil)
 				return
 			}
 		}
+
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
 				r.failRequest(resp, http.StatusBadRequest, errUnsupportedMetricEvent, err)
@@ -450,6 +441,16 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			}
 			metricEvents = append(metricEvents, &msg)
 		} else {
+			if msg.Event == nil {
+				r.failRequest(resp, http.StatusBadRequest, eventRequiredRespBody, nil)
+				return
+			}
+
+			if msg.Event == "" {
+				r.failRequest(resp, http.StatusBadRequest, eventBlankRespBody, nil)
+				return
+			}
+
 			if r.logsConsumer == nil {
 				r.failRequest(resp, http.StatusBadRequest, errUnsupportedLogEvent, err)
 				return

@@ -4,6 +4,11 @@ status:
   class: receiver
   stability:
     deprecated: [traces]
+  deprecation:
+    traces:
+      migration: "use OTLP receiver"
+      date: "2024-10-22"
   distributions: [contrib]
   codeowners:
     active: [atoulme]
+    seeking_new: true

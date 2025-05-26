@@ -39,9 +39,9 @@ type vcenterScrapeData struct {
 	hostPerfMetricsByRef     map[string]*performance.EntityMetric
 	vmsByRef                 map[string]*mo.VirtualMachine
 	vmPerfMetricsByRef       map[string]*performance.EntityMetric
-	vmVSANMetricsByUUID      map[string]*VSANMetricResults
-	hostVSANMetricsByUUID    map[string]*VSANMetricResults
-	clusterVSANMetricsByUUID map[string]*VSANMetricResults
+	vmVSANMetricsByUUID      map[string]*vSANMetricResults
+	hostVSANMetricsByUUID    map[string]*vSANMetricResults
+	clusterVSANMetricsByUUID map[string]*vSANMetricResults
 }
 
 type vcenterMetricScraper struct {
@@ -82,9 +82,9 @@ func newVcenterScrapeData() *vcenterScrapeData {
 		rPoolsByRef:              make(map[string]*mo.ResourcePool),
 		vmsByRef:                 make(map[string]*mo.VirtualMachine),
 		vmPerfMetricsByRef:       make(map[string]*performance.EntityMetric),
-		vmVSANMetricsByUUID:      make(map[string]*VSANMetricResults),
-		hostVSANMetricsByUUID:    make(map[string]*VSANMetricResults),
-		clusterVSANMetricsByUUID: make(map[string]*VSANMetricResults),
+		vmVSANMetricsByUUID:      make(map[string]*vSANMetricResults),
+		hostVSANMetricsByUUID:    make(map[string]*vSANMetricResults),
+		clusterVSANMetricsByUUID: make(map[string]*vSANMetricResults),
 	}
 }
 

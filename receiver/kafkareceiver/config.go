@@ -4,21 +4,109 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
-type AutoCommit struct {
-	// Whether or not to auto-commit updated offsets back to the broker.
-	// (default enabled).
-	Enable bool `mapstructure:"enable"`
-	// How frequently to commit updated offsets. Ineffective unless
-	// auto-commit is enabled (default 1s)
-	Interval time.Duration `mapstructure:"interval"`
+var _ component.Config = (*Config)(nil)
+
+// Config defines configuration for Kafka receiver.
+type Config struct {
+	configkafka.ClientConfig   `mapstructure:",squash"`
+	configkafka.ConsumerConfig `mapstructure:",squash"`
+
+	// Logs holds configuration about how logs should be consumed.
+	Logs TopicEncodingConfig `mapstructure:"logs"`
+
+	// Metrics holds configuration about how metrics should be consumed.
+	Metrics TopicEncodingConfig `mapstructure:"metrics"`
+
+	// Traces holds configuration about how traces should be consumed.
+	Traces TopicEncodingConfig `mapstructure:"traces"`
+
+	// Topic holds the name of the Kafka topic from which to consume data.
+	//
+	// Topic has no default. If explicitly specified, it will take precedence
+	// over the default values of Logs.Topic, Traces.Topic, and Metrics.Topic.
+	//
+	// Deprecated [v0.124.0]: Use Logs.Topic, Traces.Topic, and Metrics.Topic.
+	Topic string `mapstructure:"topic"`
+
+	// Encoding holds the expected encoding of messages (default "otlp_proto")
+	//
+	// Encoding has no default. If explicitly specified, it will take precedence
+	// over the default values of Logs.Encoding, Traces.Encoding, and
+	// Metrics.Encoding.
+	//
+	// Deprecated [v0.124.0]: Use Logs.Encoding, Traces.Encoding, and
+	// Metrics.Encoding.
+	Encoding string `mapstructure:"encoding"`
+
+	// MessageMarking controls the way the messages are marked as consumed.
+	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// HeaderExtraction controls extraction of headers from Kafka records.
+	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
+
+	// ErrorBackoff controls backoff/retry behavior when the next consumer
+	// returns an error.
+	ErrorBackOff configretry.BackOffConfig `mapstructure:"error_backoff"`
+}
+
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+	// Check if deprecated fields have been explicitly set,
+	// in which case they should be used instead of signal-
+	// specific defaults.
+	var zeroConfig Config
+	if err := conf.Unmarshal(&zeroConfig); err != nil {
+		return err
+	}
+	if c.Topic != "" {
+		if zeroConfig.Logs.Topic == "" {
+			c.Logs.Topic = c.Topic
+		}
+		if zeroConfig.Metrics.Topic == "" {
+			c.Metrics.Topic = c.Topic
+		}
+		if zeroConfig.Traces.Topic == "" {
+			c.Traces.Topic = c.Topic
+		}
+	}
+	if c.Encoding != "" {
+		if zeroConfig.Logs.Encoding == "" {
+			c.Logs.Encoding = c.Encoding
+		}
+		if zeroConfig.Metrics.Encoding == "" {
+			c.Metrics.Encoding = c.Encoding
+		}
+		if zeroConfig.Traces.Encoding == "" {
+			c.Traces.Encoding = c.Encoding
+		}
+	}
+	return conf.Unmarshal(c)
+}
+
+// TopicEncodingConfig holds signal-specific topic and encoding configuration.
+type TopicEncodingConfig struct {
+	// Topic holds the name of the Kafka topic from which messages of the
+	// signal type should be consumed.
+	//
+	// The default depends on the signal type:
+	//  - "otlp_spans" for traces
+	//  - "otlp_metrics" for metrics
+	//  - "otlp_logs" for logs
+	Topic string `mapstructure:"topic"`
+
+	// Encoding holds the expected encoding of messages for the signal type
+	//
+	// Defaults to "otlp_proto".
+	Encoding string `mapstructure:"encoding"`
 }
 
 type MessageMarking struct {
@@ -35,66 +123,4 @@ type MessageMarking struct {
 type HeaderExtraction struct {
 	ExtractHeaders bool     `mapstructure:"extract_headers"`
 	Headers        []string `mapstructure:"headers"`
-}
-
-// Config defines configuration for Kafka receiver.
-type Config struct {
-	// The list of kafka brokers (default localhost:9092)
-	Brokers []string `mapstructure:"brokers"`
-	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
-	// each of the provided brokers. It will then do a PTR lookup for each
-	// returned IP, and that set of names becomes the broker list. This can be
-	// required in SASL environments.
-	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
-	// Kafka protocol version
-	ProtocolVersion string `mapstructure:"protocol_version"`
-	// Session interval for the Kafka consumer
-	SessionTimeout time.Duration `mapstructure:"session_timeout"`
-	// Heartbeat interval for the Kafka consumer
-	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
-	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
-	Topic string `mapstructure:"topic"`
-	// Encoding of the messages (default "otlp_proto")
-	Encoding string `mapstructure:"encoding"`
-	// The consumer group that receiver will be consuming messages from (default "otel-collector")
-	GroupID string `mapstructure:"group_id"`
-	// The consumer client ID that receiver will use (default "otel-collector")
-	ClientID string `mapstructure:"client_id"`
-	// The initial offset to use if no offset was previously committed.
-	// Must be `latest` or `earliest` (default "latest").
-	InitialOffset string `mapstructure:"initial_offset"`
-
-	// Metadata is the namespace for metadata management properties used by the
-	// Client, and shared by the Producer/Consumer.
-	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
-
-	Authentication kafka.Authentication `mapstructure:"auth"`
-
-	// Controls the auto-commit functionality
-	AutoCommit AutoCommit `mapstructure:"autocommit"`
-
-	// Controls the way the messages are marked as consumed
-	MessageMarking MessageMarking `mapstructure:"message_marking"`
-
-	// Extract headers from kafka records
-	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
-
-	// The minimum bytes per fetch from Kafka (default "1")
-	MinFetchSize int32 `mapstructure:"min_fetch_size"`
-	// The default bytes per fetch from Kafka (default "1048576")
-	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
-	// The maximum bytes per fetch from Kafka (default "0", no limit)
-	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
-}
-
-const (
-	offsetLatest   string = "latest"
-	offsetEarliest string = "earliest"
-)
-
-var _ component.Config = (*Config)(nil)
-
-// Validate checks the receiver configuration is valid
-func (cfg *Config) Validate() error {
-	return nil
 }

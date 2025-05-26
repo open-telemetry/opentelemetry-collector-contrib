@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
 func TestReceiver(t *testing.T) {
@@ -47,7 +48,7 @@ func TestReceiver(t *testing.T) {
 
 			r, err := f.CreateMetrics(
 				context.Background(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop(),
 			)
@@ -111,7 +112,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -146,7 +147,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							Scheme:          "https",
 							MetricsPath:     "/metric",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -178,7 +179,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -219,7 +220,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{
@@ -298,7 +299,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -341,7 +342,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -378,7 +379,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -415,7 +416,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
@@ -436,7 +437,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopSettings())
+			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

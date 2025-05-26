@@ -58,17 +58,15 @@ for LABEL_REQ in ${LABELS}; do
         continue
     fi
 
-    # Grep exits with status code 1 if there are no matches,
-    # so we manually set RESULT to 0 if nothing is found.
-    RESULT=$(grep -c "${LABEL}" .github/CODEOWNERS || true)
+    SHORT_LABEL=$(awk -v path="${LABEL}" '$1 == path || $2 == path {print $2}' .github/component_labels.txt)
 
-    if [[ ${RESULT} = 0 ]]; then
-        echo "\"${LABEL}\" doesn't correspond to a component, skipping."
+    if [[  -z "${SHORT_LABEL}" ]]; then
+        echo "\"${SHORT_LABEL}\" doesn't correspond to a component, skipping."
         continue
     fi
 
     if [[ ${SHOULD_ADD} = true ]]; then
-        gh issue edit "${ISSUE}" --add-label "${LABEL}"
+        gh issue edit "${ISSUE}" --add-label "${SHORT_LABEL}"
 
         # Labels added by a GitHub Actions workflow don't trigger other workflows
         # by design, so we have to manually ping code owners here.

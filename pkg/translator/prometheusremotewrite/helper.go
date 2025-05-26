@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
@@ -44,9 +44,10 @@ const (
 
 var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
+	featuregate.WithRegisterToVersion("v0.118.0"),
 )
 
 type bucketBoundsData struct {
@@ -108,8 +109,8 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	ignoreAttrs []string, logOnOverwrite bool, extras ...string,
 ) []prompb.Label {
 	resourceAttrs := resource.Attributes()
-	serviceName, haveServiceName := resourceAttrs.Get(conventions.AttributeServiceName)
-	instance, haveInstanceID := resourceAttrs.Get(conventions.AttributeServiceInstanceID)
+	serviceName, haveServiceName := resourceAttrs.Get(string(conventions.ServiceNameKey))
+	instance, haveInstanceID := resourceAttrs.Get(string(conventions.ServiceInstanceIDKey))
 
 	// Calculate the maximum possible number of labels we could return so we can preallocate l
 	maxLabelCount := attributes.Len() + len(externalLabels) + len(extras)/2
@@ -130,12 +131,11 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	labels := make([]prompb.Label, 0, maxLabelCount)
 	// XXX: Should we always drop service namespace/service name/service instance ID from the labels
 	// (as they get mapped to other Prometheus labels)?
-	attributes.Range(func(key string, value pcommon.Value) bool {
+	for key, value := range attributes.All() {
 		if !slices.Contains(ignoreAttrs, key) {
 			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
 		}
-		return true
-	})
+	}
 	sort.Stable(ByLabelName(labels))
 
 	for _, label := range labels {
@@ -153,7 +153,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	// Map service.name + service.namespace to job
 	if haveServiceName {
 		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
+		if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
 			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
 		}
 		l[model.JobLabel] = val
@@ -181,7 +181,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		}
 		// internal labels should be maintained
 		name := extras[i]
-		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
+		if len(name) <= 4 || name[:2] != "__" || name[len(name)-2:] != "__" {
 			name = prometheustranslator.NormalizeLabel(name)
 		}
 		l[name] = extras[i+1]
@@ -284,12 +284,6 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: math.Inf(1)})
 		c.addExemplars(pt, bucketBounds)
-
-		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
-			labels := createLabels(baseName+createdSuffix, baseLabels)
-			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
-		}
 	}
 }
 
@@ -338,7 +332,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 
 		attrs := exemplar.FilteredAttributes()
 		labelsFromAttributes := make([]prompb.Label, 0, attrs.Len())
-		attrs.Range(func(key string, value pcommon.Value) bool {
+		for key, value := range attrs.All() {
 			val := value.AsString()
 			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
@@ -347,9 +341,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 			}
 
 			labelsFromAttributes = append(labelsFromAttributes, promLabel)
-
-			return true
-		})
+		}
 		if exemplarRunes <= maxExemplarRunes {
 			// only append filtered attributes if it does not cause exemplar
 			// labels to exceed the max number of runes
@@ -442,12 +434,6 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
 			c.addSample(quantile, qtlabels)
 		}
-
-		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
-			createdLabels := createLabels(baseName+createdSuffix, baseLabels)
-			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
-		}
 	}
 }
 
@@ -504,22 +490,6 @@ func (c *prometheusConverter) getOrCreateTimeSeries(lbls []prompb.Label) (*promp
 	return ts, true
 }
 
-// addTimeSeriesIfNeeded adds a corresponding time series if it doesn't already exist.
-// If the time series doesn't already exist, it gets added with startTimestamp for its value and timestamp for its timestamp,
-// both converted to milliseconds.
-func (c *prometheusConverter) addTimeSeriesIfNeeded(lbls []prompb.Label, startTimestamp pcommon.Timestamp, timestamp pcommon.Timestamp) {
-	ts, created := c.getOrCreateTimeSeries(lbls)
-	if created {
-		ts.Samples = []prompb.Sample{
-			{
-				// convert ns to ms
-				Value:     float64(convertTimeStamp(startTimestamp)),
-				Timestamp: convertTimeStamp(timestamp),
-			},
-		}
-	}
-}
-
 // addResourceTargetInfo converts the resource to the target info metric.
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) {
 	if settings.DisableTargetInfo || timestamp == 0 {
@@ -528,9 +498,9 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 
 	attributes := resource.Attributes()
 	identifyingAttrs := []string{
-		conventions.AttributeServiceNamespace,
-		conventions.AttributeServiceName,
-		conventions.AttributeServiceInstanceID,
+		string(conventions.ServiceNamespaceKey),
+		string(conventions.ServiceNameKey),
+		string(conventions.ServiceInstanceIDKey),
 	}
 	nonIdentifyingAttrsCount := attributes.Len()
 	for _, a := range identifyingAttrs {

@@ -249,11 +249,10 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			require.Equal(t, "test", v.scope.Name())
 			require.Equal(t, v.value.Type(), ilm2.Metrics().At(0).Type())
-			vLabels.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range vLabels.All() {
 				r, _ := m2Labels.Get(k)
 				require.Equal(t, r, v)
-				return true
-			})
+			}
 			require.Equal(t, m2Labels.Len(), vLabels.Len())
 			require.Equal(t, m2Value, vValue)
 			require.Equal(t, ts2.Unix(), vTS.Unix())
@@ -362,11 +361,10 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			require.Equal(t, v.value.Type(), ilm.Metrics().At(0).Type())
 			require.Equal(t, v.value.Type(), ilm.Metrics().At(1).Type())
 
-			vLabels.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range vLabels.All() {
 				r, _ := mLabels.Get(k)
 				require.Equal(t, r, v)
-				return true
-			})
+			}
 			require.Equal(t, mLabels.Len(), vLabels.Len())
 			require.Equal(t, mValue, vValue)
 			require.Equal(t, dataPointValue1+dataPointValue2, vValue)

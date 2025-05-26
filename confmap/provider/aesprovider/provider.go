@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package aesprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider"
 
 import (
@@ -8,6 +10,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -92,7 +95,7 @@ func (p *provider) decrypt(cipherText string) (string, error) {
 
 	nonceSize := aesGCM.NonceSize()
 	if len(cipherBytes) < nonceSize {
-		return "", fmt.Errorf("ciphertext too short")
+		return "", errors.New("ciphertext too short")
 	}
 
 	nonce, cipherBytes := cipherBytes[:nonceSize], cipherBytes[nonceSize:]

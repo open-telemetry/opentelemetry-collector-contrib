@@ -20,6 +20,7 @@ const (
 	metricNameRouting
 	resourceRouting
 	streamIDRouting
+	attrRouting
 )
 
 const (
@@ -28,22 +29,33 @@ const (
 	metricNameRoutingStr = "metric"
 	resourceRoutingStr   = "resource"
 	streamIDRoutingStr   = "streamID"
+	attrRoutingStr       = "attributes"
 )
 
 // Config defines configuration for the exporter.
 type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
-	Protocol   Protocol         `mapstructure:"protocol"`
-	Resolver   ResolverSettings `mapstructure:"resolver"`
-	RoutingKey string           `mapstructure:"routing_key"`
+	Protocol Protocol         `mapstructure:"protocol"`
+	Resolver ResolverSettings `mapstructure:"resolver"`
+
+	// RoutingKey is a single routing key value
+	RoutingKey string `mapstructure:"routing_key"`
+
+	// RoutingAttributes creates a composite routing key, based on several resource attributes of the application.
+	//
+	// Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and
+	// "span.name".
+	RoutingAttributes []string `mapstructure:"routing_attributes"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
 type Protocol struct {
 	OTLP otlpexporter.Config `mapstructure:"otlp"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ResolverSettings defines the configurations for the backend resolver
@@ -52,11 +64,15 @@ type ResolverSettings struct {
 	DNS         *DNSResolver         `mapstructure:"dns"`
 	K8sSvc      *K8sSvcResolver      `mapstructure:"k8s"`
 	AWSCloudMap *AWSCloudMapResolver `mapstructure:"aws_cloud_map"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
 type StaticResolver struct {
 	Hostnames []string `mapstructure:"hostnames"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // DNSResolver defines the configuration for the DNS resolver
@@ -65,6 +81,8 @@ type DNSResolver struct {
 	Port     string        `mapstructure:"port"`
 	Interval time.Duration `mapstructure:"interval"`
 	Timeout  time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // K8sSvcResolver defines the configuration for the DNS resolver
@@ -73,6 +91,8 @@ type K8sSvcResolver struct {
 	Ports           []int32       `mapstructure:"ports"`
 	Timeout         time.Duration `mapstructure:"timeout"`
 	ReturnHostnames bool          `mapstructure:"return_hostnames"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AWSCloudMapResolver struct {

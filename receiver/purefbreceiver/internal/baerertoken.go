@@ -14,8 +14,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 )
 
-func RetrieveBearerToken(authCfg configauth.Authentication, extensions map[component.ID]component.Component) (string, error) {
-	auth, err := authCfg.GetClientAuthenticator(context.Background(), extensions)
+func RetrieveBearerToken(authCfg configauth.Config, extensions map[component.ID]component.Component) (string, error) {
+	auth, err := authCfg.GetGRPCClientAuthenticator(context.Background(), extensions)
 	if err != nil {
 		return "", err
 	}

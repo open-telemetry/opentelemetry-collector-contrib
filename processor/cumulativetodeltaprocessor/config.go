@@ -4,14 +4,25 @@
 package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"golang.org/x/exp/maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
+
+var validMetricTypes = map[string]bool{
+	strings.ToLower(pmetric.MetricTypeSum.String()):       true,
+	strings.ToLower(pmetric.MetricTypeHistogram.String()): true,
+}
+
+var validMetricTypeList = maps.Keys(validMetricTypes)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -37,6 +48,8 @@ type MatchMetrics struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Metrics []string `mapstructure:"metrics"`
+
+	MetricTypes []string `mapstructure:"metric_types"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -46,11 +59,30 @@ var _ component.Config = (*Config)(nil)
 func (config *Config) Validate() error {
 	if (len(config.Include.Metrics) > 0 && len(config.Include.MatchType) == 0) ||
 		(len(config.Exclude.Metrics) > 0 && len(config.Exclude.MatchType) == 0) {
-		return fmt.Errorf("match_type must be set if metrics are supplied")
+		return errors.New("match_type must be set if metrics are supplied")
 	}
 	if (len(config.Include.MatchType) > 0 && len(config.Include.Metrics) == 0) ||
 		(len(config.Exclude.MatchType) > 0 && len(config.Exclude.Metrics) == 0) {
-		return fmt.Errorf("metrics must be supplied if match_type is set")
+		return errors.New("metrics must be supplied if match_type is set")
+	}
+
+	for _, metricType := range config.Exclude.MetricTypes {
+		if valid := validMetricTypes[strings.ToLower(metricType)]; !valid {
+			return fmt.Errorf(
+				"found invalid metric type in exclude.metric_types: %s. Valid values are %s",
+				metricType,
+				validMetricTypeList,
+			)
+		}
+	}
+	for _, metricType := range config.Include.MetricTypes {
+		if valid := validMetricTypes[strings.ToLower(metricType)]; !valid {
+			return fmt.Errorf(
+				"found invalid metric type in include.metric_types: %s. Valid values are %s",
+				metricType,
+				validMetricTypeList,
+			)
+		}
 	}
 	return nil
 }

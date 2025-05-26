@@ -10,12 +10,13 @@ import (
 	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
@@ -50,16 +51,23 @@ func (e *ec2ClientBuilder) buildClient(ctx context.Context, region string, clien
 }
 
 type Detector struct {
-	metadataProvider ec2provider.Provider
-	tagKeyRegexes    []*regexp.Regexp
-	logger           *zap.Logger
-	rb               *metadata.ResourceBuilder
-	ec2ClientBuilder ec2ifaceBuilder
+	metadataProvider      ec2provider.Provider
+	tagKeyRegexes         []*regexp.Regexp
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	ec2ClientBuilder      ec2ifaceBuilder
+	failOnMissingMetadata bool
 }
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	awsConfig, err := config.LoadDefaultConfig(context.Background())
+	awsConfig.Retryer = func() aws.Retryer {
+		return retry.NewStandard(func(options *retry.StandardOptions) {
+			options.MaxAttempts = cfg.MaxAttempts
+			options.MaxBackoff = cfg.MaxBackoff
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -69,17 +77,21 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &Detector{
-		metadataProvider: ec2provider.NewProvider(awsConfig),
-		tagKeyRegexes:    tagKeyRegexes,
-		logger:           set.Logger,
-		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		ec2ClientBuilder: &ec2ClientBuilder{},
+		metadataProvider:      ec2provider.NewProvider(awsConfig),
+		tagKeyRegexes:         tagKeyRegexes,
+		logger:                set.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		ec2ClientBuilder:      &ec2ClientBuilder{},
+		failOnMissingMetadata: cfg.FailOnMissingMetadata,
 	}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
@@ -93,8 +105,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
-	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEC2)
+	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSEC2.Value.AsString())
 	d.rb.SetCloudRegion(meta.Region)
 	d.rb.SetCloudAccountID(meta.AccountID)
 	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)

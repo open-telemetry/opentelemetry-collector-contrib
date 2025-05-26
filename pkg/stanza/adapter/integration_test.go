@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -26,8 +25,6 @@ import (
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zap.NewNop()
-
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
@@ -42,7 +39,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiverID,
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(receiverID.Type()),
 	})
 	if err != nil {
 		return nil, err
@@ -56,7 +53,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		obsrecv:  obsrecv,
 	}
 
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
 
 	rcv.emitter = emitter
 	return rcv, nil

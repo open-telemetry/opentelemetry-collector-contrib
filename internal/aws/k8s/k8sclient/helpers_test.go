@@ -49,7 +49,7 @@ users:
       command: foo-command
       provideClusterInfo: true
 `
-	tmpfile, err := os.CreateTemp("", "kubeconfig")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "kubeconfig")
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(tmpfile.Name(), []byte(content), 0o600))
 	// overwrite the default kube config path

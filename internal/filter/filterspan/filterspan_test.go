@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -38,14 +38,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    &filterconfig.MatchProperties{},
-			errorString: filterconfig.ErrMissingRequiredField.Error(),
+			errorString: filterconfig.ErrMissingRequiredSpanField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
 			property: &filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: filterconfig.ErrMissingRequiredField.Error(),
+			errorString: filterconfig.ErrMissingRequiredSpanField.Error(),
 		},
 		{
 			name: "log_properties",
@@ -278,7 +278,7 @@ func TestSpan_Matching_True(t *testing.T) {
 	assert.NotNil(t, span)
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
 
 	library := pcommon.NewInstrumentationScope()
 
@@ -1274,7 +1274,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		span.SetKind(ptrace.SpanKindClient)
 
 		resource := pcommon.NewResource()
-		resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+		resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
 
 		scope := pcommon.NewInstrumentationScope()
 

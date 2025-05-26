@@ -24,18 +24,18 @@ const (
 	SizeMegaByte
 )
 
-type NopWriteCloser struct {
+type nopWriteCloser struct {
 	w io.Writer
 }
 
-func (NopWriteCloser) Close() error                    { return nil }
-func (wc *NopWriteCloser) Write(p []byte) (int, error) { return wc.w.Write(p) }
+func (nopWriteCloser) Close() error                    { return nil }
+func (wc *nopWriteCloser) Write(p []byte) (int, error) { return wc.w.Write(p) }
 
 func TestBufferedWrites(t *testing.T) {
 	t.Parallel()
 
 	b := bytes.NewBuffer(nil)
-	w := newBufferedWriteCloser(&NopWriteCloser{b})
+	w := newBufferedWriteCloser(&nopWriteCloser{b})
 
 	_, err := w.Write([]byte(msg))
 	require.NoError(t, err, "Must not error when writing data")
@@ -67,8 +67,8 @@ func BenchmarkWriter(b *testing.B) {
 			payload[i] = 'a'
 		}
 		for name, w := range map[string]io.WriteCloser{
-			"discard":          &NopWriteCloser{io.Discard},
-			"buffered-discard": newBufferedWriteCloser(&NopWriteCloser{io.Discard}),
+			"discard":          &nopWriteCloser{io.Discard},
+			"buffered-discard": newBufferedWriteCloser(&nopWriteCloser{io.Discard}),
 			"raw-file":         tempfile(b),
 			"buffered-file":    newBufferedWriteCloser(tempfile(b)),
 		} {

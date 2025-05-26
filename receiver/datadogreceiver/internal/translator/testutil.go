@@ -24,16 +24,15 @@ func createMetricsTranslator() *MetricsTranslator {
 }
 
 func requireResourceAttributes(t *testing.T, attrs, expectedAttrs pcommon.Map) {
-	expectedAttrs.Range(func(k string, _ pcommon.Value) bool {
+	for k := range expectedAttrs.All() {
 		ev, _ := expectedAttrs.Get(k)
 		av, ok := attrs.Get(k)
 		require.True(t, ok)
 		require.Equal(t, ev, av)
-		return true
-	})
+	}
 }
 
-// nolint:unparam
+//nolint:unparam
 func requireScopeMetrics(t *testing.T, result pmetric.Metrics, expectedScopeMetricsLen, expectedMetricsLen int) {
 	require.Equal(t, expectedScopeMetricsLen, result.ResourceMetrics().At(0).ScopeMetrics().Len())
 	require.Equal(t, expectedMetricsLen, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())

@@ -265,9 +265,10 @@ func getSTSRegionalEndpoint(r string) string {
 	p := getPartition(r)
 
 	var e string
-	if p == endpoints.AwsPartitionID || p == endpoints.AwsUsGovPartitionID {
+	switch p {
+	case endpoints.AwsPartitionID, endpoints.AwsUsGovPartitionID:
 		e = stsEndpointPrefix + r + stsEndpointSuffix
-	} else if p == endpoints.AwsCnPartitionID {
+	case endpoints.AwsCnPartitionID:
 		e = stsEndpointPrefix + r + stsAwsCnPartitionIDSuffix
 	}
 	return e

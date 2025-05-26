@@ -10,7 +10,7 @@ import (
 
 // Config relating to Disk Metric Scraper.
 type Config struct {
-	// MetricsbuilderConfig allows to customize scraped metrics/attributes representation.
+	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// Include specifies a filter on the devices that should be included from the generated metrics.

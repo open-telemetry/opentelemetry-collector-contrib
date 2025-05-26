@@ -5,7 +5,7 @@ package helper
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -133,7 +133,7 @@ func TestParserInvalidParseDrop(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 	}
 	parse := func(i any) (any, error) {
-		return i, fmt.Errorf("parse failure")
+		return i, errors.New("parse failure")
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
@@ -152,7 +152,7 @@ func TestParserInvalidParseDropQuiet(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 	}
 	parse := func(i any) (any, error) {
-		return i, fmt.Errorf("parse failure")
+		return i, errors.New("parse failure")
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
@@ -171,7 +171,7 @@ func TestParserInvalidParseSend(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 	}
 	parse := func(i any) (any, error) {
-		return i, fmt.Errorf("parse failure")
+		return i, errors.New("parse failure")
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
@@ -191,7 +191,7 @@ func TestParserInvalidParseSendQuiet(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 	}
 	parse := func(i any) (any, error) {
-		return i, fmt.Errorf("parse failure")
+		return i, errors.New("parse failure")
 	}
 	ctx := context.Background()
 	testEntry := entry.New()

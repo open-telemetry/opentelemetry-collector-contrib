@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 // AttributeDirection specifies the value direction attribute.
@@ -36,6 +36,44 @@ func (av AttributeDirection) String() string {
 var MapAttributeDirection = map[string]AttributeDirection{
 	"read":  AttributeDirectionRead,
 	"write": AttributeDirectionWrite,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemDiskIo: metricInfo{
+		Name: "system.disk.io",
+	},
+	SystemDiskIoTime: metricInfo{
+		Name: "system.disk.io_time",
+	},
+	SystemDiskMerged: metricInfo{
+		Name: "system.disk.merged",
+	},
+	SystemDiskOperationTime: metricInfo{
+		Name: "system.disk.operation_time",
+	},
+	SystemDiskOperations: metricInfo{
+		Name: "system.disk.operations",
+	},
+	SystemDiskPendingOperations: metricInfo{
+		Name: "system.disk.pending_operations",
+	},
+	SystemDiskWeightedIoTime: metricInfo{
+		Name: "system.disk.weighted_io_time",
+	},
+}
+
+type metricsInfo struct {
+	SystemDiskIo                metricInfo
+	SystemDiskIoTime            metricInfo
+	SystemDiskMerged            metricInfo
+	SystemDiskOperationTime     metricInfo
+	SystemDiskOperations        metricInfo
+	SystemDiskPendingOperations metricInfo
+	SystemDiskWeightedIoTime    metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemDiskIo struct {
@@ -523,7 +561,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemDiskIo.emit(ils.Metrics())

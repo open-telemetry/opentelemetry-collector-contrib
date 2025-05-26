@@ -4,9 +4,12 @@ status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    active: [antonblock]
+    seeking_new: true
+    emeritus: [djaglowski]
 
 resource_attributes:
   postgresql.database.name:
@@ -283,7 +286,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation_temporality: cumulative   
+      aggregation_temporality: cumulative
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |
@@ -317,7 +320,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation_temporality: cumulative  
+      aggregation_temporality: cumulative
   postgresql.tup_returned:
     enabled: false
     description: Number of rows returned by queries in the database.
@@ -325,7 +328,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation_temporality: cumulative  
+      aggregation_temporality: cumulative
   postgresql.tup_fetched:
     enabled: false
     description: Number of rows fetched by queries in the database.
@@ -333,7 +336,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation_temporality: cumulative  
+      aggregation_temporality: cumulative
   postgresql.tup_inserted:
     enabled: false
     description: Number of rows inserted by queries in the database.
@@ -341,7 +344,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation_temporality: cumulative  
+      aggregation_temporality: cumulative
   postgresql.tup_deleted:
     enabled: false
     description: Number of rows deleted by queries in the database.
@@ -352,7 +355,7 @@ metrics:
       aggregation_temporality: cumulative
   postgresql.blks_hit:
     enabled: false
-    description: Number of times disk blocks were found already in the buffer cache. 
+    description: Number of times disk blocks were found already in the buffer cache.
     unit: "{blks_hit}"
     sum:
       value_type: int
@@ -360,11 +363,18 @@ metrics:
       aggregation_temporality: cumulative
   postgresql.blks_read:
     enabled: false
-    description: Number of disk blocks read in this database. 
+    description: Number of disk blocks read in this database.
     unit: "{blks_read}"
     sum:
       value_type: int
       monotonic: true
-      aggregation_temporality: cumulative                             
+      aggregation_temporality: cumulative
 tests:
   config:
+  goleak:
+    ignore:
+      any: "github.com/godbus/dbus.(*Conn).inWorker"
+      top:
+        # Can be removed once the following issue is resolved:
+        # https://github.com/snowflakedb/gosnowflake/issues/1369
+        - "github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"

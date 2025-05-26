@@ -246,7 +246,7 @@ resourceMetrics:
                         stringValue: received
                     - key: type
                       value:
-                        stringValue: distingushed_names
+                        stringValue: distinguished_names
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asDouble: 1
@@ -266,7 +266,7 @@ resourceMetrics:
                         stringValue: sent
                     - key: type
                       value:
-                        stringValue: distingushed_names
+                        stringValue: distinguished_names
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asDouble: 1

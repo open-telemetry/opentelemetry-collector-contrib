@@ -14,6 +14,11 @@ import (
 
 type Config struct {
 	sqlquery.Config `mapstructure:",squash"`
+	// The maximumn number of open connections to the sql server. <= 0 means unlimited
+	MaxOpenConn int `mapstructure:"max_open_conn"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func createDefaultConfig() component.Config {

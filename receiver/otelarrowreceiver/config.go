@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
@@ -17,6 +18,9 @@ import (
 type Protocols struct {
 	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
 	Arrow ArrowConfig             `mapstructure:"arrow"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AdmissionConfig struct {
@@ -29,6 +33,9 @@ type AdmissionConfig struct {
 	// This is a dimension of memory limiting to ensure waiters are not consuming an
 	// unexpectedly large amount of memory in the arrow receiver.
 	WaitingLimitMiB uint64 `mapstructure:"waiting_limit_mib"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ArrowConfig support configuring the Arrow receiver.
@@ -46,6 +53,9 @@ type ArrowConfig struct {
 
 	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
 	Zstd zstd.DecoderConfig `mapstructure:"zstd"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for OTel Arrow receiver.
@@ -54,11 +64,14 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 	// Admission is the configuration for controlling amount of request memory entering the receiver.
 	Admission AdmissionConfig `mapstructure:"admission"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
-	_ component.Config          = (*Config)(nil)
-	_ component.ConfigValidator = (*ArrowConfig)(nil)
+	_ component.Config   = (*Config)(nil)
+	_ xconfmap.Validator = (*ArrowConfig)(nil)
 )
 
 func (cfg *ArrowConfig) Validate() error {

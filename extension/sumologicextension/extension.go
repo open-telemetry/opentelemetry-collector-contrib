@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -27,10 +28,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
-	grpccredentials "google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
@@ -102,10 +103,11 @@ func init() {
 	)
 }
 
-var errGRPCNotSupported = fmt.Errorf("gRPC is not supported by sumologicextension")
-
-// SumologicExtension implements ClientAuthenticator
-var _ auth.Client = (*SumologicExtension)(nil)
+// SumologicExtension implements extensionauth.HTTPClient
+var (
+	_ extension.Extension      = (*SumologicExtension)(nil)
+	_ extensionauth.HTTPClient = (*SumologicExtension)(nil)
+)
 
 func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, buildVersion string) (*SumologicExtension, error) {
 	if conf.Credentials.InstallationToken == "" {
@@ -578,7 +580,7 @@ func (se *SumologicExtension) heartbeatLoop() {
 		cancel()
 	}()
 
-	se.logger.Info("Heartbeat loop initialized. Starting to send hearbeat requests")
+	se.logger.Info("Heartbeat loop initialized. Starting to send heartbeat requests")
 	timer := time.NewTimer(se.conf.HeartBeatInterval)
 	for {
 		select {
@@ -843,7 +845,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			Environment: se.conf.CollectorEnvironment,
 		},
 		CollectorDetails: api.OpenMetadataCollectorDetails{
-			RunningVersion: se.buildVersion,
+			RunningVersion: cleanupBuildVersion(se.buildVersion),
 		},
 		NetworkDetails: api.OpenMetadataNetworkDetails{
 			HostIPAddress: ip,
@@ -1017,19 +1019,15 @@ func (se *SumologicExtension) RoundTripper(base http.RoundTripper) (http.RoundTr
 	}, nil
 }
 
-func (se *SumologicExtension) PerRPCCredentials() (grpccredentials.PerRPCCredentials, error) {
-	return nil, errGRPCNotSupported
-}
-
 func (se *SumologicExtension) addStickySessionCookie(req *http.Request) {
 	if !se.conf.StickySessionEnabled {
 		return
 	}
-	currectCookieValue := se.StickySessionCookie()
-	if currectCookieValue != "" {
+	currentCookieValue := se.StickySessionCookie()
+	if currentCookieValue != "" {
 		cookie := &http.Cookie{
 			Name:  stickySessionKey,
-			Value: currectCookieValue,
+			Value: currentCookieValue,
 		}
 		req.AddCookie(cookie)
 	}
@@ -1102,4 +1100,28 @@ func getHostname(logger *zap.Logger) (string, error) {
 	logger.Debug("failed to get fqdn", zap.Error(err))
 
 	return os.Hostname()
+}
+
+// cleanupBuildVersion adds a leading 'v' and removes the tailing build hash to make sure the
+// backend understand the build number. Note that only version strings with the following format will be
+// cleaned up. All other version formats will remain the same.
+// Cleaned up format: 0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113
+func cleanupBuildVersion(version string) string {
+	pattern := "^v?([0-9]+\\.[0-9]+\\.[0-9]+-sumo-[0-9]+)(-[0-9a-f]{40}){0,1}(-fips){0,1}$"
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindAllStringSubmatch(version, 1)
+	if len(matches) != 1 {
+		return version
+	}
+	subMatches := matches[0]
+	if len(subMatches) > 1 {
+		ver := subMatches[1]
+		if len(subMatches) == 4 {
+			ver += subMatches[3]
+		}
+		return "v" + ver
+	}
+
+	return version
 }

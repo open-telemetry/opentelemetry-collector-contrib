@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
@@ -39,12 +39,12 @@ func TestDetect(t *testing.T) {
 	md.On("NodeName").Return("mainNode", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())
@@ -53,8 +53,8 @@ func TestDetect(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeK8SNodeName: "mainNode",
-		conventions.AttributeK8SNodeUID:  "4b15c589-1a33-42cc-927a-b78ba9947095",
+		string(conventions.K8SNodeNameKey): "mainNode",
+		string(conventions.K8SNodeUIDKey):  "4b15c589-1a33-42cc-927a-b78ba9947095",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -66,12 +66,12 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.K8sNodeUID.Enabled = false
 	cfg.ResourceAttributes.K8sNodeName.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())

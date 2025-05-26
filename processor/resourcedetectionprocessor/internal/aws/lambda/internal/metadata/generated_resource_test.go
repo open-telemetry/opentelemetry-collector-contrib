@@ -41,47 +41,47 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("aws.log.group.names")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, []any{"aws.log.group.names-item1", "aws.log.group.names-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.group.names-item1", "aws.log.group.names-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("aws.log.stream.names")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("faas.instance")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "faas.instance-val", val.Str())
+				assert.Equal(t, "faas.instance-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("faas.max_memory")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "faas.max_memory-val", val.Str())
+				assert.Equal(t, "faas.max_memory-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("faas.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "faas.name-val", val.Str())
+				assert.Equal(t, "faas.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("faas.version")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "faas.version-val", val.Str())
+				assert.Equal(t, "faas.version-val", val.Str())
 			}
 		})
 	}

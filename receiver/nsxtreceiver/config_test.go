@@ -41,7 +41,7 @@ func TestMetricValidation(t *testing.T) {
 			expectedError: errors.New("url scheme must be http or https"),
 		},
 		{
-			desc: "unparseable url",
+			desc: "unparsable url",
 			cfg: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "\x00",

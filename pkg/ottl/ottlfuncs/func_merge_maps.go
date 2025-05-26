@@ -5,9 +5,8 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -32,7 +31,7 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	args, ok := oArgs.(*MergeMapsArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("MergeMapsFactory args must be of type *MergeMapsArguments[K]")
+		return nil, errors.New("MergeMapsFactory args must be of type *MergeMapsArguments[K]")
 	}
 
 	return mergeMaps(args.Target, args.Source, args.Strategy)
@@ -60,26 +59,23 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 		}
 		switch strategy {
 		case INSERT:
-			valueMap.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range valueMap.All() {
 				if _, ok := targetMap.Get(k); !ok {
 					tv := targetMap.PutEmpty(k)
 					v.CopyTo(tv)
 				}
-				return true
-			})
+			}
 		case UPDATE:
-			valueMap.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range valueMap.All() {
 				if tv, ok := targetMap.Get(k); ok {
 					v.CopyTo(tv)
 				}
-				return true
-			})
+			}
 		case UPSERT:
-			valueMap.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range valueMap.All() {
 				tv := targetMap.PutEmpty(k)
 				v.CopyTo(tv)
-				return true
-			})
+			}
 		default:
 			return nil, fmt.Errorf("unknown strategy, %v", strategy)
 		}

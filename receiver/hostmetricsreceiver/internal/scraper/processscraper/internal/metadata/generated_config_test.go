@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -38,6 +40,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessPagingFaults:        MetricConfig{Enabled: true},
 					ProcessSignalsPending:      MetricConfig{Enabled: true},
 					ProcessThreads:             MetricConfig{Enabled: true},
+					ProcessUptime:              MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
@@ -68,6 +71,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessPagingFaults:        MetricConfig{Enabled: false},
 					ProcessSignalsPending:      MetricConfig{Enabled: false},
 					ProcessThreads:             MetricConfig{Enabled: false},
+					ProcessUptime:              MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: false},
@@ -97,7 +101,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 

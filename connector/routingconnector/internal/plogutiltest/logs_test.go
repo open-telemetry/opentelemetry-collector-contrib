@@ -104,7 +104,7 @@ func TestNewLogs(t *testing.T) {
 		)))
 	})
 
-	t.Run("asymetrical_scopes", func(t *testing.T) {
+	t.Run("asymmetrical_scopes", func(t *testing.T) {
 		expected := func() plog.Logs {
 			ld := plog.NewLogs()
 			r := ld.ResourceLogs().AppendEmpty()

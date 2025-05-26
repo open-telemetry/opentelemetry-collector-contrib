@@ -240,12 +240,8 @@ func (lsp *logsProcessor) priorityFunc(logRec plog.LogRecord, rnd randomnessName
 	// Note: in logs, unlike traces, the sampling priority
 	// attribute is interpreted as a request to be sampled.
 	if lsp.samplingPriority != "" {
-		priorityThreshold := lsp.logRecordToPriorityThreshold(logRec)
-
-		if priorityThreshold == sampling.NeverSampleThreshold {
-			threshold = priorityThreshold
-			rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
-		} else if sampling.ThresholdLessThan(priorityThreshold, threshold) {
+		priorityThreshold, has := lsp.logRecordToPriorityThreshold(logRec)
+		if has {
 			threshold = priorityThreshold
 			rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
 		}
@@ -253,7 +249,7 @@ func (lsp *logsProcessor) priorityFunc(logRec plog.LogRecord, rnd randomnessName
 	return rnd, threshold
 }
 
-func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sampling.Threshold {
+func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) (sampling.Threshold, bool) {
 	if localPriority, ok := logRec.Attributes().Get(lsp.samplingPriority); ok {
 		// Potentially raise the sampling probability to minProb
 		minProb := 0.0
@@ -266,9 +262,9 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sa
 		if minProb != 0 {
 			if th, err := sampling.ProbabilityToThresholdWithPrecision(minProb, lsp.precision); err == nil {
 				// The record has supplied a valid alternative sampling probability
-				return th
+				return th, true
 			}
 		}
 	}
-	return sampling.NeverSampleThreshold
+	return sampling.NeverSampleThreshold, false
 }

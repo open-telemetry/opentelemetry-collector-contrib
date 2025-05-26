@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("kafka.cluster.alias")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "kafka.cluster.alias-val", val.Str())
+				assert.Equal(t, "kafka.cluster.alias-val", val.Str())
 			}
 		})
 	}

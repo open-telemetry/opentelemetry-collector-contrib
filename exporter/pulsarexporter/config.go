@@ -16,8 +16,8 @@ import (
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")

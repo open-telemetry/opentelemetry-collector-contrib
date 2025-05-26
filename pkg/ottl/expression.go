@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -19,12 +20,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
+// ExprFunc is a function in OTTL
 type ExprFunc[K any] func(ctx context.Context, tCtx K) (any, error)
 
+// Expr is a struct that represents a function
 type Expr[K any] struct {
 	exprFunc ExprFunc[K]
 }
 
+// Eval invokes the OTTL function
 func (e Expr[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.exprFunc(ctx, tCtx)
 }
@@ -48,6 +52,7 @@ type GetSetter[K any] interface {
 	Setter[K]
 }
 
+// StandardGetSetter is a standard way to construct a GetSetter
 type StandardGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 	Setter func(ctx context.Context, tCtx K, val any) error
@@ -91,13 +96,13 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 			case pcommon.Map:
 				val, ok := r.Get(*k.String)
 				if !ok {
-					return nil, fmt.Errorf("key not found in map")
+					return nil, errors.New("key not found in map")
 				}
 				result = ottlcommon.GetValue(val)
 			case map[string]any:
 				val, ok := r[*k.String]
 				if !ok {
-					return nil, fmt.Errorf("key not found in map")
+					return nil, errors.New("key not found in map")
 				}
 				result = val
 			default:
@@ -144,7 +149,7 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
 			}
 		default:
-			return nil, fmt.Errorf("neither map nor slice index were set; this is an error in OTTL")
+			return nil, errors.New("neither map nor slice index were set; this is an error in OTTL")
 		}
 	}
 	return result, nil
@@ -169,6 +174,7 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		evaluated[i] = val
 	}
 
@@ -180,22 +186,36 @@ type mapGetter[K any] struct {
 }
 
 func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
-	evaluated := map[string]any{}
+	result := pcommon.NewMap()
 	for k, v := range m.mapValues {
 		val, err := v.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		switch t := val.(type) {
+		switch typedVal := val.(type) {
 		case pcommon.Map:
-			evaluated[k] = t.AsRaw()
+			target := result.PutEmpty(k).SetEmptyMap()
+			typedVal.CopyTo(target)
+		case []any:
+			target := result.PutEmpty(k).SetEmptySlice()
+			for _, el := range typedVal {
+				switch typedEl := el.(type) {
+				case pcommon.Map:
+					m := target.AppendEmpty().SetEmptyMap()
+					typedEl.CopyTo(m)
+				default:
+					err := target.AppendEmpty().FromRaw(el)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		default:
-			evaluated[k] = t
+			err := result.PutEmpty(k).FromRaw(val)
+			if err != nil {
+				return nil, err
+			}
 		}
-	}
-	result := pcommon.NewMap()
-	if err := result.FromRaw(evaluated); err != nil {
-		return nil, err
 	}
 	return result, nil
 }
@@ -365,7 +385,7 @@ type StandardFunctionGetter[K any] struct {
 // wants to pass to the function, an error is returned.
 func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	if g.Fact == nil {
-		return Expr[K]{}, fmt.Errorf("undefined function")
+		return Expr[K]{}, errors.New("undefined function")
 	}
 	fArgs := g.Fact.CreateDefaultArguments()
 	if reflect.TypeOf(fArgs).Kind() != reflect.Pointer {
@@ -388,6 +408,26 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 		return Expr[K]{}, fmt.Errorf("couldn't create function: %w", err)
 	}
 	return Expr[K]{exprFunc: fn}, nil
+}
+
+// PMapGetSetter is a GetSetter that must interact with a pcommon.Map
+type PMapGetSetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
+	Set(ctx context.Context, tCtx K, val pcommon.Map) error
+}
+
+// StandardPMapGetSetter is a basic implementation of PMapGetSetter
+type StandardPMapGetSetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (pcommon.Map, error)
+	Setter func(ctx context.Context, tCtx K, val any) error
+}
+
+func (path StandardPMapGetSetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, error) {
+	return path.Getter(ctx, tCtx)
+}
+
+func (path StandardPMapGetSetter[K]) Set(ctx context.Context, tCtx K, val pcommon.Map) error {
+	return path.Setter(ctx, tCtx, val)
 }
 
 // PMapGetter is a Getter that must return a pcommon.Map.
@@ -441,6 +481,7 @@ type StringLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*string, error)
 }
 
+// StandardStringLikeGetter is a basic implementation of StringLikeGetter
 type StandardStringLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -492,6 +533,7 @@ type FloatLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*float64, error)
 }
 
+// StandardFloatLikeGetter is a basic implementation of FloatLikeGetter
 type StandardFloatLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -556,6 +598,7 @@ type IntLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*int64, error)
 }
 
+// StandardIntLikeGetter is a basic implementation of IntLikeGetter
 type StandardIntLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -620,6 +663,7 @@ type ByteSliceLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) ([]byte, error)
 }
 
+// StandardByteSliceLikeGetter is a basic implementation of ByteSliceLikeGetter
 type StandardByteSliceLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -695,6 +739,7 @@ type BoolLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*bool, error)
 }
 
+// StandardBoolLikeGetter is a basic implementation of BoolLikeGetter
 type StandardBoolLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -812,7 +857,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 
 	if val.MathExpression == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
-		return nil, fmt.Errorf("no value field set. This is a bug in the OpenTelemetry Transformation Language")
+		return nil, errors.New("no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
 	return p.evaluateMathExpression(val.MathExpression)
 }

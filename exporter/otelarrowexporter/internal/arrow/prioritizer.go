@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -19,7 +19,7 @@ var ErrStreamRestarting = status.Error(codes.Aborted, "stream is restarting")
 
 type PrioritizerName string
 
-var _ component.ConfigValidator = PrioritizerName("")
+var _ xconfmap.Validator = PrioritizerName("")
 
 const (
 	DefaultPrioritizer         PrioritizerName = LeastLoadedPrioritizer
@@ -72,7 +72,7 @@ func pendingRequests(sws *streamWorkState) float64 {
 	return float64(len(sws.waiters) + len(sws.toWrite))
 }
 
-// Validate implements component.ConfigValidator
+// Validate implements xconfmap.Validator
 func (p PrioritizerName) Validate() error {
 	switch p {
 	// Exact match cases

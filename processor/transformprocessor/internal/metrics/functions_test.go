@@ -39,7 +39,7 @@ func Test_DataPointFunctions(t *testing.T) {
 
 			actual := DataPointFunctions()
 
-			require.Equal(t, len(expected), len(actual))
+			require.Len(t, actual, len(expected))
 			for k := range actual {
 				assert.Contains(t, expected, k)
 			}
@@ -61,7 +61,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
 
 	actual := MetricFunctions()
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}

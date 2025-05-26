@@ -152,6 +152,9 @@ type ResourceAttributeConfig struct {
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
 	// those resources.
 	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid or scalar_oid field
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
@@ -164,7 +167,7 @@ type AttributeConfig struct {
 	// This contains a list of possible values that can be associated with this attribute
 	Enum []string `mapstructure:"enum"`
 	// OID is required only if Enum and IndexedValuePrefix are not defined.
-	// This is the column OID which will provide indexed values to be uased for this attribute (alongside a metric with ColumnOIDs)
+	// This is the column OID which will provide indexed values to be used for this attribute (alongside a metric with ColumnOIDs)
 	OID string `mapstructure:"oid"`
 	// IndexedValuePrefix is required only if Enum and OID are not defined.
 	// This is used alongside metrics with ColumnOIDs to assign attribute values using this prefix + the OID index of the metric value
@@ -190,8 +193,11 @@ type MetricConfig struct {
 
 // GaugeMetric contains info about the value of the gauge metric
 type GaugeMetric struct {
-	// ValueType is required can can be either int or double
+	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // SumMetric contains info about the value of the sum metric
@@ -200,8 +206,11 @@ type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
 	Monotonic bool `mapstructure:"monotonic"`
-	// ValueType is required can can be either int or double
+	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ScalarOID holds OID info for a scalar metric as well as any {resource} attributes
@@ -214,6 +223,9 @@ type ScalarOID struct {
 	// Attributes is optional and may contain names and values associated with enum
 	// AttributeConfigs to associate with the value of the scalar OID
 	Attributes []Attribute `mapstructure:"attributes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ColumnOID holds OID info for an indexed metric as well as any attributes

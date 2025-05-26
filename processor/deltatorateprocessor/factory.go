@@ -5,7 +5,7 @@ package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -37,7 +37,7 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	processorConfig, ok := cfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("configuration parsing error")
+		return nil, errors.New("configuration parsing error")
 	}
 
 	metricsProcessor := newDeltaToRateProcessor(processorConfig, set.Logger)

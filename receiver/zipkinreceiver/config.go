@@ -47,6 +47,9 @@ type Config struct {
 	// If enabled the zipkin receiver will attempt to parse string tags/binary annotations into int/bool/float.
 	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

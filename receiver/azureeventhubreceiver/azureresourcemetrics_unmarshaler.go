@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
@@ -74,10 +74,10 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
 	resource := resourceMetrics.Resource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, metadata.ScopeName)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, r.buildInfo.Version)
-	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), metadata.ScopeName)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.buildInfo.Version)
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
@@ -97,12 +97,11 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		}
 
 		var startTimestamp pcommon.Timestamp
-		if azureMetric.TimeGrain == "PT1M" {
-			startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
-		} else {
+		if azureMetric.TimeGrain != "PT1M" {
 			r.logger.Warn("Unhandled Time Grain", zap.String("timegrain", azureMetric.TimeGrain))
 			continue
 		}
+		startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
 		metricTotal := metrics.AppendEmpty()
 		metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Total")))

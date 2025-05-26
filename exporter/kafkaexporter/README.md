@@ -6,7 +6,8 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fkafka) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_kafka&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -17,30 +18,37 @@ Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a 
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
 
-The following settings are required:
-- `protocol_version` (no default): Kafka protocol version e.g. `2.0.0`.
+## Configuration settings
+
+There are no required settings.
 
 The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers.
+- `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
-- `client_id` (default = "sarama"): The client ID to configure the Sarama Kafka client with. The client ID will be used for all produce requests.
-- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the default kafka topic to export to. See [Destination Topic](#destination-topic) below for more details.
+- `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with. The client ID will be used for all produce requests.
+- `logs`
+  - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
+  - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+- `metrics`
+  - `topic` (default = otlp\_metrics): The name of the Kafka topic from which to consume metrics.
+  - `encoding` (default = otlp\_proto): The encoding for metrics. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+- `traces`
+  - `topic` (default = otlp\_spans): The name of the Kafka topic from which to consume traces.
+  - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+- `topic` (Deprecated in v0.124.0: use `logs::topic`, `metrics::topic`, and `traces::topic`) If specified, this is used as the default topic, but will be overridden by signal-specific configuration. See [Destination Topic](#destination-topic) below for more details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details. 
-- `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
-  - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.
-  - `otlp_json`:  payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs. 
-  - The following encodings are valid *only* for **traces**.
-    - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
-    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
-    - `zipkin_proto`: the payload is serialized to Zipkin v2 proto Span.
-    - `zipkin_json`: the payload is serialized to Zipkin v2 JSON Span.
-  - The following encodings are valid *only* for **logs**.
-    - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
+- `encoding` (Deprecated in v0.124.0: use `logs::encoding`, `metrics::encoding`, and `traces::encoding`) If specified, this is used as the default encoding, but will be overridden by signal-specific configuration. See [Supported encodings](#supported-encodings) below for more details.
+- `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored.
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
-  - `plain_text`
+  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
     - `username`: The username to use.
     - `password`: The password to use
   - `sasl`
@@ -50,17 +58,7 @@ The following settings can be optionally configured:
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-  - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
-    - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to false.
-    - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to false.
-    - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to false.
-    - `insecure` (default = false): Disable verifying the server's certificate chain and host 
-      name (`InsecureSkipVerify` in the tls config)
-    - `server_name_override`: ServerName indicates the name of the server requested by the client
-      in order to support virtual hosting.
+  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -92,9 +90,44 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
-  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
-  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks
+  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type
+  - `compression_params`
+    - `level` (default = -1) the compression level used when producing messages to kafka.
+    - The following are valid combinations of `compression` and `level`
+      - `gzip`
+        - BestSpeed: `1`
+        - BestCompression: `9`
+        - DefaultCompression: `-1`
+      - `zstd`
+        - SpeedFastest: `1`
+        - SpeedDefault: `3`
+        - SpeedBetterCompression: `6`
+        - SpeedBestCompression: `11`
+      - `lz4`
+        Only supports fast level
+      - `snappy`
+        No compression levels supported yet
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
+
+### Supported encodings
+
+The Kafka exporter supports encoding extensions, as well as the following built-in encodings.
+
+Available for all signals:
+  - `otlp_proto`: data is encoded as OTLP Protobuf
+  - `otlp_json`: data is encoded as OTLP JSON
+
+Available only for traces:
+  - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
+  - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+  - `zipkin_proto`: the payload is serialized to Zipkin v2 proto Span.
+  - `zipkin_json`: the payload is serialized to Zipkin v2 JSON Span.
+
+Available only for logs:
+  - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
+
+### Example configuration
 
 Example configuration:
 
@@ -103,11 +136,13 @@ exporters:
   kafka:
     brokers:
       - localhost:9092
-    protocol_version: 2.0.0
 ```
 
 ## Destination Topic
+
 The destination topic can be defined in a few different ways and takes priority in the following order:
-1. When `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
-2. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
-3. Finally, the `topic` configuration is used as a default/fallback destination. 
+
+1. When `<signal>.topic_from_metadata_key` is set to use a key from the request metadata, the value of this key is used as the signal specific topic.
+2. Otherwise, if `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
+3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
+4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic. If this is not explicitly configured, the `topic` configuration (deprecated in v0.124.0) is used as a fallback for all signals.

@@ -7,6 +7,7 @@
 |               | [beta]: traces, metrics, logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresourcedetection) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresourcedetection) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_resourcedetection)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_resourcedetection&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -18,6 +19,17 @@
 The resource detection processor can be used to detect resource information from the host,
 in a format that conforms to the [OpenTelemetry resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource), and append or
 override the resource value in telemetry data with this information.
+
+> **Note**
+>
+> If a configured resource detector fails in some way, the error it returns to the processor will be logged, and the collector will continue to run. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
+>
+> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently disabled by default (alpha stage).
+>
+>  Example of how to enable it:
+> ```shell-session
+> $ otelcol --config=config.yaml --feature-gates=processor.resourcedetection.propagateerrors
+> ```
 
 ## Supported detectors
 
@@ -248,6 +260,31 @@ If you are using a proxy server on your EC2 instance, it's important that you ex
 
 If the instance is part of AWS ParallelCluster and the detector is failing to connect to the metadata server, check the iptable and make sure the chain `PARALLELCLUSTER_IMDS` contains a rule that allows OTEL user to access `169.254.169.254/32`
 
+In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
+
+By default, the client retries 3 times with a max backoff delay of 20s.
+
+We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      max_attempts: 10
+      max_backoff: 5m
+```
+
+The EC2 detector will report an error in logs if the EC2 metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      fail_on_missing_metadata: true
+```
+
 ### Amazon ECS
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
@@ -434,6 +471,7 @@ The list of the populated resource attributes can be found at [kubeadm Detector 
 
 The following permissions are required:
 ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: otel-collector
@@ -442,6 +480,10 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["kubeadm-config"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -557,10 +599,37 @@ processors:
 
 See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
+### Dynatrace
+
+Loads resource information from the `dt_host_metadata.properties` file which is located in
+the `/var/lib/dynatrace/enrichment` (on *nix systems) or `%ProgramData%\dynatrace\enrichment` (on Windows) directories.
+If present in the file, the following attributes will be added:
+
+- `dt.entity.host`
+- `host.name`
+
+The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/dynatrace:
+    override: false
+    detectors: [dynatrace]
+```
+
+It is strongly recommended to use the `override: false` configuration option, to prevent the detector from overwriting
+existing resource attributes.
+If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name` are already present on incoming data as it is sent from
+other sources to the collector, then these describe the monitored entity in the best way.
+Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
+or the collector's host instead, which might be inaccurate.
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

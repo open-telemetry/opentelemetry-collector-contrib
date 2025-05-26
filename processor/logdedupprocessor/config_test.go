@@ -85,6 +85,36 @@ func TestValidateConfig(t *testing.T) {
 			expectedErr: errors.New("duplicate exclude_field"),
 		},
 		{
+			desc: "invalid include_fields using entire body",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				IncludeFields:     []string{bodyField},
+			},
+			expectedErr: errors.New("cannot include the entire body"),
+		},
+		{
+			desc: "invalid include_fields not starting with body or attributes",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				IncludeFields:     []string{"not.valid"},
+			},
+			expectedErr: errors.New("an include_fields must start with body or attributes"),
+		},
+		{
+			desc: "empty include_fields is the default behavior",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				IncludeFields:     []string{},
+			},
+			expectedErr: nil,
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
@@ -94,6 +124,29 @@ func TestValidateConfig(t *testing.T) {
 				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},
 			expectedErr: nil,
+		},
+		{
+			desc: "valid config include_fields",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				IncludeFields:     []string{"body.thing", "attributes.otherthing"},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "invalid config defines both exclude_fields and include_fields",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
+				IncludeFields:     []string{"body.thing", "attributes.otherthing"},
+			},
+			expectedErr: errors.New("cannot define both exclude_fields and include_fields"),
 		},
 	}
 

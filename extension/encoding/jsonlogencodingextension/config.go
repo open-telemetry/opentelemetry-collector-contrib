@@ -15,6 +15,8 @@ const (
 type Config struct {
 	// Export raw log string instead of log wrapper
 	Mode JSONEncodingMode `mapstructure:"mode,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

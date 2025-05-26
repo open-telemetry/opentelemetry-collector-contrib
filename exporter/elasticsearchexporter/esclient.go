@@ -5,14 +5,18 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/elastic/go-elasticsearch/v7"
+	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -24,6 +28,7 @@ type clientLogger struct {
 	*zap.Logger
 	logRequestBody  bool
 	logResponseBody bool
+	componentHost   component.Host
 }
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
@@ -60,6 +65,15 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.String("status", resp.Status),
 		)
 		zl.Debug("Request roundtrip completed.", fields...)
+		if resp.StatusCode == http.StatusOK {
+			// Success
+			componentstatus.ReportStatus(
+				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
+		} else if httpRecoverableErrorStatus(resp.StatusCode) {
+			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
+			componentstatus.ReportStatus(
+				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+		}
 
 	case clientErr != nil:
 		fields = append(
@@ -67,6 +81,9 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.NamedError("reason", clientErr),
 		)
 		zl.Debug("Request failed.", fields...)
+		err := fmt.Errorf("Elasticsearch request failed: %w", clientErr)
+		componentstatus.ReportStatus(
+			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
 	}
 
 	return nil
@@ -82,15 +99,15 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-// newElasticsearchClient returns a new elasticsearch.Client
+// newElasticsearchClient returns a new esapi.Transport.
 func newElasticsearchClient(
 	ctx context.Context,
 	config *Config,
 	host component.Host,
 	telemetry component.TelemetrySettings,
 	userAgent string,
-) (*elasticsearch.Client, error) {
-	httpClient, err := config.ClientConfig.ToClient(ctx, host, telemetry)
+) (esapi.Transport, error) {
+	httpClient, err := config.ToClient(ctx, host, telemetry)
 	if err != nil {
 		return nil, err
 	}
@@ -105,18 +122,14 @@ func newElasticsearchClient(
 		return nil, err
 	}
 
-	esLogger := clientLogger{
+	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
 		logResponseBody: config.LogResponseBody,
+		componentHost:   host,
 	}
 
-	maxRetries := defaultMaxRetries
-	if config.Retry.MaxRetries != 0 {
-		maxRetries = config.Retry.MaxRetries
-	}
-
-	return elasticsearch.NewClient(elasticsearch.Config{
+	return elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
 		// configure connection setup
@@ -127,11 +140,12 @@ func newElasticsearchClient(
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus:        config.Retry.RetryOnStatus,
-		DisableRetry:         !config.Retry.Enabled,
-		EnableRetryOnTimeout: config.Retry.Enabled,
-		// RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
-		MaxRetries:   maxRetries,
+		RetryOnStatus: config.Retry.RetryOnStatus,
+		DisableRetry:  !config.Retry.Enabled,
+		RetryOnError: func(_ *http.Request, err error) bool {
+			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
+		},
+		MaxRetries:   min(defaultMaxRetries, config.Retry.MaxRetries),
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
@@ -141,7 +155,11 @@ func newElasticsearchClient(
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            &esLogger,
+		Instrumentation: elasticsearchv8.NewOpenTelemetryInstrumentation(
+			telemetry.TracerProvider,
+			false, /* captureSearchBody */
+		),
+		Logger: esLogger,
 	})
 }
 
@@ -166,4 +184,12 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 
 		return expBackoff.NextBackOff()
 	}
+}
+
+func httpRecoverableErrorStatus(statusCode int) bool {
+	// Elasticsearch uses 409 conflict to report duplicates, which aren't really
+	// an error state, so those return false (but if we were already in an error
+	// state, we will still wait until we get an actual 200 OK before changing
+	// our state back).
+	return statusCode >= 300 && statusCode != http.StatusConflict
 }

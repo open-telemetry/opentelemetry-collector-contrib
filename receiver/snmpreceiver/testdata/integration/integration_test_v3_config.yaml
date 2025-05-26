@@ -37,7 +37,7 @@ receivers:
             attributes:
               - name: snmp.test.attribute.two.enum
                 value: out
-      snmp.test.column.out.get.reponses:
+      snmp.test.column.out.get.responses:
         description: SNMP get responses
         unit: "By"
         sum:

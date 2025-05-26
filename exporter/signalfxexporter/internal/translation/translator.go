@@ -554,9 +554,10 @@ func (mp *MetricTranslator) Shutdown() {
 func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
 	var operand1Pts, operand2Pts []*sfxpb.DataPoint
 	for _, dp := range processedDataPoints {
-		if dp.Metric == tr.Operand1Metric {
+		switch dp.Metric {
+		case tr.Operand1Metric:
 			operand1Pts = append(operand1Pts, dp)
-		} else if dp.Metric == tr.Operand2Metric {
+		case tr.Operand2Metric:
 			operand2Pts = append(operand2Pts, dp)
 		}
 	}

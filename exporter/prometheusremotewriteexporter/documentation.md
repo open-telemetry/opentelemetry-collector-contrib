@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_prometheusremotewrite_consumers
+
+Number of configured workers to use to fan out the outgoing requests
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {consumer} | Sum | Int | false |
+
 ### otelcol_exporter_prometheusremotewrite_failed_translations
 
 Number of translation operations that failed to translate metrics from Otel to Prometheus
@@ -14,9 +22,33 @@ Number of translation operations that failed to translate metrics from Otel to P
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_exporter_prometheusremotewrite_sent_batches
+
+Number of remote write request batches sent to the remote write endpoint regardless of success or failure
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {batch} | Sum | Int | true |
+
 ### otelcol_exporter_prometheusremotewrite_translated_time_series
 
 Number of Prometheus time series that were translated from OTel metrics
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_writes
+
+Number of WAL writes
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_writes_failures
+
+Number of WAL writes that failed
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

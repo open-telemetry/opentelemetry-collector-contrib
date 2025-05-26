@@ -633,7 +633,7 @@ func attributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, err
 //	@return map
 func otlpKeyValueListToMap(kvList pcommon.Map) map[string]any {
 	m := make(map[string]any, kvList.Len())
-	kvList.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range kvList.All() {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
 			m[k] = v.Str()
@@ -652,8 +652,7 @@ func otlpKeyValueListToMap(kvList pcommon.Map) map[string]any {
 		default:
 			m[k] = fmt.Sprintf("<invalid map value> %v", v)
 		}
-		return true
-	})
+	}
 	return m
 }
 

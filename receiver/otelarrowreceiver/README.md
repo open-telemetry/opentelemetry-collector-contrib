@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fotelarrow%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fotelarrow) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fotelarrow%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fotelarrow) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_otelarrow)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_otelarrow&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jmacd](https://www.github.com/jmacd), [@moh-osman3](https://www.github.com/moh-osman3) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -148,7 +149,7 @@ than the receiver's `max_connection_age_grace` setting, which causes
 the exporter to cleanly shut down streams, allowing requests to
 complete before the http/2 connection is forcibly closed.  While the
 exporter will retry data that was in-flight during an unexpected
-stream shutdown, instrumentation about the telemety pipeline will show
+stream shutdown, instrumentation about the telemetry pipeline will show
 RPC errors when the exporter's `max_stream_lifetime` is not configured
 correctly.
 
@@ -171,7 +172,7 @@ exporters:
 
 ### Receiver metrics
 
-In addition to the the standard
+In addition to the standard
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)
 metrics, this component provides network-level measurement instruments 
 measuring bytes transported.  At the `normal` level of metrics detail:

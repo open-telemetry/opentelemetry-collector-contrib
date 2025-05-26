@@ -4,6 +4,10 @@ status:
   class: exporter
   stability:
     deprecated: [traces]
+  deprecation:
+    traces:
+      migration: "use OTLP exporter"
+      date: "2024-12-19"
   distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]

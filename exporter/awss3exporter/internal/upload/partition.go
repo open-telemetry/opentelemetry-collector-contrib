@@ -4,11 +4,11 @@
 package upload // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
 
 import (
-	"fmt"
 	"math/rand/v2"
 	"strconv"
 	"time"
 
+	"github.com/itchyny/timefmt-go"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
@@ -20,10 +20,10 @@ type PartitionKeyBuilder struct {
 	// PartitionPrefix defines the S3 directory (key)
 	// prefix used to write the file
 	PartitionPrefix string
-	// PartitionTruncation is used to truncate values into
+	// PartitionFormat is used to separate values into
 	// different time buckets.
-	// Currently hourly or minutely is supported
-	PartitionTruncation string
+	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
+	PartitionFormat string
 	// FilePrefix is used to define the prefix of the file written
 	// to the directory in S3.
 	FilePrefix string
@@ -34,9 +34,9 @@ type PartitionKeyBuilder struct {
 	// Expected to be one of "metrics", "traces", or "logs"
 	Metadata string
 	// Compression defines algorithm used on the
-	// body before uploaded.
+	// body before upload.
 	Compression configcompression.Type
-	// UniqueKeyFunc allows for overwritting the default behavior of
+	// UniqueKeyFunc allows for overwriting the default behavior of
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
 	//
@@ -44,21 +44,21 @@ type PartitionKeyBuilder struct {
 	UniqueKeyFunc func() string
 }
 
-func (pki *PartitionKeyBuilder) Build(ts time.Time) string {
-	return pki.bucketKeyPrefix(ts) + "/" + pki.fileName()
+func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {
+	return pki.bucketKeyPrefix(ts, overridePrefix) + "/" + pki.fileName()
 }
 
-func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time) string {
-	key := fmt.Sprintf("year=%d/month=%02d/day=%02d/hour=%02d", ts.Year(), ts.Month(), ts.Day(), ts.Hour())
-
-	switch pki.PartitionTruncation {
-	case "minute":
-		key += "/" + fmt.Sprintf("minute=%02d", ts.Minute())
-	default:
-		// Nothing to do, key defaults to hourly
+func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix string) string {
+	// Don't want to overwrite the actual value
+	prefix := pki.PartitionPrefix
+	// Only override when it's not empty string
+	if overridePrefix != "" {
+		prefix = overridePrefix
 	}
-
-	return pki.PartitionPrefix + "/" + key
+	if prefix != "" {
+		prefix += "/"
+	}
+	return prefix + timefmt.Format(ts, pki.PartitionFormat)
 }
 
 func (pki *PartitionKeyBuilder) fileName() string {

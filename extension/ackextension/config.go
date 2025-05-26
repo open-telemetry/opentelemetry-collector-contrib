@@ -15,4 +15,6 @@ type Config struct {
 	MaxNumPartition uint64 `mapstructure:"max_number_of_partition"`
 	// MaxNumPendingAcksPerPartition Specifies the maximum number of ackIDs and their corresponding status information that are waiting to be queried in each partition.
 	MaxNumPendingAcksPerPartition uint64 `mapstructure:"max_number_of_pending_acks_per_partition"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
