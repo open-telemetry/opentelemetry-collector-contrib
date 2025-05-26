@@ -1080,7 +1080,7 @@ func (s *Supervisor) loadLastRecvdRemoteConfig() {
 			s.telemetrySettings.Logger.Error("error while reading last received config", zap.Error(err))
 		}
 	} else {
-		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from fil")
+		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from file")
 	}
 }
 
