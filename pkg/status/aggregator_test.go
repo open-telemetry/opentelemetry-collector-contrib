@@ -256,9 +256,8 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 func TestAggregateStatusExtensions(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 
-	extsID := pipeline.MustNewID("extensions")
-	extInstanceID1 := componentstatus.NewInstanceID(component.MustNewID("ext1"), component.KindExtension).WithPipelines(extsID)
-	extInstanceID2 := componentstatus.NewInstanceID(component.MustNewID("ext2"), component.KindExtension).WithPipelines(extsID)
+	extInstanceID1 := componentstatus.NewInstanceID(component.MustNewID("ext1"), component.KindExtension)
+	extInstanceID2 := componentstatus.NewInstanceID(component.MustNewID("ext2"), component.KindExtension)
 	extInstanceIDs := []*componentstatus.InstanceID{extInstanceID1, extInstanceID2}
 
 	testhelpers.SeedAggregator(agg, extInstanceIDs, componentstatus.StatusOK)
