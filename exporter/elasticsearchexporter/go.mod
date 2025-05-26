@@ -33,7 +33,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.126.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/extension v1.32.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/extension/extensionauth v1.32.1-0.20250526141150-249e5d55ad2f
-	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526061459-59a11661eae8
+	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/pdata/pprofile v0.126.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/ebpf-profiler v0.0.0-20250212075250-7bf12d3f962f
 	go.opentelemetry.io/otel v1.35.0

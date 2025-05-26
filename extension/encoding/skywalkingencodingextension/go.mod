@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.126.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/extension v1.32.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/extension/extensiontest v0.126.1-0.20250526141150-249e5d55ad2f
-	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526061459-59a11661eae8
+	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526141150-249e5d55ad2f
 	google.golang.org/protobuf v1.36.6
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
