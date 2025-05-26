@@ -169,7 +169,7 @@ func TestProducerPanic(t *testing.T) {
 	// Create a mock consumer
 	mockConsumer := consumertest.NewNop()
 
-	// Wrap a panicProducer (instead of ProtoProducer) in the OtelLogsProducerWrapper
+	// Wrap a panicProducer (instead of ProtoProducer) in the otelLogsProducerWrapper
 	wrapper := newOtelLogsProducer(&panicProducer{}, mockConsumer, logger, false)
 
 	// Call Produce which should recover from panic
