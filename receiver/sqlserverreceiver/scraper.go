@@ -1027,9 +1027,11 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitTypeVal := s.retrieveValue(row, waitType, &errs, vanillaRetriever).(string)
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 
-		spanContext := trace.SpanContextFromContext(propagator.Extract(context.Background(), propagation.MapCarrier{
+		contextFromQuery := propagator.Extract(context.Background(), propagation.MapCarrier{
 			"traceparent": row[contextInfo],
-		}))
+		})
+
+		spanContext := trace.SpanContextFromContext(contextFromQuery)
 		contextInfoVal := ""
 
 		if spanContext.IsValid() {
@@ -1051,6 +1053,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		}
 
 		s.lb.RecordDbServerQuerySampleEvent(
+			contextFromQuery,
 			timestamp, clientAddressVal, clientPortVal,
 			dbNamespaceVal, queryTextVal, dbSystemNameVal,
 			networkPeerAddressVal, networkPeerPortVal,
