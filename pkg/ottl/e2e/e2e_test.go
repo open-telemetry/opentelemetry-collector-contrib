@@ -1212,11 +1212,11 @@ func Test_e2e_converters(t *testing.T) {
 	ParseSeverity(severity_number, 
 		{
 			"error":[
-				"err",
-                { "min": 3, "max": 4 }
+				{"equals": ["err"]},
+                {"range": { "min": 3, "max": 4 }}
 			],
 			"info":[
-                { "min": 1, "max": 2 }
+                {"range": { "min": 1, "max": 2 }}
 			],
 		}
 	))`,

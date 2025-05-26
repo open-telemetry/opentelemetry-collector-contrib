@@ -114,7 +114,7 @@ func evaluateSeverityNumberMapping(value int64, criteria []any) (bool, error) {
 		// if we have a numeric severity number, we need to match with number ranges
 		rangeMap, ok := rangeMapObj.(map[string]any)
 		if !ok {
-			rangeMap, ok = parseValueRangePlaceholder(crit)
+			rangeMap, ok = parseValueRangePlaceholder(rangeMapObj)
 			if !ok {
 				continue
 			}
@@ -182,14 +182,16 @@ func evaluateSeverityStringMapping(value string, criteria []any) bool {
 		if !ok {
 			return false
 		}
-		// if we have a severity string, we need to match with string mappings
-		equalsStrings, ok := criteriaEquals.([]string)
+
+		equalsObjs, ok := criteriaEquals.([]any)
 		if !ok {
 			return false
 		}
-		for _, equals := range equalsStrings {
-			if value == equals {
-				return true
+		for _, equals := range equalsObjs {
+			if equalsStr, ok := equals.(string); ok {
+				if equalsStr == value {
+					return true
+				}
 			}
 		}
 	}
