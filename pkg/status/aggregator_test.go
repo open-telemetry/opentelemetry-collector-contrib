@@ -20,7 +20,7 @@ import (
 
 func TestAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	t.Run("zero value", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
@@ -69,7 +69,7 @@ func TestAggregateStatus(t *testing.T) {
 
 func TestAggregateStatusVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	tracesKey := toPipelineKey(traces.PipelineID)
 
 	t.Run("zero value", func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestAggregateStatusVerbose(t *testing.T) {
 
 func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityRecoverable)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), componentstatus.StatusOK)
 
@@ -174,7 +174,7 @@ func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 
 func TestPipelineAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	t.Run("non existent pipeline", func(t *testing.T) {
 		st, ok := agg.AggregateStatus("doesnotexist", status.Concise)
@@ -210,7 +210,7 @@ func TestPipelineAggregateStatus(t *testing.T) {
 
 func TestPipelineAggregateStatusVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	t.Run("non existent pipeline", func(t *testing.T) {
 		st, ok := agg.AggregateStatus("doesnotexist", status.Verbose)
@@ -303,8 +303,8 @@ func TestStreaming(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	defer agg.Close()
 
-	traces := testhelpers.NewPipelineMetadata("traces")
-	metrics := testhelpers.NewPipelineMetadata("metrics")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
 	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
 	defer traceUnsub()
@@ -364,7 +364,7 @@ func TestStreamingVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	defer agg.Close()
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	tracesKey := toPipelineKey(traces.PipelineID)
 
 	allEvents, unsub := agg.Subscribe(status.ScopeAll, status.Verbose)
@@ -424,7 +424,7 @@ func TestUnsubscribe(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	defer agg.Close()
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
 	allEvents, allUnsub := agg.Subscribe(status.ScopeAll, status.Concise)
