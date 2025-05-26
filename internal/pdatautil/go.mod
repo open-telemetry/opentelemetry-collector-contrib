@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.126.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.126.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.32.1-0.20250523042642-a867641d12bd
+	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526141150-249e5d55ad2f
 )
 
 require (
