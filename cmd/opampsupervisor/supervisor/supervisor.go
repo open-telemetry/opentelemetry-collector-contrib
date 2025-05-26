@@ -1085,12 +1085,12 @@ func (s *Supervisor) loadLastRecvdRemoteConfig() {
 }
 
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	var lastRecvOwnTelemetryConfig []byte
 	var err error
 
 	if s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs {
 		// Try to load the last received own metrics config if it exists.
-		lastRecvOwnTelemetryConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnTelemetryConfigFile))
+		var lastRecvOwnTelemetryConfig []byte
+		lastRecvOwnTelemetryConfig, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnTelemetryConfigFile))
 		if err == nil {
 			set := &protobufs.ConnectionSettingsOffers{}
 			err = proto.Unmarshal(lastRecvOwnTelemetryConfig, set)
