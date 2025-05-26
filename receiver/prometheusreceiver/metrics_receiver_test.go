@@ -1758,9 +1758,10 @@ scrape_configs:
         `, strings.TrimPrefix(svr.URL, "http://")), promslog.NewNopLogger())
 	require.NoError(t, err)
 	set := receivertest.NewNopSettings(metadata.Type)
-	receiver := newPrometheusReceiver(set, &Config{
+	receiver, err := newPrometheusReceiver(set, &Config{
 		PrometheusConfig: (*PromConfig)(cfg),
 	}, new(consumertest.MetricsSink))
+	require.NoError(t, err)
 
 	ctx := context.Background()
 

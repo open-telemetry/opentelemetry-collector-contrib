@@ -31,7 +31,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
     * Rename `sqlserver.username` to `user.name` in query sample event
   
 - `receiver/prometheus`: Upgrade `receiver.prometheusreceiver.RemoveLegacyResourceAttributes` feature gate to `beta` stability (enabled by default) (#32814)
-  Disable the `receiver.promtheusreceiver.RemoveLegacyResourceAttributes` feature gate to restore previous behavior. This feature gate will be removed in a future release.
+  Disable the `receiver.prometheusreceiver.RemoveLegacyResourceAttributes` feature gate to restore previous behavior. This feature gate will be removed in a future release.
   The feature gate is used to replace the following legacy resource attributes:
   `net.host.name` -> `server.address`
   `net.host.port` -> `server.port`
