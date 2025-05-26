@@ -15,7 +15,7 @@ issues: [40227]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: the mapping_table, location_table, function_table, attribute_table, attribute_units, link_table, string_stable have been moved to a root dictionary attribute and are not part of profile anymore.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
