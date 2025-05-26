@@ -1,0 +1,87 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Spans with resource attribute including resource.foo as a int gauge metric
+            name: with_resource_foo_only
+            gauge:
+              dataPoints:
+                - asDouble: 0.500000423
+                  timeUnixNano: "1000000"
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Adjusted count for the span as a int gauge metric
+            name: span_adjusted_count
+            gauge:
+              dataPoints:
+                - asInt: 2
+                  timeUnixNano: "1000000"
+            unit: s
+          - description: Span duration for HTTP spans as a int gauge metric
+            name: http.trace.span.duration
+            gauge:
+              dataPoints:
+                - asInt: 11
+                  attributes:
+                    - key: http.response.status_code
+                      value:
+                        intValue: "201"
+                  timeUnixNano: "1000000"
+            unit: s
+          - description: Span duration for DB spans as a int gauge metric
+            name: db.trace.span.duration
+            gauge:
+              dataPoints:
+                - asDouble: 0.500000423
+                  attributes:
+                    - key: db.system
+                      value:
+                        stringValue: mysql
+                  timeUnixNano: "1000000"
+            unit: s
+          - description: Span duration for messaging spans as a double gauge metric
+            name: msg.trace.span.duration
+            gauge:
+              dataPoints:
+                - asInt: 17
+                  attributes:
+                    - key: messaging.system
+                      value:
+                        stringValue: kafka
+                  timeUnixNano: "1000000"
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
