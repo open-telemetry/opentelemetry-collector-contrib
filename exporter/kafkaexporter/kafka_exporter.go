@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"maps"
+	"sort"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/client"
@@ -27,15 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
-
-type kafkaErrors struct {
-	count int
-	err   string
-}
-
-func (ke kafkaErrors) Error() string {
-	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
-}
 
 type kafkaMessager[T any] interface {
 	// partitionData returns an iterator that yields key-value pairs
@@ -341,6 +334,16 @@ func metadataToHeaders(ctx context.Context, keys []string) []sarama.RecordHeader
 	return headers
 }
 
+type producerError struct {
+	count int
+	err   string
+}
+
+func (ke producerError) Error() string {
+	return fmt.Sprintf("failed to deliver %d messages: %s", ke.count, ke.err)
+}
+
+// wrapKafkaProducerError transforms Kafka producer errors into a more readable format
 func wrapKafkaProducerError(err error) error {
 	var prodErr sarama.ProducerErrors
 	if !errors.As(err, &prodErr) || len(prodErr) == 0 {
@@ -359,5 +362,34 @@ func wrapKafkaProducerError(err error) error {
 		return consumererror.NewPermanent(confErr)
 	}
 
-	return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+	// Count unique errors
+	errorCounts := make(map[string]int)
+	for _, producerErr := range prodErr {
+		var msg string
+		if producerErr.Msg != nil {
+			msg = producerErr.Error()
+		} else if producerErr.Err != nil {
+			msg = producerErr.Err.Error()
+		}
+		errorCounts[msg]++
+	}
+
+	// Collect keys and sort them for deterministic order
+	ks := make([]string, 0, len(errorCounts))
+	for k := range maps.Keys(errorCounts) {
+		ks = append(ks, k)
+	}
+	// Sort keys in-place
+	if len(ks) > 1 {
+		sort.Strings(ks)
+	}
+
+	// Create producerErrors slice in sorted order
+	result := make([]error, 0, len(ks))
+	for _, err := range ks {
+		count := errorCounts[err]
+		result = append(result, producerError{count, err})
+	}
+
+	return errors.Join(result...)
 }
