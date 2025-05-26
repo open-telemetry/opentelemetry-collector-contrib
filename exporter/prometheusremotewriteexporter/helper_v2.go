@@ -23,8 +23,7 @@ func batchTimeSeriesV2(tsMap map[string]*writev2.TimeSeries, symbolsTable writev
 	tsArray := make([]writev2.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)))
 	// TODO take into account size of symbols table
 	sizeOfCurrentBatch := 0
-	i := 0
-	for _, v := range tsMap {
+	for i, v := range tsMap {
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
