@@ -853,19 +853,6 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	return results
 }
 
-type internalAttribute struct {
-	key            string
-	columnName     string
-	valueRetriever func(row sqlquery.StringMap, columnName string) (any, error)
-	valueSetter    func(attributes pcommon.Map, key string, value any)
-}
-
-func defaultValueRetriever(defaultValue any) func(row sqlquery.StringMap, columnName string) (any, error) {
-	return func(_ sqlquery.StringMap, _ string) (any, error) {
-		return defaultValue, nil
-	}
-}
-
 func vanillaRetriever(row sqlquery.StringMap, columnName string) (any, error) {
 	return row[columnName], nil
 }
@@ -912,18 +899,6 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 	return result, err
 }
 
-func setString(attributes pcommon.Map, key string, value any) {
-	attributes.PutStr(key, value.(string))
-}
-
-func setInt(attributes pcommon.Map, key string, value any) {
-	attributes.PutInt(key, value.(int64))
-}
-
-func setDouble(attributes pcommon.Map, key string, value any) {
-	attributes.PutDouble(key, value.(float64))
-}
-
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
 	const eventName = "db.server.query_sample"
 	const blockingSessionID = "blocking_session_id"
@@ -933,7 +908,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const contextInfo = "context_info"
 	const cpuTimeMillisecond = "cpu_time"
 	const dbName = "db_name"
-	const dbPrefix = "sqlserver."
 	const deadlockPriority = "deadlock_priority"
 	const estimatedCompletionTimeMillisecond = "estimated_completion_time"
 	const hostName = "host_name"
@@ -1045,7 +1019,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		// this value may not be accurate if
 		// - there is proxy in the middle of sql client and sql server. Or
 		// - host_name value is empty or not accurate.
-		clientAddressVal := ""
+		var clientAddressVal string
 		if row[hostName] != "" {
 			clientAddressVal = row[hostName]
 		} else {
