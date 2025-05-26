@@ -114,16 +114,17 @@ func TestLoadConfig(t *testing.T) {
 
 			// For the protocols_config test, check that protocols.http is configured correctly
 			if tt.id.Name() == "protocols_config" {
-				require.NotNil(t, actualCfg.Protocols.HTTP)
-				assert.Equal(t, "localhost:9411", actualCfg.Protocols.HTTP.ServerConfig.Endpoint)
+				require.NotNil(t, actualCfg.HTTP)
+				assert.Equal(t, "localhost:9411", actualCfg.HTTP.ServerConfig.Endpoint)
 			}
 			// For the protocols_config test, check that protocols.http is configured correctly
 			if tt.id.Name() == "protocols_with_legacy" {
 				// Check that endpoint is set in protocols.http
-				require.NotNil(t, actualCfg.Protocols.HTTP)
-				assert.Equal(t, "localhost:9412", actualCfg.Protocols.HTTP.ServerConfig.Endpoint)
+				require.NotNil(t, actualCfg.HTTP)
+				assert.Equal(t, "localhost:9412", actualCfg.HTTP.ServerConfig.Endpoint)
 				// Check that legacy endpoint is cleared
-				assert.Equal(t, "", actualCfg.ServerConfig.Endpoint)
+				// assert.Equal(t, "", actualCfg.Endpoint)
+				assert.Empty(t, actualCfg.Endpoint, "Legacy endpoint should be cleared when protocols.http is set")
 			}
 		})
 	}

@@ -97,21 +97,21 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 
 	// Always prioritize Protocols.HTTP over root ServerConfig
 	// If Protocols.HTTP is not set, copy the root ServerConfig to it
-	if zr.config.Protocols.HTTP == nil && zr.config.Endpoint != "" {
-		zr.config.Protocols.HTTP = &HTTPConfig{
+	if zr.config.HTTP == nil && zr.config.Endpoint != "" {
+		zr.config.HTTP = &HTTPConfig{
 			ServerConfig: zr.config.ServerConfig,
 		}
 	}
 
 	// Start HTTP server if HTTP protocol is enabled
-	if zr.config.Protocols.HTTP != nil {
+	if zr.config.HTTP != nil {
 		if err := zr.startHTTPServer(ctx, host); err != nil {
 			return err
 		}
 	}
 
 	// Future protocols can be added here, for example:
-	// if zr.config.Protocols.UDP != nil {
+	// if zr.config.UDP != nil {
 	//     if err := zr.startUDPServer(ctx, host); err != nil {
 	//         return err
 	//     }
@@ -123,7 +123,7 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 // startHTTPServer initializes and starts the HTTP server for receiving Zipkin spans
 func (zr *zipkinReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
 	var err error
-	httpConfig := zr.config.Protocols.HTTP.ServerConfig
+	httpConfig := zr.config.HTTP.ServerConfig
 
 	zr.server, err = httpConfig.ToServer(ctx, host, zr.settings.TelemetrySettings, zr)
 	if err != nil {

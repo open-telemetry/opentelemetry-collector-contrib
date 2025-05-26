@@ -34,6 +34,9 @@ type Protocols struct {
 	HTTP *HTTPConfig `mapstructure:"http"`
 	// Future protocols can be added here
 	// UDP *UDPConfig `mapstructure:"udp"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for Zipkin receiver.
@@ -63,7 +66,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Check if protocols configuration is used
-	if cfg.Protocols.HTTP == nil {
+	if cfg.HTTP == nil {
 		// Currently, only HTTP protocol is supported
 		// When more protocols are added, this validation can be updated
 		// to check if at least one protocol is configured
