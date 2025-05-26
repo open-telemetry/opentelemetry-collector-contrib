@@ -46,7 +46,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/devigned/tab v0.1.1 // indirect
-	github.com/ebitengine/purego v0.8.4-0.20250520125605-a52bc8357ac9 // indirect
+	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/expr-lang/expr v1.17.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
