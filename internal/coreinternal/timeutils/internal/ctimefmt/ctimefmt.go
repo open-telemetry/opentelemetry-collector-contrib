@@ -163,3 +163,14 @@ func Validate(format string) error {
 	}
 	return nil
 }
+
+func GetNativeSubstitutes(format string) map[string]string {
+	nativeDirectives := map[string]string{}
+	directives := ctimeRegexp.FindAllString(format, -1)
+	for _, directive := range directives {
+		if val, ok := ctimeSubstitutes[directive]; ok {
+			nativeDirectives[val] = directive
+		}
+	}
+	return nativeDirectives
+}

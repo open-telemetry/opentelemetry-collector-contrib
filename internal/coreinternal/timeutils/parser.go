@@ -178,5 +178,9 @@ func ValidateLocale(locale string) error {
 	return fmt.Errorf("invalid locale '%s': %w", locale, err)
 }
 
+func GetStrptimeNativeSubstitutes(format string) map[string]string {
+	return strptime.GetNativeSubstitutes(format)
+}
+
 // Allows tests to override with deterministic value
 var Now = time.Now
