@@ -137,7 +137,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("class")
 					assert.True(t, ok)
-					assert.EqualValues(t, "datapath", attrVal.Str())
+					assert.Equal(t, "datapath", attrVal.Str())
 				case "nsxt.node.filesystem.usage":
 					assert.False(t, validatedMetrics["nsxt.node.filesystem.usage"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.usage")
 					validatedMetrics["nsxt.node.filesystem.usage"] = true
@@ -154,7 +154,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "used", attrVal.Str())
+					assert.Equal(t, "used", attrVal.Str())
 				case "nsxt.node.filesystem.utilization":
 					assert.False(t, validatedMetrics["nsxt.node.filesystem.utilization"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.utilization")
 					validatedMetrics["nsxt.node.filesystem.utilization"] = true
@@ -211,7 +211,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "received", attrVal.Str())
+					assert.Equal(t, "received", attrVal.Str())
 				case "nsxt.node.network.packet.count":
 					assert.False(t, validatedMetrics["nsxt.node.network.packet.count"], "Found a duplicate in the metrics slice: nsxt.node.network.packet.count")
 					validatedMetrics["nsxt.node.network.packet.count"] = true
@@ -228,10 +228,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "received", attrVal.Str())
+					assert.Equal(t, "received", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "dropped", attrVal.Str())
+					assert.Equal(t, "dropped", attrVal.Str())
 				}
 			}
 		})

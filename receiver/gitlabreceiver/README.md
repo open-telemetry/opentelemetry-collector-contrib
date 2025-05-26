@@ -6,6 +6,7 @@
 | Stability     | [development]: traces   |
 | Distributions | [] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgitlab%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgitlab) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgitlab%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgitlab) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_gitlab)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_gitlab&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@adrielp](https://www.github.com/adrielp), [@atoulme](https://www.github.com/atoulme) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -24,7 +25,8 @@ success, and failure rates.
 
 ### Configuration
 
-**IMPORTANT: At this time the tracing portion of this receiver only serves a health check endpoint.**
+**IMPORTANT**: Ensure your WebHook endpoint is secured with a secret and a Web
+Application Firewall (WAF) or other security measure.
 
 The WebHook configuration exposes the following settings:
 
@@ -53,3 +55,19 @@ receivers:
 
 For tracing, all configuration is set under the `webhook` key. The full set
 of exposed configuration values can be found in [`config.go`](config.go).
+
+## Tracing Limitations
+
+### Deterministic Trace/Span IDs and Manual Instrumentation
+
+The GitLab receiver creates deterministic trace/span IDs for pipelines by using an unique pipeline/job ID and the pipeline's `finished_at` timestamp. This approach ensures that the same pipeline execution always generates the same ID.
+
+**Limitation**: Manual instrumentation within GitLab pipeline jobs is currently not possible. Since the trace ID generation requires the `finished_at` timestamp, which is only available once the pipeline has completed, it's not possible to generate the same traceID within running jobs to correlate manually instrumented spans with the automatically created pipeline spans. More details can be found [here](https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215).
+
+This means:
+- The receiver can automatically create traces/spans for GitLab pipelines
+- You cannot manually instrument code within your pipeline jobs and have those spans appear in the same trace as the pipeline spans
+
+### Child and Multi-Project Pipelines
+
+**Limitation**: Child and multi-project pipelines are not supported yet. The hierarchy between parent/trigger pipelines wouldn't be reflected correctly, and instead two independent traces would be created for each pipeline. This means that the parent-child relationship between pipelines is not preserved in the generated traces.

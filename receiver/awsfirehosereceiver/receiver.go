@@ -122,13 +122,13 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.ServerConfig.ToListener(ctx)
+	listener, err = fmr.config.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start listening for HTTP requests: %w", err)
 	}
@@ -296,12 +296,11 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 	return unmarshaler, nil
 }
 
-// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
+// encodingToComponentID attempts to parse the encoding string as a component ID.
 func encodingToComponentID(encoding string) (*component.ID, error) {
-	componentType, err := component.NewType(encoding)
-	if err != nil {
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
 		return nil, fmt.Errorf("invalid component type: %w", err)
 	}
-	id := component.NewID(componentType)
 	return &id, nil
 }

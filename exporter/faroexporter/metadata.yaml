@@ -3,7 +3,7 @@ type: faro
 status:
   class: exporter
   stability:
-    development: [logs, traces]
+    alpha: [logs, traces]
   distributions: []
   codeowners:
     active: [dehaansa,rlankfo,mar4uk]

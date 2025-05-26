@@ -71,7 +71,7 @@ func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config
 	if cfg.QueueSettings.Enabled {
 		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
 	}
-	if cfg.BackOffConfig.Enabled {
+	if cfg.Enabled {
 		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
 	}
 

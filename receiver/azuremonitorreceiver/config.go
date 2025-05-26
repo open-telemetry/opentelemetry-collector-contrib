@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -25,7 +26,7 @@ var (
 	errMissingSubscriptionIDs = errors.New(`neither "SubscriptionIDs" nor "DiscoverSubscription" is specified in the config`)
 	errMissingClientID        = errors.New(`"ClientID" is not specified in config`)
 	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
-	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile"" is not specified in config`)
+	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
 	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
 
 	monitorServices = []string{
@@ -242,11 +243,7 @@ type Config struct {
 	Cloud                             string                        `mapstructure:"cloud"`
 	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
 	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
-	Authentication                    string                        `mapstructure:"auth"`
 	TenantID                          string                        `mapstructure:"tenant_id"`
-	ClientID                          string                        `mapstructure:"client_id"`
-	ClientSecret                      string                        `mapstructure:"client_secret"`
-	FederatedTokenFile                string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
 	Metrics                           NestedListAlias               `mapstructure:"metrics"`
@@ -255,7 +252,29 @@ type Config struct {
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
+	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
+
+	// Authentication accepts the component azureauthextension,
+	// and uses it to get an access token to make requests.
+	// Using this, `credentials` and any related fields become
+	// useless.
+	Authentication *AuthConfig `mapstructure:"auth"`
+
+	// Credentials is deprecated.
+	Credentials        string `mapstructure:"credentials"`
+	ClientID           string `mapstructure:"client_id"`
+	ClientSecret       string `mapstructure:"client_secret"`
+	FederatedTokenFile string `mapstructure:"federated_token_file"`
+}
+
+// AuthConfig defines the auth settings for the azure receiver.
+type AuthConfig struct {
+	// AuthenticatorID specifies the name of the azure extension to authenticate the
+	// requests to azure monitor.
+	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 const (
@@ -271,36 +290,39 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
-	switch c.Authentication {
-	case servicePrincipal:
-		if c.TenantID == "" {
-			err = multierr.Append(err, errMissingTenantID)
-		}
+	if c.Authentication == nil {
+		// only matters if there is no auth specified
+		switch c.Credentials {
+		case servicePrincipal:
+			if c.TenantID == "" {
+				err = multierr.Append(err, errMissingTenantID)
+			}
 
-		if c.ClientID == "" {
-			err = multierr.Append(err, errMissingClientID)
-		}
+			if c.ClientID == "" {
+				err = multierr.Append(err, errMissingClientID)
+			}
 
-		if c.ClientSecret == "" {
-			err = multierr.Append(err, errMissingClientSecret)
-		}
-	case workloadIdentity:
-		if c.TenantID == "" {
-			err = multierr.Append(err, errMissingTenantID)
-		}
+			if c.ClientSecret == "" {
+				err = multierr.Append(err, errMissingClientSecret)
+			}
+		case workloadIdentity:
+			if c.TenantID == "" {
+				err = multierr.Append(err, errMissingTenantID)
+			}
 
-		if c.ClientID == "" {
-			err = multierr.Append(err, errMissingClientID)
-		}
+			if c.ClientID == "" {
+				err = multierr.Append(err, errMissingClientID)
+			}
 
-		if c.FederatedTokenFile == "" {
-			err = multierr.Append(err, errMissingFedTokenFile)
-		}
+			if c.FederatedTokenFile == "" {
+				err = multierr.Append(err, errMissingFedTokenFile)
+			}
 
-	case managedIdentity:
-	case defaultCredentials:
-	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		case managedIdentity:
+		case defaultCredentials:
+		default:
+			return fmt.Errorf("credentials %q is not supported. supported authentications include [%v,%v,%v,%v]", c.Credentials, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		}
 	}
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {

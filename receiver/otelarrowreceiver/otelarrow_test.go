@@ -337,7 +337,7 @@ func TestStandardShutdown(t *testing.T) {
 
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
-	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+	assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
 func TestOTelArrowShutdown(t *testing.T) {
@@ -365,7 +365,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
-			set.TelemetrySettings.Logger = zap.New(core)
+			set.Logger = zap.New(core)
 
 			set.ID = testReceiverID
 			r, err := NewFactory().CreateTraces(
@@ -443,7 +443,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 
 			// The last, additional trace should not be received by sink, so the number of spans in
 			// the sink should not change.
-			assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+			assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 
 			shutdownCause := ""
 		scanLogs:
@@ -649,7 +649,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	assert.Equal(t, expectTraces, sink.AllTraces())
 
-	assert.Equal(t, len(expectMDs), len(sink.Metadatas()))
+	assert.Len(t, sink.Metadatas(), len(expectMDs))
 	// gRPC adds its own metadata keys, so we check for only the
 	// expected ones below:
 	for idx := range expectMDs {
@@ -692,7 +692,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	cfg.GRPC.Auth = &configauth.Authentication{
+	cfg.GRPC.Auth = &configauth.Config{
 		AuthenticatorID: authID,
 	}
 	id := component.NewID(componentmetadata.Type)

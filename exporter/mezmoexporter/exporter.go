@@ -58,7 +58,7 @@ func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 }
 
 func (m *mezmoExporter) start(ctx context.Context, host component.Host) (err error) {
-	m.client, err = m.config.ClientConfig.ToClient(ctx, host, m.settings)
+	m.client, err = m.config.ToClient(ctx, host, m.settings)
 	return err
 }
 

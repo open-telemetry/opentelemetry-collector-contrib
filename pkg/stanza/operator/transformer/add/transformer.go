@@ -5,6 +5,7 @@ package add // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -47,7 +48,7 @@ func (t *Transformer) Transform(e *entry.Entry) error {
 		}
 		return e.Set(t.Field, result)
 	}
-	return fmt.Errorf("add: missing required field 'value'")
+	return errors.New("add: missing required field 'value'")
 }
 
 func isExpr(str string) bool {

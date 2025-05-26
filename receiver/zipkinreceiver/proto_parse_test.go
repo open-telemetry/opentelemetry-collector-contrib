@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -101,7 +101,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	want.ResourceSpans().EnsureCapacity(2)
 
 	// First span/resource
-	want.ResourceSpans().AppendEmpty().Resource().Attributes().PutStr(conventions.AttributeServiceName, "svc-1")
+	want.ResourceSpans().AppendEmpty().Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "svc-1")
 	span0 := want.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span0.SetTraceID([16]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0})
 	span0.SetSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0})
@@ -109,15 +109,15 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	span0.SetName("ProtoSpan1")
 	span0.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	span0.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(12 * time.Second)))
-	span0.Attributes().PutStr(conventions.AttributeNetHostIP, "192.168.0.1")
-	span0.Attributes().PutInt(conventions.AttributeNetHostPort, 8009)
-	span0.Attributes().PutStr(conventions.AttributeNetPeerName, "memcached")
-	span0.Attributes().PutStr(conventions.AttributeNetPeerIP, "fe80::1453:a77c:da4d:d21b")
-	span0.Attributes().PutInt(conventions.AttributeNetPeerPort, 11211)
+	span0.Attributes().PutStr(string(conventions.NetHostIPKey), "192.168.0.1")
+	span0.Attributes().PutInt(string(conventions.NetHostPortKey), 8009)
+	span0.Attributes().PutStr(string(conventions.NetPeerNameKey), "memcached")
+	span0.Attributes().PutStr(string(conventions.NetPeerIPKey), "fe80::1453:a77c:da4d:d21b")
+	span0.Attributes().PutInt(string(conventions.NetPeerPortKey), 11211)
 	span0.Attributes().PutStr(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindConsumer))
 
 	// Second span/resource
-	want.ResourceSpans().AppendEmpty().Resource().Attributes().PutStr(conventions.AttributeServiceName, "search")
+	want.ResourceSpans().AppendEmpty().Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "search")
 	span1 := want.ResourceSpans().At(1).ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span1.SetTraceID([16]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0})
 	span1.SetSpanID([8]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60})
@@ -125,11 +125,11 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	span1.SetName("CacheWarmUp")
 	span1.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-10 * time.Hour)))
 	span1.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(-10 * time.Hour).Add(7 * time.Second)))
-	span1.Attributes().PutStr(conventions.AttributeNetHostIP, "10.0.0.13")
-	span1.Attributes().PutInt(conventions.AttributeNetHostPort, 8009)
-	span1.Attributes().PutStr(conventions.AttributeNetPeerName, "redis")
-	span1.Attributes().PutStr(conventions.AttributeNetPeerIP, "fe80::1453:a77c:da4d:d21b")
-	span1.Attributes().PutInt(conventions.AttributeNetPeerPort, 6379)
+	span1.Attributes().PutStr(string(conventions.NetHostIPKey), "10.0.0.13")
+	span1.Attributes().PutInt(string(conventions.NetHostPortKey), 8009)
+	span1.Attributes().PutStr(string(conventions.NetPeerNameKey), "redis")
+	span1.Attributes().PutStr(string(conventions.NetPeerIPKey), "fe80::1453:a77c:da4d:d21b")
+	span1.Attributes().PutInt(string(conventions.NetPeerPortKey), 6379)
 	span1.Attributes().PutStr(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindProducer))
 	span1.Events().EnsureCapacity(2)
 	span1.Events().AppendEmpty().SetName("DB reset")
@@ -141,11 +141,11 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	assert.Equal(t, want.ResourceSpans().Len(), reqs.ResourceSpans().Len())
 	for i := 0; i < want.ResourceSpans().Len(); i++ {
 		wantRS := want.ResourceSpans().At(i)
-		wSvcName, ok := wantRS.Resource().Attributes().Get(conventions.AttributeServiceName)
+		wSvcName, ok := wantRS.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 		assert.True(t, ok)
 		for j := 0; j < reqs.ResourceSpans().Len(); j++ {
 			reqsRS := reqs.ResourceSpans().At(j)
-			rSvcName, ok := reqsRS.Resource().Attributes().Get(conventions.AttributeServiceName)
+			rSvcName, ok := reqsRS.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 			assert.True(t, ok)
 			if rSvcName.Str() == wSvcName.Str() {
 				compareResourceSpans(t, wantRS, reqsRS)

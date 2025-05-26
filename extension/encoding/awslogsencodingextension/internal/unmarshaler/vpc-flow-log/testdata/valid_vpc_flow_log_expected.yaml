@@ -13,7 +13,7 @@ resourceLogs:
               - key: aws.vpc.flow.log.version
                 value:
                   intValue: "2"
-              - key: aws.eni.id
+              - key: network.interface.name
                 value:
                   stringValue: eni-0eb1e4178af74336c
               - key: aws.vpc.flow.start

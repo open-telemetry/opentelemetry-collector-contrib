@@ -165,7 +165,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, "broker-val", attrVal.Str())
+					assert.Equal(t, "broker-val", attrVal.Str())
 				case "kafka.brokers":
 					assert.False(t, validatedMetrics["kafka.brokers"], "Found a duplicate in the metrics slice: kafka.brokers")
 					validatedMetrics["kafka.brokers"] = true
@@ -194,10 +194,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("group")
 					assert.True(t, ok)
-					assert.EqualValues(t, "group-val", attrVal.Str())
+					assert.Equal(t, "group-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
@@ -215,10 +215,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("group")
 					assert.True(t, ok)
-					assert.EqualValues(t, "group-val", attrVal.Str())
+					assert.Equal(t, "group-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				case "kafka.consumer_group.members":
 					assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
 					validatedMetrics["kafka.consumer_group.members"] = true
@@ -235,7 +235,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("group")
 					assert.True(t, ok)
-					assert.EqualValues(t, "group-val", attrVal.Str())
+					assert.Equal(t, "group-val", attrVal.Str())
 				case "kafka.consumer_group.offset":
 					assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
 					validatedMetrics["kafka.consumer_group.offset"] = true
@@ -250,10 +250,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("group")
 					assert.True(t, ok)
-					assert.EqualValues(t, "group-val", attrVal.Str())
+					assert.Equal(t, "group-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
@@ -271,10 +271,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("group")
 					assert.True(t, ok)
-					assert.EqualValues(t, "group-val", attrVal.Str())
+					assert.Equal(t, "group-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				case "kafka.partition.current_offset":
 					assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
 					validatedMetrics["kafka.partition.current_offset"] = true
@@ -289,7 +289,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
@@ -307,7 +307,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
@@ -327,7 +327,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
@@ -347,7 +347,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
@@ -365,7 +365,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				case "kafka.topic.log_retention_size":
 					assert.False(t, validatedMetrics["kafka.topic.log_retention_size"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_size")
 					validatedMetrics["kafka.topic.log_retention_size"] = true
@@ -380,7 +380,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				case "kafka.topic.min_insync_replicas":
 					assert.False(t, validatedMetrics["kafka.topic.min_insync_replicas"], "Found a duplicate in the metrics slice: kafka.topic.min_insync_replicas")
 					validatedMetrics["kafka.topic.min_insync_replicas"] = true
@@ -395,7 +395,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				case "kafka.topic.partitions":
 					assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
 					validatedMetrics["kafka.topic.partitions"] = true
@@ -412,7 +412,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				case "kafka.topic.replication_factor":
 					assert.False(t, validatedMetrics["kafka.topic.replication_factor"], "Found a duplicate in the metrics slice: kafka.topic.replication_factor")
 					validatedMetrics["kafka.topic.replication_factor"] = true
@@ -427,7 +427,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
-					assert.EqualValues(t, "topic-val", attrVal.Str())
+					assert.Equal(t, "topic-val", attrVal.Str())
 				}
 			}
 		})

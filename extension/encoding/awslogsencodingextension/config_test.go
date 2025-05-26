@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatCloudWatchLogsSubscriptionFilter,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatPlainText,
+					FileFormat: fileFormatPlainText,
 				},
 			},
 		},
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatPlainText,
+					FileFormat: fileFormatPlainText,
 				},
 			},
 		},
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: formatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					fileFormatParquet,
+					FileFormat: fileFormatParquet,
 				},
 			},
 		},
@@ -66,6 +66,15 @@ func TestLoadConfig(t *testing.T) {
 				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
 				supportedVPCFlowLogFileFormat,
 			),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "s3_access_log"),
+			expected: &Config{
+				Format: formatS3AccessLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
 		},
 	}
 

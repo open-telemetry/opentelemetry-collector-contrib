@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -24,7 +25,7 @@ func TestNewFactoryWithLogs(t *testing.T) {
 			name: "factory_type",
 			f: func(t *testing.T) {
 				factory := NewFactory()
-				require.EqualValues(t, metadata.Type, factory.Type())
+				require.Equal(t, metadata.Type, factory.Type())
 			},
 		},
 		{
@@ -75,6 +76,25 @@ func TestNewFactoryWithLogs(t *testing.T) {
 
 				factory := NewFactory()
 				c, err := factory.CreateMetricsToMetrics(
+					context.Background(),
+					connectortest.NewNopSettings(metadata.Type),
+					factory.CreateDefaultConfig(),
+					mc,
+				)
+				require.NoError(t, err)
+				require.NotNil(t, c)
+			},
+		},
+		{
+			name: "profiles_to_metrics",
+			f: func(t *testing.T) {
+				mc, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
+					return nil
+				})
+				require.NoError(t, err)
+
+				factory := NewFactory().(xconnector.Factory)
+				c, err := factory.CreateProfilesToMetrics(
 					context.Background(),
 					connectortest.NewNopSettings(metadata.Type),
 					factory.CreateDefaultConfig(),

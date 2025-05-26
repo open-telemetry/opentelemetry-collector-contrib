@@ -138,7 +138,7 @@ func (split *dataPointSplit) appendMetricData(metricVal float64, count uint64) {
 
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.NumberDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -177,7 +177,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 }
 
 func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.NumberDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -189,7 +189,7 @@ func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.HistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -207,7 +207,7 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 }
 
 func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.HistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -229,7 +229,7 @@ func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 // - Sum is only assigned to the first split to ensure the total sum of the datapoints after aggregation is correct.
 // - Count is accumulated based on the bucket counts within each split.
 func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(idx)
+	metric := dps.At(idx)
 
 	const splitThreshold = 100
 	currentBucketIndex := 0
@@ -412,7 +412,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 }
 
 func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -430,7 +430,7 @@ func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommo
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
 func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.SummaryDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -485,7 +485,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 }
 
 func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.SummaryDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}

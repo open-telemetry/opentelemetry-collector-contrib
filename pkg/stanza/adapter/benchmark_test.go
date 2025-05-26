@@ -29,8 +29,8 @@ func TestEndToEnd(t *testing.T) {
 	ctx := context.Background()
 	f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 	cfg := f.CreateDefaultConfig().(*BenchConfig)
-	cfg.BenchOpConfig.NumEntries = numEntries
-	cfg.BenchOpConfig.NumHosts = numHosts
+	cfg.NumEntries = numEntries
+	cfg.NumHosts = numHosts
 	sink := new(consumertest.LogsSink)
 
 	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(f.Type()), cfg, sink)
@@ -54,10 +54,10 @@ func (bc benchCase) run(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 		cfg := f.CreateDefaultConfig().(*BenchConfig)
-		cfg.BaseConfig.maxBatchSize = bc.maxBatchSize
-		cfg.BaseConfig.flushInterval = bc.flushInterval
-		cfg.BenchOpConfig.NumEntries = numEntries
-		cfg.BenchOpConfig.NumHosts = numHosts
+		cfg.maxBatchSize = bc.maxBatchSize
+		cfg.flushInterval = bc.flushInterval
+		cfg.NumEntries = numEntries
+		cfg.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
 		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, sink)

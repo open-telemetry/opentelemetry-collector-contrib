@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -127,7 +127,7 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
+	cfg.Traces.ResourceAttributesAsContainerTags = []string{string(semconv.CloudAvailabilityZoneKey), string(semconv.CloudRegionKey), "az"}
 	cfg.Traces.BucketInterval = 1 * time.Second
 
 	metricsSink := &consumertest.MetricsSink{}
@@ -169,10 +169,7 @@ func TestContainerTags(t *testing.T) {
 	})
 	assert.Equal(t, 3, count)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -228,10 +225,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 	err = connector.ConsumeTraces(context.Background(), trace)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -287,10 +281,7 @@ func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceName
 	err = connector.ConsumeTraces(context.Background(), trace)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 

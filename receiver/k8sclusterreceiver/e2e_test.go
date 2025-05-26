@@ -76,6 +76,11 @@ func TestE2EClusterScoped(t *testing.T) {
 		}
 	})
 
+	// CronJob is scheduled to be executed every minute (on the full minute)
+	// This creates a delay and the resources deployed by CronJob (Job, Pod, Container)
+	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
+	time.Sleep(calculateCronJobExecution())
+
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileClusterScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -162,6 +167,11 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	})
 
+	// CronJob is scheduled to be executed every minute (on the full minute)
+	// This creates a delay and the resources deployed by CronJob (Job, Pod, Container)
+	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
+	time.Sleep(calculateCronJobExecution())
+
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -210,6 +220,18 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
+}
+
+func calculateCronJobExecution() time.Duration {
+	// extract the number of second from the current timestamp
+	seconds := time.Now().Second()
+	// calculate the time until the full minute
+	secondsToWait := 60 - seconds
+	if secondsToWait <= 1 {
+		secondsToWait = 60
+	}
+
+	return time.Duration(secondsToWait) * time.Second
 }
 
 func shortenNames(value string) string {

@@ -161,7 +161,7 @@ func newRecallLogger(t *testing.T, tempDir string) *recallLogger {
 
 func (l *recallLogger) log(s string) {
 	l.written = append(l.written, s)
-	l.Logger.Println(s)
+	l.Println(s)
 }
 
 func (l *recallLogger) recall() []string {

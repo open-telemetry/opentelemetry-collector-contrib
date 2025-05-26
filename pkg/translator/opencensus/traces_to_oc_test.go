@@ -33,23 +33,23 @@ func TestInternalTraceStateToOC(t *testing.T) {
 			},
 		},
 	}
-	assert.EqualValues(t, ocTracestate, traceStateToOC("abc=def"))
+	assert.Equal(t, ocTracestate, traceStateToOC("abc=def"))
 
 	ocTracestate.Entries = append(ocTracestate.Entries,
 		&octrace.Span_Tracestate_Entry{
 			Key:   "123",
 			Value: "4567",
 		})
-	assert.EqualValues(t, ocTracestate, traceStateToOC("abc=def,123=4567"))
+	assert.Equal(t, ocTracestate, traceStateToOC("abc=def,123=4567"))
 }
 
 func TestAttributesMapToOC(t *testing.T) {
-	assert.EqualValues(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(pcommon.NewMap(), 0))
+	assert.Equal(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(pcommon.NewMap(), 0))
 
 	ocAttrs := &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(pcommon.NewMap(), 123))
+	assert.Equal(t, ocAttrs, attributesMapToOCSpanAttributes(pcommon.NewMap(), 123))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -61,7 +61,7 @@ func TestAttributesMapToOC(t *testing.T) {
 	}
 	attrs := pcommon.NewMap()
 	attrs.PutStr("abc", "def")
-	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
+	assert.Equal(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_IntValue{IntValue: 345},
@@ -78,7 +78,7 @@ func TestAttributesMapToOC(t *testing.T) {
 		"boolval":   true,
 		"doubleval": 4.5,
 	}))
-	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
+	assert.Equal(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 }
 
 func TestSpanKindToOC(t *testing.T) {
@@ -115,7 +115,7 @@ func TestSpanKindToOC(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.kind.String(), func(t *testing.T) {
 			got := spanKindToOC(test.kind)
-			assert.EqualValues(t, test.ocKind, got, "Expected "+test.ocKind.String()+", got "+got.String())
+			assert.Equal(t, test.ocKind, got, "Expected "+test.ocKind.String()+", got "+got.String())
 		})
 	}
 }
@@ -186,7 +186,7 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.kind.String(), func(t *testing.T) {
 			got := spanKindToOCAttribute(test.kind)
-			assert.EqualValues(t, test.ocAttribute, got, "Expected "+test.ocAttribute.String()+", got "+got.String())
+			assert.Equal(t, test.ocAttribute, got, "Expected "+test.ocAttribute.String()+", got "+got.String())
 		})
 	}
 }
@@ -331,9 +331,9 @@ func TestInternalToOC(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			gotNode, gotResource, gotSpans := ResourceSpansToOC(test.td.ResourceSpans().At(0))
-			assert.EqualValues(t, test.Node, gotNode)
-			assert.EqualValues(t, test.Resource, gotResource)
-			assert.EqualValues(t, test.Spans, gotSpans)
+			assert.Equal(t, test.Node, gotNode)
+			assert.Equal(t, test.Resource, gotResource)
+			assert.Equal(t, test.Spans, gotSpans)
 		})
 	}
 }

@@ -4,7 +4,7 @@
 package ecsutil
 
 import (
-	"fmt"
+	"errors"
 	"net/url"
 	"testing"
 
@@ -39,7 +39,7 @@ func TestRestClientFromClient(t *testing.T) {
 type fakeErrorClient struct{}
 
 func (f *fakeErrorClient) Get(_ string) ([]byte, error) {
-	return nil, fmt.Errorf("")
+	return nil, errors.New("")
 }
 
 func TestRestClientError(t *testing.T) {
@@ -53,7 +53,7 @@ func TestRestClientError(t *testing.T) {
 type fakeMetadataErrorClient struct{}
 
 func (f *fakeMetadataErrorClient) Get(_ string) ([]byte, error) {
-	return nil, fmt.Errorf("")
+	return nil, errors.New("")
 }
 
 func TestRestClientMetadataError(t *testing.T) {

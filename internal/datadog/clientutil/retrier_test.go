@@ -6,7 +6,6 @@ package clientutil // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -49,7 +48,7 @@ func TestNoRetriesOnPermanentError(t *testing.T) {
 	respNonRetriable := http.Response{StatusCode: http.StatusNotFound}
 
 	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error {
-		return WrapError(fmt.Errorf("test"), &respNonRetriable)
+		return WrapError(errors.New("test"), &respNonRetriable)
 	})
 	require.Error(t, err)
 	assert.Equal(t, int64(0), retryNum)

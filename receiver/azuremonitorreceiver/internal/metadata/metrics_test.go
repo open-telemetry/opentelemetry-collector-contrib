@@ -68,10 +68,10 @@ func TestMetricsBuilder(t *testing.T) {
 			} else {
 				attrVal, ok := rm.Resource().Attributes().Get("azuremonitor.subscription_id")
 				assert.True(t, ok)
-				assert.EqualValues(t, "subscription-id-val", attrVal.Str())
+				assert.Equal(t, "subscription-id-val", attrVal.Str())
 				attrVal, ok = rm.Resource().Attributes().Get("azuremonitor.tenant_id")
 				assert.True(t, ok)
-				assert.EqualValues(t, "tenant-id-val", attrVal.Str())
+				assert.Equal(t, "tenant-id-val", attrVal.Str())
 			}
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())

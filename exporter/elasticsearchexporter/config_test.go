@@ -127,6 +127,9 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
+				},
 			},
 		},
 		{
@@ -203,6 +206,9 @@ func TestConfig(t *testing.T) {
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
+				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
 				},
 			},
 		},
@@ -281,6 +287,9 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
+				},
 			},
 		},
 		{
@@ -343,6 +352,15 @@ func TestConfig(t *testing.T) {
 
 				cfg.Batcher.MinSize = 100
 				cfg.Batcher.MaxSize = 200
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "include_source_on_error"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				includeSource := true
+				cfg.IncludeSourceOnError = &includeSource
 			}),
 		},
 	}

@@ -25,7 +25,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry for key value pairs.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	return p.ParserOperator.ProcessWith(ctx, entry, p.parse)
+	return p.ProcessWith(ctx, entry, p.parse)
 }
 
 // parse will parse a value as key values.

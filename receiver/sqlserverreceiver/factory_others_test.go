@@ -35,7 +35,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 				require.NoError(t, cfg.Validate())
 
-				require.True(t, directDBConnectionEnabled(cfg))
+				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
@@ -78,7 +78,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
 
-				require.True(t, directDBConnectionEnabled(cfg))
+				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
@@ -98,8 +98,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
-				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-				require.NoError(t, err)
+				q := getSQLServerQueryTextAndPlanQuery()
 
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {

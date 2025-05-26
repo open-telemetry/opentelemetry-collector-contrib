@@ -37,6 +37,16 @@ type mockPerfCounter struct {
 	resetErr      error
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (w *mockPerfCounter) ScrapeRawValue(_ *int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (w *mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 func (w *mockPerfCounter) Reset() error {
 	return w.resetErr
 }
@@ -548,7 +558,7 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
-						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
+						expectedAttributeLen := len(counterCfg.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
 						}
@@ -558,7 +568,7 @@ func TestScrape(t *testing.T) {
 								assert.Equal(t, val.InstanceName, v.Str())
 								continue
 							}
-							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
+							assert.Equal(t, counterCfg.Attributes[k], v.Str())
 						}
 					}
 					curMetricsNum++

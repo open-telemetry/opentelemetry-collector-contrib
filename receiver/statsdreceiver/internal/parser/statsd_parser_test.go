@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
@@ -123,7 +123,7 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				false,
 				"c",
 				0,
-				[]string{"key", semconv.AttributeContainerID},
+				[]string{"key", string(semconv.ContainerIDKey)},
 				[]string{"value", "abc123"},
 				0,
 			),
@@ -1473,7 +1473,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.EqualValues(t, tt.expectedSummaries, p.instrumentsByAddress[addrKey].summaries)
+				assert.Equal(t, tt.expectedSummaries, p.instrumentsByAddress[addrKey].summaries)
 			}
 		})
 	}

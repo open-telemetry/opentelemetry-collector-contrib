@@ -20,6 +20,7 @@ import (
 func BenchmarkConvertSimple(b *testing.B) {
 	b.StopTimer()
 	ent := entry.New()
+	b.ReportAllocs()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -30,6 +31,7 @@ func BenchmarkConvertSimple(b *testing.B) {
 func BenchmarkConvertComplex(b *testing.B) {
 	b.StopTimer()
 	ent := complexEntry()
+	b.ReportAllocs()
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -860,6 +862,10 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 
 func getResource() map[string]any {
 	return map[string]any{
+		"bool":             true,
+		"int":              123,
+		"double":           12.34,
+		"string":           "hello",
 		"file.name":        "filename.log",
 		"file.directory":   "/some_directory",
 		"host.name":        "localhost",

@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -28,7 +29,7 @@ func createTestFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	args, ok := oArgs.(*optionalFnTestArgs[K])
 
 	if !ok {
-		return nil, fmt.Errorf("TestFactory args must be of type *optionalFnTestArgs[K]")
+		return nil, errors.New("TestFactory args must be of type *optionalFnTestArgs[K]")
 	}
 
 	return hashString(args.Target), nil

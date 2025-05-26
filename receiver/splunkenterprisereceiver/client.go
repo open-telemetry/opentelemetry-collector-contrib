@@ -36,7 +36,7 @@ type splunkEntClient struct {
 }
 
 // The splunkEntClient is made up of a number of splunkClients defined for each configured endpoint
-type splunkClientMap map[any]splunkClient
+type splunkClientMap map[string]splunkClient
 
 // The client does not carry the endpoint that is configured with it and golang does not support mixed
 // type arrays so this struct contains the pair: the client configured for the endpoint and the endpoint
@@ -92,12 +92,8 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 }
 
 // For running ad hoc searches only
-func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse) (req *http.Request, err error) {
-	// get endpoint type from the context
-	eptType := ctx.Value(endpointType("type"))
-	if eptType == nil {
-		return nil, errCtxMissingEndpointType
-	}
+func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req *http.Request, err error) {
+	ctx := context.WithValue(context.Background(), endpointType("type"), eptType)
 
 	// Running searches via Splunk's REST API is a two step process: First you submit the job to run
 	// this returns a jobid which is then used in the second part to retrieve the search results
@@ -137,14 +133,9 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 }
 
 // forms an *http.Request for use with Splunk built-in API's (like introspection).
-func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint string) (req *http.Request, err error) {
+func (c *splunkEntClient) createAPIRequest(eptType string, apiEndpoint string) (req *http.Request, err error) {
 	var u string
-
-	// get endpoint type from the context
-	eptType := ctx.Value(endpointType("type"))
-	if eptType == nil {
-		return nil, errCtxMissingEndpointType
-	}
+	ctx := context.WithValue(context.Background(), endpointType("type"), eptType)
 
 	if e, ok := c.clients[eptType]; ok {
 		u = e.endpoint.String() + apiEndpoint
@@ -167,7 +158,16 @@ func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error)
 	if eptType == nil {
 		return nil, errCtxMissingEndpointType
 	}
-	if sc, ok := c.clients[eptType]; ok {
+
+	var endpointType string
+	switch t := eptType.(type) {
+	case string:
+		endpointType = t
+	default:
+		endpointType = fmt.Sprintf("%v", eptType)
+	}
+
+	if sc, ok := c.clients[endpointType]; ok {
 		res, err := sc.client.Do(req)
 		if err != nil {
 			return nil, err

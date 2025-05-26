@@ -16,7 +16,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -81,11 +81,12 @@ func spanToEnvelopes(
 
 	data := contracts.NewData()
 
-	if userID, exists := attributeMap.Get(conventions.AttributeEnduserID); exists {
+	if userID, exists := attributeMap.Get(string(conventions.EnduserIDKey)); exists {
 		envelope.Tags[contracts.UserId] = userID.Str()
 	}
 
-	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
+	switch spanKind {
+	case ptrace.SpanKindServer, ptrace.SpanKindConsumer:
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
@@ -93,7 +94,7 @@ func spanToEnvelopes(
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
-	} else if spanKind == ptrace.SpanKindClient || spanKind == ptrace.SpanKindProducer || spanKind == ptrace.SpanKindInternal {
+	case ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindInternal:
 		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
@@ -685,26 +686,26 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 	}
 
 	// RPC
-	if _, exists := attributeMap.Get(conventions.AttributeRPCSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemKey)); exists {
 		return rpcSpanType
 	}
 
 	// HTTP
-	if _, exists := attributeMap.Get(conventions.AttributeHTTPMethod); exists {
+	if _, exists := attributeMap.Get(string(conventions.HTTPMethodKey)); exists {
 		return httpSpanType
 	}
 
 	// Database
-	if _, exists := attributeMap.Get(conventions.AttributeDBSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.DBSystemKey)); exists {
 		return databaseSpanType
 	}
 
 	// Messaging
-	if _, exists := attributeMap.Get(conventions.AttributeMessagingSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.MessagingSystemKey)); exists {
 		return messagingSpanType
 	}
 
-	if _, exists := attributeMap.Get(conventions.AttributeFaaSTrigger); exists {
+	if _, exists := attributeMap.Get(string(conventions.FaaSTriggerKey)); exists {
 		return faasSpanType
 	}
 

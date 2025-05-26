@@ -107,6 +107,13 @@ func Test_InsertXML(t *testing.T) {
 			want:      `<a>foo</a>`,
 			expectErr: `InsertXML XPath selected non-element: "foo"`,
 		},
+		{
+			name:     "insert missing elements",
+			document: `<a><b>has b</b></a><a></a><a><b>also has b</b></a>`,
+			xPath:    "//a[not(b)]", // elements of a which do not have a b
+			subdoc:   `<b></b>`,
+			want:     `<a><b>has b</b></a><a><b></b></a><a><b>also has b</b></a>`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

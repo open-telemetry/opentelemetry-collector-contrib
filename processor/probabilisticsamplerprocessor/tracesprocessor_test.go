@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -890,7 +890,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				} else {
 					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
-					require.Equal(t, "", expectTS)
+					require.Empty(t, expectTS)
 				}
 
 				if len(tt.log) == 0 {
@@ -1150,7 +1150,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
+				span.Attributes().PutInt(string(conventions.HTTPStatusCodeKey), 404)
 				span.Attributes().PutStr("http.status_text", "Not Found")
 			}
 		}

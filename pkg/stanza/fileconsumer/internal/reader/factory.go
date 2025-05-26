@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +36,7 @@ type Factory struct {
 	HeaderConfig            *header.Config
 	FromBeginning           bool
 	FingerprintSize         int
+	BufPool                 sync.Pool
 	InitialBufferSize       int
 	MaxLogSize              int
 	Encoding                encoding.Encoding
@@ -57,6 +60,11 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	if err != nil {
 		return nil, err
 	}
+	var filetype string
+	if filepath.Ext(file.Name()) == gzipExtension {
+		filetype = gzipExtension
+	}
+
 	m := &Metadata{
 		Fingerprint:    fp,
 		FileAttributes: attributes,
@@ -64,26 +72,27 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		FlushState: flush.State{
 			LastDataChange: time.Now(),
 		},
+		FileType: filetype,
 	}
 	return f.NewReaderFromMetadata(file, m)
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
-		Metadata:             m,
-		set:                  f.TelemetrySettings,
-		file:                 file,
-		fileName:             file.Name(),
-		fingerprintSize:      f.FingerprintSize,
-		initialBufferSize:    f.InitialBufferSize,
-		maxLogSize:           f.MaxLogSize,
-		decoder:              f.Encoding.NewDecoder(),
-		deleteAtEOF:          f.DeleteAtEOF,
-		includeFileRecordNum: f.IncludeFileRecordNumber,
-		compression:          f.Compression,
-		acquireFSLock:        f.AcquireFSLock,
-		maxBatchSize:         DefaultMaxBatchSize,
-		emitFunc:             f.EmitFunc,
+		Metadata:          m,
+		set:               f.TelemetrySettings,
+		file:              file,
+		fileName:          file.Name(),
+		fingerprintSize:   f.FingerprintSize,
+		bufPool:           &f.BufPool,
+		initialBufferSize: f.InitialBufferSize,
+		maxLogSize:        f.MaxLogSize,
+		decoder:           f.Encoding.NewDecoder(),
+		deleteAtEOF:       f.DeleteAtEOF,
+		compression:       f.Compression,
+		acquireFSLock:     f.AcquireFSLock,
+		maxBatchSize:      DefaultMaxBatchSize,
+		emitFunc:          f.EmitFunc,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 

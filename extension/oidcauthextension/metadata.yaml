@@ -6,8 +6,8 @@ status:
     beta: [extension]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jpkrohling]
     seeking_new: true
+    emeritus: [jpkrohling]
 
 tests:
   config:

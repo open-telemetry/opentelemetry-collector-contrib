@@ -1,0 +1,56 @@
+resourceProfiles:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: resource.bar
+          value:
+            stringValue: bar
+    scopeProfiles:
+      - profiles:
+          - attributeIndices: [0, 1]
+            attributeTable:
+              - key: profile.foo
+                value:
+                  stringValue: foo
+              - key: profile.bar
+                value:
+                  stringValue: bar
+            sample:
+              - locationsLength: 0
+                timestampsUnixNano: ["0"]
+            sampleType:
+              - unitStrindex: 0
+            stringTable:
+              - count
+            duration: 10000
+          - attributeIndices: [0, 1]
+            attributeTable:
+              - key: profile.required
+                value:
+                  stringValue: foo
+              - key: profile.optional
+                value:
+                  stringValue: notbar
+            sample:
+              - locationsLength: 0
+                timestampsUnixNano: ["0"]
+            sampleType:
+              - unitStrindex: 0
+            stringTable:
+              - count
+            duration: 10000
+          - attributeIndices: [0]
+            attributeTable:
+              - key: profile.required
+                value:
+                  stringValue: notfoo
+            sample:
+              - locationsLength: 0
+                timestampsUnixNano: ["0"]
+            sampleType:
+              - unitStrindex: 0
+            stringTable:
+              - count
+        scope: {}

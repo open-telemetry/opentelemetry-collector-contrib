@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -69,13 +69,13 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) error {
 			return err
 		}
 
-		ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, e.cfg.propertiesStr())
+		ddl := fmt.Sprintf(logsDDL, e.cfg.Logs, e.cfg.propertiesStr())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
 		}
 
-		view := fmt.Sprintf(logsView, e.cfg.Table.Logs, e.cfg.Table.Logs)
+		view := fmt.Sprintf(logsView, e.cfg.Logs, e.cfg.Logs)
 		_, err = conn.ExecContext(ctx, view)
 		if err != nil {
 			e.logger.Warn("failed to create materialized view", zap.Error(err))
@@ -94,7 +94,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	label := generateLabel(e.cfg, e.cfg.Table.Logs)
+	label := generateLabel(e.cfg, e.cfg.Logs)
 	logs := make([]*dLog, 0, ld.LogRecordCount())
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -102,12 +102,12 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		resource := resourceLogs.Resource()
 		resourceAttributes := resource.Attributes()
 		serviceName := ""
-		v, ok := resourceAttributes.Get(semconv.AttributeServiceName)
+		v, ok := resourceAttributes.Get(string(semconv.ServiceNameKey))
 		if ok {
 			serviceName = v.AsString()
 		}
 		serviceInstance := ""
-		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		v, ok = resourceAttributes.Get(string(semconv.ServiceInstanceIDKey))
 		if ok {
 			serviceInstance = v.AsString()
 		}
@@ -147,7 +147,7 @@ func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog, la
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Logs, marshal, label)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Logs, marshal, label)
 	if err != nil {
 		return err
 	}

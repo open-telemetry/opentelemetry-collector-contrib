@@ -44,62 +44,62 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("vcenter.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.cluster.name-val", val.Str())
+				assert.Equal(t, "vcenter.cluster.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.datacenter.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.datacenter.name-val", val.Str())
+				assert.Equal(t, "vcenter.datacenter.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.datastore.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.datastore.name-val", val.Str())
+				assert.Equal(t, "vcenter.datastore.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.host.name-val", val.Str())
+				assert.Equal(t, "vcenter.host.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.resource_pool.inventory_path")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.resource_pool.inventory_path-val", val.Str())
+				assert.Equal(t, "vcenter.resource_pool.inventory_path-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.resource_pool.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.resource_pool.name-val", val.Str())
+				assert.Equal(t, "vcenter.resource_pool.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.virtual_app.inventory_path")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.virtual_app.inventory_path-val", val.Str())
+				assert.Equal(t, "vcenter.virtual_app.inventory_path-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.virtual_app.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.virtual_app.name-val", val.Str())
+				assert.Equal(t, "vcenter.virtual_app.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.vm.id-val", val.Str())
+				assert.Equal(t, "vcenter.vm.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.vm.name-val", val.Str())
+				assert.Equal(t, "vcenter.vm.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm_template.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.vm_template.id-val", val.Str())
+				assert.Equal(t, "vcenter.vm_template.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm_template.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "vcenter.vm_template.name-val", val.Str())
+				assert.Equal(t, "vcenter.vm_template.name-val", val.Str())
 			}
 		})
 	}

@@ -4,6 +4,7 @@
 package metricstarttimeprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -37,7 +38,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("%q is not a valid strategy", cfg.Strategy)
 	}
 	if cfg.GCInterval <= 0 {
-		return fmt.Errorf("gc_interval must be positive")
+		return errors.New("gc_interval must be positive")
 	}
 	return nil
 }

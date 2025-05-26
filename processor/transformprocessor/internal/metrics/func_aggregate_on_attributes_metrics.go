@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,7 +28,7 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 	args, ok := oArgs.(*aggregateOnAttributesArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("AggregateOnAttributesFactory args must be of type *AggregateOnAttributesArguments")
+		return nil, errors.New("AggregateOnAttributesFactory args must be of type *AggregateOnAttributesArguments")
 	}
 
 	t, err := aggregateutil.ConvertToAggregationFunction(args.AggregationFunction)
@@ -43,7 +44,7 @@ func AggregateOnAttributes(aggregationFunction aggregateutil.AggregationType, at
 		metric := tCtx.GetMetric()
 
 		if metric.Type() == pmetric.MetricTypeSummary {
-			return nil, fmt.Errorf("aggregate_on_attributes does not support aggregating Summary metrics")
+			return nil, errors.New("aggregate_on_attributes does not support aggregating Summary metrics")
 		}
 
 		ag := aggregateutil.AggGroups{}

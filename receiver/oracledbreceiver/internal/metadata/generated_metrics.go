@@ -24,11 +24,17 @@ var MetricsInfo = metricsInfo{
 	OracledbDbBlockGets: metricInfo{
 		Name: "oracledb.db_block_gets",
 	},
+	OracledbDdlStatementsParallelized: metricInfo{
+		Name: "oracledb.ddl_statements_parallelized",
+	},
 	OracledbDmlLocksLimit: metricInfo{
 		Name: "oracledb.dml_locks.limit",
 	},
 	OracledbDmlLocksUsage: metricInfo{
 		Name: "oracledb.dml_locks.usage",
+	},
+	OracledbDmlStatementsParallelized: metricInfo{
+		Name: "oracledb.dml_statements_parallelized",
 	},
 	OracledbEnqueueDeadlocks: metricInfo{
 		Name: "oracledb.enqueue_deadlocks",
@@ -56,6 +62,24 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbLogicalReads: metricInfo{
 		Name: "oracledb.logical_reads",
+	},
+	OracledbParallelOperationsDowngraded1To25Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_1_to_25_pct",
+	},
+	OracledbParallelOperationsDowngraded25To50Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_25_to_50_pct",
+	},
+	OracledbParallelOperationsDowngraded50To75Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_50_to_75_pct",
+	},
+	OracledbParallelOperationsDowngraded75To99Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_75_to_99_pct",
+	},
+	OracledbParallelOperationsDowngradedToSerial: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_to_serial",
+	},
+	OracledbParallelOperationsNotDowngraded: metricInfo{
+		Name: "oracledb.parallel_operations_not_downgraded",
 	},
 	OracledbParseCalls: metricInfo{
 		Name: "oracledb.parse_calls",
@@ -87,6 +111,9 @@ var MetricsInfo = metricsInfo{
 	OracledbProcessesUsage: metricInfo{
 		Name: "oracledb.processes.usage",
 	},
+	OracledbQueriesParallelized: metricInfo{
+		Name: "oracledb.queries_parallelized",
+	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
 	},
@@ -114,38 +141,47 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	OracledbConsistentGets          metricInfo
-	OracledbCPUTime                 metricInfo
-	OracledbDbBlockGets             metricInfo
-	OracledbDmlLocksLimit           metricInfo
-	OracledbDmlLocksUsage           metricInfo
-	OracledbEnqueueDeadlocks        metricInfo
-	OracledbEnqueueLocksLimit       metricInfo
-	OracledbEnqueueLocksUsage       metricInfo
-	OracledbEnqueueResourcesLimit   metricInfo
-	OracledbEnqueueResourcesUsage   metricInfo
-	OracledbExchangeDeadlocks       metricInfo
-	OracledbExecutions              metricInfo
-	OracledbHardParses              metricInfo
-	OracledbLogicalReads            metricInfo
-	OracledbParseCalls              metricInfo
-	OracledbPgaMemory               metricInfo
-	OracledbPhysicalReadIoRequests  metricInfo
-	OracledbPhysicalReads           metricInfo
-	OracledbPhysicalReadsDirect     metricInfo
-	OracledbPhysicalWriteIoRequests metricInfo
-	OracledbPhysicalWrites          metricInfo
-	OracledbPhysicalWritesDirect    metricInfo
-	OracledbProcessesLimit          metricInfo
-	OracledbProcessesUsage          metricInfo
-	OracledbSessionsLimit           metricInfo
-	OracledbSessionsUsage           metricInfo
-	OracledbTablespaceSizeLimit     metricInfo
-	OracledbTablespaceSizeUsage     metricInfo
-	OracledbTransactionsLimit       metricInfo
-	OracledbTransactionsUsage       metricInfo
-	OracledbUserCommits             metricInfo
-	OracledbUserRollbacks           metricInfo
+	OracledbConsistentGets                        metricInfo
+	OracledbCPUTime                               metricInfo
+	OracledbDbBlockGets                           metricInfo
+	OracledbDdlStatementsParallelized             metricInfo
+	OracledbDmlLocksLimit                         metricInfo
+	OracledbDmlLocksUsage                         metricInfo
+	OracledbDmlStatementsParallelized             metricInfo
+	OracledbEnqueueDeadlocks                      metricInfo
+	OracledbEnqueueLocksLimit                     metricInfo
+	OracledbEnqueueLocksUsage                     metricInfo
+	OracledbEnqueueResourcesLimit                 metricInfo
+	OracledbEnqueueResourcesUsage                 metricInfo
+	OracledbExchangeDeadlocks                     metricInfo
+	OracledbExecutions                            metricInfo
+	OracledbHardParses                            metricInfo
+	OracledbLogicalReads                          metricInfo
+	OracledbParallelOperationsDowngraded1To25Pct  metricInfo
+	OracledbParallelOperationsDowngraded25To50Pct metricInfo
+	OracledbParallelOperationsDowngraded50To75Pct metricInfo
+	OracledbParallelOperationsDowngraded75To99Pct metricInfo
+	OracledbParallelOperationsDowngradedToSerial  metricInfo
+	OracledbParallelOperationsNotDowngraded       metricInfo
+	OracledbParseCalls                            metricInfo
+	OracledbPgaMemory                             metricInfo
+	OracledbPhysicalReadIoRequests                metricInfo
+	OracledbPhysicalReads                         metricInfo
+	OracledbPhysicalReadsDirect                   metricInfo
+	OracledbPhysicalWriteIoRequests               metricInfo
+	OracledbPhysicalWrites                        metricInfo
+	OracledbPhysicalWritesDirect                  metricInfo
+	OracledbProcessesLimit                        metricInfo
+	OracledbProcessesUsage                        metricInfo
+	OracledbQueriesParallelized                   metricInfo
+	OracledbSessionsLimit                         metricInfo
+	OracledbSessionsUsage                         metricInfo
+	OracledbTablespaceSizeLimit                   metricInfo
+	OracledbTablespaceSizeUsage                   metricInfo
+	OracledbTransactionsLimit                     metricInfo
+	OracledbTransactionsUsage                     metricInfo
+	OracledbUserCommits                           metricInfo
+	OracledbUserRollbacks                         metricInfo
 }
 
 type metricInfo struct {
@@ -305,6 +341,57 @@ func newMetricOracledbDbBlockGets(cfg MetricConfig) metricOracledbDbBlockGets {
 	return m
 }
 
+type metricOracledbDdlStatementsParallelized struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.ddl_statements_parallelized metric with initial data.
+func (m *metricOracledbDdlStatementsParallelized) init() {
+	m.data.SetName("oracledb.ddl_statements_parallelized")
+	m.data.SetDescription("Number of DDL statements that were executed in parallel")
+	m.data.SetUnit("{statements}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbDdlStatementsParallelized) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbDdlStatementsParallelized) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbDdlStatementsParallelized) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbDdlStatementsParallelized(cfg MetricConfig) metricOracledbDdlStatementsParallelized {
+	m := metricOracledbDdlStatementsParallelized{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbDmlLocksLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -396,6 +483,57 @@ func (m *metricOracledbDmlLocksUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbDmlLocksUsage(cfg MetricConfig) metricOracledbDmlLocksUsage {
 	m := metricOracledbDmlLocksUsage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbDmlStatementsParallelized struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.dml_statements_parallelized metric with initial data.
+func (m *metricOracledbDmlStatementsParallelized) init() {
+	m.data.SetName("oracledb.dml_statements_parallelized")
+	m.data.SetDescription("Number of DML statements that were executed in parallel")
+	m.data.SetUnit("{statements}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbDmlStatementsParallelized) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbDmlStatementsParallelized) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbDmlStatementsParallelized) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbDmlStatementsParallelized(cfg MetricConfig) metricOracledbDmlStatementsParallelized {
+	m := metricOracledbDmlStatementsParallelized{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -847,6 +985,312 @@ func (m *metricOracledbLogicalReads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbLogicalReads(cfg MetricConfig) metricOracledbLogicalReads {
 	m := metricOracledbLogicalReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbParallelOperationsDowngraded1To25Pct struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.parallel_operations_downgraded_1_to_25_pct metric with initial data.
+func (m *metricOracledbParallelOperationsDowngraded1To25Pct) init() {
+	m.data.SetName("oracledb.parallel_operations_downgraded_1_to_25_pct")
+	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbParallelOperationsDowngraded1To25Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbParallelOperationsDowngraded1To25Pct) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbParallelOperationsDowngraded1To25Pct) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbParallelOperationsDowngraded1To25Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded1To25Pct {
+	m := metricOracledbParallelOperationsDowngraded1To25Pct{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbParallelOperationsDowngraded25To50Pct struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.parallel_operations_downgraded_25_to_50_pct metric with initial data.
+func (m *metricOracledbParallelOperationsDowngraded25To50Pct) init() {
+	m.data.SetName("oracledb.parallel_operations_downgraded_25_to_50_pct")
+	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbParallelOperationsDowngraded25To50Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbParallelOperationsDowngraded25To50Pct) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbParallelOperationsDowngraded25To50Pct) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbParallelOperationsDowngraded25To50Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded25To50Pct {
+	m := metricOracledbParallelOperationsDowngraded25To50Pct{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbParallelOperationsDowngraded50To75Pct struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.parallel_operations_downgraded_50_to_75_pct metric with initial data.
+func (m *metricOracledbParallelOperationsDowngraded50To75Pct) init() {
+	m.data.SetName("oracledb.parallel_operations_downgraded_50_to_75_pct")
+	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbParallelOperationsDowngraded50To75Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbParallelOperationsDowngraded50To75Pct) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbParallelOperationsDowngraded50To75Pct) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbParallelOperationsDowngraded50To75Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded50To75Pct {
+	m := metricOracledbParallelOperationsDowngraded50To75Pct{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbParallelOperationsDowngraded75To99Pct struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.parallel_operations_downgraded_75_to_99_pct metric with initial data.
+func (m *metricOracledbParallelOperationsDowngraded75To99Pct) init() {
+	m.data.SetName("oracledb.parallel_operations_downgraded_75_to_99_pct")
+	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbParallelOperationsDowngraded75To99Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbParallelOperationsDowngraded75To99Pct) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbParallelOperationsDowngraded75To99Pct) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbParallelOperationsDowngraded75To99Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded75To99Pct {
+	m := metricOracledbParallelOperationsDowngraded75To99Pct{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbParallelOperationsDowngradedToSerial struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.parallel_operations_downgraded_to_serial metric with initial data.
+func (m *metricOracledbParallelOperationsDowngradedToSerial) init() {
+	m.data.SetName("oracledb.parallel_operations_downgraded_to_serial")
+	m.data.SetDescription("Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbParallelOperationsDowngradedToSerial) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbParallelOperationsDowngradedToSerial) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbParallelOperationsDowngradedToSerial) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbParallelOperationsDowngradedToSerial(cfg MetricConfig) metricOracledbParallelOperationsDowngradedToSerial {
+	m := metricOracledbParallelOperationsDowngradedToSerial{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbParallelOperationsNotDowngraded struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.parallel_operations_not_downgraded metric with initial data.
+func (m *metricOracledbParallelOperationsNotDowngraded) init() {
+	m.data.SetName("oracledb.parallel_operations_not_downgraded")
+	m.data.SetDescription("Number of times parallel execution was executed at the requested degree of parallelism")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbParallelOperationsNotDowngraded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbParallelOperationsNotDowngraded) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbParallelOperationsNotDowngraded) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbParallelOperationsNotDowngraded(cfg MetricConfig) metricOracledbParallelOperationsNotDowngraded {
+	m := metricOracledbParallelOperationsNotDowngraded{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1360,6 +1804,57 @@ func newMetricOracledbProcessesUsage(cfg MetricConfig) metricOracledbProcessesUs
 	return m
 }
 
+type metricOracledbQueriesParallelized struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.queries_parallelized metric with initial data.
+func (m *metricOracledbQueriesParallelized) init() {
+	m.data.SetName("oracledb.queries_parallelized")
+	m.data.SetDescription("Number of SELECT statements executed in parallel")
+	m.data.SetUnit("{queries}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbQueriesParallelized) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbQueriesParallelized) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbQueriesParallelized) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbQueriesParallelized(cfg MetricConfig) metricOracledbQueriesParallelized {
+	m := metricOracledbQueriesParallelized{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbSessionsLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1766,45 +2261,54 @@ func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollback
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                MetricsBuilderConfig // config of the metrics builder.
-	startTime                             pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                       int                  // maximum observed number of metrics per resource.
-	metricsBuffer                         pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                             component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter        map[string]filter.Filter
-	resourceAttributeExcludeFilter        map[string]filter.Filter
-	metricOracledbConsistentGets          metricOracledbConsistentGets
-	metricOracledbCPUTime                 metricOracledbCPUTime
-	metricOracledbDbBlockGets             metricOracledbDbBlockGets
-	metricOracledbDmlLocksLimit           metricOracledbDmlLocksLimit
-	metricOracledbDmlLocksUsage           metricOracledbDmlLocksUsage
-	metricOracledbEnqueueDeadlocks        metricOracledbEnqueueDeadlocks
-	metricOracledbEnqueueLocksLimit       metricOracledbEnqueueLocksLimit
-	metricOracledbEnqueueLocksUsage       metricOracledbEnqueueLocksUsage
-	metricOracledbEnqueueResourcesLimit   metricOracledbEnqueueResourcesLimit
-	metricOracledbEnqueueResourcesUsage   metricOracledbEnqueueResourcesUsage
-	metricOracledbExchangeDeadlocks       metricOracledbExchangeDeadlocks
-	metricOracledbExecutions              metricOracledbExecutions
-	metricOracledbHardParses              metricOracledbHardParses
-	metricOracledbLogicalReads            metricOracledbLogicalReads
-	metricOracledbParseCalls              metricOracledbParseCalls
-	metricOracledbPgaMemory               metricOracledbPgaMemory
-	metricOracledbPhysicalReadIoRequests  metricOracledbPhysicalReadIoRequests
-	metricOracledbPhysicalReads           metricOracledbPhysicalReads
-	metricOracledbPhysicalReadsDirect     metricOracledbPhysicalReadsDirect
-	metricOracledbPhysicalWriteIoRequests metricOracledbPhysicalWriteIoRequests
-	metricOracledbPhysicalWrites          metricOracledbPhysicalWrites
-	metricOracledbPhysicalWritesDirect    metricOracledbPhysicalWritesDirect
-	metricOracledbProcessesLimit          metricOracledbProcessesLimit
-	metricOracledbProcessesUsage          metricOracledbProcessesUsage
-	metricOracledbSessionsLimit           metricOracledbSessionsLimit
-	metricOracledbSessionsUsage           metricOracledbSessionsUsage
-	metricOracledbTablespaceSizeLimit     metricOracledbTablespaceSizeLimit
-	metricOracledbTablespaceSizeUsage     metricOracledbTablespaceSizeUsage
-	metricOracledbTransactionsLimit       metricOracledbTransactionsLimit
-	metricOracledbTransactionsUsage       metricOracledbTransactionsUsage
-	metricOracledbUserCommits             metricOracledbUserCommits
-	metricOracledbUserRollbacks           metricOracledbUserRollbacks
+	config                                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                      map[string]filter.Filter
+	resourceAttributeExcludeFilter                      map[string]filter.Filter
+	metricOracledbConsistentGets                        metricOracledbConsistentGets
+	metricOracledbCPUTime                               metricOracledbCPUTime
+	metricOracledbDbBlockGets                           metricOracledbDbBlockGets
+	metricOracledbDdlStatementsParallelized             metricOracledbDdlStatementsParallelized
+	metricOracledbDmlLocksLimit                         metricOracledbDmlLocksLimit
+	metricOracledbDmlLocksUsage                         metricOracledbDmlLocksUsage
+	metricOracledbDmlStatementsParallelized             metricOracledbDmlStatementsParallelized
+	metricOracledbEnqueueDeadlocks                      metricOracledbEnqueueDeadlocks
+	metricOracledbEnqueueLocksLimit                     metricOracledbEnqueueLocksLimit
+	metricOracledbEnqueueLocksUsage                     metricOracledbEnqueueLocksUsage
+	metricOracledbEnqueueResourcesLimit                 metricOracledbEnqueueResourcesLimit
+	metricOracledbEnqueueResourcesUsage                 metricOracledbEnqueueResourcesUsage
+	metricOracledbExchangeDeadlocks                     metricOracledbExchangeDeadlocks
+	metricOracledbExecutions                            metricOracledbExecutions
+	metricOracledbHardParses                            metricOracledbHardParses
+	metricOracledbLogicalReads                          metricOracledbLogicalReads
+	metricOracledbParallelOperationsDowngraded1To25Pct  metricOracledbParallelOperationsDowngraded1To25Pct
+	metricOracledbParallelOperationsDowngraded25To50Pct metricOracledbParallelOperationsDowngraded25To50Pct
+	metricOracledbParallelOperationsDowngraded50To75Pct metricOracledbParallelOperationsDowngraded50To75Pct
+	metricOracledbParallelOperationsDowngraded75To99Pct metricOracledbParallelOperationsDowngraded75To99Pct
+	metricOracledbParallelOperationsDowngradedToSerial  metricOracledbParallelOperationsDowngradedToSerial
+	metricOracledbParallelOperationsNotDowngraded       metricOracledbParallelOperationsNotDowngraded
+	metricOracledbParseCalls                            metricOracledbParseCalls
+	metricOracledbPgaMemory                             metricOracledbPgaMemory
+	metricOracledbPhysicalReadIoRequests                metricOracledbPhysicalReadIoRequests
+	metricOracledbPhysicalReads                         metricOracledbPhysicalReads
+	metricOracledbPhysicalReadsDirect                   metricOracledbPhysicalReadsDirect
+	metricOracledbPhysicalWriteIoRequests               metricOracledbPhysicalWriteIoRequests
+	metricOracledbPhysicalWrites                        metricOracledbPhysicalWrites
+	metricOracledbPhysicalWritesDirect                  metricOracledbPhysicalWritesDirect
+	metricOracledbProcessesLimit                        metricOracledbProcessesLimit
+	metricOracledbProcessesUsage                        metricOracledbProcessesUsage
+	metricOracledbQueriesParallelized                   metricOracledbQueriesParallelized
+	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
+	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
+	metricOracledbTablespaceSizeLimit                   metricOracledbTablespaceSizeLimit
+	metricOracledbTablespaceSizeUsage                   metricOracledbTablespaceSizeUsage
+	metricOracledbTransactionsLimit                     metricOracledbTransactionsLimit
+	metricOracledbTransactionsUsage                     metricOracledbTransactionsUsage
+	metricOracledbUserCommits                           metricOracledbUserCommits
+	metricOracledbUserRollbacks                         metricOracledbUserRollbacks
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1826,44 +2330,53 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                mbc,
-		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                         pmetric.NewMetrics(),
-		buildInfo:                             settings.BuildInfo,
-		metricOracledbConsistentGets:          newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
-		metricOracledbCPUTime:                 newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
-		metricOracledbDbBlockGets:             newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
-		metricOracledbDmlLocksLimit:           newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
-		metricOracledbDmlLocksUsage:           newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
-		metricOracledbEnqueueDeadlocks:        newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
-		metricOracledbEnqueueLocksLimit:       newMetricOracledbEnqueueLocksLimit(mbc.Metrics.OracledbEnqueueLocksLimit),
-		metricOracledbEnqueueLocksUsage:       newMetricOracledbEnqueueLocksUsage(mbc.Metrics.OracledbEnqueueLocksUsage),
-		metricOracledbEnqueueResourcesLimit:   newMetricOracledbEnqueueResourcesLimit(mbc.Metrics.OracledbEnqueueResourcesLimit),
-		metricOracledbEnqueueResourcesUsage:   newMetricOracledbEnqueueResourcesUsage(mbc.Metrics.OracledbEnqueueResourcesUsage),
-		metricOracledbExchangeDeadlocks:       newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
-		metricOracledbExecutions:              newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
-		metricOracledbHardParses:              newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
-		metricOracledbLogicalReads:            newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
-		metricOracledbParseCalls:              newMetricOracledbParseCalls(mbc.Metrics.OracledbParseCalls),
-		metricOracledbPgaMemory:               newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
-		metricOracledbPhysicalReadIoRequests:  newMetricOracledbPhysicalReadIoRequests(mbc.Metrics.OracledbPhysicalReadIoRequests),
-		metricOracledbPhysicalReads:           newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
-		metricOracledbPhysicalReadsDirect:     newMetricOracledbPhysicalReadsDirect(mbc.Metrics.OracledbPhysicalReadsDirect),
-		metricOracledbPhysicalWriteIoRequests: newMetricOracledbPhysicalWriteIoRequests(mbc.Metrics.OracledbPhysicalWriteIoRequests),
-		metricOracledbPhysicalWrites:          newMetricOracledbPhysicalWrites(mbc.Metrics.OracledbPhysicalWrites),
-		metricOracledbPhysicalWritesDirect:    newMetricOracledbPhysicalWritesDirect(mbc.Metrics.OracledbPhysicalWritesDirect),
-		metricOracledbProcessesLimit:          newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
-		metricOracledbProcessesUsage:          newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
-		metricOracledbSessionsLimit:           newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
-		metricOracledbSessionsUsage:           newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
-		metricOracledbTablespaceSizeLimit:     newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
-		metricOracledbTablespaceSizeUsage:     newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
-		metricOracledbTransactionsLimit:       newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
-		metricOracledbTransactionsUsage:       newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
-		metricOracledbUserCommits:             newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
-		metricOracledbUserRollbacks:           newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
-		resourceAttributeIncludeFilter:        make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:        make(map[string]filter.Filter),
+		config:                                              mbc,
+		startTime:                                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                       pmetric.NewMetrics(),
+		buildInfo:                                           settings.BuildInfo,
+		metricOracledbConsistentGets:                        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
+		metricOracledbCPUTime:                               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDbBlockGets:                           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
+		metricOracledbDdlStatementsParallelized:             newMetricOracledbDdlStatementsParallelized(mbc.Metrics.OracledbDdlStatementsParallelized),
+		metricOracledbDmlLocksLimit:                         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
+		metricOracledbDmlLocksUsage:                         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
+		metricOracledbDmlStatementsParallelized:             newMetricOracledbDmlStatementsParallelized(mbc.Metrics.OracledbDmlStatementsParallelized),
+		metricOracledbEnqueueDeadlocks:                      newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
+		metricOracledbEnqueueLocksLimit:                     newMetricOracledbEnqueueLocksLimit(mbc.Metrics.OracledbEnqueueLocksLimit),
+		metricOracledbEnqueueLocksUsage:                     newMetricOracledbEnqueueLocksUsage(mbc.Metrics.OracledbEnqueueLocksUsage),
+		metricOracledbEnqueueResourcesLimit:                 newMetricOracledbEnqueueResourcesLimit(mbc.Metrics.OracledbEnqueueResourcesLimit),
+		metricOracledbEnqueueResourcesUsage:                 newMetricOracledbEnqueueResourcesUsage(mbc.Metrics.OracledbEnqueueResourcesUsage),
+		metricOracledbExchangeDeadlocks:                     newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
+		metricOracledbExecutions:                            newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
+		metricOracledbHardParses:                            newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
+		metricOracledbLogicalReads:                          newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
+		metricOracledbParallelOperationsDowngraded1To25Pct:  newMetricOracledbParallelOperationsDowngraded1To25Pct(mbc.Metrics.OracledbParallelOperationsDowngraded1To25Pct),
+		metricOracledbParallelOperationsDowngraded25To50Pct: newMetricOracledbParallelOperationsDowngraded25To50Pct(mbc.Metrics.OracledbParallelOperationsDowngraded25To50Pct),
+		metricOracledbParallelOperationsDowngraded50To75Pct: newMetricOracledbParallelOperationsDowngraded50To75Pct(mbc.Metrics.OracledbParallelOperationsDowngraded50To75Pct),
+		metricOracledbParallelOperationsDowngraded75To99Pct: newMetricOracledbParallelOperationsDowngraded75To99Pct(mbc.Metrics.OracledbParallelOperationsDowngraded75To99Pct),
+		metricOracledbParallelOperationsDowngradedToSerial:  newMetricOracledbParallelOperationsDowngradedToSerial(mbc.Metrics.OracledbParallelOperationsDowngradedToSerial),
+		metricOracledbParallelOperationsNotDowngraded:       newMetricOracledbParallelOperationsNotDowngraded(mbc.Metrics.OracledbParallelOperationsNotDowngraded),
+		metricOracledbParseCalls:                            newMetricOracledbParseCalls(mbc.Metrics.OracledbParseCalls),
+		metricOracledbPgaMemory:                             newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
+		metricOracledbPhysicalReadIoRequests:                newMetricOracledbPhysicalReadIoRequests(mbc.Metrics.OracledbPhysicalReadIoRequests),
+		metricOracledbPhysicalReads:                         newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
+		metricOracledbPhysicalReadsDirect:                   newMetricOracledbPhysicalReadsDirect(mbc.Metrics.OracledbPhysicalReadsDirect),
+		metricOracledbPhysicalWriteIoRequests:               newMetricOracledbPhysicalWriteIoRequests(mbc.Metrics.OracledbPhysicalWriteIoRequests),
+		metricOracledbPhysicalWrites:                        newMetricOracledbPhysicalWrites(mbc.Metrics.OracledbPhysicalWrites),
+		metricOracledbPhysicalWritesDirect:                  newMetricOracledbPhysicalWritesDirect(mbc.Metrics.OracledbPhysicalWritesDirect),
+		metricOracledbProcessesLimit:                        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
+		metricOracledbProcessesUsage:                        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
+		metricOracledbQueriesParallelized:                   newMetricOracledbQueriesParallelized(mbc.Metrics.OracledbQueriesParallelized),
+		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
+		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
+		metricOracledbTablespaceSizeLimit:                   newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
+		metricOracledbTablespaceSizeUsage:                   newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
+		metricOracledbTransactionsLimit:                     newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
+		metricOracledbTransactionsUsage:                     newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
+		metricOracledbUserCommits:                           newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
+		metricOracledbUserRollbacks:                         newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
+		resourceAttributeIncludeFilter:                      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                      make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude)
@@ -1943,8 +2456,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbConsistentGets.emit(ils.Metrics())
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
 	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
+	mb.metricOracledbDdlStatementsParallelized.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksUsage.emit(ils.Metrics())
+	mb.metricOracledbDmlStatementsParallelized.emit(ils.Metrics())
 	mb.metricOracledbEnqueueDeadlocks.emit(ils.Metrics())
 	mb.metricOracledbEnqueueLocksLimit.emit(ils.Metrics())
 	mb.metricOracledbEnqueueLocksUsage.emit(ils.Metrics())
@@ -1954,6 +2469,12 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbExecutions.emit(ils.Metrics())
 	mb.metricOracledbHardParses.emit(ils.Metrics())
 	mb.metricOracledbLogicalReads.emit(ils.Metrics())
+	mb.metricOracledbParallelOperationsDowngraded1To25Pct.emit(ils.Metrics())
+	mb.metricOracledbParallelOperationsDowngraded25To50Pct.emit(ils.Metrics())
+	mb.metricOracledbParallelOperationsDowngraded50To75Pct.emit(ils.Metrics())
+	mb.metricOracledbParallelOperationsDowngraded75To99Pct.emit(ils.Metrics())
+	mb.metricOracledbParallelOperationsDowngradedToSerial.emit(ils.Metrics())
+	mb.metricOracledbParallelOperationsNotDowngraded.emit(ils.Metrics())
 	mb.metricOracledbParseCalls.emit(ils.Metrics())
 	mb.metricOracledbPgaMemory.emit(ils.Metrics())
 	mb.metricOracledbPhysicalReadIoRequests.emit(ils.Metrics())
@@ -1964,6 +2485,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbPhysicalWritesDirect.emit(ils.Metrics())
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
+	mb.metricOracledbQueriesParallelized.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
 	mb.metricOracledbTablespaceSizeLimit.emit(ils.Metrics())
@@ -2028,6 +2550,16 @@ func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestam
 	return nil
 }
 
+// RecordOracledbDdlStatementsParallelizedDataPoint adds a data point to oracledb.ddl_statements_parallelized metric.
+func (mb *MetricsBuilder) RecordOracledbDdlStatementsParallelizedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDdlStatementsParallelized, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbDdlStatementsParallelized.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordOracledbDmlLocksLimitDataPoint adds a data point to oracledb.dml_locks.limit metric.
 func (mb *MetricsBuilder) RecordOracledbDmlLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -2045,6 +2577,16 @@ func (mb *MetricsBuilder) RecordOracledbDmlLocksUsageDataPoint(ts pcommon.Timest
 		return fmt.Errorf("failed to parse int64 for OracledbDmlLocksUsage, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbDmlLocksUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbDmlStatementsParallelizedDataPoint adds a data point to oracledb.dml_statements_parallelized metric.
+func (mb *MetricsBuilder) RecordOracledbDmlStatementsParallelizedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDmlStatementsParallelized, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbDmlStatementsParallelized.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -2135,6 +2677,66 @@ func (mb *MetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timesta
 		return fmt.Errorf("failed to parse int64 for OracledbLogicalReads, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbLogicalReads.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbParallelOperationsDowngraded1To25PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_1_to_25_pct metric.
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded1To25Pct, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbParallelOperationsDowngraded1To25Pct.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbParallelOperationsDowngraded25To50PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_25_to_50_pct metric.
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded25To50Pct, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbParallelOperationsDowngraded25To50Pct.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbParallelOperationsDowngraded50To75PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_50_to_75_pct metric.
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded50To75Pct, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbParallelOperationsDowngraded50To75Pct.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbParallelOperationsDowngraded75To99PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_75_to_99_pct metric.
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded75To99Pct, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbParallelOperationsDowngraded75To99Pct.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbParallelOperationsDowngradedToSerialDataPoint adds a data point to oracledb.parallel_operations_downgraded_to_serial metric.
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngradedToSerial, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbParallelOperationsDowngradedToSerial.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbParallelOperationsNotDowngradedDataPoint adds a data point to oracledb.parallel_operations_not_downgraded metric.
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsNotDowngradedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsNotDowngraded, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbParallelOperationsNotDowngraded.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -2235,6 +2837,16 @@ func (mb *MetricsBuilder) RecordOracledbProcessesUsageDataPoint(ts pcommon.Times
 		return fmt.Errorf("failed to parse int64 for OracledbProcessesUsage, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbProcessesUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbQueriesParallelizedDataPoint adds a data point to oracledb.queries_parallelized metric.
+func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbQueriesParallelized, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbQueriesParallelized.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

@@ -41,7 +41,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the skywalking receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -85,7 +85,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -103,7 +103,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -125,7 +125,7 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
 		TLSSetting: &configtls.ServerConfig{
 			Config: configtls.Config{
@@ -145,7 +145,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
 	}
 	set := receivertest.NewNopSettings(metadata.Type)

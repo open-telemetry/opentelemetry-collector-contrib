@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/smithy-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -29,20 +29,28 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
+func (p *mockPusher) AddLogEntry(_ context.Context, _ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return &smithy.GenericAPIError{
+			Code:    "",
+			Message: "",
+			Fault:   smithy.FaultClient,
+		}
 	}
 	return nil
 }
 
-func (p *mockPusher) ForceFlush() error {
+func (p *mockPusher) ForceFlush(_ context.Context) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return &smithy.GenericAPIError{
+			Code:    "",
+			Message: "",
+			Fault:   smithy.FaultClient,
+		}
 	}
 	return nil
 }
@@ -401,10 +409,18 @@ func TestNewExporterWithoutSession(t *testing.T) {
 }
 
 func TestWrapErrorIfBadRequest(t *testing.T) {
-	awsErr := awserr.NewRequestFailure(nil, 400, "").(error)
+	awsErr := &smithy.GenericAPIError{
+		Code:    "",
+		Message: "",
+		Fault:   smithy.FaultClient,
+	}
 	err := wrapErrorIfBadRequest(awsErr)
 	assert.True(t, consumererror.IsPermanent(err))
-	awsErr = awserr.NewRequestFailure(nil, 500, "").(error)
+	awsErr = &smithy.GenericAPIError{
+		Code:    "",
+		Message: "",
+		Fault:   smithy.FaultServer,
+	}
 	err = wrapErrorIfBadRequest(awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
 }

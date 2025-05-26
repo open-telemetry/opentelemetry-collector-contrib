@@ -197,8 +197,6 @@ SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
                                   )`
 )
 
-var driverName = "clickhouse" // for testing
-
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 	db, err := cfg.buildDB()
@@ -214,9 +212,15 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 		return nil
 	}
 
+	// We couldn't set a database in the dsn while creating the database,
+	// otherwise, there would be an exception from clickhouse
+	targetDatabase := cfg.Database
+	cfg.Database = defaultDatabase
+
 	db, err := cfg.buildDB()
+	cfg.Database = targetDatabase
 	if err != nil {
-		return err
+		return fmt.Errorf("can't connect to clickhouse: %w", err)
 	}
 	defer func() {
 		_ = db.Close()

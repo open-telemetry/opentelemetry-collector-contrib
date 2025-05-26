@@ -52,5 +52,5 @@ func TestDuplicateKeys(t *testing.T) {
 	gbap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"foo", "foo", ""})
 	require.NoError(t, err)
 	assert.NotNil(t, gbap)
-	assert.EqualValues(t, []string{"foo"}, gbap.groupByKeys)
+	assert.Equal(t, []string{"foo"}, gbap.groupByKeys)
 }

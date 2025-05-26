@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -86,7 +87,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	switch format {
 	case dockerFormat:
 		p.timeLayout = goTimeLayout
-		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleTimeAndAttributeMappings)
+		err = p.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleTimeAndAttributeMappings)
 		if err != nil {
 			return fmt.Errorf("failed to process the docker log: %w", err)
 		}
@@ -116,14 +117,14 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParseWith(ctx, entry, p.parseContainerd)
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParseWith(ctx, entry, p.parseCRIO)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
@@ -141,7 +142,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return fmt.Errorf("failed to recombine the crio log: %w", err)
 		}
 	default:
-		return fmt.Errorf("failed to detect a valid container log format")
+		return errors.New("failed to detect a valid container log format")
 	}
 
 	return nil
@@ -155,28 +156,26 @@ func (p *Parser) Stop() error {
 		// nothing is started return
 		return nil
 	}
-	var stopErrs []error
-	err := p.recombineParser.Stop()
-	if err != nil {
-		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
+	var errs error
+	if err := p.recombineParser.Stop(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
 	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
 	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
 	// the entries synchronously it is safe to call its Stop.
 	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
-	err = p.criLogEmitter.Stop()
-	if err != nil {
-		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
+	if err := p.criLogEmitter.Stop(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
 	p.criConsumers.Wait()
-	return errors.Join(stopErrs...)
+	return errs
 }
 
 // detectFormat will detect the container log format
 func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
-		return "", fmt.Errorf("entry cannot be parsed as container logs")
+		return "", errors.New("entry cannot be parsed as container logs")
 	}
 
 	raw, ok := value.(string)
@@ -281,7 +280,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 
 	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
-		return fmt.Errorf("failed to detect a valid log path")
+		return errors.New("failed to detect a valid log path")
 	}
 
 	for originalKey, attributeKey := range k8sMetadataMapping {

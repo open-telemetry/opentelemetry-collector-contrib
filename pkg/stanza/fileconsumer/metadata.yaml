@@ -1,11 +1,13 @@
 type: fileconsumer
 
 status:
+  disable_codecov_badge: true
   class: pkg
   stability:
     beta: [logs]
   codeowners:
-    active: [djaglowski, andrzej-stencel]
+    active: [andrzej-stencel]
+    emeritus: [djaglowski]
 
 telemetry:
   metrics:

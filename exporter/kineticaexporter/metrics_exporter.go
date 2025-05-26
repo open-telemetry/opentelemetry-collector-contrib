@@ -5,6 +5,7 @@ package kineticaexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -323,7 +324,7 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 						errs = append(errs, err)
 					}
 				default:
-					return fmt.Errorf("Unsupported metrics type")
+					return errors.New("Unsupported metrics type")
 				}
 
 				e.logger.Debug("Gauge ", zap.Int("count = ", len(gaugeRecords)))
@@ -369,7 +370,7 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 			e.logger.Error(err.Error())
 		}
 	default:
-		return fmt.Errorf("Unsupported metrics type")
+		return errors.New("Unsupported metrics type")
 	}
 	return multierr.Combine(errs...)
 }

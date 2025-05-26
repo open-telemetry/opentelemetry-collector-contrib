@@ -9,7 +9,7 @@ status:
     development: [traces]
   distributions: [contrib]
   codeowners:
-    active: [adrielp, andrzej-stencel, crobert-1, TylerHelmuth]
+    active: [adrielp, crobert-1, TylerHelmuth]
 
 resource_attributes:
   organization.name:

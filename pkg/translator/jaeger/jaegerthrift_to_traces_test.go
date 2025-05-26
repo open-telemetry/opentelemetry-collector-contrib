@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -61,7 +61,7 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 	got := pcommon.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)
 
-	require.EqualValues(t, expected, got)
+	require.Equal(t, expected, got)
 }
 
 func TestThriftBatchToInternalTraces(t *testing.T) {
@@ -131,7 +131,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			td, err := ThriftToTraces(test.jb)
 			assert.NoError(t, err)
-			assert.EqualValues(t, test.td, td)
+			assert.Equal(t, test.td, td)
 		})
 	}
 }
@@ -196,12 +196,12 @@ func generateThriftSpan() *jaeger.Span {
 		},
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusCode,
 			},
 			{
-				Key:   conventions.OtelStatusDescription,
+				Key:   string(conventions.OtelStatusDescriptionKey),
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
@@ -230,7 +230,7 @@ func generateThriftChildSpan() *jaeger.Span {
 		Duration:      spanEndTs - spanStartTs,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.AttributeHTTPStatusCode,
+				Key:   string(conventions.HTTPStatusCodeKey),
 				VType: jaeger.TagType_LONG,
 				VLong: &notFoundAttrVal,
 			},
@@ -257,12 +257,12 @@ func generateThriftFollowerSpan() *jaeger.Span {
 		Duration:      1000,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusCode,
 			},
 			{
-				Key:   conventions.OtelStatusDescription,
+				Key:   string(conventions.OtelStatusDescriptionKey),
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
@@ -300,12 +300,12 @@ func generateThriftTwoParentsSpan() *jaeger.Span {
 		ParentSpanId:  int64(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusCode,
 			},
 			{
-				Key:   conventions.OtelStatusDescription,
+				Key:   string(conventions.OtelStatusDescriptionKey),
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},

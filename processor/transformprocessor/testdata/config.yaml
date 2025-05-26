@@ -165,27 +165,6 @@ transform/mixed_configuration_styles:
       statements:
         - set(attributes["name"], "bear")
         - keep_keys(attributes, ["http.method", "http.path"])
-    - statements:
-        - set(span.attributes["name"], "lion")
-    - set(span.name, "lion") where span.attributes["http.path"] == "/animal"
-  metric_statements:
-    - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
-    - context: resource
-      statements:
-        - set(attributes["name"], "bear")
-        - keep_keys(attributes, ["http.method", "http.path"])
-    - statements:
-        - set(metric.name, "lion")
-    - set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"
-  log_statements:
-    - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
-    - context: resource
-      statements:
-        - set(attributes["name"], "bear")
-        - keep_keys(attributes, ["http.method", "http.path"])
-    - statements:
-        - set(log.attributes["name"], "lion")
-    - set(log.body, "lion") where log.attributes["http.path"] == "/animal"
 
 transform/with_shared_cache_key:
   trace_statements:

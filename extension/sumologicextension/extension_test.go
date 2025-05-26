@@ -1358,7 +1358,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 				assert.Equal(t, hostname, reqPayload.Hostname)
 				assert.Equal(t, "my description", reqPayload.Description)
 				assert.Equal(t, "my category/", reqPayload.Category)
-				assert.EqualValues(t,
+				assert.Equal(t,
 					map[string]any{
 						"field1": "value1",
 						"field2": "value2",
@@ -1425,10 +1425,10 @@ func TestWatchCredentialKey(t *testing.T) {
 	ctxc, cancel := context.WithCancel(ctx)
 	cancel()
 	v := se.WatchCredentialKey(ctxc, "")
-	require.Equal(t, "", v)
+	require.Empty(t, v)
 
 	v = se.WatchCredentialKey(context.Background(), "foobar")
-	require.Equal(t, "", v)
+	require.Empty(t, v)
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
@@ -1484,8 +1484,8 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 			// @sumo-drosiek: It happened to be empty OsVersion on my machine
 			// require.NotEmpty(t, reqPayload.HostDetails.OsVersion)
 			assert.NotEmpty(t, reqPayload.NetworkDetails.HostIPAddress)
-			assert.EqualValues(t, "EKS-1.20.2", reqPayload.HostDetails.Environment)
-			assert.EqualValues(t, "1.0.0", reqPayload.CollectorDetails.RunningVersion)
+			assert.Equal(t, "EKS-1.20.2", reqPayload.HostDetails.Environment)
+			assert.Equal(t, "1.0.0", reqPayload.CollectorDetails.RunningVersion)
 			assert.EqualValues(t, "A", reqPayload.TagDetails["team"])
 			assert.EqualValues(t, "linux", reqPayload.TagDetails["app"])
 			assert.EqualValues(t, "true", reqPayload.TagDetails["sumo.disco.enabled"])

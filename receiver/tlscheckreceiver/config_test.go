@@ -4,6 +4,7 @@
 package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -117,7 +118,7 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("endpoint contains a scheme, which is not allowed: https://example.com:443"),
+			expectedErr: errors.New("endpoint contains a scheme, which is not allowed: https://example.com:443"),
 		},
 		{
 			desc: "both endpoint and file path",
@@ -132,7 +133,7 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("cannot specify both endpoint and file_path"),
+			expectedErr: errors.New("cannot specify both endpoint and file_path"),
 		},
 		{
 			desc: "relative file path",
@@ -144,7 +145,7 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("file path must be absolute: cert.pem"),
+			expectedErr: errors.New("file path must be absolute: cert.pem"),
 		},
 		{
 			desc: "nonexistent file",
@@ -156,7 +157,7 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("certificate file does not exist"),
+			expectedErr: errors.New("certificate file does not exist"),
 		},
 		{
 			desc: "directory instead of file",
@@ -190,8 +191,7 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			actualErr := tc.cfg.Validate()
 			if tc.expectedErr != nil {
-				require.Error(t, actualErr)
-				require.Contains(t, actualErr.Error(), tc.expectedErr.Error())
+				require.ErrorContains(t, actualErr, tc.expectedErr.Error())
 			} else {
 				require.NoError(t, actualErr)
 			}

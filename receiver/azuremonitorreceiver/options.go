@@ -7,16 +7,19 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 )
 
 type ClientOptionsResolver interface {
 	GetArmResourceClientOptions(subscriptionID string) *arm.ClientOptions
 	GetArmSubscriptionsClientOptions() *arm.ClientOptions
 	GetArmMonitorClientOptions() *arm.ClientOptions
+	GetAzMetricsClientOptions() *azmetrics.ClientOptions
 }
 
 type clientOptionsResolver struct {
-	options *arm.ClientOptions
+	armOptions       *arm.ClientOptions
+	azmetricsOptions *azmetrics.ClientOptions
 }
 
 // newClientOptionsResolver creates a resolver that will always return the same options.
@@ -31,7 +34,7 @@ func newClientOptionsResolver(cloudStr string) ClientOptionsResolver {
 	default:
 		cloudToUse = cloud.AzurePublic
 	}
-	return &clientOptionsResolver{options: &arm.ClientOptions{
+	return &clientOptionsResolver{armOptions: &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
 			Cloud: cloudToUse,
 		},
@@ -39,13 +42,17 @@ func newClientOptionsResolver(cloudStr string) ClientOptionsResolver {
 }
 
 func (r *clientOptionsResolver) GetArmResourceClientOptions(_ string) *arm.ClientOptions {
-	return r.options
+	return r.armOptions
 }
 
 func (r *clientOptionsResolver) GetArmSubscriptionsClientOptions() *arm.ClientOptions {
-	return r.options
+	return r.armOptions
 }
 
 func (r *clientOptionsResolver) GetArmMonitorClientOptions() *arm.ClientOptions {
-	return r.options
+	return r.armOptions
+}
+
+func (r *clientOptionsResolver) GetAzMetricsClientOptions() *azmetrics.ClientOptions {
+	return r.azmetricsOptions
 }

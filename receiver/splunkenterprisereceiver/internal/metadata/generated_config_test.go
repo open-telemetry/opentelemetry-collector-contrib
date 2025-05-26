@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,6 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: true},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: true},
 					SplunkIndexerRawWriteTime:                   MetricConfig{Enabled: true},
+					SplunkIndexerRollingrestartStatus:           MetricConfig{Enabled: true},
 					SplunkIndexerThroughput:                     MetricConfig{Enabled: true},
 					SplunkIndexesAvgSize:                        MetricConfig{Enabled: true},
 					SplunkIndexesAvgUsage:                       MetricConfig{Enabled: true},
@@ -55,6 +58,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerAvgExecutionLatency:          MetricConfig{Enabled: true},
 					SplunkSchedulerAvgRunTime:                   MetricConfig{Enabled: true},
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: true},
+					SplunkSearchDuration:                        MetricConfig{Enabled: true},
+					SplunkSearchInitiation:                      MetricConfig{Enabled: true},
+					SplunkSearchStatus:                          MetricConfig{Enabled: true},
+					SplunkSearchSuccess:                         MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: true},
 					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: true},
@@ -87,6 +94,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: false},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: false},
 					SplunkIndexerRawWriteTime:                   MetricConfig{Enabled: false},
+					SplunkIndexerRollingrestartStatus:           MetricConfig{Enabled: false},
 					SplunkIndexerThroughput:                     MetricConfig{Enabled: false},
 					SplunkIndexesAvgSize:                        MetricConfig{Enabled: false},
 					SplunkIndexesAvgUsage:                       MetricConfig{Enabled: false},
@@ -103,6 +111,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerAvgExecutionLatency:          MetricConfig{Enabled: false},
 					SplunkSchedulerAvgRunTime:                   MetricConfig{Enabled: false},
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: false},
+					SplunkSearchDuration:                        MetricConfig{Enabled: false},
+					SplunkSearchInitiation:                      MetricConfig{Enabled: false},
+					SplunkSearchStatus:                          MetricConfig{Enabled: false},
+					SplunkSearchSuccess:                         MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: false},
 					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: false},
@@ -133,6 +145,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

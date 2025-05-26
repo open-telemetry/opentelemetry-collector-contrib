@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 func init() {
@@ -101,7 +101,17 @@ func TestNewSaramaClientConfig(t *testing.T) {
 				assert.Equal(t, sarama.V3_1_2_0, cfg.Version)
 			},
 		},
-		"auth": {
+		"tls": {
+			input: func() configkafka.ClientConfig {
+				cfg := configkafka.NewDefaultClientConfig()
+				cfg.TLS = &configtls.ClientConfig{
+					Config: configtls.Config{CAFile: "/nonexistent"},
+				}
+				return cfg
+			}(),
+			expectedErr: "failed to load TLS config",
+		},
+		"auth_tls": {
 			input: func() configkafka.ClientConfig {
 				cfg := configkafka.NewDefaultClientConfig()
 				cfg.Authentication.TLS = &configtls.ClientConfig{
@@ -111,9 +121,34 @@ func TestNewSaramaClientConfig(t *testing.T) {
 			}(),
 			expectedErr: "failed to load TLS config",
 		},
+		"auth_tls_ignored": {
+			input: func() configkafka.ClientConfig {
+				cfg := configkafka.NewDefaultClientConfig()
+				cfg.TLS = &configtls.ClientConfig{}
+				cfg.Authentication.TLS = &configtls.ClientConfig{
+					Insecure: true,
+				}
+				return cfg
+			}(),
+			check: func(t *testing.T, cfg *sarama.Config) {
+				assert.True(t, cfg.Net.TLS.Enable)
+			},
+		},
+		"auth": {
+			input: func() configkafka.ClientConfig {
+				cfg := configkafka.NewDefaultClientConfig()
+				cfg.Authentication.SASL = &configkafka.SASLConfig{
+					Mechanism: "PLAIN",
+				}
+				return cfg
+			}(),
+			check: func(t *testing.T, cfg *sarama.Config) {
+				assert.Equal(t, sarama.SASLMechanism("PLAIN"), cfg.Net.SASL.Mechanism)
+			},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			output, err := NewSaramaClientConfig(context.Background(), tt.input)
+			output, err := newSaramaClientConfig(context.Background(), tt.input)
 			if tt.expectedErr != "" {
 				require.Error(t, err)
 				require.ErrorContains(t, err, tt.expectedErr)
@@ -218,9 +253,9 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 	caCert := httpServer.Certificate() // self-signed
 
 	_, clientConfig := kafkatest.NewCluster(t, kfake.TLS(serverTLS))
-	tryConnect := func(cfg *configtls.ClientConfig) error {
+	tryConnect := func(cfg configtls.ClientConfig) error {
 		clientConfig := clientConfig // copy
-		clientConfig.Authentication.TLS = cfg
+		clientConfig.TLS = &cfg
 		client, err := NewSaramaClient(context.Background(), clientConfig)
 		if err != nil {
 			return err
@@ -234,20 +269,40 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		tlsConfig.CAPem = configopaque.String(
 			pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCert.Raw}),
 		)
-		assert.NoError(t, tryConnect(&tlsConfig))
+		assert.NoError(t, tryConnect(tlsConfig))
 	})
 
 	t.Run("tls_insecure_skip_verify", func(t *testing.T) {
 		t.Parallel()
 		tlsConfig := configtls.NewDefaultClientConfig()
 		tlsConfig.InsecureSkipVerify = true
-		require.NoError(t, tryConnect(&tlsConfig))
+		require.NoError(t, tryConnect(tlsConfig))
+	})
+
+	t.Run("legacy_auth_tls", func(t *testing.T) {
+		t.Parallel()
+
+		tlsConfig := configtls.NewDefaultClientConfig()
+		tlsConfig.InsecureSkipVerify = true
+		clientConfig := clientConfig // copy
+		clientConfig.Authentication.TLS = &tlsConfig
+
+		client, err := NewSaramaClient(context.Background(), clientConfig)
+		require.NoError(t, err)
+		assert.NoError(t, client.Close())
+
+		// The legacy auth TLS config should be ignored when the
+		// top-level TLS config is specified.
+		invalidTLSConfig := configtls.NewDefaultClientConfig()
+		clientConfig.TLS = &invalidTLSConfig
+		_, err = NewSaramaClient(context.Background(), clientConfig)
+		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
 	})
 
 	t.Run("tls_unknown_ca", func(t *testing.T) {
 		t.Parallel()
 		config := configtls.NewDefaultClientConfig()
-		err := tryConnect(&config)
+		err := tryConnect(config)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
 	})
@@ -255,6 +310,180 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 	t.Run("plaintext", func(t *testing.T) {
 		t.Parallel()
 		// Should fail because the server expects TLS.
-		require.Error(t, tryConnect(nil))
+		require.Error(t, tryConnect(configtls.ClientConfig{}))
 	})
+}
+
+func TestNewSaramaConsumerGroup_RebalanceAndInstanceId(t *testing.T) {
+	cluster, clientConfig := kafkatest.NewCluster(t)
+	defer cluster.Close()
+	clientConfig.ProtocolVersion = "3.7.1"
+	tests := []struct {
+		name                   string
+		groupInstanceID        string
+		groupRebalanceStrategy string
+		checkFunc              func(t *testing.T, cfg *sarama.Config)
+	}{
+		{
+			name:                   "No GroupInstanceID and No RebalanceStrategy",
+			groupInstanceID:        "",
+			groupRebalanceStrategy: "",
+			checkFunc: func(t *testing.T, cfg *sarama.Config) {
+				assert.Empty(t, cfg.Consumer.Group.InstanceId)
+				require.NotNil(t, cfg.Consumer.Group.Rebalance.GroupStrategies)
+				assert.Len(t, cfg.Consumer.Group.Rebalance.GroupStrategies, 1)
+				assert.IsType(t, sarama.NewBalanceStrategyRange(), cfg.Consumer.Group.Rebalance.GroupStrategies[0])
+			},
+		},
+		{
+			name:                   "Only RebalanceStrategy",
+			groupInstanceID:        "",
+			groupRebalanceStrategy: sarama.RoundRobinBalanceStrategyName,
+			checkFunc: func(t *testing.T, cfg *sarama.Config) {
+				assert.Empty(t, cfg.Consumer.Group.InstanceId)
+				require.NotNil(t, cfg.Consumer.Group.Rebalance.GroupStrategies)
+				assert.Len(t, cfg.Consumer.Group.Rebalance.GroupStrategies, 1)
+				assert.IsType(t, sarama.NewBalanceStrategyRoundRobin(), cfg.Consumer.Group.Rebalance.GroupStrategies[0])
+			},
+		},
+		{
+			name:                   "Both GroupInstanceID and RebalanceStrategy",
+			groupInstanceID:        "instance-2",
+			groupRebalanceStrategy: sarama.StickyBalanceStrategyName,
+			checkFunc: func(t *testing.T, cfg *sarama.Config) {
+				assert.Equal(t, "instance-2", cfg.Consumer.Group.InstanceId)
+				require.NotNil(t, cfg.Consumer.Group.Rebalance.GroupStrategies)
+				assert.Len(t, cfg.Consumer.Group.Rebalance.GroupStrategies, 1)
+				assert.IsType(t, sarama.NewBalanceStrategySticky(), cfg.Consumer.Group.Rebalance.GroupStrategies[0])
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumerConfig := configkafka.NewDefaultConsumerConfig()
+			consumerConfig.GroupID = "test-group"
+			consumerConfig.GroupInstanceID = tt.groupInstanceID
+			consumerConfig.GroupRebalanceStrategy = tt.groupRebalanceStrategy
+
+			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			require.NoError(t, err)
+			rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
+			if rebalanceStrategy != nil {
+				saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
+			}
+			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+
+			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+			require.NoError(t, err)
+			assert.NotNil(t, consumerGroup)
+
+			tt.checkFunc(t, saramaConfig)
+
+			err = consumerGroup.Close()
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestNewSaramaConsumerGroup_GroupInstanceID(t *testing.T) {
+	cluster, clientConfig := kafkatest.NewCluster(t)
+	defer cluster.Close()
+	clientConfig.ProtocolVersion = "3.7.1"
+
+	tests := []struct {
+		name            string
+		groupInstanceID string
+	}{
+		{
+			name:            "No GroupInstanceID",
+			groupInstanceID: "",
+		},
+		{
+			name:            "With GroupInstanceID",
+			groupInstanceID: "test-instance-id",
+		},
+		{
+			name:            "With Another GroupInstanceID",
+			groupInstanceID: "another-test-instance-id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumerConfig := configkafka.NewDefaultConsumerConfig()
+			consumerConfig.GroupID = "test-group"
+			consumerConfig.GroupInstanceID = tt.groupInstanceID
+
+			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			require.NoError(t, err)
+
+			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+
+			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+			require.NoError(t, err)
+			assert.NotNil(t, consumerGroup)
+
+			if tt.groupInstanceID == "" {
+				assert.Empty(t, saramaConfig.Consumer.Group.InstanceId)
+			} else {
+				assert.Equal(t, tt.groupInstanceID, saramaConfig.Consumer.Group.InstanceId)
+			}
+
+			err = consumerGroup.Close()
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestNewSaramaConsumerGroup_GroupInstanceID_InvalidProtocolVersion(t *testing.T) {
+	cluster, clientConfig := kafkatest.NewCluster(t)
+	defer cluster.Close()
+
+	tests := []struct {
+		name            string
+		groupInstanceID string
+		protocolVersion string
+		expectedErr     string
+	}{
+		{
+			name:            "GroupInstanceID with Invalid Protocol Version",
+			groupInstanceID: "test-instance-id",
+			protocolVersion: "2.2.0",
+			expectedErr:     "Consumer.Group.InstanceId need Version >= 2.3",
+		},
+		{
+			name:            "No GroupInstanceID with Invalid Protocol Version",
+			groupInstanceID: "",
+			protocolVersion: "2.2.0",
+			expectedErr:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumerConfig := configkafka.NewDefaultConsumerConfig()
+			consumerConfig.GroupID = "test-group"
+			consumerConfig.GroupInstanceID = tt.groupInstanceID
+			clientConfig.ProtocolVersion = tt.protocolVersion
+
+			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			require.NoError(t, err)
+			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+
+			if tt.expectedErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, consumerGroup)
+			}
+
+			if consumerGroup != nil {
+				err = consumerGroup.Close()
+				require.NoError(t, err)
+			}
+		})
+	}
 }

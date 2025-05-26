@@ -5,12 +5,14 @@ package dbstorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
@@ -53,8 +55,15 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 
 func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 	ctx := context.Background()
-	err := se.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37079
+	// DB instantiation fails if we instantly try to connect to it, give it some time to start
+	var err error
+	require.Eventuallyf(t, func() bool {
+		err = se.Start(context.Background(), componenttest.NewNopHost())
+		return err == nil
+	}, 30*time.Second, 100*time.Millisecond, "timeout waiting for db: %v", err)
+
 	defer func() {
 		err = se.Shutdown(context.Background())
 		assert.NoError(t, err)
@@ -190,7 +199,7 @@ func newSqliteTestExtension(dbPath string) (storage.Extension, error) {
 
 	se, ok := extension.(storage.Extension)
 	if !ok {
-		return nil, fmt.Errorf("created extension is not a storage extension")
+		return nil, errors.New("created extension is not a storage extension")
 	}
 
 	return se, nil
@@ -237,7 +246,7 @@ func newPostgresTestExtension() (storage.Extension, testcontainers.Container, er
 
 	se, ok := extension.(storage.Extension)
 	if !ok {
-		return nil, nil, fmt.Errorf("created extension is not a storage extension")
+		return nil, nil, errors.New("created extension is not a storage extension")
 	}
 
 	return se, ctr, nil

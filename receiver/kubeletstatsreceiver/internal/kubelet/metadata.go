@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -20,15 +20,15 @@ import (
 type MetadataLabel string
 
 // Values for MetadataLabel enum.
-const (
-	MetadataLabelContainerID MetadataLabel = conventions.AttributeContainerID
-	MetadataLabelVolumeType  MetadataLabel = labelVolumeType
-)
+const MetadataLabelVolumeType MetadataLabel = labelVolumeType
 
-var supportedLabels = map[MetadataLabel]bool{
-	MetadataLabelContainerID: true,
-	MetadataLabelVolumeType:  true,
-}
+var (
+	MetadataLabelContainerID MetadataLabel = MetadataLabel(conventions.ContainerIDKey)
+	supportedLabels                        = map[MetadataLabel]bool{
+		MetadataLabelContainerID: true,
+		MetadataLabelVolumeType:  true,
+	}
+)
 
 // ValidateMetadataLabelsConfig validates that provided list of metadata labels is supported
 func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
@@ -52,7 +52,7 @@ type Metadata struct {
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 	podResources              map[string]resources
 	containerResources        map[string]resources
-	nodeCapacity              NodeCapacity
+	nodeInfo                  NodeInfo
 }
 
 type resources struct {
@@ -62,7 +62,7 @@ type resources struct {
 	memoryLimit   int64
 }
 
-type NodeCapacity struct {
+type NodeInfo struct {
 	Name string
 	// node's CPU capacity in cores
 	CPUCapacity float64
@@ -83,7 +83,7 @@ func getContainerResources(r *v1.ResourceRequirements) resources {
 	}
 }
 
-func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeCap NodeCapacity,
+func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeInfo NodeInfo,
 	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error,
 ) Metadata {
 	m := Metadata{
@@ -92,7 +92,7 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeCap NodeC
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
 		podResources:              make(map[string]resources),
 		containerResources:        make(map[string]resources),
-		nodeCapacity:              nodeCap,
+		nodeInfo:                  nodeInfo,
 	}
 
 	if podsMetadata != nil {

@@ -181,7 +181,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
 	}
 
-	if !(parsed.Scheme == "service" && strings.HasPrefix(parsed.Opaque, "jmx:")) {
+	if parsed.Scheme != "service" || !strings.HasPrefix(parsed.Opaque, "jmx:") {
 		host, portStr, err := net.SplitHostPort(jmx.config.Endpoint)
 		if err != nil {
 			return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)

@@ -5,6 +5,7 @@
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fkafkatopicsobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fkafkatopicsobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fkafkatopicsobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fkafkatopicsobserver) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_kafkatopics_observer)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_kafkatopics_observer&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -28,6 +29,7 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version e.g. 2.0.0
 - `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with.
 - `topics_sync_interval` (default 5s)
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
     - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
         - `username`: The username to use.
@@ -38,17 +40,7 @@ The following settings can be optionally configured:
         - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
         - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
         - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-    - `tls`
-        - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-          only be used if `insecure` is set to false.
-        - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-          only be used if `insecure` is set to false.
-        - `key_file`: path to the TLS key to use for TLS required connections. Should
-          only be used if `insecure` is set to false.
-        - `insecure` (default = false): Disable verifying the server's certificate
-          chain and host name (`InsecureSkipVerify` in the tls config)
-        - `server_name_override`: ServerName indicates the name of the server requested by the client
-          in order to support virtual hosting.
+    - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
     - `kerberos`
         - `service_name`: Kerberos service name
         - `realm`: Kerberos realm

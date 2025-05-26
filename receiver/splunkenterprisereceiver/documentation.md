@@ -26,6 +26,8 @@ The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' p
 | ---- | ----------- | ------ |
 | splunk.feature | The Feature name from the Splunk Health Introspection Endpoint | Any Str |
 | splunk.feature.health | The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ## Optional Metrics
 
@@ -50,6 +52,8 @@ Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.buckets.searchable.status
 
@@ -65,6 +69,8 @@ Gauge tracking the number of buckets and their searchable status. *Note:** Searc
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
 | splunk.indexer.searchable | The searchability status reported for a specific object | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.bucket.count
 
@@ -79,6 +85,8 @@ Count of buckets per index
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.bucket.event.count
 
@@ -94,6 +102,8 @@ Count of events in this bucket super-directory. *Note:** Must be pointed at spec
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 | splunk.bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.bucket.hot.count
 
@@ -109,6 +119,8 @@ Count of events in this bucket super-directory. *Note:** Must be pointed at spec
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 | splunk.bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.bucket.warm.count
 
@@ -124,6 +136,8 @@ Count of events in this bucket super-directory. *Note:** Must be pointed at spec
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 | splunk.bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.event.count
 
@@ -138,6 +152,8 @@ Count of events for index, excluding frozen events. Approximately equal to the e
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.raw.size
 
@@ -152,6 +168,8 @@ Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in thi
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.data.indexes.extended.total.size
 
@@ -166,6 +184,8 @@ Size in bytes on disk of this index *Note:** Must be pointed at specific indexer
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexer.avg.rate
 
@@ -180,6 +200,8 @@ Gauge tracking the average rate of indexed data. **Note:** Search is best run ag
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexer.cpu.time
 
@@ -194,6 +216,8 @@ Gauge tracking the number of indexing process cpu seconds per instance
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexer.queue.ratio
 
@@ -208,6 +232,8 @@ Gauge tracking the average indexer index queue ration (%). *Note:** Search is be
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexer.raw.write.time
 
@@ -222,6 +248,25 @@ Gauge tracking the number of raw write seconds per instance
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.indexer.rollingrestart.status
+
+The status of a rolling restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.searchable.restart | Boolean that indicates if a searchable rolling restart/upgrade in progress.t | Any Bool |
+| splunk.rollingorrestart | Boolean that indicates if there is a rolling restart or rolling upgrade in progress. | Any Bool |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexer.throughput
 
@@ -236,6 +281,8 @@ Gauge tracking average bytes per second throughput of indexer. *Note:** Must be 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.indexer.status | The status message reported for a specific object | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexes.avg.size
 
@@ -250,6 +297,8 @@ Gauge tracking the indexes and their average size (gb). *Note:** Search is best 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexes.avg.usage
 
@@ -264,6 +313,8 @@ Gauge tracking the indexes and their average usage (%). *Note:** Search is best 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexes.bucket.count
 
@@ -278,6 +329,8 @@ Gauge tracking the indexes and their bucket counts. *Note:** Search is best run 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexes.median.data.age
 
@@ -292,6 +345,8 @@ Gauge tracking the indexes and their median data age (days). *Note:** Search is 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexes.size
 
@@ -306,6 +361,8 @@ Gauge tracking the indexes and their total size (gb). *Note:** Search is best ru
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.io.avg.iops
 
@@ -320,6 +377,8 @@ Gauge tracking the average IOPs used per instance
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.kvstore.backup.status
 
@@ -334,6 +393,8 @@ Backup and restore status of the KV store.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.kvstore.replication.status
 
@@ -348,6 +409,8 @@ Replication status of the KV store.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.kvstore.status
 
@@ -364,6 +427,8 @@ This is the overall status of the kvstore for the given deployment.
 | splunk.kvstore.storage.engine | The backend storage used by the KV store | Any Str |
 | splunk.kvstore.external | Value denoting if the KV store is using an external service | Any Str |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.license.index.usage
 
@@ -378,6 +443,8 @@ Gauge tracking the indexed license usage per index
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.parse.queue.ratio
 
@@ -392,6 +459,8 @@ Gauge tracking the average indexer parser queue ration (%). *Note:** Search is b
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.pipeline.set.count
 
@@ -406,6 +475,8 @@ Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.scheduler.avg.execution.latency
 
@@ -420,6 +491,8 @@ Gauge tracking the average execution latency of scheduled searches
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.scheduler.avg.run.time
 
@@ -434,6 +507,8 @@ Gauge tracking the average runtime of scheduled searches
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.scheduler.completion.ratio
 
@@ -448,6 +523,69 @@ Gauge tracking the ratio of completed to skipped scheduled searches
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.duration
+
+Gauge tracking the duration in seconds of the last search probe call.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.initiation
+
+Gauge tracking whether the last search probe successfully initiated a search.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.status
+
+Gauge tracking the dispatch status of the last search probe.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.search.state | The dispatch state of the search | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.success
+
+Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.introspection.queues.current
 
@@ -462,6 +600,8 @@ Gauge tracking current length of queue. *Note:** Must be pointed at specific ind
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.introspection.queues.current.bytes
 
@@ -476,6 +616,8 @@ Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at speci
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.adhoc
 
@@ -490,6 +632,8 @@ Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.completed
 
@@ -504,6 +648,8 @@ Gauge tracking number of artifacts currently on disk that belong to finished sea
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.incomplete
 
@@ -518,6 +664,8 @@ Gauge tracking number of artifacts currently on disk that belong to unfinished/r
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.invalid
 
@@ -532,6 +680,8 @@ Gauge tracking number of artifacts currently on disk that are not in a valid sta
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.job.cache.count
 
@@ -546,6 +696,8 @@ Gauge tracking number search artifacts metadata stored in memory, available in b
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.job.cache.size
 
@@ -561,6 +713,8 @@ Gauge tracking, in megabytes, memory used to cache job status and job info of al
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
 | splunk.searchartifacts.cache.type | The search artifacts cache type | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.savedsearches
 
@@ -575,6 +729,8 @@ Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of sche
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.server.searchartifacts.scheduled
 
@@ -589,6 +745,8 @@ Gauge tracking number of scheduled search artifacts currently on disk. Note:* Mu
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.typing.queue.ratio
 
@@ -603,3 +761,5 @@ Gauge tracking the average indexer typing queue ration (%). *Note:** Search is b
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |

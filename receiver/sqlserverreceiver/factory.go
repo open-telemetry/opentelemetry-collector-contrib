@@ -11,11 +11,12 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -50,6 +51,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySample: QuerySample{
 			Enabled:         false,
 			MaxRowsPerQuery: 100,
@@ -59,6 +61,7 @@ func createDefaultConfig() component.Config {
 			LookbackTime:        uint(2 * cfg.CollectionInterval / time.Second),
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
+			CollectionInterval:  time.Minute,
 		},
 	}
 }
@@ -66,55 +69,50 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
-	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+	if isPerfCounterQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
-	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled {
+	if cfg.Metrics.SqlserverDatabaseCount.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
+	}
+
+	if isWaitStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
 	return queries
 }
 
-func setupLogQueries(cfg *Config) ([]string, []error) {
+func setupLogQueries(cfg *Config) []string {
 	var queries []string
-	var errs []error
 
 	if cfg.QuerySample.Enabled {
-		queries = append(queries, getSQLServerQuerySamplesQuery(cfg.MaxRowsPerQuery))
+		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
 	if cfg.TopQueryCollection.Enabled {
-		q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-		if err != nil {
-			errs = append(errs, err)
-		} else {
-			queries = append(queries, q)
-		}
+		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
-	return queries, errs
-}
-
-func directDBConnectionEnabled(config *Config) bool {
-	return config.Server != "" &&
-		config.Username != "" &&
-		string(config.Password) != ""
+	return queries
 }
 
 // Assumes config has all information necessary to directly connect to the database
 func getDBConnectionString(config *Config) string {
+	if config.DataSource != "" {
+		return config.DataSource
+	}
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
-	if !directDBConnectionEnabled(cfg) {
+	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
 		return nil
 	}
@@ -154,25 +152,15 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
 func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
-	if !directDBConnectionEnabled(cfg) {
+	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
 		return nil
 	}
 
-	queries, errs := setupLogQueries(cfg)
-	if len(errs) > 0 {
-		params.Logger.Error("Failed to template queries in SQLServer receiver: Configuration might not be correct.", zap.Error(errors.Join(errs...)))
-		return nil
-	}
+	queries := setupLogQueries(cfg)
 
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
-		return nil
-	}
-
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-	if err != nil {
-		params.Logger.Error("Failed to template needed queries in SQLServer receiver: Configuration might not be correct.", zap.Error(err))
 		return nil
 	}
 
@@ -188,12 +176,12 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		cache := newCache(1)
 
-		if query == queryTextAndPlanQuery {
+		if query == getSQLServerQueryTextAndPlanQuery() {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
 			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
 		}
 
-		if query == getSQLServerQuerySamplesQuery(cfg.MaxRowsPerQuery) {
+		if query == getSQLServerQuerySamplesQuery() {
 			cache = newCache(1)
 		}
 
@@ -285,6 +273,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
+		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
@@ -296,9 +285,18 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverReplicaDataRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
 		metrics.SqlserverUserConnectionCount.Enabled
+}
+
+func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverOsWaitDuration.Enabled
 }

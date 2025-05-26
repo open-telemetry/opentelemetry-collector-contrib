@@ -5,9 +5,8 @@ package azureauthextension
 
 import (
 	"context"
-	"errors"
+	"net/http"
 	"testing"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -23,173 +22,165 @@ func TestNewAzureAuthenticator(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestUpdateToken(t *testing.T) {
+func TestGetToken(t *testing.T) {
+	m := mockTokenCredential{}
+	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	auth := authenticator{
+		credential: &m,
+	}
+	_, err := auth.GetToken(context.Background(), policy.TokenRequestOptions{})
+	require.NoError(t, err)
+}
+
+func TestGetHeaderValue(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]struct {
-		mockSetup   func(credential *mockTokenCredential)
+		headers     map[string][]string
+		header      string
+		value       string
 		expectedErr string
 	}{
-		"successful": {
-			mockSetup: func(m *mockTokenCredential) {
-				m.On("GetToken").Return(azcore.AccessToken{}, nil)
-			},
+		"missing_header": {
+			headers:     map[string][]string{},
+			header:      "missing",
+			expectedErr: `missing "missing" header`,
 		},
-		"unsuccessful": {
-			mockSetup: func(m *mockTokenCredential) {
-				m.On("GetToken").Return(azcore.AccessToken{}, errors.New("test"))
+		"empty_header": {
+			headers: map[string][]string{
+				"empty": {},
 			},
-			expectedErr: "azure authenticator failed to get token",
+			header:      "empty",
+			expectedErr: `empty "empty" header`,
+		},
+		"valid_values": {
+			headers: map[string][]string{
+				"test": {"test"},
+			},
+			header: "test",
+			value:  "test",
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			credentials := &mockTokenCredential{}
-			test.mockSetup(credentials)
-
-			auth := &authenticator{credential: credentials}
-			_, err := auth.updateToken(context.Background())
-			if test.expectedErr == "" {
+			v, err := getHeaderValue(test.header, test.headers)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
 				require.NoError(t, err)
-				return
+				require.Equal(t, v, test.value)
 			}
-			require.ErrorContains(t, err, test.expectedErr)
 		})
 	}
 }
 
-func TestTrackToken(t *testing.T) {
-	expiresOn := time.Now().Add(time.Hour)
-	token := "token"
-
-	// GetToken is only called when the token needs to
-	// be updated. Let's ensure it's only called once,
-	// despite concurrent access.
-	mockCred := &mockTokenCredential{}
-	mockCred.On("GetToken").
-		Return(azcore.AccessToken{
-			Token:     token,
-			ExpiresOn: expiresOn,
-		}, nil).Once()
-
-	a := &authenticator{
-		credential: mockCred,
-		logger:     zap.NewNop(),
-	}
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-	go a.trackToken(ctx)
-
-	require.Eventuallyf(t, func() bool {
-		_, err := a.getCurrentToken()
-		return err == nil
-	}, time.Millisecond*10, time.Millisecond, "failed to wait for token to be available at start")
-
-	type result struct {
-		token azcore.AccessToken
-		err   error
-	}
-	numGoroutines := 10
-	results := make(chan result, numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
-		go func() {
-			got, err := a.getCurrentToken()
-			results <- result{
-				token: got,
-				err:   err,
-			}
-		}()
-	}
-
-	for i := 0; i < numGoroutines; i++ {
-		r := <-results
-		require.NoError(t, r.err)
-		require.Equal(t, azcore.AccessToken{
-			Token:     token,
-			ExpiresOn: expiresOn,
-		}, r.token)
-	}
-
-	close(results)
-}
-
-func TestGetCurrentToken(t *testing.T) {
-	auth := authenticator{}
-	_, err := auth.getCurrentToken()
-	require.ErrorIs(t, err, errUnavailableToken)
-
-	token := azcore.AccessToken{Token: "test"}
-	auth.token.Store(token)
-	got, err := auth.getCurrentToken()
-	require.NoError(t, err)
-	require.Equal(t, token, got)
-}
-
 func TestAuthenticate(t *testing.T) {
 	t.Parallel()
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-
-	token := "token"
-	credential := &mockTokenCredential{}
-	credential.On("GetToken").Return(azcore.AccessToken{
-		Token: token,
-	})
-	auth := &authenticator{
-		credential: credential,
-		logger:     zap.NewNop(),
-	}
-	auth.token.Store(azcore.AccessToken{Token: token})
 
 	tests := map[string]struct {
 		headers     map[string][]string
 		expectedErr string
 	}{
 		"missing_authorization_header": {
-			headers:     map[string][]string{},
-			expectedErr: errMissingAuthorizationHeader.Error(),
-		},
-		"empty_authorization_header": {
 			headers: map[string][]string{
-				authorizationHeader: {},
+				"Host": {"Host"},
 			},
-			expectedErr: errEmptyAuthorizationHeader.Error(),
+			expectedErr: `missing "Authorization" header`,
 		},
-		"unexpected_authorization_value_format": {
+		"missing_host_header": {
 			headers: map[string][]string{
-				authorizationHeader: {"unexpected-format"},
+				"Authorization": {"Bearer token"},
 			},
-			expectedErr: errUnexpectedAuthorizationFormat.Error(),
+			expectedErr: `missing "Host" header`,
 		},
-		"wrong_scheme": {
+		"invalid_authorization_format": {
 			headers: map[string][]string{
-				authorizationHeader: {"wrong scheme"},
+				"Authorization": {"Invalid authorization format"},
+				"Host":          {"Host"},
 			},
-			expectedErr: `expected "Bearer" scheme, got "wrong"`,
+			expectedErr: "authorization header does not follow expected format",
+		},
+		"invalid_schema": {
+			headers: map[string][]string{
+				"Authorization": {"Invalid schema"},
+				"Host":          {"Host"},
+			},
+			expectedErr: `expected "Bearer" as schema, got "Invalid"`,
 		},
 		"invalid_token": {
 			headers: map[string][]string{
-				authorizationHeader: {"Bearer invalid"},
+				"Authorization": {"Bearer invalid"},
+				"Host":          {"Host"},
 			},
-			expectedErr: errUnexpectedToken.Error(),
+			expectedErr: `unauthorized: invalid token`,
 		},
-		"valid_token": {
+		"valid_authenticate": {
 			headers: map[string][]string{
-				authorizationHeader: {"Bearer " + token},
+				"Authorization": {"Bearer test"},
+				"Host":          {"Host"},
 			},
 		},
 	}
 
+	m := mockTokenCredential{}
+	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	auth := authenticator{
+		credential: &m,
+	}
+
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := auth.Authenticate(ctx, test.headers)
-			if test.expectedErr == "" {
+			_, err := auth.Authenticate(context.Background(), test.headers)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
 				require.NoError(t, err)
-				return
 			}
+		})
+	}
+}
 
-			require.ErrorContains(t, err, test.expectedErr)
+func TestRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		request     http.Request
+		expectedErr string
+	}{
+		"empty_headers": {
+			request:     http.Request{Header: nil},
+			expectedErr: "request headers are empty",
+		},
+		"missing_host_header": {
+			request:     http.Request{Header: map[string][]string{}},
+			expectedErr: `missing "host" header`,
+		},
+		"valid_authorize": {
+			request: http.Request{Header: map[string][]string{
+				"Host": {"Test"},
+			}},
+		},
+	}
+
+	m := mockTokenCredential{}
+	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	auth := authenticator{
+		credential: &m,
+	}
+	base := &mockRoundTripper{}
+	base.On("RoundTrip", mock.Anything).Return(&http.Response{StatusCode: http.StatusOK}, nil)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			r, err := auth.RoundTripper(base)
+			require.NoError(t, err)
+
+			_, err = r.RoundTrip(&test.request)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
@@ -203,4 +194,15 @@ var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 func (m *mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	args := m.Called()
 	return args.Get(0).(azcore.AccessToken), args.Error(1)
+}
+
+type mockRoundTripper struct {
+	mock.Mock
+}
+
+var _ http.RoundTripper = (*mockRoundTripper)(nil)
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	args := m.Called(req)
+	return args.Get(0).(*http.Response), args.Error(1)
 }

@@ -5,7 +5,7 @@ package alertmanagerexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +34,8 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		GeneratorURL:    "opentelemetry-collector",
 		DefaultSeverity: "info",
+		APIVersion:      "v2",
+		EventLabels:     []string{"attr1", "attr2"},
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackoffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
@@ -45,7 +47,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 	cfg := config.(*Config)
 
 	if cfg.Endpoint == "" {
-		return nil, fmt.Errorf(
+		return nil, errors.New(
 			"exporter config requires a non-empty \"endpoint\"")
 	}
 	return newTracesExporter(ctx, cfg, set)

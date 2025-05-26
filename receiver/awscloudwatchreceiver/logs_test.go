@@ -15,8 +15,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -29,7 +31,11 @@ func TestStart(t *testing.T) {
 	cfg.Logs.Groups.AutodiscoverConfig = nil
 
 	sink := &consumertest.LogsSink{}
-	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 
 	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -51,7 +57,11 @@ func TestPrefixedConfig(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 	alertRcvr.client = defaultMockClient()
 
 	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
@@ -83,7 +93,11 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 	alertRcvr.client = defaultMockClient()
 
 	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
@@ -117,7 +131,11 @@ func TestNamedConfigNoStreamFilter(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 	alertRcvr.client = defaultMockClient()
 
 	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
@@ -155,7 +173,11 @@ func TestDiscovery(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 	logsRcvr.client = defaultMockClient()
 
 	require.NoError(t, logsRcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -181,7 +203,11 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 	doneChan := make(chan time.Time, 1)
 	mc := &mockClient{}
 	mc.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
@@ -236,7 +262,11 @@ func TestAutodiscoverLimit(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
 	alertRcvr.client = mc
 
 	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)

@@ -280,7 +280,7 @@ func TestGetProxyAddressFromConfigFile(t *testing.T) {
 }
 
 func TestGetProxyAddressWhenNotExist(t *testing.T) {
-	assert.Equal(t, "", getProxyAddress(""), "Expect function return value to be empty")
+	assert.Empty(t, getProxyAddress(""), "Expect function return value to be empty")
 }
 
 func TestGetProxyAddressPriority(t *testing.T) {
@@ -300,7 +300,7 @@ func TestGetPartition(t *testing.T) {
 	assert.Equal(t, endpoints.AwsUsGovPartitionID, p)
 
 	p = getPartition("XYZ")
-	assert.Equal(t, "", p)
+	assert.Empty(t, p)
 }
 
 func TestGetSTSRegionalEndpoint(t *testing.T) {
@@ -314,7 +314,7 @@ func TestGetSTSRegionalEndpoint(t *testing.T) {
 	assert.Equal(t, "https://sts.us-gov-east-1.amazonaws.com", p)
 
 	p = getPartition("XYZ")
-	assert.Equal(t, "", p)
+	assert.Empty(t, p)
 }
 
 func TestNewSessionCreationFailed(t *testing.T) {

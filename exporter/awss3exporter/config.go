@@ -5,11 +5,18 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
+)
+
+const (
+	DefaultRetryMode        = "standard"
+	DefaultRetryMaxAttempts = 3
+	DefaultRetryMaxBackoff  = 20 * time.Second
 )
 
 // S3UploaderConfig contains aws s3 uploader related config to controls things
@@ -40,6 +47,17 @@ type S3UploaderConfig struct {
 	// before uploading to S3.
 	// Valid values are: `gzip` or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
+
+	// RetryMode specifies the retry mode for S3 client, default is "standard".
+	// Valid values are: "standard", "adaptive", or "nop".
+	// "nop" will disable retry by setting the retryer to aws.NopRetryer.
+	RetryMode string `mapstructure:"retry_mode"`
+	// RetryMaxAttempts specifies the maximum number of attempts for S3 client.
+	// Default is 3 (SDK default).
+	RetryMaxAttempts int `mapstructure:"retry_max_attempts"`
+	// RetryMaxBackoff specifies the maximum backoff delay for S3 client.
+	// Default is 20 seconds (SDK default).
+	RetryMaxBackoff time.Duration `mapstructure:"retry_max_backoff"`
 }
 
 type MarshalerType string
@@ -51,6 +69,14 @@ const (
 	Body         MarshalerType = "body"
 )
 
+// ResourceAttrsToS3 defines the mapping of S3 uploading configuration values to resource attribute values.
+type ResourceAttrsToS3 struct {
+	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
+	S3Prefix string `mapstructure:"s3_prefix"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
 	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
@@ -59,8 +85,9 @@ type Config struct {
 	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
-	Encoding              *component.ID `mapstructure:"encoding"`
-	EncodingFileExtension string        `mapstructure:"encoding_file_extension"`
+	Encoding              *component.ID     `mapstructure:"encoding"`
+	EncodingFileExtension string            `mapstructure:"encoding_file_extension"`
+	ResourceAttrsToS3     ResourceAttrsToS3 `mapstructure:"resource_attrs_to_s3"`
 }
 
 func (c *Config) Validate() error {
@@ -95,7 +122,7 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
-	if !validACLs[c.S3Uploader.ACL] {
+	if c.S3Uploader.ACL != "" && !validACLs[c.S3Uploader.ACL] {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 
@@ -108,6 +135,10 @@ func (c *Config) Validate() error {
 		if c.MarshalerName == SumoIC {
 			errs = multierr.Append(errs, errors.New("marshaler does not support compression"))
 		}
+	}
+
+	if c.S3Uploader.RetryMode != "nop" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {
+		errs = multierr.Append(errs, errors.New("invalid retry mode, must be either 'standard', 'adaptive' or 'nop'"))
 	}
 	return errs
 }

@@ -4,9 +4,10 @@ scope_name: otelcol/azureblobexporter
 status:
   class: exporter
   stability:
-    development: [traces, metrics, logs]
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
-    active: [hgaol]
+    active: [hgaol, MovieStoreGuy]
 
 tests:
   config:

@@ -39,7 +39,7 @@ type nsxClient struct {
 var errUnauthorized = errors.New("STATUS 403, unauthorized")
 
 func newClient(ctx context.Context, c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
-	client, err := c.ClientConfig.ToClient(ctx, host, settings)
+	client, err := c.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}

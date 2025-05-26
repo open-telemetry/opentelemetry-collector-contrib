@@ -43,7 +43,7 @@ func TestExporter_BaseTest(t *testing.T) {
 			name: "deflate",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.ClientConfig.Compression = configcompression.TypeDeflate
+				cfg.Compression = configcompression.TypeDeflate
 				return cfg
 			}(),
 		},
@@ -51,7 +51,7 @@ func TestExporter_BaseTest(t *testing.T) {
 			name: "no compression",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.ClientConfig.CompressionParams = configcompression.CompressionParams{
+				cfg.CompressionParams = configcompression.CompressionParams{
 					Level: configcompression.Level(0),
 				}
 				return cfg

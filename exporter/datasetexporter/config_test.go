@@ -4,7 +4,7 @@
 package datasetexporter
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -38,15 +38,15 @@ func TestConfigUseDefaults(t *testing.T) {
 	assert.Equal(t, "https://example.com", config.DatasetURL)
 	assert.Equal(t, "secret", string(config.APIKey))
 	assert.Equal(t, bufferMaxLifetime, config.MaxLifetime)
-	assert.Equal(t, logsExportResourceInfoDefault, config.LogsSettings.ExportResourceInfo)
-	assert.Equal(t, logsExportResourcePrefixDefault, config.LogsSettings.ExportResourcePrefix)
-	assert.Equal(t, logsExportScopeInfoDefault, config.LogsSettings.ExportScopeInfo)
-	assert.Equal(t, logsExportScopePrefixDefault, config.LogsSettings.ExportScopePrefix)
-	assert.Equal(t, logsDecomposeComplexMessageFieldDefault, config.LogsSettings.DecomposeComplexMessageField)
-	assert.Equal(t, exportSeparatorDefault, config.LogsSettings.exportSettings.ExportSeparator)
-	assert.Equal(t, exportDistinguishingSuffix, config.LogsSettings.exportSettings.ExportDistinguishingSuffix)
-	assert.Equal(t, exportSeparatorDefault, config.TracesSettings.exportSettings.ExportSeparator)
-	assert.Equal(t, exportDistinguishingSuffix, config.TracesSettings.exportSettings.ExportDistinguishingSuffix)
+	assert.Equal(t, logsExportResourceInfoDefault, config.ExportResourceInfo)
+	assert.Equal(t, logsExportResourcePrefixDefault, config.ExportResourcePrefix)
+	assert.Equal(t, logsExportScopeInfoDefault, config.ExportScopeInfo)
+	assert.Equal(t, logsExportScopePrefixDefault, config.ExportScopePrefix)
+	assert.Equal(t, logsDecomposeComplexMessageFieldDefault, config.DecomposeComplexMessageField)
+	assert.Equal(t, exportSeparatorDefault, config.LogsSettings.ExportSeparator)
+	assert.Equal(t, exportDistinguishingSuffix, config.LogsSettings.ExportDistinguishingSuffix)
+	assert.Equal(t, exportSeparatorDefault, config.TracesSettings.ExportSeparator)
+	assert.Equal(t, exportDistinguishingSuffix, config.TracesSettings.ExportDistinguishingSuffix)
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -74,7 +74,7 @@ func TestConfigValidate(t *testing.T) {
 					MaxLifetime: bufferMaxLifetime,
 				},
 			},
-			expected: fmt.Errorf("api_key is required"),
+			expected: errors.New("api_key is required"),
 		},
 		{
 			name: "missing dataset_url",
@@ -84,7 +84,7 @@ func TestConfigValidate(t *testing.T) {
 					MaxLifetime: bufferMaxLifetime,
 				},
 			},
-			expected: fmt.Errorf("dataset_url is required"),
+			expected: errors.New("dataset_url is required"),
 		},
 	}
 
@@ -112,7 +112,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.True(t, config.LogsSettings.ExportResourceInfo)
+	assert.True(t, config.ExportResourceInfo)
 }
 
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
@@ -127,5 +127,5 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.False(t, config.LogsSettings.ExportScopeInfo)
+	assert.False(t, config.ExportScopeInfo)
 }

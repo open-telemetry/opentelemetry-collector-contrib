@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync/atomic"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -24,27 +22,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	scheme              = "Bearer"
-	authorizationHeader = "Authorization"
-)
-
-var (
-	errEmptyAuthorizationHeader      = errors.New("empty authorization header")
-	errMissingAuthorizationHeader    = errors.New("missing authorization header")
-	errUnexpectedAuthorizationFormat = errors.New(`unexpected authorization value format, expected to be of format "Bearer <token>"`)
-	errUnexpectedToken               = errors.New("received token does not match the expected one")
-	errUnavailableToken              = errors.New("azure authenticator has no access to token")
-)
-
 type authenticator struct {
-	scope      string
 	credential azcore.TokenCredential
-
-	stopCh chan int
-	token  atomic.Value
-
-	logger *zap.Logger
+	logger     *zap.Logger
 }
 
 var (
@@ -118,10 +98,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 	}
 
 	return &authenticator{
-		scope:      cfg.Scope,
 		credential: credential,
-		stopCh:     make(chan int, 1),
-		token:      atomic.Value{},
 		logger:     logger,
 	}, nil
 }
@@ -141,134 +118,119 @@ func getCertificateAndKey(filename string) (*x509.Certificate, crypto.PrivateKey
 	return certs[0], privateKey, nil
 }
 
-func (a *authenticator) Start(ctx context.Context, _ component.Host) error {
-	go a.trackToken(ctx)
+func (a *authenticator) Start(_ context.Context, _ component.Host) error {
 	return nil
-}
-
-// updateToken makes a request to get a new token
-// if the authenticator does not have a token or
-// it has expired.
-func (a *authenticator) updateToken(ctx context.Context) (time.Time, error) {
-	if a.credential == nil {
-		return time.Time{}, errors.New("authenticator does not have credentials configured")
-	}
-	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{a.scope},
-	})
-	if err != nil {
-		// TODO Handle retries
-		return time.Time{}, fmt.Errorf("azure authenticator failed to get token: %w", err)
-	}
-	a.token.Store(token)
-	return token.ExpiresOn, nil
-}
-
-// trackToken runs on the background to refresh
-// the token if it expires
-func (a *authenticator) trackToken(ctx context.Context) {
-	expiresOn, err := a.updateToken(ctx)
-	if err != nil {
-		// TODO Handle retries
-		a.logger.Error("failed to update the token", zap.Error(err))
-		return
-	}
-
-	getRefresh := func(expiresOn time.Time) time.Duration {
-		// Refresh at 95% token lifetime
-		return time.Until(expiresOn) * 95 / 100
-	}
-
-	t := time.NewTicker(getRefresh(expiresOn))
-	defer t.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			a.logger.Info(
-				"azure authenticator no longer refreshing the token",
-				zap.String("reason", "context done"),
-			)
-			return
-		case <-a.stopCh:
-			a.logger.Info(
-				"azure authenticator no longer refreshing the token",
-				zap.String("reason", "received stop signal"),
-			)
-			close(a.stopCh)
-			return
-		case <-t.C:
-			expiresOn, err = a.updateToken(ctx)
-			if err != nil {
-				// TODO Handle retries
-				a.logger.Error("failed to update the token", zap.Error(err))
-				a.stopCh <- 1
-			} else {
-				t.Reset(getRefresh(expiresOn))
-			}
-		}
-	}
 }
 
 func (a *authenticator) Shutdown(_ context.Context) error {
-	select {
-	case a.stopCh <- 1:
-	default: // already stopped
-	}
 	return nil
-}
-
-func (a *authenticator) getCurrentToken() (azcore.AccessToken, error) {
-	token := a.token.Load()
-	if token == nil {
-		return azcore.AccessToken{}, errUnavailableToken
-	}
-
-	return token.(azcore.AccessToken), nil
 }
 
 // GetToken returns an access token with a
 // valid token for authorization
-func (a *authenticator) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
-	return a.getCurrentToken()
+func (a *authenticator) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	if a.credential == nil {
+		// This is not expected, since creating a new authenticator
+		// instance returns error if the supported credentials fail
+		// to initialize, and any unexpected ones should be prevented
+		// from validating the config.
+		return azcore.AccessToken{}, errors.New("unexpected: credentials were not initialized")
+	}
+	return a.credential.GetToken(ctx, options)
 }
 
-// Authenticate adds an Authorization header
-// with the bearer token
+func getHeaderValue(header string, headers map[string][]string) (string, error) {
+	value, ok := headers[header]
+	if !ok {
+		value, ok = headers[strings.ToLower(header)]
+	}
+	if !ok {
+		return "", fmt.Errorf("missing %q header", header)
+	}
+	if len(value) == 0 {
+		return "", fmt.Errorf("empty %q header", header)
+	}
+	return value[0], nil
+}
+
+// getTokenForHost will request an access token based on a scope
+// computed from the host value. It will return the token value
+// or an error if request failed.
+func (a *authenticator) getTokenForHost(ctx context.Context, host string) (string, error) {
+	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
+		// TODO Cache the tokens
+		Scopes: []string{
+			// Example: if host is "management.azure.com", then the scope to get the
+			// token will be "https://management.azure.com/.default".
+			// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
+			fmt.Sprintf("https://%s/.default", host),
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return token.Token, nil
+}
+
 func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	auth, ok := headers[authorizationHeader]
-	if !ok {
-		auth, ok = headers[strings.ToLower(authorizationHeader)]
+	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
+	auth, err := getHeaderValue("Authorization", headers)
+	if err != nil {
+		return ctx, err
 	}
-	if !ok {
-		return ctx, errMissingAuthorizationHeader
-	}
-	if len(auth) == 0 {
-		return ctx, errEmptyAuthorizationHeader
-	}
-
-	firstAuth := strings.Split(auth[0], " ")
-	if len(firstAuth) != 2 {
-		return ctx, errUnexpectedAuthorizationFormat
-	}
-	if firstAuth[0] != scheme {
-		return ctx, fmt.Errorf("expected %q scheme, got %q", scheme, firstAuth[0])
-	}
-
-	currentToken, err := a.getCurrentToken()
+	host, err := getHeaderValue("Host", headers)
 	if err != nil {
 		return ctx, err
 	}
 
-	if firstAuth[1] != currentToken.Token {
-		return ctx, errUnexpectedToken
+	authFormat := strings.Split(auth, " ")
+	if len(authFormat) != 2 {
+		return ctx, errors.New(`authorization header does not follow expected format "Bearer <Token>"`)
+	}
+	if authFormat[0] != "Bearer" {
+		return ctx, fmt.Errorf(`expected "Bearer" as schema, got %q`, authFormat[0])
 	}
 
+	token, err := a.getTokenForHost(ctx, host)
+	if err != nil {
+		return ctx, err
+	}
+	if authFormat[1] != token {
+		return ctx, errors.New("unauthorized: invalid token")
+	}
 	return ctx, nil
 }
 
-func (a *authenticator) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
-	// TODO
-	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
-	return nil, nil
+func (a *authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &roundTripper{
+		base: base,
+		auth: a,
+	}, nil
+}
+
+type roundTripper struct {
+	base http.RoundTripper
+	auth *authenticator
+}
+
+var _ http.RoundTripper = (*roundTripper)(nil)
+
+func (r *roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	req := request.Clone(request.Context())
+	if req.Header == nil {
+		return nil, errors.New(`request headers are empty, expected to find "Host" header`)
+	}
+
+	host := req.Header.Get("Host")
+	if host == "" {
+		return nil, errors.New(`missing "host" header`)
+	}
+
+	token, err := r.auth.getTokenForHost(req.Context(), host)
+	if err != nil {
+		return nil, fmt.Errorf("azureauth: failed to get token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	return r.base.RoundTrip(req)
 }

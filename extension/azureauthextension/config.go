@@ -23,7 +23,6 @@ var (
 	errEmptyClientCredential   = errors.New(`both "client_secret" and "client_certificate_path" fields are empty`)
 	errEmptyFederatedTokenFile = errors.New(`empty "federated_token_file" field`)
 	errEmptyAuthentication     = fmt.Errorf("authentication configuration is empty, please choose one of %s", validOptions)
-	errEmptyScope              = errors.New(`the "scope" field for the token permissions is empty`)
 	errMutuallyExclusiveAuth   = errors.New(`"client_secret" and "client_certificate_path" are mutually exclusive`)
 )
 
@@ -32,21 +31,23 @@ type Config struct {
 	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
 	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
 	UseDefault       bool              `mapstructure:"use_default"`
-
-	// Scope for the token.
-	// See https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc.
-	Scope string `mapstructure:"scope"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ManagedIdentity struct {
 	// if left empty, then it is system managed
 	ClientID string `mapstructure:"client_id"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type WorkloadIdentity struct {
 	ClientID           string `mapstructure:"client_id"`
 	TenantID           string `mapstructure:"tenant_id"`
 	FederatedTokenFile string `mapstructure:"federated_token_file"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ServicePrincipal struct {
@@ -54,6 +55,8 @@ type ServicePrincipal struct {
 	ClientID              string `mapstructure:"client_id"`
 	ClientSecret          string `mapstructure:"client_secret"`
 	ClientCertificatePath string `mapstructure:"client_certificate_path"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)
@@ -104,9 +107,6 @@ func (cfg *Config) Validate() error {
 	var errs []error
 	if !cfg.UseDefault && cfg.ServicePrincipal == nil && cfg.Workload == nil && cfg.Managed == nil {
 		errs = append(errs, errEmptyAuthentication)
-	}
-	if cfg.Scope == "" {
-		errs = append(errs, errEmptyScope)
 	}
 	if len(errs) > 0 {
 		return errors.Join(errs...)

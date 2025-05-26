@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:  "localhost:12345",
 					Transport: confignet.TransportTypeUDP6,
 				},
+				SocketPermissions:   0o622,
 				AggregationInterval: 70 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{

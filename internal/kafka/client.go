@@ -5,11 +5,13 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"crypto/tls"
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
@@ -20,6 +22,13 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"zstd":   sarama.CompressionZSTD,
 }
 
+func convertToSaramaCompressionLevel(p configcompression.Level) int {
+	if p == configcompression.DefaultCompressionLevel {
+		return sarama.CompressionLevelDefault
+	}
+	return int(p)
+}
+
 var saramaInitialOffsets = map[string]int64{
 	configkafka.EarliestOffset: sarama.OffsetOldest,
 	configkafka.LatestOffset:   sarama.OffsetNewest,
@@ -27,7 +36,7 @@ var saramaInitialOffsets = map[string]int64{
 
 // NewSaramaClient returns a new Kafka client with the given configuration.
 func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, config)
+	saramaConfig, err := newSaramaClientConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +45,7 @@ func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sara
 
 // NewSaramaClusterAdminClient returns a new Kafka cluster admin client with the given configuration.
 func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, config)
+	saramaConfig, err := newSaramaClientConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +58,7 @@ func NewSaramaConsumerGroup(
 	clientConfig configkafka.ClientConfig,
 	consumerConfig configkafka.ConsumerConfig,
 ) (sarama.ConsumerGroup, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, clientConfig)
+	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +67,18 @@ func NewSaramaConsumerGroup(
 	saramaConfig.Consumer.Fetch.Min = consumerConfig.MinFetchSize
 	saramaConfig.Consumer.Fetch.Default = consumerConfig.DefaultFetchSize
 	saramaConfig.Consumer.Fetch.Max = consumerConfig.MaxFetchSize
+	saramaConfig.Consumer.MaxWaitTime = consumerConfig.MaxFetchWait
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
 	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	// Set the rebalance strategy
+	rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
+	if rebalanceStrategy != nil {
+		saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
+	}
+	if len(consumerConfig.GroupInstanceID) > 0 {
+		saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+	}
 	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
 }
 
@@ -75,7 +93,7 @@ func NewSaramaSyncProducer(
 	producerConfig configkafka.ProducerConfig,
 	producerTimeout time.Duration,
 ) (sarama.SyncProducer, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, clientConfig)
+	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -86,11 +104,12 @@ func NewSaramaSyncProducer(
 	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
 	saramaConfig.Producer.Timeout = producerTimeout
 	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	saramaConfig.Producer.CompressionLevel = convertToSaramaCompressionLevel(producerConfig.CompressionParams.Level)
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
 }
 
-// NewSaramaClientConfig returns a Sarama client config, based on the given config.
-func NewSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
+// newSaramaClientConfig returns a Sarama client config, based on the given config.
+func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Metadata.Full = config.Metadata.Full
 	saramaConfig.Metadata.RefreshFrequency = config.Metadata.RefreshInterval
@@ -105,8 +124,35 @@ func NewSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 			return nil, err
 		}
 	}
-	if err := ConfigureSaramaAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
-		return nil, err
+
+	tlsConfig := config.TLS
+	if tlsConfig == nil {
+		tlsConfig = config.Authentication.TLS
 	}
+	if tlsConfig != nil {
+		if tlsConfig, err := tlsConfig.LoadTLSConfig(ctx); err != nil {
+			return nil, err
+		} else if tlsConfig != nil {
+			saramaConfig.Net.TLS.Config = tlsConfig
+			saramaConfig.Net.TLS.Enable = true
+		}
+	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == "AWS_MSK_IAM_OAUTHBEARER" {
+		saramaConfig.Net.TLS.Config = &tls.Config{}
+		saramaConfig.Net.SASL.Enable = true
+	}
+	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil
+}
+
+func rebalanceStrategy(strategy string) sarama.BalanceStrategy {
+	switch strategy {
+	case sarama.RangeBalanceStrategyName:
+		return sarama.NewBalanceStrategyRange()
+	case sarama.StickyBalanceStrategyName:
+		return sarama.NewBalanceStrategySticky()
+	case sarama.RoundRobinBalanceStrategyName:
+		return sarama.NewBalanceStrategyRoundRobin()
+	default:
+		return nil
+	}
 }

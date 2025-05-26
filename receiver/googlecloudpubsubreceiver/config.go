@@ -31,6 +31,9 @@ type Config struct {
 	// Lock down the compression of the payload, leave empty for attribute based detection
 	Compression string `mapstructure:"compression"`
 
+	// Ignore errors when the configured encoder fails to decoding a PubSub messages
+	IgnoreEncodingError bool `mapstructure:"ignore_encoding_error"`
+
 	// The client id that will be used by Pubsub to make load balancing decisions
 	ClientID string `mapstructure:"client_id"`
 }

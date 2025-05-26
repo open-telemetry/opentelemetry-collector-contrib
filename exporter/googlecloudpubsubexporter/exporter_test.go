@@ -5,7 +5,7 @@ package googlecloudpubsubexporter
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -125,7 +125,7 @@ func TestExporterClientError(t *testing.T) {
 
 	exporter := ensureExporter(exportertest.NewNopSettings(metadata.Type), cfg)
 	exporter.makeClient = func(context.Context, *Config, string) (publisherClient, error) {
-		return nil, fmt.Errorf("something went wrong")
+		return nil, errors.New("something went wrong")
 	}
 
 	require.Error(t, exporter.start(context.Background(), componenttest.NewNopHost()))

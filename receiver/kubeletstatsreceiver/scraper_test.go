@@ -82,6 +82,42 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
+func TestScraperWithInterfacesMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+		allNetworkInterfaces: map[kubelet.MetricGroup]bool{
+			kubelet.NodeMetricGroup: true,
+			kubelet.PodMetricGroup:  true,
+		},
+	}
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metadata.DefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(context.Background())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+numPods*4+numNodes*4, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_interfaces_metrics.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
 func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.

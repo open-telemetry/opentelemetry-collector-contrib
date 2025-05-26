@@ -14,12 +14,16 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// PathExpressionParser is how a context provides OTTL access to all its Paths.
 type PathExpressionParser[K any] func(Path[K]) (GetSetter[K], error)
 
+// EnumParser is how a context provides OTTL access to all its Enums.
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
+// Enum is how OTTL represents an enum's numeric value.
 type Enum int64
 
+// EnumSymbol is how OTTL represents an enum's string value.
 type EnumSymbol string
 
 func buildOriginalText(path *path) string {
@@ -72,7 +76,7 @@ func buildOriginalKeysText(keys []key) string {
 
 func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
 	if len(path.Fields) == 0 {
-		return nil, fmt.Errorf("cannot make a path from zero fields")
+		return nil, errors.New("cannot make a path from zero fields")
 	}
 
 	pathContext, fields, err := p.parsePathContext(path)
@@ -409,7 +413,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			case arg.FunctionName != nil:
 				name = *arg.FunctionName
 			default:
-				return fmt.Errorf("invalid function name given")
+				return errors.New("invalid function name given")
 			}
 			f, ok := p.functions[name]
 			if !ok {
@@ -439,7 +443,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 	switch {
 	case name == reflect.Uint8.String():
 		if argVal.Bytes == nil {
-			return nil, fmt.Errorf("slice parameter must be a byte slice literal")
+			return nil, errors.New("slice parameter must be a byte slice literal")
 		}
 		return ([]byte)(*argVal.Bytes), nil
 	case name == reflect.String.String():
@@ -547,7 +551,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if argVal.Literal != nil && argVal.Literal.Path != nil {
 			return p.buildGetSetterFromPath(argVal.Literal.Path)
 		}
-		return nil, fmt.Errorf("must be a path")
+		return nil, errors.New("must be a path")
 	case strings.HasPrefix(name, "Getter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -590,6 +594,16 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardIntLikeGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "PMapGetSetter"):
+		if argVal.Literal == nil || argVal.Literal.Path == nil {
+			return nil, errors.New("must be a path")
+		}
+		pathGetSetter, err := p.buildGetSetterFromPath(argVal.Literal.Path)
+		if err != nil {
+			return nil, err
+		}
+		stdMapGetter := StandardPMapGetter[K]{Getter: pathGetSetter.Get}
+		return StandardPMapGetSetter[K]{Getter: stdMapGetter.Get, Setter: pathGetSetter.Set}, nil
 	case strings.HasPrefix(name, "PMapGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -629,27 +643,27 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	case name == "Enum":
 		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
-			return nil, fmt.Errorf("must be an Enum")
+			return nil, errors.New("must be an Enum")
 		}
 		return *arg, nil
 	case name == reflect.String.String():
 		if argVal.String == nil {
-			return nil, fmt.Errorf("must be a string")
+			return nil, errors.New("must be a string")
 		}
 		return *argVal.String, nil
 	case name == reflect.Float64.String():
 		if argVal.Literal == nil || argVal.Literal.Float == nil {
-			return nil, fmt.Errorf("must be a float")
+			return nil, errors.New("must be a float")
 		}
 		return *argVal.Literal.Float, nil
 	case name == reflect.Int64.String():
 		if argVal.Literal == nil || argVal.Literal.Int == nil {
-			return nil, fmt.Errorf("must be an int")
+			return nil, errors.New("must be an int")
 		}
 		return *argVal.Literal.Int, nil
 	case name == reflect.Bool.String():
 		if argVal.Bool == nil {
-			return nil, fmt.Errorf("must be a bool")
+			return nil, errors.New("must be a bool")
 		}
 		return bool(*argVal.Bool), nil
 	default:
@@ -698,6 +712,7 @@ type optionalManager interface {
 	get() reflect.Value
 }
 
+// Optional is used to represent an optional function argument
 type Optional[T any] struct {
 	val      T
 	hasValue bool
@@ -727,7 +742,7 @@ func (o Optional[T]) get() reflect.Value {
 	return reflect.ValueOf(o).MethodByName("Get").Call(nil)[0]
 }
 
-// Allows creating an Optional with a value already populated for use in testing
+// NewTestingOptional allows creating an Optional with a value already populated for use in testing
 // OTTL functions.
 func NewTestingOptional[T any](val T) Optional[T] {
 	return Optional[T]{

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
@@ -19,6 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
+
+const ReadTimeout = 2 * time.Second
 
 type Input struct {
 	helper.InputOperator
@@ -55,57 +58,59 @@ func (i *Input) Start(_ operator.Persister) error {
 		return fmt.Errorf("failed to chmod named pipe: %w", chmodErr)
 	}
 
-	watcher, err := NewWatcher(i.path)
-	if err != nil {
-		return fmt.Errorf("failed to create watcher: %w", err)
-	}
-
+	// Open the pipe with O_RDWR so it won't block on opening the pipe when there is no writer.
+	// The current process is both a writer and reader, which prevents the read from receiving
+	// EOF because there is always a writer (the process itself) connects to the pipe.
 	pipe, err := os.OpenFile(i.path, os.O_RDWR, os.ModeNamedPipe)
 	if err != nil {
 		return fmt.Errorf("failed to open named pipe: %w", err)
 	}
-
 	i.pipe = pipe
 
 	ctx, cancel := context.WithCancel(context.Background())
 	i.cancel = cancel
 
-	i.wg.Add(2)
-	go func() {
-		defer i.wg.Done()
-		if err := watcher.Watch(ctx); err != nil {
-			i.Logger().Error("failed to watch named pipe", zap.Error(err))
-		}
-	}()
-
-	go func() {
-		defer i.wg.Done()
-		for {
-			select {
-			case <-watcher.C:
-				if err := i.process(ctx, pipe); err != nil {
-					i.Logger().Error("failed to process named pipe", zap.Error(err))
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+	i.wg.Add(1)
+	go i.readLoop(ctx)
 
 	return nil
 }
 
 func (i *Input) Stop() error {
-	if i.pipe != nil {
-		i.pipe.Close()
-	}
-
 	if i.cancel != nil {
 		i.cancel()
 	}
 
+	if i.pipe != nil {
+		i.pipe.Close()
+	}
+
 	i.wg.Wait()
 	return nil
+}
+
+func (i *Input) readLoop(ctx context.Context) {
+	defer i.wg.Done()
+	pipe := i.pipe
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := i.process(ctx, pipe); err != nil {
+				i.Logger().Error("error processing named pipe", zap.Error(err))
+			}
+
+			// The process exits due to whatever reason, wait for ReadTimeout and try again.
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(ReadTimeout):
+				i.Logger().Warn("processing named pipe is interrupted, retrying the process now", zap.String("path", i.path))
+			}
+		}
+	}
 }
 
 func (i *Input) process(ctx context.Context, pipe *os.File) error {

@@ -56,10 +56,8 @@ func (sr *SapmDataReceiver) Stop() error {
 
 // GenConfigYAMLStr returns exporter config for the agent.
 func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
-	disableCompression := false
-	if sr.compression == "" {
-		disableCompression = true
-	}
+	disableCompression := sr.compression == ""
+
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   sapm:

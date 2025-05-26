@@ -1,3 +1,5 @@
 status:
+  disable_codecov_badge: true
   codeowners:
-    active: [swar8080, atoulme]
+    active: [atoulme]
+    emeritus: [swar8080]

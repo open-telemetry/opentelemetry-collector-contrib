@@ -14,9 +14,9 @@ import (
 	"github.com/Showmax/go-fqdn"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -105,7 +105,7 @@ func (systemMetadataProvider) FQDN() (string, error) {
 }
 
 func (p systemMetadataProvider) Hostname() (string, error) {
-	return p.nameInfoProvider.osHostname()
+	return p.osHostname()
 }
 
 func (p systemMetadataProvider) LookupCNAME() (string, error) {
@@ -113,7 +113,7 @@ func (p systemMetadataProvider) LookupCNAME() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("LookupCNAME failed to get hostname: %w", err)
 	}
-	cname, err := p.nameInfoProvider.lookupCNAME(hostname)
+	cname, err := p.lookupCNAME(hostname)
 	if err != nil {
 		return "", fmt.Errorf("LookupCNAME failed to get CNAME: %w", err)
 	}
@@ -129,7 +129,7 @@ func (p systemMetadataProvider) ReverseLookupHost() (string, error) {
 }
 
 func (p systemMetadataProvider) hostnameToDomainName(hostname string) (string, error) {
-	ipAddresses, err := p.nameInfoProvider.lookupHost(hostname)
+	ipAddresses, err := p.lookupHost(hostname)
 	if err != nil {
 		return "", fmt.Errorf("hostnameToDomainName failed to convert hostname to IP addresses: %w", err)
 	}
@@ -140,7 +140,7 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 	var err error
 	for _, ip := range ipAddresses {
 		var names []string
-		names, err = p.nameInfoProvider.lookupAddr(ip)
+		names, err = p.lookupAddr(ip)
 		if err != nil {
 			continue
 		}
@@ -171,11 +171,11 @@ func (p systemMetadataProvider) fromOption(ctx context.Context, opt resource.Opt
 }
 
 func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
-	return p.fromOption(ctx, resource.WithHostID(), conventions.AttributeHostID)
+	return p.fromOption(ctx, resource.WithHostID(), string(conventions.HostIDKey))
 }
 
 func (p systemMetadataProvider) OSDescription(ctx context.Context) (string, error) {
-	return p.fromOption(ctx, resource.WithOSDescription(), conventions.AttributeOSDescription)
+	return p.fromOption(ctx, resource.WithOSDescription(), string(conventions.OSDescriptionKey))
 }
 
 func (systemMetadataProvider) HostArch() (string, error) {

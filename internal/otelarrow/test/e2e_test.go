@@ -134,11 +134,11 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	receiverCfg.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.ClientConfig.Endpoint = addr
-	exporterCfg.ClientConfig.WaitForReady = true
-	exporterCfg.ClientConfig.TLSSetting.Insecure = true
+	exporterCfg.Endpoint = addr
+	exporterCfg.WaitForReady = true
+	exporterCfg.TLSSetting.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
 	exporterCfg.RetryConfig.Enabled = true
@@ -612,7 +612,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+		rcfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 			ServerParameters: &configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,

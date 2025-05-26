@@ -109,6 +109,6 @@ func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.L
 	return &logsFailover{
 		config:   config,
 		failover: failover,
-		logger:   set.TelemetrySettings.Logger,
+		logger:   set.Logger,
 	}, nil
 }

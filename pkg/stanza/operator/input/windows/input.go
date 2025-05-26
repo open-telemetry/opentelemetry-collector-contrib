@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
@@ -26,6 +27,7 @@ type Input struct {
 	bookmark            Bookmark
 	buffer              *Buffer
 	channel             string
+	query               *string
 	maxReads            int
 	currentMaxReads     int
 	startAt             string
@@ -116,7 +118,7 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
 	if err != nil {
-		_ = i.persister.Delete(ctx, i.channel)
+		_ = i.persister.Delete(ctx, i.getPersistKey())
 	}
 
 	if offsetXML != "" {
@@ -132,7 +134,7 @@ func (i *Input) Start(persister operator.Persister) error {
 		subscription = NewRemoteSubscription(i.remote.Server)
 	}
 
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 		if isNonTransientError(err) {
 			if i.isRemote() {
 				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
@@ -165,18 +167,18 @@ func (i *Input) Stop() error {
 
 	var errs error
 	if err := i.subscription.Close(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to close subscription: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close subscription: %w", err))
 	}
 
 	if err := i.bookmark.Close(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to close bookmark: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close bookmark: %w", err))
 	}
 
 	if err := i.publisherCache.evictAll(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to close publishers: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close publishers: %w", err))
 	}
 
-	return errors.Join(errs, i.stopRemoteSession())
+	return multierr.Append(errs, i.stopRemoteSession())
 }
 
 // readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.
@@ -224,7 +226,7 @@ func (i *Input) read(ctx context.Context) {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 				return
 			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 				return
 			}
@@ -272,7 +274,7 @@ func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Pu
 	if err == nil {
 		return i.sendEvent(ctx, deepEvent)
 	}
-	return errors.Join(
+	return multierr.Append(
 		fmt.Errorf("render deep event: %w", err),
 		i.renderSimpleAndSend(ctx, event),
 	)
@@ -297,7 +299,7 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 
 	publisher, err := i.publisherCache.get(providerName)
 	if err != nil {
-		return errors.Join(
+		return multierr.Append(
 			fmt.Errorf("open event source for provider %q: %w", providerName, err),
 			i.renderSimpleAndSend(ctx, event),
 		)
@@ -333,7 +335,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
 func (i *Input) getBookmarkOffset(ctx context.Context) (string, error) {
-	bytes, err := i.persister.Get(ctx, i.channel)
+	bytes, err := i.persister.Get(ctx, i.getPersistKey())
 	return string(bytes), err
 }
 
@@ -350,8 +352,16 @@ func (i *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 		return
 	}
 
-	if err := i.persister.Set(ctx, i.channel, []byte(bookmarkXML)); err != nil {
+	if err := i.persister.Set(ctx, i.getPersistKey(), []byte(bookmarkXML)); err != nil {
 		i.Logger().Error("failed to set offsets", zap.Error(err))
 		return
 	}
+}
+
+func (i *Input) getPersistKey() string {
+	if i.query != nil {
+		return *i.query
+	}
+
+	return i.channel
 }

@@ -5,11 +5,11 @@ package testutil // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	context "context"
-	goerrors "errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -85,11 +85,11 @@ func (f *FakeOutput) Stop() error { return nil }
 func (f *FakeOutput) Type() string { return "fake_output" }
 
 func (f *FakeOutput) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
+	var errs error
 	for i := range entries {
-		errs = append(errs, f.Process(ctx, entries[i]))
+		errs = multierr.Append(errs, f.Process(ctx, entries[i]))
 	}
-	return goerrors.Join(errs...)
+	return errs
 }
 
 // Process will place all incoming entries on the Received channel of a fake output

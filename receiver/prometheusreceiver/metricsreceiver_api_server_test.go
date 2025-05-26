@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -46,7 +47,9 @@ func TestPrometheusAPIServer(t *testing.T) {
 				{code: 200, data: metricSet, useOpenMetrics: false},
 			},
 			normalizedName: false,
-			validateFunc:   verifyMetrics,
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				verifyMetrics(t, td, result, false)
+			},
 		},
 	}
 
@@ -61,7 +64,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		defer mp.Close()
 
 		require.NoError(t, err)
-		receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
 			APIServer: &APIServer{
 				Enabled: true,
@@ -70,6 +73,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 				},
 			},
 		}, new(consumertest.MetricsSink))
+		require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 		endpointsToReceivers[endpoint] = receiver
 
 		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))

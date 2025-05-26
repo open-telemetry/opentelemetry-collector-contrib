@@ -4,7 +4,7 @@
 package k8slogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8slogreceiver"
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -54,7 +54,7 @@ func createLogsReceiver(
 	settings.Logger.Error("k8slogreceiver is not yet implemented")
 	rCfg, ok := cfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("failed to cast config to k8slogreceiver.Config")
+		return nil, errors.New("failed to cast config to k8slogreceiver.Config")
 	}
 	return newReceiver(settings, rCfg, consumer)
 }

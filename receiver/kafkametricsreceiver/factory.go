@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 	if config.ClusterAlias != "" {
-		config.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+		config.ResourceAttributes.KafkaClusterAlias.Enabled = true
 	}
 	return config
 }

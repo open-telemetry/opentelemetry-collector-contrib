@@ -15,13 +15,14 @@ var _ xconfmap.Validator = (*Config)(nil)
 const (
 	formatCloudWatchLogsSubscriptionFilter = "cloudwatch_logs_subscription_filter"
 	formatVPCFlowLog                       = "vpc_flow_log"
+	formatS3AccessLog                      = "s3_access_log"
 
 	fileFormatPlainText = "plain-text"
 	fileFormatParquet   = "parquet"
 )
 
 var (
-	supportedLogFormats           = []string{formatCloudWatchLogsSubscriptionFilter, formatVPCFlowLog}
+	supportedLogFormats           = []string{formatCloudWatchLogsSubscriptionFilter, formatVPCFlowLog, formatS3AccessLog}
 	supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
 )
 
@@ -31,9 +32,13 @@ type Config struct {
 	// Current valid values are:
 	// - cloudwatch_logs_subscription_filter
 	// - vpc_flow_log
+	// - s3_access_log
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpc_flow_log"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type VPCFlowLogConfig struct {
@@ -43,6 +48,8 @@ type VPCFlowLogConfig struct {
 	//
 	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
 	FileFormat string `mapstructure:"file_format"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Validate() error {
@@ -53,6 +60,7 @@ func (cfg *Config) Validate() error {
 		errs = append(errs, fmt.Errorf("format unspecified, expected one of %q", supportedLogFormats))
 	case formatCloudWatchLogsSubscriptionFilter: // valid
 	case formatVPCFlowLog: // valid
+	case formatS3AccessLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}

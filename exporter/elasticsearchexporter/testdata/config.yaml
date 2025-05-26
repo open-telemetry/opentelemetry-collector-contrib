@@ -112,3 +112,6 @@ elasticsearch/batcher_minmax_size:
   batcher:
     min_size: 100
     max_size: 200
+elasticsearch/include_source_on_error:
+  endpoint: https://elastic.example.com:9200
+  include_source_on_error: true

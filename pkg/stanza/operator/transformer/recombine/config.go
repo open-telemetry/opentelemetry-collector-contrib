@@ -5,6 +5,7 @@ package recombine // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -70,11 +71,11 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 
 	if c.IsLastEntry != "" && c.IsFirstEntry != "" {
-		return nil, fmt.Errorf("only one of is_first_entry and is_last_entry can be set")
+		return nil, errors.New("only one of is_first_entry and is_last_entry can be set")
 	}
 
 	if c.IsLastEntry == "" && c.IsFirstEntry == "" {
-		return nil, fmt.Errorf("one of is_first_entry and is_last_entry must be set")
+		return nil, errors.New("one of is_first_entry and is_last_entry must be set")
 	}
 
 	var matchesFirst bool
@@ -94,7 +95,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 
 	if c.CombineField.FieldInterface == nil {
-		return nil, fmt.Errorf("missing required argument 'combine_field'")
+		return nil, errors.New("missing required argument 'combine_field'")
 	}
 
 	var overwriteWithNewest bool

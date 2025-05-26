@@ -285,9 +285,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			cfg := createDefaultConfig().(*Config)
-			cfg.TCPAddrConfig.Endpoint = localAddr
+			cfg.Endpoint = localAddr
 			if tt.metricsConfig != nil {
-				cfg.MetricsBuilderConfig.Metrics = tt.metricsConfig()
+				cfg.Metrics = tt.metricsConfig()
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)

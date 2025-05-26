@@ -154,7 +154,7 @@ func TestScraper_Scrape(t *testing.T) {
 			}
 			name, ok := m.ResourceMetrics().At(0).Resource().Attributes().Get("oracledb.instance.name")
 			assert.True(t, ok)
-			assert.Equal(t, "", name.Str())
+			assert.Empty(t, name.Str())
 			var found pmetric.Metric
 			for i := 0; i < m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); i++ {
 				metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)

@@ -23,12 +23,12 @@ func newValueCountDP[K any](
 	attrs pcommon.Map,
 ) *valueCountDP {
 	var dp valueCountDP
-	if md.ExponentialHistogram != nil {
+	if md.Key.Type == pmetric.MetricTypeExponentialHistogram {
 		dp.expHistogramDP = newExponentialHistogramDP(
 			attrs, md.ExponentialHistogram.MaxSize,
 		)
 	}
-	if md.ExplicitHistogram != nil {
+	if md.Key.Type == pmetric.MetricTypeHistogram {
 		dp.explicitHistogramDP = newExplicitHistogramDP(
 			attrs, md.ExplicitHistogram.Buckets,
 		)

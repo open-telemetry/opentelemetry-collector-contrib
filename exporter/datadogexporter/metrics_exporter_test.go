@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -39,7 +39,7 @@ import (
 func TestNewExporter(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
-		defer require.NoError(t, enableZorkianMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
@@ -90,8 +90,6 @@ func TestNewExporter(t *testing.T) {
 }
 
 func TestNewExporter_Serializer(t *testing.T) {
-	require.NoError(t, enableMetricExportSerializer())
-	defer require.NoError(t, enableNativeMetricExport())
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
@@ -146,11 +144,11 @@ func TestNewExporter_Serializer(t *testing.T) {
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableZorkianMetricExport()) })
+		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
+		string(conventions.DeploymentEnvironmentKey): "dev",
+		"custom_attribute":                           "custom_value",
 	}
 	tests := []struct {
 		metrics               pmetric.Metrics
@@ -235,7 +233,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				string(conventions127.DeploymentEnvironmentNameKey): "new_env",
 				"custom_attribute": "custom_value",
 			}),
 			source: source.Source{
@@ -483,7 +481,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				dec := json.NewDecoder(reader)
 				var actual map[string]any
 				assert.NoError(t, dec.Decode(&actual))
-				assert.EqualValues(t, tt.expectedSeries, actual)
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)
@@ -502,7 +500,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 func TestNewExporter_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableNativeMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
@@ -553,11 +551,11 @@ func TestNewExporter_Zorkian(t *testing.T) {
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableNativeMetricExport()) })
+		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
+		string(conventions.DeploymentEnvironmentKey): "dev",
+		"custom_attribute":                           "custom_value",
 	}
 	tests := []struct {
 		metrics               pmetric.Metrics
@@ -635,7 +633,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				string(conventions127.DeploymentEnvironmentNameKey): "new_env",
 				"custom_attribute": "custom_value",
 			}),
 			source: source.Source{
@@ -809,8 +807,8 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		},
 		{
 			metrics: createTestMetrics(map[string]string{
-				conventions.AttributeDeploymentEnvironment: "dev",
-				"custom_attribute":                         "custom_value",
+				string(conventions.DeploymentEnvironmentKey): "dev",
+				"custom_attribute":                           "custom_value",
 			}),
 			source: source.Source{
 				Kind:       source.HostnameKind,
@@ -921,7 +919,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				var actual map[string]any
 				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
-				assert.EqualValues(t, tt.expectedSeries, actual)
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)

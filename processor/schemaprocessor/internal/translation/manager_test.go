@@ -6,6 +6,7 @@ package translation
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -68,7 +69,7 @@ func TestRequestTranslation(t *testing.T) {
 type errorProvider struct{}
 
 func (p *errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
-	return "", fmt.Errorf("error")
+	return "", errors.New("error")
 }
 
 func TestManagerError(t *testing.T) {

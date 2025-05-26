@@ -239,7 +239,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 			httpSettings.Auth = nil
 		}
 	default:
-		return fmt.Errorf("no auth extension and no endpoint specified")
+		return errors.New("no auth extension and no endpoint specified")
 	}
 
 	client, err := httpSettings.ToClient(ctx, se.host, componenttest.NewNopTelemetrySettings())

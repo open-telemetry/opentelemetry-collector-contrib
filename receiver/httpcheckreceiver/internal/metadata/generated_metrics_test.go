@@ -107,7 +107,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.url")
 					assert.True(t, ok)
-					assert.EqualValues(t, "http.url-val", attrVal.Str())
+					assert.Equal(t, "http.url-val", attrVal.Str())
 				case "httpcheck.error":
 					assert.False(t, validatedMetrics["httpcheck.error"], "Found a duplicate in the metrics slice: httpcheck.error")
 					validatedMetrics["httpcheck.error"] = true
@@ -124,10 +124,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.url")
 					assert.True(t, ok)
-					assert.EqualValues(t, "http.url-val", attrVal.Str())
+					assert.Equal(t, "http.url-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "error.message-val", attrVal.Str())
+					assert.Equal(t, "error.message-val", attrVal.Str())
 				case "httpcheck.status":
 					assert.False(t, validatedMetrics["httpcheck.status"], "Found a duplicate in the metrics slice: httpcheck.status")
 					validatedMetrics["httpcheck.status"] = true
@@ -144,16 +144,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.url")
 					assert.True(t, ok)
-					assert.EqualValues(t, "http.url-val", attrVal.Str())
+					assert.Equal(t, "http.url-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("http.status_code")
 					assert.True(t, ok)
 					assert.EqualValues(t, 16, attrVal.Int())
 					attrVal, ok = dp.Attributes().Get("http.method")
 					assert.True(t, ok)
-					assert.EqualValues(t, "http.method-val", attrVal.Str())
+					assert.Equal(t, "http.method-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("http.status_class")
 					assert.True(t, ok)
-					assert.EqualValues(t, "http.status_class-val", attrVal.Str())
+					assert.Equal(t, "http.status_class-val", attrVal.Str())
 				}
 			}
 		})

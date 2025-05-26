@@ -296,3 +296,94 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
+  oracledb.queries_parallelized:
+    description: Number of SELECT statements executed in parallel
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{queries}"
+  oracledb.ddl_statements_parallelized:
+    description: Number of DDL statements that were executed in parallel
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{statements}"
+  oracledb.dml_statements_parallelized:
+    description: Number of DML statements that were executed in parallel
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{statements}"
+  oracledb.parallel_operations_not_downgraded:
+    description: Number of times parallel execution was executed at the
+      requested degree of parallelism
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_to_serial:
+    description: Number of times parallel execution was requested but execution
+      was serial because of insufficient parallel execution servers
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_1_to_25_pct:
+    description: Number of times parallel execution was requested and the
+      degree of parallelism was reduced down to 1-25% because of insufficient
+      parallel execution servers
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_25_to_50_pct:
+    description: Number of times parallel execution was requested and the
+      degree of parallelism was reduced down to 25-50% because of insufficient
+      parallel execution servers
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_50_to_75_pct:
+    description: Number of times parallel execution was requested and the
+      degree of parallelism was reduced down to 50-75% because of insufficient
+      parallel execution servers
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_75_to_99_pct:
+    description: Number of times parallel execution was requested and the
+      degree of parallelism was reduced down to 75-99% because of insufficient
+      parallel execution servers
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"

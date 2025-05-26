@@ -16,7 +16,52 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
+
+func basicProfiles() pprofiletest.Profiles {
+	return pprofiletest.Profiles{
+		ResourceProfiles: []pprofiletest.ResourceProfile{
+			{
+				Resource: pprofiletest.Resource{
+					Attributes: []pprofiletest.Attribute{
+						{Key: "key1", Value: "value1"},
+					},
+				},
+				ScopeProfiles: []pprofiletest.ScopeProfile{
+					{
+						Profile: []pprofiletest.Profile{
+							{
+								SampleType: []pprofiletest.ValueType{
+									{Typ: "samples", Unit: "count"},
+								},
+								PeriodType: pprofiletest.ValueType{Typ: "cpu", Unit: "nanoseconds"},
+								Attributes: []pprofiletest.Attribute{
+									{Key: "process.executable.build_id.htlhash", Value: "600DCAFE4A110000F2BF38C493F5FB92"},
+									{Key: "profile.frame.type", Value: "native"},
+									{Key: "host.id", Value: "localhost"},
+								},
+								Sample: []pprofiletest.Sample{
+									{
+										TimestampsUnixNano: []uint64{0},
+										Value:              []int64{1},
+										Locations: []pprofiletest.Location{
+											{
+												Mapping: &pprofiletest.Mapping{},
+												Address: 111,
+											},
+										},
+									},
+								},
+								ProfileID: pprofile.NewProfileIDEmpty(),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
 
 func TestSerializeProfile(t *testing.T) {
 	tests := []struct {
@@ -68,6 +113,14 @@ func TestSerializeProfile(t *testing.T) {
 					"ecs.version":            "1.12.0",
 				},
 				{
+					"@timestamp":          "1970-01-01T00:00:00Z",
+					"Stacktrace.count":    json.Number("1"),
+					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
+					"ecs.version":         "1.12.0",
+					"host.id":             "localhost",
+					"process.thread.name": "",
+				},
+				{
 					"script": map[string]any{
 						"params": map[string]any{
 							"buildid":    "YA3K_koRAADyvzjEk_X7kg",
@@ -94,14 +147,6 @@ func TestSerializeProfile(t *testing.T) {
 					"Time.created":            "",
 					"ecs.version":             serializeprofiles.EcsVersionString,
 				},
-				{
-					"@timestamp":          "1970-01-01T00:00:00Z",
-					"Stacktrace.count":    json.Number("1"),
-					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
-					"ecs.version":         "1.12.0",
-					"host.id":             "localhost",
-					"process.thread.name": "",
-				},
 			},
 		},
 	}
@@ -115,8 +160,9 @@ func TestSerializeProfile(t *testing.T) {
 			profiles.MarkReadOnly()
 
 			buf := []*bytes.Buffer{}
-			ser := New()
-			err := ser.SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
+			ser, err := New()
+			require.NoError(t, err)
+			err = ser.SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
 				buf = append(buf, b)
 				return nil
 			})
@@ -151,4 +197,24 @@ func TestSerializeProfile(t *testing.T) {
 
 func isWithinLastSecond(t time.Time) bool {
 	return time.Since(t) < time.Second
+}
+
+func BenchmarkSerializeProfile(b *testing.B) {
+	ser, err := New()
+	require.NoError(b, err)
+
+	profiles := basicProfiles().Transform()
+	resource := profiles.ResourceProfiles().At(0)
+	scope := resource.ScopeProfiles().At(0)
+	profile := scope.Profiles().At(0)
+	pushData := func(_ *bytes.Buffer, _ string, _ string) error {
+		return nil
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = ser.SerializeProfile(resource.Resource(), scope.Scope(), profile, pushData)
+	}
 }

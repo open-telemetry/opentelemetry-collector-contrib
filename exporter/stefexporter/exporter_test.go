@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -77,7 +75,9 @@ func (m *mockMetricDestServer) start() {
 		Logger:       nil,
 		ServerSchema: &schema,
 		MaxDictBytes: 0,
-		OnStream:     m.onStream,
+		Callbacks: stefgrpc.Callbacks{
+			OnStream: m.onStream,
+		},
 	}
 	mockServer := stefgrpc.NewStreamServer(settings)
 	stef_proto.RegisterSTEFDestinationServer(grpcServer, mockServer)
@@ -93,7 +93,7 @@ func (m *mockMetricDestServer) stop() {
 	m.grpcServer.Stop()
 }
 
-func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, ackFunc func(sequenceId uint64) error) error {
+func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
 	m.logger.Info("Incoming TEF/gRPC connection.")
 
 	reader, err := oteltef.NewMetricsReader(grpcReader)
@@ -115,9 +115,11 @@ func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, ackFunc 
 			continue
 		}
 
-		if err = ackFunc(reader.RecordCount()); err != nil {
+		err = stream.SendDataResponse(&stef_proto.STEFDataResponse{AckRecordId: reader.RecordCount()})
+		if err != nil {
 			return err
 		}
+
 		m.acksSent.Add(1)
 	}
 }
@@ -141,7 +143,7 @@ func runTest(
 	if cfg == nil {
 		cfg = factory.CreateDefaultConfig().(*Config)
 	}
-	cfg.ClientConfig.Endpoint = mockSrv.endpoint
+	cfg.Endpoint = mockSrv.endpoint
 	// Use insecure mode for tests so that we don't bother with certificates.
 	cfg.TLSSetting.Insecure = true
 
@@ -149,7 +151,7 @@ func runTest(
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -212,7 +214,7 @@ func TestReconnect(t *testing.T) {
 	// Shorten max ack waiting time so that the attempt to send on a failed
 	// connection times out quickly and attempt to send again is tried
 	// until the broken connection is detected and reconnection happens.
-	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
+	cfg.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -261,7 +263,7 @@ func TestAckTimeout(t *testing.T) {
 
 	// Shorten max ack waiting time so that tests run fast.
 	// Increase this if the second eventually() below fails sporadically.
-	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
+	cfg.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -294,7 +296,7 @@ func TestAckTimeout(t *testing.T) {
 
 			mockSrv.logger.Debug("Second set of data received after reconnection. Should be acknowledged.")
 			// Verify that acks were sent.
-			assert.EqualValues(t, pointCount, mockSrv.acksSent.Load())
+			assert.Equal(t, pointCount, mockSrv.acksSent.Load())
 		},
 	)
 }
@@ -316,7 +318,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -331,25 +333,26 @@ func TestStartServerAfterClient(t *testing.T) {
 	// Trying sending with server down.
 	md := testdata.GenerateMetrics(1)
 	pointCount := int64(md.DataPointCount())
+
+	go func() {
+		// Sleep a tiny bit to have more chance to hit race conditions.
+		time.Sleep(time.Millisecond)
+		// Now start the server.
+		mockSrv.start()
+	}()
+
+	// This likely executes before the server is up
+	// (but can also be before, which is good, we want to test the races).
 	err := exp.exportMetrics(context.Background(), md)
 
-	// Sending must fail.
-	require.Error(t, err)
+	// Sending must succeed since exportMetrics() waits until the server is up
+	// and connection can be established.
+	require.NoError(t, err)
 
-	// Now start the server.
-	mockSrv.start()
 	defer mockSrv.stop()
 
-	// Try sending until it succeeds. The gRPC connection may not succeed immediately.
-	assert.Eventually(
-		t, func() bool {
-			err = exp.exportMetrics(context.Background(), md)
-			return err == nil
-		}, 5*time.Second, 200*time.Millisecond,
-	)
-
 	// Ensure data is received.
-	assert.EqualValues(t, pointCount, mockSrv.recordsReceived.Load())
+	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
 }
 
 func TestCancelBlockedExport(t *testing.T) {
@@ -372,7 +375,7 @@ func TestCancelBlockedExport(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -401,11 +404,8 @@ func TestCancelBlockedExport(t *testing.T) {
 		go func() { cancel() }()
 		err = exp.exportMetrics(ctx, md)
 
-		// Sending must fail with Cancelled code.
-		require.Error(t, err)
-		stat, ok := status.FromError(err)
-		assert.True(t, ok)
-		assert.EqualValues(t, codes.Canceled, stat.Code())
+		// Sending must fail with context cancellation.
+		require.ErrorIs(t, err, context.Canceled)
 	}
 }
 
@@ -426,7 +426,7 @@ func TestCancelAfterExport(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -461,5 +461,5 @@ func TestCancelAfterExport(t *testing.T) {
 	}
 
 	// Ensure all data is received.
-	assert.EqualValues(t, pointCount, mockSrv.recordsReceived.Load())
+	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
 }

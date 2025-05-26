@@ -47,7 +47,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	var toBody toBodyFunc = func(token []byte) any {
 		return textutils.UnsafeBytesAsString(token)
 	}
-	if textutils.IsNop(c.Config.Encoding) {
+	if textutils.IsNop(c.Encoding) {
 		toBody = func(token []byte) any {
 			return token
 		}
