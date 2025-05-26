@@ -37,7 +37,6 @@ func batchTimeSeriesV2(tsMap map[string]*writev2.TimeSeries, symbolsTable writev
 
 		tsArray = append(tsArray, *v)
 		sizeOfCurrentBatch += sizeOfSeries
-		i++
 	}
 
 	if len(tsArray) != 0 {
