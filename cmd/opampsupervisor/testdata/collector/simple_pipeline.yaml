@@ -17,3 +17,6 @@ service:
     logs:
       receivers: [filelog]
       exporters: [file]
+  telemetry:
+    logs:
+      level: debug

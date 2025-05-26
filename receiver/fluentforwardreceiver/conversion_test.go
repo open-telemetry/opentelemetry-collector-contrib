@@ -19,12 +19,12 @@ func TestMessageEventConversion(t *testing.T) {
 	eventBytes := parseHexDump("testdata/message-event")
 	reader := msgp.NewReader(bytes.NewReader(eventBytes))
 
-	var event MessageEventLogRecord
+	var event messageEventLogRecord
 	err := event.DecodeMsg(reader)
 	require.NoError(t, err)
 
 	expectedLog := logConstructor(
-		Log{
+		log{
 			Timestamp: 1593031012000000000,
 			Body:      pcommon.NewValueStr("..."),
 			Attributes: map[string]any{
@@ -84,14 +84,14 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	reader := msgp.NewReader(bytes.NewReader(b))
 
-	var event MessageEventLogRecord
+	var event messageEventLogRecord
 	err = event.DecodeMsg(reader)
 	require.NoError(t, err)
 
 	le := event.LogRecords().At(0)
 
 	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
-		Log{
+		log{
 			Timestamp: 5000000000000,
 			Body:      pcommon.NewValueEmpty(),
 			Attributes: map[string]any{
@@ -118,12 +118,12 @@ func TestAttributeTypeConversion(t *testing.T) {
 }
 
 func TestEventMode(t *testing.T) {
-	require.Equal(t, "unknown", UnknownMode.String())
-	require.Equal(t, "message", MessageMode.String())
-	require.Equal(t, "forward", ForwardMode.String())
-	require.Equal(t, "packedforward", PackedForwardMode.String())
+	require.Equal(t, "unknown", unknownMode.String())
+	require.Equal(t, "message", messageMode.String())
+	require.Equal(t, "forward", forwardMode.String())
+	require.Equal(t, "packedforward", packedForwardMode.String())
 
-	const TestMode EventMode = 6
+	const TestMode eventMode = 6
 	require.Panics(t, func() { _ = TestMode.String() })
 }
 
@@ -146,7 +146,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
-			var event MessageEventLogRecord
+			var event messageEventLogRecord
 			err := event.DecodeMsg(reader)
 			require.Error(t, err)
 		})
@@ -160,7 +160,7 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
-			var event ForwardEventLogRecords
+			var event forwardEventLogRecords
 			err := event.DecodeMsg(reader)
 			require.Error(t, err)
 		})
@@ -174,7 +174,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
-			var event PackedForwardEventLogRecords
+			var event packedForwardEventLogRecords
 			err := event.DecodeMsg(reader)
 			require.Error(t, err)
 		})
@@ -186,7 +186,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		in[0x71] = 0xff
 		reader := msgp.NewReader(bytes.NewReader(in))
 
-		var event PackedForwardEventLogRecords
+		var event packedForwardEventLogRecords
 		err := event.DecodeMsg(reader)
 		require.ErrorContains(t, err, "gzip")
 		fmt.Println(err.Error())
@@ -219,7 +219,7 @@ func TestBodyConversion(t *testing.T) {
 
 	reader := msgp.NewReader(bytes.NewReader(b))
 
-	var event MessageEventLogRecord
+	var event messageEventLogRecord
 	err = event.DecodeMsg(reader)
 	require.NoError(t, err)
 
@@ -236,7 +236,7 @@ func TestBodyConversion(t *testing.T) {
 	cv.PutInt("d", 24)
 
 	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
-		Log{
+		log{
 			Timestamp: 5000000000000,
 			Body:      body,
 			Attributes: map[string]any{
