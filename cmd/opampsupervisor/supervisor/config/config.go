@@ -249,14 +249,12 @@ const (
 	MagicConfigFileRemoteConfig   MagicConfigFile = "$REMOTE_CONFIG"
 )
 
-var (
-	magicConfigFiles = map[MagicConfigFile]struct{}{
-		MagicConfigFileBuiltin:        {},
-		MagicConfigFileOpAMPExtension: {},
-		MagicConfigFileOwnMetrics:     {},
-		MagicConfigFileRemoteConfig:   {},
-	}
-)
+var magicConfigFiles = map[MagicConfigFile]struct{}{
+	MagicConfigFileBuiltin:        {},
+	MagicConfigFileOpAMPExtension: {},
+	MagicConfigFileOwnMetrics:     {},
+	MagicConfigFileRemoteConfig:   {},
+}
 
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
