@@ -77,6 +77,7 @@ require (
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/prometheus/sigv4 v0.1.1 // indirect
+	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.32.1-0.20250523042642-a867641d12bd // indirect
@@ -84,8 +85,8 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.32.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.32.1-0.20250523042642-a867641d12bd // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.32.1-0.20250523042642-a867641d12bd // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.32.1-0.20250523042642-a867641d12bd // indirect
@@ -94,7 +95,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/pipeline v0.126.1-0.20250523042642-a867641d12bd // indirect
-	go.opentelemetry.io/collector/processor v0.118.0 // indirect
+	go.opentelemetry.io/collector/processor v1.32.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/collector/semconv v0.126.1-0.20250523042642-a867641d12bd // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
