@@ -1148,8 +1148,6 @@ func (s *Supervisor) loadLastRecvdRemoteConfig() {
 }
 
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	var err error
-
 	if s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs {
 		// Try to load the last received own metrics config if it exists.
 		var lastRecvOwnTelemetryConfig []byte
@@ -1167,7 +1165,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 		s.telemetrySettings.Logger.Debug("Own metrics is not supported, will not attempt to load config from file")
 	}
 
-	_, err = s.composeMergedConfig(s.remoteConfig)
+	_, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
 	}
