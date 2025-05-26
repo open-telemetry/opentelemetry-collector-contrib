@@ -130,8 +130,8 @@ func (zr *zipkinReceiver) startHTTPServer(ctx context.Context, host component.Ho
 		return err
 	}
 
-	zr.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpConfig.Endpoint))
 	var listener net.Listener
+	zr.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpConfig.Endpoint))
 	listener, err = httpConfig.ToListener(ctx)
 	if err != nil {
 		return err

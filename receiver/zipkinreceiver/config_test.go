@@ -37,8 +37,14 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8765",
 				},
-				// When unmarshaling from YAML, protocols is empty for legacy config
-				Protocols:       Protocols{},
+				// Populate protocols with HTTP config
+				Protocols: Protocols{
+					HTTP: &HTTPConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: "localhost:8765",
+						},
+					},
+				},
 				ParseStringTags: false,
 			},
 		},
@@ -48,8 +54,14 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: defaultHTTPEndpoint,
 				},
-				// When unmarshaling from YAML, protocols is empty for legacy config
-				Protocols:       Protocols{},
+				// Populate protocols with default HTTP config
+				Protocols: Protocols{
+					HTTP: &HTTPConfig{
+						ServerConfig: confighttp.ServerConfig{
+							Endpoint: defaultHTTPEndpoint,
+						},
+					},
+				},
 				ParseStringTags: true,
 			},
 		},
@@ -112,6 +124,13 @@ func TestLoadConfig(t *testing.T) {
 			// Check parse_string_tags
 			assert.Equal(t, expectedCfg.ParseStringTags, actualCfg.ParseStringTags)
 
+			if tt.id.Name() == "customname" {
+				// We want to prioritise protocols.http over the root ServerConfig
+				// set this field if using legacy config
+				require.NotNil(t, actualCfg.HTTP)
+				assert.Equal(t, "localhost:8765", actualCfg.HTTP.ServerConfig.Endpoint)
+			}
+
 			// For the protocols_config test, check that protocols.http is configured correctly
 			if tt.id.Name() == "protocols_config" {
 				require.NotNil(t, actualCfg.HTTP)
@@ -123,7 +142,6 @@ func TestLoadConfig(t *testing.T) {
 				require.NotNil(t, actualCfg.HTTP)
 				assert.Equal(t, "localhost:9412", actualCfg.HTTP.ServerConfig.Endpoint)
 				// Check that legacy endpoint is cleared
-				// assert.Equal(t, "", actualCfg.Endpoint)
 				assert.Empty(t, actualCfg.Endpoint, "Legacy endpoint should be cleared when protocols.http is set")
 			}
 		})

@@ -21,6 +21,8 @@ const (
 // HTTPConfig defines configuration for Zipkin HTTP receiver.
 type HTTPConfig struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // UDPConfig defines configuration for a potential future Zipkin UDP receiver.
@@ -88,6 +90,9 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	// Currently only checking for HTTP, but can be expanded for future protocols
 	if !conf.IsSet(protoHTTP) {
 		// No protocols section, using legacy configuration
+		cfg.HTTP = &HTTPConfig{
+			ServerConfig: cfg.ServerConfig,
+		}
 		return nil
 	}
 
