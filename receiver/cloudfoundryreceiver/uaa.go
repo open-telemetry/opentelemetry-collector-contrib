@@ -17,7 +17,7 @@ const (
 	expirationTimeBuffer = -5 * time.Second
 )
 
-type UAATokenProvider struct {
+type uaaTokenProvider struct {
 	client         *uaago.Client
 	logger         *zap.Logger
 	username       string
@@ -28,7 +28,7 @@ type UAATokenProvider struct {
 	mutex          *sync.Mutex
 }
 
-func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, username string, password string) (*UAATokenProvider, error) {
+func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, username string, password string) (*uaaTokenProvider, error) {
 	client, err := uaago.NewClient(config.Endpoint)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, usernam
 
 	logger.Debug(fmt.Sprintf("creating new cloud foundry UAA token client with url %s username %s", config.Endpoint, username))
 
-	return &UAATokenProvider{
+	return &uaaTokenProvider{
 		logger:         logger,
 		client:         client,
 		username:       username,
@@ -48,7 +48,7 @@ func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, usernam
 	}, nil
 }
 
-func (utp *UAATokenProvider) ProvideToken() (string, error) {
+func (utp *uaaTokenProvider) ProvideToken() (string, error) {
 	utp.mutex.Lock()
 	defer utp.mutex.Unlock()
 
