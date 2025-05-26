@@ -44,6 +44,9 @@ const (
 type Config struct {
 	// transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []transform `mapstructure:"transforms"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // transform defines the transformation applied to the specific metric
@@ -94,6 +97,9 @@ type FilterConfig struct {
 	// MatchLabels specifies the label set against which the metric filter will work.
 	// This field is optional.
 	MatchLabels map[string]string `mapstructure:"experimental_match_labels"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Operation defines the specific operation performed on the selected metrics.
@@ -137,6 +143,9 @@ type ValueAction struct {
 
 	// NewValue specifies the label value to rename to.
 	NewValue string `mapstructure:"new_value"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ConfigAction is the enum to capture the type of action to perform on a metric.

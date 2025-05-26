@@ -49,7 +49,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 		TCPIdleTimeout: r.cfg.TCPIdleTimeout,
 		Parser: &protocol.Config{
 			Type: "plaintext", // TODO: update after other parsers are implemented for Carbon receiver.
-			Config: &WavefrontParser{
+			Config: &wavefrontParser{
 				ExtractCollectdTags: r.cfg.ExtractCollectdTags,
 			},
 		},

@@ -22,8 +22,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 )
 
 func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
@@ -33,14 +36,18 @@ func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
 
 func TestWALCreation_nilConfig(t *testing.T) {
 	config := (*WALConfig)(nil)
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.Nil(t, pwal)
+	require.NoError(t, err)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
 	config := &WALConfig{Directory: t.TempDir()}
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.NotNil(t, pwal)
+	require.NoError(t, err)
 	assert.NoError(t, pwal.stop())
 }
 
@@ -90,8 +97,10 @@ func TestWALStopManyTimes(t *testing.T) {
 		TruncateFrequency: 60 * time.Microsecond,
 		BufferSize:        1,
 	}
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.NotNil(t, pwal)
+	require.NoError(t, err)
 
 	// Ensure that invoking .stop() multiple times doesn't cause a panic, but actually
 	// First close should NOT return an error.
@@ -105,9 +114,10 @@ func TestWALStopManyTimes(t *testing.T) {
 func TestWAL_persist(t *testing.T) {
 	// Unit tests that requests written to the WAL persist.
 	config := &WALConfig{Directory: t.TempDir()}
-
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.NotNil(t, pwal)
+	require.NoError(t, err)
 
 	// 1. Write out all the entries.
 	reqL := []*prompb.WriteRequest{
@@ -219,4 +229,65 @@ func TestExportWithWALEnabled(t *testing.T) {
 	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.
 	err = prwe.Shutdown(context.Background())
 	assert.NoError(t, err)
+}
+
+func TestWAL_Telemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background()))
+	})
+	set := metadatatest.NewSettings(tel)
+
+	cfg := &Config{
+		WAL: &WALConfig{
+			Directory: t.TempDir(),
+		},
+		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		// Do nothing
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prw, err := newPRWExporter(cfg, set)
+	require.NotNil(t, prw)
+	require.NoError(t, err)
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, prw.Shutdown(context.Background()))
+	})
+	wal := prw.wal
+
+	// Create some test data
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+
+	// Test successful WAL write
+	err = prw.handleExport(context.Background(), metrics, nil)
+	require.NoError(t, err)
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalWrites(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Test failed WAL write by causing an out-of-order write error
+	currentIndex := wal.wWALIndex.Load()
+	wal.wWALIndex.Store(currentIndex - 1)
+
+	err = prw.handleExport(context.Background(), metrics, nil)
+	require.Error(t, err)
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 }

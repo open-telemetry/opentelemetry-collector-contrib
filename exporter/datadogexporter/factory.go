@@ -18,6 +18,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-agent/pkg/trace/writer"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -67,6 +68,10 @@ var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustR
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
 )
+
+func init() {
+	log.SetupLogger(log.Disabled(), "off")
+}
 
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {

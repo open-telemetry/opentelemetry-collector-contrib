@@ -5,14 +5,18 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-xray-sdk-go/v2/instrumentation/awsv2"
+	xrayv2 "github.com/aws/aws-xray-sdk-go/v2/instrumentation/awsv2"
 	"github.com/aws/aws-xray-sdk-go/v2/xray"
 )
+
+var dynamo *dynamodb.Client
 
 const (
 	existingTableName    = "xray_sample_table"
@@ -25,21 +29,29 @@ type Record struct {
 }
 
 func main() {
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("us-west-2"))
+	ctx, seg := initSegment(context.Background(), "DDB")
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-west-2"))
 	if err != nil {
-		panic(err)
+		log.Println(err)
+		os.Exit(1)
 	}
-	awsv2.AWSV2Instrumentor(&cfg.APIOptions)
 
-	client := dynamodb.NewFromConfig(cfg)
+	xrayv2.AWSV2Instrumentor(&cfg.APIOptions)
 
-	ctx, seg := xray.BeginSegment(context.Background(), "DDB")
+	dynamo = dynamodb.NewFromConfig(cfg)
+
 	seg.User = "xraysegmentdump"
-	err = ddbExpectedFailure(ctx, client)
-	seg.Close(err)
+	seg.Close(ddbExpectedFailure(ctx))
 }
 
-func ddbExpectedFailure(ctx context.Context, client *dynamodb.Client) error {
+func initSegment(ctx context.Context, name string) (context.Context, *xray.Segment) {
+	respCtx, seg := xray.BeginSegment(ctx, name)
+	defer seg.Close(nil)
+	return respCtx, seg
+}
+
+func ddbExpectedFailure(ctx context.Context) error {
 	err := xray.Capture(ctx, "DDB.DescribeExistingTableAndPutToMissingTable", func(ctx1 context.Context) error {
 		err := xray.AddAnnotation(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.Annotation", "anno")
 		if err != nil {
@@ -50,7 +62,7 @@ func ddbExpectedFailure(ctx context.Context, client *dynamodb.Client) error {
 			return err
 		}
 
-		_, err = client.DescribeTable(ctx1, &dynamodb.DescribeTableInput{
+		_, err = dynamo.DescribeTable(ctx1, &dynamodb.DescribeTableInput{
 			TableName: aws.String(existingTableName),
 		})
 		if err != nil {
@@ -67,7 +79,7 @@ func ddbExpectedFailure(ctx context.Context, client *dynamodb.Client) error {
 			return err
 		}
 
-		_, err = client.PutItem(ctx1, &dynamodb.PutItemInput{
+		_, err = dynamo.PutItem(ctx1, &dynamodb.PutItemInput{
 			TableName: aws.String(nonExistingTableName),
 			Item:      item,
 		})

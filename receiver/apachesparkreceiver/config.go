@@ -28,6 +28,9 @@ type Config struct {
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	ApplicationNames               []string `mapstructure:"application_names"`
 	ApplicationIDs                 []string `mapstructure:"application_ids"`
+
+  // prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates missing and invalid configuration fields.
