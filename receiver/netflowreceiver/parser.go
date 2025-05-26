@@ -17,11 +17,19 @@ import (
 
 var (
 
-	// https://en.wikipedia.org/wiki/EtherType
+	// https://www.iana.org/assignments/ieee-802-numbers/ieee-802-numbers.xhtml#ieee-802-numbers-1
 	etypeNames = map[uint32]string{
 		0x806:  "arp",
 		0x800:  "ipv4",
+		0x814c: "snmp",
 		0x86dd: "ipv6",
+		0x8847: "mpls",
+		0x888e: "eapol",
+		0x88cc: "lldp",
+		0x88e5: "macsec",
+		0x88f5: "mvrp",
+		0x88f7: "ptp",
+		0xa0ed: "6lowpan",
 	}
 
 	// https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
