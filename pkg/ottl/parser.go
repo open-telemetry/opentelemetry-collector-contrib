@@ -260,75 +260,45 @@ func (p *Parser[K]) prependContextToConditionPaths(context string, condition str
 }
 
 var (
-	parserOnce                sync.Once
-	conditionParserOnce       sync.Once
-	valueExpressionParserOnce sync.Once
-
-	parserInstance                *participle.Parser[parsedStatement]
-	conditionParserInstance       *participle.Parser[booleanExpression]
-	valueExpressionParserInstance *participle.Parser[value]
+	parser                = sync.OnceValue(newParser[parsedStatement])
+	conditionParser       = sync.OnceValue(newParser[booleanExpression])
+	valueExpressionParser = sync.OnceValue(newParser[value])
 )
 
-func getParser[G any]() *participle.Parser[G] {
-	var zero G
-	switch any(zero).(type) {
-	case parsedStatement:
-		parserOnce.Do(func() {
-			parserInstance = newParser[parsedStatement]()
-		})
-		return any(parserInstance).(*participle.Parser[G])
-	case booleanExpression:
-		conditionParserOnce.Do(func() {
-			conditionParserInstance = newParser[booleanExpression]()
-		})
-		return any(conditionParserInstance).(*participle.Parser[G])
-	case value:
-		valueExpressionParserOnce.Do(func() {
-			valueExpressionParserInstance = newParser[value]()
-		})
-		return any(valueExpressionParserInstance).(*participle.Parser[G])
-	default:
-		return newParser[G]()
-	}
-}
-
 func parseStatement(raw string) (*parsedStatement, error) {
-	parser := getParser[parsedStatement]()
-	statement, err := parser.ParseString("", raw)
+	parsed, err := parser().ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
 	}
-	err = statement.checkForCustomError()
+	err = parsed.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
-	return statement, nil
+	return parsed, nil
 }
 
 func parseCondition(raw string) (*booleanExpression, error) {
-	parser := getParser[booleanExpression]()
-	condition, err := parser.ParseString("", raw)
+	parsed, err := conditionParser().ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
-	err = condition.checkForCustomError()
+	err = parsed.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
-	return condition, nil
+	return parsed, nil
 }
 
 func parseValueExpression(raw string) (*value, error) {
-	parser := getParser[value]()
-	val, err := parser.ParseString("", raw)
+	parsed, err := valueExpressionParser().ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("expression has invalid syntax: %w", err)
 	}
-	err = val.checkForCustomError()
+	err = parsed.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
-	return val, nil
+	return parsed, nil
 }
 
 func insertContextIntoPathsOffsets(context string, statement string, offsets []int) (string, error) {
