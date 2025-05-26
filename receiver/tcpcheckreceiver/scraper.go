@@ -22,23 +22,23 @@ type scraper struct {
 	cfg                *Config
 	settings           component.TelemetrySettings
 	mb                 *metadata.MetricsBuilder
-	getConnectionState func(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState, error)
+	getConnectionState func(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState, error)
 	errorCounts        map[string]int64
 }
 
-type TCPConnectionState struct {
+type tcpConnectionState struct {
 	LocalAddr  string // Local address of the connection
 	RemoteAddr string // Remote address of the connection
 	Network    string // Network type (e.g., "tcp")
 }
 
-func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState, error) {
+func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState, error) {
 	conn, err := tcpConfig.Dial(context.Background())
 	if err != nil {
-		return TCPConnectionState{}, err
+		return tcpConnectionState{}, err
 	}
 	defer conn.Close()
-	state := TCPConnectionState{
+	state := tcpConnectionState{
 		LocalAddr:  conn.LocalAddr().String(),
 		RemoteAddr: conn.RemoteAddr().String(),
 		Network:    conn.LocalAddr().Network(),
