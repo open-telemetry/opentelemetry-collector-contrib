@@ -274,6 +274,7 @@ func parseStatement(raw string) (*parsedStatement, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return parsed, nil
 }
 
@@ -286,6 +287,7 @@ func parseCondition(raw string) (*booleanExpression, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return parsed, nil
 }
 
@@ -298,6 +300,7 @@ func parseValueExpression(raw string) (*value, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return parsed, nil
 }
 
