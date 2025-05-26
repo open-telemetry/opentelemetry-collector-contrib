@@ -91,15 +91,15 @@ func TestConfigValidateMissingAuth(t *testing.T) {
 func TestConfigValidateMultipleAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
-	cfg.Auth.XAuth2 = &SaslXAuth2Config{"Username", "Bearer"}
+	cfg.Auth.PlainText = &SaslPlainTextConfig{Username: "Username", Password: "Password"}
+	cfg.Auth.XAuth2 = &SaslXAuth2Config{Username: "Username", Bearer: "Bearer"}
 	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, errTooManyAuthDetails.Error())
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Auth.PlainText = &SaslPlainTextConfig{Username: "Username", Password: "Password"}
 	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, errMissingQueueName.Error())
 }
@@ -107,7 +107,7 @@ func TestConfigValidateMissingQueue(t *testing.T) {
 func TestConfigValidateMissingFlowControl(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Auth.PlainText = &SaslPlainTextConfig{Username: "Username", Password: "Password"}
 	// this should never happen in reality, test validation anyway
 	cfg.Flow.DelayedRetry = nil
 	err := cfg.Validate()
@@ -117,7 +117,7 @@ func TestConfigValidateMissingFlowControl(t *testing.T) {
 func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Auth.PlainText = &SaslPlainTextConfig{Username: "Username", Password: "Password"}
 	cfg.Flow.DelayedRetry = &FlowControlDelayedRetry{
 		Delay: -30 * time.Second,
 	}
@@ -128,7 +128,7 @@ func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
 func TestConfigValidateSuccess(t *testing.T) {
 	successCases := map[string]func(*Config){
 		"With Plaintext Auth": func(c *Config) {
-			c.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+			c.Auth.PlainText = &SaslPlainTextConfig{Username: "Username", Password: "Password"}
 		},
 		"With XAuth2 Auth": func(c *Config) {
 			c.Auth.XAuth2 = &SaslXAuth2Config{

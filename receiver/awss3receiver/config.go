@@ -45,12 +45,18 @@ type SQSConfig struct {
 // Notifications groups optional notification sources.
 type Notifications struct {
 	OpAMP *component.ID `mapstructure:"opampextension"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Encoding defines the encoding configuration for the file receiver.
 type Encoding struct {
 	Extension component.ID `mapstructure:"extension"`
 	Suffix    string       `mapstructure:"suffix"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines the configuration for the file receiver.
