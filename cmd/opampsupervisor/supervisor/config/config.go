@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -218,8 +219,44 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	if len(a.ConfigFiles) == 0 {
+		a.ConfigFiles = []string{
+			string(MagicConfigFileRemoteConfig),
+			string(MagicConfigFileOwnMetrics),
+			string(MagicConfigFileBuiltin),
+			string(MagicConfigFileOpAMPExtension),
+		}
+	}
+
+	for _, file := range a.ConfigFiles {
+		if !strings.HasPrefix(file, "$") {
+			continue
+		}
+		if _, ok := magicConfigFiles[MagicConfigFile(file)]; !ok {
+			return fmt.Errorf("agent::config_files contains invalid magic file: %q. Must be one of %v", file, magicConfigFiles)
+		}
+	}
+
 	return nil
 }
+
+type MagicConfigFile string
+
+const (
+	MagicConfigFileBuiltin        MagicConfigFile = "$BUILTIN_CONFIG"
+	MagicConfigFileOpAMPExtension MagicConfigFile = "$OPAMP_EXTENSION_CONFIG"
+	MagicConfigFileOwnMetrics     MagicConfigFile = "$OWN_METRICS_CONFIG"
+	MagicConfigFileRemoteConfig   MagicConfigFile = "$REMOTE_CONFIG"
+)
+
+var (
+	magicConfigFiles = map[MagicConfigFile]struct{}{
+		MagicConfigFileBuiltin:        {},
+		MagicConfigFileOpAMPExtension: {},
+		MagicConfigFileOwnMetrics:     {},
+		MagicConfigFileRemoteConfig:   {},
+	}
+)
 
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
