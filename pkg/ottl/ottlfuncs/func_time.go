@@ -90,21 +90,21 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Op
 }
 
 type ctimeError struct {
-	timeErr time.ParseError
+	msg string
 }
 
 func (e ctimeError) Error() string {
-	return e.timeErr.Error()
+	return e.msg
 }
 
 func toCTimeError(parseError time.ParseError, format string, ctimeSubstitutes map[string]string) error {
-	res := &ctimeError{timeErr: parseError}
 	// set the layout to the originally provided ctime format
-	res.timeErr.Layout = format
+	parseError.Layout = format
 
 	if ctimeSubstitute, ok := ctimeSubstitutes[parseError.LayoutElem]; ok {
-		res.timeErr.LayoutElem = ctimeSubstitute
+		parseError.LayoutElem = ctimeSubstitute
 	}
 
-	return res
+	return &ctimeError{msg: parseError.Error()}
+
 }
