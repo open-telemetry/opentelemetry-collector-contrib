@@ -6,7 +6,7 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 )
@@ -30,17 +30,17 @@ func NewCollectorInstanceInfo(
 	var info CollectorInstanceInfo
 	for k, v := range set.Resource.Attributes().All() {
 		switch k {
-		case semconv.AttributeServiceInstanceID:
+		case string(semconv.ServiceInstanceIDKey):
 			if str := v.Str(); str != "" {
 				info.serviceInstanceID = str
 				info.size++
 			}
-		case semconv.AttributeServiceName:
+		case string(semconv.ServiceNameKey):
 			if str := v.Str(); str != "" {
 				info.serviceName = str
 				info.size++
 			}
-		case semconv.AttributeServiceNamespace:
+		case string(semconv.ServiceNamespaceKey):
 			if str := v.Str(); str != "" {
 				info.serviceNamespace = str
 				info.size++
@@ -59,13 +59,13 @@ func (info CollectorInstanceInfo) Size() int {
 func (info CollectorInstanceInfo) Copy(to pcommon.Map) {
 	to.EnsureCapacity(info.Size())
 	if info.serviceInstanceID != "" {
-		to.PutStr(keyWithPrefix(semconv.AttributeServiceInstanceID), info.serviceInstanceID)
+		to.PutStr(keyWithPrefix(string(semconv.ServiceInstanceIDKey)), info.serviceInstanceID)
 	}
 	if info.serviceName != "" {
-		to.PutStr(keyWithPrefix(semconv.AttributeServiceName), info.serviceName)
+		to.PutStr(keyWithPrefix(string(semconv.ServiceNameKey)), info.serviceName)
 	}
 	if info.serviceNamespace != "" {
-		to.PutStr(keyWithPrefix(semconv.AttributeServiceNamespace), info.serviceNamespace)
+		to.PutStr(keyWithPrefix(string(semconv.ServiceNamespaceKey)), info.serviceNamespace)
 	}
 }
 

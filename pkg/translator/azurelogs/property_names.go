@@ -6,7 +6,7 @@ package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 // TODO @constanca-m remove this file once the logic for the remaining categories
@@ -15,44 +15,44 @@ import (
 func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "trackingReference":
-		attrs[conventions.AttributeAzServiceRequestID] = value
+		attrs[string(conventions.AzServiceRequestIDKey)] = value
 	case "httpMethod":
-		attrs[conventions.AttributeHTTPRequestMethod] = value
+		attrs[string(conventions.HTTPRequestMethodKey)] = value
 	case "httpVersion":
-		attrs[conventions.AttributeNetworkProtocolVersion] = value
+		attrs[string(conventions.NetworkProtocolVersionKey)] = value
 	case "requestUri":
-		attrs[conventions.AttributeURLFull] = value
+		attrs[string(conventions.URLFullKey)] = value
 	case "hostName":
-		attrs[conventions.AttributeServerAddress] = value
+		attrs[string(conventions.ServerAddressKey)] = value
 	case "requestBytes":
-		attrs[conventions.AttributeHTTPRequestSize] = toInt(value)
+		attrs[string(conventions.HTTPRequestSizeKey)] = toInt(value)
 	case "responseBytes":
-		attrs[conventions.AttributeHTTPResponseSize] = toInt(value)
+		attrs[string(conventions.HTTPResponseSizeKey)] = toInt(value)
 	case "userAgent":
-		attrs[conventions.AttributeUserAgentOriginal] = value
+		attrs[string(conventions.UserAgentOriginalKey)] = value
 	case "ClientIp", "clientIp":
 		attrs["client.address"] = value
 	case "ClientPort", "clientPort":
 		// TODO Should be a port
 		attrs["client.port"] = value
 	case "socketIp":
-		attrs[conventions.AttributeNetworkPeerAddress] = value
+		attrs[string(conventions.NetworkPeerAddressKey)] = value
 	case "timeTaken":
 		attrs["http.server.request.duration"] = toFloat(value)
 	case "requestProtocol":
-		attrs[conventions.AttributeNetworkProtocolName] = toLower(value)
+		attrs[string(conventions.NetworkProtocolNameKey)] = toLower(value)
 	case "securityCipher":
-		attrs[conventions.AttributeTLSCipher] = value
+		attrs[string(conventions.TLSCipherKey)] = value
 	case "securityCurves":
-		attrs[conventions.AttributeTLSCurve] = value
+		attrs[string(conventions.TLSCurveKey)] = value
 	case "httpStatusCode":
-		attrs[conventions.AttributeHTTPResponseStatusCode] = toInt(value)
+		attrs[string(conventions.HTTPResponseStatusCodeKey)] = toInt(value)
 	case "routeName":
-		attrs[conventions.AttributeHTTPRoute] = value
+		attrs[string(conventions.HTTPRouteKey)] = value
 	case "referer":
 		attrs["http.request.header.referer"] = value
 	case "errorInfo":
-		attrs[conventions.AttributeErrorType] = value
+		attrs[string(conventions.ErrorTypeKey)] = value
 	case "securityProtocol":
 		str, ok := value.(string)
 		if !ok {
@@ -66,8 +66,8 @@ func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, att
 		if version == "" || remaining != "" {
 			return
 		}
-		attrs[conventions.AttributeTLSProtocolName] = strings.ToLower(name)
-		attrs[conventions.AttributeTLSProtocolVersion] = version
+		attrs[string(conventions.TLSProtocolNameKey)] = strings.ToLower(name)
+		attrs[string(conventions.TLSProtocolVersionKey)] = version
 	default:
 		attrsProps[field] = value
 	}
@@ -76,13 +76,13 @@ func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, att
 func handleFrontDoorHealthProbeLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "httpVerb":
-		attrs[conventions.AttributeHTTPRequestMethod] = value
+		attrs[string(conventions.HTTPRequestMethodKey)] = value
 	case "httpStatusCode":
-		attrs[conventions.AttributeHTTPResponseStatusCode] = toInt(value)
+		attrs[string(conventions.HTTPResponseStatusCodeKey)] = toInt(value)
 	case "probeURL":
-		attrs[conventions.AttributeURLFull] = value
+		attrs[string(conventions.URLFullKey)] = value
 	case "originIP":
-		attrs[conventions.AttributeServerAddress] = value
+		attrs[string(conventions.ServerAddressKey)] = value
 	case "DNSLatencyMicroseconds":
 		microseconds, ok := tryParseFloat64(value)
 		if !ok {
@@ -109,13 +109,13 @@ func handleFrontdoorWebApplicationFirewallLog(field string, value any, attrs map
 	case "clientPort":
 		attrs["client.port"] = value
 	case "socketIP":
-		attrs[conventions.AttributeNetworkPeerAddress] = value
+		attrs[string(conventions.NetworkPeerAddressKey)] = value
 	case "requestUri":
-		attrs[conventions.AttributeURLFull] = value
+		attrs[string(conventions.URLFullKey)] = value
 	case "host":
-		attrs[conventions.AttributeServerAddress] = value
+		attrs[string(conventions.ServerAddressKey)] = value
 	case "trackingReference":
-		attrs[conventions.AttributeAzServiceRequestID] = value
+		attrs[string(conventions.AzServiceRequestIDKey)] = value
 	default:
 		attrsProps[field] = value
 	}
@@ -124,17 +124,17 @@ func handleFrontdoorWebApplicationFirewallLog(field string, value any, attrs map
 func handleAppServiceAppLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "ContainerId":
-		attrs[conventions.AttributeContainerID] = value
+		attrs[string(conventions.ContainerIDKey)] = value
 	case "ExceptionClass":
-		attrs[conventions.AttributeExceptionType] = value
+		attrs[string(conventions.ExceptionTypeKey)] = value
 	case "Host":
-		attrs[conventions.AttributeHostID] = value
+		attrs[string(conventions.HostIDKey)] = value
 	case "Method":
-		attrs[conventions.AttributeCodeFunction] = value
+		attrs[string(conventions.CodeFunctionKey)] = value
 	case "Source":
-		attrs[conventions.AttributeCodeFilepath] = value
+		attrs[string(conventions.CodeFilepathKey)] = value
 	case "Stacktrace", "StackTrace":
-		attrs[conventions.AttributeExceptionStacktrace] = value
+		attrs[string(conventions.ExceptionStacktraceKey)] = value
 	default:
 		attrsProps[field] = value
 	}
@@ -143,7 +143,7 @@ func handleAppServiceAppLogs(field string, value any, attrs map[string]any, attr
 func handleAppServiceAuditLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "Protocol":
-		attrs[conventions.AttributeNetworkProtocolName] = toLower(value)
+		attrs[string(conventions.NetworkProtocolNameKey)] = toLower(value)
 	case "User":
 		attrs["enduser.id"] = value
 	case "UserAddress":
@@ -156,7 +156,7 @@ func handleAppServiceAuditLogs(field string, value any, attrs map[string]any, at
 func handleAppServiceAuthenticationLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "StatusCode":
-		attrs[conventions.AttributeHTTPResponseStatusCode] = toInt(value)
+		attrs[string(conventions.HTTPResponseStatusCodeKey)] = toInt(value)
 	default:
 		attrsProps[field] = value
 	}
@@ -165,9 +165,9 @@ func handleAppServiceAuthenticationLogs(field string, value any, attrs map[strin
 func handleAppServiceConsoleLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "ContainerId":
-		attrs[conventions.AttributeContainerID] = value
+		attrs[string(conventions.ContainerIDKey)] = value
 	case "Host":
-		attrs[conventions.AttributeHostID] = value
+		attrs[string(conventions.HostIDKey)] = value
 	default:
 		attrsProps[field] = value
 	}
@@ -178,25 +178,25 @@ func handleAppServiceHTTPLogs(field string, value any, attrs map[string]any, att
 	case "CIp":
 		attrs["client.address"] = value
 	case "ComputerName":
-		attrs[conventions.AttributeHostName] = value
+		attrs[string(conventions.HostNameKey)] = value
 	case "CsBytes":
-		attrs[conventions.AttributeHTTPRequestBodySize] = toInt(value)
+		attrs[string(conventions.HTTPRequestBodySizeKey)] = toInt(value)
 	case "CsHost":
-		attrs[conventions.AttributeURLDomain] = value
+		attrs[string(conventions.URLDomainKey)] = value
 	case "CsMethod":
-		attrs[conventions.AttributeHTTPRequestMethod] = value
+		attrs[string(conventions.HTTPRequestMethodKey)] = value
 	case "CsUriQuery":
-		attrs[conventions.AttributeURLQuery] = value
+		attrs[string(conventions.URLQueryKey)] = value
 	case "CsUriStem":
-		attrs[conventions.AttributeURLPath] = value
+		attrs[string(conventions.URLPathKey)] = value
 	case "Referer":
 		attrs["http.request.header.referer"] = value
 	case "ScBytes":
-		attrs[conventions.AttributeHTTPResponseBodySize] = toInt(value)
+		attrs[string(conventions.HTTPResponseBodySizeKey)] = toInt(value)
 	case "ScStatus":
-		attrs[conventions.AttributeHTTPResponseStatusCode] = toInt(value)
+		attrs[string(conventions.HTTPResponseStatusCodeKey)] = toInt(value)
 	case "SPort":
-		attrs[conventions.AttributeServerPort] = toInt(value)
+		attrs[string(conventions.ServerPortKey)] = toInt(value)
 	case "TimeTaken":
 		milliseconds, ok := tryParseFloat64(value)
 		if !ok {
@@ -205,7 +205,7 @@ func handleAppServiceHTTPLogs(field string, value any, attrs map[string]any, att
 		seconds := milliseconds / 1_000
 		attrs["http.server.request.duration"] = seconds
 	case "UserAgent":
-		attrs[conventions.AttributeUserAgentOriginal] = value
+		attrs[string(conventions.UserAgentOriginalKey)] = value
 	case "Protocol":
 		str, ok := value.(string)
 		if !ok {
@@ -219,8 +219,8 @@ func handleAppServiceHTTPLogs(field string, value any, attrs map[string]any, att
 		if version == "" || remaining != "" {
 			return
 		}
-		attrs[conventions.AttributeNetworkProtocolName] = strings.ToLower(name)
-		attrs[conventions.AttributeNetworkProtocolVersion] = version
+		attrs[string(conventions.NetworkProtocolNameKey)] = strings.ToLower(name)
+		attrs[string(conventions.NetworkProtocolVersionKey)] = version
 	default:
 		attrsProps[field] = value
 	}
@@ -248,11 +248,11 @@ func handleAppServiceIPSecAuditLogs(field string, value any, attrs map[string]an
 func handleAppServicePlatformLogs(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {
 	case "containerId":
-		attrs[conventions.AttributeContainerID] = value
+		attrs[string(conventions.ContainerIDKey)] = value
 	case "containerName":
-		attrs[conventions.AttributeContainerName] = value
+		attrs[string(conventions.ContainerNameKey)] = value
 	case "exception":
-		attrs[conventions.AttributeErrorType] = value
+		attrs[string(conventions.ErrorTypeKey)] = value
 	default:
 		attrsProps[field] = value
 	}

@@ -30,6 +30,7 @@ processor/routingprocessor/
 
 # Start unmaintained components list
 
+connector/countconnector
 exporter/carbonexporter
 exporter/kineticaexporter
 exporter/opensearchexporter
