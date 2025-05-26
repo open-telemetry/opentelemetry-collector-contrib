@@ -298,7 +298,9 @@ receiver/stefreceiver receiver/stef
 receiver/syslogreceiver receiver/syslog
 receiver/systemdreceiver receiver/systemd
 receiver/tcpcheckreceiver receiver/tcpcheck
+receiver/tcplogreceiver receiver/tcplog
 receiver/tlscheckreceiver receiver/tlscheck
+receiver/udplogreceiver receiver/udplog
 receiver/vcenterreceiver receiver/vcenter
 receiver/wavefrontreceiver receiver/wavefront
 receiver/webhookeventreceiver receiver/webhookevent
@@ -321,5 +323,3 @@ exporter/opensearchexporter exporter/opensearch
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/carbonreceiver receiver/carbon
-receiver/tcplogreceiver receiver/tcplog
-receiver/udplogreceiver receiver/udplog

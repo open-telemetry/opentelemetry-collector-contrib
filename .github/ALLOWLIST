@@ -37,7 +37,5 @@ exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver
-receiver/tcplogreceiver
-receiver/udplogreceiver
 
 # End unmaintained components list
