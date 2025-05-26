@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.126.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.126.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.126.1-0.20250526141150-249e5d55ad2f
-	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526061459-59a11661eae8
+	go.opentelemetry.io/collector/pdata v1.32.1-0.20250526141150-249e5d55ad2f
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0
 	go.opentelemetry.io/otel/sdk/metric v1.35.0
