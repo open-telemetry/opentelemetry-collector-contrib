@@ -165,7 +165,7 @@ func isSameMetricV2(ts1, ts2 *writev2.TimeSeries) bool {
 	if len(ts1.LabelsRefs) != len(ts2.LabelsRefs) {
 		return false
 	}
-	// As the labels are sorted as name, value, name, value, ... we can compare the labels by index jumping 2 steps at a time
+	// As the labels are ordered as name, value, name, value, ... we can compare the labels by index jumping 2 steps at a time
 	for i := 0; i < len(ts1.LabelsRefs); i += 2 {
 		if ts1.LabelsRefs[i] != ts2.LabelsRefs[i] || ts1.LabelsRefs[i+1] != ts2.LabelsRefs[i+1] {
 			return false
