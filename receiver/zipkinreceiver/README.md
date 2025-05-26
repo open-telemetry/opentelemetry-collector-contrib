@@ -28,8 +28,43 @@ receivers:
 
 The following settings are configurable:
 
-- `endpoint` (default = localhost:9411): host:port on which the receiver is going to receive data.See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.  For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
+### Legacy Configuration (Deprecated)
+
+- `endpoint` (default = localhost:9411): host:port on which the receiver is going to receive data. See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
 - `parse_string_tags` (default = false): if enabled, the receiver will attempt to parse string tags/binary annotations into int/bool/float.
+
+### Protocol-Based Configuration
+
+Starting from v0.128.0, the zipkin receiver supports a protocol-based configuration format:
+
+```yaml
+receivers:
+  zipkin:
+    protocols:
+      http:
+        endpoint: localhost:9411
+    parse_string_tags: false
+```
+
+Currently, only the HTTP protocol is supported, but this structure allows for future expansion to other protocols (such as UDP). The protocol-based design makes the receiver more extensible and follows the pattern used by other receivers in the OpenTelemetry Collector.
+
+#### Future Protocol Support
+
+The architecture has been designed to easily add support for additional protocols in the future. For example, a UDP protocol could be added with configuration like:
+
+```yaml
+receivers:
+  zipkin:
+    protocols:
+      http:
+        endpoint: localhost:9411
+      # UDP support is not yet implemented, this is just an example
+      # udp:
+      #   endpoint: localhost:9412
+    parse_string_tags: false
+```
+
+The legacy configuration format is still supported for backward compatibility, but it is recommended to use the new protocol-based configuration format for new deployments.
 
 ## Advanced Configuration
 

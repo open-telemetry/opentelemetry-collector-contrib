@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -94,17 +95,48 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 		return errors.New("nil host")
 	}
 
+	// Always prioritize Protocols.HTTP over root ServerConfig
+	// If Protocols.HTTP is not set, copy the root ServerConfig to it
+	if zr.config.Protocols.HTTP == nil && zr.config.Endpoint != "" {
+		zr.config.Protocols.HTTP = &HTTPConfig{
+			ServerConfig: zr.config.ServerConfig,
+		}
+	}
+
+	// Start HTTP server if HTTP protocol is enabled
+	if zr.config.Protocols.HTTP != nil {
+		if err := zr.startHTTPServer(ctx, host); err != nil {
+			return err
+		}
+	}
+
+	// Future protocols can be added here, for example:
+	// if zr.config.Protocols.UDP != nil {
+	//     if err := zr.startUDPServer(ctx, host); err != nil {
+	//         return err
+	//     }
+	// }
+
+	return nil
+}
+
+// startHTTPServer initializes and starts the HTTP server for receiving Zipkin spans
+func (zr *zipkinReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
 	var err error
-	zr.server, err = zr.config.ServerConfig.ToServer(ctx, host, zr.settings.TelemetrySettings, zr)
+	httpConfig := zr.config.Protocols.HTTP.ServerConfig
+
+	zr.server, err = httpConfig.ToServer(ctx, host, zr.settings.TelemetrySettings, zr)
 	if err != nil {
 		return err
 	}
 
+	zr.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpConfig.Endpoint))
 	var listener net.Listener
-	listener, err = zr.config.ServerConfig.ToListener(ctx)
+	listener, err = httpConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
+
 	zr.shutdownWG.Add(1)
 	go func() {
 		defer zr.shutdownWG.Done()
@@ -149,12 +181,18 @@ func (zr *zipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs ptr
 
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and shutting down
-// its HTTP server.
+// its servers.
 func (zr *zipkinReceiver) Shutdown(context.Context) error {
 	var err error
+
+	// Shutdown HTTP server if it was started
 	if zr.server != nil {
 		err = zr.server.Close()
 	}
+
+	// Future protocol shutdown can be added here
+	// For example: if zr.udpServer != nil { zr.udpServer.Close() }
+
 	zr.shutdownWG.Wait()
 	return err
 }

@@ -3,3 +3,12 @@ zipkin/customname:
   endpoint: "localhost:8765"
 zipkin/parse_strings:
   parse_string_tags: true
+zipkin/protocols_config:
+  protocols:
+    http:
+      endpoint: "localhost:9411"
+zipkin/protocols_with_legacy:
+  endpoint: "localhost:9411"
+  protocols:
+    http:
+      endpoint: "localhost:9412"
