@@ -106,5 +106,4 @@ func toCTimeError(parseError time.ParseError, format string, ctimeSubstitutes ma
 	}
 
 	return &ctimeError{msg: parseError.Error()}
-
 }
