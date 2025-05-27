@@ -900,7 +900,6 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
-	const eventName = "db.server.query_sample"
 	const blockingSessionID = "blocking_session_id"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -956,9 +955,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		record := plog.NewLogRecord()
-		record.SetEventName(eventName)
-
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := s.retrieveValue(row, dbName, &errs, vanillaRetriever).(string)
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
@@ -1008,10 +1004,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		spanContext := trace.SpanContextFromContext(contextFromQuery)
 		contextInfoVal := ""
 
-		if spanContext.IsValid() {
-			record.SetTraceID(pcommon.TraceID(spanContext.TraceID()))
-			record.SetSpanID(pcommon.SpanID(spanContext.SpanID()))
-		} else {
+		if !spanContext.IsValid() {
 			contextInfoVal = hex.EncodeToString([]byte(row[contextInfo]))
 		}
 
