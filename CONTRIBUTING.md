@@ -24,9 +24,6 @@ repository:
 
   The actual name of the binary will depend on your platform. For example, on Linux x64, use `./bin/otelcontribcol_linux_amd64`.
 
-The actual name of the binary will depend on your platform, adjust accordingly
-(e.g., `./bin/otelcontribcol_linux_amd64`).
-
 Replace `otel-config.yaml` with the appropriate configuration file as needed.
 
 3. Verify that your changes are reflected in the contrib Collector's behavior by
@@ -61,7 +58,6 @@ Replace `otel-config.yaml` with the appropriate configuration file as needed.
 
 ### Overview
 
-There are two auto-generated Changelogs for this repository:
 There are two auto generated Changelogs for this repository:
 
 - `CHANGELOG.md` is intended for users of the collector and lists changes that affect the behavior of the collector.
