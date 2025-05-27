@@ -112,7 +112,7 @@ func (p *packageManager) SetAllPackagesHash(hash []byte) error {
 	return p.persistentState.SetAllPackagesHash(hash)
 }
 
-func (p *packageManager) Packages() ([]string, error) {
+func (packageManager) Packages() ([]string, error) {
 	return []string{agentPackageKey}, nil
 }
 
@@ -150,7 +150,7 @@ func (p *packageManager) SetPackageState(packageName string, state types.Package
 	return nil
 }
 
-func (p *packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
+func (packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
 	if packageName != agentPackageKey {
 		return errors.New("only agent package is supported")
 	}
@@ -265,7 +265,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	return nil
 }
 
-func (p *packageManager) DeletePackage(packageName string) error {
+func (packageManager) DeletePackage(packageName string) error {
 	if packageName != agentPackageKey {
 		// We only take the agent package, so the package already doesn't exist.
 		return nil

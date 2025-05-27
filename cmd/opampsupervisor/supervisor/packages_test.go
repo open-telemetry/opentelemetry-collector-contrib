@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -282,7 +283,7 @@ func initPackageManager(t *testing.T, tmpDir string) *packageManager {
 
 	require.NoError(t, os.MkdirAll(storageDir, 0o700))
 	require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0o600))
-	ps, err := loadOrCreatePersistentState(filepath.Join(tmpDir, "persistent_state.yaml"))
+	ps, err := loadOrCreatePersistentState(filepath.Join(tmpDir, "persistent_state.yaml"), zap.NewNop())
 	require.NoError(t, err)
 
 	pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", ps, defaultSigOpts, nil)
