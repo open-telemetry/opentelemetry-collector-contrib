@@ -329,10 +329,14 @@ jobs:
           path: internal/tools/testresults/
           retention-days: 4
       - name: Fail workflow if tests fails
-        if: steps.tests-with-junit.outcome == 'failure' || steps.tests.outcome == 'failure'
+        if: always()
         run: |
-          echo "Tests failed. Failing workflow."
-          exit 1
+          if [[ "${{ steps.tests-with-junit.outcome }}" == "failure" || "${{ steps.tests.outcome }}" == "failure" ]]; then
+            echo "Tests failed. Failing workflow."
+            exit 1
+          else
+            echo "Tests passed or were skipped. Continuing."
+          fi
           
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}

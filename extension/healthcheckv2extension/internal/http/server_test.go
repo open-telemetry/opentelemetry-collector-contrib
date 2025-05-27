@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
 	internalhelpers "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
@@ -154,15 +155,14 @@ type teststep struct {
 
 func TestStatus(t *testing.T) {
 	var server *Server
-	traces := testhelpers.NewPipelineMetadata("traces")
-	metrics := testhelpers.NewPipelineMetadata("metrics")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
 	tests := []struct {
 		name                  string
 		config                *Config
 		legacyConfig          LegacyConfig
 		componentHealthConfig *common.ComponentHealthConfig
-		pipelines             map[string]*testhelpers.PipelineMetadata
 		teststeps             []teststep
 	}{
 		{
@@ -2582,7 +2582,6 @@ func TestStatus(t *testing.T) {
 					Path:    "/status",
 				},
 			},
-			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
 				{
 					step: func() {

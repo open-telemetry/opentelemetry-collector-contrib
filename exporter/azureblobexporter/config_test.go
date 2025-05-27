@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 					ClientID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					ClientSecret: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 				},
-				Container: &Container{
+				Container: &TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
@@ -66,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				Auth: &Authentication{
 					Type: "system_managed_identity",
 				},
-				Container: &Container{
+				Container: &TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:     "user_managed_identity",
 					ClientID: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 				},
-				Container: &Container{
+				Container: &TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",
@@ -123,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:             "connection_string",
 					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 				},
-				Container: &Container{
+				Container: &TelemetryConfig{
 					Metrics: "test",
 					Logs:    "test",
 					Traces:  "test",

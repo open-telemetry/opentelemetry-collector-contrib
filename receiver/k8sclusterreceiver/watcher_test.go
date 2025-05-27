@@ -55,7 +55,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[component.ID]component.Component{
-					component.MustNewID("nop"): MockExporter{},
+					component.MustNewID("nop"): mockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},

@@ -7,6 +7,133 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.127.0
+
+### 🛑 Breaking changes 🛑
+
+- `sqlserverreceiver`: Zero values in delta attributes will be reported in top query collection. (#40041)
+  This change includes the following attributes:
+    - sqlserver.total_worker_time
+    - sqlserver.execution_count
+    - sqlserver.total_logical_reads
+    - sqlserver.total_logical_writes
+    - sqlserver.total_physical_reads
+    - sqlserver.total_rows
+    - sqlserver.total_grant_kb
+  
+- `stefreceiver, stefexporter`: Updated to STEF 0.0.6, which had a breaking change in the format from 0.0.5 (#40058)
+
+### 🚀 New components 🚀
+
+- `stefreceiver`: Update stability of STEF receiver to Alpha. (#40062)
+
+### 💡 Enhancements 💡
+
+- `coralogixexporter`: Added a mechanism to drop telemetry data when rate limit, quota or authorization errors are encountered. (#40074)
+  Added a new configuration option to the Coralogix exporter to enable a rate limiter mechanism.
+  The rate limiter mechanism is disabled by default. It can be configured using the following configuration options:
+  
+  rate_limiter:
+    enabled: true
+    threshold: 10
+    duration: 1m
+  
+  Where:
+  - `enabled` is a boolean flag to enable the rate limiter mechanism.
+  - `threshold` is the number of errors to trigger the rate limiter mechanism (default: 10).
+  - `duration` is the duration of the rate limit window (default: 1 minute).
+  
+  Note the number of errors is cumulative and reset after the duration has passed or a successful request is made.
+  
+- `coralogixexporter`: Print metrics causing the partial success response from the backend. (#40199)
+- `awss3receiver`: Add SQS support to the awss3receiver component (#36315)
+- `azuremonitorreceiver`: Add support for azureauthextension as a token provider for azuremonitorreceiver. (#39048)
+- `datadogreceiver`: Address semantic conventions noncompliance and add support for http/db (#36924)
+  * Bump semantic conventions to v1.30.0
+  * Add support for http and db attributes
+  * Use datadog's base service as service.name when available
+  * Set `server.address` on client/producer/consumer spans
+  * Properly name postgresql/redis/servlet/spring spans
+  
+- `kafkaexporter`: Allow kafka exporter to produce to topics based on metadata key values (#39208)
+  Allows the Kafka exporter to dynamically use a signal's export target topic based
+  on the value of the pipeline's metadata, allowing dynamic signal routing.
+  
+- `faroreceiver, faroexporter`: Stability level changed from development to alpha. (#40000)
+- `processor/tailsampling`: Add first policy match decision to tailsampling processor (#36795)
+- `gitlabreceiver`: add GitLab pipeline tracing functionality (#35207)
+- `receiver/k8sclusterreceiver`: Added new resource attributes `k8s.hpa.scaletargetref.kind`, `k8s.hpa.scaletargetref.name`, and `k8s.hpa.scaletargetref.apiversion` to the `k8s.hpa` resource.  These attributes are disabled by default. (#38768)
+- `datdogexporter, datadogconnector`: Graduate the datadog.EnableReceiveResourceSpansV2 feature gate to beta. (#40083)
+- `k8sobserver`: Add namespaces setting for scoping k8s client to specific namespaces (#39677)
+- `lokireceiver`: Add support for structured metadata in lokireceiver (#40095)
+- `awss3exporter`: Add the retry mode, max attempts and max backoff to the settings (#36264)
+- `receiver/netflow`: Adds additional common EtherTypes for `network.type`. (#40219)
+- `prometheusremotewriteexproter`: Adds wal metrics to the Prometheus Remote WRite Exporter. The new metrics are:
+- `otelcol_exporter_prometheusremotewrite_wal_writes`: The total number of WAL writes.
+- `otelcol_exporter_prometheusremotewrite_wal_writes_failures`: The total number of WAL write failures.
+ (#39556)
+- `sumologicexporter`: Change how infinity bounds are represented in histogram buckets so that the Sumologic backend can properly handle them. (#39904)
+- `k8sattributesprocessor`: Add option to configure automatic service resource attributes (#37114)
+  Implements [Service Attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#service-attributes).
+  
+  If you are using the file log receiver, you can now create the same resource attributes as traces (via OTLP) received
+  from an application instrumented with the OpenTelemetry Operator -
+  simply by adding the
+  `extract: { metadata: ["service.namespace", "service.name", "service.version", "service.instance.id"] }`
+  configuration to the `k8sattributesprocessor` processor.
+  See the [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md#configuring-recommended-resource-attributes) for more details.
+  
+- `signaltometricsconnector`: Add support for parsing gauge metrics from any signal types (#37093)
+- `receiver/sqlserver`: Add new metric for disk IO rate on a resource pool (#39977)
+  The new metric `sqlserver.resource_pool.disk.operations` is disabled by default.
+  
+- `receiver/sqlserver`: Add new metric `sqlserver.lock.wait.count` (#39892)
+  This metric is disabled by default.
+- `receiver/sqlserver`: Add new metric to track OS wait times (#39977)
+  The new metric is named `sqlserver.os.wait.duration` and disabled by default.
+  
+- `receiver/sqlserver`: Enable `sqlserver.page.life_expectancy` metric for all configurations (#39940)
+  This metric was originally only available when running on Windows, but is
+  now available for all configuration options, including direct connection.
+  Since this metric is enabled by default, users who have direct connection
+  configured will now have this metric emitted by default.
+  
+- `sqlserverreceiver`: Add configuration option `top_query_collection.collection_interval` for top query collection to make the collection less frequent. (#40002)
+  - This change only applies to the `top_query_collection` feature.
+  - The default value is `60s`
+  
+
+### 🧰 Bug fixes 🧰
+
+- `elasticsearchexporter`: Fix panic when encoding non-string scope attributes. (#37701)
+- `awsfirehosereceiver`: Parse encoding as a component ID, not just type, allowing for named encodings. (#39808)
+- `awsfirehosereceiver`: Fix decoding for OTLP-formatted metrics. (#39462)
+  OTLP-formatted metrics were not being decoded correctly until now.
+- `azuremonitorreceiver`: use ``metrics`` aggregation filter when ``use_batch_api: true`` (#40079)
+- `googlecloudexporter`: Update the MapMonitoredResource mapping when the exporter.googlecloud.CustomMonitoredResources feature flag is used (#40186)
+- `golden`: Return an error on timeout without receiving any data (#40076)
+- `postgresqlreceiver`: fix too many top query got reported. top query should only report those queries were executed during the query interval (#39942)
+- `filelogreceiver`: Introduce `utf8-raw` encoding to avoid replacing invalid bytes with \uFFFD when reading UTF-8 input. (#39653)
+- `internal/splunk`: Treat HTTP 403 Forbidden as a permanent error. (#39037)
+  - Splunk responses with a 403 typically indicate an authentication or authorization issue that is not likely to be resolved by retrying.
+  - This change ensures that the error is treated as permanent to avoid unnecessary retries.
+  - This change is applicable to `splunkhecexporter`, `signalfxexporter`.
+  
+- `spanmetricsconnector`: Fix bug causing span metrics calls count to be always 0 when using delta temporality (#40139)
+- `kafkareceiver, kafkaexporter`: Add support for named encoding extensions in kafkareceiver and kafkaexporter (#40142)
+- `libhoneyreceiver`: Handle paths without slashes at the end by adding them (#40070)
+- `exporter/datadog`: Correctly treat summary counts as cumulative monotonic sums instead of cumulative non-monotonic sums (#40176)
+- `opampsupervisor`: Fix bug in order of configuration composition and server start (#39949)
+  First start the Supervisor's OpAMP server at a random port, then 
+  compose the configuration for the agent with that port. 
+  
+- `cmd/opampsupervisor`: Fix race condition where the Supervisor could report the wrong health status (#40207)
+- `opampsupervisor`: If there is a remote config, the supervisor now reports the remote config as applied and the correct hash on startup. (#40233)
+- `stefreceiver`: Correctly handle Shutdown request (#40082)
+  The receiver now correctly Shutdown even if there are active connections
+
+<!-- previous-version -->
+
 ## v0.126.0
 
 ### 🛑 Breaking changes 🛑

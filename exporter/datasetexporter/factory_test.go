@@ -172,19 +172,19 @@ func TestValidateConfigs(t *testing.T) {
 	}
 }
 
-type CreateTest struct {
+type createTest struct {
 	name          string
 	config        component.Config
 	expectedError error
 }
 
-func createExporterTests() []CreateTest {
+func createExporterTests() []createTest {
 	factory := NewFactory()
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.APIKey = "default-api-key"
 	defaultCfg.DatasetURL = "https://app.eu.scalyr.com"
 
-	return []CreateTest{
+	return []createTest{
 		{
 			name:          "broken",
 			config:        &Config{},
