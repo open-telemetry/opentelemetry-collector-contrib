@@ -9,6 +9,8 @@ all_set:
       enabled: true
     system.nfs.net.udp.count:
       enabled: true
+    system.nfs.operation.count:
+      enabled: true
     system.nfs.procedure.count:
       enabled: true
     system.nfs.rpc.authrefresh.count:
@@ -30,6 +32,8 @@ all_set:
     system.nfsd.net.tcp.count:
       enabled: true
     system.nfsd.net.udp.count:
+      enabled: true
+    system.nfsd.operation.count:
       enabled: true
     system.nfsd.procedure.count:
       enabled: true
@@ -61,6 +65,8 @@ none_set:
       enabled: false
     system.nfs.net.udp.count:
       enabled: false
+    system.nfs.operation.count:
+      enabled: false
     system.nfs.procedure.count:
       enabled: false
     system.nfs.rpc.authrefresh.count:
@@ -82,6 +88,8 @@ none_set:
     system.nfsd.net.tcp.count:
       enabled: false
     system.nfsd.net.udp.count:
+      enabled: false
+    system.nfsd.operation.count:
       enabled: false
     system.nfsd.procedure.count:
       enabled: false

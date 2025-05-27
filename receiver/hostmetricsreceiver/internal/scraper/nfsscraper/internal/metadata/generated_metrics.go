@@ -25,6 +25,9 @@ var MetricsInfo = metricsInfo{
 	SystemNfsNetUDPCount: metricInfo{
 		Name: "system.nfs.net.udp.count",
 	},
+	SystemNfsOperationCount: metricInfo{
+		Name: "system.nfs.operation.count",
+	},
 	SystemNfsProcedureCount: metricInfo{
 		Name: "system.nfs.procedure.count",
 	},
@@ -57,6 +60,9 @@ var MetricsInfo = metricsInfo{
 	},
 	SystemNfsdNetUDPCount: metricInfo{
 		Name: "system.nfsd.net.udp.count",
+	},
+	SystemNfsdOperationCount: metricInfo{
+		Name: "system.nfsd.operation.count",
 	},
 	SystemNfsdProcedureCount: metricInfo{
 		Name: "system.nfsd.procedure.count",
@@ -95,6 +101,7 @@ type metricsInfo struct {
 	SystemNfsNetTCPConnectionCount  metricInfo
 	SystemNfsNetTCPCount            metricInfo
 	SystemNfsNetUDPCount            metricInfo
+	SystemNfsOperationCount         metricInfo
 	SystemNfsProcedureCount         metricInfo
 	SystemNfsRPCAuthrefreshCount    metricInfo
 	SystemNfsRPCCount               metricInfo
@@ -106,6 +113,7 @@ type metricsInfo struct {
 	SystemNfsdNetTCPConnectionCount metricInfo
 	SystemNfsdNetTCPCount           metricInfo
 	SystemNfsdNetUDPCount           metricInfo
+	SystemNfsdOperationCount        metricInfo
 	SystemNfsdProcedureCount        metricInfo
 	SystemNfsdRepcacheHits          metricInfo
 	SystemNfsdRepcacheMisses        metricInfo
@@ -318,6 +326,58 @@ func newMetricSystemNfsNetUDPCount(cfg MetricConfig) metricSystemNfsNetUDPCount 
 	return m
 }
 
+type metricSystemNfsOperationCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.nfs.operation.count metric with initial data.
+func (m *metricSystemNfsOperationCount) init() {
+	m.data.SetName("system.nfs.operation.count")
+	m.data.SetDescription("Reports the count of kernel NFSv4+ client operations")
+	m.data.SetUnit("{procedure}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNfsOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("rpc.onc.version", rpcOncVersionAttributeValue)
+	dp.Attributes().PutStr("rpc.nfs.operation.name", rpcNfsOperationNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNfsOperationCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNfsOperationCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNfsOperationCount(cfg MetricConfig) metricSystemNfsOperationCount {
+	m := metricSystemNfsOperationCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemNfsProcedureCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -327,7 +387,7 @@ type metricSystemNfsProcedureCount struct {
 // init fills system.nfs.procedure.count metric with initial data.
 func (m *metricSystemNfsProcedureCount) init() {
 	m.data.SetName("system.nfs.procedure.count")
-	m.data.SetDescription("Reports the count of kernel NFS server procedures")
+	m.data.SetDescription("Reports the count of kernel NFS client procedures")
 	m.data.SetUnit("{procedure}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -860,6 +920,58 @@ func newMetricSystemNfsdNetUDPCount(cfg MetricConfig) metricSystemNfsdNetUDPCoun
 	return m
 }
 
+type metricSystemNfsdOperationCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.nfsd.operation.count metric with initial data.
+func (m *metricSystemNfsdOperationCount) init() {
+	m.data.SetName("system.nfsd.operation.count")
+	m.data.SetDescription("Reports the count of kernel NFSv4+ server operations")
+	m.data.SetUnit("{operation}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNfsdOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("rpc.onc.version", rpcOncVersionAttributeValue)
+	dp.Attributes().PutStr("rpc.nfs.operation.name", rpcNfsOperationNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNfsdOperationCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNfsdOperationCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNfsdOperationCount(cfg MetricConfig) metricSystemNfsdOperationCount {
+	m := metricSystemNfsdOperationCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemNfsdProcedureCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1365,6 +1477,7 @@ type MetricsBuilder struct {
 	metricSystemNfsNetTCPConnectionCount  metricSystemNfsNetTCPConnectionCount
 	metricSystemNfsNetTCPCount            metricSystemNfsNetTCPCount
 	metricSystemNfsNetUDPCount            metricSystemNfsNetUDPCount
+	metricSystemNfsOperationCount         metricSystemNfsOperationCount
 	metricSystemNfsProcedureCount         metricSystemNfsProcedureCount
 	metricSystemNfsRPCAuthrefreshCount    metricSystemNfsRPCAuthrefreshCount
 	metricSystemNfsRPCCount               metricSystemNfsRPCCount
@@ -1376,6 +1489,7 @@ type MetricsBuilder struct {
 	metricSystemNfsdNetTCPConnectionCount metricSystemNfsdNetTCPConnectionCount
 	metricSystemNfsdNetTCPCount           metricSystemNfsdNetTCPCount
 	metricSystemNfsdNetUDPCount           metricSystemNfsdNetUDPCount
+	metricSystemNfsdOperationCount        metricSystemNfsdOperationCount
 	metricSystemNfsdProcedureCount        metricSystemNfsdProcedureCount
 	metricSystemNfsdRepcacheHits          metricSystemNfsdRepcacheHits
 	metricSystemNfsdRepcacheMisses        metricSystemNfsdRepcacheMisses
@@ -1415,6 +1529,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemNfsNetTCPConnectionCount:  newMetricSystemNfsNetTCPConnectionCount(mbc.Metrics.SystemNfsNetTCPConnectionCount),
 		metricSystemNfsNetTCPCount:            newMetricSystemNfsNetTCPCount(mbc.Metrics.SystemNfsNetTCPCount),
 		metricSystemNfsNetUDPCount:            newMetricSystemNfsNetUDPCount(mbc.Metrics.SystemNfsNetUDPCount),
+		metricSystemNfsOperationCount:         newMetricSystemNfsOperationCount(mbc.Metrics.SystemNfsOperationCount),
 		metricSystemNfsProcedureCount:         newMetricSystemNfsProcedureCount(mbc.Metrics.SystemNfsProcedureCount),
 		metricSystemNfsRPCAuthrefreshCount:    newMetricSystemNfsRPCAuthrefreshCount(mbc.Metrics.SystemNfsRPCAuthrefreshCount),
 		metricSystemNfsRPCCount:               newMetricSystemNfsRPCCount(mbc.Metrics.SystemNfsRPCCount),
@@ -1426,6 +1541,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemNfsdNetTCPConnectionCount: newMetricSystemNfsdNetTCPConnectionCount(mbc.Metrics.SystemNfsdNetTCPConnectionCount),
 		metricSystemNfsdNetTCPCount:           newMetricSystemNfsdNetTCPCount(mbc.Metrics.SystemNfsdNetTCPCount),
 		metricSystemNfsdNetUDPCount:           newMetricSystemNfsdNetUDPCount(mbc.Metrics.SystemNfsdNetUDPCount),
+		metricSystemNfsdOperationCount:        newMetricSystemNfsdOperationCount(mbc.Metrics.SystemNfsdOperationCount),
 		metricSystemNfsdProcedureCount:        newMetricSystemNfsdProcedureCount(mbc.Metrics.SystemNfsdProcedureCount),
 		metricSystemNfsdRepcacheHits:          newMetricSystemNfsdRepcacheHits(mbc.Metrics.SystemNfsdRepcacheHits),
 		metricSystemNfsdRepcacheMisses:        newMetricSystemNfsdRepcacheMisses(mbc.Metrics.SystemNfsdRepcacheMisses),
@@ -1506,6 +1622,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemNfsNetTCPConnectionCount.emit(ils.Metrics())
 	mb.metricSystemNfsNetTCPCount.emit(ils.Metrics())
 	mb.metricSystemNfsNetUDPCount.emit(ils.Metrics())
+	mb.metricSystemNfsOperationCount.emit(ils.Metrics())
 	mb.metricSystemNfsProcedureCount.emit(ils.Metrics())
 	mb.metricSystemNfsRPCAuthrefreshCount.emit(ils.Metrics())
 	mb.metricSystemNfsRPCCount.emit(ils.Metrics())
@@ -1517,6 +1634,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemNfsdNetTCPConnectionCount.emit(ils.Metrics())
 	mb.metricSystemNfsdNetTCPCount.emit(ils.Metrics())
 	mb.metricSystemNfsdNetUDPCount.emit(ils.Metrics())
+	mb.metricSystemNfsdOperationCount.emit(ils.Metrics())
 	mb.metricSystemNfsdProcedureCount.emit(ils.Metrics())
 	mb.metricSystemNfsdRepcacheHits.emit(ils.Metrics())
 	mb.metricSystemNfsdRepcacheMisses.emit(ils.Metrics())
@@ -1566,6 +1684,11 @@ func (mb *MetricsBuilder) RecordSystemNfsNetTCPCountDataPoint(ts pcommon.Timesta
 // RecordSystemNfsNetUDPCountDataPoint adds a data point to system.nfs.net.udp.count metric.
 func (mb *MetricsBuilder) RecordSystemNfsNetUDPCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemNfsNetUDPCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemNfsOperationCountDataPoint adds a data point to system.nfs.operation.count metric.
+func (mb *MetricsBuilder) RecordSystemNfsOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+	mb.metricSystemNfsOperationCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcNfsOperationNameAttributeValue)
 }
 
 // RecordSystemNfsProcedureCountDataPoint adds a data point to system.nfs.procedure.count metric.
@@ -1621,6 +1744,11 @@ func (mb *MetricsBuilder) RecordSystemNfsdNetTCPCountDataPoint(ts pcommon.Timest
 // RecordSystemNfsdNetUDPCountDataPoint adds a data point to system.nfsd.net.udp.count metric.
 func (mb *MetricsBuilder) RecordSystemNfsdNetUDPCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemNfsdNetUDPCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemNfsdOperationCountDataPoint adds a data point to system.nfsd.operation.count metric.
+func (mb *MetricsBuilder) RecordSystemNfsdOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+	mb.metricSystemNfsdOperationCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcNfsOperationNameAttributeValue)
 }
 
 // RecordSystemNfsdProcedureCountDataPoint adds a data point to system.nfsd.procedure.count metric.

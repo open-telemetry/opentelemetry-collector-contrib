@@ -77,6 +77,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordSystemNfsOperationCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.nfs.operation.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordSystemNfsProcedureCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.onc.procedure.name-val")
 
 			defaultMetricsCount++
@@ -118,6 +122,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNfsdNetUDPCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemNfsdOperationCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.nfs.operation.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -229,12 +237,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfs.operation.count":
+					assert.False(t, validatedMetrics["system.nfs.operation.count"], "Found a duplicate in the metrics slice: system.nfs.operation.count")
+					validatedMetrics["system.nfs.operation.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFSv4+ client operations", ms.At(i).Description())
+					assert.Equal(t, "{procedure}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("rpc.nfs.operation.name")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.nfs.operation.name-val", attrVal.Str())
 				case "system.nfs.procedure.count":
 					assert.False(t, validatedMetrics["system.nfs.procedure.count"], "Found a duplicate in the metrics slice: system.nfs.procedure.count")
 					validatedMetrics["system.nfs.procedure.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Reports the count of kernel NFS server procedures", ms.At(i).Description())
+					assert.Equal(t, "Reports the count of kernel NFS client procedures", ms.At(i).Description())
 					assert.Equal(t, "{procedure}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -367,6 +393,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.nfsd.operation.count":
+					assert.False(t, validatedMetrics["system.nfsd.operation.count"], "Found a duplicate in the metrics slice: system.nfsd.operation.count")
+					validatedMetrics["system.nfsd.operation.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Reports the count of kernel NFSv4+ server operations", ms.At(i).Description())
+					assert.Equal(t, "{operation}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("rpc.nfs.operation.name")
+					assert.True(t, ok)
+					assert.Equal(t, "rpc.nfs.operation.name-val", attrVal.Str())
 				case "system.nfsd.procedure.count":
 					assert.False(t, validatedMetrics["system.nfsd.procedure.count"], "Found a duplicate in the metrics slice: system.nfsd.procedure.count")
 					validatedMetrics["system.nfsd.procedure.count"] = true

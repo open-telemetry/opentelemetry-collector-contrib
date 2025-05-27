@@ -19,6 +19,10 @@ attributes:
     enabled: true
     description: ONC/Sun RPC procedure name
     type: string
+  rpc.nfs.operation.name:
+    enabled: true
+    description: NFSv4+ operation name
+    type: string
 
 metrics:
   system.nfs.net.count:
@@ -72,11 +76,21 @@ metrics:
 
   system.nfs.procedure.count:
     enabled: true
-    description: Reports the count of kernel NFS server procedures
+    description: Reports the count of kernel NFS client procedures
     unit: '{procedure}'
     attributes:
     - rpc.onc.version
     - rpc.onc.procedure.name
+    gauge:
+      value_type: int
+
+  system.nfs.operation.count:
+    enabled: true
+    description: Reports the count of kernel NFSv4+ client operations
+    unit: '{procedure}'
+    attributes:
+    - rpc.onc.version
+    - rpc.nfs.operation.name
     gauge:
       value_type: int
 
@@ -201,5 +215,15 @@ metrics:
     attributes:
     - rpc.onc.version
     - rpc.onc.procedure.name
+    gauge:
+      value_type: int
+
+  system.nfsd.operation.count:
+    enabled: true
+    description: Reports the count of kernel NFSv4+ server operations
+    unit: '{operation}'
+    attributes:
+    - rpc.onc.version
+    - rpc.nfs.operation.name
     gauge:
       value_type: int

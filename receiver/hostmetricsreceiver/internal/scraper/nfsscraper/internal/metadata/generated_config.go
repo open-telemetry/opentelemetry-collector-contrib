@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SystemNfsNetTCPConnectionCount  MetricConfig `mapstructure:"system.nfs.net.tcp.connection.count"`
 	SystemNfsNetTCPCount            MetricConfig `mapstructure:"system.nfs.net.tcp.count"`
 	SystemNfsNetUDPCount            MetricConfig `mapstructure:"system.nfs.net.udp.count"`
+	SystemNfsOperationCount         MetricConfig `mapstructure:"system.nfs.operation.count"`
 	SystemNfsProcedureCount         MetricConfig `mapstructure:"system.nfs.procedure.count"`
 	SystemNfsRPCAuthrefreshCount    MetricConfig `mapstructure:"system.nfs.rpc.authrefresh.count"`
 	SystemNfsRPCCount               MetricConfig `mapstructure:"system.nfs.rpc.count"`
@@ -42,6 +43,7 @@ type MetricsConfig struct {
 	SystemNfsdNetTCPConnectionCount MetricConfig `mapstructure:"system.nfsd.net.tcp.connection.count"`
 	SystemNfsdNetTCPCount           MetricConfig `mapstructure:"system.nfsd.net.tcp.count"`
 	SystemNfsdNetUDPCount           MetricConfig `mapstructure:"system.nfsd.net.udp.count"`
+	SystemNfsdOperationCount        MetricConfig `mapstructure:"system.nfsd.operation.count"`
 	SystemNfsdProcedureCount        MetricConfig `mapstructure:"system.nfsd.procedure.count"`
 	SystemNfsdRepcacheHits          MetricConfig `mapstructure:"system.nfsd.repcache.hits"`
 	SystemNfsdRepcacheMisses        MetricConfig `mapstructure:"system.nfsd.repcache.misses"`
@@ -66,6 +68,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SystemNfsNetUDPCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsOperationCount: MetricConfig{
 			Enabled: true,
 		},
 		SystemNfsProcedureCount: MetricConfig{
@@ -99,6 +104,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SystemNfsdNetUDPCount: MetricConfig{
+			Enabled: true,
+		},
+		SystemNfsdOperationCount: MetricConfig{
 			Enabled: true,
 		},
 		SystemNfsdProcedureCount: MetricConfig{

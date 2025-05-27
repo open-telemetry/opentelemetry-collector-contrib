@@ -262,12 +262,12 @@ func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
 	}, nil
 }
 
-func parseNfsV3ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
+func parseNfsV3ProcedureStats(values []uint64) (*[]RPCStats, error) {
 	if len(values) < 2 {
 		return nil, errors.New("found empty NFSv3 procedure stats line")
 	}
 
-	stats := make([]RPCProcedureStats, len(values)-1)
+	stats := make([]RPCStats, len(values)-1)
 	numprocedures := values[0]
 
 	if len(values)-1 != int(numprocedures) {
@@ -292,12 +292,12 @@ func parseNfsV3ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
 	return &stats, nil
 }
 
-func parseNfsV4ProcedureStats(values []uint64) (*[]RPCProcedureStats, error) {
+func parseNfsV4ProcedureStats(values []uint64) (*[]RPCStats, error) {
 	if len(values) < 2 {
 		return nil, errors.New("found empty NFSv4 procedure stats line")
 	}
 
-	stats := make([]RPCProcedureStats, len(values)-1)
+	stats := make([]RPCStats, len(values)-1)
 	procedurecnt := values[0]
 
 	if len(values)-1 != int(procedurecnt) {

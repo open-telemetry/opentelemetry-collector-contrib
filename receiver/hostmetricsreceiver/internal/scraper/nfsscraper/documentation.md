@@ -44,9 +44,24 @@ Reports the count of kernel NFS client UDP datagrams handled
 | ---- | ----------- | ---------- |
 | {datagram} | Gauge | Int |
 
+### system.nfs.operation.count
+
+Reports the count of kernel NFSv4+ client operations
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {procedure} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| rpc.onc.version | ONC/Sun RPC program version | Any Str |
+| rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
+
 ### system.nfs.procedure.count
 
-Reports the count of kernel NFS server procedures
+Reports the count of kernel NFS client procedures
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -138,6 +153,21 @@ Reports the count of kernel NFS server UDP datagrams handled
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {datagram} | Gauge | Int |
+
+### system.nfsd.operation.count
+
+Reports the count of kernel NFSv4+ server operations
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| rpc.onc.version | ONC/Sun RPC program version | Any Str |
+| rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
 ### system.nfsd.procedure.count
 
