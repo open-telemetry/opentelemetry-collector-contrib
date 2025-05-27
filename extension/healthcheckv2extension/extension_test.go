@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -40,7 +41,7 @@ func TestComponentStatus(t *testing.T) {
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
