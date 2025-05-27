@@ -40,6 +40,8 @@ func SplitOnAttribute(byAttribute string) (ottl.ExprFunc[ottlmetric.TransformCon
 		metrics := tCtx.GetMetrics()
 		newMetrics := map[string]pmetric.Metric{}
 
+		// for each datapoint in `cur`, if `byAttribute` exists, copy the datapoint to a new metric
+		// with the attribute value appended to it's name. remove `byAttribute` from each new datapoint.
 		rangeDataPoints(cur, func(dp dataPointWrapper) bool {
 			if attrValue, ok := dp.Attributes().Get(byAttribute); ok {
 				newMetric, exists := newMetrics[attrValue.Str()]

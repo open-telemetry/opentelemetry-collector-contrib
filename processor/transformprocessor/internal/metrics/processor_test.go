@@ -348,30 +348,41 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 		},
 		{
 			statements: []string{
-				`split_on_attribute("attr1") where metric.name == "operationB"`,
-				`split_on_attribute("attr2") where metric.name == "operationC"`,
-				`split_on_attribute("attr3") where metric.name == "operationD"`,
+				`split_on_attribute("attr1") where name == "operationB"`,
+				`split_on_attribute("state") where name == "operationC"`,
+				`split_on_attribute("attr3") where name == "operationD"`,
+				`set(name, "operation3") where name == "operationD.test3"`,
 			},
 			want: func(td pmetric.Metrics) {
-				mb := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				mb.SetEmptyHistogram()
-				fillMetricTwo(mb)
-				mb.SetName("operationB.test1")
-				mb.Histogram().DataPoints().At(0).Attributes().Remove("attr1")
-				mb.Histogram().DataPoints().At(1).Attributes().Remove("attr1")
+				metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
-				mc := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				mc.SetEmptyExponentialHistogram()
-				fillMetricThree(mc)
-				mc.SetName("operationC.test2")
-				mc.ExponentialHistogram().DataPoints().At(0).Attributes().Remove("attr2")
-				mc.ExponentialHistogram().DataPoints().At(1).Attributes().Remove("attr2")
+				m2 := metrics.AppendEmpty()
+				fillMetricTwo(m2)
+				m2.SetName("operationB.test1")
+				m2.Histogram().DataPoints().At(0).Attributes().Remove("attr1")
+				m2.Histogram().DataPoints().At(1).Attributes().Remove("attr1")
 
-				md := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				md.SetEmptySummary()
-				fillMetricFour(md)
-				md.SetName("operationD.test3")
-				md.Summary().DataPoints().At(0).Attributes().Remove("attr3")
+				// m3 is split into two new metrics, each with a single data point.
+				m3_1 := metrics.AppendEmpty()
+				fillMetricThree(m3_1)
+				m3_1.SetName("operationC.system")
+				m3_1_dp := pmetric.NewExponentialHistogramDataPointSlice()
+				m3_1.ExponentialHistogram().DataPoints().At(0).CopyTo(m3_1_dp.AppendEmpty())
+				m3_1_dp.At(0).Attributes().Remove("state")
+				m3_1_dp.CopyTo(m3_1.ExponentialHistogram().DataPoints())
+
+				m3_2 := metrics.AppendEmpty()
+				fillMetricThree(m3_2)
+				m3_2.SetName("operationC.user")
+				m3_2_dp := pmetric.NewExponentialHistogramDataPointSlice()
+				m3_2.ExponentialHistogram().DataPoints().At(1).CopyTo(m3_2_dp.AppendEmpty())
+				m3_2_dp.At(0).Attributes().Remove("state")
+				m3_2_dp.CopyTo(m3_2.ExponentialHistogram().DataPoints())
+
+				m4 := metrics.AppendEmpty()
+				fillMetricFour(m4)
+				m4.SetName("operation3")
+				m4.Summary().DataPoints().At(0).Attributes().Remove("attr3")
 			},
 		},
 	}
@@ -552,29 +563,40 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 		{
 			statements: []string{
 				`split_on_attribute("attr1") where metric.name == "operationB"`,
-				`split_on_attribute("attr2") where metric.name == "operationC"`,
+				`split_on_attribute("state") where metric.name == "operationC"`,
 				`split_on_attribute("attr3") where metric.name == "operationD"`,
+				`set(metric.name, "operation3") where metric.name == "operationD.test3"`,
 			},
 			want: func(td pmetric.Metrics) {
-				mb := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				mb.SetEmptyHistogram()
-				fillMetricTwo(mb)
-				mb.SetName("operationB.test1")
-				mb.Histogram().DataPoints().At(0).Attributes().Remove("attr1")
-				mb.Histogram().DataPoints().At(1).Attributes().Remove("attr1")
+				metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
-				mc := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				mc.SetEmptyExponentialHistogram()
-				fillMetricThree(mc)
-				mc.SetName("operationC.test2")
-				mc.ExponentialHistogram().DataPoints().At(0).Attributes().Remove("attr2")
-				mc.ExponentialHistogram().DataPoints().At(1).Attributes().Remove("attr2")
+				m2 := metrics.AppendEmpty()
+				fillMetricTwo(m2)
+				m2.SetName("operationB.test1")
+				m2.Histogram().DataPoints().At(0).Attributes().Remove("attr1")
+				m2.Histogram().DataPoints().At(1).Attributes().Remove("attr1")
 
-				md := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				md.SetEmptySummary()
-				fillMetricFour(md)
-				md.SetName("operationD.test3")
-				md.Summary().DataPoints().At(0).Attributes().Remove("attr3")
+				// m3 is split into two new metrics, each with a single data point.
+				m3_1 := metrics.AppendEmpty()
+				fillMetricThree(m3_1)
+				m3_1.SetName("operationC.system")
+				m3_1_dp := pmetric.NewExponentialHistogramDataPointSlice()
+				m3_1.ExponentialHistogram().DataPoints().At(0).CopyTo(m3_1_dp.AppendEmpty())
+				m3_1_dp.At(0).Attributes().Remove("state")
+				m3_1_dp.CopyTo(m3_1.ExponentialHistogram().DataPoints())
+
+				m3_2 := metrics.AppendEmpty()
+				fillMetricThree(m3_2)
+				m3_2.SetName("operationC.user")
+				m3_2_dp := pmetric.NewExponentialHistogramDataPointSlice()
+				m3_2.ExponentialHistogram().DataPoints().At(1).CopyTo(m3_2_dp.AppendEmpty())
+				m3_2_dp.At(0).Attributes().Remove("state")
+				m3_2_dp.CopyTo(m3_2.ExponentialHistogram().DataPoints())
+
+				m4 := metrics.AppendEmpty()
+				fillMetricFour(m4)
+				m4.SetName("operation3")
+				m4.Summary().DataPoints().At(0).Attributes().Remove("attr3")
 			},
 		},
 	}
@@ -2081,6 +2103,7 @@ func constructMetrics() pmetric.Metrics {
 	fillMetricThree(rm0ils0.Metrics().AppendEmpty())
 	fillMetricFour(rm0ils0.Metrics().AppendEmpty())
 	fillMetricFive(rm0ils0.Metrics().AppendEmpty())
+	// fillMetricSix(rm0ils0.Metrics().AppendEmpty())
 	return td
 }
 
@@ -2197,4 +2220,25 @@ func fillMetricFive(m pmetric.Metric) {
 	dataPoint1.SetStartTimestamp(StartTimestamp)
 	dataPoint1.SetDoubleValue(3.7)
 	dataPoint1.Attributes().PutStr("attr1", "test2")
+}
+
+func fillMetricSix(m pmetric.Metric) {
+	m.SetName("operationF")
+	m.SetDescription("operationF description")
+	m.SetUnit("operationF unit")
+
+	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(StartTimestamp)
+	dataPoint0.SetDoubleValue(1.0)
+	dataPoint0.Attributes().PutStr("state", "user")
+
+	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(StartTimestamp)
+	dataPoint1.SetDoubleValue(3.7)
+	dataPoint1.Attributes().PutStr("state", "system")
+
+	dataPoint2 := m.Sum().DataPoints().AppendEmpty()
+	dataPoint2.SetStartTimestamp(StartTimestamp)
+	dataPoint2.SetDoubleValue(72.89)
+	dataPoint2.Attributes().PutStr("state", "idle")
 }
