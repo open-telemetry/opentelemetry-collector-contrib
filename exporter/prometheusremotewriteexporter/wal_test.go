@@ -327,12 +327,7 @@ func TestWALRead_Telemetry(t *testing.T) {
 	})
 
 	// When the WAL starts, it tries to read from WAL, which is empty.
-	// So, the read should return an errNotFound error.
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalReads(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-
-	metadatatest.AssertEqualExporterPrometheusremotewriteWalReadsFailures(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 }

@@ -415,8 +415,6 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 			return req, nil
 		}
 		prweWAL.mu.Unlock()
-		// if the read failed for ErrNotFound or another error, we record it
-		prweWAL.telemetry.recordWALReadsFailures(ctx)
 		// If WAL was empty, let's wait for a notification from
 		// the writer go routine.
 		if errors.Is(err, wal.ErrNotFound) {
@@ -430,6 +428,8 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		}
 
 		if !errors.Is(err, wal.ErrNotFound) {
+			// record all failures apart ErrNotFound
+			prweWAL.telemetry.recordWALReadsFailures(ctx)
 			return nil, err
 		}
 	}
