@@ -1567,11 +1567,12 @@ The `ParseSeverity` converter returns a `string` that represents one of the log 
 
 `target` is a Getter that returns a string or an integer.
 `severityMapping` is a map containing the log levels, and a list of values they are mapped from. These values can be either
-strings, or map items containing a numeric range, defined by a `min` and `max` key, for the given log level.
+strings, or map items containing a numeric range, defined by a `min` and `max` key (inclusive bounds), for the given log level.
+A value will be mapped to the given log level if any of these conditions are true. 
 For example, the following mapping will map to the `info` level, if the `target` is either a string with the value `inf`,
 or an integer in the range `[200,299]`:
 
-`{"info":["inf", {"min":200, "max":299}]}`
+`{"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]}`
 
 There is also support for expressing certain status code ranges via a placeholder string. The supported placeholders are the following:
 
@@ -1582,9 +1583,9 @@ There is also support for expressing certain status code ranges via a placeholde
 
 Examples:
 
-- `ParseSeverity(attributes["log-level"] {"info":["inf", {"min":200, "max":299}]})`
-- `ParseSeverity(attributes["log-level"] {"info":["2xx"]})`
-- `ParseSeverity(severity_number {"info":["inf", {"min":200, "max":299}], "error":[{"min":400, "max":499}]})`
+- `ParseSeverity(attributes["log-level"] {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]})`
+- `ParseSeverity(attributes["log-level"] {"info":[{"range":"2xx""}]})`
+- `ParseSeverity(severity_number {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}], "error":[{"range":{"min":400, "max":499}}]})`
 
 ### ParseSimplifiedXML
 
