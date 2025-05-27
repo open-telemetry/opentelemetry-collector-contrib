@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -122,7 +123,7 @@ func evaluateSeverityNumberMapping(value int64, criteria []any) (bool, error) {
 		rangeMin, gotMin := rangeMap[minKey]
 		rangeMax, gotMax := rangeMap[maxKey]
 		if !gotMin || !gotMax {
-			return false, fmt.Errorf("range criteria must contain min and max values")
+			return false, errors.New("range criteria must contain min and max values")
 		}
 		rangeMinInt, ok := rangeMin.(int64)
 		if !ok {
