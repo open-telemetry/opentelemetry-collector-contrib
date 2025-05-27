@@ -5,12 +5,12 @@ package cloudtraillogs
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
