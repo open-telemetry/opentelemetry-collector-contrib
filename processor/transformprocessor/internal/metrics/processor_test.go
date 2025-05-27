@@ -351,6 +351,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				`split_on_attribute("attr1") where name == "operationB"`,
 				`split_on_attribute("state") where name == "operationC"`,
 				`split_on_attribute("attr3") where name == "operationD"`,
+				// checks that later statements can process the new metrics
 				`set(name, "operation3") where name == "operationD.test3"`,
 			},
 			want: func(td pmetric.Metrics) {
@@ -565,6 +566,7 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 				`split_on_attribute("attr1") where metric.name == "operationB"`,
 				`split_on_attribute("state") where metric.name == "operationC"`,
 				`split_on_attribute("attr3") where metric.name == "operationD"`,
+				// checks that later statements can process the new metrics
 				`set(metric.name, "operation3") where metric.name == "operationD.test3"`,
 			},
 			want: func(td pmetric.Metrics) {
@@ -2103,7 +2105,6 @@ func constructMetrics() pmetric.Metrics {
 	fillMetricThree(rm0ils0.Metrics().AppendEmpty())
 	fillMetricFour(rm0ils0.Metrics().AppendEmpty())
 	fillMetricFive(rm0ils0.Metrics().AppendEmpty())
-	// fillMetricSix(rm0ils0.Metrics().AppendEmpty())
 	return td
 }
 
@@ -2220,25 +2221,4 @@ func fillMetricFive(m pmetric.Metric) {
 	dataPoint1.SetStartTimestamp(StartTimestamp)
 	dataPoint1.SetDoubleValue(3.7)
 	dataPoint1.Attributes().PutStr("attr1", "test2")
-}
-
-func fillMetricSix(m pmetric.Metric) {
-	m.SetName("operationF")
-	m.SetDescription("operationF description")
-	m.SetUnit("operationF unit")
-
-	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
-	dataPoint0.SetStartTimestamp(StartTimestamp)
-	dataPoint0.SetDoubleValue(1.0)
-	dataPoint0.Attributes().PutStr("state", "user")
-
-	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
-	dataPoint1.SetStartTimestamp(StartTimestamp)
-	dataPoint1.SetDoubleValue(3.7)
-	dataPoint1.Attributes().PutStr("state", "system")
-
-	dataPoint2 := m.Sum().DataPoints().AppendEmpty()
-	dataPoint2.SetStartTimestamp(StartTimestamp)
-	dataPoint2.SetDoubleValue(72.89)
-	dataPoint2.Attributes().PutStr("state", "idle")
 }
