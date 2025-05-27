@@ -3,11 +3,14 @@
 package metadata
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type eventDbServerTopQuery struct {
@@ -15,13 +18,19 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbServerNameAttributeValue string) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbServerNameAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("db.server.top_query")
 	lr.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
 	lr.Attributes().PutDouble("sqlserver.total_worker_time", sqlserverTotalWorkerTimeAttributeValue)
 	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	lr.Attributes().PutInt("sqlserver.execution_count", sqlserverExecutionCountAttributeValue)
@@ -198,6 +207,6 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbServerNameAttributeValue string) {
-	lb.eventDbServerTopQuery.recordEvent(timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbServerNameAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbServerNameAttributeValue string) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbServerNameAttributeValue)
 }

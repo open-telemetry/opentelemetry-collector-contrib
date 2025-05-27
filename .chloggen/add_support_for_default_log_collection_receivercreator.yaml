@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: 'bug_fix'
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: 'spanmetricsconnector'
+component: receivercreator
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: 'Fix bug causing span metrics calls count to be always 0 when using delta temporality'
+note: Add an option to set default annotations to override the discovery logic
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [40139]
+issues: [37436]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
