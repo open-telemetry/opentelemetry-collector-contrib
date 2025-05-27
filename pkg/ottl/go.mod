@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.127.0
 	go.opentelemetry.io/collector/pdata v1.33.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.0
-	go.opentelemetry.io/otel v1.35.0
-	go.opentelemetry.io/otel/trace v1.35.0
+	go.opentelemetry.io/otel v1.36.0
+	go.opentelemetry.io/otel/trace v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.127.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
-	go.opentelemetry.io/otel/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
