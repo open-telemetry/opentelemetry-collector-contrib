@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/datad
 go 1.23.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/serializer v0.65.1
+	github.com/DataDog/datadog-agent/pkg/serializer v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.127.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.33.0
@@ -18,10 +18,10 @@ require (
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.65.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.65.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.65.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.65.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.66.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.66.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.1 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.1 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.1 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
@@ -92,10 +92,11 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
+	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250425173222-7b384671a197 // indirect
 	google.golang.org/grpc v1.72.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
