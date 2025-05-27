@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/apache/thrift v0.21.0
 	github.com/gorilla/mux v1.8.1
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.127.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.127.0
 	github.com/stretchr/testify v1.10.0
