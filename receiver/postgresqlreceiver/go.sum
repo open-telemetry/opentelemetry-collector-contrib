@@ -6,8 +6,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.65.1 h1:WMSComl8tXteUjDnQKZzONEOnaVloOPbZWjjGv+kFNQ=
-github.com/DataDog/datadog-agent/pkg/obfuscate v0.65.1/go.mod h1:aZhd/54tdkoestFE6bqGn+u2Z3eEnKnWwy4xY/bzSW4=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.0 h1:yJaDjRd8b5GrF3Pa1ISYiOf6w/niwvuCFz6NTmOhyeU=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.0/go.mod h1:NH6IHfS2BEWP3i8JBxr6EIuD4TXprGny8dJZZs5QdwQ=
 github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEUqFvRDw=
 github.com/DataDog/datadog-go/v5 v5.6.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.3 h1:Kl2T6QVndMEZqQSY8rkoltYP+LVNaA54N+EwAMc9N5w=
