@@ -1431,8 +1431,6 @@ func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) (e
 	return nil
 }
 
-func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
-
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
 }
