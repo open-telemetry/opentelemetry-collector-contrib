@@ -209,7 +209,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 		string(conventions.HostArchKey):      conventions.HostArchAMD64.Value.AsString(),
 		"host.ip":                            testIPsAttribute,
 		"host.mac":                           testMACsAttribute,
-		"host.interface":                   testInterfacesAttribute,
+		"host.interface":                     testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -268,7 +268,7 @@ func TestEnableHostID(t *testing.T) {
 		string(conventions.HostArchKey):      conventions.HostArchAMD64.Value.AsString(),
 		"host.ip":                            testIPsAttribute,
 		"host.mac":                           testMACsAttribute,
-		"host.interface":                   testInterfacesAttribute,
+		"host.interface":                     testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -301,7 +301,7 @@ func TestUseHostname(t *testing.T) {
 		string(conventions.HostArchKey):      conventions.HostArchAMD64.Value.AsString(),
 		"host.ip":                            testIPsAttribute,
 		"host.mac":                           testMACsAttribute,
-		"host.interface":                   testInterfacesAttribute,
+		"host.interface":                     testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -403,7 +403,7 @@ func TestDetectError(t *testing.T) {
 		string(conventions.HostArchKey):      conventions.HostArchARM64.Value.AsString(),
 		"host.ip":                            testIPsAttribute,
 		"host.mac":                           testMACsAttribute,
-		"host.interface":                   testInterfacesAttribute,
+		"host.interface":                     testInterfacesAttribute,
 	}, res.Attributes().AsRaw())
 }
 
@@ -438,7 +438,7 @@ func TestDetectCPUInfo(t *testing.T) {
 		"host.ip":                            testIPsAttribute,
 		"host.mac":                           testMACsAttribute,
 		"host.cpu.family":                    "some",
-		"host.interface":                   testInterfacesAttribute,
+		"host.interface":                     testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -467,7 +467,7 @@ func TestHostInterfaces(t *testing.T) {
 	expected := map[string]any{
 		string(conventions.HostNameKey): "hostname",
 		string(conventions.OSTypeKey):   "linux",
-		"host.interface":              testInterfacesAttribute,
+		"host.interface":                testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
