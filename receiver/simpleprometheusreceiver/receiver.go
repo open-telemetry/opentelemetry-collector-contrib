@@ -127,7 +127,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		MetricsPath:     cfg.MetricsPath,
 		Params:          cfg.Params,
 		ServiceDiscoveryConfigs: discovery.Configs{
-			&discovery.StaticConfig{
+			discovery.StaticConfig{
 				{
 					Targets: []model.LabelSet{
 						labels,

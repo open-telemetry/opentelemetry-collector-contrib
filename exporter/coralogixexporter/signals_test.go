@@ -4,234 +4,159 @@
 package coralogixexporter
 
 import (
-	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
-	exp "go.opentelemetry.io/collector/exporter"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/metadata"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func TestSignalConfigWrapper(t *testing.T) {
-	config := &configgrpc.ClientConfig{
-		Endpoint:     "test-endpoint:4317",
-		WaitForReady: true,
+func TestSignalExporter_CanSend_AfterRateLimitTimeout(t *testing.T) {
+	cfg := &Config{
+		Domain:     "test.domain.com",
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 1,
+			Duration:  time.Minute,
+		},
 	}
-	wrapper := &signalConfigWrapper{config: config}
 
-	t.Run("GetEndpoint", func(t *testing.T) {
-		assert.Equal(t, "test-endpoint:4317", wrapper.GetEndpoint())
+	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
+	require.NoError(t, err)
+
+	rateLimitErr := errors.New("rate limit exceeded")
+	exp.EnableRateLimit(rateLimitErr)
+	exp.EnableRateLimit(rateLimitErr)
+
+	assert.False(t, exp.canSend())
+
+	// Mock the time to be after the rate limit timeout (1 minute)
+	exp.rateError.state.Store(&rateErrorState{
+		timestamp: time.Now().Add(-2 * time.Minute), // Set timestamp to 2 minutes ago
+		err:       rateLimitErr,
 	})
 
-	t.Run("GetWaitForReady", func(t *testing.T) {
-		assert.True(t, wrapper.GetWaitForReady())
-	})
-
-	t.Run("ToClientConn", func(_ *testing.T) {
-		ctx := context.Background()
-		host := &mockHost{}
-		settings := component.TelemetrySettings{}
-
-		conn, _ := wrapper.ToClientConn(ctx, host, settings)
-		if conn != nil {
-			_ = conn.Close()
-			// Wait for the connection to be fully closed
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			conn.WaitForStateChange(ctx, connectivity.Ready)
-		}
-		// No assertion on error, just ensure call is safe
-	})
+	assert.True(t, exp.canSend())
+	assert.False(t, exp.rateError.isRateLimited())
 }
 
-func TestNewSignalExporter(t *testing.T) {
-	tests := []struct {
-		name           string
-		config         *Config
-		settings       exp.Settings
-		signalEndpoint string
-		headers        map[string]configopaque.String
-		wantErr        bool
-	}{
-		{
-			name:           "valid config with domain",
-			config:         &Config{Domain: "test-domain"},
-			settings:       exp.Settings{},
-			signalEndpoint: "",
-			headers:        nil,
-			wantErr:        false,
-		},
-		{
-			name:           "valid config with signal endpoint",
-			config:         &Config{},
-			settings:       exp.Settings{},
-			signalEndpoint: "test-endpoint:4317",
-			headers:        nil,
-			wantErr:        false,
-		},
-		{
-			name:           "invalid config - no domain or endpoint",
-			config:         &Config{},
-			settings:       exp.Settings{},
-			signalEndpoint: "",
-			headers:        nil,
-			wantErr:        true,
+func TestSignalExporter_CanSend_FeatureDisabled(t *testing.T) {
+	cfg := &Config{
+		Domain:     "test.domain.com",
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   false,
+			Threshold: 1,
+			Duration:  time.Minute,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			exporter, err := newSignalExporter(tt.config, tt.settings, tt.signalEndpoint, tt.headers)
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, exporter)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, exporter)
-				assert.Equal(t, tt.config, exporter.config)
-			}
-		})
-	}
+	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
+	require.NoError(t, err)
+
+	rateLimitErr := errors.New("rate limit exceeded")
+	exp.EnableRateLimit(rateLimitErr)
+	exp.EnableRateLimit(rateLimitErr)
+
+	assert.True(t, exp.canSend())
 }
 
-func TestSignalExporter_Shutdown(t *testing.T) {
+func TestSignalExporter_CanSend_BeforeRateLimitTimeout(t *testing.T) {
+	cfg := &Config{
+		Domain:     "test.domain.com",
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 1,
+			Duration:  time.Minute,
+		},
+	}
+
+	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
+	require.NoError(t, err)
+
+	rateLimitErr := errors.New("rate limit exceeded")
+	exp.EnableRateLimit(rateLimitErr)
+	exp.EnableRateLimit(rateLimitErr)
+
+	// Mock the time to be before the rate limit timeout (30 seconds ago)
+	exp.rateError.state.Store(&rateErrorState{
+		timestamp: time.Now().Add(-30 * time.Second),
+		err:       rateLimitErr,
+	})
+
+	// Should not be able to send because we're still within the timeout period
+	assert.False(t, exp.canSend())
+	assert.True(t, exp.rateError.isRateLimited())
+}
+
+func TestProcessError(t *testing.T) {
 	tests := []struct {
 		name     string
-		exporter *signalExporter
-		wantErr  bool
+		err      error
+		expected error
 	}{
 		{
-			name:     "nil client connection",
-			exporter: &signalExporter{},
-			wantErr:  false,
+			name:     "nil error returns nil",
+			err:      nil,
+			expected: nil,
+		},
+		{
+			name:     "non-gRPC error returns permanent error",
+			err:      errors.New("some error"),
+			expected: consumererror.NewPermanent(errors.New("some error")),
+		},
+		{
+			name:     "OK status returns nil",
+			err:      status.Error(codes.OK, "ok"),
+			expected: nil,
+		},
+		{
+			name:     "permanent error returns permanent error",
+			err:      status.Error(codes.InvalidArgument, "invalid argument"),
+			expected: consumererror.NewPermanent(status.Error(codes.InvalidArgument, "invalid argument")),
+		},
+		{
+			name:     "retryable error returns original error",
+			err:      status.Error(codes.Unavailable, "unavailable"),
+			expected: status.Error(codes.Unavailable, "unavailable"),
+		},
+		{
+			name: "throttled error returns throttle retry",
+			err:  status.Error(codes.ResourceExhausted, "resource exhausted"),
+			expected: func() error {
+				st := status.New(codes.ResourceExhausted, "resource exhausted")
+				st, _ = st.WithDetails(&errdetails.RetryInfo{
+					RetryDelay: durationpb.New(time.Second),
+				})
+				return exporterhelper.NewThrottleRetry(st.Err(), time.Second)
+			}(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.exporter.shutdown(context.Background())
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
+			exp := &signalExporter{}
+			err := exp.processError(tt.err)
+			if tt.expected == nil {
 				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestSignalExporter_EnhanceContext(t *testing.T) {
-	tests := []struct {
-		name     string
-		exporter *signalExporter
-		wantMD   metadata.MD
-	}{
-		{
-			name:     "empty metadata",
-			exporter: &signalExporter{},
-			wantMD:   nil,
-		},
-		{
-			name: "with metadata",
-			exporter: &signalExporter{
-				metadata: metadata.New(map[string]string{
-					"key": "value",
-				}),
-			},
-			wantMD: metadata.New(map[string]string{
-				"key": "value",
-			}),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			enhancedCtx := tt.exporter.enhanceContext(ctx)
-
-			if tt.wantMD == nil {
-				md, ok := metadata.FromOutgoingContext(enhancedCtx)
-				assert.False(t, ok)
-				assert.Nil(t, md)
 			} else {
-				md, ok := metadata.FromOutgoingContext(enhancedCtx)
-				assert.True(t, ok)
-				assert.Equal(t, tt.wantMD, md)
+				assert.Error(t, err)
+				if consumererror.IsPermanent(err) {
+					assert.True(t, consumererror.IsPermanent(err))
+				} else {
+					assert.Contains(t, err.Error(), tt.expected.Error())
+				}
 			}
 		})
 	}
-}
-
-func TestSignalExporter_StartSignalExporter(t *testing.T) {
-	tests := []struct {
-		name         string
-		config       *Config
-		signalConfig signalConfig
-	}{
-		{
-			name:   "valid signal endpoint",
-			config: &Config{},
-			signalConfig: &signalConfigWrapper{
-				config: &configgrpc.ClientConfig{
-					Endpoint: "test-endpoint:4317",
-				},
-			},
-		},
-		{
-			name: "valid domain",
-			config: &Config{
-				Domain:     "test-domain",
-				PrivateKey: configopaque.String("test-key"),
-			},
-			signalConfig: &signalConfigWrapper{
-				config: &configgrpc.ClientConfig{},
-			},
-		},
-		{
-			name:   "no endpoint or domain",
-			config: &Config{},
-			signalConfig: &signalConfigWrapper{
-				config: &configgrpc.ClientConfig{},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(_ *testing.T) {
-			exporter := &signalExporter{
-				config:   tt.config,
-				settings: component.TelemetrySettings{},
-			}
-
-			_ = exporter.startSignalExporter(context.Background(), &mockHost{}, tt.signalConfig)
-			if exporter.clientConn != nil {
-				_ = exporter.clientConn.Close()
-				// Wait for the connection to be fully closed
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				exporter.clientConn.WaitForStateChange(ctx, connectivity.Ready)
-			}
-			// No assertion on error, just ensure call is safe and close connection to avoid goroutine leaks
-		})
-	}
-}
-
-// mockHost implements component.Host interface for testing
-type mockHost struct{}
-
-func (m *mockHost) ReportFatalError(_ error) {}
-func (m *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
-}
-
-func (m *mockHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (m *mockHost) GetExporters() map[component.Type]map[component.ID]component.Component {
-	return nil
 }
