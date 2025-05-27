@@ -132,7 +132,7 @@ type metricSystemNfsNetCount struct {
 func (m *metricSystemNfsNetCount) init() {
 	m.data.SetName("system.nfs.net.count")
 	m.data.SetDescription("Reports the count of kernel NFS client network requests handled")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -429,7 +429,7 @@ type metricSystemNfsRPCCount struct {
 func (m *metricSystemNfsRPCCount) init() {
 	m.data.SetName("system.nfs.rpc.count")
 	m.data.SetDescription("Reports the count of kernel NFS client RPCs handled")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -674,7 +674,7 @@ type metricSystemNfsdNetCount struct {
 func (m *metricSystemNfsdNetCount) init() {
 	m.data.SetName("system.nfsd.net.count")
 	m.data.SetDescription("Reports the count of kernel NFS server network requests handled")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1069,7 +1069,7 @@ type metricSystemNfsdRPCBadCount struct {
 func (m *metricSystemNfsdRPCBadCount) init() {
 	m.data.SetName("system.nfsd.rpc.bad.count")
 	m.data.SetDescription("Reports the total count of kernel NFS server bad RPCs")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1118,7 +1118,7 @@ type metricSystemNfsdRPCBadauthCount struct {
 func (m *metricSystemNfsdRPCBadauthCount) init() {
 	m.data.SetName("system.nfsd.rpc.badauth.count")
 	m.data.SetDescription("Reports the total count of kernel NFS server badly authenticated RPCs")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1167,7 +1167,7 @@ type metricSystemNfsdRPCBadclientCount struct {
 func (m *metricSystemNfsdRPCBadclientCount) init() {
 	m.data.SetName("system.nfsd.rpc.badclient.count")
 	m.data.SetDescription("Reports the total count of kernel NFS server unauthorized client RPCs")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1216,7 +1216,7 @@ type metricSystemNfsdRPCBadfmtCount struct {
 func (m *metricSystemNfsdRPCBadfmtCount) init() {
 	m.data.SetName("system.nfsd.rpc.badfmt.count")
 	m.data.SetDescription("Reports the total count of kernel NFS server badly formatted RPCs")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1265,7 +1265,7 @@ type metricSystemNfsdRPCCount struct {
 func (m *metricSystemNfsdRPCCount) init() {
 	m.data.SetName("system.nfsd.rpc.count")
 	m.data.SetDescription("Reports the count of kernel NFS server RPCs handled")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 

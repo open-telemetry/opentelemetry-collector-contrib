@@ -18,7 +18,7 @@ Reports the count of kernel NFS client network requests handled
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfs.net.tcp.connection.count
 
@@ -73,7 +73,7 @@ Reports the count of kernel NFS client RPCs handled
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfs.rpc.retransmit.count
 
@@ -113,7 +113,7 @@ Reports the count of kernel NFS server network requests handled
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfsd.net.tcp.connection.count
 
@@ -184,7 +184,7 @@ Reports the total count of kernel NFS server bad RPCs
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfsd.rpc.badauth.count
 
@@ -192,7 +192,7 @@ Reports the total count of kernel NFS server badly authenticated RPCs
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfsd.rpc.badclient.count
 
@@ -200,7 +200,7 @@ Reports the total count of kernel NFS server unauthorized client RPCs
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfsd.rpc.badfmt.count
 
@@ -208,7 +208,7 @@ Reports the total count of kernel NFS server badly formatted RPCs
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfsd.rpc.count
 
@@ -216,7 +216,7 @@ Reports the count of kernel NFS server RPCs handled
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
 
 ### system.nfsd.thread.count
 

@@ -24,7 +24,7 @@ metrics:
   system.nfs.net.count:
     enabled: true
     description: Reports the count of kernel NFS client network requests handled
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
@@ -52,7 +52,7 @@ metrics:
   system.nfs.rpc.count:
     enabled: true
     description: Reports the count of kernel NFS client RPCs handled
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
@@ -132,7 +132,7 @@ metrics:
   system.nfsd.net.count:
     enabled: true
     description: Reports the count of kernel NFS server network requests handled
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
@@ -160,21 +160,21 @@ metrics:
   system.nfsd.rpc.count:
     enabled: true
     description: Reports the count of kernel NFS server RPCs handled
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
   system.nfsd.rpc.bad.count:
     enabled: true
     description: Reports the total count of kernel NFS server bad RPCs
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
   system.nfsd.rpc.badfmt.count:
     enabled: true
     description: Reports the total count of kernel NFS server badly formatted RPCs
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
@@ -182,7 +182,7 @@ metrics:
     enabled: true
     description: Reports the total count of kernel NFS server badly authenticated
       RPCs
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
@@ -190,7 +190,7 @@ metrics:
     enabled: true
     description: Reports the total count of kernel NFS server unauthorized client
       RPCs
-    unit: '{rpc}'
+    unit: '{request}'
     gauge:
       value_type: int
 
