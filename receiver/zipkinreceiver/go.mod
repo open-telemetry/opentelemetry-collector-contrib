@@ -27,7 +27,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.21.0 // indirect
+	github.com/apache/thrift v0.22.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
