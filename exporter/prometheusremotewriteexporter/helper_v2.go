@@ -19,7 +19,6 @@ func batchTimeSeriesV2(tsMap map[string]*writev2.TimeSeries, symbolsTable writev
 	// Allocate a buffer size of at least 10, or twice the last # of requests we sent
 	requests := make([]*writev2.Request, 0, max(10, state.nextRequestBufferSize))
 
-	// Allocate a time series buffer 2x the last time series batch size or the length of the input if smaller
 	tsArray := make([]writev2.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)))
 	// TODO take into account size of symbols table
 	sizeOfCurrentBatch := 0
