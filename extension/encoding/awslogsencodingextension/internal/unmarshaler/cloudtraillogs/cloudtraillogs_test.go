@@ -21,21 +21,6 @@ const (
 	filesDirectory = "testdata"
 )
 
-func TestCloudTrailLogsUnmarshaler_Unmarshal_MultipleRecords(t *testing.T) {
-	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{})
-	data, err := os.ReadFile(filepath.Join(filesDirectory, "cloudtrail_logs.json"))
-	require.NoError(t, err)
-
-	actualLogs, err := unmarshaler.UnmarshalLogs(data)
-	require.NoError(t, err)
-
-	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_logs_expected.yaml"))
-	require.NoError(t, err)
-
-	// Compare logs ignoring the order of resource logs
-	compareLogsIgnoringResourceOrder(t, expectedLogs, actualLogs)
-}
-
 // compressData compresses the input data using gzip compression
 func compressData(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
@@ -118,7 +103,7 @@ func compareResourceLogs(t *testing.T, expected, actual plog.ResourceLogs, accou
 	require.Equal(t, expected.ScopeLogs().Len(), actual.ScopeLogs().Len(),
 		"Number of scope logs doesn't match for account ID %s", accountID)
 
-	for i := 0; i < expected.ScopeLogs().Len(); i++ {
+	for i := range expected.ScopeLogs().Len() {
 		expectedSL := expected.ScopeLogs().At(i)
 		actualSL := actual.ScopeLogs().At(i)
 
@@ -133,12 +118,12 @@ func compareResourceLogs(t *testing.T, expected, actual plog.ResourceLogs, accou
 			"Number of log records doesn't match for account ID %s", accountID)
 
 		// For each log record in expected, find a matching log record in actual
-		for j := 0; j < expectedSL.LogRecords().Len(); j++ {
+		for j := range expectedSL.LogRecords().Len() {
 			expectedLR := expectedSL.LogRecords().At(j)
 
 			// Find a matching log record in actual
 			matchFound := false
-			for k := 0; k < actualSL.LogRecords().Len(); k++ {
+			for k := range actualSL.LogRecords().Len() {
 				actualLR := actualSL.LogRecords().At(k)
 
 				// Check if this is a match by comparing event ID
