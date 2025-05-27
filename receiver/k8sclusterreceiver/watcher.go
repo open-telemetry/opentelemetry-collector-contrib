@@ -259,6 +259,7 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
+		DeleteFunc: rw.onDelete,
 	})
 	if err != nil {
 		rw.logger.Error("error adding event handler to informer", zap.Error(err))
@@ -290,6 +291,17 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
 	}
 
 	rw.syncMetadataUpdate(rw.objMetadata(oldObj), rw.objMetadata(newObj))
+}
+
+func (rw *resourceWatcher) onDelete(oldObj any) {
+	rw.waitForInitialInformerSync()
+
+	// Sync metadata only if there's at least one destination for it to sent.
+	if !rw.hasDestination() {
+		return
+	}
+
+	rw.syncMetadataUpdate(rw.objMetadata(oldObj), map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{})
 }
 
 // objMetadata returns the metadata for the given object.
