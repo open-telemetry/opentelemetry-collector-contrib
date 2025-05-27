@@ -93,6 +93,10 @@ are then also available for the use within association rules. Available attribut
   - k8s.job.name
   - k8s.node.name
   - k8s.cluster.uid
+  - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
+  - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
+  - [service.version](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceversion-should-be-calculated)
+  - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)
   - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
 
 
@@ -108,11 +112,15 @@ correctly associate the matching container to the resource:
    - container.image.name
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
+   - service.version
+   - service.instance.id
 2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
    - container.id (if the `k8s.container.restart_count` resource attribute is not provided, it's not guaranteed to get the right container ID.)
    - container.image.name
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
+   - service.version
+   - service.instance.id
 3. If the `k8s.container.restart_count` resource attribute is provided, it can be used to associate with a particular container
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
@@ -262,6 +270,11 @@ The processor can be configured to set the
 ```yaml
   extract:
     otel_annotations: true 
+    metadata:
+      - service.namespace
+      - service.name
+      - service.version
+      - service.instance.id
 ```
 
 ### Config example
@@ -283,6 +296,10 @@ k8sattributes/2:
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
+      - service.namespace
+      - service.name
+      - service.version
+      - service.instance.id
     labels:
       # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
       - tag_name: app.label.component
