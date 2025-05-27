@@ -346,6 +346,34 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				dataPoints.CopyTo(m.Sum().DataPoints())
 			},
 		},
+		{
+			statements: []string{
+				`split_on_attribute("attr1") where metric.name == "operationB"`,
+				`split_on_attribute("attr2") where metric.name == "operationC"`,
+				`split_on_attribute("attr3") where metric.name == "operationD"`,
+			},
+			want: func(td pmetric.Metrics) {
+				mb := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				mb.SetEmptyHistogram()
+				fillMetricTwo(mb)
+				mb.SetName("operationB.test1")
+				mb.Histogram().DataPoints().At(0).Attributes().Remove("attr1")
+				mb.Histogram().DataPoints().At(1).Attributes().Remove("attr1")
+
+				mc := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				mc.SetEmptyExponentialHistogram()
+				fillMetricThree(mc)
+				mc.SetName("operationC.test2")
+				mc.ExponentialHistogram().DataPoints().At(0).Attributes().Remove("attr2")
+				mc.ExponentialHistogram().DataPoints().At(1).Attributes().Remove("attr2")
+
+				md := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				md.SetEmptySummary()
+				fillMetricFour(md)
+				md.SetName("operationD.test3")
+				md.Summary().DataPoints().At(0).Attributes().Remove("attr3")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -519,6 +547,34 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 				dataPoint1.Attributes().PutStr("attr1", "test")
 
 				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
+		{
+			statements: []string{
+				`split_on_attribute("attr1") where metric.name == "operationB"`,
+				`split_on_attribute("attr2") where metric.name == "operationC"`,
+				`split_on_attribute("attr3") where metric.name == "operationD"`,
+			},
+			want: func(td pmetric.Metrics) {
+				mb := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				mb.SetEmptyHistogram()
+				fillMetricTwo(mb)
+				mb.SetName("operationB.test1")
+				mb.Histogram().DataPoints().At(0).Attributes().Remove("attr1")
+				mb.Histogram().DataPoints().At(1).Attributes().Remove("attr1")
+
+				mc := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				mc.SetEmptyExponentialHistogram()
+				fillMetricThree(mc)
+				mc.SetName("operationC.test2")
+				mc.ExponentialHistogram().DataPoints().At(0).Attributes().Remove("attr2")
+				mc.ExponentialHistogram().DataPoints().At(1).Attributes().Remove("attr2")
+
+				md := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				md.SetEmptySummary()
+				fillMetricFour(md)
+				md.SetName("operationD.test3")
+				md.Summary().DataPoints().At(0).Attributes().Remove("attr3")
 			},
 		},
 	}

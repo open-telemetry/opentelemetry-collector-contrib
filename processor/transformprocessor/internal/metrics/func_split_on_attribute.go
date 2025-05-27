@@ -53,37 +53,22 @@ func SplitOnAttribute(byAttribute string) (ottl.ExprFunc[ottlmetric.TransformCon
 
 				switch cur.Type() {
 				case pmetric.MetricTypeGauge:
-					if !exists {
-						newMetric.SetEmptyGauge()
-					}
 					newDp := newMetric.Gauge().DataPoints().AppendEmpty()
 					dp.numberDataPointValue.CopyTo(newDp)
 					newDp.Attributes().Remove(byAttribute)
 				case pmetric.MetricTypeSum:
-					if !exists {
-						newMetric.SetEmptySum()
-					}
 					newDp := newMetric.Sum().DataPoints().AppendEmpty()
 					dp.numberDataPointValue.CopyTo(newDp)
 					newDp.Attributes().Remove(byAttribute)
 				case pmetric.MetricTypeHistogram:
-					if !exists {
-						newMetric.SetEmptyHistogram()
-					}
 					newDp := newMetric.Histogram().DataPoints().AppendEmpty()
 					dp.histogramDataPointValue.CopyTo(newDp)
 					newDp.Attributes().Remove(byAttribute)
 				case pmetric.MetricTypeExponentialHistogram:
-					if !exists {
-						newMetric.SetEmptyExponentialHistogram()
-					}
 					newDp := newMetric.ExponentialHistogram().DataPoints().AppendEmpty()
 					dp.expHistogramDataPointValue.CopyTo(newDp)
 					newDp.Attributes().Remove(byAttribute)
 				case pmetric.MetricTypeSummary:
-					if !exists {
-						newMetric.SetEmptySummary()
-					}
 					newDp := newMetric.Summary().DataPoints().AppendEmpty()
 					dp.summaryDataPointValue.CopyTo(newDp)
 					newDp.Attributes().Remove(byAttribute)
