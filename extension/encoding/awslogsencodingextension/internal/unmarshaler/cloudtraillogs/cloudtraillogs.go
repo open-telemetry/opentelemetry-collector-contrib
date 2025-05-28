@@ -22,8 +22,7 @@ import (
 
 type CloudTrailLogsUnmarshaler struct {
 	buildInfo component.BuildInfo
-	// Pool the gzip readers, which are expensive to create.
-	gzipPool sync.Pool
+	gzipPool  sync.Pool
 }
 
 var _ plog.Unmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
@@ -71,33 +70,28 @@ func (u *CloudTrailLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 }
 
 func (u *CloudTrailLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	// Check if the content is gzip-compressed
-	var errDecompress error
 	gzipReader, ok := u.gzipPool.Get().(*gzip.Reader)
 	if !ok {
-		gzipReader, errDecompress = gzip.NewReader(bytes.NewReader(buf))
+		var err error
+		gzipReader, err = gzip.NewReader(bytes.NewReader(buf))
+		if err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
 	} else {
-		errDecompress = gzipReader.Reset(bytes.NewReader(buf))
+		if err := gzipReader.Reset(bytes.NewReader(buf)); err != nil {
+			u.gzipPool.Put(gzipReader)
+			return plog.Logs{}, fmt.Errorf("failed to reset gzip reader: %w", err)
+		}
 	}
 
-	var decompressedBuf []byte
-	if errDecompress == nil {
-		// Content is gzip-compressed, decompress it
-		defer func() {
-			_ = gzipReader.Close()
-			u.gzipPool.Put(gzipReader)
-		}()
+	defer func() {
+		_ = gzipReader.Close()
+		u.gzipPool.Put(gzipReader)
+	}()
 
-		decompressedBuf, errDecompress = io.ReadAll(gzipReader)
-		if errDecompress != nil {
-			return plog.Logs{}, fmt.Errorf("failed to decompress CloudTrail logs: %w", errDecompress)
-		}
-	} else {
-		// Content is not gzip-compressed, use the original buffer
-		decompressedBuf = buf
-		if gzipReader != nil {
-			u.gzipPool.Put(gzipReader)
-		}
+	decompressedBuf, err := io.ReadAll(gzipReader)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to decompress CloudTrail logs: %w", err)
 	}
 
 	var cloudTrailLogs CloudTrailLogs
@@ -111,35 +105,23 @@ func (u *CloudTrailLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error)
 func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) plog.Logs {
 	logs := plog.NewLogs()
 
-	// Group records by account ID and region to create separate resource logs
-	groupedRecords := make(map[string][]CloudTrailRecord)
-	for _, record := range records {
-		// Use account ID and region as the key for grouping
-		key := record.RecipientAccountID + "|" + record.AwsRegion
-		groupedRecords[key] = append(groupedRecords[key], record)
+	if len(records) == 0 {
+		return logs
 	}
 
-	// Process each group separately
-	for _, recordGroup := range groupedRecords {
-		if len(recordGroup) == 0 {
-			continue
-		}
+	// Create a single resource logs entry for all records
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName(metadata.ScopeName)
+	scopeLogs.Scope().SetVersion(u.buildInfo.Version)
 
-		// Create a new resource logs for this group
-		resourceLogs := logs.ResourceLogs().AppendEmpty()
-		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		scopeLogs.Scope().SetName(metadata.ScopeName)
-		scopeLogs.Scope().SetVersion(u.buildInfo.Version)
+	// Set resource attributes based on the first record
+	// (all records have the same account ID and region)
+	u.setResourceAttributes(resourceLogs.Resource().Attributes(), records[0])
 
-		// Set resource attributes based on the first record in the group
-		// (all records in the group have the same account ID and region)
-		u.setResourceAttributes(resourceLogs.Resource().Attributes(), recordGroup[0])
-
-		// Process each record in the group
-		for _, record := range recordGroup {
-			logRecord := scopeLogs.LogRecords().AppendEmpty()
-			u.setLogRecord(logRecord, record)
-		}
+	for _, record := range records {
+		logRecord := scopeLogs.LogRecords().AppendEmpty()
+		u.setLogRecord(logRecord, record)
 	}
 
 	return logs
