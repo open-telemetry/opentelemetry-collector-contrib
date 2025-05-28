@@ -300,10 +300,8 @@ agent:
 It results to the following startup parameters for the collector process:
 
 ```shell
-./otel-binary --config opamp-config.yaml --config custom-config.yaml --config another-custom-config.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
+./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
 ```
-
-In case of conflicting values in the configuration files, the latest applied value takes precedence.
 
 ### Operation When OpAMP Server is Unavailable
 
