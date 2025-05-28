@@ -225,7 +225,7 @@ telemetry:
 
 ```
 
-#### Notes on **agent::config_files**, **agent::args**, and **agent::env**
+#### Notes on `agent::config_files`, `agent::args`, and `agent::env`
 
 Please be aware that when using the `agent::config_files` parameter,
 the configuration files specified are applied in the order they are specified.
@@ -279,8 +279,8 @@ magic file is missing:
 - If the `$REMOTE_CONFIG` is not specified, the Collector will not be able to
   apply the remote configuration received from the Supervisor.
 
-Arguments present in `.agent.args` are passed to the executable binary **after** the configuration files.
-The environment variables specified in `.agent.env` are set in the Collector process environment.
+Arguments present in `agent::args` are passed to the executable binary **after** the configuration files.
+The environment variables specified in `agent::env` are set in the Collector process environment.
 
 Take the configuration below as an example:
 
