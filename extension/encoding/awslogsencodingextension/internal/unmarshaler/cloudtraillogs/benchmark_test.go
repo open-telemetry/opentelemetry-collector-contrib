@@ -16,6 +16,7 @@ import (
 
 // createCloudTrailLogContent reads the sample CloudTrail log from testdata
 // and duplicates the records to create a log file with the desired number of records.
+// Ensures all records have the same region and account ID.
 func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 	// Read the sample CloudTrail log
 	data, err := os.ReadFile("testdata/cloudtrail_logs.json")
@@ -34,10 +35,19 @@ func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 
 	// Duplicate the first record to reach the desired number of logs
 	sampleRecord := sampleLog.Records[0]
-	for i := 0; i < nLogs; i++ {
+	// Ensure region and account ID are set consistently
+	constRegion := "us-east-1"
+	constAccountID := "123456789012"
+	sampleRecord.AwsRegion = constRegion
+	sampleRecord.RecipientAccountID = constAccountID
+
+	for i := range nLogs {
 		// Create a copy of the record with a slightly modified eventID to ensure uniqueness
 		recordCopy := sampleRecord
 		recordCopy.EventID = sampleRecord.EventID + "-" + string(rune(i%10+'0'))
+		// Keep region and account ID the same for all records
+		recordCopy.AwsRegion = constRegion
+		recordCopy.RecipientAccountID = constAccountID
 		benchmarkLog.Records = append(benchmarkLog.Records, recordCopy)
 	}
 
@@ -48,7 +58,6 @@ func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 	return benchmarkData
 }
 
-// compressWithGzip compresses the input data using gzip
 func compressWithGzip(b *testing.B, data []byte) []byte {
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
@@ -64,54 +73,32 @@ func compressWithGzip(b *testing.B, data []byte) []byte {
 
 func BenchmarkUnmarshalLogs(b *testing.B) {
 	benchmarks := map[string]struct {
-		nLogs    int
-		compress bool
+		nLogs int
 	}{
 		"1_log": {
-			nLogs:    1,
-			compress: false,
+			nLogs: 1,
 		},
 		"10_logs": {
-			nLogs:    10,
-			compress: false,
+			nLogs: 10,
 		},
 		"100_logs": {
-			nLogs:    100,
-			compress: false,
+			nLogs: 100,
 		},
 		"1000_logs": {
-			nLogs:    1000,
-			compress: false,
-		},
-		"1_log_gzipped": {
-			nLogs:    1,
-			compress: true,
-		},
-		"100_logs_gzipped": {
-			nLogs:    100,
-			compress: true,
-		},
-		"1000_logs_gzipped": {
-			nLogs:    1000,
-			compress: true,
+			nLogs: 1000,
 		},
 	}
 
 	u := NewCloudTrailLogsUnmarshaler(component.BuildInfo{})
 	for name, benchmark := range benchmarks {
-		// Create the log content
 		logs := createCloudTrailLogContent(b, benchmark.nLogs)
-
-		// Compress if needed
-		if benchmark.compress {
-			logs = compressWithGzip(b, logs)
-		}
+		compressedLogs := compressWithGzip(b, logs)
 
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			b.SetBytes(int64(len(logs)))
+			b.SetBytes(int64(len(compressedLogs)))
 			for i := 0; i < b.N; i++ {
-				_, err := u.UnmarshalLogs(logs)
+				_, err := u.UnmarshalLogs(compressedLogs)
 				if err != nil {
 					b.Fatalf("Error unmarshaling logs: %v", err)
 				}
