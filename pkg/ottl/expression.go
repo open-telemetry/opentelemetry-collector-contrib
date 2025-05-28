@@ -66,6 +66,19 @@ func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val any) error
 	return path.Setter(ctx, tCtx, val)
 }
 
+type LiteralGetter[K any] interface {
+	Get(ctx context.Context) (any, error)
+}
+
+type StandardLiteralGetter[K any] struct {
+	literal literal[K]
+}
+
+func (path StandardLiteralGetter[K]) Get(ctx context.Context) (any, error) {
+	var zero K
+	return path.literal.Get(ctx, zero)
+}
+
 type literal[K any] struct {
 	value any
 }
@@ -787,6 +800,84 @@ func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, erro
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", val))
 	}
 	return &result, nil
+}
+
+func (p *Parser[K]) newLiteralGetter(val value) (Getter[K], error) {
+	if val.Literal != nil {
+		if val.Literal.Path != nil {
+			return nil, errors.New("literal getter must not use path expressions")
+		}
+		if val.Literal.Converter != nil {
+			return nil, errors.New("literal getter must not use converter expressions")
+		}
+	}
+	if val.MathExpression != nil {
+		return nil, errors.New("literal getter must not use math expressions")
+	}
+
+	if val.IsNil != nil && *val.IsNil {
+		return &literal[K]{value: nil}, nil
+	}
+
+	if s := val.String; s != nil {
+		return &literal[K]{value: *s}, nil
+	}
+	if b := val.Bool; b != nil {
+		return &literal[K]{value: bool(*b)}, nil
+	}
+	if b := val.Bytes; b != nil {
+		return &literal[K]{value: ([]byte)(*b)}, nil
+	}
+
+	if val.Enum != nil {
+		enum, err := p.enumParser((*EnumSymbol)(val.Enum))
+		if err != nil {
+			return nil, err
+		}
+		return &literal[K]{value: int64(*enum)}, nil
+	}
+
+	if eL := val.Literal; eL != nil {
+		if f := eL.Float; f != nil {
+			return &literal[K]{value: *f}, nil
+		}
+		if i := eL.Int; i != nil {
+			return &literal[K]{value: *i}, nil
+		}
+		if eL.Path != nil {
+			return nil, errors.New("literal getter must not use path expressions")
+		}
+		if eL.Converter != nil {
+			return nil, errors.New("literal getter must not use converter expressions")
+		}
+	}
+
+	if val.List != nil {
+		lg := listGetter[K]{slice: make([]Getter[K], len(val.List.Values))}
+		for i, v := range val.List.Values {
+			getter, err := p.newLiteralGetter(v)
+			if err != nil {
+				return nil, err
+			}
+			lg.slice[i] = getter
+		}
+		return &lg, nil
+	}
+
+	if val.Map != nil {
+		mg := mapGetter[K]{mapValues: map[string]Getter[K]{}}
+		for _, kvp := range val.Map.Values {
+			getter, err := p.newLiteralGetter(*kvp.Value)
+			if err != nil {
+				return nil, err
+			}
+			mg.mapValues[*kvp.Key] = getter
+		}
+		return &mg, nil
+	}
+
+	return nil, errors.New("no literal found in value")
+
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {

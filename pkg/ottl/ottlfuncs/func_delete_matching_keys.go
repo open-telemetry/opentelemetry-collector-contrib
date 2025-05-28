@@ -15,7 +15,8 @@ import (
 )
 
 type DeleteMatchingKeysArguments[K any] struct {
-	Target  ottl.PMapGetter[K]
+	// TODO revert
+	Target  ottl.LiteralGetter[K]
 	Pattern string
 }
 
@@ -29,8 +30,16 @@ func createDeleteMatchingKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 	if !ok {
 		return nil, errors.New("DeleteMatchingKeysFactory args must be of type *DeleteMatchingKeysArguments[K]")
 	}
+	v, err := args.Target.Get(context.Background())
+	if err != nil {
+		return nil, err
+	}
 
-	return deleteMatchingKeys(args.Target, args.Pattern)
+	fmt.Println(fmt.Sprintf("Delete Matching Keys: %v", v))
+	return func(ctx context.Context, tCtx K) (any, error) {
+		return nil, nil
+	}, nil
+	//return deleteMatchingKeys(args.Target, args.Pattern)
 }
 
 func deleteMatchingKeys[K any](target ottl.PMapGetter[K], pattern string) (ottl.ExprFunc[K], error) {

@@ -640,6 +640,17 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardByteSliceLikeGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "LiteralGetter"):
+		getter, err := p.newLiteralGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		var zero K
+		v, err := getter.Get(context.Background(), zero)
+		if err != nil {
+			return nil, err
+		}
+		return StandardLiteralGetter[K]{literal[K]{value: v}}, nil
 	case name == "Enum":
 		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
