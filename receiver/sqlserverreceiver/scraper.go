@@ -667,7 +667,15 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateSQL(row[columnName]) })
+		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			if obfuscated, err := obfuscateSQL(statement); err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return statement, nil
+			} else {
+				return obfuscated, nil
+			}
+		})
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
 		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
@@ -1003,7 +1011,13 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				key:        "db.query.text",
 				columnName: statementText,
 				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateSQL(row[columnName])
+					statement := row[columnName]
+					if obfuscated, err := obfuscateSQL(statement); err != nil {
+						s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+						return statement, nil
+					} else {
+						return obfuscated, nil
+					}
 				},
 				valueSetter: setString,
 			},
