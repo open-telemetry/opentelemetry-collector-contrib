@@ -20,7 +20,7 @@ type NfsRPCStats struct {
 
 // nfs.procedure.count / nfsd.procedure.count stats
 type RPCStats struct {
-	NFSVersion        uint64
+	NFSVersion        uint
 	NFSProcedureName  string
 	NFSProcedureCalls uint64
 }
@@ -51,9 +51,10 @@ type NfsdThreadStats struct {
 
 // nfsd.net.* stats
 type NfsdNetStats struct {
-	NetCount uint64
-	UDPCount uint64
-	TCPCount uint64
+	NetCount           uint64
+	UDPCount           uint64
+	TCPCount           uint64
+	TCPConnectionCount uint64
 }
 
 // nfsd.rpc.* stats
