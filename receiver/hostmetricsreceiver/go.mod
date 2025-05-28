@@ -29,6 +29,7 @@ require (
 	go.opentelemetry.io/collector/scraper v0.127.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.127.0
 	go.opentelemetry.io/collector/scraper/scrapertest v0.127.0
+	go.opentelemetry.io/collector/semconv v0.127.0
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
