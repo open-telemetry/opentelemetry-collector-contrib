@@ -363,14 +363,14 @@ func TestEmptyAttributes(t *testing.T) {
 	}{
 		{
 			name: "Empty Attributes Map",
-			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }
-{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }`,
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }`,
 			attributes: map[string]string{},
 		},
 		{
 			name: "nil Attributes",
-			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }
-{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }`,
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }`,
 			attributes: nil,
 		},
 	}
@@ -385,15 +385,16 @@ func TestEmptyAttributes(t *testing.T) {
 			lr := sl.LogRecords().AppendEmpty()
 
 			require.NoError(t, lr.Attributes().FromRaw(map[string]any{
-				"ClientIP":            fmt.Sprintf("89.163.253.%d", 200+idx),
-				"ClientRequestHost":   fmt.Sprintf("www.theburritobot%d.com", idx),
-				"ClientRequestMethod": "GET",
-				"ClientRequestURI":    "/static/img/testimonial-hipster.png",
-				"EdgeEndTimestamp":    "2023-03-03T05:30:05Z",
-				"EdgeResponseBytes":   "69045",
-				"EdgeResponseStatus":  "200",
-				"EdgeStartTimestamp":  "2023-03-03T05:29:05Z",
-				"RayID":               "3a6050bcbe121a87",
+				"ClientIP":                    fmt.Sprintf("89.163.253.%d", 200+idx),
+				"ClientRequestHost":           fmt.Sprintf("www.theburritobot%d.com", idx),
+				"ClientRequestMethod":         "GET",
+				"ClientRequestURI":            "/static/img/testimonial-hipster.png",
+				"EdgeEndTimestamp":            "2023-03-03T05:30:05Z",
+				"EdgeResponseBytes":           "69045",
+				"EdgeResponseStatus":          "200",
+				"EdgeStartTimestamp":          "2023-03-03T05:29:05Z",
+				"RayID":                       "3a6050bcbe121a87",
+				"RequestHeaders.Content_Type": "application/json",
 			}))
 
 			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
@@ -409,7 +410,7 @@ func TestEmptyAttributes(t *testing.T) {
 
 			payloadToExpectedBody(t, line, lr)
 		}
-
+		fmt.Println(logs)
 		return logs
 	}
 

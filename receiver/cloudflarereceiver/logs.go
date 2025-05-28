@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+	"maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
@@ -310,6 +312,28 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutDouble(attrName, v)
 				case bool:
 					attrs.PutBool(attrName, v)
+				case map[string]any:
+					// Flatten the map and add each field with a prefixed key
+					flattened := flattenMap(v, attrName+".")
+					for k, val := range flattened {
+						switch v := val.(type) {
+						case string:
+							attrs.PutStr(k, v)
+						case int:
+							attrs.PutInt(k, int64(v))
+						case int64:
+							attrs.PutInt(k, v)
+						case float64:
+							attrs.PutDouble(k, v)
+						case bool:
+							attrs.PutBool(k, v)
+						default:
+							l.logger.Warn("unable to translate flattened field to attribute, unsupported type",
+								zap.String("field", k),
+								zap.Any("value", v),
+								zap.String("type", fmt.Sprintf("%T", v)))
+						}
+					}
 				default:
 					l.logger.Warn("unable to translate field to attribute, unsupported type",
 						zap.String("field", field),
@@ -342,4 +366,24 @@ func severityFromStatusCode(statusCode int64) plog.SeverityNumber {
 	default:
 		return plog.SeverityNumberUnspecified
 	}
+}
+
+// flattenMap recursively flattens a map[string]interface{} into a single level map
+// with keys joined by dot.
+func flattenMap(input map[string]any, prefix string) map[string]any {
+	result := make(map[string]any)
+	for k, v := range input {
+		// Replace hyphens with underscores in the key. Content-Type becomes Content_Type
+		k = strings.ReplaceAll(k, "-", "_")
+		newKey := prefix + k
+		switch val := v.(type) {
+		case map[string]any:
+			// Recursively flatten nested maps
+			nested := flattenMap(val, newKey+".")
+			maps.Copy(result, nested)
+		default:
+			result[newKey] = v
+		}
+	}
+	return result
 }
