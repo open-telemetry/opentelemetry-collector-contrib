@@ -830,7 +830,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory(WithSpanFunctions(DefaultSpanFunctions(), tt.customSpanFunctions), WithSpanEventFunctions(DefaultSpanEventFunctions(), tt.customSpanEventFunctions))
+			factory := NewFactoryWithOptions(WithSpanFunctions(DefaultSpanFunctions(), tt.customSpanFunctions), WithSpanEventFunctions(DefaultSpanEventFunctions(), tt.customSpanEventFunctions))
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
@@ -883,7 +883,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory(WithLogFunctions(DefaultLogFunctions(), tt.customLogFunctions))
+			factory := NewFactoryWithOptions(WithLogFunctions(DefaultLogFunctions(), tt.customLogFunctions))
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
@@ -962,7 +962,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory(WithMetricFunctions(DefaultMetricFunctions(), tt.customMetricFunctions), WithDataPointFunctions(DefaultDataPointFunctions(), tt.customDataPointFunctions))
+			factory := NewFactoryWithOptions(WithMetricFunctions(DefaultMetricFunctions(), tt.customMetricFunctions), WithDataPointFunctions(DefaultDataPointFunctions(), tt.customDataPointFunctions))
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
