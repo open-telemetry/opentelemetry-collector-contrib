@@ -3,7 +3,7 @@ type: awscloudwatchlogs
 status:
   class: exporter
   stability:
-    beta: [logs]
+    unmaintained: [logs]
   distributions: [contrib]
   codeowners:
     active: []
