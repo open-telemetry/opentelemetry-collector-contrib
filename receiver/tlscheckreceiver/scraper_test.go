@@ -400,11 +400,11 @@ func TestValidateFilepath(t *testing.T) {
 		{
 			desc:        "relative file path",
 			filePath:    "cert.pem",
-			expectedErr: "file path must be absolute",
+			expectedErr: "error accessing certificate file",
 		},
 		{
 			desc:        "nonexistent file",
-			filePath:    "/nonexistent/path/cert.pem",
+			filePath:    "D:/nonexistent/path/cert.pem",
 			expectedErr: "error accessing certificate file",
 		},
 		{
