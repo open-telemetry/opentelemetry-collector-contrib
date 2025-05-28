@@ -32,6 +32,8 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	rb := lb.NewResourceBuilder()
 	rb.SetHostName("host.name-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
@@ -136,6 +138,8 @@ func TestLogsBuilder(t *testing.T) {
 
 			rb := lb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")

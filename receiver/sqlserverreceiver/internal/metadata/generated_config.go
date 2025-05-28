@@ -295,6 +295,8 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
 	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
+	ServerAddress         ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
 	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
 	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
@@ -304,6 +306,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		HostName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		SqlserverComputerName: ResourceAttributeConfig{
 			Enabled: false,
