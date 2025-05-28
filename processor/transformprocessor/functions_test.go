@@ -6,17 +6,16 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var (
-	DefaultFunctions = []ottl.Factory[bool]{
-		createTestFuncFactory[bool]("DefaultFunc1"),
-		createTestFuncFactory[bool]("DefaultFunc2"),
-		createTestFuncFactory[bool]("DefaultFunc3"),
-	}
-)
+var DefaultFunctions = []ottl.Factory[bool]{
+	createTestFuncFactory[bool]("DefaultFunc1"),
+	createTestFuncFactory[bool]("DefaultFunc2"),
+	createTestFuncFactory[bool]("DefaultFunc3"),
+}
 
 func Test_createFunctionsMap_EmptyFunctions(t *testing.T) {
 	functions := [][]ottl.Factory[bool]{}
