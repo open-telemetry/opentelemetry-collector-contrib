@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"strconv"
@@ -26,7 +27,6 @@ import (
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
-	"maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
@@ -314,7 +314,7 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutBool(attrName, v)
 				case map[string]any:
 					// Flatten the map and add each field with a prefixed key
-					flattened := flattenMap(v, attrName+".")
+					flattened := flattenMap(v, attrName+l.cfg.Separator, l.cfg.Separator)
 					for k, val := range flattened {
 						switch v := val.(type) {
 						case string:
@@ -370,7 +370,7 @@ func severityFromStatusCode(statusCode int64) plog.SeverityNumber {
 
 // flattenMap recursively flattens a map[string]interface{} into a single level map
 // with keys joined by dot.
-func flattenMap(input map[string]any, prefix string) map[string]any {
+func flattenMap(input map[string]any, prefix string, separator string) map[string]any {
 	result := make(map[string]any)
 	for k, v := range input {
 		// Replace hyphens with underscores in the key. Content-Type becomes Content_Type
@@ -379,7 +379,7 @@ func flattenMap(input map[string]any, prefix string) map[string]any {
 		switch val := v.(type) {
 		case map[string]any:
 			// Recursively flatten nested maps
-			nested := flattenMap(val, newKey+".")
+			nested := flattenMap(val, newKey+separator, separator)
 			maps.Copy(result, nested)
 		default:
 			result[newKey] = v
