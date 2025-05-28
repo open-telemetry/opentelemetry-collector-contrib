@@ -587,7 +587,7 @@ To aggregate only using a specified set of attributes, you can use `keep_matchin
 
 `split_on_attribute(attribute)`
 
-The `split_on_attribute` function splits a metric into several metrics and elimates an attribute. 
+The `split_on_attribute` function splits a metric into several metrics and eliminates an attribute. 
 
 `attribute` is the attribute name to split by. The new metrics are identical to the original metric, but have the matching attribute value appended to the name.
 
