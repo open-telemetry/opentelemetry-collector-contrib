@@ -78,22 +78,6 @@ resourceLogs:
                               value: { stringValue: stopped }
                             - key: currentState
                               value: { stringValue: pending }
-  - resource:
-      attributes:
-        - key: cloud.provider
-          value:
-            stringValue: aws
-        - key: cloud.region
-          value:
-            stringValue: us-east-1
-        - key: cloud.account.id
-          value:
-            stringValue: "888888888888"
-    scopeLogs:
-      - scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
-          version: ""
-        logRecords:
           - timeUnixNano: 1689801909000000000
             attributes:
               - key: request.event_id
@@ -124,7 +108,7 @@ resourceLogs:
               - key: principal.name
                 value: { stringValue: Mary }
               - key: principal.iam.arn
-                value: { stringValue: arn:aws:iam::888888888888:user/Mary }
+                value: { stringValue: arn:aws:iam::123456789012:user/Mary }
               - key: tls.protocol.version
                 value: { stringValue: TLSv1.2 }
               - key: tls.cipher
@@ -134,7 +118,7 @@ resourceLogs:
               - key: aws.target_user.name
                 value: { stringValue: Richard }
               - key: aws.target_user.arn
-                value: { stringValue: arn:aws:iam::888888888888:user/Richard }
+                value: { stringValue: arn:aws:iam::123456789012:user/Richard }
               - key: aws.target_user.id
                 value: { stringValue: AIDA6ON6E4XEP7EXAMPLE }
               - key: aws.target_user.path
