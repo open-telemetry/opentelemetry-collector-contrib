@@ -83,8 +83,12 @@ func WithSpanFunctions(spanFunctions ...[]ottl.Factory[ottlspan.TransformContext
 	}
 }
 
-// NewFactory can receive FactoryOption like With*Functions to set ottl functions in the resulting processor.
-func NewFactory(options ...FactoryOption) processor.Factory {
+func NewFactory() processor.Factory {
+	return NewFactoryWithOptions()
+}
+
+// NewFactoryWithOptions can receive FactoryOption like With*Functions to set ottl functions in the resulting processor.
+func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 	f := &transformProcessorFactory{
 		dataPointFunctions:                 defaultDataPointFunctionsMap(),
 		logFunctions:                       defaultLogFunctionsMap(),
