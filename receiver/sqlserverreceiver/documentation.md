@@ -86,8 +86,6 @@ This metric is only available when running on Windows.
 
 Time a page will stay in the buffer pool.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
@@ -524,6 +522,40 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | “{transactions}/s” | Gauge | Double |
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+### db.server.top_query
+
+top query
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double |
+| db.query.text | The text of the database query being executed. | Any Str |
+| sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int |
+| sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.total_physical_reads | Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str |
+| sqlserver.query_plan | The query execution plan used by the SQL Server. | Any Str |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| sqlserver.total_rows | Total number of rows returned by the query, reported in delta value. | Any Int |
+| sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double |
+| sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int |
+| server.address | The network address of the server hosting the database. | Any Str |
+| server.port | The port number on which the server is listening. | Any Int |
+| db.server.name | The name of the server hosting the database. | Any Str |
 
 ## Resource Attributes
 
