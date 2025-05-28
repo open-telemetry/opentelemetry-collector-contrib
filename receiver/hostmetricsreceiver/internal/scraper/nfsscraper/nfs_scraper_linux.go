@@ -248,55 +248,55 @@ func getNfsdStats() (*NfsdStats, error) {
 	return parseNfsdStats(f)
 }
 
-func parseNfsNetStats(values []uint64) (*NfsNetStats, error) {
-	if len(values) != 4 {
+func parseNfsNetStats(values *[]uint64) (*NfsNetStats, error) {
+	if len(*values) != 4 {
 		return nil, errors.New("parsing nfs client network stats: unexpected field count")
 	}
 
 	return &NfsNetStats{
-		NetCount:           values[0],
-		UDPCount:           values[1],
-		TCPCount:           values[2],
-		TCPConnectionCount: values[3],
+		NetCount:           (*values)[0],
+		UDPCount:           (*values)[1],
+		TCPCount:           (*values)[2],
+		TCPConnectionCount: (*values)[3],
 	}, nil
 }
 
-func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
-	if len(values) != 3 {
+func parseNfsRPCStats(values *[]uint64) (*NfsRPCStats, error) {
+	if len(*values) != 3 {
 		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
 	}
 
 	return &NfsRPCStats{
-		RPCCount:         values[0],
-		RetransmitCount:  values[1],
-		AuthRefreshCount: values[2],
+		RPCCount:         (*values)[0],
+		RetransmitCount:  (*values)[1],
+		AuthRefreshCount: (*values)[2],
 	}, nil
 }
 
-func parseNfsdNetStats(values []uint64) (*NfsdNetStats, error) {
-	if len(values) != 4 {
+func parseNfsdNetStats(values *[]uint64) (*NfsdNetStats, error) {
+	if len(*values) != 4 {
 		return nil, errors.New("parsing nfs server network stats: unexpected field count")
 	}
 
 	return &NfsdNetStats{
-		NetCount:           values[0],
-		UDPCount:           values[1],
-		TCPCount:           values[2],
-		TCPConnectionCount: values[3],
+		NetCount:           (*values)[0],
+		UDPCount:           (*values)[1],
+		TCPCount:           (*values)[2],
+		TCPConnectionCount: (*values)[3],
 	}, nil
 }
 
-func parseNfsdRPCStats(values []uint64) (*NfsdRPCStats, error) {
-	if len(values) != 5 {
+func parseNfsdRPCStats(values *[]uint64) (*NfsdRPCStats, error) {
+	if len(*values) != 5 {
 		return nil, errors.New("parsing nfs server RPC stats: unexpected field count")
 	}
 
 	return &NfsdRPCStats{
-		RPCCount:       values[0],
-		BadCount:       values[1],
-		BadFmtCount:    values[2],
-		BadAuthCount:   values[3],
-		BadClientCount: values[4],
+		RPCCount:       (*values)[0],
+		BadCount:       (*values)[1],
+		BadFmtCount:    (*values)[2],
+		BadAuthCount:   (*values)[3],
+		BadClientCount: (*values)[4],
 	}, nil
 }
 
@@ -342,24 +342,44 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsProcFile, line)
 		}
 
-		values, err := parseStringsToUint64s(fields[1:])
-		if err != nil {
-			return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsProcFile, line, err)
-		}
-
+		var parse func(*[]uint64) error
 		switch stattype := fields[0]; stattype {
 		case "net":
-			nfsStats.NfsNetStats, err = parseNfsNetStats(values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsNetStats, err = parseNfsNetStats(values)
+				return err
+			}
 		case "rpc":
-			nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
+				return err
+			}
 		case "proc3":
-			nfsStats.NfsV3ProcedureStats, err = parseNfsCallStats(3, &nfsV3Procedures, &values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsV3ProcedureStats, err = parseNfsCallStats(3, &nfsV3Procedures, values)
+				return err
+			}
 		case "proc4":
-			nfsStats.NfsV4ProcedureStats, err = parseNfsCallStats(4, &nfsV4Procedures, &values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsV4ProcedureStats, err = parseNfsCallStats(4, &nfsV4Procedures, values)
+				return err
+			}
 		}
 
-		if err != nil {
-			return nil, fmt.Errorf("error parsing nfs client stats: %w", err)
+		if parse != nil {
+			values, err := parseStringsToUint64s(fields[1:])
+			if err != nil {
+				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
+			}
+
+			err = parse(values)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
+			}
 		}
 	}
 
@@ -382,26 +402,50 @@ func parseNfsdStats(f io.Reader) (*NfsdStats, error) {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsdProcFile, line)
 		}
 
-		values, err := parseStringsToUint64s(fields[1:])
-		if err != nil {
-			return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
-		}
-
+		var parse func(*[]uint64) error
 		switch stattype := fields[0]; stattype {
 		case "net":
-			nfsdStats.NfsdNetStats, err = parseNfsdNetStats(values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsdStats.NfsdNetStats, err = parseNfsdNetStats(values)
+				return err
+			}
 		case "rpc":
-			nfsdStats.NfsdRPCStats, err = parseNfsdRPCStats(values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsdStats.NfsdRPCStats, err = parseNfsdRPCStats(values)
+				return err
+			}
 		case "proc3":
-			nfsdStats.NfsdV3ProcedureStats, err = parseNfsCallStats(3, &nfsdV3Procedures, &values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsdStats.NfsdV3ProcedureStats, err = parseNfsCallStats(3, &nfsdV3Procedures, values)
+				return err
+			}
 		case "proc4":
-			nfsdStats.NfsdV4ProcedureStats, err = parseNfsCallStats(4, &nfsdV4Procedures, &values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsdStats.NfsdV4ProcedureStats, err = parseNfsCallStats(4, &nfsdV4Procedures, values)
+				return err
+			}
 		case "proc4ops":
-			nfsdStats.NfsdV4OperationStats, err = parseNfsCallStats(4, &nfsdV4Operations, &values)
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsdStats.NfsdV4OperationStats, err = parseNfsCallStats(4, &nfsdV4Operations, values)
+				return err
+			}
 		}
 
-		if err != nil {
-			return nil, fmt.Errorf("error parsing nfs server stats: %w", err)
+		if parse != nil {
+			values, err := parseStringsToUint64s(fields[1:])
+			if err != nil {
+				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
+			}
+
+			err = parse(values)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
+			}
 		}
 	}
 

@@ -9,7 +9,7 @@ import (
 )
 
 // parseStringsToUint64s parses a slice of strings into a slice of uint64
-func parseStringsToUint64s(strSlice []string) ([]uint64, error) {
+func parseStringsToUint64s(strSlice []string) (*[]uint64, error) {
 	uint64Slice := make([]uint64, 0, len(strSlice))
 
 	for _, s := range strSlice {
@@ -20,7 +20,7 @@ func parseStringsToUint64s(strSlice []string) ([]uint64, error) {
 		uint64Slice = append(uint64Slice, val)
 	}
 
-	return uint64Slice, nil
+	return &uint64Slice, nil
 }
 
 func nothing(_ ...any) {
