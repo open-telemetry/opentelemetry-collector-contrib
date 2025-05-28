@@ -120,6 +120,10 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 			signalConfigWrapper.config.Headers = make(map[string]configopaque.String)
 		}
 		signalConfigWrapper.config.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
+
+		for k, v := range signalConfigWrapper.config.Headers {
+			e.metadata.Set(k, string(v))
+		}
 	}
 
 	e.callOptions = []grpc.CallOption{
