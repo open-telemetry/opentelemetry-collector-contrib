@@ -853,10 +853,6 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	return results
 }
 
-func vanillaRetriever(row sqlquery.StringMap, columnName string) (any, error) {
-	return row[columnName], nil
-}
-
 func retrieveInt(row sqlquery.StringMap, columnName string) (any, error) {
 	var err error
 	var result int64
@@ -950,21 +946,21 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	dbSystemNameVal := "microsoft.sql_server"
 
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
-		dbNamespaceVal := s.retrieveValue(row, dbName, &errs, vanillaRetriever).(string)
+		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			return obfuscateSQL(row[columnName])
 		}).(string)
-		dbSystemNameVal := "microsoft.sql_server"
-		networkPeerAddressVal := s.retrieveValue(row, clientAddress, &errs, vanillaRetriever).(string)
+		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
-		commandVal := s.retrieveValue(row, command, &errs, vanillaRetriever).(string)
+		commandVal := row[command]
 		cpuTimeMillisecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
@@ -978,23 +974,23 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt).(int64)
 		openTransactionCountVal := s.retrieveValue(row, openTransactionCount, &errs, retrieveInt).(int64)
 		percentCompleteVal := s.retrieveValue(row, percentComplete, &errs, retrieveFloat).(float64)
-		queryStartVal := s.retrieveValue(row, queryStart, &errs, vanillaRetriever).(string)
+		queryStartVal := row[queryStart]
 		readsVal := s.retrieveValue(row, reads, &errs, retrieveInt).(int64)
-		requestStatusVal := s.retrieveValue(row, requestStatus, &errs, vanillaRetriever).(string)
+		requestStatusVal := row[requestStatus]
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
-		sessionStatusVal := s.retrieveValue(row, sessionStatus, &errs, vanillaRetriever).(string)
+		sessionStatusVal := row[sessionStatus]
 		totalElapsedTimeMillisecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
 		transactionIDVal := s.retrieveValue(row, transactionID, &errs, retrieveInt).(int64)
 		transactionIsolationLevelVal := s.retrieveValue(row, transactionIsolationLevel, &errs, retrieveInt).(int64)
-		usernameVal := s.retrieveValue(row, username, &errs, vanillaRetriever).(string)
-		waitResourceVal := s.retrieveValue(row, waitResource, &errs, vanillaRetriever).(string)
+		usernameVal := row[username]
+		waitResourceVal := row[waitResource]
 		waitTimeMillisecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
-		waitTypeVal := s.retrieveValue(row, waitType, &errs, vanillaRetriever).(string)
+		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 
 		contextFromQuery := propagator.Extract(context.Background(), propagation.MapCarrier{
