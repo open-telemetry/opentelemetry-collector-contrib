@@ -40,11 +40,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -152,7 +152,7 @@ type Supervisor struct {
 	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
 	configApplyTimeout time.Duration
 	// lastHealthFromClient is the last health status of the agent received from the client.
-	lastHealthFromClient *protobufs.ComponentHealth
+	lastHealthFromClient atomic.Pointer[protobufs.ComponentHealth]
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -228,17 +228,17 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 		pcommonRes.Attributes().PutStr(k, *v)
 	}
 
-	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
-		pcommonRes.Attributes().PutStr(semconv.AttributeServiceName, "opamp-supervisor")
+	if _, ok := cfg.Resource[string(semconv.ServiceNameKey)]; !ok {
+		pcommonRes.Attributes().PutStr(string(semconv.ServiceNameKey), "opamp-supervisor")
 	}
 
-	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
+	if _, ok := cfg.Resource[string(semconv.ServiceInstanceIDKey)]; !ok {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID := instanceUUID.String()
-		pcommonRes.Attributes().PutStr(semconv.AttributeServiceInstanceID, instanceID)
+		pcommonRes.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instanceID)
 	}
 
-	// TODO currently we do not have the build info containing the version available to set semconv.AttributeServiceVersion
+	// TODO currently we do not have the build info containing the version available to set semconv.ServiceVersionKey
 
 	var attrs []telemetryconfig.AttributeNameValue
 	for k, v := range pcommonRes.Attributes().All() {
@@ -319,13 +319,13 @@ func (s *Supervisor) Start() error {
 	s.telemetrySettings.Logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
+	if err = s.startOpAMP(); err != nil {
+		return fmt.Errorf("cannot start OpAMP client: %w", err)
+	}
+
 	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
 		return fmt.Errorf("failed loading initial config: %w", err)
-	}
-
-	if err = s.startOpAMP(); err != nil {
-		return fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -459,7 +459,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				identAttr := message.AgentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
-					if attr.Key == semconv.AttributeServiceInstanceID {
+					if attr.Key == string(semconv.ServiceInstanceIDKey) {
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
@@ -625,15 +625,27 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
+	// load the remote config, this is needed for start settings
+	s.loadRemoteConfig()
+
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
+		RemoteConfigStatus: func() *protobufs.RemoteConfigStatus {
+			if s.remoteConfig != nil {
+				return &protobufs.RemoteConfigStatus{
+					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+					LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
+				}
+			}
+			return nil
+		}(),
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
-				s.telemetrySettings.Logger.Debug("Connected to the server.")
+				s.telemetrySettings.Logger.Info("Connected to the server.")
 			},
 			OnConnectFailed: func(_ context.Context, err error) {
 				s.telemetrySettings.Logger.Error("Failed to connect to the server", zap.Error(err))
@@ -771,7 +783,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 
 	if message.Health != nil {
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
-		s.lastHealthFromClient = message.Health
+		s.lastHealthFromClient.Store(message.Health)
 		err := s.opampClient.SetHealth(message.Health)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
@@ -1046,8 +1058,8 @@ func (s *Supervisor) composeAgentConfigFiles() []byte {
 	return b
 }
 
-func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	var lastRecvRemoteConfig, lastRecvOwnTelemetryConfig []byte
+func (s *Supervisor) loadRemoteConfig() {
+	var lastRecvRemoteConfig []byte
 	var err error
 
 	if s.config.Capabilities.AcceptsRemoteConfig {
@@ -1070,6 +1082,11 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	} else {
 		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
+}
+
+func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
+	var lastRecvOwnTelemetryConfig []byte
+	var err error
 
 	if s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs {
 		// Try to load the last received own metrics config if it exists.
@@ -1328,7 +1345,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.lastHealthFromClient = nil
+			s.lastHealthFromClient.Store(nil)
 			if !configApplyTimeoutTimer.Stop() {
 				select {
 				case <-configApplyTimeoutTimer.C: // Try to drain the channel
@@ -1389,7 +1406,8 @@ func (s *Supervisor) runAgentProcess() {
 			}
 
 		case <-configApplyTimeoutTimer.C:
-			if s.lastHealthFromClient == nil || !s.lastHealthFromClient.Healthy {
+			lastHealth := s.lastHealthFromClient.Load()
+			if lastHealth == nil || !lastHealth.Healthy {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
 			} else {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
