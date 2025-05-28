@@ -261,6 +261,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attributes](#aggregate_on_attributes)
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
+- [split_on_attribute](#split_on_attribute)
 
 ### convert_sum_to_gauge
 
@@ -582,6 +583,31 @@ statements:
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
+### split_on_attribute
+
+`split_on_attribute(attribute)`
+
+The `split_on_attribute` function splits a metric into several metrics and elimates an attribute. 
+
+`attribute` is the attribute name to split by. The new metrics are identical to the original metric, but have the matching attribute value appended to the name.
+
+Examples:
+
+```yaml
+statements:
+  - split_on_attribute("direction") where metric.name == "system.network.io"
+```
+
+The `system.network.io` metric would be replaced by a new metric for each datapoint with a unique value for `direction` e.g. `system.network.io.transmit` and `system.network.io.receive`.
+
+Additional renames can be included later to customise the new metric names e.g.
+
+```yaml
+statements:
+  - split_on_attribute("direction") where metric.name == "system.network.io"
+  - set(metric.name, "system.network.out") where metric.name == "system.network.io.transmit"
+  - set(metric.name, "system.network.in") where metric.name == "system.network.io.receive"
+```
 
 ## Examples
 
