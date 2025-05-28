@@ -669,12 +669,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			if obfuscated, err := obfuscateSQL(statement); err != nil {
+			obfuscated, err := obfuscateSQL(statement)
+			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
 				return statement, nil
-			} else {
-				return obfuscated, nil
 			}
+
+			return obfuscated, nil
 		})
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
@@ -1012,12 +1013,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				columnName: statementText,
 				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
 					statement := row[columnName]
-					if obfuscated, err := obfuscateSQL(statement); err != nil {
+					obfuscated, err := obfuscateSQL(statement)
+					if err != nil {
 						s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
 						return statement, nil
-					} else {
-						return obfuscated, nil
 					}
+					return obfuscated, nil
 				},
 				valueSetter: setString,
 			},
