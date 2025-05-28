@@ -16,6 +16,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,6 +36,16 @@ const (
 	instanceNameKey  = "sql_instance"
 	serverAddressKey = "server.address"
 	serverPortKey    = "server.port"
+)
+
+const removeServerResourceAttributeFeatureGateId = "receiver.sqlserver.RemoveServerResourceAttribute"
+
+var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	removeServerResourceAttributeFeatureGateId,
+	featuregate.StageBeta,
+	featuregate.WithRegisterFromVersion("v0.128.0"),
+	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are no longer added to metrics. Instead they will be in attributes."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141"),
 )
 
 type sqlServerScraperHelper struct {
@@ -176,6 +187,11 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
 
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
+
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
 			err = fmt.Errorf("row %d: %w", i, err)
@@ -260,6 +276,11 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -532,6 +553,10 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetHostName(s.config.Server)
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))

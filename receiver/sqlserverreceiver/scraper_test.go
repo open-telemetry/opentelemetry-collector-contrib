@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -100,6 +101,7 @@ func TestEmptyScrape(t *testing.T) {
 }
 
 func TestSuccessfulScrape(t *testing.T) {
+	testutil.SetFeatureGateForTest(t, removeServerResourceAttributeFeatureGate, true)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
 	cfg.Password = "password"
@@ -142,7 +144,7 @@ func TestSuccessfulScrape(t *testing.T) {
 		}
 
 		// Uncomment line below to re-generate expected metrics.
-		// golden.WriteMetrics(t, expectedFile, actualMetrics)
+		golden.WriteMetrics(t, expectedFile, actualMetrics)
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		assert.NoError(t, err)
 
@@ -150,7 +152,7 @@ func TestSuccessfulScrape(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreResourceMetricsOrder()))
+			pmetrictest.IgnoreResourceMetricsOrder()), expectedFile)
 	}
 }
 
