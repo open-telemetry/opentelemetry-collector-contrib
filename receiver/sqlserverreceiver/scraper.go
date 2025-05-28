@@ -38,10 +38,10 @@ const (
 	serverPortKey    = "server.port"
 )
 
-const removeServerResourceAttributeFeatureGateId = "receiver.sqlserver.RemoveServerResourceAttribute"
+const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
 
 var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	removeServerResourceAttributeFeatureGateId,
+	removeServerResourceAttributeFeatureGateID,
 	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.128.0"),
 	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are no longer added to metrics. Instead they will be in attributes."),

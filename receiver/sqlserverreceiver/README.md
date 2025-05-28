@@ -111,6 +111,17 @@ Top query collection enabled:
           max_rows_per_query: 1450
           
 ```
+
+## Feature Gate
+Since v0.128.0, we added one new feature gate for removing `server.port` and `server.address` 
+resource attributes. As they are not identified as resources attributes from semantic convention.
+To enable it, pass the following argument to otel collector
+
+```
+"--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute"
+
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
