@@ -499,7 +499,6 @@ func TestAttributesWithSeparator(t *testing.T) {
 
 			payloadToExpectedBody(t, line, lr)
 		}
-		fmt.Println(logs)
 		return logs
 	}
 
