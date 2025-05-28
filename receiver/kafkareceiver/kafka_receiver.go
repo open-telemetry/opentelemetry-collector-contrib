@@ -528,10 +528,19 @@ func (c *consumerGroupHandler) handleMessage(
 			c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
 				zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 		}
-		if c.messageMarking.After && c.messageMarking.OnError {
-			session.MarkMessage(message, "")
+		if c.messageMarking.After && !c.messageMarking.OnError {
+			// Only return an error if messages are marked after successful processing.
+			return err
 		}
-		return err
+		// We're either marking messages as consumed ahead of time (disregarding outcome),
+		// or after processing but including errors. Either way we should not return an error,
+		// as that will restart the consumer unnecessarily.
+		c.logger.Error("failed to consume message, skipping due to message_marking config",
+			zap.Error(err),
+			zap.String("topic", message.Topic),
+			zap.Int32("partition", claim.Partition()),
+			zap.Int64("offset", message.Offset),
+		)
 	}
 	if c.backOff != nil {
 		c.resetBackoff()
