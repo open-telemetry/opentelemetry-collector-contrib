@@ -30,8 +30,6 @@ func Test_splitOnAttribute(t *testing.T) {
 			metricName:  "sum_metric",
 			byAttribute: "state",
 			want: func(metrics pmetric.MetricSlice) {
-				getTestSumMetricSingleAttribute().CopyTo(metrics.AppendEmpty())
-
 				metric1 := metrics.AppendEmpty()
 				metric1.SetEmptySum()
 				metric1.SetName("sum_metric.val1")
@@ -57,8 +55,6 @@ func Test_splitOnAttribute(t *testing.T) {
 			metricName:  "sum_metric",
 			byAttribute: "state",
 			want: func(metrics pmetric.MetricSlice) {
-				getTestSumMetricDuplicateAttribute().CopyTo(metrics.AppendEmpty())
-
 				metric1 := metrics.AppendEmpty()
 				metric1.SetEmptySum()
 				metric1.SetName("sum_metric.val1")
@@ -80,8 +76,6 @@ func Test_splitOnAttribute(t *testing.T) {
 			metricName:  "gauge_metric",
 			byAttribute: "direction",
 			want: func(metrics pmetric.MetricSlice) {
-				getTestSumMetricManyAttributes().CopyTo(metrics.AppendEmpty())
-
 				metric1 := metrics.AppendEmpty()
 				metric1.SetEmptyGauge()
 				metric1.SetName("gauge_metric.read")
@@ -105,7 +99,7 @@ func Test_splitOnAttribute(t *testing.T) {
 
 			metrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(metrics.AppendEmpty())
-			tCtx := ottlmetric.NewTransformContext(tt.input, metrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			tCtx := ottlmetric.NewTransformContext(metrics.At(0), metrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 			_, err = evaluate(nil, tCtx)
 			assert.Equal(t, tt.wantErr, err)
 

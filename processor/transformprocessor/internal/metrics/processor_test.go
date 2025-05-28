@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -356,6 +357,9 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			},
 			want: func(td pmetric.Metrics) {
 				metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				metrics.RemoveIf(func(m pmetric.Metric) bool {
+					return (m.Name() == "operationB" || m.Name() == "operationC" || m.Name() == "operationD")
+				})
 
 				m2 := metrics.AppendEmpty()
 				fillMetricTwo(m2)
@@ -400,7 +404,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			exTd := constructMetrics()
 			tt.want(exTd)
 
-			assert.Equal(t, exTd, td)
+			assert.NoError(t, pmetrictest.CompareMetrics(exTd, td, pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
 }
@@ -571,6 +575,9 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 			},
 			want: func(td pmetric.Metrics) {
 				metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				metrics.RemoveIf(func(m pmetric.Metric) bool {
+					return (m.Name() == "operationB" || m.Name() == "operationC" || m.Name() == "operationD")
+				})
 
 				m2 := metrics.AppendEmpty()
 				fillMetricTwo(m2)
@@ -620,7 +627,7 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 			exTd := constructMetrics()
 			tt.want(exTd)
 
-			assert.Equal(t, exTd, td)
+			assert.NoError(t, pmetrictest.CompareMetrics(exTd, td, pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
 }

@@ -48,7 +48,7 @@ func SplitOnAttribute(byAttribute string) (ottl.ExprFunc[ottlmetric.TransformCon
 				newMetric, exists := newMetrics[attrValue.Str()]
 
 				if !exists {
-					newMetric = metrics.AppendEmpty()
+					newMetric = pmetric.NewMetric()
 					aggregateutil.CopyMetricDetails(cur, newMetric)
 					newMetric.SetName(fmt.Sprintf("%s.%s", cur.Name(), strings.ReplaceAll(attrValue.Str(), " ", "_")))
 					newMetrics[attrValue.Str()] = newMetric
@@ -79,6 +79,20 @@ func SplitOnAttribute(byAttribute string) (ottl.ExprFunc[ottlmetric.TransformCon
 			}
 			return true
 		})
+
+		// we have to be careful about how we remove the split metric in the input transform context;
+		// if we remove it, the outer loop misses the next metric because its position in the slice changes.
+		// to combat this, we replace the current metric with the first new metric, and append the rest to
+		// the end of the slice.
+		replace := true
+		for _, newMetric := range newMetrics {
+			if replace {
+				newMetric.CopyTo(cur)
+				replace = false
+			} else {
+				newMetric.CopyTo(metrics.AppendEmpty())
+			}
+		}
 
 		return nil, nil
 	}, nil
