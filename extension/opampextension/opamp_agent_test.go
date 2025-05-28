@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
@@ -545,7 +546,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	assert.NoError(t, o.Start(context.Background(), componenttest.NewNopHost()))
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
