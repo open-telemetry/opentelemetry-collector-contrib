@@ -84,18 +84,13 @@ func validateEndpoint(endpoint string) error {
 
 func validateFilepath(filePath string) error {
 	cleanPath := filepath.Clean(filePath)
+	fileInfo, err := os.Stat(cleanPath)
+	if err != nil {
+		return fmt.Errorf("error accessing certificate file %s: %w", filePath, err)
+	}
 	if !filepath.IsAbs(cleanPath) {
 		return fmt.Errorf("file path must be absolute: %s", filePath)
 	}
-
-	fileInfo, err := os.Stat(cleanPath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("certificate file does not exist: %s", filePath)
-		}
-		return fmt.Errorf("error accessing certificate file %s: %w", filePath, err)
-	}
-
 	if fileInfo.IsDir() {
 		return fmt.Errorf("path is a directory, not a file: %s", cleanPath)
 	}

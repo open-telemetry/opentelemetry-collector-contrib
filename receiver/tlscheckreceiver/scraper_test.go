@@ -405,7 +405,7 @@ func TestValidateFilepath(t *testing.T) {
 		{
 			desc:        "nonexistent file",
 			filePath:    "/nonexistent/path/cert.pem",
-			expectedErr: "certificate file does not exist",
+			expectedErr: "error accessing certificate file",
 		},
 		{
 			desc:        "directory instead of file",
