@@ -81,29 +81,10 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Op
 		if err != nil {
 			var timeErr *time.ParseError
 			if errors.As(err, &timeErr) {
-				return nil, toCTimeError(*timeErr, format, ctimeSubstitutes)
+				return nil, timeutils.ToStrptimeParseError(timeErr, format, ctimeSubstitutes)
 			}
 			return nil, err
 		}
 		return timestamp, nil
 	}, nil
-}
-
-type ctimeError struct {
-	msg string
-}
-
-func (e ctimeError) Error() string {
-	return e.msg
-}
-
-func toCTimeError(parseError time.ParseError, format string, ctimeSubstitutes map[string]string) error {
-	// set the layout to the originally provided ctime format
-	parseError.Layout = format
-
-	if ctimeSubstitute, ok := ctimeSubstitutes[parseError.LayoutElem]; ok {
-		parseError.LayoutElem = ctimeSubstitute
-	}
-
-	return &ctimeError{msg: parseError.Error()}
 }

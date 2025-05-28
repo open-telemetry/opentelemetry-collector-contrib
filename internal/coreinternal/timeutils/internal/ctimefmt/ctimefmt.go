@@ -164,6 +164,9 @@ func Validate(format string) error {
 	return nil
 }
 
+// GetNativeSubstitutes analyzes the provided format string and returns a map where each
+// key is a Go native layout element (as used in time.Format) found in the format, and
+// each value is the corresponding ctime-like directive.
 func GetNativeSubstitutes(format string) map[string]string {
 	nativeDirectives := map[string]string{}
 	directives := ctimeRegexp.FindAllString(format, -1)

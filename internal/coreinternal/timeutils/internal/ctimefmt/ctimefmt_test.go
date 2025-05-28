@@ -139,6 +139,13 @@ func TestGetNativeSubstitutes(t *testing.T) {
 			},
 			want: map[string]string{"01": "%m", "02": "%d", "04": "%M", "05": "%S", "15": "%H", "999": "%L"},
 		},
+		{
+			name: "format contains Go layout elements",
+			args: args{
+				format: "2006-%m-%d",
+			},
+			want: map[string]string{"01": "%m", "02": "%d"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
