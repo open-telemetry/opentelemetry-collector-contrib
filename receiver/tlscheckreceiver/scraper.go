@@ -63,7 +63,7 @@ func validatePort(port string) error {
 		return fmt.Errorf("provided port is not a number: %s", port)
 	}
 	if portNum < 1 || portNum > 65535 {
-		return fmt.Errorf("provided port is out of valid range (1-65535): %d", portNum)
+		return fmt.Errorf("provided port is out of valid range [1, 65535]: %d", portNum)
 	}
 	return nil
 }
@@ -126,7 +126,8 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 
 	s.settings.Logger.Info("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
 	if len(state.PeerCertificates) == 0 {
-		s.settings.Logger.Error("No TLS certificates found. Verify the endpoint serves TLS certificates.", zap.String("endpoint", endpoint))
+		err := fmt.Errorf("no TLS certificates found for endpoint: %s. Verify the endpoint serves TLS certificates", endpoint)
+		s.settings.Logger.Error(err.Error(), zap.String("endpoint", endpoint))
 		errs <- err
 		return
 	}
