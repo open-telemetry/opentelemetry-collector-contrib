@@ -244,7 +244,7 @@ receiver/githubreceiver/                                         @open-telemetry
 receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @atoulme
 receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth
 receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
-receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB
+receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
