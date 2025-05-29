@@ -24,7 +24,6 @@ func TestRegionEnv(t *testing.T) {
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, region, cfg.Region, "Region value should be fetched from environment")
-
 }
 
 // Test GetAWSConfig with explicit region setting
@@ -174,7 +173,7 @@ func TestNewHTTPClientWithCustomTimeout(t *testing.T) {
 	client, err := newHTTPClient(logger, 8, timeoutSeconds, false, "")
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
-	assert.Equal(t, time.Duration(60*time.Second), client.Timeout)
+	assert.Equal(t, 60*time.Second, client.Timeout)
 }
 
 // Test getProxyAddress function

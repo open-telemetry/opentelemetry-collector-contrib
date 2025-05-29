@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -30,17 +29,6 @@ const (
 	STSAwsIsoESuffix          = ".cloud.adc-e.uk"   // AWS ISO-E partition
 	STSAwsIsoFSuffix          = ".csp.hci.ic.gov"   // AWS ISO-F partition
 )
-
-// regionToPartitionRegexp defines the regex patterns for matching regions to AWS partitions
-var regionToPartitionRegexp = map[string]*regexp.Regexp{
-	"aws":        regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il)\-\w+\-\d+$`),
-	"aws-cn":     regexp.MustCompile(`^cn\-\w+\-\d+$`),
-	"aws-us-gov": regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
-	"aws-iso":    regexp.MustCompile(`^us\-iso\-\w+\-\d+$`),
-	"aws-iso-b":  regexp.MustCompile(`^us\-isob\-\w+\-\d+$`),
-	"aws-iso-e":  regexp.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
-	"aws-iso-f":  regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
-}
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
@@ -172,49 +160,4 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 	}
 
 	return transport, nil
-}
-
-// getPartition returns AWS Partition for the provided region.
-// AWS SDK v2 provides the GetPartition function in the internal module
-// (https://github.com/aws/aws-sdk-go-v2/blob/main/internal/endpoints/awsrulesfn/partitions.go)
-// which cannot be imported directly. This implementation mimics that logic using regex matching.
-func getPartition(region string) string {
-	if region == "" {
-		return "aws" // default partition
-	}
-
-	// Try to match region to partition using regex patterns
-	for partition, re := range regionToPartitionRegexp {
-		if re.MatchString(region) {
-			return partition
-		}
-	}
-
-	// Default to standard AWS partition if no match found
-	return "aws"
-}
-
-// getSTSRegionalEndpoint constructs the STS endpoint for a specific region
-func getSTSRegionalEndpoint(r string) string {
-	p := getPartition(r)
-
-	var suffix string
-	switch p {
-	case "aws", "aws-us-gov":
-		suffix = STSEndpointSuffix
-	case "aws-cn":
-		suffix = STSAwsCnPartitionIDSuffix
-	case "aws-iso":
-		suffix = STSAwsIsoSuffix
-	case "aws-iso-b":
-		suffix = STSAwsIsoBSuffix
-	case "aws-iso-e":
-		suffix = STSAwsIsoESuffix
-	case "aws-iso-f":
-		suffix = STSAwsIsoFSuffix
-	default:
-		suffix = STSEndpointSuffix
-	}
-
-	return STSEndpointPrefix + r + suffix
 }
