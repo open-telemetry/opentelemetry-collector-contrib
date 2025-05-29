@@ -4,6 +4,7 @@
 package opampextension
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -144,8 +145,68 @@ func TestConfig_Getters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.expected.headers(t, tt.fields.Server.GetHeaders())
-			tt.expected.tls(t, tt.fields.Server.GetTLSSetting())
+			tt.expected.tls(t, tt.fields.Server.getTLSSetting())
 			tt.expected.endpoint(t, tt.fields.Server.GetEndpoint())
+		})
+	}
+}
+
+func TestOpAMPServer_GetTLSConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		server            OpAMPServer
+		expectedTLSConfig assert.ValueAssertionFunc
+	}{
+		{
+			name: "wss endpoint",
+			server: OpAMPServer{
+				WS: &commonFields{
+					Endpoint:   "wss://example.com",
+					TLSSetting: configtls.NewDefaultClientConfig(),
+				},
+			},
+			expectedTLSConfig: assert.NotNil,
+		},
+		{
+			name: "https endpoint",
+			server: OpAMPServer{
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint:   "https://example.com",
+						TLSSetting: configtls.NewDefaultClientConfig(),
+					},
+				},
+			},
+			expectedTLSConfig: assert.NotNil,
+		},
+		{
+			name: "ws endpoint",
+			server: OpAMPServer{
+				WS: &commonFields{
+					Endpoint: "ws://example.com",
+				},
+			},
+			expectedTLSConfig: assert.Nil,
+		},
+		{
+			name: "http endpoint",
+			server: OpAMPServer{
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint: "http://example.com",
+					},
+				},
+			},
+			expectedTLSConfig: assert.Nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tlsConfig, err := tt.server.GetTLSConfig(ctx)
+			assert.NoError(t, err)
+			tt.expectedTLSConfig(t, tlsConfig)
 		})
 	}
 }

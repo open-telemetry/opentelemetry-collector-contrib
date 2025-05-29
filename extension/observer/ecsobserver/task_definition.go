@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"go.uber.org/zap"
 )
 
@@ -81,9 +81,9 @@ func (m *taskDefinitionMatcher) matcherType() matcherType {
 	return matcherTypeTaskDefinition
 }
 
-func (m *taskDefinitionMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (m *taskDefinitionMatcher) matchTargets(t *taskAnnotated, c ecstypes.ContainerDefinition) ([]matchedTarget, error) {
 	// Check arn
-	if !m.arnRegex.MatchString(aws.StringValue(t.Task.TaskDefinitionArn)) {
+	if !m.arnRegex.MatchString(aws.ToString(t.Task.TaskDefinitionArn)) {
 		return nil, errNotMatched
 	}
 	// The rest is same as ServiceMatcher

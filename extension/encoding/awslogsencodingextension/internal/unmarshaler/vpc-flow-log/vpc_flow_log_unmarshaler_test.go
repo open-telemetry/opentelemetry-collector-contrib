@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -103,8 +103,8 @@ func TestHandleAddresses(t *testing.T) {
 				destination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				conventions.AttributeSourceAddress:      "10.40.1.175",
-				conventions.AttributeDestinationAddress: "10.40.2.236",
+				string(conventions.SourceAddressKey):      "10.40.1.175",
+				string(conventions.DestinationAddressKey): "10.40.2.236",
 			},
 		},
 		"pkt_same_as_src-dst": {
@@ -115,8 +115,8 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				conventions.AttributeSourceAddress:      "10.40.1.175",
-				conventions.AttributeDestinationAddress: "10.40.2.236",
+				string(conventions.SourceAddressKey):      "10.40.1.175",
+				string(conventions.DestinationAddressKey): "10.40.2.236",
 			},
 		},
 		"different_source": {
@@ -127,9 +127,9 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				conventions.AttributeSourceAddress:       "10.20.33.164",
-				conventions.AttributeDestinationAddress:  "10.40.2.236",
-				conventions.AttributeNetworkLocalAddress: "10.40.1.175",
+				string(conventions.SourceAddressKey):       "10.20.33.164",
+				string(conventions.DestinationAddressKey):  "10.40.2.236",
+				string(conventions.NetworkLocalAddressKey): "10.40.1.175",
 			},
 		},
 		"different_destination": {
@@ -140,9 +140,9 @@ func TestHandleAddresses(t *testing.T) {
 				pktDestination: "10.20.33.164",
 			},
 			expected: map[string]string{
-				conventions.AttributeSourceAddress:       "10.40.2.236",
-				conventions.AttributeDestinationAddress:  "10.20.33.164",
-				conventions.AttributeNetworkLocalAddress: "10.40.2.31",
+				string(conventions.SourceAddressKey):       "10.40.2.236",
+				string(conventions.DestinationAddressKey):  "10.20.33.164",
+				string(conventions.NetworkLocalAddressKey): "10.40.2.31",
 			},
 		},
 	}

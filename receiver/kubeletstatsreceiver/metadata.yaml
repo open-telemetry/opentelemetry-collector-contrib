@@ -82,17 +82,15 @@ attributes:
 
 metrics:
   k8s.node.cpu.usage:
-    enabled: false
+    enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
     gauge:
       value_type: double
     attributes: []
   k8s.node.cpu.utilization:
-    enabled: true
+    enabled: false
     description: "Node CPU utilization"
-    warnings:
-      if_enabled: "This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
     unit: "1"
     gauge:
       value_type: double
@@ -197,17 +195,15 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   k8s.pod.cpu.usage:
-    enabled: false
+    enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.cpu.utilization:
-    enabled: true
+    enabled: false
     description: "Pod CPU utilization"
-    warnings:
-      if_enabled: "This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead."
     unit: "1"
     gauge:
       value_type: double
@@ -354,17 +350,15 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   container.cpu.usage:
-    enabled: false
+    enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
     gauge:
       value_type: double
     attributes: [ ]
   container.cpu.utilization:
-    enabled: true
+    enabled: false
     description: "Container CPU utilization"
-    warnings:
-      if_enabled: "This metric will be disabled in a future release. Use metric container.cpu.usage instead."
     unit: "1"
     gauge:
       value_type: double

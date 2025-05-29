@@ -10,12 +10,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -117,10 +115,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			cacheGetter := func(_ TransformContext) pcommon.Map {
 				return testCache
 			}
-			pep := pathExpressionParser{
-				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
-			}
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			profile := createProfileTelemetry()
@@ -191,33 +186,20 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
+	testCache := pcommon.NewMap()
+	cacheGetter := func(_ TransformContext) pcommon.Map {
+		return testCache
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
-			require.NoError(t, err)
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
+			assert.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	ctx := NewTransformContext(
-		pprofile.NewProfile(),
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		pprofile.NewScopeProfiles(),
-		pprofile.NewResourceProfiles(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
 var profileID = pprofile.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}

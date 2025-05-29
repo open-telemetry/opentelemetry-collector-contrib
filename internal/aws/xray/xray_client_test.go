@@ -4,40 +4,49 @@
 package awsxray
 
 import (
-	"net/http"
+	"context"
+	"runtime"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 )
 
-func TestUserAgent(t *testing.T) {
-	logger := zap.NewNop()
-
-	buildInfo := component.BuildInfo{
-		Command: "test-collector-contrib",
-		Version: "1.0",
+func TestAddToUserAgentHeader(t *testing.T) {
+	tests := []struct {
+		name         string
+		userAgentVal string
+		pos          middleware.RelativePosition
+	}{
+		{
+			name:         "tracing.XRayVersionUserAgentHandler",
+			userAgentVal: agentPrefix + getModVersion() + execEnvPrefix + "UNKNOWN" + osPrefix + runtime.GOOS + "-" + runtime.GOARCH,
+			pos:          middleware.After,
+		},
 	}
 
-	newSession, err := session.NewSession()
-	require.NoError(t, err)
-	xray := NewXRayClient(logger, &aws.Config{}, buildInfo, newSession).(*xrayClient)
-	x := xray.xRay
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stack := middleware.NewStack(test.name, func() any { return struct{}{} })
 
-	req := request.New(aws.Config{}, metadata.ClientInfo{}, x.Handlers, nil, &request.Operation{
-		HTTPMethod: http.MethodGet,
-		HTTPPath:   "/",
-	}, nil, nil)
+			err := stack.Serialize.Add(&addToUserAgentHeader{
+				id:  test.name,
+				val: test.userAgentVal,
+			}, test.pos)
+			assert.NoError(t, err)
 
-	x.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "test-collector-contrib/1.0")
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "xray-otel-exporter/")
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "exec-env/")
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "OS/")
+			err = stack.Serialize.Add(middleware.SerializeMiddlewareFunc("TestCapture", func(
+				_ context.Context,
+				in middleware.SerializeInput,
+				_ middleware.SerializeHandler,
+			) (out middleware.SerializeOutput, metadata middleware.Metadata, err error) {
+				req := in.Request.(*smithyhttp.Request)
+				assert.Contains(t, req.Header.Get("User-Agent"), test.userAgentVal)
+				assert.Equal(t, "123456.789", req.Header.Get("X-Amzn-Xray-Timestamp"))
+				return out, metadata, nil
+			}), middleware.After)
+			assert.NoError(t, err)
+		})
+	}
 }

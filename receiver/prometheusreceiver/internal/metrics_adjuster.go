@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
@@ -264,12 +264,12 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	}
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+		_, found := rm.Resource().Attributes().Get(string(semconv.ServiceNameKey))
 		if !found {
 			return errors.New("adjusting metrics without job")
 		}
 
-		_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		_, found = rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
 		if !found {
 			return errors.New("adjusting metrics without instance")
 		}
@@ -277,8 +277,8 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
-		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		job, _ := rm.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+		instance, _ := rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
 		tsm := a.jobsMap.get(job.Str(), instance.Str())
 
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that

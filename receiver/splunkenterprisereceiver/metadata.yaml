@@ -51,6 +51,15 @@ attributes:
   splunk.feature.health:
     description: The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint
     type: string
+  splunk.search.state:
+    description: The dispatch state of the search
+    type: string
+  splunk.searchable.restart:
+    description: Boolean that indicates if a searchable rolling restart/upgrade in progress.t
+    type: bool
+  splunk.rollingorrestart:
+    description: Boolean that indicates if there is a rolling restart or rolling upgrade in progress.
+    type: bool
 
 metrics:
   splunk.license.index.usage:
@@ -365,6 +374,44 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]
+  # `services/cluster/manager/status`
+  splunk.indexer.rollingrestart.status:
+    enabled: false
+    description: The status of a rolling restart.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.searchable.restart, splunk.rollingorrestart, splunk.splunkd.build, splunk.splunkd.version]
+
+  # Search Metrics
+  splunk.search.duration:
+    enabled: false
+    description: Gauge tracking the duration in seconds of the last search probe call.
+    unit: "{status}"
+    gauge:
+      value_type: double
+    attributes: [splunk.splunkd.build, splunk.splunkd.version]
+  splunk.search.initiation:
+    enabled: false
+    description: Gauge tracking whether the last search probe successfully initiated a search.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.splunkd.build, splunk.splunkd.version]
+  splunk.search.status:
+    enabled: false
+    description: Gauge tracking the dispatch status of the last search probe.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.search.state, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.search.success:
+    enabled: false
+    description: Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.splunkd.build, splunk.splunkd.version]
 
 tests:
   config:

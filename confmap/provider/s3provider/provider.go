@@ -17,7 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -57,10 +57,6 @@ func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 }
 
 func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	if !strings.HasPrefix(uri, schemeName+":") {
-		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
-	}
-
 	// initialize the s3 client in the first call of Retrieve
 	if fmp.client == nil {
 		cfg, err := config.LoadDefaultConfig(context.Background())

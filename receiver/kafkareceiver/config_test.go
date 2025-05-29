@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -157,6 +157,33 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     10 * time.Second,
 					MaxElapsedTime:  1 * time.Minute,
 					Multiplier:      1.5,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "rebalance_strategy"),
+			expected: &Config{
+				ClientConfig: configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.GroupRebalanceStrategy = "sticky"
+					config.GroupInstanceID = "test-instance"
+					return config
+				}(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
 				},
 			},
 		},

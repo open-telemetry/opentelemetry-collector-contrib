@@ -77,6 +77,7 @@ func TestAzureScraperStart(t *testing.T) {
 					time:                timeMock,
 					azIDCredentialsFunc: azIDCredentialsFuncMock,
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
+					settings:            componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -90,12 +91,13 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "service_principal",
 			testFunc: func(t *testing.T) {
 				cfg := createDefaultTestConfig()
-				cfg.Authentication = servicePrincipal
+				cfg.Credentials = servicePrincipal
 				s := &azureScraper{
 					cfg:                 cfg,
 					time:                timeMock,
 					azIDCredentialsFunc: azIDCredentialsFuncMock,
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
+					settings:            componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -109,12 +111,13 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "workload_identity",
 			testFunc: func(t *testing.T) {
 				cfg := createDefaultTestConfig()
-				cfg.Authentication = workloadIdentity
+				cfg.Credentials = workloadIdentity
 				s := &azureScraper{
 					cfg:                 cfg,
 					time:                timeMock,
 					azIDCredentialsFunc: azIDCredentialsFuncMock,
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
+					settings:            componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -128,12 +131,13 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "managed_identity",
 			testFunc: func(t *testing.T) {
 				cfg := createDefaultTestConfig()
-				cfg.Authentication = managedIdentity
+				cfg.Credentials = managedIdentity
 				s := &azureScraper{
 					cfg:                   cfg,
 					time:                  timeMock,
 					azIDCredentialsFunc:   azIDCredentialsFuncMock,
 					azManagedIdentityFunc: azManagedIdentityFuncMock,
+					settings:              componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -147,12 +151,13 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "default_credentials",
 			testFunc: func(t *testing.T) {
 				cfg := createDefaultTestConfig()
-				cfg.Authentication = defaultCredentials
+				cfg.Credentials = defaultCredentials
 				s := &azureScraper{
 					cfg:                      cfg,
 					time:                     timeMock,
 					azIDCredentialsFunc:      azIDCredentialsFuncMock,
 					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
+					settings:                 componenttest.NewNopTelemetrySettings(),
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {

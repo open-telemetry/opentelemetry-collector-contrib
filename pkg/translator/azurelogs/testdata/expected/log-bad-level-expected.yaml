@@ -1,84 +1,20 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
-          - attributes:
-              - key: cloud.resource_id
-                value:
-                  stringValue: /RESOURCE_ID
-              - key: cloud.provider
-                value:
-                  stringValue: azure
-              - key: event.name
-                value:
-                  stringValue: az.resource.log
-            body:
+          - body:
               kvlistValue:
                 values:
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: apiId
-                            value:
-                              stringValue: demo-api
-                          - key: url
-                            value:
-                              stringValue: https://api.azure-api.net/sessions
-                          - key: apimSubscriptionId
-                            value:
-                              stringValue: master
-                          - key: clientProtocol
-                            value:
-                              stringValue: HTTP/1.1
-                          - key: responseSize
-                            value:
-                              doubleValue: 102945
-                          - key: backendProtocol
-                            value:
-                              stringValue: HTTP/1.1
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: backendTime
-                            value:
-                              doubleValue: 54
-                          - key: clientTlsVersion
-                            value:
-                              stringValue: "1.2"
-                          - key: backendMethod
-                            value:
-                              stringValue: GET
-                          - key: responseCode
-                            value:
-                              doubleValue: 200
-                          - key: backendResponseCode
-                            value:
-                              doubleValue: 200
-                          - key: requestSize
-                            value:
-                              doubleValue: 632
-                          - key: operationId
-                            value:
-                              stringValue: GetSessions
-                          - key: apiRevision
-                            value:
-                              stringValue: "1"
-                          - key: clientTime
-                            value:
-                              doubleValue: 190
-                          - key: cache
-                            value:
-                              stringValue: none
-                          - key: method
-                            value:
-                              stringValue: GET
-                  - key: result.type
-                    value:
-                      stringValue: Succeeded
-                  - key: cloud.region
-                    value:
-                      stringValue: West US
                   - key: network.peer.address
                     value:
                       stringValue: 13.14.15.16
@@ -94,6 +30,70 @@ resourceLogs:
                   - key: operation.name
                     value:
                       stringValue: Microsoft.ApiManagement/GatewayLogs
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: operationId
+                            value:
+                              stringValue: GetSessions
+                          - key: method
+                            value:
+                              stringValue: GET
+                          - key: backendTime
+                            value:
+                              doubleValue: 54
+                          - key: apimSubscriptionId
+                            value:
+                              stringValue: master
+                          - key: backendProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: url
+                            value:
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
+                          - key: backendUrl
+                            value:
+                              stringValue: https://api.azurewebsites.net/sessions
+                          - key: apiRevision
+                            value:
+                              stringValue: "1"
+                          - key: clientTlsVersion
+                            value:
+                              stringValue: "1.2"
+                          - key: backendMethod
+                            value:
+                              stringValue: GET
+                          - key: responseCode
+                            value:
+                              doubleValue: 200
+                          - key: cache
+                            value:
+                              stringValue: none
+                          - key: clientProtocol
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: responseSize
+                            value:
+                              doubleValue: 102945
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
+                          - key: backendResponseCode
+                            value:
+                              doubleValue: 200
+                  - key: result.type
+                    value:
+                      stringValue: Succeeded
+                  - key: cloud.region
+                    value:
+                      stringValue: West US
             severityNumber: 4
             severityText: "4"
             spanId: ""

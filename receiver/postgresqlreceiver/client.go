@@ -65,6 +65,7 @@ type client interface {
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
 }
 
 type postgreSQLClient struct {
@@ -825,6 +826,117 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, log
 		currentAttributes["db.namespace"] = row["datname"]
 		currentAttributes["user.name"] = row["usename"]
 		currentAttributes["db.system.name"] = "postgresql"
+		finalAttributes = append(finalAttributes, currentAttributes)
+	}
+
+	return finalAttributes, errors.Join(errs...)
+}
+
+func convertMillisecondToSecond(column string, value string, logger *zap.Logger) (any, error) {
+	result := float64(0)
+	var err error
+	if value != "" {
+		result, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			logger.Error("failed to parse float", zap.String("column", column), zap.String("value", value), zap.Error(err))
+		}
+	}
+	return result / 1000.0, err
+}
+
+func convertToInt(column string, value string, logger *zap.Logger) (any, error) {
+	result := 0
+	var err error
+	if value != "" {
+		result, err = strconv.Atoi(value)
+		if err != nil {
+			logger.Error("failed to parse int", zap.String("column", column), zap.String("value", value), zap.Error(err))
+		}
+	}
+	return int64(result), err
+}
+
+//go:embed templates/topQueryTemplate.tmpl
+var topQueryTemplate string
+
+// getTopQuery implements client.
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+	buf := bytes.Buffer{}
+
+	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
+	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
+	// in this query, we should only gather query after 8:15
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit": limit,
+	}); err != nil {
+		logger.Error("failed to execute template", zap.Error(err))
+		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
+
+	rows, err := wrappedDb.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			logger.Error("failed getting log rows", zap.Error(err))
+			return []map[string]any{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	errs := make([]error, 0)
+	finalAttributes := make([]map[string]any, 0)
+
+	for _, row := range rows {
+		hasConvention := map[string]string{
+			"datname": "db.namespace",
+			"query":   "db.query.text",
+		}
+
+		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
+			callsColumnName:             convertToInt,
+			rowsColumnName:              convertToInt,
+			sharedBlksDirtiedColumnName: convertToInt,
+			sharedBlksHitColumnName:     convertToInt,
+			sharedBlksReadColumnName:    convertToInt,
+			sharedBlksWrittenColumnName: convertToInt,
+			tempBlksReadColumnName:      convertToInt,
+			tempBlksWrittenColumnName:   convertToInt,
+			totalExecTimeColumnName:     convertMillisecondToSecond,
+			totalPlanTimeColumnName:     convertMillisecondToSecond,
+			"query": func(_ string, val string, logger *zap.Logger) (any, error) {
+				// TODO: check if it is truncated.
+				result, err := obfuscateSQL(val)
+				if err != nil {
+					logger.Error("failed to obfuscate query", zap.String("query", val))
+					return "", err
+				}
+				return result, nil
+			},
+		}
+		currentAttributes := make(map[string]any)
+
+		for col := range row {
+			var val any
+			var err error
+			converter, ok := needConversion[col]
+			if ok {
+				val, err = converter(col, row[col], logger)
+				if err != nil {
+					logger.Warn("failed to convert column to int", zap.String("column", col), zap.Error(err))
+					errs = append(errs, err)
+				}
+			} else {
+				val = row[col]
+			}
+			if hasConvention[col] != "" {
+				currentAttributes[hasConvention[col]] = val
+			} else {
+				currentAttributes[dbAttributePrefix+col] = val
+			}
+		}
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 

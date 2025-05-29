@@ -31,7 +31,7 @@
     "row_count": "a1",
     "query_hash": "0x70A3B130B1048D4D",
     "query_plan_hash": "0x140210F64B788CB9",
-    "context_info": "",
+    "context_info": "0x70A3B130B1048D4D",
     "username": "sa"
   }
 ]

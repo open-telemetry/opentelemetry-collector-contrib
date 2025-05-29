@@ -339,6 +339,10 @@ func TestGetReceiverOptions(t *testing.T) {
 					kubelet.NodeMetricGroup: true,
 					kubelet.PodMetricGroup:  true,
 				},
+				allNetworkInterfaces: map[kubelet.MetricGroup]bool{
+					kubelet.NodeMetricGroup: false,
+					kubelet.PodMetricGroup:  false,
+				},
 				collectionInterval: 10 * time.Second,
 			},
 		},

@@ -74,3 +74,53 @@ func AssertSameTimeStampForMetrics(t *testing.T, metrics pmetric.MetricSlice, st
 		}
 	}
 }
+
+// AssertExpectedMetrics checks that metrics contains expected metrics and no other metrics.
+// It also checks that each expected metric has at least one data point.
+func AssertExpectedMetrics(t *testing.T, expectedMetrics map[string]bool, actualMetrics pmetric.Metrics) {
+	unexpectedMetrics := map[string]bool{}
+
+	metricsCount := 0
+	totalDataPointCount := 0
+
+	metricsSlice := actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metricsSlice.Len(); i++ {
+		metricsCount++
+		metricsSlice.At(i)
+		metric := metricsSlice.At(i)
+		switch metric.Type() {
+		case pmetric.MetricTypeSum:
+			totalDataPointCount += metric.Sum().DataPoints().Len()
+		case pmetric.MetricTypeGauge:
+			totalDataPointCount += metric.Gauge().DataPoints().Len()
+		case pmetric.MetricTypeHistogram:
+			totalDataPointCount += metric.Histogram().DataPoints().Len()
+		case pmetric.MetricTypeExponentialHistogram:
+			totalDataPointCount += metric.ExponentialHistogram().DataPoints().Len()
+		case pmetric.MetricTypeSummary:
+			totalDataPointCount += metric.Summary().DataPoints().Len()
+		default:
+			assert.Fail(t, "Unexpected metric type")
+		}
+
+		metricName := metric.Name()
+		if _, ok := expectedMetrics[metricName]; ok {
+			expectedMetrics[metricName] = true
+		} else {
+			unexpectedMetrics[metricName] = true
+		}
+	}
+
+	// Check that we have some metrics and data points
+	assert.Positive(t, metricsCount, "No metrics were collected")
+	assert.Positive(t, totalDataPointCount, "No data points were collected")
+
+	// Check that each expected metric has at least one data point
+	for metricName, hasDataPoints := range expectedMetrics {
+		assert.True(t, hasDataPoints, "Metric %s has no data points", metricName)
+	}
+	// Check that no unexpected metrics were collected
+	for metricName := range unexpectedMetrics {
+		assert.Fail(t, "Unexpected metric was collected", metricName)
+	}
+}

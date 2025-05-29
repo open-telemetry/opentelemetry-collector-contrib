@@ -1880,6 +1880,63 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td pmetric.Metrics)
+	}{
+		{
+			name: "inferring from statements",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`resource.attributes["test"] == nil`},
+					Statements: []string{`set(metric.name, Concat([metric.name, "pass"], "-"))`},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				for _, v := range td.ResourceMetrics().All() {
+					for _, m := range v.ScopeMetrics().All() {
+						for _, mm := range m.Metrics().All() {
+							mm.SetName(mm.Name() + "-pass")
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "inferring from conditions",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`metric.name != nil`},
+					Statements: []string{`set(resource.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				for _, v := range td.ResourceMetrics().All() {
+					v.Resource().Attributes().PutStr("test", "pass")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string

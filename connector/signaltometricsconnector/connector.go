@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
@@ -27,9 +29,10 @@ type signalToMetrics struct {
 	collectorInstanceInfo model.CollectorInstanceInfo
 	logger                *zap.Logger
 
-	spanMetricDefs []model.MetricDef[ottlspan.TransformContext]
-	dpMetricDefs   []model.MetricDef[ottldatapoint.TransformContext]
-	logMetricDefs  []model.MetricDef[ottllog.TransformContext]
+	spanMetricDefs    []model.MetricDef[ottlspan.TransformContext]
+	dpMetricDefs      []model.MetricDef[ottldatapoint.TransformContext]
+	logMetricDefs     []model.MetricDef[ottllog.TransformContext]
+	profileMetricDefs []model.MetricDef[ottlprofile.TransformContext]
 
 	component.StartFunc
 	component.ShutdownFunc
@@ -240,5 +243,56 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 		}
 	}
 	aggregator.Finalize(sm.logMetricDefs)
+	return sm.next.ConsumeMetrics(ctx, processedMetrics)
+}
+
+func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofile.Profiles) error {
+	if len(sm.profileMetricDefs) == 0 {
+		return nil
+	}
+
+	processedMetrics := pmetric.NewMetrics()
+	processedMetrics.ResourceMetrics().EnsureCapacity(profiles.ResourceProfiles().Len())
+	aggregator := aggregator.NewAggregator[ottlprofile.TransformContext](processedMetrics)
+
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		resourceProfile := profiles.ResourceProfiles().At(i)
+		resourceAttrs := resourceProfile.Resource().Attributes()
+
+		for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
+			scopeProfile := resourceProfile.ScopeProfiles().At(j)
+
+			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
+				profile := scopeProfile.Profiles().At(k)
+				profileAttrs := pprofile.FromAttributeIndices(profile.AttributeTable(), profile)
+
+				for _, md := range sm.profileMetricDefs {
+					filteredProfileAttrs, ok := md.FilterAttributes(profileAttrs)
+					if !ok {
+						continue
+					}
+
+					// The transform context is created from original attributes so that the
+					// OTTL expressions are also applied on the original attributes.
+					tCtx := ottlprofile.NewTransformContext(profile, scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+					if md.Conditions != nil {
+						match, err := md.Conditions.Eval(ctx, tCtx)
+						if err != nil {
+							return fmt.Errorf("failed to evaluate conditions: %w", err)
+						}
+						if !match {
+							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
+							continue
+						}
+					}
+					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
+					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredProfileAttrs, 1); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	aggregator.Finalize(sm.profileMetricDefs)
 	return sm.next.ConsumeMetrics(ctx, processedMetrics)
 }

@@ -216,6 +216,15 @@
       "matchPackageNames": [
         "github.com/knadh/koanf{/,}**"
       ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/splunk/stef packages",
+      "matchPackageNames": [
+        "github.com/splunk/stef{/,}**"
+      ]
     }
   ],
   "ignoreDeps": [

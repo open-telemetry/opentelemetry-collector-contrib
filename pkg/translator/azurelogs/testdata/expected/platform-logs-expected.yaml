@@ -1,26 +1,20 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
-          - attributes:
-              - key: cloud.resource_id
-                value:
-                  stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
-              - key: cloud.provider
-                value:
-                  stringValue: azure
-              - key: event.name
-                value:
-                  stringValue: az.resource.log
-            body:
+          - body:
               kvlistValue:
                 values:
-                  - key: category
-                    value:
-                      stringValue: AppServicePlatformLogs
-                  - key: operation.name
-                    value:
-                      stringValue: ContainerLogs
                   - key: container.id
                     value:
                       stringValue: CONTAINER_ID
@@ -34,6 +28,12 @@ resourceLogs:
                           - key: message
                             value:
                               stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
+                  - key: category
+                    value:
+                      stringValue: AppServicePlatformLogs
+                  - key: operation.name
+                    value:
+                      stringValue: ContainerLogs
             severityNumber: 9
             severityText: Informational
             spanId: ""

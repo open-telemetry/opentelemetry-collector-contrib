@@ -86,8 +86,6 @@ This metric is only available when running on Windows.
 
 Time a page will stay in the buffer pool.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
@@ -359,6 +357,16 @@ Total number of lock timeouts.
 | ---- | ----------- | ---------- |
 | “{timeouts}/s” | Gauge | Double |
 
+### sqlserver.lock.wait.count
+
+Cumulative count of lock waits that occurred.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait} | Sum | Int | Cumulative | true |
+
 ### sqlserver.login.rate
 
 Total number of logins.
@@ -390,6 +398,23 @@ Total memory in use.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | “KB” | Sum | Double | Cumulative | false |
+
+### sqlserver.os.wait.duration
+
+Total wait time for this wait type
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| wait.category | Category of the reason for a wait. | Any Str |
+| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str |
 
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
@@ -430,6 +455,22 @@ Throughput rate of replica data.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` |
+
+### sqlserver.resource_pool.disk.operations
+
+The rate of operations issued.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operations}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
@@ -482,10 +523,45 @@ Total number of mirror write transactions.
 | ---- | ----------- | ---------- |
 | “{transactions}/s” | Gauge | Double |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+### db.server.top_query
+
+top query
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double |
+| db.query.text | The text of the database query being executed. | Any Str |
+| sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int |
+| sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.total_physical_reads | Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str |
+| sqlserver.query_plan | The query execution plan used by the SQL Server. | Any Str |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| sqlserver.total_rows | Total number of rows returned by the query, reported in delta value. | Any Int |
+| sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double |
+| sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int |
+| server.address | The network address of the server hosting the database. | Any Str |
+| server.port | The port number on which the server is listening. | Any Int |
+| db.server.name | The name of the server hosting the database. | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| host.name | The host name of SQL Server | Any Str | true |
 | server.address | Name of the database host. | Any Str | false |
 | server.port | Server port number. | Any Int | false |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false |

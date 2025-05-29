@@ -1,0 +1,171 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Profile count by attribute with default
+            name: profile.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: bar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: notbar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: other
+                    - key: profile.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: Profile count by attribute with default
+            name: profile.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: bar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: notbar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: other
+                    - key: profile.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+  - resource:
+      attributes:
+        - key: resource.optional
+          value:
+            stringValue: bar
+        - key: resource.required
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - metrics:
+          - description: Profile count by attribute with default
+            name: profile.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: bar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: notbar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: other
+                    - key: profile.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+  - resource:
+      attributes:
+        - key: resource.optional
+          value:
+            stringValue: notbar
+        - key: resource.required
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - metrics:
+          - description: Profile count by attribute with default
+            name: profile.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: bar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: notbar
+                    - key: profile.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: profile.optional
+                      value:
+                        stringValue: other
+                    - key: profile.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector

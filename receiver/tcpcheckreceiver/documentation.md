@@ -39,7 +39,7 @@ Records errors occurring during TCP check.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | tcpcheck.endpoint | TCP endpoint | Any Str |
-| error.code | Error code recorded during check | Any Str |
+| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` |
 
 ### tcpcheck.status
 

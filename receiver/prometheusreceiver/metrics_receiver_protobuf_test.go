@@ -7,6 +7,7 @@ import (
 	"math"
 	"testing"
 
+	types "github.com/gogo/protobuf/types"
 	"github.com/prometheus/prometheus/config"
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/stretchr/testify/require"
@@ -181,10 +182,18 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						{
 							UpperBound:      10,
 							CumulativeCount: 1011,
+							Exemplar: &dto.Exemplar{
+								Value: 8.1,
+								Label: []dto.LabelPair{{Name: "tch_e1", Value: "v1"}},
+							},
 						},
 						{
 							UpperBound:      math.Inf(1),
 							CumulativeCount: 1213,
+							Exemplar: &dto.Exemplar{
+								Value: 18,
+								Label: []dto.LabelPair{{Name: "tch_e2", Value: "v2"}},
+							},
 						},
 					},
 				},
@@ -205,6 +214,10 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						{
 							UpperBound:      0.5,
 							CumulativeCount: 789,
+							Exemplar: &dto.Exemplar{
+								Value: 0.1,
+								Label: []dto.LabelPair{{Name: "tmhc_e1", Value: "v1"}},
+							},
 						},
 						{
 							UpperBound:      10,
@@ -229,6 +242,18 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						{Offset: 1, Length: 1},
 					},
 					PositiveDelta: []int64{1, 0},
+					Exemplars: []*dto.Exemplar{
+						{
+							Value:     0.2,
+							Timestamp: &types.Timestamp{Seconds: 123, Nanos: 456},
+							Label:     []dto.LabelPair{{Name: "tmhn_e1", Value: "mv1"}},
+						},
+						{
+							Value:     1.3,
+							Timestamp: &types.Timestamp{Seconds: 321, Nanos: 456},
+							Label:     []dto.LabelPair{{Name: "tmhn_e2", Value: "mv2"}},
+						},
+					},
 				},
 			},
 		},
@@ -257,11 +282,48 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						{Offset: 2, Length: 1},
 					},
 					PositiveDelta: []int64{1, 0},
+					Exemplars: []*dto.Exemplar{
+						{
+							Value:     0.8,
+							Label:     []dto.LabelPair{{Name: "tnh_e1", Value: "mv1"}},
+							Timestamp: &types.Timestamp{Seconds: 234, Nanos: 456},
+						},
+						{
+							Value:     111,
+							Label:     []dto.LabelPair{{Name: "tnh_e2", Value: "mv2"}},
+							Timestamp: &types.Timestamp{Seconds: 432, Nanos: 456},
+						},
+					},
 				},
 			},
 		},
 	}
 	prometheusMetricFamilyToProtoBuf(t, buffer, nativeHistogram)
+
+	// Exemplar check function to check that the right values go to the
+	// right datapoints.
+	checkClassicHistogramExemplars := func(t *testing.T, hdp pmetric.HistogramDataPoint) {
+		require.Equal(t, 2, hdp.Exemplars().Len())
+		values := []float64{hdp.Exemplars().At(0).DoubleValue(), hdp.Exemplars().At(1).DoubleValue()}
+		require.Contains(t, values, 8.1)
+		require.Contains(t, values, 18.0)
+	}
+	checkMixedHistogramClassicExemplars := func(t *testing.T, hdp pmetric.HistogramDataPoint) {
+		require.Equal(t, 1, hdp.Exemplars().Len())
+		require.Equal(t, 0.1, hdp.Exemplars().At(0).DoubleValue())
+	}
+	checkMixedHistogramNativeExemplars := func(t *testing.T, hdp pmetric.ExponentialHistogramDataPoint) {
+		require.Equal(t, 2, hdp.Exemplars().Len())
+		values := []float64{hdp.Exemplars().At(0).DoubleValue(), hdp.Exemplars().At(1).DoubleValue()}
+		require.Contains(t, values, 0.2)
+		require.Contains(t, values, 1.3)
+	}
+	checkNativeHistogramExemplars := func(t *testing.T, hdp pmetric.ExponentialHistogramDataPoint) {
+		require.Equal(t, 2, hdp.Exemplars().Len())
+		values := []float64{hdp.Exemplars().At(0).DoubleValue(), hdp.Exemplars().At(1).DoubleValue()}
+		require.Contains(t, values, 0.8)
+		require.Contains(t, values, 111.0)
+	}
 
 	testCases := map[string]struct {
 		mutCfg                 func(*PromConfig)
@@ -278,6 +340,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -289,6 +352,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
+							checkMixedHistogramNativeExemplars,
 						},
 					}},
 					nil,
@@ -300,6 +364,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
+							checkNativeHistogramExemplars,
 						},
 					}},
 					nil,
@@ -316,6 +381,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -327,6 +393,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkMixedHistogramClassicExemplars,
 						},
 					}},
 					nil,
@@ -348,17 +415,31 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
 				},
-				{ // Only scrape classic buckets from mixed histograms.
+				{ // Scrape both classic and native buckets from mixed histograms.
 					"test_mixed_histogram",
 					pmetric.MetricTypeHistogram,
 					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkMixedHistogramClassicExemplars,
+						},
+					}},
+					nil,
+				},
+				{ // Scrape both classic and native buckets from mixed histograms.
+					"test_mixed_histogram",
+					pmetric.MetricTypeExponentialHistogram,
+					"",
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
+							checkMixedHistogramNativeExemplars,
 						},
 					}},
 					nil,
@@ -370,6 +451,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
+							checkNativeHistogramExemplars,
 						},
 					}},
 					nil,
@@ -391,6 +473,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -402,6 +485,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+							checkMixedHistogramClassicExemplars,
 						},
 					}},
 					nil,

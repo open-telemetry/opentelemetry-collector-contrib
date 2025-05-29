@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -59,6 +60,11 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	if err != nil {
 		return nil, err
 	}
+	var filetype string
+	if filepath.Ext(file.Name()) == gzipExtension {
+		filetype = gzipExtension
+	}
+
 	m := &Metadata{
 		Fingerprint:    fp,
 		FileAttributes: attributes,
@@ -66,6 +72,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		FlushState: flush.State{
 			LastDataChange: time.Now(),
 		},
+		FileType: filetype,
 	}
 	return f.NewReaderFromMetadata(file, m)
 }

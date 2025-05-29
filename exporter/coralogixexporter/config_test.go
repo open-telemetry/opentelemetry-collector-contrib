@@ -90,13 +90,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
-				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-					Enabled:      false,
-					FlushTimeout: 200 * time.Millisecond,
-					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-						Sizer:   exporterhelper.RequestSizerTypeItems,
-						MinSize: 8192,
-					},
+				RateLimiter: RateLimiterConfig{
+					Enabled:   false,
+					Threshold: 10,
+					Duration:  time.Minute,
 				},
 			},
 		},
@@ -155,13 +152,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
-				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-					Enabled:      false,
-					FlushTimeout: 200 * time.Millisecond,
-					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-						Sizer:   exporterhelper.RequestSizerTypeItems,
-						MinSize: 8192,
-					},
+				RateLimiter: RateLimiterConfig{
+					Enabled:   false,
+					Threshold: 10,
+					Duration:  time.Minute,
 				},
 			},
 		},
@@ -339,9 +333,11 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.Domain = "localhost"
 	cfg.PrivateKey = "test-key"
 	cfg.AppName = "test-app"
-	cfg.BatcherConfig.Enabled = true
-	cfg.BatcherConfig.FlushTimeout = 1 * time.Second
-	cfg.BatcherConfig.MinSize = 100
+	cfg.QueueSettings.Enabled = true
+	cfg.QueueSettings.Batch = &exporterhelper.BatchConfig{
+		FlushTimeout: 1 * time.Second,
+		MinSize:      100,
+	}
 
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {
