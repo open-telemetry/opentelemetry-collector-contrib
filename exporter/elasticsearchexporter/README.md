@@ -514,6 +514,17 @@ processors:
           - set(attributes["elasticsearch.document_id"], Concat(["log", attributes["event_name"], attributes["event_creation_time"], "-"))
 ```
 
+## Reliability
+
+This table describes the reliability and outcome under different scenarios.
+
+| Setup                                                             | Elasticsearch unreachable        | Elasticsearch _bulk returning HTTP 500s                                                    | Collector crash                      |
+|-------------------------------------------------------------------|----------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------|
+| (batcher::enabled: true / false) AND (no queue / in memory queue) | Retry up to `retry::max_retries` | If status code is configured in `retry::retry_on_status`, retry up to `retry::max_retries` | Complete data loss                   |
+| (batcher::enabled: true / false) AND (persistent queue)           | Retry up to `retry::max_retries` | If status code is configured in `retry::retry_on_status`, retry up to `retry::max_retries` | No data loss (including requests being retried), at least once delivery |
+| (batcher::enabled: nil) AND (no queue / in memory queue)          | Retry up to `retry::max_retries` | If status code is configured in `retry::retry_on_status`, retry up to `retry::max_retries` | Complete data loss                   |
+| (batcher::enabled: nil) AND (persistent queue)                    | Retry up to `retry::max_retries` | If status code is configured in `retry::retry_on_status`, retry up to `retry::max_retries` | Complete data loss                   |
+
 ## Known issues
 
 ### version_conflict_engine_exception
