@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package otelserializer
 
 import (
@@ -57,7 +60,7 @@ func TestSerializeTraces(t *testing.T) {
 		},
 		{
 			name: "unset status code",
-			spanCustomizer: func(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) {
+			spanCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, span ptrace.Span) {
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 			},
 			wantErr: false,
