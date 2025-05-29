@@ -15,13 +15,11 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -227,26 +225,11 @@ type AgentDescription struct {
 }
 
 type Telemetry struct {
-	// TODO: Add more telemetry options
-	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs    Logs                   `mapstructure:"logs"`
-	Metrics Metrics                `mapstructure:"metrics"`
-	Traces  telemetry.TracesConfig `mapstructure:"traces"`
+	Logs    telemetry.LogsConfig    `mapstructure:"logs"`
+	Metrics telemetry.MetricsConfig `mapstructure:"metrics"`
+	Traces  telemetry.TracesConfig  `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
-}
-
-type Logs struct {
-	Level       zapcore.Level `mapstructure:"level"`
-	OutputPaths []string      `mapstructure:"output_paths"`
-	// Processors allow configuration of log record processors to emit logs to
-	// any number of supported backends.
-	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
-}
-
-type Metrics struct {
-	Level   configtelemetry.Level `mapstructure:"level"`
-	Readers []config.MetricReader `mapstructure:"readers"`
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -287,7 +270,7 @@ func DefaultSupervisor() Supervisor {
 			PassthroughLogs:         false,
 		},
 		Telemetry: Telemetry{
-			Logs: Logs{
+			Logs: telemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
 				OutputPaths: []string{"stderr"},
 			},

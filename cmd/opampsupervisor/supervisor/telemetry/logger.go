@@ -4,12 +4,11 @@
 package telemetry
 
 import (
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-func NewLogger(cfg config.Logs) (*zap.Logger, error) {
+func NewLogger(cfg telemetry.LogsConfig) (*zap.Logger, error) {
 	zapCfg := zap.NewProductionConfig()
 
 	zapCfg.Level = zap.NewAtomicLevelAt(cfg.Level)

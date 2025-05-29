@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -583,7 +584,7 @@ telemetry:
 						PassthroughLogs:         true,
 					},
 					Telemetry: Telemetry{
-						Logs: Logs{
+						Logs: telemetry.LogsConfig{
 							Level:       zapcore.WarnLevel,
 							OutputPaths: []string{"stdout"},
 						},
