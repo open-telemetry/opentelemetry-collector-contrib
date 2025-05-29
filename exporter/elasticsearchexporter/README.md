@@ -518,7 +518,7 @@ processors:
 
 This table describes the reliability and outcome under different scenarios.
 
-| Setup                                                      | Elasticsearch unreachable | Elasticsearch _bulk returning HTTP 500s                                 | Collector crash                                                                 | Elasticsearch backpressure                                         |
+| Setup                                                      | Scenario: Elasticsearch unreachable | Scenario: Elasticsearch _bulk returning HTTP 500s                                 | Scenario: Collector crash                                                                 | Scenario: Elasticsearch backpressure                                         |
 |------------------------------------------------------------|--------------------------|------------------------------------------------------------------------|--------------------------------------------------------------------------------|--------------------------------------------------------------------|
 | (`batcher::enabled`: true / false) AND no queue            | Retry                    | If status code is configured in `retry::retry_on_status`, retry         | Complete data loss                                                              | Propagated directly up the pipeline                                |
 | (`batcher::enabled`: true / false) AND in-memory queue     | Retry                    | If status code is configured in `retry::retry_on_status`, retry         | Complete data loss                                                              | Propagated up the pipeline if queue is full                        |
