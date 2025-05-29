@@ -527,7 +527,9 @@ This table describes the reliability and outcome under different scenarios.
 | (`batcher::enabled`: nil) AND in-memory queue              | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated up the pipeline when all bulk indexer buffers and queue are full |
 | (`batcher::enabled`: nil) AND persistent queue             | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated up the pipeline when all bulk indexer buffers and queue are full |
 
-Note: Retries are always subject to `retry::enabled` and `retry::max_retries`.
+Note:
+- Retries are always subject to `retry::enabled` and `retry::max_retries`.
+- When queue is full, it drops or blocks requests depending on [`sending_queue::block_on_overflow`](https://github.com/open-telemetry/opentelemetry-collector/blob/4a3717978a51e6929c90bdaccfba3ea369044629/exporter/exporterhelper/README.md?plain=1#L20).
 
 ## Known issues
 
