@@ -645,7 +645,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		}(),
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
-				s.telemetrySettings.Logger.Debug("Connected to the server.")
+				s.telemetrySettings.Logger.Info("Connected to the server.")
 			},
 			OnConnectFailed: func(_ context.Context, err error) {
 				s.telemetrySettings.Logger.Error("Failed to connect to the server", zap.Error(err))
