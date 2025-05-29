@@ -19,7 +19,8 @@ type NfsRPCStats struct {
 }
 
 // nfs.procedure.count / nfsd.procedure.count stats
-type RPCStats struct {
+// nfs.operation.count / nfsd.operation.count stats
+type CallStats struct {
 	NFSVersion        uint
 	NFSProcedureName  string
 	NFSProcedureCalls uint64
@@ -70,8 +71,8 @@ type NfsdRPCStats struct {
 type NfsStats struct {
 	NfsNetStats         *NfsNetStats
 	NfsRPCStats         *NfsRPCStats
-	NfsV3ProcedureStats *[]RPCStats
-	NfsV4ProcedureStats *[]RPCStats
+	NfsV3ProcedureStats *[]CallStats
+	NfsV4ProcedureStats *[]CallStats
 }
 
 // 15 metrics + 22 NFSv3 procedures + 76 NFSv4 procedures = 113 metrics
@@ -82,7 +83,7 @@ type NfsdStats struct {
 	NfsdThreadStats      *NfsdThreadStats
 	NfsdNetStats         *NfsdNetStats
 	NfsdRPCStats         *NfsdRPCStats
-	NfsdV3ProcedureStats *[]RPCStats
-	NfsdV4ProcedureStats *[]RPCStats
-	NfsdV4OperationStats *[]RPCStats
+	NfsdV3ProcedureStats *[]CallStats
+	NfsdV4ProcedureStats *[]CallStats
+	NfsdV4OperationStats *[]CallStats
 }
