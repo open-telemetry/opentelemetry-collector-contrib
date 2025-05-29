@@ -41,15 +41,14 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		var dataSource string
 		var err error
 
-		if sqlCfg.DataSourceConfig.Host != "" && sqlCfg.DataSourceConfig.Port != 0 && sqlCfg.DataSourceConfig.Database != "" {
+		if sqlCfg.DataSource != "" {
+			dataSource = sqlCfg.DataSource
+		} else {
 			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Driver, sqlCfg.DataSourceConfig)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			dataSource = sqlCfg.DataSource
 		}
-
 		var opts []scraperhelper.ControllerOption
 		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Driver, dataSource, sqlCfg.MaxOpenConn)
 
