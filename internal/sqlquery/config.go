@@ -36,15 +36,7 @@ func (c Config) Validate() error {
 		return errors.New("'driver' cannot be empty")
 	}
 	if c.DataSource == "" {
-		if c.DataSourceConfig.Host == "" {
-			return errors.New("'datasource_config.host' must be specified")
-		}
-		if c.DataSourceConfig.Port == 0 {
-			return errors.New("'datasource_config.port' must be specified")
-		}
-		if c.DataSourceConfig.Database == "" {
-			return errors.New("'datasource_config.database' must be specified")
-		}
+		return errors.New("'datasource' must be specified")
 	}
 
 	if len(c.Queries) == 0 {
