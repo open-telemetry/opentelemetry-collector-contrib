@@ -126,8 +126,8 @@ attributes:
   server.port:
     description: The port number on which the server is listening.
     type: int
-  db.server.name:
-    description: The name of the server hosting the database.
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
 
 events:
@@ -149,7 +149,7 @@ events:
       - sqlserver.total_grant_kb
       - server.address
       - server.port
-      - db.server.name
+      - db.system.name
 
 metrics:
   sqlserver.user.connection.count:
