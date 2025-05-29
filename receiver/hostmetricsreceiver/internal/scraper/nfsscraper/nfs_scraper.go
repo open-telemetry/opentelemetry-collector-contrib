@@ -5,8 +5,10 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -48,17 +50,27 @@ func (s *nfsScraper) start(_ context.Context, _ component.Host) error {
 func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
-	NfsStats, err := s.nfsStats()
+	nfsStats, err := s.nfsStats()
 	if err != nil {
 		errs.AddPartial(nfsMetricsLen, err)
 	}
 
-	NfsdStats, err := s.nfsdStats()
+	nfsdStats, err := s.nfsdStats()
 	if err != nil {
 		errs.AddPartial(nfsdMetricsLen, err)
 	}
 
-	nothing(NfsStats, NfsdStats)
+	err = s.addMetrics(&nfsStats, &nfsdStats)
+	if err != nil {
+		errs.AddPartial(nfsdMetricsLen, err)
+	}
 
 	return s.mb.Emit(), errs.Combine()
+}
+
+func (s *scraper) addMetrics(nfsStats *NfsStats, nfsdStats *NfsdStats) error {
+{
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	
 }
