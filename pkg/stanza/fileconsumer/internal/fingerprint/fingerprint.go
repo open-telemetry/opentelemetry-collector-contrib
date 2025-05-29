@@ -34,7 +34,7 @@ func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
 		// If the file is of compressed type, uncompress the data before creating its fingerprint
 		uncompressedData, err := gzip.NewReader(file)
 		if err != nil {
-			return nil, fmt.Errorf("uncompressing gzip file: %w", err)
+			return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
 		}
 		defer uncompressData.Close()
 
