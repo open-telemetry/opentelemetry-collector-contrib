@@ -99,6 +99,23 @@ func TestGetMetadataFromImds(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Successfully retrieves Instance Life Cycle metadata",
+			client: func(t *testing.T) ImdsGetMetadataAPI {
+				return mockGetMetadataAPI(func(_ context.Context, params *imds.GetMetadataInput, _ ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
+					t.Helper()
+					if e, a := "instance-life-cycle", params.Path; e != a {
+						t.Errorf("expected Path: %v, got: %v", e, a)
+					}
+					return &imds.GetMetadataOutput{
+						Content: io.NopCloser(bytes.NewReader([]byte("this is the body foo bar baz"))),
+					}, nil
+				})
+			},
+			path:    "instance-life-cycle",
+			expect:  []byte("this is the body foo bar baz"),
+			wantErr: false,
+		},
+		{
 			name: "Path is empty",
 			client: func(t *testing.T) ImdsGetMetadataAPI {
 				return mockGetMetadataAPI(func(_ context.Context, params *imds.GetMetadataInput, _ ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
