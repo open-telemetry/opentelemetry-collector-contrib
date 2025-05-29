@@ -86,8 +86,6 @@ This metric is only available when running on Windows.
 
 Time a page will stay in the buffer pool.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
