@@ -218,7 +218,6 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 			case <-prweWAL.stopChan:
 				return
 			default:
-				fmt.Println("in default continuallyPopWALThenExport")
 				err := prweWAL.continuallyPopWALThenExport(runCtx, signalStart)
 				signalStart = func() {}
 				if err != nil {

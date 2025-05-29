@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-
 	"sort"
 	"testing"
 	"time"
@@ -302,46 +301,6 @@ func TestWALRead_Telemetry(t *testing.T) {
 	})
 	set := metadatatest.NewSettings(tel)
 
-	cfg := &Config{
-		WAL: &WALConfig{
-			Directory: t.TempDir(),
-		},
-		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
-	}
-
-	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		// Do nothing
-	}))
-	defer server.Close()
-
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = server.URL
-	cfg.ClientConfig = clientConfig
-
-	prw, err := newPRWExporter(cfg, set)
-	require.NotNil(t, prw)
-	require.NoError(t, err)
-
-	err = prw.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		assert.NoError(t, prw.Shutdown(context.Background()))
-	})
-
-	// When the WAL starts, it tries to read from WAL, which is empty.
-	metadatatest.AssertEqualExporterPrometheusremotewriteWalReads(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-}
-
-func TestWALReadCorrupted_Telemetry(t *testing.T) {
-	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() {
-		require.NoError(t, tel.Shutdown(context.Background()))
-	})
-	set := metadatatest.NewSettings(tel)
-
 	// Create a temporary directory for the WAL
 	tempDir := t.TempDir()
 	cfg := &Config{
@@ -389,14 +348,19 @@ func TestWALReadCorrupted_Telemetry(t *testing.T) {
 	// Write a successful WAL write first
 	err = prw.handleExport(context.Background(), metrics, nil)
 	require.NoError(t, err)
+	err = wal.wal.Close()
+	require.NoError(t, err)
 
-	// necessary to write the data to the WAL
-	time.Sleep(1 * time.Second)
+	// Write corrupted data
 	corruptedData := []byte{0x80}
 	firstWalFile := filepath.Join(wal.walPath, "00000000000000000001")
-	err = os.WriteFile(firstWalFile, corruptedData, 0600)
+	err = os.WriteFile(firstWalFile, corruptedData, 0o600)
+	require.NoError(t, err)
 	// write the corrupted data and start reading from the index
-	time.Sleep(1 * time.Second)
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	// Unable to start the WAL cause there is a corrupted entry
+	require.Error(t, err)
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_reads_failures")
 	// verify that the metric exists, so it's incremented
 	require.NoError(t, err)
