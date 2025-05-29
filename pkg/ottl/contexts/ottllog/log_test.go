@@ -242,7 +242,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			bodyType:     "int",
 			setStatement: `set(body, "2")`,
-			getStatement: `body`,
+			getStatement: `body.string`,
 		},
 		{
 			name: "flags",
