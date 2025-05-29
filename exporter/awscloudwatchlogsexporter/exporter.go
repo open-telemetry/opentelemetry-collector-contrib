@@ -46,14 +46,13 @@ type emfMetadata struct {
 	LogStreamName string       `json:"log_stream_name,omitempty"`
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, error) {
+func newCwLogsPusher(ctx context.Context, expConfig *Config, params exp.Settings) (*cwlExporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
 
 	expConfig.logger = params.Logger
 
-	ctx := context.TODO()
 	awsConfig, err := awsutil.GetAWSConfig(ctx, params.Logger, &expConfig.AWSSessionSettings)
 	if err != nil {
 		return nil, err
@@ -79,14 +78,14 @@ func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, erro
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, error) {
+func newCwLogsExporter(ctx context.Context, config component.Config, params exp.Settings) (exp.Logs, error) {
 	expConfig := config.(*Config)
-	logsPusher, err := newCwLogsPusher(expConfig, params)
+	logsPusher, err := newCwLogsPusher(ctx, expConfig, params)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewLogs(
-		context.TODO(),
+		ctx, // Use the passed context instead of context.TODO()
 		params,
 		config,
 		logsPusher.consumeLogs,
