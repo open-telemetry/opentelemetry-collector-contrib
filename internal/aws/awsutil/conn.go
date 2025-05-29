@@ -16,30 +16,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
-
-type ConnAttr interface {
-	getEC2Region(ctx context.Context, cfg aws.Config) (string, error)
-}
-
-// Conn implements connAttr interface.
-type Conn struct{}
-
-func (c *Conn) getEC2Region(ctx context.Context, cfg aws.Config) (string, error) {
-	// get region from ec2 metadata service
-	client := imds.NewFromConfig(cfg)
-	output, err := client.GetRegion(ctx, &imds.GetRegionInput{})
-	if err != nil {
-		return "", err
-	}
-	return output.Region, nil
-}
 
 // AWS STS endpoint constants
 const (
@@ -135,17 +114,12 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	var options []func(*config.LoadOptions) error
+	// Add EC2 IMDS region option by default
+	options = append(options, config.WithEC2IMDSRegion())
+
 	if settings.Region != "" {
 		options = append(options, config.WithRegion(settings.Region))
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", settings.Region))
-	}
-
-	if settings.RoleARN != "" {
-		options = append(options, config.WithAssumeRoleCredentialOptions(func(o *stscreds.AssumeRoleOptions) {
-			if settings.ExternalID != "" {
-				o.ExternalID = aws.String(settings.ExternalID)
-			}
-		}))
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, options...)
@@ -165,22 +139,6 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	return cfg, nil
-}
-
-func CreateStaticCredentialProvider(accessKey, secretKey, sessionToken string) aws.CredentialsProvider {
-	return credentials.NewStaticCredentialsProvider(accessKey, secretKey, sessionToken)
-}
-
-func CreateAssumeRoleCredentialProvider(cfg aws.Config, roleARN, externalID string) (aws.CredentialsProvider, error) {
-	stsClient := sts.NewFromConfig(cfg)
-
-	options := func(o *stscreds.AssumeRoleOptions) {
-		if externalID != "" {
-			o.ExternalID = aws.String(externalID)
-		}
-	}
-	provider := stscreds.NewAssumeRoleProvider(stsClient, roleARN, options)
-	return aws.NewCredentialsCache(provider), nil
 }
 
 // ProxyServerTransport configures HTTP transport for TCP Proxy Server.
