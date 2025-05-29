@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
+	"go.opentelemetry.io/collector/component"
 	"net/url"
 	"time"
 
@@ -14,9 +16,9 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
+
+const clickhouseDriverName = "clickhouse"
 
 // Config defines configuration for clickhouse exporter.
 type Config struct {
@@ -68,15 +70,15 @@ type Config struct {
 
 type MetricTablesConfig struct {
 	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
-	Gauge internal.MetricTypeConfig `mapstructure:"gauge"`
+	Gauge metrics.MetricTypeConfig `mapstructure:"gauge"`
 	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
-	Sum internal.MetricTypeConfig `mapstructure:"sum"`
+	Sum metrics.MetricTypeConfig `mapstructure:"sum"`
 	// Summary is the table name for summary metric type. default is `otel_metrics_summary`.
-	Summary internal.MetricTypeConfig `mapstructure:"summary"`
+	Summary metrics.MetricTypeConfig `mapstructure:"summary"`
 	// Histogram is the table name for histogram metric type. default is `otel_metrics_histogram`.
-	Histogram internal.MetricTypeConfig `mapstructure:"histogram"`
+	Histogram metrics.MetricTypeConfig `mapstructure:"histogram"`
 	// ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
-	ExponentialHistogram internal.MetricTypeConfig `mapstructure:"exponential_histogram"`
+	ExponentialHistogram metrics.MetricTypeConfig `mapstructure:"exponential_histogram"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -100,6 +102,31 @@ var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		collectorVersion: "unknown",
+		driverName:       clickhouseDriverName,
+
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		ConnectionParams: map[string]string{},
+		Database:         defaultDatabase,
+		LogsTableName:    "otel_logs",
+		TracesTableName:  "otel_traces",
+		TTL:              0,
+		CreateSchema:     true,
+		AsyncInsert:      true,
+		MetricsTables: MetricTablesConfig{
+			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
+			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
+			Summary:              metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
+			Histogram:            metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
+			ExponentialHistogram: metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
+		},
+	}
+}
 
 // Validate the ClickHouse server configuration.
 func (cfg *Config) Validate() (err error) {

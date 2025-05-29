@@ -5,6 +5,7 @@ package clickhouseexporter
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
@@ -70,11 +70,11 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "otel_metrics_custom_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_custom_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "otel_metrics_custom_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "otel_metrics_custom_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
 				},
 				ConnectionParams: map[string]string{},
 				QueueSettings: exporterhelper.QueueBatchConfig{
@@ -123,11 +123,11 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			cfg:  Config{},
 			want: Config{
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "otel_metrics_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_exponential_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "otel_metrics_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "otel_metrics_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "otel_metrics_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "otel_metrics_exponential_histogram"},
 				},
 			},
 		},
@@ -139,11 +139,11 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			want: Config{
 				MetricsTableName: "table_name",
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exponential_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "table_name_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "table_name_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exponential_histogram"},
 				},
 			},
 		},
@@ -151,20 +151,20 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			name: "only metric_tables set fully",
 			cfg: Config{
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exponential_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "table_name_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "table_name_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exponential_histogram"},
 				},
 			},
 			want: Config{
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exponential_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "table_name_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "table_name_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exponential_histogram"},
 				},
 			},
 		},
@@ -172,18 +172,18 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			name: "only metric_tables set partially",
 			cfg: Config{
 				MetricsTables: MetricTablesConfig{
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exp_histogram"},
 				},
 			},
 			want: Config{
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "otel_metrics_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exp_histogram"},
 				},
 			},
 		},
@@ -192,19 +192,19 @@ func TestBuildMetricMetricTableNames(t *testing.T) {
 			cfg: Config{
 				MetricsTableName: "custom_name",
 				MetricsTables: MetricTablesConfig{
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exp_histogram"},
 				},
 			},
 			want: Config{
 				MetricsTableName: "custom_name",
 				MetricsTables: MetricTablesConfig{
-					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
-					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
-					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
-					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
-					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+					Gauge:                metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
+					Sum:                  metrics.MetricTypeConfig{Name: "otel_metrics_sum"},
+					Summary:              metrics.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            metrics.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: metrics.MetricTypeConfig{Name: "table_name_exp_histogram"},
 				},
 			},
 		},
@@ -223,7 +223,7 @@ func TestAreMetricTableNamesSet(t *testing.T) {
 
 	cfg = Config{
 		MetricsTables: MetricTablesConfig{
-			Gauge: internal.MetricTypeConfig{Name: "gauge"},
+			Gauge: metrics.MetricTypeConfig{Name: "gauge"},
 		},
 	}
 	require.True(t, cfg.areMetricTableNamesSet())

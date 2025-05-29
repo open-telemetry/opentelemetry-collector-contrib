@@ -8,20 +8,14 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
-const clickhouseDriverName = "clickhouse"
-
-// NewFactory creates a factory for ClickHouse exporter.
+// NewFactory creates a factory for the ClickHouse exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
@@ -32,33 +26,6 @@ func NewFactory() exporter.Factory {
 	)
 }
 
-func createDefaultConfig() component.Config {
-	return &Config{
-		collectorVersion: "unknown",
-		driverName:       clickhouseDriverName,
-
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		ConnectionParams: map[string]string{},
-		Database:         defaultDatabase,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TTL:              0,
-		CreateSchema:     true,
-		AsyncInsert:      true,
-		MetricsTables: MetricTablesConfig{
-			Gauge:                internal.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
-			Sum:                  internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
-			Summary:              internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
-			Histogram:            internal.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
-			ExponentialHistogram: internal.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
-		},
-	}
-}
-
-// createLogsExporter creates a new exporter for logs.
-// Logs are directly inserted into ClickHouse.
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
@@ -66,7 +33,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exporter, err := newLogsExporter(set.Logger, c)
+	exp, err := newLogsExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
 	}
@@ -75,17 +42,15 @@ func createLogsExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushLogsData,
-		exporterhelper.WithStart(exporter.start),
-		exporterhelper.WithShutdown(exporter.shutdown),
+		exp.pushLogsData,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
-// createTracesExporter creates a new exporter for traces.
-// Traces are directly inserted into ClickHouse.
 func createTracesExporter(
 	ctx context.Context,
 	set exporter.Settings,
@@ -93,7 +58,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exporter, err := newTracesExporter(set.Logger, c)
+	exp, err := newTracesExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse traces exporter: %w", err)
 	}
@@ -102,9 +67,9 @@ func createTracesExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushTraceData,
-		exporterhelper.WithStart(exporter.start),
-		exporterhelper.WithShutdown(exporter.shutdown),
+		exp.pushTraceData,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
@@ -118,7 +83,7 @@ func createMetricExporter(
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exporter, err := newMetricsExporter(set.Logger, c)
+	exp, err := newMetricsExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse metrics exporter: %w", err)
 	}
@@ -127,27 +92,41 @@ func createMetricExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushMetricsData,
-		exporterhelper.WithStart(exporter.start),
-		exporterhelper.WithShutdown(exporter.shutdown),
+		exp.pushMetricsData,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
-func generateTTLExpr(ttl time.Duration, timeField string) string {
-	if ttl > 0 {
-		switch {
-		case ttl%(24*time.Hour) == 0:
-			return fmt.Sprintf(`TTL %s + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
-		case ttl%(time.Hour) == 0:
-			return fmt.Sprintf(`TTL %s + toIntervalHour(%d)`, timeField, ttl/time.Hour)
-		case ttl%(time.Minute) == 0:
-			return fmt.Sprintf(`TTL %s + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
-		default:
-			return fmt.Sprintf(`TTL %s + toIntervalSecond(%d)`, timeField, ttl/time.Second)
-		}
+// TODO: move elsewhere
+
+func createDatabase(ctx context.Context, cfg *Config) error {
+	// use default database to create new database
+	if cfg.Database == defaultDatabase {
+		return nil
 	}
-	return ""
+
+	// We couldn't set a database in the dsn while creating the database,
+	// otherwise, there would be an exception from clickhouse
+	// TODO: we don't need to set db at all, the insert/ddl is fully qualified
+	targetDatabase := cfg.Database
+	cfg.Database = defaultDatabase
+
+	db, err := cfg.buildDB()
+	cfg.Database = targetDatabase
+	if err != nil {
+		return fmt.Errorf("can't connect to clickhouse: %w", err)
+	}
+	defer func() {
+		_ = db.Close()
+	}()
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.clusterString())
+	_, err = db.ExecContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("create database: %w", err)
+	}
+	return nil
 }
