@@ -57,13 +57,13 @@ func newLogsReceiver(
 	}
 
 	var dataSource string
-	if config.DataSourceConfig.Host != "" && config.DataSourceConfig.Port != 0 && config.DataSourceConfig.Database != "" {
+	if config.DataSource != "" {
+		dataSource = config.DataSource
+	} else {
 		dataSource, err = sqlquery.BuildDataSourceString(config.Driver, config.DataSourceConfig)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		dataSource = config.DataSource
 	}
 
 	receiver := &logsReceiver{
