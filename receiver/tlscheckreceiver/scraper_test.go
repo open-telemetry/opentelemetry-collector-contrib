@@ -361,7 +361,7 @@ func TestValidateEndpoint(t *testing.T) {
 		{
 			desc:        "port out of range",
 			endpoint:    "example.com:67000",
-			expectedErr: "provided port is out of valid range (1-65535): 67000",
+			expectedErr: "provided port is out of valid range [1, 65535]: 67000",
 		},
 	}
 
