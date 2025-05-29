@@ -4,14 +4,19 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"encoding/hex"
 	"math"
+	"unicode/utf8"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
@@ -81,12 +86,14 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 }
 
 // getPromExemplarsV2 returns a slice of writev2.Exemplar from pdata exemplars.
-func getPromExemplarsV2[T exemplarType](pt T) []writev2.Exemplar {
+func getPromExemplarsV2[T exemplarType](pt T, c *prometheusConverterV2) []writev2.Exemplar {
 	promExemplars := make([]writev2.Exemplar, 0, pt.Exemplars().Len())
 	for i := 0; i < pt.Exemplars().Len(); i++ {
 		exemplar := pt.Exemplars().At(i)
-
+		exemplarRunes := 0
 		var promExemplar writev2.Exemplar
+		traceAndSpanLabels := labels.Labels{}
+		attrLabels := labels.Labels{}
 
 		switch exemplar.ValueType() {
 		case pmetric.ExemplarValueTypeInt:
@@ -100,7 +107,44 @@ func getPromExemplarsV2[T exemplarType](pt T) []writev2.Exemplar {
 				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 			}
 		}
-		// TODO append labels to promExemplar.Labels
+
+		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
+			val := hex.EncodeToString(traceID[:])
+			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarTraceIDKey) + utf8.RuneCountInString(val)
+			traceAndSpanLabels = append(traceAndSpanLabels, labels.Label{
+				Name:  prometheustranslator.ExemplarTraceIDKey,
+				Value: val,
+			})
+		}
+
+		if spanID := exemplar.SpanID(); !spanID.IsEmpty() {
+			val := hex.EncodeToString(spanID[:])
+			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarSpanIDKey) + utf8.RuneCountInString(val)
+			traceAndSpanLabels = append(traceAndSpanLabels, labels.Label{
+				Name:  prometheustranslator.ExemplarSpanIDKey,
+				Value: val,
+			})
+		}
+
+		attrs := exemplar.FilteredAttributes()
+		for key, value := range attrs.All() {
+			val := value.AsString()
+			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
+			attrLabels = append(attrLabels, labels.Label{
+				Name:  key,
+				Value: val,
+			})
+		}
+
+		finalLabels := traceAndSpanLabels
+
+		if exemplarRunes <= maxExemplarRunes {
+			// only append filtered attributes if it does not cause exemplar
+			// labels to exceed the max number of runes
+			finalLabels = append(finalLabels, attrLabels...)
+		}
+
+		promExemplar.LabelsRefs = c.symbolTable.SymbolizeLabels(finalLabels, promExemplar.LabelsRefs)
 
 		promExemplars = append(promExemplars, promExemplar)
 	}
