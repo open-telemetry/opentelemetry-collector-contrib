@@ -68,7 +68,8 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver: "mydriver",
+					Driver:     "mydriver",
+					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
 					DataSourceConfig: sqlquery.DataSourceConfig{
 						Host:     "localhost",
 						Port:     5432,
@@ -144,17 +145,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource_config.host' must be specified",
-		},
-		{
-			fname:        "config-invalid-missing-datasource-port.yaml",
-			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource_config.port' must be specified",
-		},
-		{
-			fname:        "config-invalid-missing-datasource-database.yaml",
-			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource_config.database' must be specified",
+			errorMessage: "'datasource' must be specified",
 		},
 		{
 			fname: "config-logs.yaml",
@@ -192,7 +183,8 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver: "mydriver",
+					Driver:     "mydriver",
+					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
 					DataSourceConfig: sqlquery.DataSourceConfig{
 						Host:     "localhost",
 						Port:     5432,
