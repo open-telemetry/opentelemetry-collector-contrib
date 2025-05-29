@@ -518,12 +518,14 @@ processors:
 
 This table describes the reliability and outcome under different scenarios.
 
-| Setup                                                             | Elasticsearch unreachable        | Elasticsearch _bulk returning HTTP 500s                                                    | Collector crash                      |
-|-------------------------------------------------------------------|----------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------|
-| (`batcher::enabled`: true / false) AND (no queue / in memory queue) | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   |
-| (`batcher::enabled`: true / false) AND (persistent queue)           | Retry | If status code is configured in `retry::retry_on_status`, retry | No data loss (including requests being retried), at least once delivery |
-| (`batcher::enabled`: nil) AND (no queue / in memory queue)          | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   |
-| (`batcher::enabled`: nil) AND (persistent queue)                    | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   |
+| Setup                                                             | Elasticsearch unreachable        | Elasticsearch _bulk returning HTTP 500s                                                    | Collector crash                      | Elasticsearch backpressure |
+|-------------------------------------------------------------------|----------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------|--------------------------------------|
+| (`batcher::enabled`: true / false) AND no queue | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   | Propagated directly up the pipeline |
+| (`batcher::enabled`: true / false) AND in-memory queue | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   | Propagated up the pipeline if queue is full |
+| (`batcher::enabled`: true / false) AND persistent queue           | Retry | If status code is configured in `retry::retry_on_status`, retry | No data loss (including requests being retried), at least once delivery | Propagated up the pipeline if queue is full |
+| (`batcher::enabled`: nil) AND no queue          | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   | Propagated up the pipeline when all bulk indexer buffers is full |
+| (`batcher::enabled`: nil) AND in-memory queue)          | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   | Propagated up the pipeline when all bulk indexer buffers and queue are full |
+| (`batcher::enabled`: nil) AND persistent queue                    | Retry | If status code is configured in `retry::retry_on_status`, retry | Complete data loss                   | Propagated up the pipeline when all bulk indexer buffers and queue are full |
 
 Note: Retries are always subject to `retry::enabled` and `retry::max_retries`.
 
