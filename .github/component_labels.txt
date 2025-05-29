@@ -22,7 +22,6 @@ connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
@@ -317,6 +316,7 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 connector/countconnector connector/count
+exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
 exporter/opensearchexporter exporter/opensearch
