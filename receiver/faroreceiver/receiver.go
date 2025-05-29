@@ -128,11 +128,11 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 
 	r.shutdownWg.Add(1)
 	go func() {
+		defer r.shutdownWg.Done()
 		if err := r.serverHTTP.Serve(listener); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			r.settings.Logger.Error("Failed to start HTTP server", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-		r.shutdownWg.Done()
 	}()
 
 	r.settings.Logger.Info("HTTP server started", zap.String("address", r.serverHTTP.Addr))
