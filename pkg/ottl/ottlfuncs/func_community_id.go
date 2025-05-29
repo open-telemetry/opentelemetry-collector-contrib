@@ -113,7 +113,6 @@ func CommunityIDHash[K any](
 		}
 
 		// Determine a flow direction and normalize
-		var flowTuple []byte
 		srcIPBytes := srcIPAddr.To4()
 		dstIPBytes := dstIPAddr.To4()
 		srcPortForHash, dstPortForHash := uint16(srcPort), uint16(dstPort)
@@ -139,40 +138,7 @@ func CommunityIDHash[K any](
 
 		// Build the flow tuple
 		// Format: <seed:2><protocol:1><src_ip><dst_ip><src_port:2><dst_port:2>
-		flowTuple = make([]byte, 0, 2+1+len(srcIPBytes)+len(dstIPBytes)+2+2)
-
-		// Add seed (2 bytes, network order)
-		seedBytes := make([]byte, 2)
-		binary.BigEndian.PutUint16(seedBytes, seedValue)
-		flowTuple = append(flowTuple, seedBytes...)
-
-		// Add protocol (1 byte)
-		flowTuple = append(flowTuple, byte(protolValue))
-
-		// Add source and destination IPs
-		flowTuple = append(flowTuple, srcIPBytes...)
-		flowTuple = append(flowTuple, dstIPBytes...)
-
-		// Add source and destination ports (2 bytes each, network order)
-		srcPortBytes := make([]byte, 2)
-		binary.BigEndian.PutUint16(srcPortBytes, srcPortForHash)
-		flowTuple = append(flowTuple, srcPortBytes...)
-
-		dstPortBytes := make([]byte, 2)
-		binary.BigEndian.PutUint16(dstPortBytes, dstPortForHash)
-		flowTuple = append(flowTuple, dstPortBytes...)
-
-		// Generate the SHA1 hash
-		//gosec:disable G401 -- we are not using SHA1 for security, but for generating unique identifier, conflicts will be solved with the seed
-		hash := sha1.New()
-		hash.Write(flowTuple)
-		hashBytes := hash.Sum(nil)
-
-		// Encode with Base64
-		encoded := base64.StdEncoding.EncodeToString(hashBytes)
-
-		// Add version prefix (1) and return
-		return "1:" + encoded, nil
+		return generateFlowTuple(srcIPBytes, dstIPBytes, srcPortForHash, dstPortForHash, protolValue, seedValue), nil
 	}, nil
 }
 
@@ -205,10 +171,47 @@ func resolveProtocolValue(protoStr string) (int, error) {
 //	-1 if ip1 < ip2
 //	 0 if equal
 //	 1 is if ip1 > ip2
-func compareIPs(ipSource1, ipSource2 string) int {
+func compareIPs(ipSource1 string, ipSource2 string) int {
 	// skip error check since already validated
 	ip1, _ := netip.ParseAddr(ipSource1)
 	ip2, _ := netip.ParseAddr(ipSource2)
 
 	return ip1.Compare(ip2)
+}
+
+func generateFlowTuple(srcIPBytes net.IP, dstIPBytes net.IP, srcPortForHash uint16, dstPortForHash uint16, protolValue int, seedValue uint16) string {
+	flowTuple := make([]byte, 0, 2+1+len(srcIPBytes)+len(dstIPBytes)+2+2)
+
+	// Add seed (2 bytes, network order)
+	seedBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(seedBytes, seedValue)
+	flowTuple = append(flowTuple, seedBytes...)
+
+	// Add protocol (1 byte)
+	flowTuple = append(flowTuple, byte(protolValue))
+
+	// Add source and destination IPs
+	flowTuple = append(flowTuple, srcIPBytes...)
+	flowTuple = append(flowTuple, dstIPBytes...)
+
+	// Add source and destination ports (2 bytes each, network order)
+	srcPortBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(srcPortBytes, srcPortForHash)
+	flowTuple = append(flowTuple, srcPortBytes...)
+
+	dstPortBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(dstPortBytes, dstPortForHash)
+	flowTuple = append(flowTuple, dstPortBytes...)
+
+	// Generate the SHA1 hash
+	//gosec:disable G401 -- we are not using SHA1 for security, but for generating unique identifier, conflicts will be solved with the seed
+	hash := sha1.New()
+	hash.Write(flowTuple)
+	hashBytes := hash.Sum(nil)
+
+	// Encode with Base64
+	encoded := base64.StdEncoding.EncodeToString(hashBytes)
+
+	// Add version prefix (1) and return
+	return "1:" + encoded
 }
