@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -60,6 +61,8 @@ type Config struct {
 
 	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
 	ErrorMode ErrorMode           `mapstructure:"error_mode"`
+
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
