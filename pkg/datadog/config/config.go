@@ -372,6 +372,7 @@ func CreateDefaultConfig() component.Config {
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
+			sourceTimeout:  25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 		},
 	}
 }
