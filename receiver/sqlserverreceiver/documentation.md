@@ -555,7 +555,7 @@ top query
 | sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int |
 | server.address | The network address of the server hosting the database. | Any Str |
 | server.port | The port number on which the server is listening. | Any Int |
-| db.server.name | The name of the server hosting the database. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
 
 ## Resource Attributes
 
