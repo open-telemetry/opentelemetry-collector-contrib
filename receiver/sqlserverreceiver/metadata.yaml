@@ -219,7 +219,6 @@ attributes:
     description: Login name associated with the SQL Server session.
     type: string
 
-
 events:
   db.server.top_query:
     enabled: true
