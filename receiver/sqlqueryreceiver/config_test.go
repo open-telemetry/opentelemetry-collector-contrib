@@ -226,6 +226,44 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "aggregation=cumulative but data_type=gauge does not support aggregation",
 		},
+		{
+			fname: "config-both-datasource.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:     "mysql",
+					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					DataSourceConfig: sqlquery.DataSourceConfig{
+						Host:     "localhost",
+						Port:     5432,
+						Database: "mydb",
+						Username: "me",
+						Password: "s3cr3t",
+					},
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
