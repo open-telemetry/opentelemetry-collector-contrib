@@ -6,6 +6,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.33.0
 	go.opentelemetry.io/collector/component/componenttest v0.127.0
+	go.opentelemetry.io/collector/config/configopaque v1.33.0
 	go.opentelemetry.io/collector/pdata v1.33.0
 	go.opentelemetry.io/collector/scraper v0.127.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.127.0
