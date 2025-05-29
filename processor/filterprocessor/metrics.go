@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -34,7 +35,7 @@ type filterMetricProcessor struct {
 	logger            *zap.Logger
 }
 
-func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetricProcessor, error) {
+func newFilterMetricProcessor(set processor.Settings, cfg *Config, additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) (*filterMetricProcessor, error) {
 	var err error
 	fsp := &filterMetricProcessor{
 		logger: set.Logger,
@@ -48,7 +49,8 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
-			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, filterottl.StandardMetricFuncs(), cfg.ErrorMode, set.TelemetrySettings)
+			metricFuncs := filterottl.MergeAdditionalFuncs(filterottl.StandardMetricFuncs(), additionalMetricFuncs)
+			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, metricFuncs, cfg.ErrorMode, set.TelemetrySettings)
 			if err != nil {
 				return nil, err
 			}
