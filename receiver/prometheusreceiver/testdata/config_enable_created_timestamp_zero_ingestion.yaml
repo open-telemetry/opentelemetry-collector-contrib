@@ -1,0 +1,5 @@
+prometheus:
+  enable_created_timestamp_zero_ingestion: false
+  config:
+      scrape_config_files:
+        - ./testdata/scrape-config.yaml

@@ -53,6 +53,7 @@ func createDefaultConfig() component.Config {
 		PrometheusConfig: &PromConfig{
 			GlobalConfig: promconfig.DefaultGlobalConfig,
 		},
+		EnableCreatedTimestampZeroIngestion: true,
 	}
 }
 

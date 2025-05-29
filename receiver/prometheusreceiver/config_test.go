@@ -120,6 +120,20 @@ func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(cfg))
 }
 
+func TestValidateConfigEnableCreatedTimestampZeroIngestion(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_enable_created_timestamp_zero_ingestion.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	require.NoError(t, xconfmap.Validate(cfg))
+	assert.False(t, cfg.(*Config).EnableCreatedTimestampZeroIngestion)
+}
+
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-section.yaml"))
 	require.NoError(t, err)
