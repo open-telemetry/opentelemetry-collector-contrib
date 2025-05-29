@@ -33,6 +33,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				ClientType: clientTypeSarama,
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
@@ -81,6 +82,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
 			expected: &Config{
+				ClientType:      clientTypeSarama,
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
@@ -105,6 +107,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
 			expected: &Config{
+				ClientType:      clientTypeSarama,
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),

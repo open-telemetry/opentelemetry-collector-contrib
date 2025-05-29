@@ -5,14 +5,10 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"iter"
 
-	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -20,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
@@ -28,41 +25,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-type kafkaErrors struct {
-	count int
-	err   string
-}
+const (
+	clientTypeFranzGo = "franz-go"
+	clientTypeSarama  = "sarama"
+)
 
-func (ke kafkaErrors) Error() string {
-	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
-}
-
-type kafkaMessager[T any] interface {
-	// partitionData returns an iterator that yields key-value pairs
-	// where the key is the partition key, and the value is the pdata
-	// type (plog.Logs, etc.)
-	partitionData(T) iter.Seq2[[]byte, T]
-
-	// marshalData marshals a pdata type into onr or more messages.
-	marshalData(T) ([]marshaler.Message, error)
-
-	// getTopic returns the topic name for the given context and data.
-	getTopic(context.Context, T) string
+// Producer is an interface that abstracts the Kafka producer operations
+// to allow for different implementations (e.g., Sarama, franz-go)
+type Producer[T any] interface {
+	// ExportData sends a batch of messages to Kafka
+	ExportData(ctx context.Context, data T) error
+	// Close shuts down the producer
+	Close() error
 }
 
 type kafkaExporter[T any] struct {
 	cfg         Config
 	logger      *zap.Logger
-	newMessager func(host component.Host) (kafkaMessager[T], error)
-
-	messager kafkaMessager[T]
-	producer sarama.SyncProducer
+	newMessager func(host component.Host) (kafkaclient.Messenger[T], error)
+	producer    Producer[T]
 }
 
 func newKafkaExporter[T any](
 	config Config,
 	set exporter.Settings,
-	newMessager func(component.Host) (kafkaMessager[T], error),
+	newMessager func(component.Host) (kafkaclient.Messenger[T], error),
 ) *kafkaExporter[T] {
 	return &kafkaExporter[T]{
 		cfg:         config,
@@ -76,50 +63,43 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) error
 	if err != nil {
 		return err
 	}
-	e.messager = messager
 
-	producer, err := kafka.NewSaramaSyncProducer(
-		ctx, e.cfg.ClientConfig, e.cfg.Producer,
-		e.cfg.TimeoutSettings.Timeout,
-	)
-	if err != nil {
-		return err
+	switch e.cfg.ClientType {
+	case clientTypeFranzGo:
+		producer, err := kafka.NewFranzSyncProducer(e.cfg.ClientConfig,
+			e.cfg.Producer, e.cfg.TimeoutSettings.Timeout, e.logger,
+		)
+		if err != nil {
+			return err
+		}
+		e.producer = kafkaclient.NewFranzSyncProducer(producer, messager,
+			e.cfg.IncludeMetadataKeys,
+		)
+	case clientTypeSarama:
+		producer, err := kafka.NewSaramaSyncProducer(ctx, e.cfg.ClientConfig,
+			e.cfg.Producer, e.cfg.TimeoutSettings.Timeout,
+		)
+		if err != nil {
+			return err
+		}
+		e.producer = kafkaclient.NewSaramaSyncProducer(producer, messager,
+			e.cfg.IncludeMetadataKeys,
+		)
 	}
-	e.producer = producer
 	return nil
 }
 
-func (e *kafkaExporter[T]) Close(context.Context) error {
+func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 	if e.producer == nil {
 		return nil
 	}
-	return e.producer.Close()
+	err = e.producer.Close()
+	e.producer = nil
+	return err
 }
 
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
-	var allSaramaMessages []*sarama.ProducerMessage
-	for key, data := range e.messager.partitionData(data) {
-		partitionMessages, err := e.messager.marshalData(data)
-		if err != nil {
-			return consumererror.NewPermanent(err)
-		}
-		for i := range partitionMessages {
-			// Marshalers may set the Key, so don't override
-			// if it's set and we're not partitioning here.
-			if key != nil {
-				partitionMessages[i].Key = key
-			}
-		}
-		saramaMessages := makeSaramaMessages(partitionMessages, e.messager.getTopic(ctx, data))
-		allSaramaMessages = append(allSaramaMessages, saramaMessages...)
-	}
-	messagesWithHeaders(allSaramaMessages, metadataToHeaders(
-		ctx, e.cfg.IncludeMetadataKeys,
-	))
-	if err := e.producer.SendMessages(allSaramaMessages); err != nil {
-		return wrapKafkaProducerError(err)
-	}
-	return nil
+	return e.producer.ExportData(ctx, data)
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
@@ -129,7 +109,7 @@ func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptra
 	case "jaeger_proto", "jaeger_json":
 		config.PartitionTracesByID = false
 	}
-	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[ptrace.Traces], error) {
+	return newKafkaExporter(config, set, func(host component.Host) (kafkaclient.Messenger[ptrace.Traces], error) {
 		marshaler, err := getTracesMarshaler(config.Traces.Encoding, host)
 		if err != nil {
 			return nil, err
@@ -146,15 +126,15 @@ type kafkaTracesMessager struct {
 	marshaler marshaler.TracesMarshaler
 }
 
-func (e *kafkaTracesMessager) marshalData(td ptrace.Traces) ([]marshaler.Message, error) {
+func (e *kafkaTracesMessager) MarshalData(td ptrace.Traces) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalTraces(td)
 }
 
-func (e *kafkaTracesMessager) getTopic(ctx context.Context, td ptrace.Traces) string {
+func (e *kafkaTracesMessager) GetTopic(ctx context.Context, td ptrace.Traces) string {
 	return getTopic(ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
 }
 
-func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
+func (e *kafkaTracesMessager) PartitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
 	return func(yield func([]byte, ptrace.Traces) bool) {
 		if !e.config.PartitionTracesByID {
 			yield(nil, td)
@@ -174,7 +154,7 @@ func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, 
 }
 
 func newLogsExporter(config Config, set exporter.Settings) *kafkaExporter[plog.Logs] {
-	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[plog.Logs], error) {
+	return newKafkaExporter(config, set, func(host component.Host) (kafkaclient.Messenger[plog.Logs], error) {
 		marshaler, err := getLogsMarshaler(config.Logs.Encoding, host)
 		if err != nil {
 			return nil, err
@@ -191,15 +171,15 @@ type kafkaLogsMessager struct {
 	marshaler marshaler.LogsMarshaler
 }
 
-func (e *kafkaLogsMessager) marshalData(ld plog.Logs) ([]marshaler.Message, error) {
+func (e *kafkaLogsMessager) MarshalData(ld plog.Logs) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalLogs(ld)
 }
 
-func (e *kafkaLogsMessager) getTopic(ctx context.Context, ld plog.Logs) string {
+func (e *kafkaLogsMessager) GetTopic(ctx context.Context, ld plog.Logs) string {
 	return getTopic(ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
 }
 
-func (e *kafkaLogsMessager) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
+func (e *kafkaLogsMessager) PartitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
 		if !e.config.PartitionLogsByResourceAttributes {
 			yield(nil, ld)
@@ -217,7 +197,7 @@ func (e *kafkaLogsMessager) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.L
 }
 
 func newMetricsExporter(config Config, set exporter.Settings) *kafkaExporter[pmetric.Metrics] {
-	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[pmetric.Metrics], error) {
+	return newKafkaExporter(config, set, func(host component.Host) (kafkaclient.Messenger[pmetric.Metrics], error) {
 		marshaler, err := getMetricsMarshaler(config.Metrics.Encoding, host)
 		if err != nil {
 			return nil, err
@@ -234,15 +214,15 @@ type kafkaMetricsMessager struct {
 	marshaler marshaler.MetricsMarshaler
 }
 
-func (e *kafkaMetricsMessager) marshalData(md pmetric.Metrics) ([]marshaler.Message, error) {
+func (e *kafkaMetricsMessager) MarshalData(md pmetric.Metrics) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalMetrics(md)
 }
 
-func (e *kafkaMetricsMessager) getTopic(ctx context.Context, md pmetric.Metrics) string {
+func (e *kafkaMetricsMessager) GetTopic(ctx context.Context, md pmetric.Metrics) string {
 	return getTopic(ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
 }
 
-func (e *kafkaMetricsMessager) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
+func (e *kafkaMetricsMessager) PartitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
 	return func(yield func([]byte, pmetric.Metrics) bool) {
 		if !e.config.PartitionMetricsByResourceAttributes {
 			yield(nil, md)
@@ -268,8 +248,7 @@ type resource interface {
 	Resource() pcommon.Resource
 }
 
-func getTopic[T resource](
-	ctx context.Context,
+func getTopic[T resource](ctx context.Context,
 	signalCfg SignalConfig,
 	topicFromAttribute string,
 	resources resourceSlice[T],
@@ -291,73 +270,4 @@ func getTopic[T resource](
 		return topic
 	}
 	return signalCfg.Topic
-}
-
-func makeSaramaMessages(messages []marshaler.Message, topic string) []*sarama.ProducerMessage {
-	saramaMessages := make([]*sarama.ProducerMessage, len(messages))
-	for i, message := range messages {
-		msg := &sarama.ProducerMessage{
-			Topic: topic,
-		}
-		if message.Key != nil {
-			msg.Key = sarama.ByteEncoder(message.Key)
-		}
-		if message.Value != nil {
-			msg.Value = sarama.ByteEncoder(message.Value)
-		}
-		saramaMessages[i] = msg
-	}
-	return saramaMessages
-}
-
-func messagesWithHeaders(msg []*sarama.ProducerMessage, h []sarama.RecordHeader) {
-	if len(h) == 0 || len(msg) == 0 {
-		return
-	}
-	for i := range msg {
-		if len(msg[i].Headers) == 0 {
-			msg[i].Headers = h
-			continue
-		}
-		msg[i].Headers = append(msg[i].Headers, h...)
-	}
-}
-
-func metadataToHeaders(ctx context.Context, keys []string) []sarama.RecordHeader {
-	if len(keys) == 0 {
-		return nil
-	}
-	info := client.FromContext(ctx)
-	headers := make([]sarama.RecordHeader, 0, len(keys))
-	for _, key := range keys {
-		valueSlice := info.Metadata.Get(key)
-		for _, v := range valueSlice {
-			headers = append(headers, sarama.RecordHeader{
-				Key:   []byte(key),
-				Value: []byte(v),
-			})
-		}
-	}
-	return headers
-}
-
-func wrapKafkaProducerError(err error) error {
-	var prodErr sarama.ProducerErrors
-	if !errors.As(err, &prodErr) || len(prodErr) == 0 {
-		return err
-	}
-
-	var areConfigErrs bool
-	var confErr sarama.ConfigurationError
-	for _, producerErr := range prodErr {
-		if areConfigErrs = errors.As(producerErr.Err, &confErr); !areConfigErrs {
-			break
-		}
-	}
-
-	if areConfigErrs {
-		return consumererror.NewPermanent(confErr)
-	}
-
-	return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
 }

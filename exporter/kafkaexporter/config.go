@@ -16,6 +16,7 @@ var _ component.Config = (*Config)(nil)
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
+	ClientType                string                          `mapstructure:"client_type"`
 	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -102,6 +103,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		if zeroConfig.Traces.Encoding == "" {
 			c.Traces.Encoding = c.Encoding
 		}
+	}
+	if c.ClientType == "" {
+		c.ClientType = clientTypeSarama // Default to Sarama
 	}
 	return conf.Unmarshal(c)
 }

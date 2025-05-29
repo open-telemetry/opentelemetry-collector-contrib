@@ -20,9 +20,14 @@ processors for higher throughput and resiliency. Message payload encoding is con
 
 ## Configuration settings
 
+> [!WARNING]
+> The `client_type = "franz-go"` config is experimental and may change without notice.
+
 There are no required settings.
 
 The following settings can be optionally configured:
+
+- `client_type` (default = "sarama"): The client type to use for the exporter. Supported values are `sarama` and `franz-go`. The `sarama` client is the client that's been in use for a long time, while the `franz-go` client is a newer implementation with better performance, broader KIP support. `franz-go` is up to 2x faster than `sarama`.
 - `brokers` (default = localhost:9092): The list of kafka brokers.
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
