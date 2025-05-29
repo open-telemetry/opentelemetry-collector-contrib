@@ -6,7 +6,6 @@ package ottllog
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
@@ -469,7 +468,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
-			setStatements: []string{`set(attributes["arr_str"], ["str"])`},
+			setStatements: []string{`set(attributes["arr_str"], ["new"])`},
 			getStatement:  `attributes["arr_str"]`,
 		},
 		{
@@ -553,7 +552,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
-			setStatements: []string{`set(attributes["arr_bytes"], [[9, 6, 4]])`},
+			setStatements: []string{`set(attributes["arr_bytes"], [0x090604])`},
 			getStatement:  `attributes["arr_bytes"]`,
 		},
 		{
@@ -576,7 +575,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
-			setStatements: []string{`set(attributes["pMap"], {"k1": "string", "k2": {}})`},
+			setStatements: []string{`set(attributes["pMap"], {"k2": {"k1": "string"}})`},
 			getStatement:  `attributes["pMap"]`,
 		},
 		{
@@ -599,7 +598,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
-			setStatements: []string{`set(attributes["map"], {"k1": "string", "k2": {}})`},
+			setStatements: []string{`set(attributes["map"], {"k2": {"k1": "string"}})`},
 			getStatement:  `attributes["map"]`,
 		},
 		{
@@ -656,7 +655,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
-			setStatements: []string{`set(attributes["new"], ["", "", ["new"]])`},
+			setStatements: []string{`set(attributes["new"], [nil, nil, ["new"]])`},
 			getStatement:  `attributes["new"][2][0]`,
 		},
 		{
@@ -687,29 +686,37 @@ func Test_newPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name+"_convertion", func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
-
 			logParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
 
-			var tCtx TransformContext
-			for _, setStatement := range tt.setStatements {
-				fmt.Println(setStatement)
-				statement, err := logParser.ParseStatement(setStatement)
-				require.NoError(t, err)
+			log, scope, resource := createTelemetry(tt.bodyType)
+			tCtx := NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
-				tCtx = constructLogTransformContextEditors()
-				_, executed, err := statement.Execute(context.Background(), tCtx)
-				require.NoError(t, err)
-				assert.True(t, executed)
-			}
+			statement, err := logParser.ParseStatement(tt.setStatements[0])
+			require.NoError(t, err)
 
+			_, executed, err := statement.Execute(context.Background(), tCtx)
+			require.NoError(t, err)
+			assert.True(t, executed)
+
+			exLog, exScope, exResource := createTelemetry(tt.bodyType)
+			exCache := pcommon.NewMap()
+			tt.modified(exLog, exScope, exResource, exCache)
+
+			assert.Equal(t, exLog, log)
+			assert.Equal(t, exScope, scope)
+			assert.Equal(t, exResource, resource)
+			assert.Equal(t, exCache, exCache)
+
+			// Verify getter
+			log, scope, resource = createTelemetry(tt.bodyType)
+			tCtx = NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			getExpression, err := logParser.ParseValueExpression(tt.getStatement)
 			require.NoError(t, err)
 			require.NotNil(t, getExpression)
 			getResult, err := getExpression.Eval(context.Background(), tCtx)
 
-			//verify set statement execution worked
 			assert.NoError(t, err)
-			assert.Equal(t, tt.newVal, getResult)
+			assert.Equal(t, tt.orig, getResult)
 		})
 	}
 
