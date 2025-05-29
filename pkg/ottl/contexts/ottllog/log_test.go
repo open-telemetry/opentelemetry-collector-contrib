@@ -684,7 +684,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name+"_convertion", func(t *testing.T) {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			logParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
 
@@ -757,9 +757,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	ctx := NewTransformContext(logRec, instrumentationScope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		expected any
+		name         string
+		path         ottl.Path[TransformContext]
+		expected     any
+		getStatement string
 	}{
 		{
 			name: "resource",
@@ -771,7 +772,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					},
 				},
 			}},
-			expected: "val",
+			expected:     "val",
+			getStatement: `resource.attributes["str"]`,
 		},
 		{
 			name: "resource with context",
@@ -780,18 +782,37 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					S: ottltest.Strp("str"),
 				},
 			}},
-			expected: "val",
+			expected:     "val",
+			getStatement: `resource.attributes["str"]`,
 		},
 		{
-			name:     "instrumentation_scope",
-			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope",
+			path:         &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 		{
-			name:     "instrumentation_scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope with context",
+			path:         &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
+	}
+
+	settings := componenttest.NewNopTelemetrySettings()
+	logParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			getExpression, err := logParser.ParseValueExpression(tt.getStatement)
+			require.NoError(t, err)
+			require.NotNil(t, getExpression)
+			getResult, err := getExpression.Eval(context.Background(), ctx)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, getResult)
+		})
 	}
 
 	for _, tt := range tests {
