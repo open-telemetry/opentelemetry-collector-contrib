@@ -1787,9 +1787,10 @@ func (m *metricSqlserverPageLifeExpectancy) init() {
 	m.data.SetDescription("Time a page will stay in the buffer pool.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pagePerformanceObjectsAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1797,6 +1798,7 @@ func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("page.performance_objects", pagePerformanceObjectsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3290,8 +3292,8 @@ func (mb *MetricsBuilder) RecordSqlserverPageLazyWriteRateDataPoint(ts pcommon.T
 }
 
 // RecordSqlserverPageLifeExpectancyDataPoint adds a data point to sqlserver.page.life_expectancy metric.
-func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverPageLifeExpectancy.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.Timestamp, val int64, pagePerformanceObjectsAttributeValue string) {
+	mb.metricSqlserverPageLifeExpectancy.recordDataPoint(mb.startTime, ts, val, pagePerformanceObjectsAttributeValue)
 }
 
 // RecordSqlserverPageLookupRateDataPoint adds a data point to sqlserver.page.lookup.rate metric.

@@ -159,7 +159,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
+			mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1, "page.performance_objects-val")
 
 			allMetricsCount++
 			mb.RecordSqlserverPageLookupRateDataPoint(ts, 1)
@@ -661,6 +661,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("page.performance_objects")
+					assert.True(t, ok)
+					assert.Equal(t, "page.performance_objects-val", attrVal.Str())
 				case "sqlserver.page.lookup.rate":
 					assert.False(t, validatedMetrics["sqlserver.page.lookup.rate"], "Found a duplicate in the metrics slice: sqlserver.page.lookup.rate")
 					validatedMetrics["sqlserver.page.lookup.rate"] = true
