@@ -15,7 +15,7 @@ issues: [40373]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: 
+subtext: |
   - This fixes a bug on Kubernetes daemonset deployments where collector hangs/reboots on startup.
   - This configuration option already existed but was not available for customer configuration.
 
