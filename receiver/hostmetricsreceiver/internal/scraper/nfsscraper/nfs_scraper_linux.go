@@ -249,7 +249,7 @@ func getNfsdStats() (*NfsdStats, error) {
 }
 
 func parseNfsNetStats(values *[]uint64) (*NfsNetStats, error) {
-	if len(*values) != 4 {
+	if len(*values) < 4 {
 		return nil, errors.New("parsing nfs client network stats: unexpected field count")
 	}
 
@@ -262,7 +262,7 @@ func parseNfsNetStats(values *[]uint64) (*NfsNetStats, error) {
 }
 
 func parseNfsRPCStats(values *[]uint64) (*NfsRPCStats, error) {
-	if len(*values) != 3 {
+	if len(*values) < 3 {
 		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
 	}
 
@@ -274,7 +274,7 @@ func parseNfsRPCStats(values *[]uint64) (*NfsRPCStats, error) {
 }
 
 func parseNfsdNetStats(values *[]uint64) (*NfsdNetStats, error) {
-	if len(*values) != 4 {
+	if len(*values) < 4 {
 		return nil, errors.New("parsing nfs server network stats: unexpected field count")
 	}
 
@@ -286,8 +286,51 @@ func parseNfsdNetStats(values *[]uint64) (*NfsdNetStats, error) {
 	}, nil
 }
 
+func parseNfsdRepcacheStats(values *[]uint64) (*NfsdRepcacheStats, error) {
+	if len(*values) < 3 {
+		return nil, errors.New("parsing nfs server repcache stats: unexpected field count")
+	}
+
+	return &NfsdRepcacheStats{
+		Hits:    (*values)[0],
+		Misses:  (*values)[1],
+		Nocache: (*values)[2],
+	}, nil
+}
+
+func parseNfsdFhStats(values *[]uint64) (*NfsdFhStats, error) {
+	if len(*values) < 1 {
+		return nil, errors.New("parsing nfs server fh stats: unexpected field count")
+	}
+
+	return &NfsdFhStats{
+		Stale: (*values)[0],
+	}, nil
+}
+
+func parseNfsdIoStats(values *[]uint64) (*NfsdIoStats, error) {
+	if len(*values) < 2 {
+		return nil, errors.New("parsing nfs server io stats: unexpected field count")
+	}
+
+	return &NfsdIoStats{
+		Read:  (*values)[0],
+		Write: (*values)[1],
+	}, nil
+}
+
+func parseNfsdThreadStats(values *[]uint64) (*NfsdThreadStats, error) {
+	if len(*values) < 1 {
+		return nil, errors.New("parsing nfs server io stats: unexpected field count")
+	}
+
+	return &NfsdThreadStats{
+		Threads: (*values)[0],
+	}, nil
+}
+
 func parseNfsdRPCStats(values *[]uint64) (*NfsdRPCStats, error) {
-	if len(*values) != 5 {
+	if len(*values) < 5 {
 		return nil, errors.New("parsing nfs server RPC stats: unexpected field count")
 	}
 
@@ -404,6 +447,30 @@ func parseNfsdStats(f io.Reader) (*NfsdStats, error) {
 
 		var parse func(*[]uint64) error
 		switch stattype := fields[0]; stattype {
+		case "rc":
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsdRepcacheStats, err = parseNfsdRepcacheStats(values)
+				return err
+			}
+		case "fh":
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsdFhStats, err = parseNfsdFhStats(values)
+				return err
+			}
+		case "io":
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsdIoStats, err = parseNfsdIoStats(values)
+				return err
+			}
+		case "th":
+			parse = func(values *[]uint64) error {
+				var err error
+				nfsStats.NfsdThreadStats, err = parseNfsdThreadStats(values)
+				return err
+			}
 		case "net":
 			parse = func(values *[]uint64) error {
 				var err error
