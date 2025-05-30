@@ -134,7 +134,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "server.address-val", 11, "db.server.name-val")
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "server.address-val", 11, "db.system.name-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
@@ -214,9 +214,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("server.port")
 					assert.True(t, ok)
 					assert.EqualValues(t, 11, attrVal.Int())
-					attrVal, ok = lr.Attributes().Get("db.server.name")
+					attrVal, ok = lr.Attributes().Get("db.system.name")
 					assert.True(t, ok)
-					assert.Equal(t, "db.server.name-val", attrVal.Str())
+					assert.Equal(t, "db.system.name-val", attrVal.Str())
 				}
 			}
 		})
