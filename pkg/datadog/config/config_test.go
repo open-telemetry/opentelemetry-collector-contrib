@@ -739,7 +739,7 @@ func TestLoadConfig(t *testing.T) {
 					ReporterPeriod: 10 * time.Minute,
 				},
 				HostnameDetectionTimeout: 25 * time.Second,
-				OnlyMetadata: false,
+				OnlyMetadata:             false,
 			},
 		},
 	}
