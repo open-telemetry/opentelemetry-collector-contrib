@@ -5,12 +5,11 @@ package opensearchexporter
 
 import (
 	"context"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -39,6 +38,21 @@ func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = "https://opensearch.example.com:9200"
+	})
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.TODO()))
+}
+
+func TestFactory_CreateLogs_DateFormat(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "https://opensearch.example.com:9200"
+		cfg.LogsIndex = "testlog-%{yyyy}"
+		cfg.LogDateFormat = true
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(context.Background(), params, cfg)

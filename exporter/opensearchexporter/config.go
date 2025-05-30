@@ -24,6 +24,8 @@ const (
 
 	// defaultMappingMode value is used when component.Config.MappingSettings.Mode is not set.
 	defaultMappingMode = "ss4o"
+
+	defaultLogDateFormat = false
 )
 
 // Config defines configuration for OpenSearch exporter.
@@ -44,6 +46,8 @@ type Config struct {
 	// https://opensearch.org/docs/latest/im-plugin/index/
 	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
 	LogsIndex string `mapstructure:"logs_index"`
+
+	LogDateFormat bool `mapstructure:"log_date_format"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.

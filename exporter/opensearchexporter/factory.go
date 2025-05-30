@@ -35,6 +35,7 @@ func newDefaultConfig() component.Config {
 		Namespace:        defaultNamespace,
 		BulkAction:       defaultBulkAction,
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		LogDateFormat:    defaultLogDateFormat,
 		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
 	}
 }

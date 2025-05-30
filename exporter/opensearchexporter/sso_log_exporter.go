@@ -6,6 +6,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"go.opentelemetry.io/collector/component"
@@ -37,7 +38,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 
 	return &logExporter{
 		telemetry:    set.TelemetrySettings,
-		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex),
+		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex, cfg.LogDateFormat),
 		bulkAction:   cfg.BulkAction,
 		httpSettings: cfg.ClientConfig,
 		model:        model,
@@ -70,10 +71,42 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return indexer.joinedError()
 }
 
-func getIndexName(dataset, namespace, index string) string {
+func getIndexName(dataset, namespace, index string, dateformat bool) string {
+	var t time.Time
+	if dateformat {
+		replacer := strings.NewReplacer(
+			"%{yyyy}", t.Format("2006"),
+			"%{yy}", t.Format("06"),
+			"%{mm}", t.Format("01"),
+			"%{dd}", t.Format("02"),
+			"%{yyyy.mm.dd}", t.Format("2006.01.02"),
+			"%{yy.mm.dd}", t.Format("06.01.02"),
+			"%{y}", t.Format("06"),
+			"%{m}", t.Format("01"),
+			"%{d}", t.Format("02"),
+		)
+		return replacer.Replace(index)
+	}
+
 	if len(index) != 0 {
 		return index
 	}
 
 	return strings.Join([]string{"ss4o_logs", dataset, namespace}, "-")
+}
+
+// 예시: index 설정에 시간 포맷 적용
+func formatIndexName(indexPattern string, t time.Time) string {
+	replacer := strings.NewReplacer(
+		"%{yyyy}", t.Format("2006"),
+		"%{yy}", t.Format("06"),
+		"%{mm}", t.Format("01"),
+		"%{dd}", t.Format("02"),
+		"%{yyyy.mm.dd}", t.Format("2006.01.02"),
+		"%{yy.mm.dd}", t.Format("06.01.02"),
+		"%{y}", t.Format("06"),
+		"%{m}", t.Format("01"),
+		"%{d}", t.Format("02"),
+	)
+	return replacer.Replace(indexPattern)
 }
