@@ -434,17 +434,6 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	settings := exportertest.NewNopSettings(metadata.Type)
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	t.Setenv("AWS_ACCESS_KEY_ID", "invalid")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "invalid")
-	t.Setenv("AWS_SESSION_TOKEN", "invalid")
-
-	// 모든 리전 소스 차단
-	t.Setenv("AWS_REGION", "")
-	t.Setenv("AWS_DEFAULT_REGION", "")
-	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
-	t.Setenv("AWS_CONFIG_FILE", "/dev/null")
-	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", "/dev/null")
 
 	ctx := context.Background()
 	exp, err := newEmfExporter(ctx, expCfg, settings)
