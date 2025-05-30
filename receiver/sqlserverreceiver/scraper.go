@@ -976,14 +976,14 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
 		commandVal := row[command]
-		cpuTimeMillisecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+		cpuTimeSecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
 		deadlockPriorityVal := s.retrieveValue(row, deadlockPriority, &errs, retrieveInt).(int64)
-		estimatedCompletionTimeMillisecondVal := s.retrieveValue(row, estimatedCompletionTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+		estimatedCompletionTimeSecondVal := s.retrieveValue(row, estimatedCompletionTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
-		lockTimeoutMillisecondVal := s.retrieveValue(row, lockTimeoutMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+		lockTimeoutSecondVal := s.retrieveValue(row, lockTimeoutMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
 		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt).(int64)
@@ -995,14 +995,14 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
-		totalElapsedTimeMillisecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
 		transactionIDVal := s.retrieveValue(row, transactionID, &errs, retrieveInt).(int64)
 		transactionIsolationLevelVal := s.retrieveValue(row, transactionIsolationLevel, &errs, retrieveInt).(int64)
 		usernameVal := row[username]
 		waitResourceVal := row[waitResource]
-		waitTimeMillisecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+		waitTimeSecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
 		waitTypeVal := row[waitType]
@@ -1036,15 +1036,15 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			dbNamespaceVal, queryTextVal, dbSystemNameVal,
 			networkPeerAddressVal, networkPeerPortVal,
 			blockSessionIDVal, contextInfoVal,
-			commandVal, cpuTimeMillisecondVal,
-			deadlockPriorityVal, estimatedCompletionTimeMillisecondVal,
-			lockTimeoutMillisecondVal, logicalReadsVal,
+			commandVal, cpuTimeSecondVal,
+			deadlockPriorityVal, estimatedCompletionTimeSecondVal,
+			lockTimeoutSecondVal, logicalReadsVal,
 			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
 			queryStartVal, readsVal,
 			requestStatusVal, rowCountVal,
 			sessionIDVal, sessionStatusVal,
-			totalElapsedTimeMillisecondVal, transactionIDVal, transactionIsolationLevelVal,
-			waitResourceVal, waitTimeMillisecondVal, waitTypeVal, writesVal, usernameVal,
+			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
+			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 		)
 
 		if !resourcesAdded {
