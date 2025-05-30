@@ -94,7 +94,7 @@ Time a page will stay in the buffer pool.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| page.performance_objects | the performance object for page life expectancy | Any Str |
+| performance_counter.object_name | Category to which this counter belongs | Any Str |
 
 ### sqlserver.page.operation.rate
 
