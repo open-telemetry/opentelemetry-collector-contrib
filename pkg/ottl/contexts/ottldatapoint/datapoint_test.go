@@ -5,6 +5,9 @@ package ottldatapoint
 
 import (
 	"context"
+	fmt "fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 	"time"
@@ -25,12 +28,14 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	newCache.PutStr("temp", "value")
 
 	tests := []struct {
-		name      string
-		path      ottl.Path[TransformContext]
-		orig      any
-		newVal    any
-		modified  func(cache pcommon.Map)
-		valueType pmetric.NumberDataPointValueType
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(cache pcommon.Map)
+		valueType    pmetric.NumberDataPointValueType
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "cache",
@@ -42,6 +47,8 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			modified: func(cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
+			setStatement: `set(cache, {"temp": "value"})`,
+			getStatement: `cache`,
 		},
 		{
 			name: "cache access",
@@ -58,6 +65,8 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			modified: func(cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
+			setStatement: `set(cache["temp"], "new value")`,
+			getStatement: `cache["temp"]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -96,6 +105,37 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			assert.Equal(t, exCache, testCache)
 		})
 	}
+
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+
+				ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				numberDataPoint = createNumberDataPointTelemetry(tt.valueType)
+
+				ctx = NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
 }
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
@@ -113,12 +153,14 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name      string
-		path      ottl.Path[TransformContext]
-		orig      any
-		newVal    any
-		modified  func(pmetric.NumberDataPoint)
-		valueType pmetric.NumberDataPointValueType
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(pmetric.NumberDataPoint)
+		valueType    pmetric.NumberDataPointValueType
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -130,6 +172,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(start_time_unix_nano, 200000000)",
+			getStatement: "start_time_unix_nano",
 		},
 		{
 			name: "start_time",
@@ -141,6 +185,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
 			},
+			setStatement: `set(start_time, Time("1970-01-01T00:00:00.2Z", "%Y-%m-%dT%H:%M:%S.%f%z"))`,
+			getStatement: `start_time`,
 		},
 		{
 			name: "time",
@@ -152,6 +198,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: `set(time, Time("1970-01-01T00:00:00.2Z", "%Y-%m-%dT%H:%M:%S.%f%z"))`,
+			getStatement: `time`,
 		},
 		{
 			name: "time_unix_nano",
@@ -163,6 +211,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(time_unix_nano, 200000000)",
+			getStatement: "time_unix_nano",
 		},
 		{
 			name: "value_double",
@@ -174,7 +224,9 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetDoubleValue(2.2)
 			},
-			valueType: pmetric.NumberDataPointValueTypeDouble,
+			valueType:    pmetric.NumberDataPointValueTypeDouble,
+			setStatement: "set(value_double, 2.2)",
+			getStatement: "value_double",
 		},
 		{
 			name: "value_int",
@@ -186,6 +238,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetIntValue(2)
 			},
+			setStatement: "set(value_int, 2)",
+			getStatement: "value_int",
 		},
 		{
 			name: "flags",
@@ -197,6 +251,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
+			setStatement: "set(flags, 1)",
+			getStatement: "flags",
 		},
 		{
 			name: "exemplars",
@@ -208,6 +264,9 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
+			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			//setStatement: "set(exemplars, 2)",
+			//getStatement: "exemplars",
 		},
 		{
 			name: "attributes",
@@ -219,6 +278,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
+			setStatement: `set(attributes, {"hello": "world"})`,
+			getStatement: `attributes`,
 		},
 		{
 			name: "attributes string",
@@ -235,6 +296,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutStr("str", "newVal")
 			},
+			setStatement: `set(attributes["str"], "newVal")`,
+			getStatement: `attributes["str"]`,
 		},
 		{
 			name: "attributes bool",
@@ -251,6 +314,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutBool("bool", false)
 			},
+			setStatement: `set(attributes["bool"], false)`,
+			getStatement: `attributes["bool"]`,
 		},
 		{
 			name: "attributes int",
@@ -267,6 +332,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutInt("int", 20)
 			},
+			setStatement: `set(attributes["int"], 20)`,
+			getStatement: `attributes["int"]`,
 		},
 		{
 			name: "attributes float",
@@ -283,6 +350,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutDouble("double", 2.4)
 			},
+			setStatement: `set(attributes["double"], 2.4)`,
+			getStatement: `attributes["double"]`,
 		},
 		{
 			name: "attributes bytes",
@@ -299,6 +368,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
+			setStatement: `set(attributes["bytes"], 0x020304)`,
+			getStatement: `attributes["bytes"]`,
 		},
 		{
 			name: "attributes array string",
@@ -318,6 +389,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["arr_str"], ["new"])`,
+			getStatement: `attributes["arr_str"]`,
 		},
 		{
 			name: "attributes array bool",
@@ -337,6 +410,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
+			setStatement: `set(attributes["arr_bool"], [false])`,
+			getStatement: `attributes["arr_bool"]`,
 		},
 		{
 			name: "attributes array int",
@@ -356,6 +431,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
+			setStatement: `set(attributes["arr_int"], [20])`,
+			getStatement: `attributes["arr_int"]`,
 		},
 		{
 			name: "attributes array float",
@@ -375,6 +452,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
+			setStatement: `set(attributes["arr_float"], [2.0])`,
+			getStatement: `attributes["arr_float"]`,
 		},
 		{
 			name: "attributes array bytes",
@@ -394,6 +473,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
+			setStatement: `set(attributes["arr_bytes"], [0x090604])`,
+			getStatement: `attributes["arr_bytes"]`,
 		},
 		{
 			name: "attributes pcommon.Map",
@@ -415,6 +496,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["pMap"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["pMap"]`,
 		},
 		{
 			name: "attributes map[string]any",
@@ -436,6 +519,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["map"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["map"]`,
 		},
 		{
 			name: "attributes nested",
@@ -462,6 +547,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
+			setStatement: `set(attributes["slice"], [{"map": "new"}])`,
+			getStatement: `attributes["slice"][0]["map"]`,
 		},
 		{
 			name: "attributes nested new values",
@@ -489,6 +576,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["new"], [nil, nil, ["new"]])`,
+			getStatement: `attributes["new"][2][0]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -527,6 +616,36 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
 		})
 	}
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+
+				ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				numberDataPoint = createNumberDataPointTelemetry(tt.valueType)
+
+				ctx = NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
 }
 
 func createNumberDataPointTelemetry(valueType pmetric.NumberDataPointValueType) pmetric.NumberDataPoint {
@@ -562,11 +681,13 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(pmetric.HistogramDataPoint)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(pmetric.HistogramDataPoint)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -578,6 +699,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(start_time_unix_nano, 200000000)",
+			getStatement: "start_time_unix_nano",
 		},
 		{
 			name: "time_unix_nano",
@@ -589,6 +712,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(time_unix_nano, 200000000)",
+			getStatement: "time_unix_nano",
 		},
 		{
 			name: "flags",
@@ -611,6 +736,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetCount(3)
 			},
+			setStatement: "set(count, 3)",
+			getStatement: "count",
 		},
 		{
 			name: "sum",
@@ -622,6 +749,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetSum(10.2)
 			},
+			setStatement: "set(sum, 10.2)",
+			getStatement: "sum",
 		},
 		{
 			name: "bucket_counts",
@@ -633,6 +762,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.BucketCounts().FromRaw([]uint64{1, 2})
 			},
+			setStatement: "set(bucket_counts, [1, 2])",
+			getStatement: "bucket_counts",
 		},
 		{
 			name: "explicit_bounds",
@@ -655,6 +786,9 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
+			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			//setStatement: "set(exemplars, 2)",
+			//getStatement: "exemplars",
 		},
 		{
 			name: "attributes",
@@ -666,6 +800,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
+			setStatement: `set(attributes, {"hello": "world"})`,
+			getStatement: `attributes`,
 		},
 		{
 			name: "attributes string",
@@ -682,6 +818,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutStr("str", "newVal")
 			},
+			setStatement: `set(attributes["str"], "newVal")`,
+			getStatement: `attributes["str"]`,
 		},
 		{
 			name: "attributes bool",
@@ -698,6 +836,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutBool("bool", false)
 			},
+			setStatement: `set(attributes["bool"], false)`,
+			getStatement: `attributes["bool"]`,
 		},
 		{
 			name: "attributes int",
@@ -714,6 +854,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutInt("int", 20)
 			},
+			setStatement: `set(attributes["int"], 20)`,
+			getStatement: `attributes["int"]`,
 		},
 		{
 			name: "attributes float",
@@ -730,6 +872,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutDouble("double", 2.4)
 			},
+			setStatement: `set(attributes["double"], 2.4)`,
+			getStatement: `attributes["double"]`,
 		},
 		{
 			name: "attributes bytes",
@@ -746,6 +890,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
+			setStatement: `set(attributes["bytes"], 0x020304)`,
+			getStatement: `attributes["bytes"]`,
 		},
 		{
 			name: "attributes array string",
@@ -765,6 +911,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["arr_str"], ["new"])`,
+			getStatement: `attributes["arr_str"]`,
 		},
 		{
 			name: "attributes array bool",
@@ -784,6 +932,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
+			setStatement: `set(attributes["arr_bool"], [false])`,
+			getStatement: `attributes["arr_bool"]`,
 		},
 		{
 			name: "attributes array int",
@@ -803,6 +953,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
+			setStatement: `set(attributes["arr_int"], [20])`,
+			getStatement: `attributes["arr_int"]`,
 		},
 		{
 			name: "attributes array float",
@@ -822,6 +974,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
+			setStatement: `set(attributes["arr_float"], [2.0])`,
+			getStatement: `attributes["arr_float"]`,
 		},
 		{
 			name: "attributes array bytes",
@@ -841,6 +995,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
+			setStatement: `set(attributes["arr_bytes"], [0x090604])`,
+			getStatement: `attributes["arr_bytes"]`,
 		},
 		{
 			name: "attributes pcommon.Map",
@@ -862,6 +1018,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["pMap"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["pMap"]`,
 		},
 		{
 			name: "attributes map[string]any",
@@ -883,6 +1041,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["map"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["map"]`,
 		},
 		{
 			name: "attributes nested",
@@ -909,6 +1069,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
+			setStatement: `set(attributes["slice"], [{"map": "new"}])`,
+			getStatement: `attributes["slice"][0]["map"]`,
 		},
 		{
 			name: "attributes nested new values",
@@ -936,6 +1098,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["new"], [nil, nil, ["new"]])`,
+			getStatement: `attributes["new"][2][0]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -972,6 +1136,35 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, histogramDataPoint)
+		})
+	}
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				histogramDataPoint := createHistogramDataPointTelemetry()
+
+				ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				histogramDataPoint = createHistogramDataPointTelemetry()
+
+				ctx = NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
 		})
 	}
 }
@@ -1015,11 +1208,13 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(pmetric.ExponentialHistogramDataPoint)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(pmetric.ExponentialHistogramDataPoint)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -1031,6 +1226,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(start_time_unix_nano, 200000000)",
+			getStatement: "start_time_unix_nano",
 		},
 		{
 			name: "time_unix_nano",
@@ -1042,6 +1239,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(time_unix_nano, 200000000)",
+			getStatement: "time_unix_nano",
 		},
 		{
 			name: "flags",
@@ -1053,6 +1252,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
+			setStatement: "set(flags, 1)",
+			getStatement: "flags",
 		},
 		{
 			name: "count",
@@ -1064,6 +1265,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetCount(3)
 			},
+			setStatement: "set(count, 3)",
+			getStatement: "count",
 		},
 		{
 			name: "sum",
@@ -1075,6 +1278,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetSum(10.2)
 			},
+			setStatement: "set(sum, 10.2)",
+			getStatement: "sum",
 		},
 		{
 			name: "scale",
@@ -1086,6 +1291,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetScale(2)
 			},
+			setStatement: "set(scale, 2)",
+			getStatement: "scale",
 		},
 		{
 			name: "zero_count",
@@ -1097,6 +1304,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetZeroCount(2)
 			},
+			setStatement: "set(zero_count, 2)",
+			getStatement: "zero_count",
 		},
 		{
 			name: "positive",
@@ -1108,6 +1317,9 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newPositive.CopyTo(datapoint.Positive())
 			},
+			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			//setStatement: "set(positive, 2)",
+			//getStatement: "positive",
 		},
 		{
 			name: "positive offset",
@@ -1122,6 +1334,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Positive().SetOffset(2)
 			},
+			setStatement: "set(positive.offset, 2)",
+			getStatement: "positive.offset",
 		},
 		{
 			name: "positive bucket_counts",
@@ -1136,6 +1350,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Positive().BucketCounts().FromRaw([]uint64{0, 1, 2})
 			},
+			setStatement: "set(positive.bucket_counts, [0, 1, 2])",
+			getStatement: "positive.bucket_counts",
 		},
 		{
 			name: "negative",
@@ -1147,6 +1363,9 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newPositive.CopyTo(datapoint.Negative())
 			},
+			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			//setStatement: "set(negative, 2)",
+			//getStatement: "negative",
 		},
 		{
 			name: "negative offset",
@@ -1161,6 +1380,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Negative().SetOffset(2)
 			},
+			setStatement: "set(negative.offset, 2)",
+			getStatement: "negative.offset",
 		},
 		{
 			name: "negative bucket_counts",
@@ -1175,6 +1396,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Negative().BucketCounts().FromRaw([]uint64{0, 1, 2})
 			},
+			setStatement: "set(negative.bucket_counts, [0, 1, 2])",
+			getStatement: "negative.bucket_counts",
 		},
 		{
 			name: "exemplars",
@@ -1186,6 +1409,9 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
+			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			//setStatement: "set(exemplars, 2)",
+			//getStatement: "exemplars",
 		},
 		{
 			name: "attributes",
@@ -1197,6 +1423,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
+			setStatement: `set(attributes, {"hello": "world"})`,
+			getStatement: `attributes`,
 		},
 		{
 			name: "attributes string",
@@ -1213,6 +1441,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutStr("str", "newVal")
 			},
+			setStatement: `set(attributes["str"], "newVal")`,
+			getStatement: `attributes["str"]`,
 		},
 		{
 			name: "attributes bool",
@@ -1229,6 +1459,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutBool("bool", false)
 			},
+			setStatement: `set(attributes["bool"], false)`,
+			getStatement: `attributes["bool"]`,
 		},
 		{
 			name: "attributes int",
@@ -1245,6 +1477,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutInt("int", 20)
 			},
+			setStatement: `set(attributes["int"], 20)`,
+			getStatement: `attributes["int"]`,
 		},
 		{
 			name: "attributes float",
@@ -1261,6 +1495,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutDouble("double", 2.4)
 			},
+			setStatement: `set(attributes["double"], 2.4)`,
+			getStatement: `attributes["double"]`,
 		},
 		{
 			name: "attributes bytes",
@@ -1277,6 +1513,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
+			setStatement: `set(attributes["bytes"], 0x020304)`,
+			getStatement: `attributes["bytes"]`,
 		},
 		{
 			name: "attributes array string",
@@ -1296,6 +1534,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["arr_str"], ["new"])`,
+			getStatement: `attributes["arr_str"]`,
 		},
 		{
 			name: "attributes array bool",
@@ -1315,6 +1555,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
+			setStatement: `set(attributes["arr_bool"], [false])`,
+			getStatement: `attributes["arr_bool"]`,
 		},
 		{
 			name: "attributes array int",
@@ -1334,6 +1576,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
+			setStatement: `set(attributes["arr_int"], [20])`,
+			getStatement: `attributes["arr_int"]`,
 		},
 		{
 			name: "attributes array float",
@@ -1353,6 +1597,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
+			setStatement: `set(attributes["arr_float"], [2.0])`,
+			getStatement: `attributes["arr_float"]`,
 		},
 		{
 			name: "attributes array bytes",
@@ -1372,6 +1618,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
+			setStatement: `set(attributes["arr_bytes"], [0x090604])`,
+			getStatement: `attributes["arr_bytes"]`,
 		},
 		{
 			name: "attributes pcommon.Map",
@@ -1393,6 +1641,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["pMap"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["pMap"]`,
 		},
 		{
 			name: "attributes map[string]any",
@@ -1414,6 +1664,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["map"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["map"]`,
 		},
 		{
 			name: "attributes nested",
@@ -1440,6 +1692,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
+			setStatement: `set(attributes["slice"], [{"map": "new"}])`,
+			getStatement: `attributes["slice"][0]["map"]`,
 		},
 		{
 			name: "attributes nested new values",
@@ -1467,6 +1721,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["new"], [nil, nil, ["new"]])`,
+			getStatement: `attributes["new"][2][0]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -1505,6 +1761,35 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			assert.Equal(t, exNumberDataPoint, expoHistogramDataPoint)
 		})
 	}
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
+
+				ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				expoHistogramDataPoint = createExpoHistogramDataPointTelemetry()
+
+				ctx = NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
+
 }
 
 func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoint {
@@ -1547,11 +1832,13 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(pmetric.SummaryDataPoint)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(pmetric.SummaryDataPoint)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -1563,6 +1850,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(start_time_unix_nano, 200000000)",
+			getStatement: "start_time_unix_nano",
 		},
 		{
 			name: "time_unix_nano",
@@ -1574,6 +1863,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(time_unix_nano, 200000000)",
+			getStatement: "time_unix_nano",
 		},
 		{
 			name: "flags",
@@ -1585,6 +1876,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			},
+			setStatement: "set(flags, 1)",
+			getStatement: "flags",
 		},
 		{
 			name: "count",
@@ -1596,6 +1889,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetCount(3)
 			},
+			setStatement: "set(count, 3)",
+			getStatement: "count",
 		},
 		{
 			name: "sum",
@@ -1607,6 +1902,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetSum(10.2)
 			},
+			setStatement: "set(sum, 10.2)",
+			getStatement: "sum",
 		},
 		{
 			name: "quantile_values",
@@ -1618,6 +1915,9 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				newQuartileValues.CopyTo(datapoint.QuantileValues())
 			},
+			//TODO how to set pmetric.SummaryDataPointValueAtQuantileSlice from a string rappresentation?
+			//setStatement: "set(quantile_values, 10.2)",
+			//getStatement: "quantile_values",
 		},
 		{
 			name: "attributes",
@@ -1629,6 +1929,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
 			},
+			setStatement: `set(attributes, {"hello": "world"})`,
+			getStatement: `attributes`,
 		},
 		{
 			name: "attributes string",
@@ -1645,6 +1947,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutStr("str", "newVal")
 			},
+			setStatement: `set(attributes["str"], "newVal")`,
+			getStatement: `attributes["str"]`,
 		},
 		{
 			name: "attributes bool",
@@ -1661,6 +1965,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutBool("bool", false)
 			},
+			setStatement: `set(attributes["bool"], false)`,
+			getStatement: `attributes["bool"]`,
 		},
 		{
 			name: "attributes int",
@@ -1677,6 +1983,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutInt("int", 20)
 			},
+			setStatement: `set(attributes["int"], 20)`,
+			getStatement: `attributes["int"]`,
 		},
 		{
 			name: "attributes float",
@@ -1693,6 +2001,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutDouble("double", 2.4)
 			},
+			setStatement: `set(attributes["double"], 2.4)`,
+			getStatement: `attributes["double"]`,
 		},
 		{
 			name: "attributes bytes",
@@ -1709,6 +2019,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
+			setStatement: `set(attributes["bytes"], 0x020304)`,
+			getStatement: `attributes["bytes"]`,
 		},
 		{
 			name: "attributes array string",
@@ -1728,6 +2040,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["arr_str"], ["new"])`,
+			getStatement: `attributes["arr_str"]`,
 		},
 		{
 			name: "attributes array bool",
@@ -1747,6 +2061,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
+			setStatement: `set(attributes["arr_bool"], [false])`,
+			getStatement: `attributes["arr_bool"]`,
 		},
 		{
 			name: "attributes array int",
@@ -1766,6 +2082,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
+			setStatement: `set(attributes["arr_int"], [20])`,
+			getStatement: `attributes["arr_int"]`,
 		},
 		{
 			name: "attributes array float",
@@ -1785,6 +2103,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
+			setStatement: `set(attributes["arr_float"], [2.0])`,
+			getStatement: `attributes["arr_float"]`,
 		},
 		{
 			name: "attributes array bytes",
@@ -1804,6 +2124,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
+			setStatement: `set(attributes["arr_bytes"], [0x090604])`,
+			getStatement: `attributes["arr_bytes"]`,
 		},
 		{
 			name: "attributes pcommon.Map",
@@ -1825,6 +2147,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["pMap"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["pMap"]`,
 		},
 		{
 			name: "attributes map[string]any",
@@ -1846,6 +2170,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["map"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["map"]`,
 		},
 		{
 			name: "attributes nested",
@@ -1872,6 +2198,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
+			setStatement: `set(attributes["slice"], [{"map": "new"}])`,
+			getStatement: `attributes["slice"][0]["map"]`,
 		},
 		{
 			name: "attributes nested new values",
@@ -1899,6 +2227,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["new"], [nil, nil, ["new"]])`,
+			getStatement: `attributes["new"][2][0]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -1935,6 +2265,35 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, summaryDataPoint)
+		})
+	}
+
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				summaryDataPoint := createSummaryDataPointTelemetry()
+
+				ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				summaryDataPoint = createSummaryDataPointTelemetry()
+
+				ctx = NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
 		})
 	}
 }
@@ -1995,11 +2354,13 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 	newMetric.SetName("new name")
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(metric pmetric.Metric)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(metric pmetric.Metric)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "metric name",
@@ -2014,6 +2375,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			modified: func(metric pmetric.Metric) {
 				metric.SetName("new name")
 			},
+			setStatement: `set(metric.name, "new name")`,
+			getStatement: `metric.name`,
 		},
 		{
 			name: "metric description",
@@ -2028,6 +2391,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			modified: func(metric pmetric.Metric) {
 				metric.SetDescription("new description")
 			},
+			setStatement: `set(metric.description, "new description")`,
+			getStatement: `metric.description`,
 		},
 		{
 			name: "metric unit",
@@ -2042,6 +2407,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			modified: func(metric pmetric.Metric) {
 				metric.SetUnit("new unit")
 			},
+			setStatement: `set(metric.unit, "new unit")`,
+			getStatement: `metric.unit`,
 		},
 		{
 			name: "metric type",
@@ -2055,6 +2422,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			newVal: int64(pmetric.MetricTypeSum),
 			modified: func(_ pmetric.Metric) {
 			},
+			setStatement: fmt.Sprintf("set(metric.type, %d)", int64(pmetric.MetricTypeSum)),
+			getStatement: `metric.type`,
 		},
 		{
 			name: "metric aggregation_temporality",
@@ -2069,6 +2438,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			},
+			setStatement: `set(metric.aggregation_temporality, 2)`,
+			getStatement: `metric.aggregation_temporality`,
 		},
 		{
 			name: "metric is_monotonic",
@@ -2083,6 +2454,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetIsMonotonic(false)
 			},
+			setStatement: `set(metric.is_monotonic, true)`,
+			getStatement: `metric.is_monotonic`,
 		},
 		{
 			name: "metric field with context",
@@ -2094,7 +2467,38 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			newVal: int64(pmetric.MetricTypeSum),
 			modified: func(_ pmetric.Metric) {
 			},
+			setStatement: fmt.Sprintf("set(metric.type, %d)", int64(pmetric.MetricTypeSum)),
+			getStatement: `metric.type`,
 		},
+	}
+
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			statement, err := stmtParser.ParseStatement(tt.setStatement)
+			require.NoError(t, err)
+
+			metric := createMetricTelemetry()
+
+			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+			_, executed, err := statement.Execute(context.Background(), ctx)
+			require.NoError(t, err)
+			assert.True(t, executed)
+
+			getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+			require.NoError(t, err)
+
+			metric = createMetricTelemetry()
+
+			ctx = NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+			getResult, err := getStatement.Eval(context.Background(), ctx)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.orig, getResult)
+		})
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2118,6 +2522,13 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			assert.Equal(t, exMetric, metric)
 		})
 	}
+}
+
+func createParser(t *testing.T) ottl.Parser[TransformContext] {
+	settings := componenttest.NewNopTelemetrySettings()
+	stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	require.NoError(t, err)
+	return stmtParser
 }
 
 func createMetricTelemetry() pmetric.Metric {
@@ -2242,9 +2653,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		pmetric.NewResourceMetrics())
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		expected any
+		name         string
+		path         ottl.Path[TransformContext]
+		expected     any
+		getStatement string
 	}{
 		{
 			name: "resource",
@@ -2256,7 +2668,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					},
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
 			name: "resource with context",
@@ -2265,27 +2678,32 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					S: ottltest.Strp("foo"),
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
-			name:     "metric",
-			path:     &pathtest.Path[TransformContext]{N: "metric", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: metric.Name(),
+			name:         "metric",
+			path:         &pathtest.Path[TransformContext]{N: "metric", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected:     metric.Name(),
+			getStatement: `metric.name`,
 		},
 		{
-			name:     "metric with context",
-			path:     &pathtest.Path[TransformContext]{C: "metric", N: "name"},
-			expected: metric.Name(),
+			name:         "metric with context",
+			path:         &pathtest.Path[TransformContext]{C: "metric", N: "name"},
+			expected:     metric.Name(),
+			getStatement: `metric.name`,
 		},
 		{
-			name:     "instrumentation_scope",
-			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope",
+			path:         &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 		{
-			name:     "instrumentation_scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope with context",
+			path:         &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 	}
 
@@ -2297,6 +2715,19 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			getExpression, err := stmtParser.ParseValueExpression(tt.getStatement)
+			require.NoError(t, err)
+			require.NotNil(t, getExpression)
+			getResult, err := getExpression.Eval(context.Background(), ctx)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, getResult)
 		})
 	}
 }
