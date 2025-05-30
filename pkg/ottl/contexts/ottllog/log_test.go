@@ -446,7 +446,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				log.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
-			//setStatement: `set(attributes["bytes"], [2, 3, 4])`, // this generates a pcommon.Slice
 			setStatement: `set(attributes["bytes"], 0x020304)`,
 			getStatement: `attributes["bytes"]`,
 		},
