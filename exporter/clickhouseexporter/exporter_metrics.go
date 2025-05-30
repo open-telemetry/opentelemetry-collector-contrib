@@ -24,20 +24,9 @@ type metricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	dsn, err := cfg.buildDSN()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := internal.NewClickhouseClient(dsn)
-	if err != nil {
-		return nil, err
-	}
-
 	tablesConfig := generateMetricTablesConfigMapper(cfg)
 
 	return &metricsExporter{
-		db:           db,
 		logger:       logger,
 		cfg:          cfg,
 		tablesConfig: tablesConfig,
@@ -46,6 +35,16 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	metrics.SetLogger(e.logger)
+
+	dsn, err := e.cfg.buildDSN()
+	if err != nil {
+		return err
+	}
+
+	e.db, err = internal.NewClickhouseClient(dsn)
+	if err != nil {
+		return err
+	}
 
 	if e.cfg.shouldCreateSchema() {
 		database := e.cfg.database()

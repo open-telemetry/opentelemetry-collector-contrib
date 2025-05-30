@@ -264,6 +264,7 @@ func TestConfig_buildDSN(t *testing.T) {
 	}
 
 	type ChOptions struct {
+		Database    string
 		Secure      bool
 		DialTimeout time.Duration
 		Compress    clickhouse.CompressionMethod
@@ -286,7 +287,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "clickhouse://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "Support tcp scheme",
@@ -296,7 +297,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "prefers database name from config over from DSN",
@@ -307,9 +308,10 @@ func TestConfig_buildDSN(t *testing.T) {
 				Database: "otel",
 			},
 			wantChOptions: ChOptions{
-				Secure: false,
+				Database: "otel",
+				Secure:   false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "clickhouse://foo:bar@127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "use database name from DSN if not set in config",
@@ -319,7 +321,8 @@ func TestConfig_buildDSN(t *testing.T) {
 				Password: "bar",
 			},
 			wantChOptions: ChOptions{
-				Secure: false,
+				Database: "otel",
+				Secure:   false,
 			},
 			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
@@ -341,7 +344,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "https://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4&secure=true",
+			want: "https://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4&secure=true",
 		},
 		{
 			name: "Preserve query parameters",
@@ -351,7 +354,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4&foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "Parse clickhouse settings",
@@ -363,7 +366,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				DialTimeout: 30 * time.Second,
 				Compress:    clickhouse.CompressionBrotli,
 			},
-			want: "https://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=br&dial_timeout=30s&secure=true",
+			want: "https://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=br&dial_timeout=30s&secure=true",
 		},
 		{
 			name: "Should respect connection parameters",
@@ -374,7 +377,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4&foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "support replace database in DSN with config to override database",
@@ -382,21 +385,24 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000/otel",
 				Database: "override",
 			},
-			want: "tcp://127.0.0.1:9000/override?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			wantChOptions: ChOptions{
+				Database: "override",
+			},
+			want: "tcp://127.0.0.1:9000/otel?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "when config option is missing, preserve async_insert false in DSN",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000?async_insert=false",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "when config option is missing, preserve async_insert true in DSN",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000?async_insert=true",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in connection params as false",
@@ -406,7 +412,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in connection params as true",
@@ -416,7 +422,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in DSN as false",
@@ -425,7 +431,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "use async_insert true config option when it is not present in DSN",
@@ -434,7 +440,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "use async_insert false config option when it is not present in DSN",
@@ -443,7 +449,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=false&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "set async_insert to true when not present in config or DSN",
@@ -451,7 +457,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "connection_params takes priority over endpoint and async_insert option.",
@@ -461,7 +467,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "use compress br config option when it is not present in DSN",
@@ -470,7 +476,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Compress: "br",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=br",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=br",
 		},
 		{
 			name: "set compress to lz4 when not present in config or DSN",
@@ -478,7 +484,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "connection_params takes priority over endpoint and compress option.",
@@ -487,7 +493,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				ConnectionParams: map[string]string{"compress": "br"},
 				Compress:         "lz4",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=br",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=br",
 		},
 		{
 			name: "include default otel product info in DSN",
@@ -495,7 +501,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
 		{
 			name: "correctly append default product info when value is included in DSN",
@@ -503,7 +509,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000?client_info_product=customProductInfo%2Fv1.2.3",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true&client_info_product=customProductInfo%2Fv1.2.3%2Cotelcol%2Ftest&compress=lz4",
+			want: "tcp://127.0.0.1:9000?async_insert=true&client_info_product=customProductInfo%2Fv1.2.3%2Cotelcol%2Ftest&compress=lz4",
 		},
 	}
 	for _, tt := range tests {
@@ -521,6 +527,9 @@ func TestConfig_buildDSN(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equalf(t, tt.wantChOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
 				assert.Equalf(t, tt.wantChOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
+				if tt.wantChOptions.Database != "" {
+					assert.Equalf(t, tt.wantChOptions.Database, cfg.database(), "Database does not match")
+				}
 				if tt.wantChOptions.Compress != 0 {
 					assert.Equalf(t, tt.wantChOptions.Compress, opts.Compression.Method, "Compress is not nil")
 				}

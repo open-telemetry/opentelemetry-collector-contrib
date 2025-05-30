@@ -28,18 +28,7 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	dsn, err := cfg.buildDSN()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := internal.NewClickhouseClient(dsn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &logsExporter{
-		db:        db,
 		insertSQL: renderInsertLogsSQL(cfg),
 		logger:    logger,
 		cfg:       cfg,
@@ -47,6 +36,16 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	dsn, err := e.cfg.buildDSN()
+	if err != nil {
+		return err
+	}
+
+	e.db, err = internal.NewClickhouseClient(dsn)
+	if err != nil {
+		return err
+	}
+
 	if e.cfg.shouldCreateSchema() {
 		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
 			return err

@@ -249,9 +249,14 @@ func (cfg *Config) tableEngineString() string {
 }
 
 // database returns the preferred database for creating tables and inserting data.
-// The DSN's database settings take precedence over the config option. Falls back to default if neither are set.
+// The config option takes precedence over the DSN's settings.
+// Falls back to default if neither are set.
 // Assumes config has passed Validate.
 func (cfg *Config) database() string {
+	if cfg.Database != "" && cfg.Database != defaultDatabase {
+		return cfg.Database
+	}
+
 	dsn, err := cfg.buildDSN()
 	if err != nil {
 		return ""
@@ -264,8 +269,6 @@ func (cfg *Config) database() string {
 
 	if dsnDB != "" && dsnDB != defaultDatabase {
 		return dsnDB
-	} else if cfg.Database != "" && cfg.Database != defaultDatabase {
-		return cfg.Database
 	}
 
 	return defaultDatabase

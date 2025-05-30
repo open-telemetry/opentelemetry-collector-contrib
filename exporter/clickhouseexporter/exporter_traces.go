@@ -29,18 +29,7 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	dsn, err := cfg.buildDSN()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := internal.NewClickhouseClient(dsn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &tracesExporter{
-		db:        db,
 		insertSQL: renderInsertTracesSQL(cfg),
 		logger:    logger,
 		cfg:       cfg,
@@ -48,6 +37,16 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	dsn, err := e.cfg.buildDSN()
+	if err != nil {
+		return err
+	}
+
+	e.db, err = internal.NewClickhouseClient(dsn)
+	if err != nil {
+		return err
+	}
+
 	if e.cfg.shouldCreateSchema() {
 		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
 			return err
