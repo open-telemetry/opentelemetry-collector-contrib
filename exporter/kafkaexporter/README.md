@@ -20,9 +20,15 @@ processors for higher throughput and resiliency. Message payload encoding is con
 
 ## Configuration settings
 
+> [!NOTE]
+> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> `exporter.kafkaexporter.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+
 There are no required settings.
 
 The following settings can be optionally configured:
+
 - `brokers` (default = localhost:9092): The list of kafka brokers.
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
