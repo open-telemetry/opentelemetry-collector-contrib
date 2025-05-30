@@ -1,0 +1,3 @@
+metricsaggregation:
+  transforms:
+    - action: update
