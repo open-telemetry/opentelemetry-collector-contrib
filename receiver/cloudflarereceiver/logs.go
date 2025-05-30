@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net"
 	"net/http"
 	"strconv"
@@ -314,7 +313,8 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutBool(attrName, v)
 				case map[string]any:
 					// Flatten the map and add each field with a prefixed key
-					flattened := flattenMap(v, attrName+l.cfg.Separator, l.cfg.Separator)
+					flattened := make(map[string]any)
+					flattenMap(v, attrName+l.cfg.Separator, l.cfg.Separator, flattened)
 					for k, val := range flattened {
 						switch v := val.(type) {
 						case string:
@@ -368,10 +368,9 @@ func severityFromStatusCode(statusCode int64) plog.SeverityNumber {
 	}
 }
 
-// flattenMap recursively flattens a map[string]interface{} into a single level map
-// with keys joined by dot.
-func flattenMap(input map[string]any, prefix string, separator string) map[string]any {
-	result := make(map[string]any)
+// flattenMap recursively flattens a map[string]any into a single level map
+// with keys joined by the specified separator
+func flattenMap(input map[string]any, prefix string, separator string, result map[string]any) {
 	for k, v := range input {
 		// Replace hyphens with underscores in the key. Content-Type becomes Content_Type
 		k = strings.ReplaceAll(k, "-", "_")
@@ -379,11 +378,9 @@ func flattenMap(input map[string]any, prefix string, separator string) map[strin
 		switch val := v.(type) {
 		case map[string]any:
 			// Recursively flatten nested maps
-			nested := flattenMap(val, newKey+separator, separator)
-			maps.Copy(result, nested)
+			flattenMap(val, newKey+separator, separator, result)
 		default:
 			result[newKey] = v
 		}
 	}
-	return result
 }
