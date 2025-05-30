@@ -36,7 +36,8 @@ type kedaScalerExporter struct {
 }
 
 type QueryBody struct {
-	Query string `json:"query"`
+	Query string   `json:"query"`
+	_     struct{} `json:"-"`
 }
 
 func newKedaScalerExporter(

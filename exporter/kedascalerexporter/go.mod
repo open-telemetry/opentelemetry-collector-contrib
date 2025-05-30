@@ -6,8 +6,8 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
 	github.com/kedacore/keda/v2 v2.17.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.127.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.127.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.127.1-0.20250528155941-4a3717978a51
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.127.1-0.20250528155941-4a3717978a51
 	github.com/prometheus/prometheus v0.302.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250528155941-4a3717978a51
@@ -77,8 +77,8 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.127.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.127.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.127.1-0.20250528155941-4a3717978a51 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -89,29 +89,29 @@ require (
 	github.com/prometheus/sigv4 v0.1.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.33.0 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.127.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.33.0 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v0.127.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.33.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.33.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.33.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.33.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.127.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.127.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.127.0 // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.127.0 // indirect
-	go.opentelemetry.io/collector/extension v1.33.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.33.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.127.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.127.0 // indirect
+	go.opentelemetry.io/collector/client v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/extension v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.127.1-0.20250528155941-4a3717978a51 // indirect
 	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250528155941-4a3717978a51 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.127.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.127.1-0.20250528155941-4a3717978a51 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.1-0.20250528155941-4a3717978a51 // indirect
-	go.opentelemetry.io/collector/pipeline v0.127.0 // indirect
-	go.opentelemetry.io/collector/receiver v1.33.0 // indirect
-	go.opentelemetry.io/collector/receiver/receivertest v0.127.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.127.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/receiver v1.33.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.127.1-0.20250528155941-4a3717978a51 // indirect
 	go.opentelemetry.io/collector/semconv v0.122.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
@@ -148,3 +148,7 @@ replace github.com/prometheus/common => github.com/prometheus/common v0.62.0
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
