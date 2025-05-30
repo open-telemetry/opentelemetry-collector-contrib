@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	faro "github.com/grafana/faro/pkg/go"
 	"go.opentelemetry.io/collector/component"
@@ -56,8 +57,10 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 }
 
 type faroReceiver struct {
-	cfg        *Config
+	cfg *Config
+
 	serverHTTP *http.Server
+	shutdownWg sync.WaitGroup
 
 	nextTraces consumer.Traces
 	nextLogs   consumer.Logs
@@ -76,10 +79,13 @@ func (r *faroReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (r *faroReceiver) Shutdown(ctx context.Context) error {
+	var err error
 	if r.serverHTTP != nil {
-		return r.serverHTTP.Shutdown(ctx)
+		err = r.serverHTTP.Shutdown(ctx)
 	}
-	return nil
+
+	r.shutdownWg.Wait()
+	return err
 }
 
 func (r *faroReceiver) RegisterTracesConsumer(tc consumer.Traces) {
@@ -120,7 +126,9 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return err
 	}
 
+	r.shutdownWg.Add(1)
 	go func() {
+		defer r.shutdownWg.Done()
 		if err := r.serverHTTP.Serve(listener); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			r.settings.Logger.Error("Failed to start HTTP server", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))

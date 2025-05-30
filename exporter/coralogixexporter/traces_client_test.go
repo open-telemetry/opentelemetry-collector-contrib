@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -213,9 +214,27 @@ type mockTracesServer struct {
 	ptraceotlp.UnimplementedGRPCServer
 	recvCount      int
 	partialSuccess *ptraceotlp.ExportPartialSuccess
+	t              testing.TB
 }
 
-func (m *mockTracesServer) Export(_ context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+func (m *mockTracesServer) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		m.t.Error("No metadata found in context")
+		return ptraceotlp.NewExportResponse(), errors.New("no metadata found")
+	}
+
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		m.t.Error("No Authorization header found")
+		return ptraceotlp.NewExportResponse(), errors.New("no authorization header")
+	}
+
+	if authHeader[0] != "Bearer test-key" {
+		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
+		return ptraceotlp.NewExportResponse(), errors.New("invalid authorization header")
+	}
+
 	m.recvCount += req.Traces().SpanCount()
 	resp := ptraceotlp.NewExportResponse()
 	if m.partialSuccess != nil {
@@ -231,7 +250,7 @@ func startMockOtlpTracesServer(tb testing.TB) (endpoint string, stopFn func(), s
 		tb.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	srv = &mockTracesServer{}
+	srv = &mockTracesServer{t: tb}
 	ptraceotlp.RegisterGRPCServer(grpcServer, srv)
 	go func() {
 		_ = grpcServer.Serve(ln)
