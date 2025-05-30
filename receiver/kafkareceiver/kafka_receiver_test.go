@@ -292,10 +292,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 	// After receiving messages, the internal metrics should be updated.
 	metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
-		// 2 because:
-		//  - the initial open
-		//  - the invalid message causes the consumer to restart, closing the partition
-		Value:      2,
+		Value:      1,
 		Attributes: attribute.NewSet(attribute.String("name", set.ID.Name())),
 	}}, metricdatatest.IgnoreTimestamp())
 
@@ -312,10 +309,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
 	metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
-		// 2 because:
-		//  - the invalid message causes the consumer to restart, closing the partition
-		//  - it re-acquires the partition, but then shutting down closes the partition again
-		Value: 2,
+		Value: 1,
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.Name()),
 		),
@@ -323,8 +317,9 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 	observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
 	logEntries := observedErrorLogs.All()
-	assert.Len(t, logEntries, 1)
+	assert.Len(t, logEntries, 2)
 	assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
+	assert.Equal(t, "failed to consume message, skipping due to message_marking config", logEntries[1].Message)
 
 	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 4, // offset of the final message
@@ -343,6 +338,104 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestReceiver_MessageMarking(t *testing.T) {
+	t.Parallel()
+	for name, testcase := range map[string]struct {
+		markAfter  bool
+		markErrors bool
+
+		errorShouldRestart bool
+	}{
+		"mark_before": {
+			markAfter: false,
+		},
+		"mark_after_success": {
+			markAfter:          true,
+			errorShouldRestart: true,
+		},
+		"mark_after_all": {
+			markAfter:  true,
+			markErrors: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+			// Send some invalid data to the otlp_spans topic so unmarshaling fails,
+			// and then send some valid data to show that the invalid data does not
+			// block the consumer.
+			traces := testdata.GenerateTraces(1)
+			data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+			require.NoError(t, err)
+			results := kafkaClient.ProduceSync(context.Background(),
+				&kgo.Record{Topic: "otlp_spans", Value: []byte("junk")},
+				&kgo.Record{Topic: "otlp_spans", Value: data},
+			)
+			require.NoError(t, results.FirstErr())
+
+			var calls atomic.Int64
+			consumer := newTracesConsumer(func(_ context.Context, received ptrace.Traces) error {
+				calls.Add(1)
+				return ptracetest.CompareTraces(traces, received)
+			})
+
+			// Only mark messages after consuming, including for errors.
+			receiverConfig.MessageMarking.After = testcase.markAfter
+			receiverConfig.MessageMarking.OnError = testcase.markErrors
+			set, tel, observedLogs := mustNewSettings(t)
+			f := NewFactory()
+			r, err := f.CreateTraces(context.Background(), set, receiverConfig, consumer)
+			require.NoError(t, err)
+			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			})
+
+			if testcase.errorShouldRestart {
+				// Verify that the consumer restarts at least once.
+				assert.Eventually(t, func() bool {
+					m, err := tel.GetMetric("otelcol_kafka_receiver_partition_start")
+					require.NoError(t, err)
+
+					dataPoints := m.Data.(metricdata.Sum[int64]).DataPoints
+					assert.Len(t, dataPoints, 1)
+					return dataPoints[0].Value > 5
+				}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
+
+				// The invalid message should block the consumer.
+				assert.Zero(t, calls.Load())
+
+				observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+				logEntries := observedErrorLogs.All()
+				require.NotEmpty(t, logEntries)
+				for _, entry := range logEntries {
+					assert.Equal(t, "failed to unmarshal message", entry.Message)
+				}
+			} else {
+				assert.Eventually(t, func() bool {
+					return calls.Load() == 1
+				}, time.Second, 100*time.Millisecond, "unmarshal error should not block consumption")
+
+				// Verify that the consumer did not restart.
+				metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
+					Value:      1,
+					Attributes: attribute.NewSet(attribute.String("name", set.ID.Name())),
+				}}, metricdatatest.IgnoreTimestamp())
+
+				observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+				logEntries := observedErrorLogs.All()
+				require.Len(t, logEntries, 2)
+				assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
+				assert.Equal(t,
+					"failed to consume message, skipping due to message_marking config",
+					logEntries[1].Message,
+				)
+			}
+		})
+	}
 }
 
 func TestNewLogsReceiver(t *testing.T) {
