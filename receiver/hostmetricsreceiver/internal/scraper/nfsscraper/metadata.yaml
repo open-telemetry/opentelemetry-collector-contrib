@@ -15,7 +15,7 @@ attributes:
   rpc.onc.version:
     enabled: true
     description: ONC/Sun RPC program version
-    type: string
+    type: int
   rpc.onc.procedure.name:
     enabled: true
     description: ONC/Sun RPC procedure name

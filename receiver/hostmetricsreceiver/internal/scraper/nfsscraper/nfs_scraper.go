@@ -60,7 +60,7 @@ func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		errs.AddPartial(nfsdMetricsLen, err)
 	}
 
-	err = s.addMetrics(&nfsStats, &nfsdStats)
+	err = s.recordMetrics(&nfsStats, &nfsdStats)
 	if err != nil {
 		errs.AddPartial(nfsdMetricsLen, err)
 	}
@@ -68,9 +68,40 @@ func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), errs.Combine()
 }
 
-func (s *scraper) addMetrics(nfsStats *NfsStats, nfsdStats *NfsdStats) error {
+func (s *scraper) recordMetrics(nfsStats *NfsStats, nfsdStats *NfsdStats) error {
 {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	s.mb.RecordSystemNfsNetCount(now, (*nfsStats.NfsNetStats).NetCount)
+	s.mb.RecordSystemNfsNetUdpCount(now, (*nfsStats.NfsNetStats).UDPCount)
+	s.mb.RecordSystemNfsNetTcpCount(now, (*nfsStats.NfsNetStats).TCPCount)
+	s.mb.RecordSystemNfsNetTcpConnectionCount(now, (*nfsStats.NfsNetStats).TCPConnectionCount)
+
+	s.mb.RecordSystemNfsRpcCount(now, (*nfsStats.NFSRPCStats).RPCCount)
+	s.mb.RecordSystemNfsRpcRetransmitCount(now, (*nfsStats.NFSRPCStats).RetransmitCount)
+	s.mb.RecordSystemNfsRpcAuthrefreshCount(now, (*nfsStats.NFSRPCStats).AuthRefreshCount)
 	
+	s.mb.RecordSystemNfsProcedureCount(now, (*nfsStats.TODO))
+	s.mb.RecordSystemNfsOperationCount(now, (*nfsStats.TODO))
+			
+	s.mb.RecordSystemNfsdRepcacheHits(now, (*nfsdStats.NfsdRepcacheStats).Hits)
+	s.mb.RecordSystemNfsdRepcacheMisses(now, (*nfsdStats.NfsdRepcacheStats).Misses)
+	s.mb.RecordSystemNfsdRepcacheNocache(now, (*nfsdStats.NfsdRepcacheStats).Nocache)
+
+	s.mb.RecordSystemNfsdFhStaleCount(now, (*nfsdStats.NfsdFhStats).Stale)
+	s.mb.RecordSystemNfsdIoReadCount(now, (*nfsdStats.NfsdIoStats).Read)
+	s.mb.RecordSystemNfsdIoWriteCount(now, (*nfsdStats.NfsdIoStats).Write)
+	s.mb.RecordSystemNfsdThreadCount(now, (*nfsdStats.NfsdThreadStats).Threads)
+	s.mb.RecordSystemNfsdNetCount(now, (*nfsdStats.NfsdNetStats).NetCount)
+	s.mb.RecordSystemNfsdNetUdpCount(now, (*nfsdStats.NfsdNetStats).UDPCount)
+	s.mb.RecordSystemNfsdNetTcpCount(now, (*nfsdStats.NfsdNetStats).TCPCount)
+	s.mb.RecordSystemNfsdNetTcpConnectionCount(now, (*nfsdStats.NfsdNetStats).TCPConnectionCount)
+	
+	s.mb.RecordSystemNfsdRpcCount(now, (*nfsdStats.NfsdRPCStats).RPCCount
+	s.mb.RecordSystemNfsdRpcBadCount(now, (*nfsdStats.NfsdRPCSats).BadCount
+	s.mb.RecordSystemNfsdRpcBadfmtCount(now, (*nfsdStats.NfsdRPCStats).BadFmtCount
+	s.mb.RecordSystemNfsdRpcBadauthCount(now, (*nfsdStats.NfsdRPCStats).BadAuthCount
+	s.mb.RecordSystemNfsdRpcBadclientCount(now, (*nfsdStats.NfsdRPCStats).BadClientCount
+	s.mb.RecordSystemNfsdProcedureCount(now, (*nfsdStats.)
+	s.mb.RecordSystemNfsdOperationCount(now, (*nfsdStats.)
 }
