@@ -169,7 +169,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "16771"
                   attributes:
-                    - key: page.performance_objects
+                    - key: performance_counter.object_name
                       value:
                         stringValue: SQLServer:Buffer Manager
                   startTimeUnixNano: "1000000"
@@ -221,7 +221,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "16771"
                   attributes:
-                    - key: page.performance_objects
+                    - key: performance_counter.object_name
                       value:
                         stringValue: SQLServer:Buffer Node
                   startTimeUnixNano: "1000000"
