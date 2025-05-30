@@ -261,12 +261,12 @@ func parseNfsNetStats(values *[]uint64) (*NfsNetStats, error) {
 	}, nil
 }
 
-func parseNfsRPCStats(values *[]uint64) (*NfsRPCStats, error) {
+func parseNfsRpcStats(values *[]uint64) (*NfsRpcStats, error) {
 	if len(*values) < 3 {
 		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
 	}
 
-	return &NfsRPCStats{
+	return &NfsRpcStats{
 		RPCCount:         (*values)[0],
 		RetransmitCount:  (*values)[1],
 		AuthRefreshCount: (*values)[2],
@@ -343,12 +343,12 @@ func parseNfsdRPCStats(values *[]uint64) (*NfsdRPCStats, error) {
 	}, nil
 }
 
-func parseNfsCallStats(nfsVersion uint, names *[]string, values *[]uint64) (*[]RPCStats, error) {
+func parseNfsCallStats(nfsVersion int64, names *[]string, values *[]uint64) (*[]CallStats, error) {
 	if len(*values) < 2 {
 		return nil, errors.New("found empty stats line")
 	}
 
-	stats := make([]RPCStats, len(*values)-1)
+	stats := make([]CallStats, len(*values)-1)
 	numCalls := (*values)[0]
 
 	if len(*values)-1 != int(numCalls) {
@@ -366,8 +366,8 @@ func parseNfsCallStats(nfsVersion uint, names *[]string, values *[]uint64) (*[]R
 		}
 
 		stats[i-1].NFSVersion = nfsVersion
-		stats[i-1].NFSProcedureName = (*names)[i-1]
-		stats[i-1].NFSProcedureCalls = calls
+		stats[i-1].NFSCallName = (*names)[i-1]
+		stats[i-1].NFSCallCount = calls
 	}
 
 	return &stats, nil
@@ -396,7 +396,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		case "rpc":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
+				nfsStats.NfsRpcStats, err = parseNfsRpcStats(values)
 				return err
 			}
 		case "proc3":
@@ -408,7 +408,9 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		case "proc4":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsV4ProcedureStats, err = parseNfsCallStats(4, &nfsV4Procedures, values)
+				// Linux kernel calls NFSv4 client operations procedures, but they're actually
+				// operations of compound procedures, per RFC7530
+				nfsStats.NfsV4OperationStats, err = parseNfsCallStats(4, &nfsV4Procedures, values)
 				return err
 			}
 		}
@@ -450,25 +452,25 @@ func parseNfsdStats(f io.Reader) (*NfsdStats, error) {
 		case "rc":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsdRepcacheStats, err = parseNfsdRepcacheStats(values)
+				nfsdStats.NfsdRepcacheStats, err = parseNfsdRepcacheStats(values)
 				return err
 			}
 		case "fh":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsdFhStats, err = parseNfsdFhStats(values)
+				nfsdStats.NfsdFhStats, err = parseNfsdFhStats(values)
 				return err
 			}
 		case "io":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsdIoStats, err = parseNfsdIoStats(values)
+				nfsdStats.NfsdIoStats, err = parseNfsdIoStats(values)
 				return err
 			}
 		case "th":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsdThreadStats, err = parseNfsdThreadStats(values)
+				nfsdStats.NfsdThreadStats, err = parseNfsdThreadStats(values)
 				return err
 			}
 		case "net":

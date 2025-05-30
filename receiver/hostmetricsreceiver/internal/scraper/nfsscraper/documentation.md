@@ -56,7 +56,7 @@ Reports the count of kernel NFSv4+ client operations
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| rpc.onc.version | ONC/Sun RPC program version | Any Str |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
 ### system.nfs.procedure.count
@@ -71,7 +71,7 @@ Reports the count of kernel NFS client procedures
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| rpc.onc.version | ONC/Sun RPC program version | Any Str |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str |
 
 ### system.nfs.rpc.authrefresh.count
@@ -166,7 +166,7 @@ Reports the count of kernel NFSv4+ server operations
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| rpc.onc.version | ONC/Sun RPC program version | Any Str |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
 ### system.nfsd.procedure.count
@@ -181,7 +181,7 @@ Reports the count of kernel NFS client procedures
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| rpc.onc.version | ONC/Sun RPC program version | Any Str |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str |
 
 ### system.nfsd.repcache.hits
