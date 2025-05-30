@@ -7,7 +7,7 @@ change_type: enhancement
 component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: add one attribute for page.life_expectancy to deduplicate data
+note: add one attribute for performance_counter.object_name to deduplicate data
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40359]
