@@ -6,43 +6,31 @@ package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 )
 
 // FranzSyncProducer is a wrapper around the franz-go client that implements
 // the Producer interface. Allowing us to use the franz-go client while
 // maintaining compatibility with the existing Kafka exporter code.
-type FranzSyncProducer[T any] struct {
+type FranzSyncProducer struct {
 	client       *kgo.Client
-	messenger    Messenger[T]
 	metadataKeys []string
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
-func NewFranzSyncProducer[T any](
-	client *kgo.Client,
-	messenger Messenger[T],
+func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
-) FranzSyncProducer[T] {
-	return FranzSyncProducer[T]{
+) FranzSyncProducer {
+	return FranzSyncProducer{
 		client:       client,
-		messenger:    messenger,
 		metadataKeys: metadataKeys,
 	}
 }
 
 // ExportData sends a batch of messages to Kafka
-func (p FranzSyncProducer[T]) ExportData(ctx context.Context, data T) error {
-	messages, err := partitionMessages(ctx,
-		data, p.messenger, makeFranzMessages,
-	)
-	if err != nil || len(messages) == 0 {
-		return err
-	}
+func (p FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
+	messages := makeFranzMessages(msgs)
 	setMessageHeaders(ctx, messages, p.metadataKeys,
 		func(key string, value []byte) kgo.RecordHeader {
 			return kgo.RecordHeader{Key: key, Value: value}
@@ -54,7 +42,6 @@ func (p FranzSyncProducer[T]) ExportData(ctx context.Context, data T) error {
 	var errs []error
 	for _, r := range result {
 		if r.Err != nil {
-			fmt.Println(r.Err.Error())
 			errs = append(errs, r.Err)
 		}
 	}
@@ -62,20 +49,23 @@ func (p FranzSyncProducer[T]) ExportData(ctx context.Context, data T) error {
 }
 
 // Close shuts down the producer and flushes any remaining messages.
-func (p FranzSyncProducer[T]) Close() error {
+func (p FranzSyncProducer) Close() error {
 	p.client.Close()
 	return nil
 }
 
-func makeFranzMessages(messages []marshaler.Message, topic string) []*kgo.Record {
-	msgs := make([]*kgo.Record, len(messages))
-	for i, message := range messages {
-		msgs[i] = &kgo.Record{Topic: topic}
-		if message.Key != nil {
-			msgs[i].Key = message.Key
-		}
-		if message.Value != nil {
-			msgs[i].Value = message.Value
+func makeFranzMessages(messages Messages) []*kgo.Record {
+	msgs := make([]*kgo.Record, 0, messages.Count)
+	for _, msg := range messages.TopicMessages {
+		for _, message := range msg.Messages {
+			msg := &kgo.Record{Topic: msg.Topic}
+			if message.Key != nil {
+				msg.Key = message.Key
+			}
+			if message.Value != nil {
+				msg.Value = message.Value
+			}
+			msgs = append(msgs, msg)
 		}
 	}
 	return msgs

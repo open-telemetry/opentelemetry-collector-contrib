@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -119,8 +120,10 @@ func TestTracesPusher_ctx(t *testing.T) {
 }
 
 func TestTracesPusher_attr_Kgo(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
+	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
+
 	config := createDefaultConfig().(*Config)
-	config.ClientType = clientTypeFranzGo
 	attributeKey := "my_custom_topic_key_traces"
 	expectedTopicFromAttribute := "topic_from_traces_attr_kgo"
 	config.TopicFromAttribute = attributeKey
@@ -152,9 +155,10 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestTracesPusher_ctx_Kgo(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
+	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.ClientType = clientTypeFranzGo
 		expectedTopicFromCtx := "my_kgo_topic_from_ctx"
 		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
@@ -179,7 +183,6 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.ClientType = clientTypeFranzGo
 		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
 		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
 			componenttest.NewNopHost(), config.Traces.Topic,
@@ -575,8 +578,9 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 }
 
 func TestMetricsDataPusher_Kgo(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
+	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
-	config.ClientType = clientTypeFranzGo
 
 	exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
 		componenttest.NewNopHost(), config.Metrics.Topic,
@@ -606,8 +610,10 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 }
 
 func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
+	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
+
 	config := createDefaultConfig().(*Config)
-	config.ClientType = clientTypeFranzGo
 	attributeKey := "my_custom_topic_key_metrics"
 	expectedTopicFromAttribute := "topic_from_metrics_attr_kgo"
 	config.TopicFromAttribute = attributeKey // This applies to all signals if not overridden per signal
@@ -644,7 +650,6 @@ func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
 func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.ClientType = clientTypeFranzGo
 		expectedTopicFromCtx := "my_kgo_metrics_topic_from_ctx"
 		exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
@@ -670,7 +675,6 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.ClientType = clientTypeFranzGo
 		config.IncludeMetadataKeys = []string{"x-metrics-tenant-id", "x-metrics-req-id"}
 		exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
 			componenttest.NewNopHost(), config.Metrics.Topic,
@@ -791,8 +795,9 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 }
 
 func TestLogsDataPusher_attr_Kgo(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
+	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	config := createDefaultConfig().(*Config)
-	config.ClientType = clientTypeFranzGo
 	attributeKey := "my_custom_topic_key_logs"
 	expectedTopicFromAttribute := "topic_from_logs_attr_kgo"
 	config.TopicFromAttribute = attributeKey
@@ -824,9 +829,10 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 }
 
 func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, true))
+	defer require.NoError(t, featuregate.GlobalRegistry().Set(franzGoClientFeatureGateName, false))
 	t.Run("WithTopic", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.ClientType = clientTypeFranzGo
 		expectedTopicFromCtx := "my_kgo_logs_topic_from_ctx"
 		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
 			componenttest.NewNopHost(), expectedTopicFromCtx,
@@ -851,7 +857,6 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 
 	t.Run("WithMetadata", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.ClientType = clientTypeFranzGo
 		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
 		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
 			componenttest.NewNopHost(), config.Logs.Topic,
@@ -1211,10 +1216,11 @@ func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafk
 	// Fake starting the exporter.
 	messager, err := exp.newMessager(host)
 	require.NoError(t, err)
+	exp.messenger = messager
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, messager, cfg.IncludeMetadataKeys)
+	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
 		assert.NoError(t, exp.Close(context.Background()))
@@ -1228,10 +1234,11 @@ func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kaf
 	// Fake starting the exporter.
 	messager, err := exp.newMessager(host)
 	require.NoError(t, err)
+	exp.messenger = messager
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, messager, cfg.IncludeMetadataKeys)
+	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
 		assert.NoError(t, exp.Close(context.Background()))
@@ -1245,10 +1252,11 @@ func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaE
 	// Fake starting the exporter.
 	messager, err := exp.newMessager(host)
 	require.NoError(t, err)
+	exp.messenger = messager
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, messager, cfg.IncludeMetadataKeys)
+	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
 		assert.NoError(t, exp.Close(context.Background()))
@@ -1290,7 +1298,8 @@ func configureExporter[T any](tb testing.TB,
 	messager, err := exp.newMessager(host) // messager implements Marshaler[pmetric.Metrics]
 	require.NoError(tb, err, "failed to create messager for metrics")
 
-	exp.producer = kafkaclient.NewFranzSyncProducer(client, messager, cfg.IncludeMetadataKeys)
+	exp.messenger = messager
+	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys)
 
 	tb.Cleanup(func() { assert.NoError(tb, exp.Close(context.Background())) })
 	return cluster

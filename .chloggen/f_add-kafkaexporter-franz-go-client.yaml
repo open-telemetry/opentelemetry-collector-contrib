@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: 'kafkaexporter'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add experimental opt-in support to use franz-go in the Kafka exporter for better performance."
+note: "Add an Alpha feature gate `exporter.kafkaexporter.UseFranzGoClient` to use franz-go in the Kafka exporter for better performance."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40364]

@@ -10,39 +10,29 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 )
 
 // SaramaSyncProducer is a wrapper around the kafkaclient.Producer that implements
 // the sarama.SyncProducer interface. This allows us to use the new franz-go
 // client while maintaining compatibility with the existing Sarama-based code.
-type SaramaSyncProducer[T any] struct {
+type SaramaSyncProducer struct {
 	producer     sarama.SyncProducer
-	messenger    Messenger[T]
 	metadataKeys []string
 }
 
 // NewSaramaSyncProducer creates a new SaramaSyncProducer that wraps a kafkaclient.Producer.
-func NewSaramaSyncProducer[T any](producer sarama.SyncProducer,
-	marshaler Messenger[T],
+func NewSaramaSyncProducer(producer sarama.SyncProducer,
 	metadataKeys []string,
-) *SaramaSyncProducer[T] {
-	return &SaramaSyncProducer[T]{
+) *SaramaSyncProducer {
+	return &SaramaSyncProducer{
 		producer:     producer,
-		messenger:    marshaler,
 		metadataKeys: metadataKeys,
 	}
 }
 
 // ExportData sends multiple messages to the Kafka broker using the underlying producer.
-func (p *SaramaSyncProducer[T]) ExportData(ctx context.Context, data T) error {
-	messages, err := partitionMessages(ctx,
-		data, p.messenger, makeSaramaMessages,
-	)
-	if err != nil || len(messages) == 0 {
-		return wrapKafkaProducerError(err)
-	}
+func (p *SaramaSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
+	messages := makeSaramaMessages(msgs)
 	setMessageHeaders(ctx, messages, p.metadataKeys,
 		func(key string, value []byte) sarama.RecordHeader {
 			return sarama.RecordHeader{Key: []byte(key), Value: value}
@@ -58,19 +48,22 @@ func (p *SaramaSyncProducer[T]) ExportData(ctx context.Context, data T) error {
 
 // Close shuts down the producer and flushes any remaining messages.
 // It implements the sarama.SyncProducer interface.
-func (p *SaramaSyncProducer[T]) Close() error {
+func (p *SaramaSyncProducer) Close() error {
 	return p.producer.Close()
 }
 
-func makeSaramaMessages(messages []marshaler.Message, topic string) []*sarama.ProducerMessage {
-	msgs := make([]*sarama.ProducerMessage, len(messages))
-	for i, message := range messages {
-		msgs[i] = &sarama.ProducerMessage{Topic: topic}
-		if message.Key != nil {
-			msgs[i].Key = sarama.ByteEncoder(message.Key)
-		}
-		if message.Value != nil {
-			msgs[i].Value = sarama.ByteEncoder(message.Value)
+func makeSaramaMessages(messages Messages) []*sarama.ProducerMessage {
+	msgs := make([]*sarama.ProducerMessage, 0, messages.Count)
+	for _, msg := range messages.TopicMessages {
+		for _, message := range msg.Messages {
+			msg := &sarama.ProducerMessage{Topic: msg.Topic}
+			if message.Key != nil {
+				msg.Key = sarama.ByteEncoder(message.Key)
+			}
+			if message.Value != nil {
+				msg.Value = sarama.ByteEncoder(message.Value)
+			}
+			msgs = append(msgs, msg)
 		}
 	}
 	return msgs
