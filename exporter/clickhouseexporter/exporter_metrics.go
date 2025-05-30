@@ -84,7 +84,7 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := metrics.NewMetricsModel(e.cfg.database(), e.tablesConfig)
+	metricsMap := metrics.NewMetricsModel(e.tablesConfig, e.cfg.database())
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
