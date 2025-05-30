@@ -1262,6 +1262,24 @@ func Test_e2e_converters(t *testing.T) {
 				attributes.AppendEmpty().SetStr("foo")
 			},
 		},
+		{
+			statement: `set(attributes["indexof"], Index("opentelemetry", "telemetry"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", 4)
+			},
+		},
+		{
+			statement: `set(attributes["indexof"], Index(attributes["slices"], "name"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", -1)
+			},
+		},
+		{
+			statement: `set(attributes["indexof"], Index(attributes["slices"], "slice2"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", 1)
+			},
+		},
 	}
 
 	for _, tt := range tests {
