@@ -66,9 +66,9 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250528155941-4a3717978a51 // indirect
 	go.opentelemetry.io/collector/receiver v1.33.1-0.20250528155941-4a3717978a51 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.127.1-0.20250528155941-4a3717978a51 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
-	go.opentelemetry.io/otel/log v0.11.0 // indirect
+	go.opentelemetry.io/otel/log v0.12.2 // indirect
 	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
