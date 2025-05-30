@@ -47,16 +47,21 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	metrics.SetLogger(e.logger)
 
-	if !e.cfg.shouldCreateSchema() {
-		return nil
+	if e.cfg.shouldCreateSchema() {
+		database := e.cfg.database()
+		clusterStr := e.cfg.clusterString()
+		if err := internal.CreateDatabase(ctx, e.db, database, clusterStr); err != nil {
+			return err
+		}
+
+		ttlExpr := internal.GenerateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
+		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, clusterStr, e.cfg.tableEngineString(), ttlExpr, e.db)
+		if err != nil {
+			return err
+		}
 	}
 
-	if err := createDatabase(ctx, e.cfg); err != nil {
-		return err
-	}
-
-	ttlExpr := internal.GenerateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-	return metrics.NewMetricsTable(ctx, e.tablesConfig, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.db)
+	return nil
 }
 
 func generateMetricTablesConfigMapper(cfg *Config) metrics.MetricTablesConfigMapper {
@@ -74,11 +79,12 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		return e.db.Close()
 	}
+
 	return nil
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := metrics.NewMetricsModel(e.tablesConfig)
+	metricsMap := metrics.NewMetricsModel(e.cfg.database(), e.tablesConfig)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
@@ -112,6 +118,6 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			}
 		}
 	}
-	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
+
 	return metrics.InsertMetrics(ctx, e.db, metricsMap)
 }

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS %s %s (
+CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),

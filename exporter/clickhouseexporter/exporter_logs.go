@@ -48,6 +48,10 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 	if e.cfg.shouldCreateSchema() {
+		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
+			return err
+		}
+
 		if err := createLogsTable(ctx, e.cfg, e.db); err != nil {
 			return err
 		}
@@ -147,12 +151,16 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(sql_templates.LogsInsert, cfg.LogsTableName)
+	return fmt.Sprintf(sql_templates.LogsInsert, cfg.database(), cfg.LogsTableName)
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "TimestampTime")
-	return fmt.Sprintf(sql_templates.LogsCreateTable, cfg.LogsTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
+	return fmt.Sprintf(sql_templates.LogsCreateTable,
+		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
+		cfg.tableEngineString(),
+		ttlExpr,
+	)
 }
 
 func createLogsTable(ctx context.Context, cfg *Config, db driver.Conn) error {

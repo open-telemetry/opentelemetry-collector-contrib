@@ -100,33 +100,3 @@ func createMetricExporter(
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
-
-// TODO: move elsewhere
-
-func createDatabase(ctx context.Context, cfg *Config) error {
-	// use default database to create new database
-	if cfg.Database == defaultDatabase {
-		return nil
-	}
-
-	// We couldn't set a database in the dsn while creating the database,
-	// otherwise, there would be an exception from clickhouse
-	// TODO: we don't need to set db at all, the insert/ddl is fully qualified
-	targetDatabase := cfg.Database
-	cfg.Database = defaultDatabase
-
-	db, err := cfg.buildDB()
-	cfg.Database = targetDatabase
-	if err != nil {
-		return fmt.Errorf("can't connect to clickhouse: %w", err)
-	}
-	defer func() {
-		_ = db.Close()
-	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.clusterString())
-	_, err = db.ExecContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("create database: %w", err)
-	}
-	return nil
-}

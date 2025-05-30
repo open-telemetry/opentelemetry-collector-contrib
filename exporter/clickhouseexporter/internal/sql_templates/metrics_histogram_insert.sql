@@ -1,4 +1,4 @@
-INSERT INTO %s (
+INSERT INTO "%s"."%s" (
     ResourceAttributes,
     ResourceSchemaUrl,
     ScopeName,

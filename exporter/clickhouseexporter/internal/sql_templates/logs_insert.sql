@@ -1,4 +1,4 @@
-INSERT INTO %s (
+INSERT INTO "%s"."%s" (
     Timestamp,
     TraceId,
     SpanId,

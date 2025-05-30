@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS %s %s (
-                                     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
     ScopeVersion String CODEC(ZSTD(1)),
@@ -22,11 +22,11 @@ CREATE TABLE IF NOT EXISTS %s %s (
     NegativeOffset Int32 CODEC(ZSTD(1)),
     NegativeBucketCounts Array(UInt64) CODEC(ZSTD(1)),
     Exemplars Nested (
-                         FilteredAttributes Map(LowCardinality(String), String),
-    TimeUnix DateTime64(9),
-    Value Float64,
-    SpanId String,
-    TraceId String
+        FilteredAttributes Map(LowCardinality(String), String),
+        TimeUnix DateTime64(9),
+        Value Float64,
+        SpanId String,
+        TraceId String
     ) CODEC(ZSTD(1)),
     Flags UInt32  CODEC(ZSTD(1)),
     Min Float64 CODEC(ZSTD(1)),

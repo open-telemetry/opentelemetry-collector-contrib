@@ -4,11 +4,24 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"time"
 )
+
+const DefaultDatabase = "default"
+
+// DatabaseFromDSN returns the database specified in the DSN. Empty if unset.
+func DatabaseFromDSN(dsn string) (string, error) {
+	opt, err := clickhouse.ParseDSN(dsn)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse DSN: %w", err)
+	}
+
+	return opt.Auth.Database, nil
+}
 
 // NewClickhouseClient creates a new ClickHouse client from a DSN URL string.
 func NewClickhouseClient(dsn string) (driver.Conn, error) {
@@ -16,6 +29,9 @@ func NewClickhouseClient(dsn string) (driver.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Always connect to default database since configured database may not exist yet.
+	opt.Auth.Database = DefaultDatabase
 
 	// TODO: put enable_json_type=1 in the DSN
 	//opt.Settings["enable_json_type"] = "1"
@@ -44,4 +60,20 @@ func GenerateTTLExpr(ttl time.Duration, timeField string) string {
 	}
 
 	return ""
+}
+
+// CreateDatabase runs the DDL for creating a database, with optional cluster string
+func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr string) error {
+	if database == DefaultDatabase {
+		return nil
+	}
+
+	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", database, clusterStr)
+
+	err := db.Exec(ctx, ddl)
+	if err != nil {
+		return fmt.Errorf("create database: %w", err)
+	}
+
+	return nil
 }

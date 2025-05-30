@@ -10,7 +10,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sql_templates"
-	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
@@ -50,6 +49,10 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 	if e.cfg.shouldCreateSchema() {
+		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
+			return err
+		}
+
 		if err := createTraceTables(ctx, e.cfg, e.db); err != nil {
 			return err
 		}
@@ -176,22 +179,34 @@ func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []stri
 }
 
 func renderInsertTracesSQL(cfg *Config) string {
-	return fmt.Sprintf(strings.ReplaceAll(sql_templates.TracesInsert, "'", "`"), cfg.TracesTableName)
+	return fmt.Sprintf(sql_templates.TracesInsert, cfg.database(), cfg.TracesTableName)
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(sql_templates.TracesCreateTable, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
+	return fmt.Sprintf(sql_templates.TracesCreateTable,
+		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.tableEngineString(),
+		ttlExpr,
+	)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
-	return fmt.Sprintf(sql_templates.TracesCreateTsTable, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
+	return fmt.Sprintf(sql_templates.TracesCreateTsTable,
+		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.tableEngineString(),
+		ttlExpr,
+	)
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
-	return fmt.Sprintf(sql_templates.TracesCreateTsView, cfg.TracesTableName,
-		cfg.clusterString(), cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
+	database := cfg.database()
+	return fmt.Sprintf(sql_templates.TracesCreateTsView,
+		database, cfg.TracesTableName, cfg.clusterString(),
+		database, cfg.TracesTableName,
+		database, cfg.TracesTableName,
+	)
 }
 
 func createTraceTables(ctx context.Context, cfg *Config, db driver.Conn) error {

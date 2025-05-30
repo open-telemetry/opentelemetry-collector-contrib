@@ -4,9 +4,9 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 	"go.opentelemetry.io/collector/component"
 	"net/url"
@@ -133,6 +133,7 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = errors.Join(err, errConfigNoEndpoint)
 	}
+
 	dsn, e := cfg.buildDSN()
 	if e != nil {
 		err = errors.Join(err, e)
@@ -187,11 +188,6 @@ func (cfg *Config) buildDSN() (string, error) {
 	}
 	queryParams.Set("client_info_product", productInfo)
 
-	// Use database from config if not specified in path, or if config is not default.
-	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
-		dsnURL.Path = cfg.Database
-	}
-
 	// Override username and password if specified in config.
 	if cfg.Username != "" {
 		dsnURL.User = url.UserPassword(cfg.Username, string(cfg.Password))
@@ -200,23 +196,6 @@ func (cfg *Config) buildDSN() (string, error) {
 	dsnURL.RawQuery = queryParams.Encode()
 
 	return dsnURL.String(), nil
-}
-
-func (cfg *Config) buildDB() (*sql.DB, error) {
-	dsn, err := cfg.buildDSN()
-	if err != nil {
-		return nil, err
-	}
-
-	// ClickHouse sql driver will read clickhouse settings from the DSN string.
-	// It also ensures defaults.
-	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
-	conn, err := sql.Open(cfg.driverName, dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
 }
 
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
@@ -267,6 +246,29 @@ func (cfg *Config) tableEngineString() string {
 	}
 
 	return fmt.Sprintf("%s(%s)", engine, params)
+}
+
+// database returns the preferred database for creating tables and inserting data.
+// The DSN's database settings take precedence over the config option. Falls back to default if neither are set.
+// Assumes config has passed Validate.
+func (cfg *Config) database() string {
+	dsn, err := cfg.buildDSN()
+	if err != nil {
+		return ""
+	}
+
+	dsnDB, err := internal.DatabaseFromDSN(dsn)
+	if err != nil {
+		return ""
+	}
+
+	if dsnDB != "" && dsnDB != defaultDatabase {
+		return dsnDB
+	} else if cfg.Database != "" && cfg.Database != defaultDatabase {
+		return cfg.Database
+	}
+
+	return defaultDatabase
 }
 
 // clusterString generates the ON CLUSTER string. Returns empty string if not set.

@@ -5,7 +5,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -62,9 +61,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, cluster, engine, ttlExpr string, db driver.Conn) error {
-	for key, queryTemplate := range supportedMetricTypes {
-		query := fmt.Sprintf(queryTemplate, tablesConfig[key].Name, cluster, engine, ttlExpr)
+func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, database, cluster, engine, ttlExpr string, db driver.Conn) error {
+	for key, ddlTemplate := range supportedMetricTypes {
+		query := fmt.Sprintf(ddlTemplate, database, tablesConfig[key].Name, cluster, engine, ttlExpr)
 		if err := db.Exec(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -73,22 +72,22 @@ func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper,
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tablesConfig MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tablesConfig MetricTablesConfigMapper, database string) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsGaugeInsert, tablesConfig[pmetric.MetricTypeGauge].Name),
+			insertSQL: fmt.Sprintf(sql_templates.MetricsGaugeInsert, database, tablesConfig[pmetric.MetricTypeGauge].Name),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsSumInsert, tablesConfig[pmetric.MetricTypeSum].Name),
+			insertSQL: fmt.Sprintf(sql_templates.MetricsSumInsert, database, tablesConfig[pmetric.MetricTypeSum].Name),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsHistogramInsert, tablesConfig[pmetric.MetricTypeHistogram].Name),
+			insertSQL: fmt.Sprintf(sql_templates.MetricsHistogramInsert, database, tablesConfig[pmetric.MetricTypeHistogram].Name),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsExpHistogramInsert, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
+			insertSQL: fmt.Sprintf(sql_templates.MetricsExpHistogramInsert, database, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsSummaryInsert, tablesConfig[pmetric.MetricTypeSummary].Name),
+			insertSQL: fmt.Sprintf(sql_templates.MetricsSummaryInsert, database, tablesConfig[pmetric.MetricTypeSummary].Name),
 		},
 	}
 }
@@ -205,23 +204,6 @@ func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuant
 		values = append(values, value.Value())
 	}
 	return quantiles, values
-}
-
-// doWithTx is a copy of clickhouseexporter.doWithTx, it starts a transaction to exec SQL in fn.
-// This function is in a temporary status, after this PR get merged,
-// there will be a PR to move all db function and tool function to internal package.
-func doWithTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("db.Begin: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-	if err := fn(tx); err != nil {
-		return err
-	}
-	return tx.Commit()
 }
 
 func newPlaceholder(count int) *string {

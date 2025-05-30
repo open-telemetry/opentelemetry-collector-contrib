@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS %s %s (
+CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
                                      Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
     TraceId String CODEC(ZSTD(1)),
     SpanId String CODEC(ZSTD(1)),
