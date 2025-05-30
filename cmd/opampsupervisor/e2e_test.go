@@ -624,6 +624,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	var healthReport atomic.Value
 	var agentConfig atomic.Value
+	var lastRemoteConfigStatus atomic.Value
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -637,6 +638,9 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 					if config != nil {
 						agentConfig.Store(string(config.Body))
 					}
+				}
+				if message.RemoteConfigStatus != nil {
+					lastRemoteConfigStatus.Store(message.RemoteConfigStatus)
 				}
 
 				return &protobufs.ServerToAgent{}
@@ -684,6 +688,19 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		return false
 	}, 5*time.Second, 250*time.Millisecond, "Supervisor never reported that the Collector was unhealthy")
 
+	require.Eventually(t, func() bool {
+		lastStatus := lastRemoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		if lastStatus.GetStatus() != protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED {
+			return false
+		}
+
+		lastErr := lastStatus.GetErrorMessage()
+		// The error message should contain the last error from the agent
+		// and the last error from the agent should contain the string "doesntexist"
+		// because this is an unrecognized component.
+		return strings.Contains(lastErr, "doesntexist")
+	}, 5*time.Second, 250*time.Millisecond, "Supervisor never reported the last error from the agent")
+
 	cfg, hash, _, _ = createSimplePipelineCollectorConf(t)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
@@ -706,6 +723,15 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 
 		return false
 	}, 5*time.Second, 250*time.Millisecond, "Supervisor never reported that the Collector became healthy")
+
+	require.Eventually(t, func() bool {
+		lastStatus := lastRemoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		if lastStatus.GetStatus() != protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
+			return false
+		}
+
+		return true
+	}, 10*time.Second, 250*time.Millisecond, "Supervisor never reported that the last error from the agent was cleared")
 }
 
 func TestSupervisorConfiguresCapabilities(t *testing.T) {
