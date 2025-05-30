@@ -466,9 +466,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
-			sourceTimeout:  25 * time.Second,
 		},
-		OnlyMetadata: false,
+		HostnameDetectionTimeout: 25 * time.Second,
+		OnlyMetadata:             false,
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -542,9 +542,9 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
 					ReporterPeriod: 30 * time.Minute,
-					sourceTimeout:  25 * time.Second,
 				},
-				OnlyMetadata: false,
+				HostnameDetectionTimeout: 25 * time.Second,
+				OnlyMetadata:             false,
 			},
 		},
 		{
@@ -611,8 +611,8 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
 					ReporterPeriod: 30 * time.Minute,
-					sourceTimeout:  25 * time.Second,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
 			},
 		},
 		{
@@ -677,8 +677,8 @@ func TestLoadConfig(t *testing.T) {
 					HostnameSource: HostnameSourceConfigOrSystem,
 					Tags:           []string{"example:tag"},
 					ReporterPeriod: 30 * time.Minute,
-					sourceTimeout:  25 * time.Second,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
 			},
 		},
 		{
@@ -737,8 +737,8 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
 					ReporterPeriod: 10 * time.Minute,
-					sourceTimeout:  25 * time.Second,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
 				OnlyMetadata: false,
 			},
 		},
