@@ -261,12 +261,12 @@ func parseNfsNetStats(values *[]uint64) (*NfsNetStats, error) {
 	}, nil
 }
 
-func parseNfsRpcStats(values *[]uint64) (*NfsRpcStats, error) {
+func parseNfsRPCStats(values *[]uint64) (*NfsRPCStats, error) {
 	if len(*values) < 3 {
 		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
 	}
 
-	return &NfsRpcStats{
+	return &NfsRPCStats{
 		RPCCount:         (*values)[0],
 		RetransmitCount:  (*values)[1],
 		AuthRefreshCount: (*values)[2],
@@ -396,7 +396,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		case "rpc":
 			parse = func(values *[]uint64) error {
 				var err error
-				nfsStats.NfsRpcStats, err = parseNfsRpcStats(values)
+				nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
 				return err
 			}
 		case "proc3":
@@ -506,7 +506,16 @@ func parseNfsdStats(f io.Reader) (*NfsdStats, error) {
 		}
 
 		if parse != nil {
-			values, err := parseStringsToUint64s(fields[1:])
+			var err error
+			var values *[]uint64
+
+			if fields[0] == "th" {
+				// th has a mix of uint64 and double. the double values are obsolete (always 0.000)
+				values, err = parseStringsToUint64s(fields[1:2])
+			} else {
+				values, err = parseStringsToUint64s(fields[1:])
+			}
+
 			if err != nil {
 				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
 			}

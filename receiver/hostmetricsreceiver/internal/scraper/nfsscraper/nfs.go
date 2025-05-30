@@ -12,7 +12,7 @@ type NfsNetStats struct {
 }
 
 // nfs.rpc.* stats
-type NfsRpcStats struct {
+type NfsRPCStats struct {
 	RPCCount         uint64
 	RetransmitCount  uint64
 	AuthRefreshCount uint64
@@ -70,7 +70,7 @@ type NfsdRPCStats struct {
 // 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
 type NfsStats struct {
 	NfsNetStats         *NfsNetStats
-	NfsRpcStats         *NfsRpcStats
+	NfsRPCStats         *NfsRPCStats
 	NfsV3ProcedureStats *[]CallStats
 	NfsV4ProcedureStats *[]CallStats
 	NfsV4OperationStats *[]CallStats
