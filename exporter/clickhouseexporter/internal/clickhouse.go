@@ -33,9 +33,6 @@ func NewClickhouseClient(dsn string) (driver.Conn, error) {
 	// Always connect to default database since configured database may not exist yet.
 	opt.Auth.Database = DefaultDatabase
 
-	// TODO: put enable_json_type=1 in the DSN
-	//opt.Settings["enable_json_type"] = "1"
-
 	conn, err := clickhouse.Open(opt)
 	if err != nil {
 		return nil, err
