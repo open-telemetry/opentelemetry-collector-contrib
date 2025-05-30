@@ -36,9 +36,9 @@ func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
 		}
-		defer uncompressData.Close()
+		defer uncompressedData.Close()
 
-		n, err := uncompressData.Read(buf)
+		n, err := uncompressedData.Read(buf)
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
 		}
