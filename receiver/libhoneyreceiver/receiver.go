@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
 type libhoneyReceiver struct {
@@ -261,8 +262,14 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	noErrors := []byte(`{"errors":[]}`)
-	writeResponse(resp, enc.ContentType(), http.StatusOK, noErrors)
+	// return clean response if no errors above
+	noErrors := response.MakeResponse([]int{})
+	json, err := json.Marshal(noErrors)
+	if err != nil {
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, enc.ContentType(), http.StatusOK, json)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {
