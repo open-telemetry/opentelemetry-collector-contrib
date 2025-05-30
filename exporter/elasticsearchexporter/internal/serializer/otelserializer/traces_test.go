@@ -31,8 +31,8 @@ func TestSerializeTraces(t *testing.T) {
 				span.SetKind(ptrace.SpanKindServer)
 				span.Status().SetCode(ptrace.StatusCodeOk)
 				span.Status().SetMessage("Hello")
-				resource.Attributes().PutEmptyMap("resource_map").PutStr("foo", "bar")
-				scope.Attributes().PutEmptyMap("scope_map").PutStr("foo", "bar")
+				resource.Attributes().PutInt("foo", 123)
+				scope.Attributes().PutStr("foo", "bar")
 			},
 			wantErr: false,
 			expected: map[string]any{
@@ -42,14 +42,12 @@ func TestSerializeTraces(t *testing.T) {
 				"links":      []any{},
 				"resource": map[string]any{
 					"attributes": map[string]any{
-						"resource_map": map[string]any{
-							"foo": "bar",
-						},
+						"foo": json.Number("123"),
 					},
 				},
 				"scope": map[string]any{
 					"attributes": map[string]any{
-						"scope_map": map[string]any{"foo": "bar"},
+						"foo": "bar",
 					},
 				},
 				"status": map[string]any{
