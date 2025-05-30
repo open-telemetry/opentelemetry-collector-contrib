@@ -77,11 +77,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNfsOperationCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.nfs.operation.name-val")
+			mb.RecordSystemNfsOperationCountDataPoint(ts, 1, 15, "rpc.nfs.operation.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNfsProcedureCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.onc.procedure.name-val")
+			mb.RecordSystemNfsProcedureCountDataPoint(ts, 1, 15, "rpc.onc.procedure.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -125,11 +125,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNfsdOperationCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.nfs.operation.name-val")
+			mb.RecordSystemNfsdOperationCountDataPoint(ts, 1, 15, "rpc.nfs.operation.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNfsdProcedureCountDataPoint(ts, 1, "rpc.onc.version-val", "rpc.onc.procedure.name-val")
+			mb.RecordSystemNfsdProcedureCountDataPoint(ts, 1, 15, "rpc.onc.procedure.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -251,7 +251,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
 					assert.True(t, ok)
-					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					assert.EqualValues(t, 15, attrVal.Int())
 					attrVal, ok = dp.Attributes().Get("rpc.nfs.operation.name")
 					assert.True(t, ok)
 					assert.Equal(t, "rpc.nfs.operation.name-val", attrVal.Str())
@@ -269,7 +269,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
 					assert.True(t, ok)
-					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					assert.EqualValues(t, 15, attrVal.Int())
 					attrVal, ok = dp.Attributes().Get("rpc.onc.procedure.name")
 					assert.True(t, ok)
 					assert.Equal(t, "rpc.onc.procedure.name-val", attrVal.Str())
@@ -407,7 +407,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
 					assert.True(t, ok)
-					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					assert.EqualValues(t, 15, attrVal.Int())
 					attrVal, ok = dp.Attributes().Get("rpc.nfs.operation.name")
 					assert.True(t, ok)
 					assert.Equal(t, "rpc.nfs.operation.name-val", attrVal.Str())
@@ -425,7 +425,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("rpc.onc.version")
 					assert.True(t, ok)
-					assert.Equal(t, "rpc.onc.version-val", attrVal.Str())
+					assert.EqualValues(t, 15, attrVal.Int())
 					attrVal, ok = dp.Attributes().Get("rpc.onc.procedure.name")
 					assert.True(t, ok)
 					assert.Equal(t, "rpc.onc.procedure.name-val", attrVal.Str())

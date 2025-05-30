@@ -341,7 +341,7 @@ func (m *metricSystemNfsOperationCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNfsOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+func (m *metricSystemNfsOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -349,7 +349,7 @@ func (m *metricSystemNfsOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("rpc.onc.version", rpcOncVersionAttributeValue)
+	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
 	dp.Attributes().PutStr("rpc.nfs.operation.name", rpcNfsOperationNameAttributeValue)
 }
 
@@ -393,7 +393,7 @@ func (m *metricSystemNfsProcedureCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNfsProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcOncProcedureNameAttributeValue string) {
+func (m *metricSystemNfsProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -401,7 +401,7 @@ func (m *metricSystemNfsProcedureCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("rpc.onc.version", rpcOncVersionAttributeValue)
+	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
 	dp.Attributes().PutStr("rpc.onc.procedure.name", rpcOncProcedureNameAttributeValue)
 }
 
@@ -935,7 +935,7 @@ func (m *metricSystemNfsdOperationCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNfsdOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+func (m *metricSystemNfsdOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -943,7 +943,7 @@ func (m *metricSystemNfsdOperationCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("rpc.onc.version", rpcOncVersionAttributeValue)
+	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
 	dp.Attributes().PutStr("rpc.nfs.operation.name", rpcNfsOperationNameAttributeValue)
 }
 
@@ -987,7 +987,7 @@ func (m *metricSystemNfsdProcedureCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNfsdProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcOncProcedureNameAttributeValue string) {
+func (m *metricSystemNfsdProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -995,7 +995,7 @@ func (m *metricSystemNfsdProcedureCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("rpc.onc.version", rpcOncVersionAttributeValue)
+	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
 	dp.Attributes().PutStr("rpc.onc.procedure.name", rpcOncProcedureNameAttributeValue)
 }
 
@@ -1687,12 +1687,12 @@ func (mb *MetricsBuilder) RecordSystemNfsNetUDPCountDataPoint(ts pcommon.Timesta
 }
 
 // RecordSystemNfsOperationCountDataPoint adds a data point to system.nfs.operation.count metric.
-func (mb *MetricsBuilder) RecordSystemNfsOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNfsOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
 	mb.metricSystemNfsOperationCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcNfsOperationNameAttributeValue)
 }
 
 // RecordSystemNfsProcedureCountDataPoint adds a data point to system.nfs.procedure.count metric.
-func (mb *MetricsBuilder) RecordSystemNfsProcedureCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcOncProcedureNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNfsProcedureCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
 	mb.metricSystemNfsProcedureCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcOncProcedureNameAttributeValue)
 }
 
@@ -1747,12 +1747,12 @@ func (mb *MetricsBuilder) RecordSystemNfsdNetUDPCountDataPoint(ts pcommon.Timest
 }
 
 // RecordSystemNfsdOperationCountDataPoint adds a data point to system.nfsd.operation.count metric.
-func (mb *MetricsBuilder) RecordSystemNfsdOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcNfsOperationNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNfsdOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
 	mb.metricSystemNfsdOperationCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcNfsOperationNameAttributeValue)
 }
 
 // RecordSystemNfsdProcedureCountDataPoint adds a data point to system.nfsd.procedure.count metric.
-func (mb *MetricsBuilder) RecordSystemNfsdProcedureCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue string, rpcOncProcedureNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordSystemNfsdProcedureCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
 	mb.metricSystemNfsdProcedureCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcOncProcedureNameAttributeValue)
 }
 
