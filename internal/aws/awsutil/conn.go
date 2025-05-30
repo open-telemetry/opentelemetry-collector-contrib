@@ -19,17 +19,6 @@ import (
 	"golang.org/x/net/http2"
 )
 
-// AWS STS endpoint constants
-const (
-	STSEndpointPrefix         = "https://sts."
-	STSEndpointSuffix         = ".amazonaws.com"
-	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition
-	STSAwsIsoSuffix           = ".c2s.ic.gov"       // AWS ISO partition
-	STSAwsIsoBSuffix          = ".sc2s.sgov.gov"    // AWS ISO-B partition
-	STSAwsIsoESuffix          = ".cloud.adc-e.uk"   // AWS ISO-E partition
-	STSAwsIsoFSuffix          = ".csp.hci.ic.gov"   // AWS ISO-F partition
-)
-
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
 	proxyAddress string,
@@ -103,7 +92,10 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 
 	var options []func(*config.LoadOptions) error
 	// Add EC2 IMDS region option by default
-	options = append(options, config.WithEC2IMDSRegion())
+	// Skip EC2 IMDS if explicitly disabled
+	if os.Getenv("AWS_EC2_METADATA_DISABLED") != "true" {
+		options = append(options, config.WithEC2IMDSRegion())
+	}
 
 	if settings.Region != "" {
 		options = append(options, config.WithRegion(settings.Region))
@@ -127,37 +119,4 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	return cfg, nil
-}
-
-// ProxyServerTransport configures HTTP transport for TCP Proxy Server.
-func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http.Transport, error) {
-	tls := &tls.Config{
-		InsecureSkipVerify: config.NoVerifySSL,
-	}
-
-	proxyAddr := getProxyAddress(config.ProxyAddress)
-	proxyURL, err := getProxyURL(proxyAddr)
-	if err != nil {
-		logger.Error("unable to obtain proxy URL", zap.Error(err))
-		return nil, err
-	}
-
-	// Connection timeout in seconds
-	idleConnTimeout := time.Duration(config.RequestTimeoutSeconds) * time.Second
-
-	transport := &http.Transport{
-		MaxIdleConns:        config.NumberOfWorkers,
-		MaxIdleConnsPerHost: config.NumberOfWorkers,
-		IdleConnTimeout:     idleConnTimeout,
-		Proxy:               http.ProxyURL(proxyURL),
-		TLSClientConfig:     tls,
-
-		// If not disabled the transport will add a gzip encoding header
-		// to requests with no `accept-encoding` header value. The header
-		// is added after we sign the request which invalidates the
-		// signature.
-		DisableCompression: true,
-	}
-
-	return transport, nil
 }

@@ -66,40 +66,6 @@ func TestGetAWSConfigWithRetries(t *testing.T) {
 	assert.Equal(t, 5, cfg.RetryMaxAttempts)
 }
 
-// Test ProxyServerTransport
-func TestProxyServerTransport(t *testing.T) {
-	logger := zap.NewNop()
-	config := &AWSSessionSettings{
-		NumberOfWorkers:       8,
-		RequestTimeoutSeconds: 30,
-		ProxyAddress:          "http://example.com",
-		NoVerifySSL:           false,
-	}
-
-	transport, err := ProxyServerTransport(logger, config)
-	assert.NoError(t, err, "Should not return error")
-	assert.NotNil(t, transport, "Transport should not be nil")
-	assert.Equal(t, 8, transport.MaxIdleConns, "MaxIdleConns should match configuration")
-	assert.Equal(t, 8, transport.MaxIdleConnsPerHost, "MaxIdleConnsPerHost should match configuration")
-	assert.True(t, transport.DisableCompression, "DisableCompression should be true")
-}
-
-// Test ProxyServerTransport with SSL verification disabled
-func TestProxyServerTransportNoVerifySSL(t *testing.T) {
-	logger := zap.NewNop()
-	config := &AWSSessionSettings{
-		NumberOfWorkers:       8,
-		RequestTimeoutSeconds: 30,
-		ProxyAddress:          "",
-		NoVerifySSL:           true,
-	}
-
-	transport, err := ProxyServerTransport(logger, config)
-	assert.NoError(t, err, "Should not return error")
-	assert.NotNil(t, transport, "Transport should not be nil")
-	assert.True(t, transport.TLSClientConfig.InsecureSkipVerify, "InsecureSkipVerify should be true")
-}
-
 // Test NewHTTPClient
 func TestNewHTTPClient(t *testing.T) {
 	logger := zap.NewNop()
