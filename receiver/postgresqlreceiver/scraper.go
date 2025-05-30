@@ -309,7 +309,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				row[dbAttributePrefix+columnName] = finalValue
 			}
 		}
-		item := Item{
+		if row[dbAttributePrefix+totalExecTimeColumnName] == 0.0 {
+			continue
+		}
+		item := item{
 			row:      row,
 			priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			index:    i,
@@ -320,7 +323,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	heap.Init(&pq)
 	explained := int64(0)
 	for pq.Len() > 0 && logRecords.Len() < int(topNQuery) {
-		item := heap.Pop(&pq).(*Item)
+		item := heap.Pop(&pq).(*item)
 		record := logRecords.AppendEmpty()
 		record.SetTimestamp(timestamp)
 		record.SetEventName("top query")
@@ -671,13 +674,13 @@ func (p *postgreSQLScraper) retrieveBackends(
 
 // reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
 
-type Item struct {
+type item struct {
 	row      map[string]any
 	priority float64
 	index    int
 }
 
-type priorityQueue []*Item
+type priorityQueue []*item
 
 func (pq priorityQueue) Len() int { return len(pq) }
 
@@ -693,7 +696,7 @@ func (pq priorityQueue) Swap(i, j int) {
 
 func (pq *priorityQueue) Push(x any) {
 	n := len(*pq)
-	item := x.(*Item)
+	item := x.(*item)
 	item.index = n
 	*pq = append(*pq, item)
 }

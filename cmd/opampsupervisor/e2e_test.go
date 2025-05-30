@@ -78,6 +78,13 @@ func defaultConnectingHandler(connectionCallbacks types.ConnectionCallbacks) fun
 	}
 }
 
+func getAgentLogs(t *testing.T, storageDir string) string {
+	agentLogFile := filepath.Join(storageDir, "agent.log")
+	agentLog, err := os.ReadFile(agentLogFile)
+	require.NoError(t, err)
+	return string(agentLog)
+}
+
 // onConnectingFuncFactory is a function that will be given to types.ConnectionCallbacks as
 // OnConnectingFunc. This allows changing the ConnectionCallbacks both from the newOpAMPServer
 // caller and inside of newOpAMP Server, and for custom implementations of the value for `Accept`
@@ -274,6 +281,53 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
+func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
+	connected := atomic.Bool{}
+	server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(_ context.Context, _ types.Connection) {
+			connected.Store(true)
+		},
+	})
+
+	cfg, _, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	collectorConfigDir := t.TempDir()
+	cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
+	t.Cleanup(func() { cfgFile.Close() })
+	require.NoError(t, err)
+
+	_, err = cfgFile.Write(cfg.Bytes())
+	require.NoError(t, err)
+
+	storageDir := t.TempDir()
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":          server.addr,
+		"storage_dir":  storageDir,
+		"local_config": cfgFile.Name(),
+	})
+	t.Cleanup(s.Shutdown)
+	require.NoError(t, s.Start())
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	require.EventuallyWithTf(t, func(c *assert.CollectT) {
+		require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+}
+
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
 	storageDir := t.TempDir()
 	t.Log("Storage dir:", storageDir)
@@ -403,6 +457,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	// create server
 	var agentConfig atomic.Value
+	var remoteConfigStatus atomic.Value
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -414,7 +469,9 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 						agentConfig.Store(string(config.Body))
 					}
 				}
-
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -444,6 +501,12 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// verify that the supervisor reports the remote config as applied and the correct hash
+	require.Eventually(t, func() bool {
+		status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return status != nil && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, hash)
+	}, 20*time.Second, 500*time.Millisecond, "Remote config status never became applied")
 
 	for _, port := range []int{healthcheckPort, secondHealthcheckPort} {
 		require.Eventually(t, func() bool {
@@ -1207,6 +1270,13 @@ func TestSupervisorRestartCommand(t *testing.T) {
 			Type: protobufs.CommandType_CommandType_Restart,
 		},
 	})
+
+	// Here we will wait for the supervisor connection to go away and come back.
+	// This helps us check that the restart logic is actually restarting the agent.
+	// Note: this also helps the data race detector confirm that access to the
+	// [Supervisor.lastHealthFromClient] has to be synchronized to prevent races.
+	waitForSupervisorConnection(server.supervisorConnected, false)
+	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
