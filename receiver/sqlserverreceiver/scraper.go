@@ -964,7 +964,13 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-			return obfuscateSQL(row[columnName])
+			statement := row[columnName]
+			obfuscated, err := obfuscateSQL(statement)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return statement, nil
+			}
+			return obfuscated, nil
 		}).(string)
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
