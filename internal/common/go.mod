@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/distribution/reference v0.6.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250509190408-4ca0f1829e0a
+	go.opentelemetry.io/collector/featuregate v1.33.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )

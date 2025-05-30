@@ -7,6 +7,45 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.127.0
+
+### 🛑 Breaking changes 🛑
+
+- `cloudfoundryreceiver`: Unexport EnvelopeStreamFactory and UAATokenProvider (#40270)
+- `fluentforwardreceiver`: Unexport all structs in fluentforward receiver. (#40108)
+- `postgresqlreceiver`: Unexport Item (#40265)
+- `netflowreceiver`: Unexport OtelLogsProducerWrapper (#40269)
+- `k8sobserver`: Unexport RunningContainer (#40228)
+- `receiver/vcenter`: unexport struct DatacenterStats (#40109)
+- `tcpcheckreceiver`: Unexport TCPConnectionState (#40271)
+- `wavefrontreceiver`: Unexport WavefrontParser struct (#40105)
+
+### 💡 Enhancements 💡
+
+- `sqlserverreceiver`: Use generated structured event functions in mdatagen (#40041)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/experimentalmetricmetadata`: Add missing otel.entity.type field to the delete events (#40279)
+
+<!-- previous-version -->
+
+## v0.126.0
+
+### 🛑 Breaking changes 🛑
+
+- `fluentforwardreceiver`: Unexport AckResponse (#39831)
+- `splunkenterprisereceiver`: Unexport InfoEntry and InfoContent (#39830)
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: Add methods to scrape raw values from Windows performance counters. (#39835)
+- `eventlogreceiver`: add raw XML query filtering option (#38517)
+- `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate and configuration to the exporter to send Prometheus remote write 2.0 version. (#33661)
+  WARNING! PRW 2.0 support for the exporter is still under development and not ready for usage.
+
+<!-- previous-version -->
+
 ## v0.125.0
 
 ### 💡 Enhancements 💡
