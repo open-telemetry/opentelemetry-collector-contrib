@@ -127,8 +127,8 @@ attributes:
   server.port:
     description: The port number on which the server is listening.
     type: int
-  db.server.name:
-    description: The name of the server hosting the database.
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
   ## query sample
   client.address:
@@ -139,9 +139,6 @@ attributes:
     type: int
   db.namespace:
     description: The database name.
-    type: string
-  db.system.name:
-    description: The database system name. It will always be microsoft.sql_server.
     type: string
   network.peer.address:
     description: IP address of the peer client.
@@ -238,7 +235,7 @@ events:
       - sqlserver.total_grant_kb
       - server.address
       - server.port
-      - db.server.name
+      - db.system.name
   db.server.query_sample:
     enabled: true
     description: query sample

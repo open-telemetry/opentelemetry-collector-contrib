@@ -545,7 +545,7 @@ query sample
 | client.port | TCP port used by the client. | Any Int |
 | db.namespace | The database name. | Any Str |
 | db.query.text | The text of the database query being executed. | Any Str |
-| db.system.name | The database system name. It will always be microsoft.sql_server. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
 | network.peer.address | IP address of the peer client. | Any Str |
 | network.peer.port | TCP port used by the peer client. | Any Int |
 | sqlserver.blocking_session_id | Session ID that is blocking the current session. 0 if none. | Any Int |
@@ -597,7 +597,7 @@ top query
 | sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int |
 | server.address | The network address of the server hosting the database. | Any Str |
 | server.port | The port number on which the server is listening. | Any Int |
-| db.server.name | The name of the server hosting the database. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
 
 ## Resource Attributes
 

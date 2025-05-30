@@ -178,9 +178,17 @@ func TestProducerConfig(t *testing.T) {
 				RequiredAcks:    0,
 				Compression:     "zstd",
 				CompressionParams: configcompression.CompressionParams{
-					Level: configcompression.DefaultCompressionLevel,
+					// zero is treated as the codec-specific default
+					Level: 0,
 				},
 				FlushMaxMessages: 2,
+			},
+		},
+		"snappy_compression": {
+			expected: ProducerConfig{
+				MaxMessageBytes: 1000000,
+				RequiredAcks:    1,
+				Compression:     "snappy",
 			},
 		},
 		"invalid_compression_level": {
