@@ -83,13 +83,23 @@ attributes:
     description: Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information.
     type: string
   # attributes for events
+  ## common
+  db.query.text:
+    description: The text of the database query being executed.
+    type: string
+  sqlserver.query_hash:
+    description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
+    type: string
+  sqlserver.query_plan_hash:
+    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    type: string
+  sqlserver.total_elapsed_time:
+    description: Total elapsed time for completed executions of this plan, reported in delta seconds.
+    type: double
   ## top query
   sqlserver.total_worker_time:
     description: Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds.
     type: double
-  db.query.text:
-    description: The text of the database query being executed.
-    type: string
   sqlserver.execution_count:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
@@ -102,21 +112,12 @@ attributes:
   sqlserver.total_physical_reads:
     description: Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value.
     type: int
-  sqlserver.query_hash:
-    description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
-    type: string
   sqlserver.query_plan:
     description: The query execution plan used by the SQL Server.
-    type: string
-  sqlserver.query_plan_hash:
-    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
   sqlserver.total_rows:
     description: Total number of rows returned by the query, reported in delta value.
     type: int
-  sqlserver.total_elapsed_time:
-    description: Total elapsed time for completed executions of this plan, reported in delta seconds.
-    type: double
   sqlserver.total_grant_kb:
     description: The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value.
     type: int
@@ -128,6 +129,91 @@ attributes:
     type: int
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
+    type: string
+  ## query sample
+  client.address:
+    description: Hostname or address of the client.
+    type: string 
+  client.port:
+    description: TCP port used by the client.
+    type: int
+  db.namespace:
+    description: The database name.
+    type: string
+  network.peer.address:
+    description: IP address of the peer client.
+    type: string
+  network.peer.port:
+    description: TCP port used by the peer client.
+    type: int
+  sqlserver.blocking_session_id:
+    description: Session ID that is blocking the current session. 0 if none.
+    type: int
+  sqlserver.context_info:
+    description: Context information for the session, represented as a hexadecimal string.
+    type: string
+  sqlserver.command:
+    description: SQL command type being executed.
+    type: string
+  sqlserver.cpu_time:
+    description: CPU time consumed by the query, in seconds.
+    type: double
+  sqlserver.deadlock_priority:
+    description: Deadlock priority value for the session.
+    type: int
+  sqlserver.estimated_completion_time:
+    description: Estimated time remaining for the request to complete, in seconds.
+    type: double
+  sqlserver.lock_timeout:
+    description: Lock timeout value in seconds.
+    type: double
+  sqlserver.logical_reads:
+    description: Number of logical reads (data read from cache/memory).
+    type: int
+  sqlserver.open_transaction_count:
+    description: Number of transactions currently open in the session.
+    type: int
+  sqlserver.percent_complete:
+    description: Percentage of work completed.
+    type: double
+  sqlserver.query_start:
+    description: Timestamp of when the SQL query started (ISO 8601 format).
+    type: string
+  sqlserver.reads:
+    description: Number of physical reads performed by the query.
+    type: int
+  sqlserver.request_status:
+    description: Status of the request (e.g., running, suspended).
+    type: string
+  sqlserver.row_count:
+    description: Number of rows affected or returned by the query.
+    type: int
+  sqlserver.session_id:
+    description: ID of the SQL Server session.
+    type: int
+  sqlserver.session_status:
+    description: Status of the session (e.g., running, sleeping).
+    type: string
+  sqlserver.transaction_id:
+    description: Unique ID of the active transaction.
+    type: int
+  sqlserver.transaction_isolation_level:
+    description: Transaction isolation level used in the session. Represented as numeric constant.
+    type: int
+  sqlserver.wait_resource:
+    description: The resource for which the session is waiting.
+    type: string
+  sqlserver.wait_time:
+    description: Duration in seconds the request has been waiting.
+    type: double
+  sqlserver.wait_type:
+    description: Type of wait encountered by the request. Empty if none.
+    type: string
+  sqlserver.writes:
+    description: Number of writes performed by the query.
+    type: int
+  user.name:
+    description: Login name associated with the SQL Server session.
     type: string
 
 events:
@@ -150,6 +236,43 @@ events:
       - server.address
       - server.port
       - db.system.name
+  db.server.query_sample:
+    enabled: true
+    description: query sample
+    attributes:
+      - client.address
+      - client.port
+      - db.namespace
+      - db.query.text
+      - db.system.name
+      - network.peer.address
+      - network.peer.port
+      - sqlserver.blocking_session_id
+      - sqlserver.context_info
+      - sqlserver.command
+      - sqlserver.cpu_time
+      - sqlserver.deadlock_priority
+      - sqlserver.estimated_completion_time
+      - sqlserver.lock_timeout
+      - sqlserver.logical_reads
+      - sqlserver.open_transaction_count
+      - sqlserver.percent_complete
+      - sqlserver.query_hash
+      - sqlserver.query_plan_hash
+      - sqlserver.query_start
+      - sqlserver.reads
+      - sqlserver.request_status
+      - sqlserver.row_count
+      - sqlserver.session_id
+      - sqlserver.session_status
+      - sqlserver.total_elapsed_time
+      - sqlserver.transaction_id
+      - sqlserver.transaction_isolation_level
+      - sqlserver.wait_resource
+      - sqlserver.wait_time
+      - sqlserver.wait_type
+      - sqlserver.writes
+      - user.name
 
 metrics:
   sqlserver.user.connection.count:
