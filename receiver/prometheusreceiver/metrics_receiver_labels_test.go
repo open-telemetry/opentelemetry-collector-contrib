@@ -6,9 +6,11 @@ package prometheusreceiver
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
@@ -820,4 +822,108 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 			nil,
 		},
 	})
+}
+
+const targetInstrumentationScopesFromScopeInfoMetric = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.27.0"} 100
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 100
+jvm_memory_bytes_used{area="heap"} 100
+# TYPE otel_scope_info gauge
+otel_scope_info{animal="bear", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 1
+`
+
+func TestScopeInfoScopeAttributes(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetInstrumentationScopesFromScopeInfoMetric},
+			},
+			validateFunc: verifyMultipleScopesFromScopeInfoMetric,
+		},
+	}
+	removeScopeInfoFeatureGate := getRemoveScopeInfoFeatureGate()
+	originalValue := removeScopeInfoFeatureGate.IsEnabled()
+	testutil.SetFeatureGateForTest(t, removeScopeInfoFeatureGate, false)
+	testComponent(t, targets, nil)
+	testutil.SetFeatureGateForTest(t, removeScopeInfoFeatureGate, true)
+	testComponent(t, targets, nil)
+	testutil.SetFeatureGateForTest(t, removeScopeInfoFeatureGate, originalValue)
+}
+
+func verifyMultipleScopesFromScopeInfoMetric(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	gate := getRemoveScopeInfoFeatureGate()
+	if gate.IsEnabled() {
+		require.Equal(t, 3, sms.Len(), "Three scope metrics should be present") // fake.scope.name, github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver, scope.with.attributes
+		sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+			return a.Scope().Name() < b.Scope().Name()
+		})
+		// First scope is fake.scope.name
+		require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
+		require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+		require.Equal(t, "https://opentelemetry.io/schemas/1.27.0", sms.At(0).SchemaUrl())
+		require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+		metrics := sms.At(0).Metrics()
+		require.Equal(t, 1, metrics.Len())
+		require.Equal(t, "jvm_memory_bytes_used", metrics.At(0).Name())
+
+		// Second scope is the default scope when no scope info is present
+		require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+		require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+		metrics = sms.At(1).Metrics()
+		require.Equal(t, 1, metrics.Len())
+		require.Equal(t, "jvm_memory_bytes_used", metrics.At(1).Name())
+
+		// Third scope is scope.with.attributes, which doesn't really have extra attributes
+		// when the feature gate is enabled.
+		require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
+		require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+		require.Equal(t, 0, sms.At(2).Scope().Attributes().Len())
+		metrics = sms.At(2).Metrics()
+		metrics.Sort(func(a, b pmetric.Metric) bool {
+			return a.Name() < b.Name()
+		})
+		require.Equal(t, 1, metrics.Len())
+		require.Equal(t, "jvm_memory_bytes_used", metrics.At(0).Name())
+		require.Equal(t, "otel_scope_info", metrics.At(1).Name())
+
+		heap, ok := metrics.At(0).Gauge().DataPoints().At(0).Attributes().Get("area")
+		require.True(t, ok)
+		require.Equal(t, "heap", heap.Str())
+		animal, ok := metrics.At(1).Gauge().DataPoints().At(0).Attributes().Get("animal")
+		require.True(t, ok)
+		require.Equal(t, "bear", animal.Str())
+	} else {
+		require.Equal(t, 3, sms.Len(), "Three scope metrics should be present")
+		sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+			return a.Scope().Name() < b.Scope().Name()
+		})
+		require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
+		require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+		require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+		require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+		require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+		require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
+		require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+		require.Equal(t, 1, sms.At(2).Scope().Attributes().Len())
+		scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
+		require.True(t, found)
+		require.Equal(t, "bear", scopeAttrVal.Str())
+	}
+}
+
+func getRemoveScopeInfoFeatureGate() *featuregate.Gate {
+	var gate *featuregate.Gate
+	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+		if g.ID() == "receiver.prometheusreceiver.RemoveScopeInfo" {
+			gate = g
+		}
+	})
+	return gate
 }
