@@ -228,6 +228,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes
