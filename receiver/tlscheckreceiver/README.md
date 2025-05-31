@@ -43,6 +43,10 @@ receivers:
 
 This component does not provide hostname, validity period, path, or CRL / OCSP verification on the certificate.
 
+## Certificate File Validation
+
+If a certificate file specified in the configuration does not exist or is unable to be opened, an error will be logged on each scrape cycle and the `otelcol_scraper_errored_metric_points` metric will be incremented. If you would like to monitor for the existence of specific certificate files on disk, consider using the [File Stats receiver](../filestatsreceiver/README.md).
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml).
