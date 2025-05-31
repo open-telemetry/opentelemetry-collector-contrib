@@ -90,6 +90,12 @@ Time a page will stay in the buffer pool.
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| performance_counter.object_name | Category to which this counter belongs | Any Str |
+
 ### sqlserver.page.operation.rate
 
 Number of physical database page operations issued.
