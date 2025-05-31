@@ -33,16 +33,37 @@ import (
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                      sync.RWMutex
-	deleteMut              sync.Mutex
-	logger                 *zap.Logger
-	kc                     kubernetes.Interface
-	informer               cache.SharedInformer
-	namespaceInformer      cache.SharedInformer
-	nodeInformer           cache.SharedInformer
-	replicasetInformer     cache.SharedInformer
-	replicasetRegex        *regexp.Regexp
-	cronJobRegex           *regexp.Regexp
+	m         sync.RWMutex
+	deleteMut sync.Mutex
+	// Used to protect informer creation and handler registration/deregistration. Can't be the main mutex, because that
+	// blocks cache updates, which are necessary for handlers to sync.
+	informerMut sync.Mutex
+	logger      *zap.Logger
+	kc          kubernetes.Interface
+
+	// informer providers
+	podInformerProvider        InformerProvider
+	namespaceInformerProvider  InformerProviderNamespace
+	replicasetInformerProvider InformerProviderReplicaSet
+	nodeInformerProvider       InformerProviderNode
+
+	// informer event handler registrations
+	podInformer                   cache.SharedInformer
+	podHandlerRegistration        cache.ResourceEventHandlerRegistration
+	namespaceInformer             cache.SharedInformer
+	namespaceHandlerRegistration  cache.ResourceEventHandlerRegistration
+	nodeInformer                  cache.SharedInformer
+	nodeHandlerRegistration       cache.ResourceEventHandlerRegistration
+	replicasetInformer            cache.SharedInformer
+	replicasetHandlerRegistration cache.ResourceEventHandlerRegistration
+
+	// selectors and filters
+	labelSelector   labels.Selector
+	fieldSelector   fields.Selector
+	replicasetRegex *regexp.Regexp
+	cronJobRegex    *regexp.Regexp
+
+	// internal state
 	deleteQueue            []deleteRequest
 	stopCh                 chan struct{}
 	waitForMetadata        bool
@@ -93,6 +114,7 @@ func New(
 	newInformer InformerProvider,
 	newNamespaceInformer InformerProviderNamespace,
 	newReplicaSetInformer InformerProviderReplicaSet,
+	newNodeInformer InformerProviderNode,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 ) (Client, error) {
@@ -129,18 +151,20 @@ func New(
 	}
 	c.kc = kc
 
-	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
+	c.labelSelector, c.fieldSelector, err = selectorsFromFilters(c.Filters)
 	if err != nil {
 		return nil, err
 	}
 	set.Logger.Info(
 		"k8s filtering",
-		zap.String("labelSelector", labelSelector.String()),
-		zap.String("fieldSelector", fieldSelector.String()),
+		zap.String("labelSelector", c.labelSelector.String()),
+		zap.String("fieldSelector", c.fieldSelector.String()),
 	)
+
 	if newInformer == nil {
 		newInformer = newSharedInformer
 	}
+	c.podInformerProvider = newInformer
 
 	if newNamespaceInformer == nil {
 		switch {
@@ -156,46 +180,20 @@ func New(
 			newNamespaceInformer = NewNoOpInformer
 		}
 	}
-
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	err = c.informer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
-
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	c.namespaceInformer = newNamespaceInformer(c.kc)
+	c.namespaceInformerProvider = newNamespaceInformer
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if newReplicaSetInformer == nil {
 			newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
-
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
+		c.replicasetInformerProvider = newReplicaSetInformer
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
+		if newNodeInformer == nil {
+			newNodeInformer = newNodeSharedInformer
+		}
+		c.nodeInformerProvider = newNodeInformer
 	}
 
 	return c, err
@@ -203,11 +201,35 @@ func New(
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
+	var err error
+	c.informerMut.Lock()
+	defer c.informerMut.Unlock()
+
+	// if we return an error, we need to signal any informers we created to stop
+	defer func() {
+		if err != nil {
+			close(c.stopCh)
+		}
+	}()
+
+	// Set up handlers for other informers before the Pod informer, as Pod metadata depends on them.
 	synced := make([]cache.InformerSynced, 0)
-	// start the replicaSet informer first, as the replica sets need to be
-	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+
+	// set up the replicaset informer if needed
+	if c.replicasetInformerProvider != nil {
+		transformFunc := func(object any) (any, error) {
+			originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+				return object, nil
+			}
+
+			return removeUnnecessaryReplicaSetData(originalReplicaset), nil
+		}
+		c.replicasetInformer, err = c.replicasetInformerProvider(c.kc, c.Filters.Namespace, transformFunc, c.stopCh)
+		if err != nil {
+			return err
+		}
+		c.replicasetHandlerRegistration, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
@@ -215,11 +237,12 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
+		synced = append(synced, c.replicasetHandlerRegistration.HasSynced)
 	}
 
-	reg, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	// set up the namespace informer
+	c.namespaceInformer = c.namespaceInformerProvider(c.kc, c.stopCh)
+	c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
@@ -227,11 +250,12 @@ func (c *WatchClient) Start() error {
 	if err != nil {
 		return err
 	}
-	synced = append(synced, reg.HasSynced)
-	go c.namespaceInformer.Run(c.stopCh)
+	synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
 
-	if c.nodeInformer != nil {
-		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	// set up the node informer if needed
+	if c.nodeInformerProvider != nil {
+		c.nodeInformer = c.nodeInformerProvider(c.kc, c.Filters.Node, 5*time.Minute, c.stopCh)
+		c.nodeHandlerRegistration, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
@@ -239,11 +263,30 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.nodeInformer.Run(c.stopCh)
+		synced = append(synced, c.nodeHandlerRegistration.HasSynced)
 	}
 
-	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	// wait until other informers are synced before adding the Pod informer
+	// we want metadata for other resource types to be populated before we start acting on Pod metadata
+	c.logger.Debug("waiting for non Pod caches to sync")
+	if !c.waitForCacheSync(time.Second*5, synced...) {
+		c.logger.Warn("timed out waiting for caches to sync, proceeding anyway")
+	}
+
+	// set up the pod informer
+	transformFunc := func(object any) (any, error) {
+		originalPod, success := object.(*api_v1.Pod)
+		if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+			return object, nil
+		}
+
+		return removeUnnecessaryPodData(originalPod, c.Rules), nil
+	}
+	c.podInformer, err = c.podInformerProvider(c.kc, c.Filters.Namespace, c.labelSelector, c.fieldSelector, transformFunc, c.stopCh)
+	if err != nil {
+		return err
+	}
+	c.podHandlerRegistration, err = c.podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
@@ -252,20 +295,11 @@ func (c *WatchClient) Start() error {
 		return err
 	}
 
-	// start the podInformer with the prerequisite of the other informers to be finished first
-	go c.runInformerWithDependencies(c.informer, synced)
-
 	if c.waitForMetadata {
-		timeoutCh := make(chan struct{})
-		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
-			close(timeoutCh)
-		})
-		defer t.Stop()
-		// Wait for the Pod informer to be completed.
-		// The other informers will already be finished at this point, as the pod informer
-		// waits for them be finished before it can run
-		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
-			return errors.New("failed to wait for caches to sync")
+		c.logger.Debug("waiting for Pod caches to sync")
+		// we only need to check the Pod sync, since we've already checked the others
+		if !c.waitForCacheSync(c.waitForMetadataTimeout, c.podHandlerRegistration.HasSynced) {
+			return errors.New("timed out waiting for Pod cache to sync")
 		}
 	}
 	return nil
@@ -273,6 +307,43 @@ func (c *WatchClient) Start() error {
 
 // Stop signals the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
+	c.informerMut.Lock()
+	defer c.informerMut.Unlock()
+
+	var eventHandlerRemovalErrors []error
+	if c.podHandlerRegistration != nil {
+		if err := c.podInformer.RemoveEventHandler(c.podHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.podHandlerRegistration = nil
+	}
+
+	if c.namespaceHandlerRegistration != nil {
+		if err := c.namespaceInformer.RemoveEventHandler(c.namespaceHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.namespaceHandlerRegistration = nil
+	}
+
+	if c.replicasetInformer != nil && c.replicasetHandlerRegistration != nil {
+		if err := c.replicasetInformer.RemoveEventHandler(c.replicasetHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.replicasetHandlerRegistration = nil
+	}
+
+	if c.nodeInformer != nil && c.nodeHandlerRegistration != nil {
+		if err := c.nodeInformer.RemoveEventHandler(c.nodeHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.nodeHandlerRegistration = nil
+	}
+
+	if len(eventHandlerRemovalErrors) > 0 {
+		multiErr := errors.Join(eventHandlerRemovalErrors...)
+		c.logger.Error("error removing event handlers from informers", zap.Error(multiErr))
+	}
+
 	close(c.stopCh)
 }
 
@@ -1196,20 +1267,17 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 	return nil, false
 }
 
-// runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
-// before the informer is started. This is necessary e.g. for the pod informer which requires the replica set informer
-// to be finished to correctly establish the connection to the replicaset/deployment it belongs to.
-func (c *WatchClient) runInformerWithDependencies(informer cache.SharedInformer, dependencies []cache.InformerSynced) {
-	if len(dependencies) > 0 {
-		timeoutCh := make(chan struct{})
-		// TODO hard coding the timeout for now, check if we should make this configurable
-		t := time.AfterFunc(5*time.Second, func() {
-			close(timeoutCh)
-		})
-		defer t.Stop()
-		cache.WaitForCacheSync(timeoutCh, dependencies...)
+// waitForCacheSync waits until the given cache sync functions all indicate success, or a timeout.
+func (c *WatchClient) waitForCacheSync(waitTime time.Duration, synced ...cache.InformerSynced) bool {
+	if len(synced) == 0 {
+		return true
 	}
-	informer.Run(c.stopCh)
+	timeoutCh := make(chan struct{})
+	t := time.AfterFunc(waitTime, func() {
+		close(timeoutCh)
+	})
+	defer t.Stop()
+	return cache.WaitForCacheSync(timeoutCh, synced...)
 }
 
 // ignoreDeletedFinalStateUnknown returns the object wrapped in
