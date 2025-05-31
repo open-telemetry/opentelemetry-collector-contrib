@@ -44,7 +44,7 @@ var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().Must
 	removeServerResourceAttributeFeatureGateID,
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are no longer added to metrics. Instead they will be in attributes."),
+	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are no longer added to metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141"),
 )
 
