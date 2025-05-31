@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
 
-go 1.23.0
+go 1.23.6
 
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/jaegertracing/jaeger-idl v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.127.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250528155941-4a3717978a51
