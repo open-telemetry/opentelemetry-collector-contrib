@@ -282,7 +282,7 @@ func Test_export(t *testing.T) {
 
 		assert.Len(t, writeReq.Timeseries, 1)
 		require.NotNil(t, writeReq.GetTimeseries())
-		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
+		assert.Equal(t, ts1, writeReq.GetTimeseries()[0])
 		w.WriteHeader(code)
 	}
 
@@ -297,21 +297,21 @@ func Test_export(t *testing.T) {
 	}{
 		{
 			"success_case",
-			*ts1,
+			ts1,
 			true,
 			http.StatusAccepted,
 			false,
 		},
 		{
 			"server_no_response_case",
-			*ts1,
+			ts1,
 			false,
 			http.StatusAccepted,
 			true,
 		},
 		{
 			"error_status_code_case",
-			*ts1,
+			ts1,
 			true,
 			http.StatusForbidden,
 			true,
@@ -331,7 +331,7 @@ func Test_export(t *testing.T) {
 			if !tt.serverUp {
 				server.Close()
 			}
-			err := runExportPipeline(ts1, serverURL)
+			err := runExportPipeline(&ts1, serverURL)
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return
@@ -353,9 +353,9 @@ func TestNoMetricsNoError(t *testing.T) {
 
 func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// First we will construct a TimeSeries array from the testutils package
-	testmap := make(map[string]*prompb.TimeSeries)
+	tss := []prompb.TimeSeries{}
 	if ts != nil {
-		testmap["test"] = ts
+		tss = append(tss, *ts)
 	}
 
 	cfg := createDefaultConfig().(*Config)
@@ -384,7 +384,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	return prwe.handleExport(context.Background(), testmap, nil)
+	return prwe.handleExport(context.Background(), tss, nil)
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -998,19 +998,16 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	})
 	require.NotNil(t, prwe.wal)
 
-	ts1 := &prompb.TimeSeries{
+	ts1 := prompb.TimeSeries{
 		Labels:  []prompb.Label{{Name: "ts1l1", Value: "ts1k1"}},
 		Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
 	}
-	ts2 := &prompb.TimeSeries{
+	ts2 := prompb.TimeSeries{
 		Labels:  []prompb.Label{{Name: "ts2l1", Value: "ts2k1"}},
 		Samples: []prompb.Sample{{Value: 2, Timestamp: 200}},
 	}
-	tsMap := map[string]*prompb.TimeSeries{
-		"timeseries1": ts1,
-		"timeseries2": ts2,
-	}
-	errs := prwe.handleExport(ctx, tsMap, nil)
+	tss := []prompb.TimeSeries{ts1, ts2}
+	errs := prwe.handleExport(ctx, tss, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will be flushed to the WAL before exiting.
@@ -1046,9 +1043,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	gotFromWAL := reqs[0]
 	assert.Len(t, gotFromWAL.Timeseries, 2)
 	want := &prompb.WriteRequest{
-		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{
-			*ts1, *ts2,
-		}),
+		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{ts1, ts2}),
 	}
 
 	// Even after sorting timeseries, we need to sort them
