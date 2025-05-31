@@ -44,6 +44,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				SocketPermissions:   0o622,
 				AggregationInterval: 70 * time.Second,
+				EnableMetricType:    false,
+				MetricTypeAttribute: "metric_type",
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{
 						StatsdType:   "histogram",
@@ -191,6 +193,15 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: negativeAggregationIntervalErr,
+		},
+		{
+			name: "emptyMetricTypeAttribute",
+			cfg: &Config{
+				AggregationInterval: 10,
+				EnableMetricType:    true,
+				MetricTypeAttribute: "",
+			},
+			expectedErr: "metric_type_attribute cannot be set to empty when enable_metric_type is true",
 		},
 	}
 
