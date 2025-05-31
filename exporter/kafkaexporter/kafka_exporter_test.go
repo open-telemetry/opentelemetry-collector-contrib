@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -934,7 +935,9 @@ func TestWrapKafkaProducerError(t *testing.T) {
 		got := wrapKafkaProducerError(prodErrs)
 
 		assert.True(t, consumererror.IsPermanent(got))
-		assert.Contains(t, got.Error(), err.Error())
+		assert.EqualError(t, got,
+			"Permanent error: kafka: invalid configuration (configuration error)",
+		)
 	})
 
 	t.Run("should return permanent error whne multiple configuration error", func(t *testing.T) {
@@ -947,32 +950,40 @@ func TestWrapKafkaProducerError(t *testing.T) {
 		got := wrapKafkaProducerError(prodErrs)
 
 		assert.True(t, consumererror.IsPermanent(got))
-		assert.Contains(t, got.Error(), err.Error())
+		assert.EqualError(t, got,
+			"Permanent error: kafka: invalid configuration (configuration error)",
+		)
 	})
 
 	t.Run("should return not permanent error when at least one not configuration error", func(t *testing.T) {
 		err := sarama.ConfigurationError("configuration error")
 		prodErrs := sarama.ProducerErrors{
-			&sarama.ProducerError{Err: err},
-			&sarama.ProducerError{Err: errors.New("other producer error")},
+			&sarama.ProducerError{Err: err, Msg: &sarama.ProducerMessage{Topic: "test-topic"}},
+			&sarama.ProducerError{Err: errors.New("other producer error"), Msg: &sarama.ProducerMessage{Topic: "test-topic"}},
 		}
 
 		got := wrapKafkaProducerError(prodErrs)
 
 		assert.False(t, consumererror.IsPermanent(got))
-		assert.Contains(t, got.Error(), err.Error())
+		assert.EqualError(t, got, strings.Join([]string{
+			"failed to deliver 1 messages: kafka: Failed to produce message to topic test-topic: kafka: invalid configuration (configuration error)",
+			"failed to deliver 1 messages: kafka: Failed to produce message to topic test-topic: other producer error",
+		}, "\n"),
+		)
 	})
 
 	t.Run("should return not permanent error on other producer error", func(t *testing.T) {
 		err := errors.New("other producer error")
 		prodErrs := sarama.ProducerErrors{
-			&sarama.ProducerError{Err: err},
+			&sarama.ProducerError{Err: err, Msg: &sarama.ProducerMessage{Topic: "test-topic"}},
 		}
 
 		got := wrapKafkaProducerError(prodErrs)
 
 		assert.False(t, consumererror.IsPermanent(got))
-		assert.Contains(t, got.Error(), err.Error())
+		assert.EqualError(t, got,
+			"failed to deliver 1 messages: kafka: Failed to produce message to topic test-topic: other producer error",
+		)
 	})
 
 	t.Run("should return not permanent error when other error", func(t *testing.T) {
@@ -981,6 +992,6 @@ func TestWrapKafkaProducerError(t *testing.T) {
 		got := wrapKafkaProducerError(err)
 
 		assert.False(t, consumererror.IsPermanent(got))
-		assert.Contains(t, got.Error(), err.Error())
+		assert.EqualError(t, got, "other error")
 	})
 }
