@@ -23,7 +23,11 @@ all_set:
       enabled: true
     host.name:
       enabled: true
+    os.build.id:
+      enabled: true
     os.description:
+      enabled: true
+    os.name:
       enabled: true
     os.type:
       enabled: true
@@ -53,7 +57,11 @@ none_set:
       enabled: false
     host.name:
       enabled: false
+    os.build.id:
+      enabled: false
     os.description:
+      enabled: false
+    os.name:
       enabled: false
     os.type:
       enabled: false
