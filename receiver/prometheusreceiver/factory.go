@@ -40,6 +40,7 @@ func NewFactory() receiver.Factory {
 	// This includes ScrapeManager lib that is used by the Promethes receiver.
 	// We need to set the validation scheme to _something_ to avoid panics, and
 	// UTF8 is the default in Prometheus.
+	//nolint:staticcheck // TODO: Figure out how to remove the deprecated global.
 	model.NameValidationScheme = model.UTF8Validation
 
 	return receiver.NewFactory(
