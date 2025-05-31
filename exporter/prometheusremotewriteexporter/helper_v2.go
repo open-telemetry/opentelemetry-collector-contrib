@@ -10,19 +10,23 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 )
 
-// batchTimeSeries splits series into multiple batch write requests.
 func batchTimeSeriesV2(tsMap map[string]*writev2.TimeSeries, symbolsTable writev2.SymbolsTable, maxBatchByteSize int, state *batchTimeSeriesState) ([]*writev2.Request, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
-	// Allocate a buffer size of at least 10, or twice the last # of requests we sent
 	requests := make([]*writev2.Request, 0, max(10, state.nextRequestBufferSize))
-
 	tsArray := make([]writev2.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)))
-	// TODO take into account size of symbols table
-	sizeOfCurrentBatch := 0
+
+	// Calculate symbols table size once since it's shared across batches
+	symbolsSize := 0
+	for _, symbol := range symbolsTable.Symbols() {
+		symbolsSize += len(symbol)
+	}
+
+	sizeOfCurrentBatch := symbolsSize // Initialize with symbols table size
 	i := 0
+
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
@@ -32,7 +36,7 @@ func batchTimeSeriesV2(tsMap map[string]*writev2.TimeSeries, symbolsTable writev
 			requests = append(requests, wrapped)
 
 			tsArray = make([]writev2.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)-i))
-			sizeOfCurrentBatch = 0
+			sizeOfCurrentBatch = symbolsSize // Reset to symbols table size for new batch
 		}
 
 		tsArray = append(tsArray, *v)
