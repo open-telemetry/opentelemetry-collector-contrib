@@ -91,8 +91,7 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	var options []func(*config.LoadOptions) error
-  options = append(options, config.WithEC2IMDSRegion())
-	}
+	options = append(options, config.WithEC2IMDSRegion())
 
 	if settings.Region != "" {
 		options = append(options, config.WithRegion(settings.Region))
