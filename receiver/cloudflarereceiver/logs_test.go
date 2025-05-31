@@ -363,19 +363,107 @@ func TestEmptyAttributes(t *testing.T) {
 	}{
 		{
 			name: "Empty Attributes Map",
-			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }
-{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }`,
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }`,
 			attributes: map[string]string{},
 		},
 		{
 			name: "nil Attributes",
-			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }
-{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }`,
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }`,
 			attributes: nil,
 		},
 	}
 
 	expectedLogs := func(t *testing.T, payload string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver")
+
+		for idx, line := range strings.Split(payload, "\n") {
+			lr := sl.LogRecords().AppendEmpty()
+
+			require.NoError(t, lr.Attributes().FromRaw(map[string]any{
+				"ClientIP":                    fmt.Sprintf("89.163.253.%d", 200+idx),
+				"ClientRequestHost":           fmt.Sprintf("www.theburritobot%d.com", idx),
+				"ClientRequestMethod":         "GET",
+				"ClientRequestURI":            "/static/img/testimonial-hipster.png",
+				"EdgeEndTimestamp":            "2023-03-03T05:30:05Z",
+				"EdgeResponseBytes":           "69045",
+				"EdgeResponseStatus":          "200",
+				"EdgeStartTimestamp":          "2023-03-03T05:29:05Z",
+				"RayID":                       "3a6050bcbe121a87",
+				"RequestHeaders.Content_Type": "application/json",
+			}))
+
+			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
+			ts, err := time.Parse(time.RFC3339, "2023-03-03T05:29:05Z")
+			require.NoError(t, err)
+			lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+			lr.SetSeverityNumber(plog.SeverityNumberInfo)
+			lr.SetSeverityText(plog.SeverityNumberInfo.String())
+
+			var log map[string]any
+			err = json.Unmarshal([]byte(line), &log)
+			require.NoError(t, err)
+
+			payloadToExpectedBody(t, line, lr)
+		}
+		return logs
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			recv := newReceiver(t, &Config{
+				Logs: LogsConfig{
+					Endpoint:       "localhost:0",
+					TLS:            &configtls.ServerConfig{},
+					TimestampField: "EdgeStartTimestamp",
+					Attributes:     tc.attributes,
+					Separator:      ".",
+				},
+			},
+				&consumertest.LogsSink{},
+			)
+			var logs plog.Logs
+			rawLogs, err := parsePayload([]byte(tc.payload))
+			if err == nil {
+				logs = recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
+			}
+			require.NoError(t, err)
+			require.NotNil(t, logs)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs(t, tc.payload), logs, plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestAttributesWithSeparator(t *testing.T) {
+	now := time.Time{}
+
+	testCases := []struct {
+		name       string
+		payload    string
+		attributes map[string]string
+		separator  string
+	}{
+		{
+			name: "Empty Attributes Map",
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }`,
+			attributes: map[string]string{},
+			separator:  ".",
+		},
+		{
+			name: "nil Attributes",
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Content-Type": "application/json" } }`,
+			attributes: nil,
+			separator:  "_test_",
+		},
+	}
+
+	expectedLogs := func(t *testing.T, payload string, separator string) plog.Logs {
 		logs := plog.NewLogs()
 		rl := logs.ResourceLogs().AppendEmpty()
 		sl := rl.ScopeLogs().AppendEmpty()
@@ -394,6 +482,7 @@ func TestEmptyAttributes(t *testing.T) {
 				"EdgeResponseStatus":  "200",
 				"EdgeStartTimestamp":  "2023-03-03T05:29:05Z",
 				"RayID":               "3a6050bcbe121a87",
+				fmt.Sprintf("RequestHeaders%sContent_Type", separator): "application/json",
 			}))
 
 			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
@@ -409,7 +498,6 @@ func TestEmptyAttributes(t *testing.T) {
 
 			payloadToExpectedBody(t, line, lr)
 		}
-
 		return logs
 	}
 
@@ -421,6 +509,86 @@ func TestEmptyAttributes(t *testing.T) {
 					TLS:            &configtls.ServerConfig{},
 					TimestampField: "EdgeStartTimestamp",
 					Attributes:     tc.attributes,
+					Separator:      tc.separator,
+				},
+			},
+				&consumertest.LogsSink{},
+			)
+			var logs plog.Logs
+			rawLogs, err := parsePayload([]byte(tc.payload))
+			if err == nil {
+				logs = recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
+			}
+			require.NoError(t, err)
+			require.NotNil(t, logs)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs(t, tc.payload, tc.separator), logs, plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestMultipleMapAttributes(t *testing.T) {
+	now := time.Time{}
+
+	testCases := []struct {
+		name       string
+		payload    string
+		attributes map[string]string
+	}{
+		{
+			name: "Multi Map Attributes",
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Cookie-new": { "x-m2-new": "sensitive" } } }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87", "RequestHeaders": { "Cookie-new": { "x-m2-new": "sensitive" } } }`,
+			attributes: map[string]string{},
+		},
+	}
+
+	expectedLogs := func(t *testing.T, payload string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver")
+
+		for idx, line := range strings.Split(payload, "\n") {
+			lr := sl.LogRecords().AppendEmpty()
+
+			require.NoError(t, lr.Attributes().FromRaw(map[string]any{
+				"ClientIP":                           fmt.Sprintf("89.163.253.%d", 200+idx),
+				"ClientRequestHost":                  fmt.Sprintf("www.theburritobot%d.com", idx),
+				"ClientRequestMethod":                "GET",
+				"ClientRequestURI":                   "/static/img/testimonial-hipster.png",
+				"EdgeEndTimestamp":                   "2023-03-03T05:30:05Z",
+				"EdgeResponseBytes":                  "69045",
+				"EdgeResponseStatus":                 "200",
+				"EdgeStartTimestamp":                 "2023-03-03T05:29:05Z",
+				"RayID":                              "3a6050bcbe121a87",
+				"RequestHeaders.Cookie_new.x_m2_new": "sensitive",
+			}))
+
+			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
+			ts, err := time.Parse(time.RFC3339, "2023-03-03T05:29:05Z")
+			require.NoError(t, err)
+			lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+			lr.SetSeverityNumber(plog.SeverityNumberInfo)
+			lr.SetSeverityText(plog.SeverityNumberInfo.String())
+
+			var log map[string]any
+			err = json.Unmarshal([]byte(line), &log)
+			require.NoError(t, err)
+
+			payloadToExpectedBody(t, line, lr)
+		}
+		return logs
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			recv := newReceiver(t, &Config{
+				Logs: LogsConfig{
+					Endpoint:       "localhost:0",
+					TLS:            &configtls.ServerConfig{},
+					TimestampField: "EdgeStartTimestamp",
+					Attributes:     tc.attributes,
+					Separator:      ".",
 				},
 			},
 				&consumertest.LogsSink{},
