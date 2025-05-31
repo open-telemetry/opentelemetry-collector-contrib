@@ -7,6 +7,7 @@ postgresql/minimal:
   top_query_collection:
     enabled: true
     top_n_query: 1234
+    query_plan_cache_ttl: 123s
 postgresql/pool:
   endpoint: localhost:5432
   transport: tcp
