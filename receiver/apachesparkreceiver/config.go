@@ -27,8 +27,9 @@ type Config struct {
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	ApplicationNames               []string `mapstructure:"application_names"`
+	ApplicationIDs                 []string `mapstructure:"application_ids"`
 
-	// prevent unkeyed literal initialization
+  // prevent unkeyed literal initialization
 	_ struct{}
 }
 
