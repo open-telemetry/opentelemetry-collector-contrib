@@ -91,10 +91,7 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	var options []func(*config.LoadOptions) error
-	// Add EC2 IMDS region option by default
-	// Skip EC2 IMDS if explicitly disabled
-	if os.Getenv("AWS_EC2_METADATA_DISABLED") != "true" {
-		options = append(options, config.WithEC2IMDSRegion())
+  options = append(options, config.WithEC2IMDSRegion())
 	}
 
 	if settings.Region != "" {

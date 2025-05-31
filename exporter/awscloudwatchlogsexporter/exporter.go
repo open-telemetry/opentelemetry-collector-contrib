@@ -85,7 +85,7 @@ func newCwLogsExporter(ctx context.Context, config component.Config, params exp.
 		return nil, err
 	}
 	return exporterhelper.NewLogs(
-		ctx, // Use the passed context instead of context.TODO()
+		ctx,
 		params,
 		config,
 		logsPusher.consumeLogs,
