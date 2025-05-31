@@ -17,8 +17,8 @@ issues: [40141]
 # Use pipe (|) for multiline entries.
 subtext: | 
   - add `host.name` resource attributes in the exported metrics. in document it says this attribute is exported but actually not.
-  - add feature gate for remove `server.address` and `server.port` resource attributes, as they are not resource attributes according to semantic convetion. to enable this feature gate, when running the otel colelctor, pass the following argument `--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute`.
-  - when the above feature gate is disabled, database io metrics will also contain `server.port` resource attribute, which was not reported previously.
+  - add feature gate to remove the `server.address` and `server.port` resource attributes, as they are not resource attributes according to the semantic conventions. To enable this feature gate, when running the otel collector, pass the following argument `--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute`.
+  - when the above feature gate is disabled, database io metrics will also contain `host.name` resource attribute, which was not reported previously.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

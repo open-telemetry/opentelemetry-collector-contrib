@@ -113,13 +113,13 @@ Top query collection enabled:
 ```
 
 ## Feature Gate
-Since v0.128.0, we added one new feature gate for removing `server.port` and `server.address` 
-resource attributes. As they are not identified as resources attributes from semantic convention.
-To enable it, pass the following argument to otel collector
+
+A new feature gate was added in `v0.128.0` for removing the `server.address` and `server.port` 
+resource attributes, as they are not identified as resources attributes in the semantic conventions.
+To enable it, pass the following argument to the Collector:
 
 ```
-"--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute"
-
+--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute
 ```
 
 ## Metrics
