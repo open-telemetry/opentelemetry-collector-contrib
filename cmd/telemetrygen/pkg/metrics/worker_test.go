@@ -476,6 +476,19 @@ func configWithMultipleAttributes(metric MetricType, qty int) *Config {
 	}
 }
 
+func configWithEnabledUnique(metric MetricType, qty int) *Config {
+	return &Config{
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: nil,
+		},
+		EnforceUniqueTimeseries: true,
+		NumMetrics:              qty,
+		MetricName:              "test",
+		MetricType:              metric,
+	}
+}
+
 func TestTemporalityStartTimes(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -529,7 +542,7 @@ func TestTemporalityStartTimes(t *testing.T) {
 				clock:                  clock,
 			}
 
-			w.simulateMetrics(resource.Default(), m, nil)
+			w.simulateMetrics(resource.Default(), m, nil, nil)
 
 			wg.Wait()
 
@@ -554,4 +567,36 @@ func logTimestampDiff(t *testing.T, firstTime, secondTime time.Time) {
 		firstTime.String(),
 		secondTime.String(),
 		secondTime.Sub(firstTime))
+}
+
+func TestUniqueSumTimeseries(t *testing.T) {
+	// arrange
+	qty := 4
+	cfg := configWithEnabledUnique(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	var actualValue attribute.Value
+	var exist bool
+	for i := 0; i < qty; i++ {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 1, attr.Len(), "it must have one attribute here")
+		actualValue, exist = attr.Value(timeBoxAttributeName)
+		assert.True(t, exist, "it should have the timebox attribute")
+		assert.LessOrEqual(t, actualValue.AsInt64(), int64(4), "it should be between 0 and 4")
+	}
 }
