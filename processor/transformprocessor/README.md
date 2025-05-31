@@ -261,6 +261,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attributes](#aggregate_on_attributes)
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
+- [drop_bucket](#drop_bucket)
 
 ### convert_sum_to_gauge
 
@@ -582,6 +583,19 @@ statements:
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
+### drop_bucket
+
+`drop_bucket(pattern)`
+
+The `drop_bucket` function removes histogram buckets whose bounds match the provided regex pattern.
+
+`pattern` is a string containing a valid regular expression to match against bucket bounds.
+
+Examples:
+
+- `drop_bucket("^10$") where metric.name == "http_request_duration"` - Remove the bucket with bound exactly equal to 10
+- `drop_bucket("^(5|20)$") where metric.name == "request_size"` - Remove buckets with bounds 5 and 20
+- `drop_bucket("^1.*") where metric.name == "latency"` - Remove all buckets with bounds starting with 1
 
 ## Examples
 
