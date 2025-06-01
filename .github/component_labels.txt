@@ -6,6 +6,7 @@ cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
+confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
 connector/countconnector connector/count
@@ -113,7 +114,6 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
-extension/tpmextension extension/tpm
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -140,6 +140,7 @@ pkg/core/xidutils pkg/core/xidutils
 pkg/datadog pkg/datadog
 pkg/experimentalmetricmetadata pkg/experimentalmetricmetadata
 pkg/golden pkg/golden
+pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/pdatatest pkg/pdatatest

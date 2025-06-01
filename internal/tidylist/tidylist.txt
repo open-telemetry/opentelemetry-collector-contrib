@@ -18,6 +18,8 @@ exporter/opencensusexporter
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
+internal/exp/metrics
+processor/deltatocumulativeprocessor
 receiver/prometheusreceiver
 exporter/prometheusexporter
 internal/splunk
@@ -25,9 +27,11 @@ pkg/batchperresourceattr
 pkg/core/xidutils
 pkg/translator/jaeger
 exporter/sapmexporter
+internal/gopsutilenv
 pkg/experimentalmetricmetadata
 pkg/translator/signalfx
 exporter/signalfxexporter
+exporter/stefexporter
 exporter/syslogexporter
 pkg/translator/zipkin
 receiver/zipkinreceiver
@@ -35,7 +39,6 @@ exporter/zipkinexporter
 extension/storage
 pkg/stanza
 receiver/carbonreceiver
-internal/exp/metrics
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/sapmreceiver
@@ -43,6 +46,7 @@ receiver/signalfxreceiver
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
+receiver/stefreceiver
 receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
@@ -50,6 +54,7 @@ cmd/opampsupervisor
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
+confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
 internal/filter
@@ -66,6 +71,7 @@ processor/transformprocessor
 internal/docker
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
+pkg/winperfcounters
 receiver/hostmetricsreceiver
 internal/datadog
 pkg/datadog
@@ -115,6 +121,7 @@ exporter/googlecloudpubsubexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
+pkg/kafka/configkafka
 internal/kafka
 pkg/batchpersignal
 pkg/kafka/topic
@@ -140,7 +147,6 @@ internal/rabbitmq
 exporter/rabbitmqexporter
 exporter/sematextexporter
 exporter/sentryexporter
-exporter/stefexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
@@ -188,7 +194,6 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
-extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -200,12 +205,10 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
-pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/datadogsemanticsprocessor
-processor/deltatocumulativeprocessor
 processor/deltatorateprocessor
 processor/dnslookupprocessor
 processor/filterprocessor
@@ -308,7 +311,6 @@ receiver/sqlqueryreceiver
 receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
-receiver/stefreceiver
 receiver/systemdreceiver
 receiver/tcpcheckreceiver
 receiver/tcplogreceiver

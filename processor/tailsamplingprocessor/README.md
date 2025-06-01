@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tail_sampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tail_sampling&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech) \| Seeking more code owners! |
 | Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
@@ -59,17 +60,18 @@ The following configuration options can also be modified:
   - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
+- `sample_on_first_match`: Make decision as soon as a policy matches
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
 - When there's a "drop" decision, the trace is not sampled;
-- When there's an "inverted not sample" decision, the trace is not sampled;
+- When there's an "inverted not sample" decision, the trace is not sampled; ***Deprecated***
 - When there's a "sample" decision, the trace is sampled;
-- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled;
+- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled; ***Deprecated***
 - In all other cases, the trace is NOT sampled
 
-An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy.
+An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy. There is an exception to this if the policy is within an and or composite policy, the resulting decision will be either sampled or not sampled. The "inverted" decisions have been deprecated, please make use of drop policy to explicitly not sample select traces.
 
 Examples:
 
@@ -558,6 +560,12 @@ When this feature gate is set, this will add additional attributes on each sampl
 |---------------------------------|---------------------------------------------------------------------------|----------------------------|
 | `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always                     |
 | `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used |
+
+### Disable invert decisions
+
+The invert sampling decisions (`InvertSampled` and `InvertNotSampled`) have been deprecated, however, they are still available. To disable them before their complete removal, you can use the `processor.tailsamplingprocessor.disableinvertdecisions` feature gate. When this feature gate is set, sampling policy `invert_match` will result in a `Sampled` or `NotSampled` decision instead of `InvertSampled` or `InvertNotSampled`. This applies to the string, numeric, and boolean tag policy.
+
+If you disable invert decisions, you can make use of drop policy to explicitly not sample select traces.
 
 ### Policy Evaluation Errors
 

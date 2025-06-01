@@ -6,10 +6,10 @@ package translator
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -21,7 +21,7 @@ func TestAddAWSToResource(t *testing.T) {
 	}{
 		"WithNil": {
 			want: map[string]any{
-				conventions.AttributeCloudProvider: "unknown",
+				string(conventions.CloudProviderKey): "unknown",
 			},
 		},
 		"WithCloudWatchLogs": {
@@ -38,12 +38,12 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-				conventions.AttributeAWSLogGroupARNs: []any{
+				string(conventions.CloudProviderKey): conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.AWSLogGroupARNsKey): []any{
 					"arn:aws:logs:<region>:<account>:log-group:<log-group-1>:*",
 					"arn:aws:logs:<region>:<account>:log-group:<log-group-2>:*",
 				},
-				conventions.AttributeAWSLogGroupNames: []any{"<log-group-1>", "<log-group-2>"},
+				string(conventions.AWSLogGroupNamesKey): []any{"<log-group-1>", "<log-group-2>"},
 			},
 		},
 		"WithEC2": {
@@ -56,11 +56,11 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderAWS,
-				conventions.AttributeCloudAvailabilityZone: "<ec2-az>",
-				conventions.AttributeHostID:                "<instance-id>",
-				conventions.AttributeHostType:              "<instance-size>",
-				conventions.AttributeHostImageID:           "<ami>",
+				string(conventions.CloudProviderKey):         conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.CloudAvailabilityZoneKey): "<ec2-az>",
+				string(conventions.HostIDKey):                "<instance-id>",
+				string(conventions.HostTypeKey):              "<instance-size>",
+				string(conventions.HostImageIDKey):           "<ami>",
 			},
 		},
 		"WithECS": {
@@ -72,10 +72,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderAWS,
-				conventions.AttributeCloudAvailabilityZone: "<ecs-az>",
-				conventions.AttributeContainerName:         "<container-name>",
-				conventions.AttributeContainerID:           "<ecs-container-id>",
+				string(conventions.CloudProviderKey):         conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.CloudAvailabilityZoneKey): "<ecs-az>",
+				string(conventions.ContainerNameKey):         "<container-name>",
+				string(conventions.ContainerIDKey):           "<ecs-container-id>",
 			},
 		},
 		"WithEKS": {
@@ -87,10 +87,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAWS,
-				conventions.AttributeK8SPodName:     "<pod>",
-				conventions.AttributeK8SClusterName: "<cluster-name>",
-				conventions.AttributeContainerID:    "<eks-container-id>",
+				string(conventions.CloudProviderKey):  conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.K8SPodNameKey):     "<pod>",
+				string(conventions.K8SClusterNameKey): "<cluster-name>",
+				string(conventions.ContainerIDKey):    "<eks-container-id>",
 			},
 		},
 		"WithBeanstalk": {
@@ -102,10 +102,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:     conventions.AttributeCloudProviderAWS,
-				conventions.AttributeServiceNamespace:  "<environment>",
-				conventions.AttributeServiceInstanceID: "1",
-				conventions.AttributeServiceVersion:    "<version-label>",
+				string(conventions.CloudProviderKey):     conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.ServiceNamespaceKey):  "<environment>",
+				string(conventions.ServiceInstanceIDKey): "1",
+				string(conventions.ServiceVersionKey):    "<version-label>",
 			},
 		},
 	}

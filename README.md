@@ -69,6 +69,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
+- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
@@ -107,13 +108,12 @@ Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
 
-Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
+Maintainers ([@open-telemetry/collector-contrib-maintainers](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainers)):
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
-- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
@@ -123,6 +123,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 Emeritus Maintainers
 
+- [Daniel Jaglowski](https://github.com/djaglowski), Bindplane
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
