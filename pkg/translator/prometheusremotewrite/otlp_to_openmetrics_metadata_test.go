@@ -237,6 +237,70 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}
 }
 
+func TestOtelMetricsToMetadataNamespace(t *testing.T) {
+	ts := uint64(time.Now().UnixNano())
+	tests := []struct {
+		name      string
+		metrics   pmetric.Metrics
+		want      []*prompb.MetricMetadata
+		namespace string
+	}{
+		{
+			name:      "gauge_no_namespace",
+			metrics:   GenerateMetricsGauge(),
+			namespace: "",
+			want: []*prompb.MetricMetadata{
+				{
+					Type: prompb.MetricMetadata_GAUGE,
+					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+						testdata.TestGaugeDoubleMetricName,
+						pcommon.NewMap(),
+						1, ts,
+					), "", false),
+					Unit: "bytes_per_second",
+					Help: "gauge description",
+				},
+			},
+		},
+		{
+			name:      "gauge_namespace",
+			metrics:   GenerateMetricsGauge(),
+			namespace: "ns",
+			want: []*prompb.MetricMetadata{
+				{
+					Type: prompb.MetricMetadata_GAUGE,
+					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+						testdata.TestGaugeDoubleMetricName,
+						pcommon.NewMap(),
+						1, ts,
+					), "ns", false),
+					Unit: "bytes_per_second",
+					Help: "gauge description",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			for i := 0; i < len(metaData); i++ {
+				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
+				assert.Equal(t, tt.want[i].Unit, metaData[i].Unit)
+				assert.Equal(t, tt.want[i].MetricFamilyName, metaData[i].MetricFamilyName)
+				assert.Equal(t, tt.want[i].Help, metaData[i].Help)
+			}
+		})
+	}
+}
+
+func GenerateMetricsGauge() pmetric.Metrics {
+	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+	ms := ilm0.Metrics()
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "By/s", "gauge description")
+	return md
+}
+
 func GenerateMetricsAllTypesNoDataPointsHelp() pmetric.Metrics {
 	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
