@@ -6,6 +6,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap/zaptest/observer"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -20,9 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestStart(t *testing.T) {
@@ -274,6 +274,138 @@ func TestAutodiscoverLimit(t *testing.T) {
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
 }
 
+func TestUpdateGroupRequests(t *testing.T) {
+	type testLogDetail struct {
+		message   string
+		groupName string
+	}
+
+	tests := []struct {
+		name          string
+		currentGroups []groupRequest
+		newGroups     []groupRequest
+		expectedInfo  []testLogDetail
+		expectedWarn  []testLogDetail
+	}{
+		{
+			currentGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			newGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			expectedInfo: []testLogDetail{},
+			expectedWarn: []testLogDetail{},
+		},
+		{
+			currentGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+			},
+			newGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			expectedInfo: []testLogDetail{
+				{message: "new log group found", groupName: "group2"},
+			},
+			expectedWarn: []testLogDetail{},
+		},
+		{
+			currentGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			newGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+			},
+			expectedInfo: []testLogDetail{},
+			expectedWarn: []testLogDetail{
+				{message: "log group no longer exists", groupName: "group2"},
+			},
+		},
+		{
+			currentGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			newGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group3"},
+			},
+			expectedInfo: []testLogDetail{
+				{message: "new log group found", groupName: "group3"},
+			},
+			expectedWarn: []testLogDetail{
+				{message: "log group no longer exists", groupName: "group2"},
+			},
+		},
+		{
+			currentGroups: []groupRequest{},
+			newGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			expectedInfo: []testLogDetail{
+				{message: "new log group found", groupName: "group1"},
+				{message: "new log group found", groupName: "group2"},
+			},
+			expectedWarn: []testLogDetail{},
+		},
+		{
+			currentGroups: []groupRequest{
+				&mockGroupRequest{name: "group1"},
+				&mockGroupRequest{name: "group2"},
+			},
+			newGroups:    []groupRequest{},
+			expectedInfo: []testLogDetail{},
+			expectedWarn: []testLogDetail{
+				{message: "log group no longer exists", groupName: "group1"},
+				{message: "log group no longer exists", groupName: "group2"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		core, observedLogs := observer.New(zap.InfoLevel)
+		logger := zap.New(core)
+
+		logsReceiver := &logsReceiver{
+			settings: receiver.Settings{
+				TelemetrySettings: component.TelemetrySettings{
+					Logger: logger,
+				},
+			},
+			groupRequests: tt.currentGroups,
+		}
+
+		logsReceiver.updateGroupRequests(tt.newGroups)
+
+		// Assert value was updated
+		require.Equal(t, tt.newGroups, logsReceiver.groupRequests)
+
+		// Assert logs were emitted
+		infoLogs := observedLogs.FilterLevelExact(zap.InfoLevel).All()
+		warnLogs := observedLogs.FilterLevelExact(zap.WarnLevel).All()
+
+		require.Equal(t, len(tt.expectedInfo), len(infoLogs))
+		require.Equal(t, len(tt.expectedWarn), len(warnLogs))
+
+		for i, expected := range tt.expectedInfo {
+			actual := observedLogs.FilterLevelExact(zap.InfoLevel).All()[i]
+			require.Equal(t, expected.message, actual.Message)
+			require.Equal(t, expected.groupName, actual.ContextMap()["groupName"])
+		}
+
+		for i, expected := range tt.expectedWarn {
+			actual := observedLogs.FilterLevelExact(zap.WarnLevel).All()[i]
+			require.Equal(t, expected.message, actual.Message)
+			require.Equal(t, expected.groupName, actual.ContextMap()["groupName"])
+		}
+	}
+}
+
 func defaultMockClient() client {
 	mc := &mockClient{}
 	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
@@ -350,4 +482,18 @@ func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlo
 func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
+}
+
+type mockGroupRequest struct {
+	name string
+}
+
+func (g mockGroupRequest) request(_ int, _ string, _, _ *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+	return &cloudwatchlogs.FilterLogEventsInput{
+		LogGroupName: &g.name,
+	}
+}
+
+func (g mockGroupRequest) groupName() string {
+	return g.name
 }

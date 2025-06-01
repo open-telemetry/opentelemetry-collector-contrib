@@ -186,12 +186,12 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 			return
 		case <-t.C:
 			if l.autodiscover != nil {
-				group, err := l.discoverGroups(ctx, l.autodiscover)
+				groups, err := l.discoverGroups(ctx, l.autodiscover)
 				if err != nil {
 					l.settings.Logger.Error("unable to perform discovery of log groups", zap.Error(err))
 					continue
 				}
-				l.groupRequests = group
+				l.updateGroupRequests(groups)
 			}
 
 			err := l.poll(ctx)
@@ -200,6 +200,42 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (l *logsReceiver) updateGroupRequests(groups []groupRequest) {
+	// Log CloudWatch log groups changes
+	gCurr := 0
+	gNew := 0
+
+	for gCurr < len(l.groupRequests) && gNew < len(groups) {
+		if l.groupRequests[gCurr].groupName() == groups[gNew].groupName() {
+			gCurr++
+			gNew++
+		} else if l.groupRequests[gCurr].groupName() < groups[gNew].groupName() {
+			l.settings.Logger.Warn("log group no longer exists",
+				zap.String("groupName", l.groupRequests[gCurr].groupName()))
+			gCurr++
+		} else if l.groupRequests[gCurr].groupName() > groups[gNew].groupName() {
+			l.settings.Logger.Info("new log group found",
+				zap.String("groupName", groups[gNew].groupName()))
+			gNew++
+		}
+	}
+
+	// Log remaining log groups
+	for gCurr < len(l.groupRequests) {
+		l.settings.Logger.Warn("log group no longer exists",
+			zap.String("groupName", l.groupRequests[gCurr].groupName()))
+		gCurr++
+	}
+
+	for gNew < len(groups) {
+		l.settings.Logger.Info("new log group found",
+			zap.String("groupName", groups[gNew].groupName()))
+		gNew++
+	}
+
+	l.groupRequests = groups
 }
 
 func (l *logsReceiver) poll(ctx context.Context) error {
