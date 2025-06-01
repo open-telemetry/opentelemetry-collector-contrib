@@ -101,7 +101,6 @@ func Test_batchTimeSeriesV2UpdatesStateForLargeBatches(t *testing.T) {
 	}
 
 	tsMap1 := getTimeseriesMapV2(tsArray)
-
 	state := newBatchTimeServicesState()
 	requests, err := batchTimeSeriesV2(tsMap1, smb, 1000000, state)
 
