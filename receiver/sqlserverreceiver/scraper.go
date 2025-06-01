@@ -667,7 +667,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateSQL(row[columnName]) })
+		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			obfuscated, err := obfuscateSQL(statement)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return statement, nil
+			}
+
+			return obfuscated, nil
+		})
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
 		cached, executionCountVal := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
@@ -853,23 +862,6 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	return results
 }
 
-type internalAttribute struct {
-	key            string
-	columnName     string
-	valueRetriever func(row sqlquery.StringMap, columnName string) (any, error)
-	valueSetter    func(attributes pcommon.Map, key string, value any)
-}
-
-func defaultValueRetriever(defaultValue any) func(row sqlquery.StringMap, columnName string) (any, error) {
-	return func(_ sqlquery.StringMap, _ string) (any, error) {
-		return defaultValue, nil
-	}
-}
-
-func vanillaRetriever(row sqlquery.StringMap, columnName string) (any, error) {
-	return row[columnName], nil
-}
-
 func retrieveInt(row sqlquery.StringMap, columnName string) (any, error) {
 	var err error
 	var result int64
@@ -912,20 +904,7 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 	return result, err
 }
 
-func setString(attributes pcommon.Map, key string, value any) {
-	attributes.PutStr(key, value.(string))
-}
-
-func setInt(attributes pcommon.Map, key string, value any) {
-	attributes.PutInt(key, value.(int64))
-}
-
-func setDouble(attributes pcommon.Map, key string, value any) {
-	attributes.PutDouble(key, value.(float64))
-}
-
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
-	const eventName = "db.server.query_sample"
 	const blockingSessionID = "blocking_session_id"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -933,7 +912,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const contextInfo = "context_info"
 	const cpuTimeMillisecond = "cpu_time"
 	const dbName = "db_name"
-	const dbPrefix = "sqlserver."
 	const deadlockPriority = "deadlock_priority"
 	const estimatedCompletionTimeMillisecond = "estimated_completion_time"
 	const hostName = "host_name"
@@ -976,250 +954,98 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	dbSystemNameVal := "microsoft.sql_server"
 
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		record := plog.NewLogRecord()
-		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		record.SetEventName(eventName)
-
-		// Attributes sorted alphabetically by key
-		attributes := []internalAttribute{
-			{
-				key:            "client.port",
-				columnName:     clientPort,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "db.namespace",
-				columnName:     dbName,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        "db.query.text",
-				columnName: statementText,
-				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateSQL(row[columnName])
-				},
-				valueSetter: setString,
-			},
-			{
-				key:            "db.system.name",
-				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
-				valueSetter:    setString,
-			},
-			{
-				key:            "network.peer.address",
-				columnName:     clientAddress,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            "network.peer.port",
-				columnName:     clientPort,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			// the following ones are the attributes that are not in the semantic conventions
-			{
-				key:            dbPrefix + blockingSessionID,
-				columnName:     blockingSessionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + command,
-				columnName:     command,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + cpuTimeMillisecond,
-				columnName: cpuTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + deadlockPriority,
-				columnName:     deadlockPriority,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:        dbPrefix + estimatedCompletionTimeMillisecond,
-				columnName: estimatedCompletionTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:        dbPrefix + lockTimeoutMillisecond,
-				columnName: lockTimeoutMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + logicalReads,
-				columnName:     logicalReads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + openTransactionCount,
-				columnName:     openTransactionCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + percentComplete,
-				columnName:     percentComplete,
-				valueRetriever: retrieveFloat,
-				valueSetter:    setDouble,
-			},
-			{
-				key:            dbPrefix + queryHash,
-				valueRetriever: defaultValueRetriever(queryHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryPlanHash,
-				valueRetriever: defaultValueRetriever(queryPlanHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryStart,
-				columnName:     queryStart,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + reads,
-				columnName:     reads,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + requestStatus,
-				columnName:     requestStatus,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + rowCount,
-				columnName:     rowCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + sessionID,
-				columnName:     sessionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + sessionStatus,
-				columnName:     sessionStatus,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + totalElapsedTimeMillisecond,
-				columnName: totalElapsedTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + transactionID,
-				columnName:     transactionID,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + transactionIsolationLevel,
-				columnName:     transactionIsolationLevel,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            "user.name",
-				columnName:     username,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + waitResource,
-				columnName:     waitResource,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:        dbPrefix + waitTimeMillisecond,
-				columnName: waitTimeMillisecond,
-				valueRetriever: retrieveIntAndConvert(func(i int64) any {
-					return float64(i) / 1000.0
-				}),
-				valueSetter: setDouble,
-			},
-			{
-				key:            dbPrefix + waitType,
-				columnName:     waitType,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + writes,
-				columnName:     writes,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-		}
-
-		spanContext := trace.SpanContextFromContext(propagator.Extract(context.Background(), propagation.MapCarrier{
-			"traceparent": row[contextInfo],
-		}))
-
-		if spanContext.IsValid() {
-			record.SetTraceID(pcommon.TraceID(spanContext.TraceID()))
-			record.SetSpanID(pcommon.SpanID(spanContext.SpanID()))
-		} else {
-			attributes = append(attributes, internalAttribute{
-				key:            dbPrefix + contextInfo,
-				valueRetriever: defaultValueRetriever(hex.EncodeToString([]byte(row[contextInfo]))),
-				valueSetter:    setString,
-			})
-		}
-
-		for _, attr := range attributes {
-			value, err := attr.valueRetriever(row, attr.columnName)
+		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
+		dbNamespaceVal := row[dbName]
+		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			obfuscated, err := obfuscateSQL(statement)
 			if err != nil {
-				errs = append(errs, err)
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return statement, nil
 			}
-			attr.valueSetter(record.Attributes(), attr.key, value)
+			return obfuscated, nil
+		}).(string)
+		networkPeerAddressVal := row[clientAddress]
+		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
+		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
+		commandVal := row[command]
+		cpuTimeSecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		deadlockPriorityVal := s.retrieveValue(row, deadlockPriority, &errs, retrieveInt).(int64)
+		estimatedCompletionTimeSecondVal := s.retrieveValue(row, estimatedCompletionTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		lockTimeoutSecondVal := s.retrieveValue(row, lockTimeoutMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt).(int64)
+		openTransactionCountVal := s.retrieveValue(row, openTransactionCount, &errs, retrieveInt).(int64)
+		percentCompleteVal := s.retrieveValue(row, percentComplete, &errs, retrieveFloat).(float64)
+		queryStartVal := row[queryStart]
+		readsVal := s.retrieveValue(row, reads, &errs, retrieveInt).(int64)
+		requestStatusVal := row[requestStatus]
+		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
+		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
+		sessionStatusVal := row[sessionStatus]
+		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		transactionIDVal := s.retrieveValue(row, transactionID, &errs, retrieveInt).(int64)
+		transactionIsolationLevelVal := s.retrieveValue(row, transactionIsolationLevel, &errs, retrieveInt).(int64)
+		usernameVal := row[username]
+		waitResourceVal := row[waitResource]
+		waitTimeSecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i) / 1000.0
+		})).(float64)
+		waitTypeVal := row[waitType]
+		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
+
+		contextFromQuery := propagator.Extract(context.Background(), propagation.MapCarrier{
+			"traceparent": row[contextInfo],
+		})
+
+		spanContext := trace.SpanContextFromContext(contextFromQuery)
+		contextInfoVal := ""
+
+		if !spanContext.IsValid() {
+			contextInfoVal = hex.EncodeToString([]byte(row[contextInfo]))
 		}
 
 		// client.address: use host_name if it has value, if not, use client_net_address.
 		// this value may not be accurate if
 		// - there is proxy in the middle of sql client and sql server. Or
 		// - host_name value is empty or not accurate.
+		var clientAddressVal string
 		if row[hostName] != "" {
-			record.Attributes().PutStr("client.address", row[hostName])
+			clientAddressVal = row[hostName]
 		} else {
-			record.Attributes().PutStr("client.address", row[clientAddress])
+			clientAddressVal = row[clientAddress]
 		}
 
-		s.lb.AppendLogRecord(record)
+		s.lb.RecordDbServerQuerySampleEvent(
+			contextFromQuery,
+			timestamp, clientAddressVal, clientPortVal,
+			dbNamespaceVal, queryTextVal, dbSystemNameVal,
+			networkPeerAddressVal, networkPeerPortVal,
+			blockSessionIDVal, contextInfoVal,
+			commandVal, cpuTimeSecondVal,
+			deadlockPriorityVal, estimatedCompletionTimeSecondVal,
+			lockTimeoutSecondVal, logicalReadsVal,
+			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
+			queryStartVal, readsVal,
+			requestStatusVal, rowCountVal,
+			sessionIDVal, sessionStatusVal,
+			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
+			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
+		)
 
 		if !resourcesAdded {
 			resourceAttributes := resources.Attributes()

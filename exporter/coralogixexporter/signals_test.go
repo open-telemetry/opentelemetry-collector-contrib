@@ -4,12 +4,16 @@
 package coralogixexporter
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -157,6 +161,137 @@ func TestProcessError(t *testing.T) {
 					assert.Contains(t, err.Error(), tt.expected.Error())
 				}
 			}
+		})
+	}
+}
+
+func TestSignalExporter_AuthorizationHeader(t *testing.T) {
+	privateKey := "test-private-key"
+	cfg := &Config{
+		Domain:     "test.domain.com",
+		PrivateKey: configopaque.String(privateKey),
+		Logs: configgrpc.ClientConfig{
+			Headers: map[string]configopaque.String{},
+		},
+	}
+
+	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
+	require.NoError(t, err)
+
+	wrapper := &signalConfigWrapper{config: &cfg.Logs}
+	err = exp.startSignalExporter(context.Background(), componenttest.NewNopHost(), wrapper)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exp.shutdown(context.Background()))
+	}()
+
+	authHeader, ok := wrapper.config.Headers["Authorization"]
+	require.True(t, ok, "Authorization header should be present")
+	assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader, "Authorization header should be in Bearer format")
+
+	mdValue := exp.metadata.Get("Authorization")
+	require.Len(t, mdValue, 1, "Authorization header should be present in metadata")
+	assert.Equal(t, "Bearer "+privateKey, mdValue[0], "Authorization header in metadata should be in Bearer format")
+}
+
+func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
+	tests := []struct {
+		name   string
+		config configgrpc.ClientConfig
+	}{
+		{
+			name: "logs",
+			config: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{
+					"Custom-Header": "custom-value",
+					"X-Test":        "test-value",
+				},
+			},
+		},
+		{
+			name: "traces",
+			config: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{
+					"Custom-Header": "custom-value",
+					"X-Test":        "test-value",
+				},
+			},
+		},
+		{
+			name: "metrics",
+			config: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{
+					"Custom-Header": "custom-value",
+					"X-Test":        "test-value",
+				},
+			},
+		},
+		{
+			name: "profiles",
+			config: configgrpc.ClientConfig{
+				Headers: map[string]configopaque.String{
+					"Custom-Header": "custom-value",
+					"X-Test":        "test-value",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			privateKey := "test-private-key"
+			cfg := &Config{
+				Domain:     "test.domain.com",
+				PrivateKey: configopaque.String(privateKey),
+			}
+
+			switch tt.name {
+			case "logs":
+				cfg.Logs = tt.config
+			case "traces":
+				cfg.Traces = tt.config
+			case "metrics":
+				cfg.Metrics = tt.config
+			case "profiles":
+				cfg.Profiles = tt.config
+			}
+
+			exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
+			require.NoError(t, err)
+
+			wrapper := &signalConfigWrapper{config: &tt.config}
+			err = exp.startSignalExporter(context.Background(), componenttest.NewNopHost(), wrapper)
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, exp.shutdown(context.Background()))
+			}()
+
+			headers := wrapper.config.Headers
+			require.Len(t, headers, 3)
+
+			authHeader, ok := headers["Authorization"]
+			require.True(t, ok)
+			assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader)
+
+			customHeader, ok := headers["Custom-Header"]
+			require.True(t, ok)
+			assert.Equal(t, configopaque.String("custom-value"), customHeader)
+
+			testHeader, ok := headers["X-Test"]
+			require.True(t, ok)
+			assert.Equal(t, configopaque.String("test-value"), testHeader)
+
+			mdAuth := exp.metadata.Get("Authorization")
+			require.Len(t, mdAuth, 1)
+			assert.Equal(t, "Bearer "+privateKey, mdAuth[0])
+
+			mdCustom := exp.metadata.Get("Custom-Header")
+			require.Len(t, mdCustom, 1)
+			assert.Equal(t, "custom-value", mdCustom[0])
+
+			mdTest := exp.metadata.Get("X-Test")
+			require.Len(t, mdTest, 1)
+			assert.Equal(t, "test-value", mdTest[0])
 		})
 	}
 }
