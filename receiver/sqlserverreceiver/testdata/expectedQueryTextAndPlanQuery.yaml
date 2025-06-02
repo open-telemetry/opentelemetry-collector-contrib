@@ -55,7 +55,7 @@ resourceLogs:
               - key: server.port
                 value:
                   intValue: "1433"
-              - key: db.server.name
+              - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
             body: {}

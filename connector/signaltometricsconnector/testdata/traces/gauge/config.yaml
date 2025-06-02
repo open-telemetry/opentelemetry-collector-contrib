@@ -1,0 +1,47 @@
+signaltometrics:
+  spans:
+    - name: with_resource_foo_only
+      description: Spans with resource attribute including resource.foo as a int gauge metric
+      unit: s
+      include_resource_attributes:
+        - key: resource.foo
+      gauge:
+        value: Double(Seconds(end_time - start_time))
+    - name: span_adjusted_count
+      description: Adjusted count for the span as a int gauge metric
+      unit: s
+      gauge:
+        value: Int(AdjustedCount())
+    - name: http.trace.span.duration
+      description: Span duration for HTTP spans as a int gauge metric
+      unit: s
+      attributes:
+        - key: http.response.status_code
+      gauge:
+        value: Int(Seconds(end_time - start_time))
+    - name: db.trace.span.duration
+      description: Span duration for DB spans as a int gauge metric
+      unit: s
+      attributes:
+        - key: db.system
+      gauge:
+        value: Double(Seconds(end_time - start_time))
+    - name: msg.trace.span.duration
+      description: Span duration for messaging spans as a double gauge metric
+      unit: s
+      conditions: # Will evaluate to true
+        - resource.attributes["404.attribute"] != nil
+        - resource.attributes["resource.foo"] != nil
+      attributes:
+        - key: messaging.system
+      gauge:
+        value: Int(Seconds(end_time - start_time))
+    - name: ignored.gauge
+      description: Will be ignored due to conditions evaluating to false
+      unit: s
+      conditions: # Will evaluate to false
+        - resource.attributes["404.attribute"] != nil
+      attributes:
+        - key: messaging.system
+      gauge:
+        value: Double(Seconds(end_time - start_time))
