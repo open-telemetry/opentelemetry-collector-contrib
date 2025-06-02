@@ -168,6 +168,10 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "16771"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: SQLServer:Buffer Manager
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.life_expectancy
@@ -216,6 +220,10 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "16771"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: SQLServer:Buffer Node
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.life_expectancy
