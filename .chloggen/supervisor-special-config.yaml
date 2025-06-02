@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for total control of configuration merging through magic configuration files
+note: Add support for total control of configuration merging through special configuration files
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39963]
@@ -16,26 +16,18 @@ issues: [39963]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The magic configuration files can be used through the `agent::config_files` option to control the order
+  The special configuration files can be used through the `agent::config_files` option to control the order
   in which configuration is merged. This allows greater customization of this feature, so that it can adapt
   many use cases without requiring code changes.
-
-  This feature keeps backwards compatibility with previous behavior by injecting the magic config files where
-  necessary if none of them are explicitly present in the list of config files. As long as a single magic file
-  is present no automagic injection happens.
-
-  It's important to know that omitting one or more of the magic config files can cause the Supervisor and Agent
-  to misbehave (i.e. unexpected resource attributes, broken agent telemetry or broken OpAMP connection between
-  Agent and Supervisor).
 
   Configuration is merged from the top of the list to the bottom, in order. This means that the first configuration
   files will get overwritten by the later ones.
 
-  Here's a list of the avaialable magic configuration options and what they represent:
+  Here's a list of the available special configuration options and what they represent:
 
+  - "$OWN_METRICS_CONFIG": configuration for the agent's own telemetry.
   - "$BUILTIN_CONFIG": configuration that doesn't affect how it works (resource, identifying and non-identifying attributes, etc.).
   - "$OPAMP_EXTENSION_CONFIG": configuration for the agent's OpAMP extension to connect to the Supervisor.
-  - "$OWN_METRICS_CONFIG": configuration for the agent's own telemetry.
   - "$REMOTE_CONFIG": remote configuration received by the Supervisor.
 
   Here's an example that could be used to configure the Agent:
@@ -43,13 +35,22 @@ subtext: |
   ```
   agent:
     config_files:
-    - $OPAMP_EXTENSION_CONFIG
+    - base_config.yaml
     - $OWN_METRICS_CONFIG
     - $BUILTIN_CONFIG
-    - base_config.yaml
+    - $OPAMP_EXTENSION_CONFIG
     - $REMOTE_CONFIG
     - compliance_config.yaml
   ```
+
+  If **one or more** of the special files are not specified, they are automatically
+  added at predetermined positions in the list. The order is as follows:
+
+  - `$OWN_METRICS_CONFIG`
+  - `$BUILTIN_CONFIG`
+  - <USER_PROVIDED_CONFIG_FILES>
+  - `$OPAMP_EXTENSION_CONFIG`
+  - `$REMOTE_CONFIG`
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
