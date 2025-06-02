@@ -17,7 +17,6 @@ import (
 )
 
 func TestEnableCreatedTimestampZeroIngestionGateUsage(t *testing.T) {
-
 	ctx := context.Background()
 	mockConsumer := new(consumertest.MetricsSink)
 	cfg := createDefaultConfig().(*Config)
