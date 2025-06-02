@@ -20,7 +20,7 @@ import (
 
 func configureBenchmark(tb testing.TB) {
 	if os.Getenv("BENCHMARK_KAFKA") == "" {
-		tb.Skip("Skipping Kafka benchmarks")
+		tb.Skip("Skipping Kafka benchmarks, set BENCHMARK_KAFKA to any value run them, and optionally USE_FRANZ_GO to use franz-go client")
 	}
 	tb.Helper()
 	if ct := os.Getenv("USE_FRANZ_GO"); ct != "" {

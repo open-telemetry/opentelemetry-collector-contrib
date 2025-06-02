@@ -22,6 +22,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/plugin/kzap"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -41,15 +42,17 @@ func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
 ) (*kgo.Client, error) {
+	codec := compressionCodec(cfg.Compression)
+	switch cfg.CompressionParams.Level {
+	case 0, configcompression.DefaultCompressionLevel:
+	default:
+		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
+	}
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(clientCfg.Brokers...),
 		kgo.WithLogger(kzap.New(logger.Named("kafka"))),
 		kgo.ProduceRequestTimeout(timeout),
-		kgo.ProducerBatchCompression(
-			compressionCodec(cfg.Compression).WithLevel(
-				int(cfg.CompressionParams.Level),
-			),
-		),
+		kgo.ProducerBatchCompression(codec),
 		// Use the UniformBytesPartitioner that is the default in franz-go with
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
