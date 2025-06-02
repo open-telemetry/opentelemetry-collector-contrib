@@ -61,7 +61,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	for _, lhe := range lhes {
 		parentID, err := lhe.GetParentID(cfg.Attributes.ParentID)
 		if err != nil {
-			logger.Warn("parent id not found")
+			logger.Debug("parent id not found")
 		}
 
 		action := lhe.SignalType(logger)
@@ -160,7 +160,7 @@ func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, a
 			case bool:
 				newEvent.Attributes().PutBool(lkey, lval)
 			default:
-				logger.Warn("SpanEvent data type issue",
+				logger.Debug("SpanEvent data type issue",
 					zap.String("trace.trace_id", sp.TraceID().String()),
 					zap.String("trace.span_id", sp.SpanID().String()),
 					zap.String("key", lkey))
@@ -176,7 +176,7 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 		if linkTraceStr, ok := spl.Data["trace.link.trace_id"]; ok {
 			tidByteArray, err := hex.DecodeString(linkTraceStr.(string))
 			if err != nil {
-				logger.Warn("span link invalid",
+				logger.Debug("span link invalid",
 					zap.String("missing.attribute", "trace.link.trace_id"),
 					zap.String("span link contents", spl.DebugString()))
 				continue
@@ -186,7 +186,7 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 			}
 			newLink.SetTraceID(pcommon.TraceID(tidByteArray))
 		} else {
-			logger.Warn("span link missing attributes",
+			logger.Debug("span link missing attributes",
 				zap.String("missing.attribute", "trace.link.trace_id"),
 				zap.String("span link contents", spl.DebugString()))
 			continue
@@ -195,7 +195,7 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 		if linkSpanStr, ok := spl.Data["trace.link.span_id"]; ok {
 			sidByteArray, err := hex.DecodeString(linkSpanStr.(string))
 			if err != nil {
-				logger.Warn("span link invalid",
+				logger.Debug("span link invalid",
 					zap.String("missing.attribute", "trace.link.span_id"),
 					zap.String("span link contents", spl.DebugString()))
 				continue
@@ -205,7 +205,7 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 			}
 			newLink.SetSpanID(pcommon.SpanID(sidByteArray))
 		} else {
-			logger.Warn("span link missing attributes",
+			logger.Debug("span link missing attributes",
 				zap.String("missing.attribute", "trace.link.span_id"),
 				zap.String("span link contents", spl.DebugString()))
 			continue
@@ -234,7 +234,7 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 			case bool:
 				newLink.Attributes().PutBool(lkey, lval)
 			default:
-				logger.Warn("SpanLink data type issue",
+				logger.Debug("SpanLink data type issue",
 					zap.String("trace.trace_id", sp.TraceID().String()),
 					zap.String("trace.span_id", sp.SpanID().String()),
 					zap.String("key", lkey))
