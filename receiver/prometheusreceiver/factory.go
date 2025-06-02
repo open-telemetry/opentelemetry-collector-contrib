@@ -6,7 +6,6 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 
-	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
@@ -36,12 +35,6 @@ var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
 
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
-	// Since Prometheus 3.0, the default validation scheme for metric names is UTF8.
-	// This includes ScrapeManager lib that is used by the Promethes receiver.
-	// We need to set the validation scheme to _something_ to avoid panics, and
-	// UTF8 is the default in Prometheus.
-	model.NameValidationScheme = model.UTF8Validation
-
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
