@@ -945,6 +945,63 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	return nil
 }
 
+func (s *Supervisor) addSpecialConfigFiles() {
+	// - If no config file are provided, we add the special config files matching the
+	//   standard order of configuration merging.
+	if len(s.config.Agent.ConfigFiles) == 0 {
+		for _, file := range config.SpecialConfigFiles {
+			s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(file))
+		}
+		return
+	}
+
+	missingSpecialConfigFiles := make(map[config.SpecialConfigFile]struct{}, len(config.SpecialConfigFiles))
+	for _, file := range config.SpecialConfigFiles {
+		missingSpecialConfigFiles[file] = struct{}{}
+	}
+	for _, file := range s.config.Agent.ConfigFiles {
+		if strings.HasPrefix(file, "$") {
+			delete(missingSpecialConfigFiles, config.SpecialConfigFile(file))
+		}
+	}
+
+	// If there are config files AND none of them are the special ones, we
+	// add the special config files to the user provided ones.
+	if len(missingSpecialConfigFiles) == len(config.SpecialConfigFiles) {
+		newConfigFiles := []string{
+			string(config.SpecialConfigFileOwnMetrics),
+			string(config.SpecialConfigFileBuiltin),
+		}
+		newConfigFiles = append(newConfigFiles, s.config.Agent.ConfigFiles...)
+		newConfigFiles = append(newConfigFiles,
+			string(config.SpecialConfigFileOpAMPExtension),
+			string(config.SpecialConfigFileRemoteConfig),
+		)
+		s.config.Agent.ConfigFiles = newConfigFiles
+		return
+	}
+
+	// if missing ownmetrics, add it to the beginning
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOwnMetrics]; ok {
+		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 0, string(config.SpecialConfigFileOwnMetrics))
+	}
+
+	// if missing builtin, add it to the beginning
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileBuiltin]; ok {
+		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 1, string(config.SpecialConfigFileBuiltin))
+	}
+
+	// if missing opamp extension, add it to the end
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOpAMPExtension]; ok {
+		s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(config.SpecialConfigFileOpAMPExtension))
+	}
+
+	// if missing remote config, add it to the end
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileRemoteConfig]; ok {
+		s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(config.SpecialConfigFileRemoteConfig))
+	}
+}
+
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
 
@@ -1075,25 +1132,25 @@ type configComposer func() []byte
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig) ([]byte, error) {
 	konf := koanf.New("::")
 
-	magicConfigComposers := map[config.MagicConfigFile][]configComposer{
-		config.MagicConfigFileBuiltin:        {s.composeExtraLocalConfig},
-		config.MagicConfigFileOpAMPExtension: {s.composeOpAMPExtensionConfig},
-		config.MagicConfigFileOwnMetrics:     {s.composeOwnMetricsConfig},
-		config.MagicConfigFileRemoteConfig:   s.createRemoteConfigComposers(incomingConfig),
+	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
+		config.SpecialConfigFileOwnMetrics:     {s.composeOwnMetricsConfig},
+		config.SpecialConfigFileBuiltin:        {s.composeExtraLocalConfig},
+		config.SpecialConfigFileOpAMPExtension: {s.composeOpAMPExtensionConfig},
+		config.SpecialConfigFileRemoteConfig:   s.createRemoteConfigComposers(incomingConfig),
 	}
 
 	for _, file := range s.config.Agent.ConfigFiles {
-		// The magic config files should always be valid yaml.
+		// The special config files should always be valid yaml.
 		// If they are not we need a hard crash.
-		// Important: this applies ONLY to magic config files.
+		// Important: this applies ONLY to special config files.
 		// Normal config files with invalid yaml should be just ignored.
 		if strings.HasPrefix(file, "$") {
-			cfgProviders := magicConfigComposers[config.MagicConfigFile(file)]
+			cfgProviders := specialConfigComposers[config.SpecialConfigFile(file)]
 			for _, cfgProvider := range cfgProviders {
 				cfgBytes := cfgProvider()
 				err := konf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
 				if err != nil {
-					s.telemetrySettings.Logger.Error("Could not merge magic config file", zap.String("magicConfig", file), zap.Error(err))
+					s.telemetrySettings.Logger.Error("Could not merge special config file", zap.String("specialConfig", file), zap.Error(err))
 					return nil, err
 				}
 			}
@@ -1251,37 +1308,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	// Here we try to preserve some backwards compatibility, so it works like this:
-	// - If no config file are provided, we add the magic config files matching the
-	//   standard order of configuration merging.
-	// - If there are config files AND none of them are the magic ones, we again
-	//   preserve the standard behavior by prepending the magic config files to
-	//   the user provided ones.
-	// - If there are config files AND at least one of them is a magic config file,
-	//   we assume the user is aware of the magic config files and we don't touch them.
-	if len(s.config.Agent.ConfigFiles) == 0 {
-		s.config.Agent.ConfigFiles = []string{
-			string(config.MagicConfigFileRemoteConfig),
-			string(config.MagicConfigFileOwnMetrics),
-			string(config.MagicConfigFileBuiltin),
-			string(config.MagicConfigFileOpAMPExtension),
-		}
-	}
-	hasMagicConfigFile := false
-	for _, file := range s.config.Agent.ConfigFiles {
-		if strings.HasPrefix(file, "$") {
-			hasMagicConfigFile = true
-			break
-		}
-	}
-	if !hasMagicConfigFile {
-		s.config.Agent.ConfigFiles = append([]string{
-			string(config.MagicConfigFileRemoteConfig),
-			string(config.MagicConfigFileOwnMetrics),
-			string(config.MagicConfigFileBuiltin),
-			string(config.MagicConfigFileOpAMPExtension),
-		}, s.config.Agent.ConfigFiles...)
-	}
+	s.addSpecialConfigFiles()
 
 	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 	if !hasIncomingConfigMap {

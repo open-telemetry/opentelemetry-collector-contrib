@@ -143,7 +143,7 @@ agent:
   # Collector process.
   run_as: myuser
   # List of configuration files to be merged to built the Collector's effective
-  # configuratio. It includes a few "magic" files. Read the "Config Files" section
+  # configuratio. It includes a few "special" files. Read the "Config Files" section
   # below for more details.
   config_files:
     - $OPAMP_EXTENSION_CONFIG
@@ -235,7 +235,7 @@ Configuration added by files at the top of the list may be overwritten by the la
 The indicated configuration files are merged in memory and the resulting configuration
 is written to `<storage::directory>/effective.yaml`.
 
-There are a few "magic" configuration files that can be used to completely
+There are a few "special" configuration files that can be used to completely
 customize the priority order of the Collector configuration. Below are the available
 values and what they represent:
 
@@ -244,11 +244,7 @@ values and what they represent:
 - `$BUILTIN_CONFIG`: built-in base configuration.
 - `$REMOTE_CONFIG`: remote configuration received by the Supervisor.
 
-If **none** of these are explicitly specified, they are automatically prepended to the
-list of configuration files. This ensures that user-provided configuration files have
-higher priority.
-
-These magic files can be mixed with user-provided configuration files to create complex
+These special files can be mixed with user-provided configuration files to create complex
 configuration merge orders, for instance, creating base-layer configuration at the
 lowest priority while keeping compliance configuration at the highest priority:
 
@@ -256,28 +252,21 @@ lowest priority while keeping compliance configuration at the highest priority:
 agent:
   config_files:
     - base_config.yaml
-    - $OPAMP_EXTENSION_CONFIG
     - $OWN_METRICS_CONFIG
     - $BUILTIN_CONFIG
+    - $OPAMP_EXTENSION_CONFIG
     - $REMOTE_CONFIG
     - compliance_config.yaml
 ```
 
-**VERY IMPORTANT**: if a single magic file is found in `agent::config_files`,
-the Supervisor will not automatically add the others. The user is responsible for ensuring
-that all of them are present. Missing a magic file can cause their respective feature to
-not work correctly, potentially affecting the Supervisor's and Collector's behavior.
-The list below contains a few, but not all, examples of what can happen if a gven
-magic file is missing:
+If **one or more** of the special files are not specified, they are automatically
+at predetermined positions in the list. The order is as follows:
 
-- If the `$OPAMP_EXTENSION_CONFIG` is not specified, the Collector
-  will not be able to connect to the Supervisor, triggering a restart loop.
-- If the `$OWN_METRICS_CONFIG` is not specified, the Collector will not be able
-  to report its own metrics.
-- If the `$BUILTIN_CONFIG` is not specified, the Collector will not have the
-  expected identifying, non-identifying and resource attributes.
-- If the `$REMOTE_CONFIG` is not specified, the Collector will not be able to
-  apply the remote configuration received from the Supervisor.
+- `$OWN_METRICS_CONFIG`
+- `$BUILTIN_CONFIG`
+- <USER_PROVIDED_CONFIG_FILES>
+- `$OPAMP_EXTENSION_CONFIG`
+- `$REMOTE_CONFIG`
 
 Arguments present in `agent::args` are passed to the executable binary **after** the configuration files.
 The environment variables specified in `agent::env` are set in the Collector process environment.

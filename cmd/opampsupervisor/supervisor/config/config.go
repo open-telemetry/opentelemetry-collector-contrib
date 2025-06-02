@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -221,10 +222,10 @@ func (a Agent) Validate() error {
 
 	if len(a.ConfigFiles) == 0 {
 		a.ConfigFiles = []string{
-			string(MagicConfigFileRemoteConfig),
-			string(MagicConfigFileOwnMetrics),
-			string(MagicConfigFileBuiltin),
-			string(MagicConfigFileOpAMPExtension),
+			string(SpecialConfigFileRemoteConfig),
+			string(SpecialConfigFileOwnMetrics),
+			string(SpecialConfigFileBuiltin),
+			string(SpecialConfigFileOpAMPExtension),
 		}
 	}
 
@@ -232,28 +233,28 @@ func (a Agent) Validate() error {
 		if !strings.HasPrefix(file, "$") {
 			continue
 		}
-		if _, ok := magicConfigFiles[MagicConfigFile(file)]; !ok {
-			return fmt.Errorf("agent::config_files contains invalid magic file: %q. Must be one of %v", file, magicConfigFiles)
+		if !slices.Contains(SpecialConfigFiles, SpecialConfigFile(file)) {
+			return fmt.Errorf("agent::config_files contains invalid special file: %q. Must be one of %v", file, SpecialConfigFiles)
 		}
 	}
 
 	return nil
 }
 
-type MagicConfigFile string
+type SpecialConfigFile string
 
 const (
-	MagicConfigFileBuiltin        MagicConfigFile = "$BUILTIN_CONFIG"
-	MagicConfigFileOpAMPExtension MagicConfigFile = "$OPAMP_EXTENSION_CONFIG"
-	MagicConfigFileOwnMetrics     MagicConfigFile = "$OWN_METRICS_CONFIG"
-	MagicConfigFileRemoteConfig   MagicConfigFile = "$REMOTE_CONFIG"
+	SpecialConfigFileBuiltin        SpecialConfigFile = "$BUILTIN_CONFIG"
+	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
+	SpecialConfigFileOwnMetrics     SpecialConfigFile = "$OWN_METRICS_CONFIG"
+	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
 )
 
-var magicConfigFiles = map[MagicConfigFile]struct{}{
-	MagicConfigFileBuiltin:        {},
-	MagicConfigFileOpAMPExtension: {},
-	MagicConfigFileOwnMetrics:     {},
-	MagicConfigFileRemoteConfig:   {},
+var SpecialConfigFiles = []SpecialConfigFile{
+	SpecialConfigFileOwnMetrics,
+	SpecialConfigFileBuiltin,
+	SpecialConfigFileOpAMPExtension,
+	SpecialConfigFileRemoteConfig,
 }
 
 type AgentDescription struct {
