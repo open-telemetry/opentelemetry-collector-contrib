@@ -17,9 +17,9 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	go.opentelemetry.io/collector/component v1.33.1-0.20250602081514-8568c97b0d15
-	go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250528155941-4a3717978a51
+	go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250602081514-8568c97b0d15
-	go.opentelemetry.io/collector/pdata/pprofile v0.127.1-0.20250528155941-4a3717978a51
+	go.opentelemetry.io/collector/pdata/pprofile v0.127.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/trace v1.36.0
 	go.uber.org/goleak v1.3.0
@@ -46,7 +46,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250602081514-8568c97b0d15 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.127.1-0.20250528155941-4a3717978a51 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.127.1-0.20250602081514-8568c97b0d15 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
