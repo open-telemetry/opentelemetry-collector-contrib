@@ -73,18 +73,7 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 func getIndexName(dataset, namespace, index string, dateformat bool, t time.Time) string {
 	if dateformat {
-		replacer := strings.NewReplacer(
-			"%{yyyy}", t.Format("2006"),
-			"%{yy}", t.Format("06"),
-			"%{mm}", t.Format("01"),
-			"%{dd}", t.Format("02"),
-			"%{yyyy.mm.dd}", t.Format("2006.01.02"),
-			"%{yy.mm.dd}", t.Format("06.01.02"),
-			"%{y}", t.Format("06"),
-			"%{m}", t.Format("01"),
-			"%{d}", t.Format("02"),
-		)
-		return replacer.Replace(index)
+		return FormatIndexName(index, t)
 	}
 
 	if len(index) != 0 {
@@ -92,20 +81,4 @@ func getIndexName(dataset, namespace, index string, dateformat bool, t time.Time
 	}
 
 	return strings.Join([]string{"ss4o_logs", dataset, namespace}, "-")
-}
-
-// 예시: index 설정에 시간 포맷 적용
-func formatIndexName(indexPattern string, t time.Time) string {
-	replacer := strings.NewReplacer(
-		"%{yyyy}", t.Format("2006"),
-		"%{yy}", t.Format("06"),
-		"%{mm}", t.Format("01"),
-		"%{dd}", t.Format("02"),
-		"%{yyyy.mm.dd}", t.Format("2006.01.02"),
-		"%{yy.mm.dd}", t.Format("06.01.02"),
-		"%{y}", t.Format("06"),
-		"%{m}", t.Format("01"),
-		"%{d}", t.Format("02"),
-	)
-	return replacer.Replace(indexPattern)
 }

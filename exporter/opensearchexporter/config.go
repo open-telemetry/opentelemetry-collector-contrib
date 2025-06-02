@@ -55,11 +55,12 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint   = errors.New("endpoint must be specified")
-	errDatasetNoValue     = errors.New("dataset must be specified")
-	errNamespaceNoValue   = errors.New("namespace must be specified")
-	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid = errors.New("mapping.mode is invalid")
+	errConfigNoEndpoint    = errors.New("endpoint must be specified")
+	errDatasetNoValue      = errors.New("dataset must be specified")
+	errNamespaceNoValue    = errors.New("namespace must be specified")
+	errBulkActionInvalid   = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid  = errors.New("mapping.mode is invalid")
+	errIndexPatternInvalid = errors.New("Please ensure that the date in the index_pattern follows the format specified in index_date_format.")
 )
 
 type MappingsSettings struct {
@@ -147,6 +148,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.BulkAction != "create" && cfg.BulkAction != "index" {
 		return errBulkActionInvalid
+	}
+
+	if ContainsIndexPattern(cfg.LogsIndex) && !cfg.LogDateFormat {
+		return errIndexPatternInvalid
 	}
 
 	if _, ok := mappingModes[cfg.Mode]; !ok {
