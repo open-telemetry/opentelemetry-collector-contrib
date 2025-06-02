@@ -60,7 +60,8 @@ var (
 	errNamespaceNoValue    = errors.New("namespace must be specified")
 	errBulkActionInvalid   = errors.New("bulk_action can either be `create` or `index`")
 	errMappingModeInvalid  = errors.New("mapping.mode is invalid")
-	errIndexPatternInvalid = errors.New("Please ensure that the date in the index_pattern follows the format specified in index_date_format.")
+	errIndexFormatInvalid  = errors.New("When index_date_format is set to true, the index_log field is required.")
+	errIndexPatternInvalid = errors.New("Check index pattern or index_date_format.")
 )
 
 type MappingsSettings struct {
@@ -148,6 +149,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.BulkAction != "create" && cfg.BulkAction != "index" {
 		return errBulkActionInvalid
+	}
+
+	if len(cfg.LogsIndex) == 0 && cfg.LogDateFormat {
+		return errIndexFormatInvalid
 	}
 
 	if ContainsIndexPattern(cfg.LogsIndex) && !cfg.LogDateFormat {
