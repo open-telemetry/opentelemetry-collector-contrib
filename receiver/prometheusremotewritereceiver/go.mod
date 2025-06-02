@@ -19,9 +19,9 @@ require (
 	go.opentelemetry.io/collector/consumer v1.33.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250602081514-8568c97b0d15
-	go.opentelemetry.io/collector/receiver v1.33.1-0.20250528155941-4a3717978a51
+	go.opentelemetry.io/collector/receiver v1.33.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.127.1-0.20250528155941-4a3717978a51
-	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250528155941-4a3717978a51
+	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250602081514-8568c97b0d15
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
