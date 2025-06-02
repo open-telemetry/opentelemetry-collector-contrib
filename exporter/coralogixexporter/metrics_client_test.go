@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
@@ -213,10 +214,28 @@ type mockMetricsServer struct {
 	pmetricotlp.UnimplementedGRPCServer
 	recvCount      int
 	partialSuccess *pmetricotlp.ExportPartialSuccess
+	t              testing.TB
 }
 
-func (m *mockMetricsServer) Export(_ context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
-	m.recvCount += req.Metrics().MetricCount()
+func (m *mockMetricsServer) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		m.t.Error("No metadata found in context")
+		return pmetricotlp.NewExportResponse(), errors.New("no metadata found")
+	}
+
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		m.t.Error("No Authorization header found")
+		return pmetricotlp.NewExportResponse(), errors.New("no authorization header")
+	}
+
+	if authHeader[0] != "Bearer test-key" {
+		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
+		return pmetricotlp.NewExportResponse(), errors.New("invalid authorization header")
+	}
+
+	m.recvCount += req.Metrics().DataPointCount()
 	resp := pmetricotlp.NewExportResponse()
 	if m.partialSuccess != nil {
 		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
@@ -231,7 +250,7 @@ func startMockOtlpMetricsServer(tb testing.TB) (endpoint string, stopFn func(), 
 		tb.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	srv = &mockMetricsServer{}
+	srv = &mockMetricsServer{t: tb}
 	pmetricotlp.RegisterGRPCServer(grpcServer, srv)
 	go func() {
 		_ = grpcServer.Serve(ln)
