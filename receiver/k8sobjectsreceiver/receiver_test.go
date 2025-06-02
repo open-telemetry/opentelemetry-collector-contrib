@@ -194,11 +194,9 @@ func TestWatchObject(t *testing.T) {
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "pods",
-			Mode: WatchMode,
-			K8sObjectTarget: K8sObjectTarget{
-				Namespaces: []string{"default"},
-			},
+			Name:       "pods",
+			Mode:       WatchMode,
+			Namespaces: []string{"default"},
 		},
 	}
 
@@ -262,13 +260,11 @@ func TestExcludeDeletedTrue(t *testing.T) {
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "pods",
-			Mode: WatchMode,
-			K8sObjectTarget: K8sObjectTarget{
-				Namespaces: []string{"default"},
-				ExcludeWatchType: []apiWatch.EventType{
-					apiWatch.Deleted,
-				},
+			Name:       "pods",
+			Mode:       WatchMode,
+			Namespaces: []string{"default"},
+			ExcludeWatchType: []apiWatch.EventType{
+				apiWatch.Deleted,
 			},
 		},
 	}

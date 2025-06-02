@@ -32,12 +32,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 
 		config := &K8sObjectsConfig{
-			K8sObjectTarget: K8sObjectTarget{
-				gvr: &schema.GroupVersionResource{
-					Group:    "",
-					Version:  "v1",
-					Resource: "pods",
-				},
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
 			},
 		}
 		logs := pullObjectsToLogData(&objects, time.Now(), config)
@@ -70,12 +68,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 
 		config := &K8sObjectsConfig{
-			K8sObjectTarget: K8sObjectTarget{
-				gvr: &schema.GroupVersionResource{
-					Group:    "",
-					Version:  "v1",
-					Resource: "nodes",
-				},
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "nodes",
 			},
 		}
 
@@ -96,12 +92,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 	t.Run("Test event observed timestamp is present", func(t *testing.T) {
 		config := &K8sObjectsConfig{
-			K8sObjectTarget: K8sObjectTarget{
-				gvr: &schema.GroupVersionResource{
-					Group:    "",
-					Version:  "v1",
-					Resource: "events",
-				},
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
 			},
 		}
 		event := &watch.Event{
@@ -136,12 +130,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 	t.Run("Test pull and watch objects both contain k8s.namespace.name", func(t *testing.T) {
 		observedTimestamp := time.Now()
 		config := &K8sObjectsConfig{
-			K8sObjectTarget: K8sObjectTarget{
-				gvr: &schema.GroupVersionResource{
-					Group:    "",
-					Version:  "v1",
-					Resource: "events",
-				},
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
 			},
 		}
 		watchedEvent := &watch.Event{

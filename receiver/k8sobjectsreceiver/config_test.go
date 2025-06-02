@@ -41,14 +41,12 @@ func TestLoadConfig(t *testing.T) {
 						LabelSelector: "environment in (production),tier in (frontend)",
 					},
 					{
-						Name:  "events",
-						Mode:  WatchMode,
-						Group: "events.k8s.io",
-						K8sObjectTarget: K8sObjectTarget{
-							Namespaces: []string{"default"},
-							ExcludeWatchType: []apiWatch.EventType{
-								apiWatch.Deleted,
-							},
+						Name:       "events",
+						Mode:       WatchMode,
+						Namespaces: []string{"default"},
+						Group:      "events.k8s.io",
+						ExcludeWatchType: []apiWatch.EventType{
+							apiWatch.Deleted,
 						},
 					},
 				},
@@ -85,20 +83,16 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Name:            "events",
 						Mode:            WatchMode,
+						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
-						K8sObjectTarget: K8sObjectTarget{
-							Namespaces: []string{"default"},
-						},
 					},
 					{
 						Name:            "events",
 						Mode:            WatchMode,
+						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "2",
-						K8sObjectTarget: K8sObjectTarget{
-							Namespaces: []string{"default"},
-						},
 					},
 				},
 			},
@@ -157,10 +151,8 @@ func TestValidate(t *testing.T) {
 					{
 						Name: "pods",
 						Mode: PullMode,
-						K8sObjectTarget: K8sObjectTarget{
-							ExcludeWatchType: []apiWatch.EventType{
-								apiWatch.Deleted,
-							},
+						ExcludeWatchType: []apiWatch.EventType{
+							apiWatch.Deleted,
 						},
 					},
 				},
@@ -214,22 +206,20 @@ func TestDeepCopy(t *testing.T) {
 		{
 			name: "deep copy",
 			expected: &K8sObjectsConfig{
-				Name:            "pods",
-				Group:           "group",
-				Mode:            PullMode,
-				FieldSelector:   "status.phase=Running",
-				LabelSelector:   "environment in (production),tier in (frontend)",
-				Interval:        time.Hour,
-				ResourceVersion: "1",
-				K8sObjectTarget: K8sObjectTarget{
-					Namespaces:       []string{"default"},
-					ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
-					exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
-					gvr: &schema.GroupVersionResource{
-						Group:    "group",
-						Version:  "v1",
-						Resource: "pods",
-					},
+				Name:             "pods",
+				Group:            "group",
+				Namespaces:       []string{"default"},
+				Mode:             PullMode,
+				FieldSelector:    "status.phase=Running",
+				LabelSelector:    "environment in (production),tier in (frontend)",
+				Interval:         time.Hour,
+				ResourceVersion:  "1",
+				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
+				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
+				gvr: &schema.GroupVersionResource{
+					Group:    "group",
+					Version:  "v1",
+					Resource: "pods",
 				},
 			},
 		},
