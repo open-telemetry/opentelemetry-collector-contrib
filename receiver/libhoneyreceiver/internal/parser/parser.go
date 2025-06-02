@@ -52,11 +52,10 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	} // seed a default
 
 	alreadyUsedFields := []string{cfg.Resources.ServiceName, cfg.Scopes.LibraryName, cfg.Scopes.LibraryVersion}
-	alreadyUsedFields = append(alreadyUsedFields, cfg.Attributes.Name,
+	alreadyUsedTraceFields := []string{cfg.Attributes.Name,
 		cfg.Attributes.TraceID, cfg.Attributes.ParentID, cfg.Attributes.SpanID,
 		cfg.Attributes.Error, cfg.Attributes.SpanKind,
-	)
-	alreadyUsedFields = append(alreadyUsedFields, cfg.Attributes.DurationFields...)
+	}
 
 	for _, lhe := range lhes {
 		parentID, err := lhe.GetParentID(cfg.Attributes.ParentID)
@@ -70,6 +69,8 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 			spanService, _ := lhe.GetService(cfg, &foundServices, dataset)
 			spanScopeKey, _ := lhe.GetScope(cfg, &foundScopes, spanService) // adds a new found scope if needed
 			newSpan := foundScopes.Scope[spanScopeKey].ScopeSpans.AppendEmpty()
+			alreadyUsedFields = append(alreadyUsedFields, alreadyUsedTraceFields...)
+			alreadyUsedFields = append(alreadyUsedFields, cfg.Attributes.DurationFields...)
 			err := lhe.ToPTraceSpan(&newSpan, &alreadyUsedFields, cfg, logger)
 			if err != nil {
 				logger.Warn("span could not be converted from libhoney to ptrace", zap.String("span.object", lhe.DebugString()))
