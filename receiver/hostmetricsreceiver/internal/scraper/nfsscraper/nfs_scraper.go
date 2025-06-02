@@ -150,7 +150,7 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp, nfsdStats *NfsdSta
 
 	if nfsdStats.NfsdV4OperationStats != nil {
 		for _, callStat := range *nfsdStats.NfsdV4OperationStats {
-			s.mb.RecordSystemNfsOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordSystemNfsdOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 }

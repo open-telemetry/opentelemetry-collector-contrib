@@ -65,7 +65,7 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count", "system.nfs.net.count", "system.nfsd.procedure.count"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count", "system.nfs.net.count", "system.nfs.net.udp.count", "system.nfs.net.tcp.count", "system.nfs.net.tcp.connection.count", "system.nfs.rpc.count", "system.nfs.rpc.retransmit.count", "system.nfs.rpc.authrefresh.count", "system.nfs.procedure.count", "system.nfs.operation.count", "system.nfsd.repcache.hits", "system.nfsd.repcache.misses", "system.nfsd.repcache.nocache", "system.nfsd.fh.stale.count", "system.nfsd.io.read.count", "system.nfsd.io.write.count", "system.nfsd.thread.count", "system.nfsd.net.count", "system.nfsd.net.udp.count", "system.nfsd.net.tcp.count", "system.nfsd.net.tcp.connection.count", "system.nfsd.rpc.count", "system.nfsd.rpc.bad.count", "system.nfsd.rpc.badfmt.count", "system.nfsd.rpc.badauth.count", "system.nfsd.rpc.badclient.count", "system.nfsd.procedure.count", "system.nfsd.operation.count"},
 	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
