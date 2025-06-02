@@ -88,7 +88,7 @@ func TestDisableFileRecordOffset(t *testing.T) {
 	}()
 
 	e := waitForOne(t, logReceived)
-	require.NotNil(t, e.Attributes[attrs.LogFileRecordOffset])
+	require.Nil(t, e.Attributes[attrs.LogFileRecordOffset])
 }
 
 // TestReadExistingLogsFileRecordOffset tests that the `log.file.record_offset` is included
@@ -101,7 +101,7 @@ func TestReadExistingLogsFileRecordOffset(t *testing.T) {
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
-	writeString(t, temp, "testlog1\ntestlog2\n")
+	writeString(t, temp, "01234567\n89abcdef\n")
 
 	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
