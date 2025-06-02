@@ -1,6 +1,6 @@
 sqlquery:
   collection_interval: 10s
-  driver: mysql
+  driver: sqlserver
   datasource_config:
     host: localhost
     database: mydb
