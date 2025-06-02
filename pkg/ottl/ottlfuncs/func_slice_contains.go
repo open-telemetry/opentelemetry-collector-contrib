@@ -16,21 +16,21 @@ type ContainsArguments[K any] struct {
 	Item   ottl.Getter[K]
 }
 
-func NewSliceContainsFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("SliceContains", &ContainsArguments[K]{}, createSliceContainsFunction[K])
+func NewContainsValueFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ContainsValue", &ContainsArguments[K]{}, createContainsValueFunction[K])
 }
 
-func createSliceContainsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+func createContainsValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*ContainsArguments[K])
 
 	if !ok {
-		return nil, errors.New("SliceContainsFactory args must be of type *ContainsArguments[K]")
+		return nil, errors.New("ContainsValueFactory args must be of type *ContainsArguments[K]")
 	}
 
-	return sliceContains(args.Target, args.Item), nil
+	return containsValue(args.Target, args.Item), nil
 }
 
-func sliceContains[K any](target ottl.PSliceGetter[K], itemGetter ottl.Getter[K]) ottl.ExprFunc[K] {
+func containsValue[K any](target ottl.PSliceGetter[K], itemGetter ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		slice, sliceErr := target.Get(ctx, tCtx)
 		if sliceErr != nil {

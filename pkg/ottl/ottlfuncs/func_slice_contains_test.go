@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_SliceContains(t *testing.T) {
+func Test_ContainsValue(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   ottl.StandardPSliceGetter[any]
@@ -171,7 +171,7 @@ func Test_SliceContains(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := sliceContains(tt.target, tt.item)
+			exprFunc := containsValue(tt.target, tt.item)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -179,7 +179,7 @@ func Test_SliceContains(t *testing.T) {
 	}
 }
 
-func Test_SliceContains_Error(t *testing.T) {
+func Test_ContainsValue_Error(t *testing.T) {
 	target := &ottl.StandardPSliceGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return make(chan int), nil
@@ -191,7 +191,7 @@ func Test_SliceContains_Error(t *testing.T) {
 		},
 	}
 
-	exprFunc := sliceContains(target, item)
+	exprFunc := containsValue(target, item)
 	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }
