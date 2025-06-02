@@ -202,7 +202,6 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 	case s.s.items <- doc:
 		return nil
 	}
-
 }
 
 // End is a no-op.
