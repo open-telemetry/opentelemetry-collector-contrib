@@ -195,7 +195,7 @@ type healthDetails struct {
 }
 
 // '/services/server/info'
-type Info struct {
+type info struct {
 	Host    string      `json:"origin"`
 	Entries []infoEntry `json:"entry"`
 }
@@ -209,7 +209,7 @@ type infoContent struct {
 	Version string `json:"version"`
 }
 
-type infoDict map[any]Info
+type infoDict map[any]info
 
 // '/services/search/jobs/{search_id}'
 type searchMetaEntries struct {
