@@ -105,3 +105,39 @@ func TestCloudTrailLogsUnmarshaler_Unmarshal_InvalidTimestamp(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to parse timestamp of log")
 }
+
+func TestExtractTLSVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "TLSv1.2 format",
+			input:    "TLSv1.2",
+			expected: "1.2",
+		},
+		{
+			name:     "TLSv1.3 format",
+			input:    "TLSv1.3",
+			expected: "1.3",
+		},
+		{
+			name:     "Already in version-only format",
+			input:    "1.2",
+			expected: "1.2",
+		},
+		{
+			name:     "Empty string",
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractTLSVersion(tt.input)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
