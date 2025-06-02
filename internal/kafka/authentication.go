@@ -15,14 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
-const (
-	SCRAMSHA512          = "SCRAM-SHA-512"
-	SCRAMSHA256          = "SCRAM-SHA-256"
-	PLAIN                = "PLAIN"
-	AWSMSKIAM            = "AWS_MSK_IAM"
-	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER"
-)
-
 // configureSaramaAuthentication configures authentication in sarama.Config.
 //
 // The provided config is assumed to have been validated.

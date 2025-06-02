@@ -27,6 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
+const (
+	SCRAMSHA512          = "SCRAM-SHA-512"
+	SCRAMSHA256          = "SCRAM-SHA-256"
+	PLAIN                = "PLAIN"
+	AWSMSKIAM            = "AWS_MSK_IAM"
+	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
+)
+
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
 func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
 	cfg configkafka.ProducerConfig,
@@ -45,14 +53,7 @@ func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
 		// Use the UniformBytesPartitioner that is the default in franz-go with
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
-		kgo.RecordPartitioner(kgo.UniformBytesPartitioner(64<<10, true, true,
-			kgo.SaramaCompatHasher(func(b []byte) uint32 {
-				h := fnv.New32a()
-				h.Reset()
-				h.Write(b)
-				return h.Sum32()
-			}),
-		)),
+		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
 	}
 	// Configure required acks
 	switch cfg.RequiredAcks {
@@ -66,7 +67,6 @@ func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
 		// NOTE(marclop) only disable if acks != all.
 		opts = append(opts, kgo.DisableIdempotentWrite())
 		opts = append(opts, kgo.RequiredAcks(kgo.LeaderAck()))
-
 	}
 	// Configure TLS if needed
 	if clientCfg.TLS != nil {
@@ -197,4 +197,15 @@ func compressionCodec(compression string) kgo.CompressionCodec {
 	default:
 		return kgo.NoCompression()
 	}
+}
+
+func newSaramaCompatPartitioner() kgo.Partitioner {
+	return kgo.StickyKeyPartitioner(kgo.SaramaCompatHasher(saramaHashFn))
+}
+
+func saramaHashFn(b []byte) uint32 {
+	h := fnv.New32a()
+	h.Reset()
+	h.Write(b)
+	return h.Sum32()
 }
