@@ -64,3 +64,44 @@ func compareLogsIgnoringResourceOrder(t *testing.T, expected, actual plog.Logs) 
 		plogtest.IgnoreLogRecordsOrder())
 	require.NoError(t, err, "Logs don't match")
 }
+
+func TestCloudTrailLogsUnmarshaler_Unmarshal_EmptyRecords(t *testing.T) {
+	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{})
+
+	emptyRecordsJSON := `{"Records": []}`
+
+	compressedData, err := compressData([]byte(emptyRecordsJSON))
+	require.NoError(t, err)
+
+	logs, err := unmarshaler.UnmarshalLogs(compressedData)
+	require.NoError(t, err)
+
+	require.Equal(t, 0, logs.ResourceLogs().Len(), "Expected empty logs")
+}
+
+func TestCloudTrailLogsUnmarshaler_Unmarshal_InvalidTimestamp(t *testing.T) {
+	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{})
+
+	// Create a CloudTrailLogs with an invalid timestamp format
+	invalidTimestampJSON := `{"Records": [{
+		"eventVersion": "1.08",
+		"eventTime": "2023-07-19T21:17:28",
+		"eventSource": "ec2.amazonaws.com",
+		"eventName": "StartInstances",
+		"awsRegion": "us-east-1",
+		"sourceIPAddress": "192.0.2.1",
+		"userAgent": "aws-cli/1.16.312",
+		"requestID": "12345678-1234-1234-1234-123456789012",
+		"eventID": "12345678-1234-1234-1234-123456789012",
+		"eventType": "AwsApiCall",
+		"recipientAccountId": "123456789012"
+	}]}`
+
+	compressedData, err := compressData([]byte(invalidTimestampJSON))
+	require.NoError(t, err)
+
+	// This should return an error since the timestamp is invalid
+	_, err = unmarshaler.UnmarshalLogs(compressedData)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to parse timestamp of log")
+}
