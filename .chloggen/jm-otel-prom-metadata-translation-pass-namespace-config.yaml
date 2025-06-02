@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/translator/prometheusremotewrite
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Passing metric name namespace to otel metadata translation so when provided metric name matches the metric name in metadata"
+note: "Fix bug where metric metadata was sent with incorrect metric name if configuration includes 'namespace'"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [ 39826 ]
