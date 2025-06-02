@@ -147,6 +147,42 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "'datasource' must be specified",
 		},
 		{
+			fname: "config-invalid-missing-datasource-config-port-sql-server.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver: "sqlserver",
+					DataSourceConfig: sqlquery.DataSourceConfig{
+						Host:     "localhost",
+						Database: "mydb",
+						Username: "me",
+						Password: "s3cr3t",
+					},
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			fname:        "config-invalid-missing-datasource-config-port.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "'datasource_config.port' or 'datasource' must be specified",
