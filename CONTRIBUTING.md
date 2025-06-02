@@ -324,6 +324,12 @@ After a component has been merged it must be added to the
 [OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
 to be included in the distributed otelcol-contrib binaries and docker images.
 
+## Semantic Conventions compatibility
+
+When introducing new metrics, attributes or entity attributes to components, ensure that
+[Semantic Conventions' compatibility guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/coding-guidelines.md#semantic-conventions-compatibility)
+are taken into account.
+
 ## Adding metrics to existing receivers
 Following these steps for contributing additional metrics to existing receivers.
  - Read instructions [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#fork) on how to
