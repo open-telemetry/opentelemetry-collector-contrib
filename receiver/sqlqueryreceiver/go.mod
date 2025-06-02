@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250602081514-8568c97b0d15
-	go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250602081514-8568c97b0d15
+	go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250602081514-8568c97b0d15 // indirect
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/collector/consumer v1.33.1-0.20250602081514-8568c97b0d15
 	go.opentelemetry.io/collector/extension v1.33.1-0.20250602081514-8568c97b0d15 // indirect
@@ -146,7 +146,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250602081514-8568c97b0d15 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.127.1-0.20250602081514-8568c97b0d15 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.127.1-0.20250602081514-8568c97b0d15 // indirect
 	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250602081514-8568c97b0d15 // indirect
