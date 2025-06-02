@@ -72,11 +72,11 @@ func TestAddFileResolvedFields(t *testing.T) {
 	}
 }
 
-// AddFileRecordOffset tests that the `log.file.record_offset` is correctly included
-// when IncludeFileRecordOffset is set to true
-func TestAddOffset(t *testing.T) {
+// TestDisableFileRecordOffset tests that the `log.file.record_offset` is not included
+// when IncludeFileRecordOffset is set to `false`
+func TestDisableFileRecordOffset(t *testing.T) {
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
-		cfg.IncludeFileRecordOffset = true
+		cfg.IncludeFileRecordOffset = false
 	})
 
 	temp := openTemp(t, tempDir)
@@ -91,9 +91,9 @@ func TestAddOffset(t *testing.T) {
 	require.NotNil(t, e.Attributes[attrs.LogFileRecordOffset])
 }
 
-// TestOffsetReadExistingLogs tests that the `log.file.record_offset` increments
-// correctly
-func TestOffsetReadExistingLogs(t *testing.T) {
+// TestReadExistingLogsFileRecordOffset tests that the `log.file.record_offset` is included
+// when IncludeFileRecordOffset is set to `true` and increments correctly
+func TestReadExistingLogsFileRecordOffset(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileRecordOffset = true
