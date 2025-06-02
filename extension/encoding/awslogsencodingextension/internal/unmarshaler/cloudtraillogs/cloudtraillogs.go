@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goccy/go-json"
+	gojson "github.com/goccy/go-json"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -95,18 +95,18 @@ func (u *CloudTrailLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error)
 	}
 
 	var cloudTrailLogs CloudTrailLogs
-	if err := json.Unmarshal(decompressedBuf, &cloudTrailLogs); err != nil || len(cloudTrailLogs.Records) == 0 {
+	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLogs); err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail logs: %w", err)
 	}
 
-	return u.processRecords(cloudTrailLogs.Records), nil
+	return u.processRecords(cloudTrailLogs.Records)
 }
 
-func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) plog.Logs {
+func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	if len(records) == 0 {
-		return logs
+		return logs, nil
 	}
 
 	// Create a single resource logs entry for all records
@@ -121,22 +121,22 @@ func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) p
 
 	for _, record := range records {
 		logRecord := scopeLogs.LogRecords().AppendEmpty()
-		u.setLogRecord(logRecord, record)
+		if err := u.setLogRecord(logRecord, record); err != nil {
+			return plog.Logs{}, err
+		}
 	}
 
-	return logs
+	return logs, nil
 }
 
 // checks if the event is related to EC2 instance operations
 func isEC2InstanceOperation(eventName string) bool {
-	ec2Operations := map[string]bool{
-		"StartInstances":     true,
-		"StopInstances":      true,
-		"TerminateInstances": true,
-		"RebootInstances":    true,
-		"RunInstances":       true,
+	switch eventName {
+	case "StartInstances", "StopInstances", "TerminateInstances", "RebootInstances", "RunInstances":
+		return true
+	default:
+		return false
 	}
-	return ec2Operations[eventName]
 }
 
 func extractInstanceIDs(requestParams map[string]any) []string {
@@ -163,11 +163,14 @@ func (u *CloudTrailLogsUnmarshaler) setResourceAttributes(attrs pcommon.Map, rec
 	attrs.PutStr(string(conventions.CloudAccountIDKey), record.RecipientAccountID)
 }
 
-func (u *CloudTrailLogsUnmarshaler) setLogRecord(logRecord plog.LogRecord, record CloudTrailRecord) {
-	if t, err := time.Parse(time.RFC3339, record.EventTime); err == nil {
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(t))
+func (u *CloudTrailLogsUnmarshaler) setLogRecord(logRecord plog.LogRecord, record CloudTrailRecord) error {
+	t, err := time.Parse(time.RFC3339, record.EventTime)
+	if err != nil {
+		return fmt.Errorf("failed to parse timestamp of log: %w", err)
 	}
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(t))
 	u.setLogAttributes(logRecord.Attributes(), record)
+	return nil
 }
 
 func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
