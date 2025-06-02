@@ -202,7 +202,9 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 
 	if record.TLSDetails != nil {
 		if tlsVersion, ok := record.TLSDetails["tlsVersion"].(string); ok {
-			attrs.PutStr(string(conventions.TLSProtocolVersionKey), tlsVersion)
+			// Extract only the version number from TLSv1.2 format
+			version := extractTLSVersion(tlsVersion)
+			attrs.PutStr(string(conventions.TLSProtocolVersionKey), version)
 		}
 		if cipherSuite, ok := record.TLSDetails["cipherSuite"].(string); ok {
 			attrs.PutStr(string(conventions.TLSCipherKey), cipherSuite)
@@ -254,6 +256,14 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 			}
 		}
 	}
+}
+
+// extract the version number from a TLS version string (e.g. "TLSv1.2" becomes "1.2")
+func extractTLSVersion(tlsVersion string) string {
+	if len(tlsVersion) > 4 && tlsVersion[:4] == "TLSv" {
+		return tlsVersion[4:]
+	}
+	return tlsVersion
 }
 
 func extractInstanceDetails(responseElements map[string]any) []map[string]string {
