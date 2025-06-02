@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: 'prometheusremotewritereceiver'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: obsreport provides unified and consistent observability signals ( metrics, tracing, etc) for components of the OpenTelemetry collector.
+note: Improve observability about data ingestion
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37277]
