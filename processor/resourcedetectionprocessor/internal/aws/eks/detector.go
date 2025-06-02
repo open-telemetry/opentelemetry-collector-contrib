@@ -5,22 +5,21 @@ package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
+	imdsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
+	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
@@ -28,33 +27,33 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr = "eks"
-
 	// Environment variable that is set when running on Kubernetes.
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
+	// EKS cluster version string identifier.
+	eksClusterStringIdentifier = "-eks-"
 
-	clusterNameAwsEksTag     = "aws:eks:cluster-name"
-	clusterNameEksTag        = "eks:cluster-name"
-	kubernetesClusterNameTag = "kubernetes.io/cluster/"
+	imdsCheckMaxRetry = 1
 )
-
-type detectorUtils interface {
-	getClusterName(ctx context.Context, logger *zap.Logger) string
-	getClusterNameTagFromReservations([]types.Reservation) string
-	getCloudAccountID(ctx context.Context, logger *zap.Logger) string
-	getClusterVersion() (string, error)
-}
-
-type eksDetectorUtils struct {
-	clientset *kubernetes.Clientset
-}
 
 // detector for EKS
 type detector struct {
-	utils  detectorUtils
+	cfg          Config
+	logger       *zap.Logger
+	imdsProvider imdsprovider.Provider
+	apiProvider  apiprovider.Provider
+	ra           metadata.ResourceAttributesConfig
+	rb           *metadata.ResourceBuilder
+	utils        detectorUtils
+}
+
+type eksDetectorUtils struct {
+	cfg    Config
 	logger *zap.Logger
-	err    error
-	ra     metadata.ResourceAttributesConfig
-	rb     *metadata.ResourceBuilder
+}
+
+type detectorUtils interface {
+	isIMDSAccessible(ctx context.Context) bool
+	getAWSConfig(ctx context.Context, testAccess bool) (aws.Config, error)
 }
 
 var _ internal.Detector = (*detector)(nil)
@@ -64,160 +63,149 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 // NewDetector returns a resource detector that will detect AWS EKS resources.
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	utils, err := newK8sDetectorUtils()
+	utils := &eksDetectorUtils{cfg: cfg, logger: set.Logger}
+
+	awsConfig, err := utils.getAWSConfig(context.Background(), false)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeName := os.Getenv(cfg.NodeFromEnvVar)
+	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName)
+	if err != nil {
+		return nil, err
+	}
 
 	return &detector{
-		utils:  utils,
-		logger: set.Logger,
-		err:    err,
-		ra:     cfg.ResourceAttributes,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		cfg:          cfg,
+		logger:       set.Logger,
+		apiProvider:  apiProvider,
+		imdsProvider: imdsprovider.NewProvider(awsConfig),
+		ra:           cfg.ResourceAttributes,
+		rb:           metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils:        utils,
 	}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
-	isEKS, err := isEKS(d.utils)
-	if err != nil {
-		d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
+	if isEKS, err := d.isEKS(); err != nil || !isEKS {
+		if err != nil {
+			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
+		}
 		return pcommon.NewResource(), "", err
-	}
-	if !isEKS {
-		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
 	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSEKS.Value.AsString())
-	if d.ra.CloudAccountID.Enabled {
-		accountID := d.utils.getCloudAccountID(ctx, d.logger)
-		d.rb.SetCloudAccountID(accountID)
+
+	if d.utils.isIMDSAccessible(ctx) {
+		return d.detectFromIMDS(ctx)
+	}
+	return d.detectFromAPI(ctx)
+}
+
+func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string, error) {
+	imdsMeta, err := d.imdsProvider.Get(ctx)
+	if err != nil {
+		return d.rb.Emit(), conventions.SchemaURL, err
 	}
 
-	if d.ra.K8sClusterName.Enabled {
-		clusterName := d.utils.getClusterName(ctx, d.logger)
-		d.rb.SetK8sClusterName(clusterName)
+	d.rb.SetHostID(imdsMeta.InstanceID)
+	d.rb.SetCloudAvailabilityZone(imdsMeta.AvailabilityZone)
+	d.rb.SetCloudRegion(imdsMeta.Region)
+	d.rb.SetCloudAccountID(imdsMeta.AccountID)
+	d.rb.SetHostImageID(imdsMeta.ImageID)
+	d.rb.SetHostType(imdsMeta.InstanceType)
+
+	hostname, err := d.imdsProvider.Hostname(ctx)
+	if err != nil {
+		return d.rb.Emit(), conventions.SchemaURL, err
 	}
+	d.rb.SetHostName(hostname)
+
+	if d.ra.K8sClusterName.Enabled {
+		d.apiProvider.SetRegionInstanceID(imdsMeta.Region, imdsMeta.InstanceID)
+		var apiMeta apiprovider.InstanceMetadata
+		if apiMeta, err = d.apiProvider.GetInstanceMetadata(ctx); err != nil {
+			return d.rb.Emit(), conventions.SchemaURL, err
+		}
+		d.rb.SetK8sClusterName(apiMeta.ClusterName)
+	}
+	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string, error) {
+	k8sMeta, err := d.apiProvider.GetK8sInstanceMetadata(ctx)
+	if err != nil {
+		return d.rb.Emit(), conventions.SchemaURL, err
+	}
+
+	d.rb.SetHostID(k8sMeta.InstanceID)
+	d.rb.SetCloudAvailabilityZone(k8sMeta.AvailabilityZone)
+	d.rb.SetCloudRegion(k8sMeta.Region)
+
+	apiMeta, err := d.apiProvider.GetInstanceMetadata(ctx)
+	if err != nil {
+		return d.rb.Emit(), conventions.SchemaURL, err
+	}
+
+	d.rb.SetCloudAccountID(apiMeta.AccountID)
+	d.rb.SetHostImageID(apiMeta.ImageID)
+	d.rb.SetHostType(apiMeta.InstanceType)
+	d.rb.SetHostName(apiMeta.Hostname)
+	d.rb.SetK8sClusterName(apiMeta.ClusterName)
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
-func isEKS(utils detectorUtils) (bool, error) {
+func (d *detector) isEKS() (bool, error) {
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
 		return false, nil
 	}
 
-	clusterVersion, err := utils.getClusterVersion()
+	clusterVersion, err := d.apiProvider.ClusterVersion()
 	if err != nil {
 		return false, fmt.Errorf("isEks() error retrieving cluster version: %w", err)
 	}
-	if strings.Contains(clusterVersion, "-eks-") {
+	if strings.Contains(clusterVersion, eksClusterStringIdentifier) {
 		return true, nil
 	}
 	return false, nil
 }
 
-func newK8sDetectorUtils() (*eksDetectorUtils, error) {
-	// Get cluster configuration
-	confs, err := rest.InClusterConfig()
+func (e eksDetectorUtils) isIMDSAccessible(ctx context.Context) bool {
+	cfg, err := e.getAWSConfig(ctx, true)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create config: %w", err)
+		e.logger.Debug("EC2 Metadata service is not accessible", zap.Error(err))
+		return false
 	}
 
-	// Create clientset using generated configuration
-	clientset, err := kubernetes.NewForConfig(confs)
-	if err != nil {
-		return nil, errors.New("failed to create clientset for Kubernetes client")
+	client := imds.NewFromConfig(cfg)
+	if _, err := client.GetMetadata(ctx, &imds.GetMetadataInput{Path: "instance-id"}); err != nil {
+		e.logger.Debug("EC2 Metadata service is not accessible", zap.Error(err))
+		return false
 	}
-
-	return &eksDetectorUtils{clientset: clientset}, nil
+	return true
 }
 
-func (e eksDetectorUtils) getClusterVersion() (string, error) {
-	serverVersion, err := e.clientset.Discovery().ServerVersion()
+func (e eksDetectorUtils) getAWSConfig(ctx context.Context, checkAccess bool) (aws.Config, error) {
+	awsConfig, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrieve server version: %w", err)
-	}
-	return serverVersion.GitVersion, nil
-}
-
-func (e eksDetectorUtils) getClusterName(ctx context.Context, logger *zap.Logger) string {
-	defaultErrorMessage := "Unable to get EKS cluster name"
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		logger.Warn(defaultErrorMessage, zap.Error(err))
-		return ""
+		return aws.Config{}, err
 	}
 
-	imdsClient := imds.NewFromConfig(cfg)
-	resp, err := imdsClient.GetRegion(ctx, &imds.GetRegionInput{})
-	if err != nil {
-		logger.Warn(defaultErrorMessage, zap.Error(err))
-		return ""
+	maxAttempts := e.cfg.MaxAttempts
+	if checkAccess {
+		maxAttempts = imdsCheckMaxRetry
 	}
 
-	cfg.Region = resp.Region
-	ec2Client := ec2.NewFromConfig(cfg)
-
-	instanceIdentityDocument, err := imdsClient.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
-	if err != nil {
-		logger.Warn(defaultErrorMessage, zap.Error(err))
-		return ""
+	awsConfig.Retryer = func() aws.Retryer {
+		return retry.NewStandard(func(options *retry.StandardOptions) {
+			options.MaxAttempts = maxAttempts
+			options.MaxBackoff = e.cfg.MaxBackoff
+		})
 	}
-
-	instances, err := ec2Client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []string{
-			instanceIdentityDocument.InstanceID,
-		},
-	})
-	if err != nil {
-		logger.Warn(defaultErrorMessage, zap.Error(err))
-		return ""
-	}
-
-	clusterName := e.getClusterNameTagFromReservations(instances.Reservations)
-	if len(clusterName) == 0 {
-		logger.Warn("Failed to detect EKS cluster name. No tag for cluster name found on EC2 instance")
-		return ""
-	}
-
-	return clusterName
-}
-
-func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []types.Reservation) string {
-	for _, reservation := range reservations {
-		for _, instance := range reservation.Instances {
-			for _, tag := range instance.Tags {
-				if tag.Key == nil {
-					continue
-				}
-
-				if *tag.Key == clusterNameAwsEksTag || *tag.Key == clusterNameEksTag {
-					return *tag.Value
-				} else if strings.HasPrefix(*tag.Key, kubernetesClusterNameTag) {
-					return strings.TrimPrefix(*tag.Key, kubernetesClusterNameTag)
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
-func (e eksDetectorUtils) getCloudAccountID(ctx context.Context, logger *zap.Logger) string {
-	defaultErrorMessage := "Unable to get EKS cluster account ID"
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		logger.Warn(defaultErrorMessage, zap.Error(err))
-		return ""
-	}
-
-	imdsClient := imds.NewFromConfig(cfg)
-	instanceIdentityDocument, err := imdsClient.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
-	if err != nil {
-		logger.Warn(defaultErrorMessage, zap.Error(err))
-		return ""
-	}
-
-	return instanceIdentityDocument.AccountID
+	return awsConfig, nil
 }

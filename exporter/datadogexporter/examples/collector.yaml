@@ -451,6 +451,12 @@ exporters:
       ## The default is 30 minutes.
       # reporter_period: 30m
 
+    ## @param hostname_detection_timeout - duration - optional - default: 25s
+    ## The amount of time in which the exporter will wait for hostname detection to be available.
+    ## Datadog Exporter requires a hostname to send traces to Datadog backend.
+    #
+    # hostname_detection_timeout: 25s
+
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.
     #

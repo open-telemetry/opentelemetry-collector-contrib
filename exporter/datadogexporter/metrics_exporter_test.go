@@ -65,8 +65,8 @@ func TestNewExporter(t *testing.T) {
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
 		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
 	}
-	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
@@ -114,8 +114,8 @@ func TestNewExporter_Serializer(t *testing.T) {
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
 		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
 	}
-	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	var err error

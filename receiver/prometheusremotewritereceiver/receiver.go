@@ -14,6 +14,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
+	lru "github.com/hashicorp/golang-lru/v2"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -30,6 +31,10 @@ import (
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
+	}
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -37,7 +42,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
-		rmCache: make(map[uint64]pmetric.ResourceMetrics),
+		rmCache: cache,
 	}, nil
 }
 
@@ -45,10 +50,11 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	config  *Config
-	server  *http.Server
-	wg      sync.WaitGroup
-	rmCache map[uint64]pmetric.ResourceMetrics
+	config *Config
+	server *http.Server
+	wg     sync.WaitGroup
+
+	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric
@@ -237,7 +243,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
-			if existingRM, ok := prw.rmCache[hashedLabels]; ok {
+			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
 				rm = existingRM
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
@@ -252,20 +258,20 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(l.Name, l.Value)
 				}
 			}
-			prw.rmCache[hashedLabels] = rm
+			prw.rmCache.Add(hashedLabels, rm)
 			continue
 		}
 
 		// For metrics other than target_info, we need to follow the standard process of creating a metric.
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		existingRM, ok := prw.rmCache[hashedLabels]
+		existingRM, ok := prw.rmCache.Get(hashedLabels)
 		if ok {
 			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.rmCache[hashedLabels] = rm
+			prw.rmCache.Add(hashedLabels, rm)
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)

@@ -79,8 +79,38 @@ jobs:
         # concurrent component tests clashing when building such targets. This applies
         # specifically to Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34691
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
-      - name: Run Unit tests
+      
+      # Unit tests without JUnit output are much faster, so it's fine to run on every PR.
+      # The only time we don't run them is when we already ran them with JUnit output.
+      - name: Run Unit Tests
+        id: tests
+        if: github.ref != 'refs/heads/main'
         run: make -j2 gotest GROUP=${{ matrix.group }}
+
+      # JUnit tests are super long, so we only run them on pushes to the main branch.
+      # This is used for automation that automatically creates issues for flaky tests that are
+      # merged to main, so we don't run them on every PR.
+      - name: Run Unit Tests With JUnit and Coverage
+        id: tests-with-junit
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true # Allow uploading artifacts even if the test fails
+        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: test-results-windows-${{ matrix.os }}-${{ matrix.group }}
+          path: internal/tools/testresults/
+          retention-days: 4
+      - name: Fail workflow if tests fails
+        if: always()
+        shell: bash
+        run: |
+          if [[ "${{ steps.tests-with-junit.outcome }}" == "failure" || "${{ steps.tests.outcome }}" == "failure" ]]; then
+            echo "Tests failed. Failing workflow."
+            exit 1
+          else
+            echo "Tests passed or were skipped. Continuing."
+          fi
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest
@@ -98,3 +128,41 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+  flakytests-generate-issues:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    needs: [windows-unittest-matrix]
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+        with:
+          go-version: 1.23.9
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        with:
+          merge-multiple: true
+          pattern: test-results-windows-*
+          path: ./internal/tools/testresults/
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Generate Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./.tools/issuegenerator -path ./internal/tools/testresults/
