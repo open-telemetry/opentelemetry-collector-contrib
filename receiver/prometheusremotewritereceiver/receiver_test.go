@@ -20,10 +20,12 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -63,6 +65,16 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	assert.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
 	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
 
 	// Add cleanup to ensure LRU cache is properly purged
