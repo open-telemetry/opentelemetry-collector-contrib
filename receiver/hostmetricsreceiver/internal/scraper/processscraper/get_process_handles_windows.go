@@ -15,7 +15,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-var useNewGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"hostmetrics.process.onWindowsUseNewGetProcesses",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("If disabled, the scraper will use the legacy implementation to retrieve process handles."),
