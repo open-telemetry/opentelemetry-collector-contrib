@@ -266,12 +266,26 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	// return clean response if no errors above
 	noErrors := response.MakeResponse([]int{})
-	json, err := json.Marshal(noErrors)
+
+	var responseBody []byte
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		// For msgpack requests, return msgpack response
+		responseBody, err = msgpack.Marshal(noErrors)
+		contentType = encoder.MsgpackContentType
+	default:
+		// For JSON requests, return JSON response
+		responseBody, err = json.Marshal(noErrors)
+		contentType = encoder.JSONContentType
+	}
+
 	if err != nil {
 		errorutil.HTTPError(resp, err)
 		return
 	}
-	writeResponse(resp, enc.ContentType(), http.StatusOK, json)
+	writeResponse(resp, contentType, http.StatusOK, responseBody)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {

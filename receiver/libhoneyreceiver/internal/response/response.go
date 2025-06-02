@@ -11,13 +11,11 @@ type ResponseInBatch struct {
 }
 
 func MakeResponse(eventErrs []int) []ResponseInBatch {
-	responses := make([]ResponseInBatch, len(eventErrs))
-
 	if len(eventErrs) == 0 {
-		responses = append(responses, ResponseInBatch{Status: http.StatusAccepted})
-		return responses
+		return []ResponseInBatch{{Status: http.StatusAccepted}}
 	}
 
+	responses := make([]ResponseInBatch, len(eventErrs))
 	for i, eventErr := range eventErrs {
 		responses[i] = ResponseInBatch{
 			ErrorStr: "error",
