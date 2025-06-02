@@ -37,6 +37,16 @@ type mockPerfCounter struct {
 	resetErr      error
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (w *mockPerfCounter) ScrapeRawValue(_ *int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (w *mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 func (w *mockPerfCounter) Reset() error {
 	return w.resetErr
 }

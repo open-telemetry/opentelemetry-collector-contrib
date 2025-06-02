@@ -315,7 +315,7 @@ func TestSendTraces(t *testing.T) {
 		Headers: map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
 		},
-		Auth: &configauth.Authentication{
+		Auth: &configauth.Config{
 			AuthenticatorID: authID,
 		},
 	}
@@ -924,7 +924,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		Headers: map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
 		},
-		Auth: &configauth.Authentication{
+		Auth: &configauth.Config{
 			AuthenticatorID: authID,
 		},
 	}

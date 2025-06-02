@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
@@ -166,7 +166,7 @@ func populateSpan(seg *awsxray.Segment, traceID, parentID *string, span ptrace.S
 	addStartTime(seg.StartTime, span)
 	addEndTime(seg.EndTime, span)
 	addBool(seg.InProgress, awsxray.AWSXRayInProgressAttribute, attrs)
-	addString(seg.User, conventions.AttributeEnduserID, attrs)
+	addString(seg.User, string(conventions.EnduserIDKey), attrs)
 
 	addHTTP(seg, span)
 	addCause(seg, span)
@@ -188,12 +188,12 @@ func populateResource(seg *awsxray.Segment, rs pcommon.Resource) {
 	attrs.Clear()
 	attrs.EnsureCapacity(initAttrCapacity)
 
-	addString(seg.Name, conventions.AttributeServiceName, attrs)
+	addString(seg.Name, string(conventions.ServiceNameKey), attrs)
 
 	addAWSToResource(seg.AWS, attrs)
 	addSdkToResource(seg, attrs)
 	if seg.Service != nil {
-		addString(seg.Service.Version, conventions.AttributeServiceVersion, attrs)
+		addString(seg.Service.Version, string(conventions.ServiceVersionKey), attrs)
 	}
 
 	addString(seg.ResourceARN, awsxray.AWSXRayResourceARNAttribute, attrs)

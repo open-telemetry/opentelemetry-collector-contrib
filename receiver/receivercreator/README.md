@@ -7,6 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Freceivercreator%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Freceivercreator) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Freceivercreator%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Freceivercreator) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_receiver_creator)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_receiver_creator&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
@@ -485,6 +486,22 @@ receiver_creator/metrics:
      enabled: true
      # Define which receivers should be ignored when provided through annotations
      # ignore_receivers: []
+     # default_annotations: {}
+receiver_creator/logs:
+  watch_observers: [ k8s_observer ]
+  discovery:
+    enabled: true
+    # Define default annotations
+    #
+    # This can be used when a default behaviour is required for all discovered
+    # Pods/containers without having to explicitly annotate all Pods.
+    #
+    # Example: Enable log collection for all discovered Pods/containers unless they are explicitly
+    # annotated with `io.opentelemetry.discovery.logs/enabled: "false"`.
+    # (to avoid collecting Collector's own logs make sure that Collector Pods are properly annotated
+    # with `io.opentelemetry.discovery.logs/enabled: "false"`)
+    # default_annotations:
+    #   io.opentelemetry.discovery.logs/enabled: true
 ```
 
 See below for the supported annotations that user can define to automatically enable receivers to start
@@ -605,7 +622,7 @@ the Pod level hints are used as a fallback (see detailed example below).
 
 The current implementation relies on the implementation of `k8sobserver` extension and specifically
 the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
-The hints are evaluated per container by extracting the annotations from each [`Pod Container` endpoint](#Pod Container) that is emitted.
+The hints are evaluated per container by extracting the annotations from each [`Pod Container` endpoint](#pod-container) that is emitted.
 
 
 ### Examples

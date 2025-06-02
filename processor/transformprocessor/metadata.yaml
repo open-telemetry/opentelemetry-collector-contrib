@@ -3,11 +3,14 @@ type: transform
 status:
   class: processor
   stability:
-    alpha: [traces, metrics, logs]
+    development: [profiles]
+    beta: [traces, metrics, logs]
   distributions: [contrib, k8s]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
-    active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley, edmocosta]
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
+    seeking_new: true
 
 tests:
   config:

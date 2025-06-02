@@ -235,10 +235,8 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
-	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
-		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
-	} else {
-		params.Logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention.")
+	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 	}
 	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v

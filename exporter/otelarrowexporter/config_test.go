@@ -84,7 +84,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
+				Auth:            &configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
 			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 				Enabled:      true,

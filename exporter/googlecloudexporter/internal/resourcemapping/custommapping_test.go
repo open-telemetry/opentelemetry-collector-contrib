@@ -72,7 +72,9 @@ func TestCustomMonitoredResourceMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CustomMonitoredResourceMapping(tt.resource)
+			got := CustomMetricMonitoredResourceMapping(tt.resource)
+			assert.Equal(t, tt.want, got)
+			got = CustomLoggingMonitoredResourceMapping(tt.resource)
 			assert.Equal(t, tt.want, got)
 		})
 	}

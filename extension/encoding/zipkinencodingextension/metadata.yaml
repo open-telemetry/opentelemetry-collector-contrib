@@ -1,6 +1,7 @@
 type: zipkin_encoding
 
 status:
+  disable_codecov_badge: true
   class: extension
   stability:
     alpha: [extension]

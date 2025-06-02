@@ -1264,6 +1264,20 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "Using HasPrefix",
+			statement: `set(attributes["test"], "pass") where HasPrefix(body, "operation")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "Using HasSuffix",
+			statement: `set(attributes["test"], "pass") where HasSuffix(body, "tionA")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "Using hex",
 			statement: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
 			want: func(tCtx ottllog.TransformContext) {
