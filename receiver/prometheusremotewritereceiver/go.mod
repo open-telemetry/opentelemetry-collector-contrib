@@ -13,13 +13,14 @@ require (
 	go.opentelemetry.io/collector/component v1.32.1-0.20250523042642-a867641d12bd
 	go.opentelemetry.io/collector/component/componentstatus v0.126.1-0.20250523042642-a867641d12bd
 	go.opentelemetry.io/collector/component/componenttest v0.126.1-0.20250523042642-a867641d12bd
-	go.opentelemetry.io/collector/config/confighttp v0.126.1-0.20250523042642-a867641d12bd
+	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250501194116-727ae96d6214
 	go.opentelemetry.io/collector/confmap v1.32.1-0.20250523042642-a867641d12bd
 	go.opentelemetry.io/collector/consumer v1.32.1-0.20250523042642-a867641d12bd
 	go.opentelemetry.io/collector/consumer/consumertest v0.126.1-0.20250523042642-a867641d12bd
 	go.opentelemetry.io/collector/pdata v1.32.1-0.20250523042642-a867641d12bd
-	go.opentelemetry.io/collector/receiver v1.32.1-0.20250523042642-a867641d12bd
-	go.opentelemetry.io/collector/receiver/receivertest v0.126.1-0.20250523042642-a867641d12bd
+	go.opentelemetry.io/collector/receiver v1.32.0
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250501194116-727ae96d6214
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
