@@ -260,7 +260,7 @@ agent:
 ```
 
 If **one or more** of the special files are not specified, they are automatically
-at predetermined positions in the list. The order is as follows:
+added at predetermined positions in the list. The order is as follows:
 
 - `$OWN_METRICS_CONFIG`
 - `$BUILTIN_CONFIG`
