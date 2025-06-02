@@ -6,10 +6,10 @@ package cloudtraillogs
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"os"
 	"testing"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 )
@@ -24,7 +24,7 @@ func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 
 	// Parse the sample log to get the records
 	var sampleLog CloudTrailLogs
-	err = json.Unmarshal(data, &sampleLog)
+	err = gojson.Unmarshal(data, &sampleLog)
 	require.NoError(b, err)
 	require.NotEmpty(b, sampleLog.Records, "sample log should contain at least one record")
 
@@ -52,7 +52,7 @@ func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 	}
 
 	// Marshal the log back to JSON
-	benchmarkData, err := json.Marshal(benchmarkLog)
+	benchmarkData, err := gojson.Marshal(benchmarkLog)
 	require.NoError(b, err)
 
 	return benchmarkData
