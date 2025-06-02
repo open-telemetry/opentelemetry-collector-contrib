@@ -52,7 +52,8 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	} // seed a default
 
 	alreadyUsedFields := []string{cfg.Resources.ServiceName, cfg.Scopes.LibraryName, cfg.Scopes.LibraryVersion}
-	alreadyUsedTraceFields := []string{cfg.Attributes.Name,
+	alreadyUsedTraceFields := []string{
+		cfg.Attributes.Name,
 		cfg.Attributes.TraceID, cfg.Attributes.ParentID, cfg.Attributes.SpanID,
 		cfg.Attributes.Error, cfg.Attributes.SpanKind,
 	}

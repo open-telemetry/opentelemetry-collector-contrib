@@ -182,7 +182,6 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedResponse, actualResponse)
 			}
-
 		})
 	}
 }
