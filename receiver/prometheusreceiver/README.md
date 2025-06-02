@@ -71,7 +71,7 @@ prometheus --config.file=prom.yaml
 - `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default. To enable it, use the following feature gate option:
 
 ```shell
-"--feature-gates=receiver.prometheusreceiver.-EnableCreatedTimestampZeroIngestion"
+"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
 ```
 - `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
   the collector start time as the metric start time if the
