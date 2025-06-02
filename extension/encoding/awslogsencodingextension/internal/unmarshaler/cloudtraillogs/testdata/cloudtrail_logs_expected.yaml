@@ -47,7 +47,7 @@ resourceLogs:
               - key: principal.iam.arn
                 value: { stringValue: arn:aws:iam::123456789012:user/Mateo }
               - key: tls.protocol.version
-                value: { stringValue: TLSv1.2 }
+                value: { stringValue: "1.2" }
               - key: tls.cipher
                 value: { stringValue: ECDHE-RSA-AES128-GCM-SHA256 }
               - key: server.address
@@ -110,7 +110,7 @@ resourceLogs:
               - key: principal.iam.arn
                 value: { stringValue: arn:aws:iam::123456789012:user/Mary }
               - key: tls.protocol.version
-                value: { stringValue: TLSv1.2 }
+                value: { stringValue: "1.2" }
               - key: tls.cipher
                 value: { stringValue: ECDHE-RSA-AES128-GCM-SHA256 }
               - key: server.address
