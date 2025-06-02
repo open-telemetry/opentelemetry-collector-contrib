@@ -35,7 +35,7 @@ var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
 
 var enableCreatedTimestampZeroIngestionGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion",
-	featuregate.StageBeta,
+	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Enables ingestion of created timestamp."+
 		" Created timestamps are injected as 0 valued samples when appropriate."),
 )
