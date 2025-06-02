@@ -78,7 +78,7 @@ type documentEncoder interface {
 	encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error
 	encodeMetrics(_ encodingContext, _ []datapoints.DataPoint, validationErrors *[]error, _ elasticsearch.Index, _ *bytes.Buffer) (map[string]string, error)
-	encodeProfile(_ encodingContext, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
+	encodeProfile(_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
 }
 
 type encodingContext struct {
@@ -291,10 +291,11 @@ func (e otelModeEncoder) encodeMetrics(
 
 func (e otelModeEncoder) encodeProfile(
 	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
 	profile pprofile.Profile,
 	pushData func(*bytes.Buffer, string, string) error,
 ) error {
-	return e.serializer.SerializeProfile(ec.resource, ec.scope, profile, pushData)
+	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func (e bodymapModeEncoder) encodeLog(
@@ -339,7 +340,7 @@ type profilesUnsupportedEncoder struct {
 }
 
 func (e profilesUnsupportedEncoder) encodeProfile(
-	_ encodingContext, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error,
+	_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error,
 ) error {
 	return fmt.Errorf("mapping mode %q (%d) does not support profiles", e.mode, int(e.mode))
 }
