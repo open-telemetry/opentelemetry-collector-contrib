@@ -174,6 +174,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 				assert.Eventually(t, func() bool {
 					return sink.LogRecordCount() > 0
 				}, time.Second, 10*time.Millisecond)
+				assert.Equal(t, tt.contentType, resp.Header.Get("Content-Type"))
 			}
 			if tt.expectedResponse != nil {
 				var actualResponse []response.ResponseInBatch
@@ -181,6 +182,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedResponse, actualResponse)
 			}
+
 		})
 	}
 }

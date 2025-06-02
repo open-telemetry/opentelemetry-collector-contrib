@@ -239,6 +239,8 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		if len(libhoneyevents) > 0 {
 			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 		}
+	default:
+		r.settings.Logger.Info("unsupported content type", zap.String("content-type", req.Header.Get("Content-Type")))
 	}
 
 	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
