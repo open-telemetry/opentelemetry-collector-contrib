@@ -136,7 +136,14 @@ func (s *syncBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
 
 	s.wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
-		bulkIndexer, _ := docappender.NewBulkIndexer(s.bulkIndexerCfg)
+		bulkIndexer, err := docappender.NewBulkIndexer(s.bulkIndexerCfg)
+		if err != nil {
+			// This should never happen in practice:
+			// NewBulkIndexer should only fail if the
+			// config is invalid, and we expect it to
+			// always be valid at this point.
+			return errBulkIndexerSession{err: err}
+		}
 		worker := &syncBulkIndexerWorker{
 			indexer:               bulkIndexer,
 			items:                 s.items,
@@ -204,7 +211,7 @@ func (s *syncBulkIndexerSession) End() {
 }
 
 // Flush flushes documents added to the bulk indexer session.
-func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
+func (s *syncBulkIndexerSession) Flush(_ context.Context) error {
 	return nil
 }
 
