@@ -25,6 +25,14 @@ func TestObfuscateSQL(t *testing.T) {
 	assert.Equal(t, expectedSQL, result)
 }
 
+func TestObfuscateInvalidSQL(t *testing.T) {
+	sql := "SELECT cpu_time AS [CPU Usage (time)]"
+	result, err := obfuscateSQL(sql)
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+}
+
 func TestObfuscateQueryPlan(t *testing.T) {
 	expected, err := os.ReadFile(filepath.Join("testdata", "expectedQueryPlan.xml"))
 	assert.NoError(t, err)

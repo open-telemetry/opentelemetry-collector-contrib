@@ -1,27 +1,33 @@
+dictionary:
+  attributeTable:
+    - key: process.executable.build_id.htlhash
+      value:
+        stringValue: 600DCAFE4A110000F2BF38C493F5FB92
+    - key: profile.frame.type
+      value:
+        stringValue: native
+    - key: host.id
+      value:
+        stringValue: localhost
+  locationTable:
+    - address: "111"
+      attributeIndices:
+        - 1
+      mappingIndex: 0
+  mappingTable:
+    - attributeIndices:
+        - 0
+  stringTable:
+    - samples
+    - count
+    - cpu
+    - nanoseconds
 resourceProfiles:
   - resource: {}
     scopeProfiles:
       - profiles:
           - attributeIndices:
               - 2
-            attributeTable:
-              - key: process.executable.build_id.htlhash
-                value:
-                  stringValue: 600DCAFE4A110000F2BF38C493F5FB92
-              - key: profile.frame.type
-                value:
-                  stringValue: native
-              - key: host.id
-                value:
-                  stringValue: localhost
-            locationTable:
-              - address: "111"
-                attributeIndices:
-                  - 1
-                mappingIndex: 0
-            mappingTable:
-              - attributeIndices:
-                  - 0
             periodType:
               typeStrindex: 2
               unitStrindex: 3
@@ -32,9 +38,4 @@ resourceProfiles:
                   - "0"
             sampleType:
               - unitStrindex: 1
-            stringTable:
-              - samples
-              - count
-              - cpu
-              - nanoseconds
         scope: {}

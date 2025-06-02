@@ -98,20 +98,11 @@ func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile
 }
 
 func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
-	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).Profiles()
-			for k := 0; k < lrs.Len(); k++ {
-				lr := lrs.At(k)
-				for l := 0; l < lr.AttributeTable().Len(); l++ {
-					a := lr.AttributeTable().At(l)
-					if a.Key() == opt.attributeName {
-						a.Value().SetEmptyBytes()
-					}
-				}
-			}
+	dic := profiles.ProfilesDictionary()
+	for l := 0; l < dic.AttributeTable().Len(); l++ {
+		a := dic.AttributeTable().At(l)
+		if a.Key() == opt.attributeName {
+			a.Value().SetEmptyBytes()
 		}
 	}
 }
@@ -205,32 +196,16 @@ func sortProfileSlices(ls pprofile.Profiles) {
 				}
 				as := a.ProfileID()
 				bs := b.ProfileID()
-				if !bytes.Equal(as[:], bs[:]) {
-					return bytes.Compare(as[:], bs[:]) < 0
-				}
-				am := pcommon.NewMap()
-				for _, i := range a.AttributeIndices().AsRaw() {
-					v := a.AttributeTable().At(int(i))
-					am.PutStr(v.Key(), v.Value().AsString())
-				}
-				bm := pcommon.NewMap()
-				for _, i := range b.AttributeIndices().AsRaw() {
-					v := b.AttributeTable().At(int(i))
-					bm.PutStr(v.Key(), v.Value().AsString())
-				}
-
-				aAttrs := pdatautil.MapHash(am)
-				bAttrs := pdatautil.MapHash(bm)
-				return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+				return bytes.Compare(as[:], bs[:]) < 0
 			})
 		}
 	}
 }
 
-func profileAttributesToMap(p pprofile.Profile) map[string]string {
+func profileAttributesToMap(dic pprofile.ProfilesDictionary, p pprofile.Profile) map[string]string {
 	d := map[string]string{}
 	for _, i := range p.AttributeIndices().AsRaw() {
-		v := p.AttributeTable().At(int(i))
+		v := dic.AttributeTable().At(int(i))
 		d[v.Key()] = v.Value().AsString()
 	}
 
