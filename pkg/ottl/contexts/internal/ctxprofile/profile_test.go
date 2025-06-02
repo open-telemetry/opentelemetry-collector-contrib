@@ -69,7 +69,7 @@ func TestPathGetSetter(t *testing.T) {
 			val:  []int64{345},
 		},
 		{
-			path: "default_sample_type_string_index",
+			path: "default_sample_type_index",
 			val:  int64(456),
 		},
 		{
