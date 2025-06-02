@@ -39,6 +39,7 @@ func (c Config) Validate() error {
 		if c.DataSourceConfig.Host == "" {
 			return errors.New("'datasource_config.host' or 'datasource' must be specified")
 		}
+		// For sqlserver, port is optional
 		if c.Driver != "sqlserver" {
 			if c.DataSourceConfig.Port == 0 {
 				return errors.New("'datasource_config.port' or 'datasource' must be specified")
