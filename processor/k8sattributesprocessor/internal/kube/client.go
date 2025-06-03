@@ -45,6 +45,9 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
 	K8sDeploymentLabel      = "k8s.deployment.label.%s"
 	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#statefulset
+	K8sStatefulSetLabel      = "k8s.statefulset.label.%s"
+	K8sStatefulSetAnnotation = "k8s.statefulset.annotation.%s"
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -995,7 +998,7 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentAnnotation)
+		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentLabel)
 	}
 
 	return tags
@@ -1005,11 +1008,11 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromStatefulSetMetadata(d.Labels, tags, "k8s.statefulset.labels.%s")
+		r.extractFromStatefulSetMetadata(d.Labels, tags, K8sStatefulSetLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromStatefulSetMetadata(d.Annotations, tags, "k8s.statefulset.annotations.%s")
+		r.extractFromStatefulSetMetadata(d.Annotations, tags, K8sStatefulSetLabel)
 	}
 
 	return tags

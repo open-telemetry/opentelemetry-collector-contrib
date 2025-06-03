@@ -1590,7 +1590,7 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 			n, ok := c.GetStatefulSet(string(statefulset.UID))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			assert.Len(t, tc.attributes, len(n.Attributes))
 			for k, v := range tc.attributes {
 				got, ok := n.Attributes[k]
 				assert.True(t, ok)
