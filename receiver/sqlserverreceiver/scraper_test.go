@@ -450,8 +450,20 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 		},
 	}
 
-	_, err := scraper.ScrapeLogs(context.Background())
+	actualLogs, err := scraper.ScrapeLogs(context.Background())
 	assert.Error(t, err)
+
+	expectedFile := "expectedQueryTextAndPlanQueryWithInvalidData.yaml"
+
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, filepath.Join("testdata", expectedFile), actualLogs)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", expectedFile))
+	assert.NoError(t, err)
+
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+	assert.NoError(t, errs)
 }
 
 func TestRecordDatabaseSampleQuery(t *testing.T) {

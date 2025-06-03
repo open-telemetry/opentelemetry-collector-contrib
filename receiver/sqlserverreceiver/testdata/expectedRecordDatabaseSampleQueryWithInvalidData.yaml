@@ -13,6 +13,9 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: client.address
+                value:
+                  stringValue: DESKTOP-GHAEGRD
               - key: client.port
                 value:
                   intValue: "0"
@@ -21,7 +24,7 @@ resourceLogs:
                   stringValue: master
               - key: db.query.text
                 value:
-                  stringValue: SELECT DB_NAME ( r.database_id ), ISNULL ( c.client_net_address, ? ), ISNULL ( c.client_tcp_port, ? ), CONVERT ( NVARCHAR, TODATETIMEOFFSET ( r.start_time, DATEPART ( TZOFFSET, SYSDATETIMEOFFSET ( ) ) ), ? ), s.session_id, s.STATUS, r.STATUS, ISNULL ( s.host_name, ? ), r.command, SUBSTRING ( o.TEXT, ( r.statement_start_offset / ? ) + ? ( ( CASE r.statement_end_offset WHEN - ? THEN DATALENGTH ( o.TEXT ) ELSE r.statement_end_offset END - r.statement_start_offset ) / ? ) + ? ), r.blocking_session_id, ISNULL ( r.wait_type, ? ), r.wait_time, r.wait_resource, r.open_transaction_count, r.transaction_id, r.percent_complete, r.estimated_completion_time, r.cpu_time, r.total_elapsed_time, r.reads, r.writes, r.logical_reads, r.transaction_isolation_level, r.LOCK_TIMEOUT, r.DEADLOCK_PRIORITY, r.row_count, r.query_hash, r.query_plan_hash, ISNULL ( r.context_info, CONVERT ( VARBINARY, ? ) ), s.login_name FROM sys.dm_exec_requests r INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id CROSS APPLY sys.dm_exec_sql_text ( r.plan_handle )
+                  stringValue: SELECT cpu_time AS [CPU Usage (time)]
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
@@ -34,6 +37,9 @@ resourceLogs:
               - key: sqlserver.blocking_session_id
                 value:
                   intValue: "0"
+              - key: sqlserver.context_info
+                value:
+                  stringValue: "307837304133423133304231303438443444"
               - key: sqlserver.command
                 value:
                   stringValue: SELECT
@@ -91,9 +97,6 @@ resourceLogs:
               - key: sqlserver.transaction_isolation_level
                 value:
                   intValue: "0"
-              - key: user.name
-                value:
-                  stringValue: sa
               - key: sqlserver.wait_resource
                 value:
                   stringValue: ""
@@ -106,16 +109,13 @@ resourceLogs:
               - key: sqlserver.writes
                 value:
                   intValue: "0"
-              - key: sqlserver.context_info
+              - key: user.name
                 value:
-                  stringValue: "307837304133423133304231303438443444"
-              - key: client.address
-                value:
-                  stringValue: DESKTOP-GHAEGRD
+                  stringValue: sa
             body: {}
             eventName: db.server.query_sample
             spanId: ""
-            timeUnixNano: "1746443501199160000"
+            timeUnixNano: "1748221339132048638"
             traceId: ""
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
