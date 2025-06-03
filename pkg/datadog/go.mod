@@ -119,7 +119,7 @@ require (
 	go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/extension v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.33.1-0.20250603105141-605011a1fea8 // indirect

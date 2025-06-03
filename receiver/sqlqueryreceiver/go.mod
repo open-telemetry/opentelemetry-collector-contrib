@@ -13,7 +13,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/extension v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/receiver v1.33.1-0.20250603105141-605011a1fea8

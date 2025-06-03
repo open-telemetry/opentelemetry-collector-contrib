@@ -48,7 +48,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/connector v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/consumer/consumererror v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/exporter v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/exporter/debugexporter v0.127.1-0.20250603105141-605011a1fea8
@@ -60,7 +60,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pipeline v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/processor v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/processor v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/batchprocessor v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/receiver v1.33.1-0.20250603105141-605011a1fea8

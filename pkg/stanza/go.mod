@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/config/configtls v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/extension/xextension v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250603105141-605011a1fea8

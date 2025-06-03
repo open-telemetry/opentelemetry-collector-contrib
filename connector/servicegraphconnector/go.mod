@@ -12,14 +12,14 @@ require (
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/connector v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/connector/connectortest v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/exporter v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pipeline v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/processor v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/processor v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/metric v1.36.0
 	go.opentelemetry.io/otel/sdk/metric v1.36.0
