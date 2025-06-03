@@ -46,6 +46,8 @@ go.opentelemetry.io/collector/component v1.33.1-0.20250602081514-8568c97b0d15 h1
 go.opentelemetry.io/collector/component v1.33.1-0.20250602081514-8568c97b0d15/go.mod h1:Mw34zg+euXK4x9xp1uPvv4R9sPtRztjnkgBAWeNQysc=
 go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250602081514-8568c97b0d15 h1:Gw1ST0/1PDRXPcXvJVR2TiBMgS+DdzETWPgDkiOac7Y=
 go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250602081514-8568c97b0d15/go.mod h1:Kz1htXkERf/SIX4fo25ObRmPUyf1c2sQwe/D+nSBhog=
+go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250602081514-8568c97b0d15 h1:H+SsXmePMjzbCzq9rPvkcirm9F4lF5Huk8djp8rhh5U=
+go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250602081514-8568c97b0d15/go.mod h1:rw0/X78O8cOk0dhACqNbdiKk1PF7z7mwq9wgSpWoqgs=
 go.opentelemetry.io/collector/consumer v1.33.1-0.20250602081514-8568c97b0d15 h1:8x583O4tR//5yAPWH2yPmBQtXDsa/M/NfVbEkSkuk9Q=
 go.opentelemetry.io/collector/consumer v1.33.1-0.20250602081514-8568c97b0d15/go.mod h1:N4YUcLidyacWr2Zvme5XyfdC48MkuM1faQRg6+0yzSU=
 go.opentelemetry.io/collector/consumer/consumererror v0.127.0 h1:9MylkP5eR2hlaj80v67VRUjSoiHNNHTK37gCrtz/9+w=
@@ -142,3 +144,5 @@ gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntN
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
+sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=

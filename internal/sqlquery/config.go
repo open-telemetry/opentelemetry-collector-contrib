@@ -8,16 +8,27 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
+type DataSourceConfig struct {
+	Host             string              `mapstructure:"host"`
+	Port             int                 `mapstructure:"port"`
+	Database         string              `mapstructure:"database"`
+	Username         string              `mapstructure:"username"`
+	Password         configopaque.String `mapstructure:"password"`
+	AdditionalParams map[string]any      `mapstructure:"additional_params"`
+}
+
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Driver                         string          `mapstructure:"driver"`
-	DataSource                     string          `mapstructure:"datasource"`
-	Queries                        []Query         `mapstructure:"queries"`
-	StorageID                      *component.ID   `mapstructure:"storage"`
-	Telemetry                      TelemetryConfig `mapstructure:"telemetry"`
+	Driver                         string           `mapstructure:"driver"`
+	DataSource                     string           `mapstructure:"datasource"`
+	DataSourceConfig               DataSourceConfig `mapstructure:"datasource_config"`
+	Queries                        []Query          `mapstructure:"queries"`
+	StorageID                      *component.ID    `mapstructure:"storage"`
+	Telemetry                      TelemetryConfig  `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {
@@ -25,8 +36,20 @@ func (c Config) Validate() error {
 		return errors.New("'driver' cannot be empty")
 	}
 	if c.DataSource == "" {
-		return errors.New("'datasource' cannot be empty")
+		if c.DataSourceConfig.Host == "" {
+			return errors.New("'datasource_config.host' or 'datasource' must be specified")
+		}
+		// For sqlserver, port is optional
+		if c.Driver != "sqlserver" {
+			if c.DataSourceConfig.Port == 0 {
+				return errors.New("'datasource_config.port' or 'datasource' must be specified")
+			}
+		}
+		if c.DataSourceConfig.Database == "" {
+			return errors.New("'datasource_config.database' or 'datasource' must be specified")
+		}
 	}
+
 	if len(c.Queries) == 0 {
 		return errors.New("'queries' cannot be empty")
 	}
