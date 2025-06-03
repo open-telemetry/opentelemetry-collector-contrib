@@ -1,19 +1,24 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package waf
 
 import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+	"sync"
+
 	gojson "github.com/goccy/go-json"
 	"github.com/klauspost/compress/gzip"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.28.0"
-	"io"
-	"strings"
-	"sync"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 )
 
 type wafLogUnmarshaler struct {
@@ -49,7 +54,7 @@ type wafLog struct {
 		Args        string `json:"args"`
 		HTTPVersion string `json:"httpVersion"`
 		HTTPMethod  string `json:"httpMethod"`
-		RequestId   string `json:"requestId"`
+		RequestID   string `json:"requestID"`
 		Fragment    string `json:"fragment"`
 		Scheme      string `json:"scheme"`
 		Host        string `json:"host"`
@@ -159,7 +164,6 @@ func setKeyAttributes(webACLID string, key *resourceKey) error {
 
 	key.resourceID = webACLID
 	return nil
-
 }
 
 func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord, key *resourceKey, setKey bool) error {
@@ -169,9 +173,12 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord, key *re
 	record.SetTimestamp(ts)
 
 	if log.HTTPRequest.HTTPVersion != "" {
-		_, version, _ := strings.Cut(log.HTTPRequest.HTTPVersion, "HTTP/")
-		if version == "" {
-			return fmt.Errorf(`"httpRequest.httpVersion" does not have expected format "HTTP/<version"`)
+		_, version, found := strings.Cut(log.HTTPRequest.HTTPVersion, "HTTP/")
+		if !found || version == "" {
+			return fmt.Errorf(
+				`httpRequest.httpVersion %q does not have expected format "HTTP/<version"`,
+				log.HTTPRequest.HTTPVersion,
+			)
 		}
 		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), "http")
 		record.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), version)
@@ -198,7 +205,7 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord, key *re
 	putStr(string(conventions.URLPathKey), log.HTTPRequest.URI)
 	putStr(string(conventions.URLQueryKey), log.HTTPRequest.Args)
 	putStr(string(conventions.HTTPRequestMethodKey), log.HTTPRequest.HTTPMethod)
-	putStr(string(conventions.AWSRequestIDKey), log.HTTPRequest.RequestId)
+	putStr(string(conventions.AWSRequestIDKey), log.HTTPRequest.RequestID)
 	putStr(string(conventions.URLFragmentKey), log.HTTPRequest.Fragment)
 	putStr(string(conventions.URLSchemeKey), log.HTTPRequest.Scheme)
 	putStr("geo.country.iso_code", log.HTTPRequest.Country)

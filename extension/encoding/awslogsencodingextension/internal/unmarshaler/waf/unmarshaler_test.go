@@ -1,16 +1,21 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package waf
 
 import (
 	"bytes"
-	gojson "github.com/goccy/go-json"
-	"github.com/klauspost/compress/gzip"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"os"
 	"path/filepath"
 	"testing"
+
+	gojson "github.com/goccy/go-json"
+	"github.com/klauspost/compress/gzip"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 // compressData in gzip format
