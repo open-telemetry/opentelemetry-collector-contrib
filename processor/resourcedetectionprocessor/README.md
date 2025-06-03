@@ -380,23 +380,6 @@ In this example, the env variable `K8S_NODE_NAME` will hold the actual node name
                 fieldPath: spec.nodeName
 ```
 
-#### IMDS client 
-These options are available to configure the IMDS client:
-
-- `max_attempts`: The maximum number of attempts to make when calling the IMDS endpoint. The default is 3.
-- `max_backoff`: The maximum backoff time to use when retrying a request. The default is 20 seconds.
-
-```yaml
-processors:
-  resourcedetection/eks:
-    detectors: [eks]
-    timeout: 15s
-    override: false
-    eks:
-      max_attempts: 10
-      max_backoff: 5m
-```
-
 ### AWS Lambda
 
 Uses the AWS Lambda [runtime environment variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime)

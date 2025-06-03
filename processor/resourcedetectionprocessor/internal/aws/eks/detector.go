@@ -196,16 +196,13 @@ func (e eksDetectorUtils) getAWSConfig(ctx context.Context, checkAccess bool) (a
 		return aws.Config{}, err
 	}
 
-	maxAttempts := e.cfg.MaxAttempts
 	if checkAccess {
-		maxAttempts = imdsCheckMaxRetry
+		awsConfig.Retryer = func() aws.Retryer {
+			return retry.NewStandard(func(options *retry.StandardOptions) {
+				options.MaxAttempts = imdsCheckMaxRetry
+			})
+		}
 	}
 
-	awsConfig.Retryer = func() aws.Retryer {
-		return retry.NewStandard(func(options *retry.StandardOptions) {
-			options.MaxAttempts = maxAttempts
-			options.MaxBackoff = e.cfg.MaxBackoff
-		})
-	}
 	return awsConfig, nil
 }

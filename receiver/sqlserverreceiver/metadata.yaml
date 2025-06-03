@@ -43,6 +43,9 @@ attributes:
     description: The page operation types.
     type: string
     enum: [read, write]
+  performance_counter.object_name:
+    description: Category to which this counter belongs
+    type: string
   physical_filename:
     description: The physical filename of the file being monitored.
     type: string
@@ -333,6 +336,7 @@ metrics:
     unit: s
     gauge:
       value_type: int
+    attributes: [performance_counter.object_name]
   sqlserver.page.split.rate:
     enabled: true
     description: Number of pages split as a result of overflowing index pages.
