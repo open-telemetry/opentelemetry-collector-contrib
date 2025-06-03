@@ -154,7 +154,7 @@ require (
 	github.com/prometheus/common/assets v0.2.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.14.0 // indirect
 	github.com/prometheus/otlptranslator v0.0.0-20250320144820-d800c8b0eb07 // indirect
-	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/sigv4 v0.1.2 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -209,8 +209,8 @@ require (
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
 	google.golang.org/api v0.230.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250414145226-207652e42e2e // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250519155744-55703ea1f237 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
 	google.golang.org/grpc v1.72.2 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
