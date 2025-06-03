@@ -28,6 +28,7 @@ confmap/provider/aesprovider/                                    @open-telemetry
 confmap/provider/googlesecretmanagerprovider/                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @psx95 @braydonk @ridwanmsharif
 confmap/provider/s3provider/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
 confmap/provider/secretsmanagerprovider/                         @open-telemetry/collector-contrib-approvers @atoulme
+connector/countconnector/                                        @open-telemetry/collector-contrib-approvers @akats7
 connector/datadogconnector/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @ankitpatel96 @jade-guiton-dd @IbraheemA
 connector/exceptionsconnector/                                   @open-telemetry/collector-contrib-approvers @marctc
 connector/failoverconnector/                                     @open-telemetry/collector-contrib-approvers @akats7 @fatsheep9146
@@ -244,7 +245,7 @@ receiver/githubreceiver/                                         @open-telemetry
 receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @atoulme
 receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth
 receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
-receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB
+receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
@@ -291,7 +292,7 @@ receiver/podmanreceiver/                                         @open-telemetry
 receiver/postgresqlreceiver/                                     @open-telemetry/collector-contrib-approvers @antonblock
 receiver/pprofreceiver/                                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens @krajorama
-receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
+receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens @perebaj
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
@@ -357,7 +358,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
-connector/countconnector/                                        @open-telemetry/collector-contrib-approvers
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers
 exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers
 exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers

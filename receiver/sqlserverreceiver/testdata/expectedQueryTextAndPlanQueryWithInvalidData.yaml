@@ -1,0 +1,68 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.computer.name
+          value:
+            stringValue: DESKTOP-GHAEGRD
+        - key: sqlserver.instance.name
+          value:
+            stringValue: sqlserver
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: sqlserver.total_worker_time
+                value:
+                  doubleValue: 0
+              - key: db.query.text
+                value:
+                  stringValue: SELECT cpu_time AS [CPU Usage (time)]
+              - key: sqlserver.execution_count
+                value:
+                  intValue: "0"
+              - key: sqlserver.total_logical_reads
+                value:
+                  intValue: "0"
+              - key: sqlserver.total_logical_writes
+                value:
+                  intValue: "0"
+              - key: sqlserver.total_physical_reads
+                value:
+                  intValue: "0"
+              - key: sqlserver.query_hash
+                value:
+                  stringValue: "307833373834394538373431373145334633"
+              - key: sqlserver.query_plan
+                value:
+                  stringValue: ""
+              - key: sqlserver.query_plan_hash
+                value:
+                  stringValue: "307844333131323930393432394131423530"
+              - key: sqlserver.total_rows
+                value:
+                  intValue: "0"
+              - key: sqlserver.total_elapsed_time
+                value:
+                  doubleValue: 0.003845
+              - key: sqlserver.total_grant_kb
+                value:
+                  intValue: "0"
+              - key: server.address
+                value:
+                  stringValue: 0.0.0.0
+              - key: server.port
+                value:
+                  intValue: "1433"
+              - key: db.system.name
+                value:
+                  stringValue: microsoft.sql_server
+            body: {}
+            eventName: db.server.top_query
+            spanId: ""
+            timeUnixNano: "1748501969782683000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
