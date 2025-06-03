@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/service v0.127.1-0.20250603112025-e1f670844604
+	go.opentelemetry.io/collector/service v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0
 	go.opentelemetry.io/contrib/otelconf v0.16.0
 	go.opentelemetry.io/otel v1.36.0
@@ -151,7 +151,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.127.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250603105141-605011a1fea8 // indirect
@@ -180,19 +180,19 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/pipeline v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.127.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/processor v1.33.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/processor v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.127.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250603112025-e1f670844604 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/receiver v1.33.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.127.1-0.20250603112025-e1f670844604 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.127.1-0.20250603112025-e1f670844604 // indirect
-	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250603112025-e1f670844604 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.127.1-0.20250603112025-e1f670844604 // indirect
-	go.opentelemetry.io/collector/service/hostcapabilities v0.127.1-0.20250603112025-e1f670844604 // indirect
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.127.1-0.20250603105141-605011a1fea8 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.127.1-0.20250603105141-605011a1fea8 // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250603105141-605011a1fea8 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.127.1-0.20250603105141-605011a1fea8 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.36.0 // indirect

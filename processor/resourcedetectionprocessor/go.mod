@@ -25,17 +25,17 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap/xconfmap v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/consumer/xconsumer v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/processor v1.33.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/processor v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/processorhelper v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/processortest v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250603112025-e1f670844604
+	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

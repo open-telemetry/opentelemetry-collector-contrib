@@ -79,8 +79,8 @@ go.opentelemetry.io/collector/connector/connectortest v0.127.1-0.20250603105141-
 go.opentelemetry.io/collector/connector/connectortest v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:86Yr8FkvqLc/lPxa+yggWlzkGnBI7cvO80UzCVdhacU=
 go.opentelemetry.io/collector/connector/xconnector v0.127.1-0.20250603105141-605011a1fea8 h1:/1alEjZmmv562nyJ3XlnvFMTVHpVstJS8JV8AlrcwKA=
 go.opentelemetry.io/collector/connector/xconnector v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:24R6Gkz1xS2kYhnBYkS0R2HkQHpkbtNmK3aoHivXrTw=
-go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786 h1:tdudJ3ptCiUz3RvXIXCYIjzu7J7Jo3rEOYtTbtm/QgU=
-go.opentelemetry.io/collector/consumer v1.33.1-0.20250603085401-72878a1e9786/go.mod h1:N4YUcLidyacWr2Zvme5XyfdC48MkuM1faQRg6+0yzSU=
+go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8 h1:1XVOMghcLL0f06If2B+AWgAboHldr8RH4j5/S+3Qt0U=
+go.opentelemetry.io/collector/consumer v1.33.1-0.20250603105141-605011a1fea8/go.mod h1:N4YUcLidyacWr2Zvme5XyfdC48MkuM1faQRg6+0yzSU=
 go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250603105141-605011a1fea8 h1:a4pgBPQRInqJNavll7EU1VZU4HLXinGCTn85qcZBzVc=
 go.opentelemetry.io/collector/consumer/consumertest v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:noTdz8I/0CdGQFyLCi5ce8xAhjF1zxyAJyJtNhIBip0=
 go.opentelemetry.io/collector/consumer/xconsumer v0.127.1-0.20250603105141-605011a1fea8 h1:yBOkghuyHsRXA/W0WuSBaUr1eckFnqSlkHMvofk7gF4=

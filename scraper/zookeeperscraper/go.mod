@@ -12,10 +12,10 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/config/confignet v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/filter v0.127.1-0.20250603112025-e1f670844604
+	go.opentelemetry.io/collector/filter v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/scraper v0.127.1-0.20250603112025-e1f670844604
-	go.opentelemetry.io/collector/scraper/scrapertest v0.127.1-0.20250603112025-e1f670844604
+	go.opentelemetry.io/collector/scraper v0.127.1-0.20250603105141-605011a1fea8
+	go.opentelemetry.io/collector/scraper/scrapertest v0.127.1-0.20250603105141-605011a1fea8
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
