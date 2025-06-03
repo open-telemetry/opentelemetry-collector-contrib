@@ -349,8 +349,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			// TODO: Validate if we need to deal with classic and native histograms here. Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39864#discussion_r2077232035
-			addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
+			if len(ts.Samples) > 0 {
+				badRequestErrors = errors.Join(badRequestErrors, errors.New("this flow just support the conversion of native histograms to exponential histograms. classic histograms will be dropped"))
+			} else {
+				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
+			}
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
