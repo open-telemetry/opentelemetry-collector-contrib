@@ -226,7 +226,7 @@ var nfsdV4Operations = []string{
 	"REMOVEXATTR",
 }
 
-func getNfsStats() (*NfsStats, error) {
+func getOSNfsStats() (*NfsStats, error) {
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
 		return nil, err
@@ -237,7 +237,7 @@ func getNfsStats() (*NfsStats, error) {
 	return parseNfsStats(f)
 }
 
-func getNfsdStats() (*NfsdStats, error) {
+func getOSNfsdStats() (*NfsdStats, error) {
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
 		return nil, err

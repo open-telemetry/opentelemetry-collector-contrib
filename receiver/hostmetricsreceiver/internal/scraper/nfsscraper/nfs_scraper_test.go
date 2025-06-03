@@ -7,12 +7,14 @@ import (
 	"context"
 	"testing"
 
-	//	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/scraper/scrapertest"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
 func mockGetNfsStats() (*NfsStats, error) {
@@ -145,38 +147,150 @@ func TestScrape(t *testing.T) {
 		t.Skip()
 	}
 
-	ctx := context.Background()
-
 	type testCase struct {
-		name               string
+		name string
 	}
 
 	testCases := []testCase{
 		{
-    			name:               "All metrics",
+			name: "All metrics",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper :=&nfsScraper{
-				settings:  scrapertest.NewNopSettings(metadata.Type),
-				config:    &Config{
+			scraper := &nfsScraper{
+				settings: scrapertest.NewNopSettings(metadata.Type),
+				config: &Config{
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				},
-				nfsStats:  mockGetNfsStats,
-				nfsdStats: mockGetNfsdStats,
+				getNfsStats:  mockGetNfsStats,
+				getNfsdStats: mockGetNfsdStats,
 			}
-			
+
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
 
-			
+			noAttrs := pcommon.NewMap()
+			assertMetric(t, md, "system.nfs.net.count", int64(scraper.nfsStats.NfsNetStats.NetCount), noAttrs)
+			assertMetric(t, md, "system.nfs.net.udp.count", int64(scraper.nfsStats.NfsNetStats.UDPCount), noAttrs)
+			assertMetric(t, md, "system.nfs.net.tcp.count", int64(scraper.nfsStats.NfsNetStats.TCPCount), noAttrs)
+			assertMetric(t, md, "system.nfs.net.tcp.connections", int64(scraper.nfsStats.NfsNetStats.TCPConnectionCount), noAttrs)
+
+			assertMetric(t, md, "system.nfs.rpc.count", int64(scraper.nfsStats.NfsRPCStats.RPCCount), noAttrs)
+			assertMetric(t, md, "system.nfs.rpc.retransmits", int64(scraper.nfsStats.NfsRPCStats.RetransmitCount), noAttrs)
+			assertMetric(t, md, "system.nfs.rpc.auth_refreshes", int64(scraper.nfsStats.NfsRPCStats.AuthRefreshCount), noAttrs)
+
+			for _, s := range *scraper.nfsStats.NfsV3ProcedureStats {
+				attrs := pcommon.NewMap()
+				attrs.PutInt("nfs.version", s.NFSVersion)
+				attrs.PutStr("nfs.procedure", s.NFSCallName)
+				assertMetric(t, md, "system.nfs.procedure.count", int64(s.NFSCallCount), attrs)
+			}
+
+			for _, s := range *scraper.nfsStats.NfsV4ProcedureStats {
+				attrs := pcommon.NewMap()
+				attrs.PutInt("nfs.version", s.NFSVersion)
+				attrs.PutStr("nfs.procedure", s.NFSCallName)
+				assertMetric(t, md, "system.nfs.procedure.count", int64(s.NFSCallCount), attrs)
+			}
+
+			for _, s := range *scraper.nfsStats.NfsV4OperationStats {
+				attrs := pcommon.NewMap()
+				attrs.PutInt("nfs.version", s.NFSVersion)
+				attrs.PutStr("nfs.operation", s.NFSCallName)
+				assertMetric(t, md, "system.nfs.operation.count", int64(s.NFSCallCount), attrs)
+			}
+
+			assertMetric(t, md, "system.nfsd.repcache.hits", int64(scraper.nfsdStats.NfsdRepcacheStats.Hits), noAttrs)
+			assertMetric(t, md, "system.nfsd.repcache.misses", int64(scraper.nfsdStats.NfsdRepcacheStats.Misses), noAttrs)
+			assertMetric(t, md, "system.nfsd.repcache.nocache", int64(scraper.nfsdStats.NfsdRepcacheStats.Nocache), noAttrs)
+
+			assertMetric(t, md, "system.nfsd.fh.stale", int64(scraper.nfsdStats.NfsdFhStats.Stale), noAttrs)
+
+			assertMetric(t, md, "system.nfsd.io.read", int64(scraper.nfsdStats.NfsdIoStats.Read), noAttrs)
+			assertMetric(t, md, "system.nfsd.io.write", int64(scraper.nfsdStats.NfsdIoStats.Write), noAttrs)
+
+			assertMetric(t, md, "system.nfsd.thread.count", int64(scraper.nfsdStats.NfsdThreadStats.Threads), noAttrs)
+
+			assertMetric(t, md, "system.nfsd.net.count", int64(scraper.nfsdStats.NfsdNetStats.NetCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.net.udp.count", int64(scraper.nfsdStats.NfsdNetStats.UDPCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.net.tcp.count", int64(scraper.nfsdStats.NfsdNetStats.TCPCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.net.tcp.connections", int64(scraper.nfsdStats.NfsdNetStats.TCPConnectionCount), noAttrs)
+
+			assertMetric(t, md, "system.nfsd.rpc.count", int64(scraper.nfsdStats.NfsdRPCStats.RPCCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.rpc.bad_calls", int64(scraper.nfsdStats.NfsdRPCStats.BadCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.rpc.bad_format", int64(scraper.nfsdStats.NfsdRPCStats.BadFmtCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.rpc.bad_auth", int64(scraper.nfsdStats.NfsdRPCStats.BadAuthCount), noAttrs)
+			assertMetric(t, md, "system.nfsd.rpc.bad_clients", int64(scraper.nfsdStats.NfsdRPCStats.BadClientCount), noAttrs)
+
+			for _, s := range *scraper.nfsdStats.NfsdV3ProcedureStats {
+				attrs := pcommon.NewMap()
+				attrs.PutInt("nfs.version", s.NFSVersion)
+				attrs.PutStr("nfs.procedure", s.NFSCallName)
+				assertMetric(t, md, "system.nfsd.procedure.count", int64(s.NFSCallCount), attrs)
+			}
+
+			for _, s := range *scraper.nfsdStats.NfsdV4ProcedureStats {
+				attrs := pcommon.NewMap()
+				attrs.PutInt("nfs.version", s.NFSVersion)
+				attrs.PutStr("nfs.procedure", s.NFSCallName)
+				assertMetric(t, md, "system.nfsd.procedure.count", int64(s.NFSCallCount), attrs)
+			}
+			for _, s := range *scraper.nfsdStats.NfsdV4OperationStats {
+				attrs := pcommon.NewMap()
+				attrs.PutInt("nfs.version", s.NFSVersion)
+				attrs.PutStr("nfs.operation", s.NFSCallName)
+				assertMetric(t, md, "system.nfsd.operation.count", int64(s.NFSCallCount), attrs)
+			}
 		})
 	}
+}
 
-	nothing(ctx)
+func assertMetric(t *testing.T, metrics pmetric.Metrics, name string, value int64, attributes pcommon.Map) {
+	metric, found := findMetric(metrics, name)
+	require.True(t, found, "Metric %q not found", name)
+
+	var dps pmetric.NumberDataPointSlice
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		dps = metric.Sum().DataPoints()
+	case pmetric.MetricTypeGauge:
+		dps = metric.Gauge().DataPoints()
+	default:
+		t.Fatalf("unexpected metric type %s for metric %s", metric.Type(), name)
+		return
+	}
+
+	var foundDp bool
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if dp.IntValue() == value && dp.Attributes().Equal(attributes) {
+			foundDp = true
+			break
+		}
+	}
+
+	assert.True(t, foundDp, "Datapoint not found for metric %q with value %d and attributes %v", name, value, attributes)
+}
+
+// findMetric searches for a metric by name in the pmetric.Metrics object.
+func findMetric(metrics pmetric.Metrics, name string) (pmetric.Metric, bool) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				if m.Name() == name {
+					return m, true
+				}
+			}
+		}
+	}
+	return pmetric.Metric{}, false
 }

@@ -27,18 +27,22 @@ type nfsScraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
-	// for mocking
-	nfsStats  func() (*NfsStats, error)
-	nfsdStats func() (*NfsdStats, error)
+	getNfsStats  func() (*NfsStats, error)
+	getNfsdStats func() (*NfsdStats, error)
+
+	nfsStats  *NfsStats
+	nfsdStats *NfsdStats
 }
 
 // newNfsScraper creates an NFS Scraper related metric
 func newNfsScraper(settings scraper.Settings, cfg *Config) *nfsScraper {
 	return &nfsScraper{
-		settings:  settings,
-		config:    cfg,
-		nfsStats:  getNfsStats,
-		nfsdStats: getNfsdStats,
+		settings:     settings,
+		config:       cfg,
+		getNfsStats:  getOSNfsStats,
+		getNfsdStats: getOSNfsdStats,
+		nfsStats:     nil,
+		nfsdStats:    nil,
 	}
 }
 
@@ -48,19 +52,20 @@ func (s *nfsScraper) start(_ context.Context, _ component.Host) error {
 }
 
 func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	var err error
 	var errs scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	nfsStats, err := s.nfsStats()
+	s.nfsStats, err = s.getNfsStats()
 	if err == nil {
-		s.recordNfsMetrics(now, nfsStats)
+		s.recordNfsMetrics(now, s.nfsStats)
 	} else {
 		errs.AddPartial(nfsMetricsLen, err)
 	}
 
-	nfsdStats, err := s.nfsdStats()
+	s.nfsdStats, err = s.getNfsdStats()
 	if err == nil {
-		s.recordNfsdMetrics(now, nfsdStats)
+		s.recordNfsdMetrics(now, s.nfsdStats)
 	} else {
 		errs.AddPartial(nfsdMetricsLen, err)
 	}
