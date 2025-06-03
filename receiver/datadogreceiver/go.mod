@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.23.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.154
+	github.com/DataDog/agent-payload/v5 v5.0.155
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.66.0
 	github.com/DataDog/datadog-agent/pkg/trace v0.66.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
+	github.com/DataDog/datadog-api-client-go/v2 v2.38.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.127.0
