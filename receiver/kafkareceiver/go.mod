@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/IBM/sarama v1.45.2
@@ -17,7 +17,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.127.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
-	github.com/twmb/franz-go v1.18.1
+	github.com/twmb/franz-go v1.19.5
 	github.com/twmb/franz-go/pkg/kadm v1.16.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8
@@ -99,7 +99,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/relvacode/iso8601 v1.6.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.9.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.11.2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
