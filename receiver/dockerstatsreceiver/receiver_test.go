@@ -117,6 +117,7 @@ var (
 		ContainerImageName:   resourceAttributeEnabled,
 		ContainerName:        resourceAttributeEnabled,
 		ContainerRuntime:     resourceAttributeEnabled,
+		ContainerLabels:      resourceAttributeEnabled,
 	}
 )
 
@@ -218,7 +219,16 @@ func TestScrapeV2(t *testing.T) {
 			},
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
-				withMetrics(allMetricsEnabled),
+				withMetrics(allMetricsEnabled).
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
+				withLabelMatchers(LabelMatcher{ // matches "container.label.2" but not "container.label"
+					MatchType: regexpMatchType,
+					Include:   "container\\.label\\.",
+				}),
 		},
 		{
 			desc:                "scrapeV2_two_containers",
@@ -241,7 +251,16 @@ func TestScrapeV2(t *testing.T) {
 			},
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
-				withMetrics(allMetricsEnabled),
+				withMetrics(allMetricsEnabled).
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
+				withLabelMatchers(LabelMatcher{
+					MatchType: regexpMatchType,
+					Include:   ".*",
+				}),
 		},
 		{
 			desc:                "scrapeV2_no_pids_stats",
@@ -259,7 +278,16 @@ func TestScrapeV2(t *testing.T) {
 			},
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
-				withMetrics(allMetricsEnabled),
+				withMetrics(allMetricsEnabled).
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
+				withLabelMatchers(LabelMatcher{
+					MatchType: regexpMatchType,
+					Include:   ".*",
+				}),
 		},
 		{
 			desc:                "scrapeV2_pid_stats_max",
@@ -276,7 +304,11 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 			cfgBuilder: newTestConfigBuilder().
-				withDefaultLabels().
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withMetrics(allMetricsEnabled),
 		},
 		{
@@ -294,6 +326,11 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 			cfgBuilder: newTestConfigBuilder().
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled),
 		},
@@ -311,6 +348,11 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 			cfgBuilder: newTestConfigBuilder().
+				withResourceAttributes(func() metadata.ResourceAttributesConfig {
+					ra := metadata.DefaultResourceAttributesConfig()
+					ra.ContainerLabels.Enabled = true
+					return ra
+				}()).
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled),
 		},
@@ -330,7 +372,11 @@ func TestScrapeV2(t *testing.T) {
 			cfgBuilder: newTestConfigBuilder().
 				withDefaultLabels().
 				withMetrics(allMetricsEnabled).
-				withResourceAttributes(allResourceAttributesEnabled),
+				withResourceAttributes(allResourceAttributesEnabled).
+				withLabelMatchers(LabelMatcher{
+					MatchType: strictMatchType,
+					Include:   "container.label.2",
+				}),
 		},
 	}
 
@@ -465,6 +511,11 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 		"container.label":   "container-metric-label",
 		"container.label.2": "container-metric-label-2",
 	}
+	return cb
+}
+
+func (cb *testConfigBuilder) withLabelMatchers(matchers ...LabelMatcher) *testConfigBuilder {
+	cb.config.ContainerLabelsToResourceAttributes = matchers
 	return cb
 }
 
