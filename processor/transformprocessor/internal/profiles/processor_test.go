@@ -1166,6 +1166,63 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	}
 }
 
+func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td pprofile.Profiles)
+	}{
+		{
+			name: "inferring from statements",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`resource.attributes["test"] == nil`},
+					Statements: []string{`set(profile.original_payload_format, Concat([profile.original_payload_format, "pass"], "-"))`},
+				},
+			},
+			want: func(td pprofile.Profiles) {
+				for _, v := range td.ResourceProfiles().All() {
+					for _, m := range v.ScopeProfiles().All() {
+						for _, mm := range m.Profiles().All() {
+							mm.SetOriginalPayloadFormat(mm.OriginalPayloadFormat() + "-pass")
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "inferring from conditions",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`profile.original_payload_format != nil`},
+					Statements: []string{`set(resource.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td pprofile.Profiles) {
+				for _, v := range td.ResourceProfiles().All() {
+					v.Resource().Attributes().PutStr("test", "pass")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructProfiles()
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessProfiles(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructProfiles()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func constructProfiles() pprofile.Profiles {
 	return constructTestProfiles().Transform()
 }
