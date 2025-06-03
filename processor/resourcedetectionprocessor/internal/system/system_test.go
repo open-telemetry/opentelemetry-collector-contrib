@@ -88,6 +88,18 @@ func (m *mockMetadata) CPUInfo(_ context.Context) ([]cpu.InfoStat, error) {
 	return args.Get(0).([]cpu.InfoStat), args.Error(1)
 }
 
+// OSName returns a mock OS name.
+func (m *mockMetadata) OSName(_ context.Context) (string, error) {
+	args := m.MethodCalled("OSName")
+	return args.String(0), args.Error(1)
+}
+
+// OSBuildID returns a mock OS build ID.
+func (m *mockMetadata) OSBuildID(_ context.Context) (string, error) {
+	args := m.MethodCalled("OSBuildID")
+	return args.String(0), args.Error(1)
+}
+
 var (
 	testIPsAttribute = []any{"192.168.1.140", "fe80::abc2:4a28:737a:609e"}
 	testIPsAddresses = []net.IP{net.ParseIP(testIPsAttribute[0].(string)), net.ParseIP(testIPsAttribute[1].(string))}
@@ -403,6 +415,28 @@ func TestDetectCPUInfo(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectOSNameAndBuildID(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("FQDN").Return("fqdn", nil)
+	md.On("OSDescription").Return("desc", nil)
+	md.On("OSType").Return("type", nil)
+	md.On("OSVersion").Return("ver", nil)
+	md.On("OSName").Return("MyOS", nil)
+	md.On("OSBuildID").Return("Build123", nil)
+	md.On("HostArch").Return("amd64", nil)
+
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.OsName.Enabled = true
+	cfg.OsBuildID.Enabled = true
+	detector := newTestDetector(md, []string{"dns"}, cfg)
+	res, _, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	attrs := res.Attributes().AsRaw()
+	assert.Equal(t, "MyOS", attrs["os.name"])
+	assert.Equal(t, "Build123", attrs["os.build.id"])
+	md.AssertExpectations(t)
 }
 
 func newTestDetector(mock *mockMetadata, hostnameSources []string, resCfg metadata.ResourceAttributesConfig) *Detector {
