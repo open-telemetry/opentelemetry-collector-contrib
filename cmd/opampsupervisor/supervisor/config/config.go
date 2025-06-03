@@ -150,9 +150,9 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 }
 
 type OpAMPServer struct {
-	Endpoint   string                 `mapstructure:"endpoint"`
-	Headers    http.Header            `mapstructure:"headers"`
-	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	Endpoint string                 `mapstructure:"endpoint"`
+	Headers  http.Header            `mapstructure:"headers"`
+	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 func (o OpAMPServer) Validate() error {

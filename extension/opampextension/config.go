@@ -85,10 +85,10 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 }
 
 type commonFields struct {
-	Endpoint   string                         `mapstructure:"endpoint"`
-	TLS configtls.ClientConfig         `mapstructure:"tls,omitempty"`
-	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
-	Auth       component.ID                   `mapstructure:"auth,omitempty"`
+	Endpoint string                         `mapstructure:"endpoint"`
+	TLS      configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	Headers  map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Auth     component.ID                   `mapstructure:"auth,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {

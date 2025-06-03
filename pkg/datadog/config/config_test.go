@@ -175,7 +175,7 @@ func TestValidate(t *testing.T) {
 					MaxIdleConnsPerHost: maxIdleConnPerHost,
 					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
-					TLS:          configtls.ClientConfig{InsecureSkipVerify: true},
+					TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 				},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
