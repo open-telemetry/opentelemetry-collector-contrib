@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
@@ -35,6 +36,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
 	}
+
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -55,6 +57,7 @@ type prometheusRemoteWriteReceiver struct {
 	wg     sync.WaitGroup
 
 	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
+	obsrecv *receiverhelper.ObsReport
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric
@@ -101,6 +104,14 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
 	var err error
+	prw.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             prw.settings.ID,
+		ReceiverCreateSettings: prw.settings,
+		Transport:              "http",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create obsreport: %w", err)
+	}
 
 	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux)
 	if err != nil {
@@ -179,8 +190,13 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	// TODO(@perebaj): Evaluate if we should use the obsreport here. Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38812#discussion_r2053094391
-	_ = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+
+	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+	if err != nil {
+		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+	}
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
