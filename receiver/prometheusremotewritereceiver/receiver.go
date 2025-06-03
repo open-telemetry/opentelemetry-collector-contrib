@@ -239,7 +239,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// More about stats: https://github.com/prometheus/docs/blob/main/docs/specs/prw/remote_write_spec_2_0.md#required-written-response-headers
 		// TODO: add histograms and exemplars to the stats. Histograms can be added after this PR be merged. Ref #39864
 		// Exemplars should be implemented to add them to the stats.
-		stats = promremote.WriteResponseStats{}
+		stats = promremote.WriteResponseStats{
+			Confirmed: true,
+		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
@@ -369,10 +371,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
-			stats.Confirmed = true
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			stats.Confirmed = true
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
