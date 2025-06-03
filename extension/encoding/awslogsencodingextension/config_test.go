@@ -80,6 +80,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "waf_log"),
 			expected: &Config{
 				Format: formatWAFLog,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "cloudtrail_logs"),
+			expected: &Config{
+				Format: formatCloudTrailLogs,
 				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: fileFormatPlainText,
 				},
