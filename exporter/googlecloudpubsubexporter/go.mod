@@ -59,8 +59,8 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/pipeline v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/receiver v1.33.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250603112025-e1f670844604 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.127.1-0.20250603112025-e1f670844604 // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.127.1-0.20250603105141-605011a1fea8 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect

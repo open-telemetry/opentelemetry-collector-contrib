@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/processor/processortest v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250603112025-e1f670844604
+	go.opentelemetry.io/collector/processor/xprocessor v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
