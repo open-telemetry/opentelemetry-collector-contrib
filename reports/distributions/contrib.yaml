@@ -207,6 +207,7 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
         - tcpcheck
         - tcplog

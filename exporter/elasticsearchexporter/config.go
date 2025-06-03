@@ -129,12 +129,18 @@ type TelemetrySettings struct {
 
 	LogFailedDocsInput          bool          `mapstructure:"log_failed_docs_input"`
 	LogFailedDocsInputRateLimit time.Duration `mapstructure:"log_failed_docs_input_rate_limit"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type LogstashFormatSettings struct {
 	Enabled         bool   `mapstructure:"enabled"`
 	PrefixSeparator string `mapstructure:"prefix_separator"`
 	DateFormat      string `mapstructure:"date_format"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DynamicIndexSetting struct {
@@ -142,14 +148,23 @@ type DynamicIndexSetting struct {
 	//
 	// Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DynamicPipelineSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AuthenticationSettings defines user authentication related settings.
@@ -164,6 +179,9 @@ type AuthenticationSettings struct {
 	//
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
 	APIKey configopaque.String `mapstructure:"api_key"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // DiscoverySettings defines Elasticsearch node discovery related settings.
@@ -183,6 +201,9 @@ type DiscoverySettings struct {
 	// Interval instructs the exporter to renew the list of Elasticsearch URLs
 	// with the given interval. URLs will not be updated if Interval is <=0.
 	Interval time.Duration `mapstructure:"interval"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // FlushSettings defines settings for configuring the write buffer flushing
@@ -194,6 +215,9 @@ type FlushSettings struct {
 
 	// Interval configures the max age of a document in the send buffer.
 	Interval time.Duration `mapstructure:"interval"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // RetrySettings defines settings for the HTTP request retries in the Elasticsearch exporter.
@@ -235,6 +259,9 @@ type MappingsSettings struct {
 	//
 	// If unspecified, all mapping modes are allowed.
 	AllowedModes []string `mapstructure:"allowed_modes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type MappingMode int
