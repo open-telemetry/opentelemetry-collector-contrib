@@ -264,9 +264,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
-			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
-			//setStatement: "set(exemplars, 2)",
-			//getStatement: "exemplars",
 		},
 		{
 			name: "attributes",
@@ -786,7 +783,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
-			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			//TODO how to set pmetric.HistogramDataPoint with string?
 			//setStatement: "set(exemplars, 2)",
 			//getStatement: "exemplars",
 		},
@@ -1409,9 +1406,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
-			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
-			//setStatement: "set(exemplars, 2)",
-			//getStatement: "exemplars",
 		},
 		{
 			name: "attributes",
@@ -1915,9 +1909,6 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				newQuartileValues.CopyTo(datapoint.QuantileValues())
 			},
-			//TODO how to set pmetric.SummaryDataPointValueAtQuantileSlice from a string rappresentation?
-			//setStatement: "set(quantile_values, 10.2)",
-			//getStatement: "quantile_values",
 		},
 		{
 			name: "attributes",
