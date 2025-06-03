@@ -1102,8 +1102,8 @@ func (s *Supervisor) loadRemoteConfig() {
 // loadLastReceivedOwnTelemetryConfig loads the last received own telemetry config from file if the capability is supported.
 func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 	// If none of the own telemetry capabilities are supported, do nothing.
-	if !(s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs) {
-		s.telemetrySettings.Logger.Debug("Own metrics is not supported, will not attempt to load config from file")
+	if !s.config.Capabilities.ReportsOwnMetrics && !s.config.Capabilities.ReportsOwnTraces && !s.config.Capabilities.ReportsOwnLogs {
+		s.telemetrySettings.Logger.Debug("Own telemetry is not supported, will not attempt to load config from file")
 		return
 	}
 
@@ -1371,7 +1371,9 @@ func (s *Supervisor) runAgentProcess() {
 				// not starting agent because of nop config, clear timer, report applied status, report healthy status
 				configApplyTimeoutTimer.Stop()
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
-				s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""})
+				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
+					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
+				}
 			}
 
 		case <-s.commander.Exited():

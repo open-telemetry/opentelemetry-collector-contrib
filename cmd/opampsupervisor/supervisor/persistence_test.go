@@ -58,7 +58,7 @@ last_remote_config_status:
 
 func TestPersistentState_SetInstanceID(t *testing.T) {
 	f := filepath.Join(t.TempDir(), "state.yaml")
-	state, err := createNewPersistentState(f)
+	state, err := createNewPersistentState(f, zap.NewNop())
 	require.NoError(t, err)
 
 	// instance ID should be populated
@@ -72,7 +72,7 @@ func TestPersistentState_SetInstanceID(t *testing.T) {
 	require.Equal(t, newUUID, state.InstanceID)
 
 	// Test that loading the state after setting the instance ID has the new instance ID
-	loadedState, err := loadPersistentState(f)
+	loadedState, err := loadPersistentState(f, zap.NewNop())
 	require.NoError(t, err)
 
 	require.Equal(t, newUUID, loadedState.InstanceID)
@@ -80,7 +80,7 @@ func TestPersistentState_SetInstanceID(t *testing.T) {
 
 func TestPersistentState_SetLastRemoteConfigStatus(t *testing.T) {
 	f := filepath.Join(t.TempDir(), "state.yaml")
-	state, err := createNewPersistentState(f)
+	state, err := createNewPersistentState(f, zap.NewNop())
 	require.NoError(t, err)
 
 	require.Nil(t, state.LastRemoteConfigStatus)
@@ -96,7 +96,7 @@ func TestPersistentState_SetLastRemoteConfigStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test that loading the state after setting the last remote config status has the new status
-	loadedState, err := loadPersistentState(f)
+	loadedState, err := loadPersistentState(f, zap.NewNop())
 	require.NoError(t, err)
 
 	require.Equal(t, &protobufs.RemoteConfigStatus{
