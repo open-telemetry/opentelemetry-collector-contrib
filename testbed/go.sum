@@ -30,8 +30,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2/go.mod h1:wP83
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.154 h1:vHuR8HlV5bBEQEotAplDp7OLfjSyA51RD5zuLcPEPHo=
-github.com/DataDog/agent-payload/v5 v5.0.154/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
+github.com/DataDog/agent-payload/v5 v5.0.155 h1:tOD4Q3imRewXwEa1iDRZrKOIQhYQN4+GaRpV0dA6ckU=
+github.com/DataDog/agent-payload/v5 v5.0.155/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.66.0 h1:tRoQRcRr/j0310axQlCRbJFD4XklIr40EGfonVxt3lg=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.66.0/go.mod h1:u/ZS2pzrBQ1LokbEvFULjn1SfX+If31uqtz6MJ7UaFo=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.0 h1:yJaDjRd8b5GrF3Pa1ISYiOf6w/niwvuCFz6NTmOhyeU=
@@ -53,8 +53,8 @@ github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.0/go.mod h1:yFofpjKXfgM
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.0.0-20201009092105-58e18918b2db/go.mod h1:EtS4X73GXAyrpVddkLQ4SewSQX+zv284e8iIkVBXgtk=
 github.com/DataDog/datadog-agent/pkg/version v0.66.0 h1://9qUXTbku7Pg51DASO7ojfypkW0tcQeO8tfbKe8/XM=
 github.com/DataDog/datadog-agent/pkg/version v0.66.0/go.mod h1:LXOHXAHH+vqBwmQKcZa5FgBEi4ECKIC2WsV2Jd9VVJ0=
-github.com/DataDog/datadog-api-client-go/v2 v2.37.1 h1:weZhrGMO//sMEoSKWngoSQwMp4zBSlEX4p3/YWy9ltw=
-github.com/DataDog/datadog-api-client-go/v2 v2.37.1/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.38.0 h1:0f2SuTVOFyDDtYvkOs+xawZLO08h10CBeiEfXsx5kVc=
+github.com/DataDog/datadog-api-client-go/v2 v2.38.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go v3.5.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEUqFvRDw=
