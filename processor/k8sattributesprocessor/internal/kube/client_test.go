@@ -1565,7 +1565,7 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.statefulset.labels.label1": "lv1",
+				"k8s.statefulset.label.label1": "lv1",
 			},
 		},
 		{
@@ -1579,7 +1579,7 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.statefulset.annotations.annotation1": "av1",
+				"k8s.statefulset.annotation.annotation1": "av1",
 			},
 		},
 	}

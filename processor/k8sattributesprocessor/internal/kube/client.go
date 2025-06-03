@@ -998,7 +998,7 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentLabel)
+		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentAnnotation)
 	}
 
 	return tags
@@ -1012,7 +1012,7 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromStatefulSetMetadata(d.Annotations, tags, K8sStatefulSetLabel)
+		r.extractFromStatefulSetMetadata(d.Annotations, tags, K8sStatefulSetAnnotation)
 	}
 
 	return tags
