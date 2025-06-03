@@ -343,6 +343,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.AcceptRemoteWriteProtoMsgs,
 		o.EnableOTLPWriteReceiver,
 		o.ConvertOTLPDelta,
+		o.NativeOTLPDeltaIngestion,
 		o.CTZeroIngestionEnabled,
 	)
 
