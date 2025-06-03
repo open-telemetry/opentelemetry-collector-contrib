@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.28.0"
 	"io"
+	"strings"
 	"sync"
 )
 
@@ -28,6 +29,7 @@ func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
 	}
 }
 
+// See log fields: https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html.
 type wafLog struct {
 	Timestamp           int64  `json:"timestamp"`
 	WebACLID            string `json:"webaclId"`
@@ -43,7 +45,7 @@ type wafLog struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
 		} `json:"headers"`
-		URI         string `json:"URI"`
+		URI         string `json:"uri"`
 		Args        string `json:"args"`
 		HTTPVersion string `json:"httpVersion"`
 		HTTPMethod  string `json:"httpMethod"`
@@ -76,19 +78,29 @@ func (w *wafLogUnmarshaler) UnmarshalLogs(content []byte) (plog.Logs, error) {
 	return w.unmarshalWAFLogs(gzipReader)
 }
 
+type resourceKey struct {
+	region     string
+	accountID  string
+	resourceID string
+}
+
 func (w *wafLogUnmarshaler) unmarshalWAFLogs(reader io.Reader) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceLogs.Resource().Attributes().PutStr(
+		string(conventions.CloudProviderKey),
+		conventions.CloudProviderAWS.Value.AsString(),
+	)
 
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
 
+	key := &resourceKey{}
+	setKey := true
 	scanner := bufio.NewScanner(reader)
-
-	if scanner.Scan() {
+	for scanner.Scan() {
 		logLine := scanner.Bytes()
 		var log wafLog
 		if err := gojson.Unmarshal(logLine, &log); err != nil {
@@ -96,41 +108,103 @@ func (w *wafLogUnmarshaler) unmarshalWAFLogs(reader io.Reader) (plog.Logs, error
 		}
 
 		record := scopeLogs.LogRecords().AppendEmpty()
-		if err := w.addWAFLog(log, record); err != nil {
+		if err := w.addWAFLog(log, record, key, setKey); err != nil {
 			return plog.Logs{}, err
 		}
+		// no need to keep parsing the webACLID value for the resource attributes
+		// after parsing the first log, since they are all the same
+		setKey = false
+	}
+
+	// set the resource attributes
+	if key.resourceID != "" {
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), key.resourceID)
+	}
+	if key.accountID != "" {
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), key.accountID)
+	}
+	if key.region != "" {
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudRegionKey), key.region)
 	}
 
 	return logs, nil
 }
 
-func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
+// setKeyAttributes based on the web ACL ID
+func setKeyAttributes(webACLID string, key *resourceKey) error {
+	expectedFormat := "arn:aws:wafv2:<region>:<account>:<scope>/webacl/<name>/<id>"
+	value, remaining, _ := strings.Cut(webACLID, "arn:aws:wafv2:")
+	if value != "" {
+		return fmt.Errorf("webaclId %q does not have expected prefix %q", webACLID, "arn:aws:wafv2:")
+	}
+	if remaining == "" {
+		return fmt.Errorf("webaclId %q contains no data after expected prefix %q", webACLID, "arn:aws:wafv2:")
+	}
+
+	value, remaining, _ = strings.Cut(remaining, ":")
+	if value == "" {
+		return fmt.Errorf("could not find region in webaclId %q", webACLID)
+	}
+	key.region = value
+
+	value, remaining, _ = strings.Cut(remaining, ":")
+	if value == "" {
+		return fmt.Errorf("could not find account in webaclId %q", webACLID)
+	}
+	key.accountID = value
+
+	if remaining == "" {
+		return fmt.Errorf("webaclId %q does not have expected format %q", webACLID, expectedFormat)
+	}
+
+	key.resourceID = webACLID
+	return nil
+
+}
+
+func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord, key *resourceKey, setKey bool) error {
 	// timestamp is in milliseconds, so we need to convert it to ns first
 	nanos := log.Timestamp * 1_000_000
 	ts := pcommon.Timestamp(nanos)
 	record.SetTimestamp(ts)
 
-	record.Attributes().PutStr(string(conventions.CloudResourceIDKey), log.WebACLID)
+	if log.HTTPRequest.HTTPVersion != "" {
+		_, version, _ := strings.Cut(log.HTTPRequest.HTTPVersion, "HTTP/")
+		if version == "" {
+			return fmt.Errorf(`"httpRequest.httpVersion" does not have expected format "HTTP/<version"`)
+		}
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), "http")
+		record.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), version)
+	}
 
-	record.Attributes().PutStr("aws.waf.action", log.Action)
-	record.Attributes().PutStr("aws.waf.terminating_rule.type", log.TerminatingRuleType)
-	record.Attributes().PutStr("aws.waf.terminating_rule.id", log.TerminatingRuleID)
-	record.Attributes().PutStr("aws.waf.source.id", log.HTTPSourceID)
-	record.Attributes().PutStr("aws.waf.source.name", log.HTTPSourceName)
+	putStr := func(name string, value string) {
+		if value != "" {
+			record.Attributes().PutStr(name, value)
+		}
+	}
+
+	putStr("aws.waf.terminating_rule.type", log.TerminatingRuleType)
+	putStr("aws.waf.terminating_rule.id", log.TerminatingRuleID)
+	putStr("aws.waf.action", log.Action)
+	putStr("aws.waf.source.id", log.HTTPSourceID)
+	putStr("aws.waf.source.name", log.HTTPSourceName)
 
 	for _, header := range log.HTTPRequest.Headers {
-		record.Attributes().PutStr("http.request.header."+header.Name, header.Value)
+		putStr("http.request.header."+header.Name, header.Value)
 	}
-	record.Attributes().PutStr(string(conventions.ClientAddressKey), log.HTTPRequest.ClientIP)
-	record.Attributes().PutStr(string("geo.country.iso_code"), log.HTTPRequest.Country)
-	record.Attributes().PutStr(string(conventions.URLPathKey), log.HTTPRequest.URI)
-	record.Attributes().PutStr(string(conventions.URLQueryKey), log.HTTPRequest.Args)
-	record.Attributes().PutStr(string(conventions.ClientAddressKey), log.HTTPRequest.HTTPVersion)
-	record.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), log.HTTPRequest.HTTPMethod)
-	record.Attributes().PutStr(string(conventions.AWSRequestIDKey), log.HTTPRequest.RequestId)
-	record.Attributes().PutStr(string(conventions.URLFragmentKey), log.HTTPRequest.Fragment)
-	record.Attributes().PutStr(string(conventions.URLSchemeKey), log.HTTPRequest.Scheme)
-	// record.Attributes().PutStr(string(conventions.ClientAddressKey), log.HTTPRequest.Host)
 
-	return nil
+	putStr(string(conventions.ClientAddressKey), log.HTTPRequest.ClientIP)
+	putStr(string(conventions.ServerAddressKey), log.HTTPRequest.Host)
+	putStr(string(conventions.URLPathKey), log.HTTPRequest.URI)
+	putStr(string(conventions.URLQueryKey), log.HTTPRequest.Args)
+	putStr(string(conventions.HTTPRequestMethodKey), log.HTTPRequest.HTTPMethod)
+	putStr(string(conventions.AWSRequestIDKey), log.HTTPRequest.RequestId)
+	putStr(string(conventions.URLFragmentKey), log.HTTPRequest.Fragment)
+	putStr(string(conventions.URLSchemeKey), log.HTTPRequest.Scheme)
+	putStr("geo.country.iso_code", log.HTTPRequest.Country)
+
+	if !setKey {
+		return nil
+	}
+	return setKeyAttributes(log.WebACLID, key)
 }
