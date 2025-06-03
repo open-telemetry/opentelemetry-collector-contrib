@@ -77,19 +77,13 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err)
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
-			// Windows does not currently support the faults metric
 			expectedMetrics := 4
-			if runtime.GOOS == "windows" {
-				expectedMetrics = 3
-			}
 
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
 			startIndex := 0
-			if runtime.GOOS != "windows" {
-				assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
-				startIndex++
-			}
+			assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
+			startIndex++
 
 			assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)},
 				test.expectedStartTime, false)
