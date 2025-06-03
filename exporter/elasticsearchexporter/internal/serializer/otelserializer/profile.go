@@ -26,7 +26,7 @@ const (
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
-func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	err := s.createLRUs()
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 		return pushData(c, id, index)
 	}
 
-	data, err := serializeprofiles.Transform(resource, scope, profile)
+	data, err := serializeprofiles.Transform(dic, resource, scope, profile)
 	if err != nil {
 		return err
 	}
