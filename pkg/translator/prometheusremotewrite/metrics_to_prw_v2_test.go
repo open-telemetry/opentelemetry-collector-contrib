@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 func TestFromMetricsV2(t *testing.T) {
 	settings := Settings{
 		Namespace:         "",
