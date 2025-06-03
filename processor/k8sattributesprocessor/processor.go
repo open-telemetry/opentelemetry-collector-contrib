@@ -48,7 +48,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
@@ -188,6 +188,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), string(conventions.K8SNodeUIDKey), nodeUID)
 		}
 	}
+
+	deployment := getDeploymentUID(pod, resource.Attributes())
+	if deployment != "" {
+		attrsToAdd := kp.getAttributesForPodsDeployment(deployment)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key string, val string) {
@@ -209,6 +217,13 @@ func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.NodeName
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SNodeNameKey))
+}
+
+func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.DeploymentUID != "" {
+		return pod.DeploymentUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -301,6 +316,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 		return nil
 	}
 	return node.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID string) map[string]string {
+	d, ok := kp.kc.GetDeployment(deploymentUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
 }
 
 func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
