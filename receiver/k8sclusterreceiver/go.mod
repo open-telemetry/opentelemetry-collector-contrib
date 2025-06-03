@@ -93,11 +93,11 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.33.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.33.1-0.20250603105141-605011a1fea8 // indirect

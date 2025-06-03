@@ -55,7 +55,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.127.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/config/confignet v1.33.1-0.20250603105141-605011a1fea8
@@ -403,12 +403,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.127.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.33.1-0.20250603105141-605011a1fea8 // indirect
