@@ -336,7 +336,7 @@ run:
 docker-component: check-component
 	GOOS=linux GOARCH=$(GOARCH) $(MAKE) $(COMPONENT)
 	cp ./bin/$(COMPONENT)_linux_$(GOARCH) ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	docker build --platform linux/$(GOARCH) -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component
