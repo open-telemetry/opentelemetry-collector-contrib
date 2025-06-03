@@ -120,12 +120,12 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			profile := createProfileTelemetry()
 
-			tCtx := NewTransformContext(profile, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			tCtx := NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(profile, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			tCtx = NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
@@ -146,7 +146,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := pcommon.NewInstrumentationScope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContext(pprofile.NewProfile(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+	ctx := NewTransformContext(pprofile.NewProfile(), pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 
 	tests := []struct {
 		name     string

@@ -264,7 +264,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
-				profileAttrs := pprofile.FromAttributeIndices(profile.AttributeTable(), profile)
+				profileAttrs := pprofile.FromAttributeIndices(profiles.ProfilesDictionary().AttributeTable(), profile)
 
 				for _, md := range sm.profileMetricDefs {
 					filteredProfileAttrs, ok := md.FilterAttributes(profileAttrs)
@@ -274,7 +274,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
-					tCtx := ottlprofile.NewTransformContext(profile, scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+					tCtx := ottlprofile.NewTransformContext(profile, profiles.ProfilesDictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {

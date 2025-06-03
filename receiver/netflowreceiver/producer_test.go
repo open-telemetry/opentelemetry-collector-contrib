@@ -150,16 +150,16 @@ func TestProduceRaw(t *testing.T) {
 	}
 }
 
-// This PanicProducer replaces the ProtoProducer, to simulate it producing a panic
-type PanicProducer struct{}
+// This panicProducer replaces the ProtoProducer, to simulate it producing a panic
+type panicProducer struct{}
 
-func (m *PanicProducer) Produce(_ any, _ *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
+func (m *panicProducer) Produce(_ any, _ *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
 	panic("producer panic!")
 }
 
-func (m *PanicProducer) Close() {}
+func (m *panicProducer) Close() {}
 
-func (m *PanicProducer) Commit(_ []producer.ProducerMessage) {}
+func (m *panicProducer) Commit(_ []producer.ProducerMessage) {}
 
 func TestProducerPanic(t *testing.T) {
 	// Create a mock logger that can capture logged messages
@@ -169,8 +169,8 @@ func TestProducerPanic(t *testing.T) {
 	// Create a mock consumer
 	mockConsumer := consumertest.NewNop()
 
-	// Wrap a PanicProducer (instead of ProtoProducer) in the OtelLogsProducerWrapper
-	wrapper := newOtelLogsProducer(&PanicProducer{}, mockConsumer, logger, false)
+	// Wrap a panicProducer (instead of ProtoProducer) in the otelLogsProducerWrapper
+	wrapper := newOtelLogsProducer(&panicProducer{}, mockConsumer, logger, false)
 
 	// Call Produce which should recover from panic
 	messages, err := wrapper.Produce(nil, &producer.ProduceArgs{

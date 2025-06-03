@@ -37,18 +37,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-type SplunkContainerConfig struct {
+type splunkContainerConfig struct {
 	conCtx    context.Context
 	container testcontainers.Container
 }
 
-func setup() SplunkContainerConfig {
+func setup() splunkContainerConfig {
 	// Perform setup operations here
 	cfg := startSplunk()
 	return cfg
 }
 
-func teardown(cfg SplunkContainerConfig) {
+func teardown(cfg splunkContainerConfig) {
 	// Perform teardown operations here
 	fmt.Println("Tearing down...")
 	// Stop and remove the container
@@ -84,7 +84,7 @@ func createInsecureClient() *http.Client {
 	return client
 }
 
-func startSplunk() SplunkContainerConfig {
+func startSplunk() splunkContainerConfig {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -150,7 +150,7 @@ func startSplunk() SplunkContainerConfig {
 	integrationtestutils.SetConfigVariable("UI_PORT", strconv.Itoa(uiPort.Int()))
 	integrationtestutils.SetConfigVariable("HEC_PORT", strconv.Itoa(hecPort.Int()))
 	integrationtestutils.SetConfigVariable("MANAGEMENT_PORT", strconv.Itoa(managementPort.Int()))
-	cfg := SplunkContainerConfig{
+	cfg := splunkContainerConfig{
 		conCtx:    conContext,
 		container: container,
 	}

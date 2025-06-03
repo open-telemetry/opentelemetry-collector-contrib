@@ -98,6 +98,8 @@ all_set:
     sqlserver.user.connection.count:
       enabled: true
   events:
+    db.server.query_sample:
+      enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
@@ -212,6 +214,8 @@ none_set:
     sqlserver.user.connection.count:
       enabled: false
   events:
+    db.server.query_sample:
+      enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:

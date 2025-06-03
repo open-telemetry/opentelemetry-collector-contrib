@@ -7,6 +7,29 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.127.0
+
+### 🛑 Breaking changes 🛑
+
+- `cloudfoundryreceiver`: Unexport EnvelopeStreamFactory and UAATokenProvider (#40270)
+- `fluentforwardreceiver`: Unexport all structs in fluentforward receiver. (#40108)
+- `postgresqlreceiver`: Unexport Item (#40265)
+- `netflowreceiver`: Unexport OtelLogsProducerWrapper (#40269)
+- `k8sobserver`: Unexport RunningContainer (#40228)
+- `receiver/vcenter`: unexport struct DatacenterStats (#40109)
+- `tcpcheckreceiver`: Unexport TCPConnectionState (#40271)
+- `wavefrontreceiver`: Unexport WavefrontParser struct (#40105)
+
+### 💡 Enhancements 💡
+
+- `sqlserverreceiver`: Use generated structured event functions in mdatagen (#40041)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/experimentalmetricmetadata`: Add missing otel.entity.type field to the delete events (#40279)
+
+<!-- previous-version -->
+
 ## v0.126.0
 
 ### 🛑 Breaking changes 🛑

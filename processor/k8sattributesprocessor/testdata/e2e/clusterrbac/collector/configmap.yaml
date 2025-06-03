@@ -20,6 +20,9 @@ data:
           - from: pod
             key: workload
             tag_name: k8s.annotations.workload
+          - from: deployment
+            key: workload
+            tag_name: simple-deployment-workload-annotation
           labels:
           - from: pod
             key: app

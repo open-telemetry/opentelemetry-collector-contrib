@@ -91,6 +91,14 @@ type Config struct {
 	// HostMetadata defines the host metadata specific configuration
 	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
 
+	// HostnameDetectionTimeout defines the timeout for hostname detection.
+	// This is necessary for initializing datadog exporter
+	// On K8s, it must be set to less than `failureThreshold * periodSeconds` due to
+	// initialization blocking health_check liveness probes on startup.
+	// If set to zero duration, there will be no timeout applied.
+	// Default is 25 seconds.
+	HostnameDetectionTimeout time.Duration `mapstructure:"hostname_detection_timeout"`
+
 	// OnlyMetadata defines whether to only send metadata
 	// This is useful for agent-collector setups, so that
 	// metadata about a host is sent to the backend even
@@ -373,5 +381,7 @@ func CreateDefaultConfig() component.Config {
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
 		},
+
+		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 	}
 }

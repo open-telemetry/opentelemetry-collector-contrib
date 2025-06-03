@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/component"
@@ -26,8 +27,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
 type libhoneyReceiver struct {
@@ -226,6 +229,21 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
 		}
+		// Post-process msgpack events to ensure timestamps are set
+		for i := range libhoneyevents {
+			if libhoneyevents[i].MsgPackTimestamp == nil {
+				if libhoneyevents[i].Time != "" {
+					// Parse the time string and set MsgPackTimestamp
+					propertime := eventtime.GetEventTime(libhoneyevents[i].Time)
+					libhoneyevents[i].MsgPackTimestamp = &propertime
+				} else {
+					// No time field, use current time
+					tnow := time.Now()
+					libhoneyevents[i].MsgPackTimestamp = &tnow
+					libhoneyevents[i].Time = eventtime.GetEventTimeDefaultString()
+				}
+			}
+		}
 		if len(libhoneyevents) > 0 {
 			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
@@ -238,6 +256,8 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		if len(libhoneyevents) > 0 {
 			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 		}
+	default:
+		r.settings.Logger.Info("unsupported content type", zap.String("content-type", req.Header.Get("Content-Type")))
 	}
 
 	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
@@ -261,8 +281,28 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	noErrors := []byte(`{"errors":[]}`)
-	writeResponse(resp, enc.ContentType(), http.StatusOK, noErrors)
+	// return clean response if no errors above
+	noErrors := response.MakeResponse([]int{})
+
+	var responseBody []byte
+	var contentType string
+
+	switch enc.ContentType() {
+	case encoder.MsgpackContentType:
+		// For msgpack requests, return msgpack response
+		responseBody, err = msgpack.Marshal(noErrors)
+		contentType = encoder.MsgpackContentType
+	default:
+		// For JSON requests, return JSON response
+		responseBody, err = json.Marshal(noErrors)
+		contentType = encoder.JSONContentType
+	}
+
+	if err != nil {
+		errorutil.HTTPError(resp, err)
+		return
+	}
+	writeResponse(resp, contentType, http.StatusOK, responseBody)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {

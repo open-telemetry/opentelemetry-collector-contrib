@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: libhoneyreceiver
+note: Fix response encoding for msgpack
+issues: [40413]
+change_logs: [user]
+subtext: |
+  The libhoneyreceiver now correctly encodes the response for msgpack.
+  This fixes the issue where the response was not being encoded correctly.

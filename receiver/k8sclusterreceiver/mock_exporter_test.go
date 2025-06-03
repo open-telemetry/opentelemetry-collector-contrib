@@ -12,13 +12,13 @@ import (
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
-type MockExporter struct{}
+type mockExporter struct{}
 
-func (m MockExporter) Start(context.Context, component.Host) error {
+func (m mockExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m MockExporter) Shutdown(context.Context) error {
+func (m mockExporter) Shutdown(context.Context) error {
 	return nil
 }
 

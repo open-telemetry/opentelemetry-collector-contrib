@@ -342,6 +342,17 @@ func TestPathGetSetter(t *testing.T) {
 				log.SetSpanID(spanID2)
 			},
 		},
+		{
+			name: "event_name",
+			path: &pathtest.Path[*testContext]{
+				N: "event_name",
+			},
+			orig:   "",
+			newVal: "exception",
+			modified: func(log plog.LogRecord) {
+				log.SetEventName("exception")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
@@ -231,7 +233,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestWAL_Telemetry(t *testing.T) {
+func TestWALWrite_Telemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() {
 		require.NoError(t, tel.Shutdown(context.Background()))
@@ -290,4 +292,78 @@ func TestWAL_Telemetry(t *testing.T) {
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalWritesFailures(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+}
+
+func TestWALRead_Telemetry(t *testing.T) {
+	// Skip flaky test in CI, because it's flaky and hard to reliably test; still useful for local testing.
+	t.Skip("Skipping in CI: test is flaky;still useful for local testing")
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background()))
+	})
+	set := metadatatest.NewSettings(tel)
+
+	// Create a temporary directory for the WAL
+	tempDir := t.TempDir()
+	cfg := &Config{
+		WAL: &WALConfig{
+			BufferSize: 1,
+			Directory:  tempDir,
+		},
+		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV2,
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		// Do nothing
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prw, err := newPRWExporter(cfg, set)
+	require.NotNil(t, prw)
+	require.NoError(t, err)
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, prw.Shutdown(context.Background()))
+	})
+
+	// Verify initial WAL reads metric
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalReads(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	wal := prw.wal
+
+	// Create some test data
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+
+	// Write a successful WAL write first
+	err = prw.handleExport(context.Background(), metrics, nil)
+	require.NoError(t, err)
+	err = wal.wal.Close()
+	require.NoError(t, err)
+
+	// Write corrupted data
+	corruptedData := []byte{0x80}
+	firstWalFile := filepath.Join(wal.walPath, "00000000000000000001")
+	err = os.WriteFile(firstWalFile, corruptedData, 0o600)
+	require.NoError(t, err)
+	// write the corrupted data and start reading from the index
+
+	err = prw.Start(context.Background(), componenttest.NewNopHost())
+	// Unable to start the WAL cause there is a corrupted entry
+	require.Error(t, err)
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_reads_failures")
+	// verify that the metric exists, so it's incremented
+	require.NoError(t, err)
 }
