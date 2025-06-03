@@ -394,3 +394,124 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	}
 	assert.True(t, found, "Expected partial success log with correct fields and metric names")
 }
+
+func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpMetricsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Metrics: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 3,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	t.Run("Under rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("service.name", "test-service")
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		metricCount := 3000
+		for i := 0; i < metricCount; i++ {
+			metric := sm.Metrics().AppendEmpty()
+			metric.SetName(fmt.Sprintf("test_metric_%d", i))
+			metric.SetUnit("1")
+			metric.SetEmptyGauge()
+			dp := metric.Gauge().DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dp.SetDoubleValue(float64(i))
+		}
+
+		start := time.Now()
+		err = exp.pushMetrics(context.Background(), metrics)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, metricCount, mockSrv.recvCount, "Expected to receive exactly %d metrics", metricCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+
+	t.Run("Over rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+
+		rateLimitErr := errors.New("rate limit exceeded")
+		for i := 0; i < 5; i++ {
+			exp.EnableRateLimit(rateLimitErr)
+		}
+
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("service.name", "test-service")
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		metricCount := 7000
+		for i := 0; i < metricCount; i++ {
+			metric := sm.Metrics().AppendEmpty()
+			metric.SetName(fmt.Sprintf("test_metric_%d", i))
+			metric.SetUnit("1")
+			metric.SetEmptyGauge()
+			dp := metric.Gauge().DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dp.SetDoubleValue(float64(i))
+		}
+
+		start := time.Now()
+		err = exp.pushMetrics(context.Background(), metrics)
+		duration := time.Since(start)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "rate limit exceeded")
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+		assert.Zero(t, mockSrv.recvCount, "Expected no metrics to be received due to rate limiting")
+	})
+
+	t.Run("Rate limit reset", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		time.Sleep(2 * time.Second)
+
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("service.name", "test-service")
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		metricCount := 3000
+		for i := 0; i < metricCount; i++ {
+			metric := sm.Metrics().AppendEmpty()
+			metric.SetName(fmt.Sprintf("test_metric_%d", i))
+			metric.SetUnit("1")
+			metric.SetEmptyGauge()
+			dp := metric.Gauge().DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			dp.SetDoubleValue(float64(i))
+		}
+
+		start := time.Now()
+		err = exp.pushMetrics(context.Background(), metrics)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, metricCount, mockSrv.recvCount, "Expected to receive exactly %d metrics after rate limit reset", metricCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+}
