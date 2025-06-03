@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/component v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/component/componentstatus v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250603105141-605011a1fea8
-	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250603085401-72878a1e9786
+	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/config/confignet v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/config/configtls v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/confmap v1.33.1-0.20250603105141-605011a1fea8
@@ -59,7 +59,7 @@ require (
 	github.com/splunk/stef/go/pkg v0.0.6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603085401-72878a1e9786 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.33.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250603105141-605011a1fea8 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.33.1-0.20250603105141-605011a1fea8 // indirect
