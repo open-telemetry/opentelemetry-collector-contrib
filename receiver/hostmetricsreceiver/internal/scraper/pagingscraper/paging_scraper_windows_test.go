@@ -221,7 +221,6 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 	require.NotNil(t, metrics, "Metrics cannot be nil")
 
 	// Expected metric names for paging scraper.
-	// Note: the `system.paging.faults` is now being collected on Windows.
 	expectedMetrics := map[string]bool{
 		"system.paging.operations": false,
 		"system.paging.usage":      false,
