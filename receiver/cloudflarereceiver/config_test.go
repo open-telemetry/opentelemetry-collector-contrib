@@ -123,6 +123,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Secret:         "1234567890abcdef1234567890abcdef",
 					TimestampField: "EdgeStartTimestamp",
+					Separator:      ".",
 					Attributes: map[string]string{
 						"ClientIP":         "http_request.client_ip",
 						"ClientRequestURI": "http_request.uri",

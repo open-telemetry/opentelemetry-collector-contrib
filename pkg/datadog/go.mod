@@ -5,8 +5,8 @@ go 1.23.0
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.66.0
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.28.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.127.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250602081514-8568c97b0d15
@@ -30,10 +30,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.66.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.66.0 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.37.1 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.38.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.27.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.28.0 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.223.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.224.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect

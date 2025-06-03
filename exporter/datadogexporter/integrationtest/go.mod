@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.23.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.154
+	github.com/DataDog/agent-payload/v5 v5.0.155
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.127.0
@@ -125,18 +125,18 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.66.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.66.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.66.0 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.37.1 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.38.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 // indirect
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.27.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.27.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.28.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.28.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.28.0 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.0 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
@@ -153,7 +153,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.223.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.224.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
@@ -261,13 +261,13 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.63.0 // indirect
+	github.com/prometheus/common v0.64.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.4 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
@@ -363,7 +363,7 @@ require (
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect

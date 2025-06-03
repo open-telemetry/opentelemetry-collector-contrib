@@ -8,7 +8,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.127.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.127.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.127.0
-	github.com/prometheus/client_golang/exp v0.0.0-20250516091459-7c924b7c82b5
 	github.com/prometheus/common v0.64.0
 	github.com/prometheus/prometheus v0.304.1
 	github.com/stretchr/testify v1.10.0
