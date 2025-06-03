@@ -195,3 +195,18 @@ func (s EntityStateDetails) Interval() time.Duration {
 type EntityDeleteDetails struct {
 	orig plog.LogRecord
 }
+
+// EntityType returns the type of the entity.
+// TODO: Move the entity type methods to EntityEvent as they are needed for both EntityState and EntityDelete events.
+func (d EntityDeleteDetails) EntityType() string {
+	t, ok := d.orig.Attributes().Get(semconvOtelEntityType)
+	if !ok {
+		return ""
+	}
+	return t.Str()
+}
+
+// SetEntityType sets the type of the entity.
+func (d EntityDeleteDetails) SetEntityType(t string) {
+	d.orig.Attributes().PutStr(semconvOtelEntityType, t)
+}

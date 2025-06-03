@@ -42,6 +42,9 @@ func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
 	InputConfig        journald.Config `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator
