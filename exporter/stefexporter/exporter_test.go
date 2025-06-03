@@ -370,8 +370,8 @@ func TestCancelBlockedExport(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
-		Endpoint:   endpoint,
-		TLS: configtls.ClientConfig{Insecure: true},
+		Endpoint: endpoint,
+		TLS:      configtls.ClientConfig{Insecure: true},
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)

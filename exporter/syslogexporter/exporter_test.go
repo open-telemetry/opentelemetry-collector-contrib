@@ -228,11 +228,11 @@ func TestTLSConfig(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			exporter, err := initExporter(
 				&Config{
-					Endpoint:   "test.com",
-					Network:    testInstance.network,
-					Port:       514,
-					Protocol:   "rfc5424",
-					TLS: testInstance.tlsSettings,
+					Endpoint: "test.com",
+					Network:  testInstance.network,
+					Port:     514,
+					Protocol: "rfc5424",
+					TLS:      testInstance.tlsSettings,
 				},
 				createExporterCreateSettings())
 

@@ -161,8 +161,8 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 			name: "wss endpoint",
 			server: OpAMPServer{
 				WS: &commonFields{
-					Endpoint:   "wss://example.com",
-					TLS: configtls.NewDefaultClientConfig(),
+					Endpoint: "wss://example.com",
+					TLS:      configtls.NewDefaultClientConfig(),
 				},
 			},
 			expectedTLSConfig: assert.NotNil,
@@ -172,8 +172,8 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 			server: OpAMPServer{
 				HTTP: &httpFields{
 					commonFields: commonFields{
-						Endpoint:   "https://example.com",
-						TLS: configtls.NewDefaultClientConfig(),
+						Endpoint: "https://example.com",
+						TLS:      configtls.NewDefaultClientConfig(),
 					},
 				},
 			},

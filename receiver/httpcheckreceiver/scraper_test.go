@@ -67,8 +67,8 @@ func TestScraperStart(t *testing.T) {
 					Targets: []*targetConfig{
 						{
 							ClientConfig: confighttp.ClientConfig{
-								TLS: configtls.ClientConfig{},
-								Endpoint:   "http://example.com",
+								TLS:      configtls.ClientConfig{},
+								Endpoint: "http://example.com",
 							},
 						},
 					},
