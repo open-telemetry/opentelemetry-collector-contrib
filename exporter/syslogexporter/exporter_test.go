@@ -141,7 +141,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *expor
 func createTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
 	config.Network = "tcp"
-	config.TLSSetting.Insecure = true
+	config.TLS.Insecure = true
 	return config
 }
 
@@ -232,7 +232,7 @@ func TestTLSConfig(t *testing.T) {
 					Network:    testInstance.network,
 					Port:       514,
 					Protocol:   "rfc5424",
-					TLSSetting: testInstance.tlsSettings,
+					TLS: testInstance.tlsSettings,
 				},
 				createExporterCreateSettings())
 
