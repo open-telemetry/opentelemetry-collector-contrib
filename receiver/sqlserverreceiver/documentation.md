@@ -359,6 +359,16 @@ Total number of lock timeouts.
 | ---- | ----------- | ---------- |
 | “{timeouts}/s” | Gauge | Double |
 
+### sqlserver.lock.wait.count
+
+Cumulative count of lock waits that occurred.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait} | Sum | Int | Cumulative | true |
+
 ### sqlserver.login.rate
 
 Total number of logins.
@@ -390,6 +400,23 @@ Total memory in use.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | “KB” | Sum | Double | Cumulative | false |
+
+### sqlserver.os.wait.duration
+
+Total wait time for this wait type
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| wait.category | Category of the reason for a wait. | Any Str |
+| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str |
 
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
@@ -430,6 +457,22 @@ Throughput rate of replica data.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` |
+
+### sqlserver.resource_pool.disk.operations
+
+The rate of operations issued.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operations}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
@@ -486,6 +529,7 @@ Total number of mirror write transactions.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| host.name | The host name of SQL Server | Any Str | true |
 | server.address | Name of the database host. | Any Str | false |
 | server.port | Server port number. | Any Int | false |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false |

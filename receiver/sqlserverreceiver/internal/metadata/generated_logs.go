@@ -10,14 +10,60 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+type eventDbServerTopQuery struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerTopQuery) recordEvent(timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbServerNameAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	lr := e.data.AppendEmpty()
+	lr.SetEventName("db.server.top_query")
+	lr.SetTimestamp(timestamp)
+	lr.Attributes().PutDouble("sqlserver.total_worker_time", sqlserverTotalWorkerTimeAttributeValue)
+	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	lr.Attributes().PutInt("sqlserver.execution_count", sqlserverExecutionCountAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_logical_reads", sqlserverTotalLogicalReadsAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_logical_writes", sqlserverTotalLogicalWritesAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_physical_reads", sqlserverTotalPhysicalReadsAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_hash", sqlserverQueryHashAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_plan", sqlserverQueryPlanAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_plan_hash", sqlserverQueryPlanHashAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_rows", sqlserverTotalRowsAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.total_elapsed_time", sqlserverTotalElapsedTimeAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_grant_kb", sqlserverTotalGrantKbAttributeValue)
+	lr.Attributes().PutStr("server.address", serverAddressAttributeValue)
+	lr.Attributes().PutInt("server.port", serverPortAttributeValue)
+	lr.Attributes().PutStr("db.server.name", dbServerNameAttributeValue)
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerTopQuery) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerTopQuery(cfg EventConfig) eventDbServerTopQuery {
+	e := eventDbServerTopQuery{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
+	config                         LogsBuilderConfig // config of the logs builder.
 	logsBuffer                     plog.Logs
 	logRecordsBuffer               plog.LogRecordSlice
 	buildInfo                      component.BuildInfo // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	eventDbServerTopQuery          eventDbServerTopQuery
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -25,13 +71,51 @@ type LogBuilderOption interface {
 	apply(*LogsBuilder)
 }
 
-func NewLogsBuilder(settings receiver.Settings) *LogsBuilder {
+func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
+		config:                         lbc,
 		logsBuffer:                     plog.NewLogs(),
 		logRecordsBuffer:               plog.NewLogRecordSlice(),
 		buildInfo:                      settings.BuildInfo,
+		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerAddress.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverComputerName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverComputerName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverDatabaseName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDatabaseName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverDatabaseName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDatabaseName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverInstanceName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverInstanceName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverInstanceName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverInstanceName.EventsExclude)
 	}
 
 	return lb
@@ -39,7 +123,7 @@ func NewLogsBuilder(settings receiver.Settings) *LogsBuilder {
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted logs.
 func (lb *LogsBuilder) NewResourceBuilder() *ResourceBuilder {
-	return NewResourceBuilder(ResourceAttributesConfig{})
+	return NewResourceBuilder(lb.config.ResourceAttributes)
 }
 
 // ResourceLogsOption applies changes to provided resource logs.
@@ -76,6 +160,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
+	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
 	for _, op := range options {
 		op.apply(rl)
@@ -110,4 +195,9 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	logs := lb.logsBuffer
 	lb.logsBuffer = plog.NewLogs()
 	return logs
+}
+
+// RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbServerNameAttributeValue string) {
+	lb.eventDbServerTopQuery.recordEvent(timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbServerNameAttributeValue)
 }

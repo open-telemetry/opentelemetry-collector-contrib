@@ -253,7 +253,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	}
 
 	noErrors := []byte(`{"errors":[]}`)
-	writeResponse(resp, enc.ContentType(), http.StatusAccepted, noErrors)
+	writeResponse(resp, enc.ContentType(), http.StatusOK, noErrors)
 }
 
 func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {
