@@ -155,6 +155,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 		name    string
 		metrics pmetric.Metrics
 		want    []*prompb.MetricMetadata
+		suffix  string
 	}{
 		{
 			name:    "all types§",
@@ -222,50 +223,9 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 			},
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false, "")
-
-			for i := 0; i < len(metaData); i++ {
-				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
-				assert.Equal(t, tt.want[i].Unit, metaData[i].Unit)
-				assert.Equal(t, tt.want[i].MetricFamilyName, metaData[i].MetricFamilyName)
-				assert.Equal(t, tt.want[i].Help, metaData[i].Help)
-			}
-		})
-	}
-}
-
-func TestOtelMetricsToMetadataNamespace(t *testing.T) {
-	ts := uint64(time.Now().UnixNano())
-	tests := []struct {
-		name      string
-		metrics   pmetric.Metrics
-		want      []*prompb.MetricMetadata
-		namespace string
-	}{
 		{
-			name:      "gauge_no_namespace",
-			metrics:   GenerateMetricsGauge(),
-			namespace: "",
-			want: []*prompb.MetricMetadata{
-				{
-					Type: prompb.MetricMetadata_GAUGE,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
-						testdata.TestGaugeDoubleMetricName,
-						pcommon.NewMap(),
-						1, ts,
-					), "", false),
-					Unit: "bytes_per_second",
-					Help: "gauge description",
-				},
-			},
-		},
-		{
-			name:      "gauge_namespace",
-			metrics:   GenerateMetricsGauge(),
-			namespace: "ns",
+			name:    "gauge_namespace",
+			metrics: GenerateMetricsGauge(),
 			want: []*prompb.MetricMetadata{
 				{
 					Type: prompb.MetricMetadata_GAUGE,
@@ -278,11 +238,13 @@ func TestOtelMetricsToMetadataNamespace(t *testing.T) {
 					Help: "gauge description",
 				},
 			},
+			suffix: "ns",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.suffix)
+
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
 				assert.Equal(t, tt.want[i].Unit, metaData[i].Unit)
