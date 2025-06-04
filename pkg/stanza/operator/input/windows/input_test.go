@@ -219,6 +219,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	input := newTestInput()
 	input.includeLogRecordOriginal = true
 	input.pollInterval = time.Second
+	input.buffer = NewBuffer() // Initialize buffer
 
 	// Create a mock event XML
 	eventXML := &EventXML{
@@ -229,9 +230,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	}
 
 	ctx := context.Background()
-
 	persister := testutil.NewMockPersister("")
-
 	fake := testutil.NewFakeOutput(t)
 	input.WriterOperator.OutputOperators = []operator.Operator{fake}
 
@@ -242,10 +241,9 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
-		Attributes: map[string]any{
-			"log.record.original": eventXML.Original,
-		},
+		Attributes: make(map[string]any),
 	}
+	expectedEntry.Attributes["log.record.original"] = eventXML.Original
 
 	// Verify that log.record.original attribute exists and contains the original XML
 	fake.ExpectEntry(t, expectedEntry)
@@ -259,6 +257,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	input := newTestInput()
 	input.includeLogRecordOriginal = false
 	input.pollInterval = time.Second
+	input.buffer = NewBuffer() // Initialize buffer
 
 	// Create a mock event XML
 	eventXML := &EventXML{
@@ -280,7 +279,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
-		Attributes: map[string]any{},
+		Attributes: make(map[string]any),
 	}
 
 	// Verify that log.record.original attribute does not exist
