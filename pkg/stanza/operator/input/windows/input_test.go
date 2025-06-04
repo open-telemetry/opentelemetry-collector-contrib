@@ -218,6 +218,7 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	input := newTestInput()
 	input.includeLogRecordOriginal = true
+	input.pollInterval = time.Second
 
 	// Create a mock event XML
 	eventXML := &EventXML{
@@ -257,6 +258,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	input := newTestInput()
 	input.includeLogRecordOriginal = false
+	input.pollInterval = time.Second
 
 	// Create a mock event XML
 	eventXML := &EventXML{
