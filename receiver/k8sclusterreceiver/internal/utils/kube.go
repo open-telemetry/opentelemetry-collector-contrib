@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 )
 
 // GetUIDForObject returns the UID for a Kubernetes object.
@@ -46,4 +47,30 @@ var re = regexp.MustCompile(`^[\w_-]+://`)
 // StripContainerID returns a pure container id without the runtime scheme://.
 func StripContainerID(id string) string {
 	return re.ReplaceAllString(id, "")
+}
+
+// GetObjectFromStore retrieves the requested object from the given stores.
+// first, the object is attempted to be retrieved from the store for all namespaces,
+// and if it is not found there, the namespace-specific store is used
+func GetObjectFromStore(namespace, objName string, stores map[string]cache.Store) (any, error) {
+	var obj any
+	exists := false
+	var err error
+	// first, check if there is a store for all namespaces
+	if store, ok := stores[""]; ok {
+		obj, exists, err = store.GetByKey(GetIDForCache(namespace, objName))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !exists {
+		// check if there is a store for the namespace object
+		if store, ok := stores[namespace]; ok {
+			obj, exists, err = store.GetByKey(GetIDForCache(namespace, objName))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return obj, nil
 }
