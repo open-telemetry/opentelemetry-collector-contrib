@@ -340,7 +340,7 @@ func TestGzipReadFallback(t *testing.T) {
 	// Create a test file with some content
 	content := "test line 1\ntest line 2\ntest line 3\n"
 	tempPath := filepath.Join(tempDir, "test.log")
-	err := os.WriteFile(tempPath, []byte(content), 0x600)
+	err := os.WriteFile(tempPath, []byte(content), 0600)
 	require.NoError(t, err)
 
 	// Create a gzipped version of the file
@@ -384,7 +384,7 @@ func TestGzipReadFallback(t *testing.T) {
 	require.NotEmpty(t, secondToken)
 	require.Equal(t, []byte("test line 2"), secondToken)
 
-	// Read the rest of the content
+	// Read the rest of the content in the sink
 	thirdToken := sink.NextToken(t)
 	require.NotEmpty(t, thirdToken)
 	require.Equal(t, []byte("test line 3"), thirdToken)

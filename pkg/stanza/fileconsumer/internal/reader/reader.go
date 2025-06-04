@@ -85,10 +85,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		// For gzip files, we track offset based on decompressed bytes read
 		// The offset will be updated by the scanner as it reads tokens
 		defer func() {
-			// Only update to EOF if we've actually read everything
-			if r.Offset >= currentEOF {
-				r.Offset = currentEOF
-			}
+			r.Offset = currentEOF
 		}()
 	default:
 		r.reader = r.file
@@ -142,9 +139,9 @@ func (r *Reader) createGzipReader() (int64, error) {
 		zap.Int64("offset", r.Offset),
 		zap.Error(err))
 
-	if _, err := r.file.Seek(0, 0); err != nil {
-		r.set.Logger.Error("failed to seek to start of file", zap.Error(err))
-		return 0, err
+	if _, seekErr := r.file.Seek(0, 0); seekErr != nil {
+		r.set.Logger.Error("failed to seek to start of file", zap.Error(seekErr))
+		return 0, seekErr
 	}
 
 	// create a new gzip reader from the start of the file
