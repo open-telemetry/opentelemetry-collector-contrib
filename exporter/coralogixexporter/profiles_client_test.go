@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestNewProfilesExporter(t *testing.T) {
@@ -214,10 +215,34 @@ type mockProfilesServer struct {
 	pprofileotlp.UnimplementedGRPCServer
 	recvCount      int
 	partialSuccess *pprofileotlp.ExportPartialSuccess
+	t              testing.TB
 }
 
-func (m *mockProfilesServer) Export(_ context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
-	m.recvCount += req.Profiles().ResourceProfiles().Len()
+func (m *mockProfilesServer) Export(ctx context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		m.t.Error("No metadata found in context")
+		return pprofileotlp.NewExportResponse(), errors.New("no metadata found")
+	}
+
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		m.t.Error("No Authorization header found")
+		return pprofileotlp.NewExportResponse(), errors.New("no authorization header")
+	}
+
+	if authHeader[0] != "Bearer test-key" {
+		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
+		return pprofileotlp.NewExportResponse(), errors.New("invalid authorization header")
+	}
+
+	// Count individual profiles instead of resource profiles
+	for _, rp := range req.Profiles().ResourceProfiles().All() {
+		for _, sp := range rp.ScopeProfiles().All() {
+			m.recvCount += sp.Profiles().Len()
+		}
+	}
+
 	resp := pprofileotlp.NewExportResponse()
 	if m.partialSuccess != nil {
 		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
@@ -232,7 +257,7 @@ func startMockOtlpProfilesServer(tb testing.TB) (endpoint string, stopFn func(),
 		tb.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	srv = &mockProfilesServer{}
+	srv = &mockProfilesServer{t: tb}
 	pprofileotlp.RegisterGRPCServer(grpcServer, srv)
 	go func() {
 		_ = grpcServer.Serve(ln)
@@ -250,7 +275,7 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 	cfg := &Config{
 		Profiles: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -306,7 +331,7 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 	cfg := &Config{
 		Profiles: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -365,4 +390,122 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "Expected partial success log with correct fields")
+}
+
+func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpProfilesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Profiles: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 3,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	t.Run("Under rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		profiles := pprofile.NewProfiles()
+		rp := profiles.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("service.name", "test-service")
+		sp := rp.ScopeProfiles().AppendEmpty()
+
+		profileCount := 3000
+		for i := 0; i < profileCount; i++ {
+			profile := sp.Profiles().AppendEmpty()
+			var id [16]byte
+			binary.LittleEndian.PutUint64(id[:8], uint64(i))
+			profile.SetProfileID(id)
+			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
+			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		}
+
+		start := time.Now()
+		err = exp.pushProfiles(context.Background(), profiles)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, profileCount, mockSrv.recvCount, "Expected to receive exactly %d profiles", profileCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+
+	t.Run("Over rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+
+		rateLimitErr := errors.New("rate limit exceeded")
+		for i := 0; i < 5; i++ {
+			exp.EnableRateLimit(rateLimitErr)
+		}
+
+		profiles := pprofile.NewProfiles()
+		rp := profiles.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("service.name", "test-service")
+		sp := rp.ScopeProfiles().AppendEmpty()
+
+		profileCount := 7000
+		for i := 0; i < profileCount; i++ {
+			profile := sp.Profiles().AppendEmpty()
+			var id [16]byte
+			binary.LittleEndian.PutUint64(id[:8], uint64(i))
+			profile.SetProfileID(id)
+			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
+			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		}
+
+		start := time.Now()
+		err = exp.pushProfiles(context.Background(), profiles)
+		duration := time.Since(start)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "rate limit exceeded")
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+		assert.Zero(t, mockSrv.recvCount, "Expected no profiles to be received due to rate limiting")
+	})
+
+	t.Run("Rate limit reset", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		time.Sleep(2 * time.Second)
+
+		profiles := pprofile.NewProfiles()
+		rp := profiles.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("service.name", "test-service")
+		sp := rp.ScopeProfiles().AppendEmpty()
+
+		profileCount := 3000
+		for i := 0; i < profileCount; i++ {
+			profile := sp.Profiles().AppendEmpty()
+			var id [16]byte
+			binary.LittleEndian.PutUint64(id[:8], uint64(i))
+			profile.SetProfileID(id)
+			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
+			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		}
+
+		start := time.Now()
+		err = exp.pushProfiles(context.Background(), profiles)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, profileCount, mockSrv.recvCount, "Expected to receive exactly %d profiles after rate limit reset", profileCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
 }
