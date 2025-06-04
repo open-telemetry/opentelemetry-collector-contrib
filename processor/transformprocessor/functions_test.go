@@ -11,46 +11,52 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var DefaultFunctions = []ottl.Factory[bool]{
-	createTestFuncFactory[bool]("DefaultFunc1"),
-	createTestFuncFactory[bool]("DefaultFunc2"),
-	createTestFuncFactory[bool]("DefaultFunc3"),
-}
-
-func Test_createFunctionsMap_EmptyFunctions(t *testing.T) {
-	functions := [][]ottl.Factory[bool]{}
-	expected := map[string]ottl.Factory[bool]{}
-
-	actual := createFunctionsMap(functions)
-
-	for k, v := range actual {
-		assert.Equal(t, v.Name(), expected[k].Name())
-	}
-}
-
-func Test_createFunctionsMap_NoDefaultsAndOneFunction(t *testing.T) {
-	functions := [][]ottl.Factory[bool]{
-		{
-			createTestFuncFactory[bool]("TestFunc1"),
-		},
+func Test_mergeFunctionsToMap_MergeToEmptyMap(t *testing.T) {
+	emptyMap := map[string]ottl.Factory[bool]{}
+	functions := []ottl.Factory[bool]{
+		createTestFuncFactory[bool]("TestFunc1"),
 	}
 	expected := map[string]ottl.Factory[bool]{
 		"TestFunc1": createTestFuncFactory[bool]("TestFunc1"),
 	}
 
-	actual := createFunctionsMap(functions)
+	actual := mergeFunctionsToMap(emptyMap, functions)
 
-	for k, v := range actual {
-		assert.Equal(t, v.Name(), expected[k].Name())
+	for k, v := range expected {
+		assert.Contains(t, actual, k)
+		assert.Equal(t, v.Name(), actual[k].Name())
 	}
 }
 
-func Test_createFunctionsMap_DefaultsAndOneFunction(t *testing.T) {
-	functions := [][]ottl.Factory[bool]{
-		DefaultFunctions,
-		{
-			createTestFuncFactory[bool]("TestFunc1"),
-		},
+func Test_mergeFunctionsToMap_MergeNoFunctionsToDefaultFunctions(t *testing.T) {
+	functionsMap := map[string]ottl.Factory[bool]{
+		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
+		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
+		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
+	}
+	functions := []ottl.Factory[bool]{}
+	expected := map[string]ottl.Factory[bool]{
+		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
+		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
+		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
+	}
+
+	actual := mergeFunctionsToMap(functionsMap, functions)
+
+	for k, v := range expected {
+		assert.Contains(t, actual, k)
+		assert.Equal(t, v.Name(), actual[k].Name())
+	}
+}
+
+func Test_mergeFunctionsToMap_MergeOneFunctionToDefaultFunctions(t *testing.T) {
+	functionsMap := map[string]ottl.Factory[bool]{
+		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
+		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
+		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
+	}
+	functions := []ottl.Factory[bool]{
+		createTestFuncFactory[bool]("TestFunc1"),
 	}
 	expected := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
@@ -59,41 +65,24 @@ func Test_createFunctionsMap_DefaultsAndOneFunction(t *testing.T) {
 		"TestFunc1":    createTestFuncFactory[bool]("TestFunc1"),
 	}
 
-	actual := createFunctionsMap(functions)
+	actual := mergeFunctionsToMap(functionsMap, functions)
 
-	for k, v := range actual {
-		assert.Equal(t, v.Name(), expected[k].Name())
+	for k, v := range expected {
+		assert.Contains(t, actual, k)
+		assert.Equal(t, v.Name(), actual[k].Name())
 	}
 }
 
-func Test_createFunctionsMap_OverrideDefaultFunction(t *testing.T) {
-	functions := [][]ottl.Factory[bool]{
-		DefaultFunctions,
-		{
-			createTestFuncFactory[bool]("DefaultFunc1"),
-		},
-	}
-	expected := map[string]ottl.Factory[bool]{
+func Test_mergeFunctionsToMap_MergeMultipleFunctionToDefaultFunctions(t *testing.T) {
+	functionsMap := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
 		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
 		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
 	}
-
-	actual := createFunctionsMap(functions)
-
-	for k, v := range actual {
-		assert.Equal(t, v.Name(), expected[k].Name())
-	}
-}
-
-func Test_createFunctionsMapeDefaultsAndMultipleFunctions(t *testing.T) {
-	functions := [][]ottl.Factory[bool]{
-		DefaultFunctions,
-		{
-			createTestFuncFactory[bool]("TestFunc1"),
-			createTestFuncFactory[bool]("TestFunc2"),
-			createTestFuncFactory[bool]("TestFunc3"),
-		},
+	functions := []ottl.Factory[bool]{
+		createTestFuncFactory[bool]("TestFunc1"),
+		createTestFuncFactory[bool]("TestFunc2"),
+		createTestFuncFactory[bool]("TestFunc3"),
 	}
 	expected := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
@@ -104,9 +93,37 @@ func Test_createFunctionsMapeDefaultsAndMultipleFunctions(t *testing.T) {
 		"TestFunc3":    createTestFuncFactory[bool]("TestFunc3"),
 	}
 
-	actual := createFunctionsMap(functions)
+	actual := mergeFunctionsToMap(functionsMap, functions)
 
-	for k, v := range actual {
-		assert.Equal(t, v.Name(), expected[k].Name())
+	for k, v := range expected {
+		assert.Contains(t, actual, k)
+		assert.Equal(t, v.Name(), actual[k].Name())
+	}
+}
+
+func Test_mergeFunctionsToMap_OverridingExistingFunction(t *testing.T) {
+	functionsMap := map[string]ottl.Factory[bool]{
+		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
+		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
+		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
+	}
+	functions := []ottl.Factory[bool]{
+		createTestFuncFactory[bool]("TestFunc1"),
+		createTestFuncFactory[bool]("DefaultFunc2"),
+		createTestFuncFactory[bool]("TestFunc3"),
+	}
+	expected := map[string]ottl.Factory[bool]{
+		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
+		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
+		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
+		"TestFunc1":    createTestFuncFactory[bool]("TestFunc1"),
+		"TestFunc3":    createTestFuncFactory[bool]("TestFunc3"),
+	}
+
+	actual := mergeFunctionsToMap(functionsMap, functions)
+
+	for k, v := range expected {
+		assert.Contains(t, actual, k)
+		assert.Equal(t, v.Name(), actual[k].Name())
 	}
 }
