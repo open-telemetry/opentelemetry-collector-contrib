@@ -19,7 +19,7 @@ subtext: |
   This change adds an experimental opt-in support to use the franz-go client in the Kafka exporter.
   The franz-go client is a high-performance Kafka client that can improve the performance of the Kafka exporter.
   The default client remains sarama, which is used by the Kafka receiver and other components.
-  The franz-go client can be enabled by setting `client_type=franz-go` in the configuration.
+  Enable the franz-go client by setting the `exporter.kafkaexporter.UseFranzGo` feature gate.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
