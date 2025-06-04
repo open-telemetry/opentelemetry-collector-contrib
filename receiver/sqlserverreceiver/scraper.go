@@ -442,7 +442,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageLifeExpectancy)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageLifeExpectancyDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverPageLifeExpectancyDataPoint(now, val.(int64), row["object"])
 			}
 		case pageLookupsPerSec:
 			val, err := retrieveFloat(row, valueKey)

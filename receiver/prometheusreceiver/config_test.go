@@ -74,7 +74,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
 	assert.Equal(t, 5*time.Second, r0.TargetAllocator.Timeout)
-	assert.Equal(t, "client.crt", r0.TargetAllocator.TLSSetting.CertFile)
+	assert.Equal(t, "client.crt", r0.TargetAllocator.TLS.CertFile)
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)

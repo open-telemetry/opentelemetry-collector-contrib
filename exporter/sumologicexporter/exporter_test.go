@@ -239,7 +239,7 @@ func TestPartiallyFailed(t *testing.T) {
 func TestInvalidHTTPClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "test_endpoint"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			MinVersion: "invalid",
 		},

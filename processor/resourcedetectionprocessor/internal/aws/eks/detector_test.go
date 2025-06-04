@@ -366,8 +366,6 @@ func (m *mockDetectorUtils) getAWSConfig(_ context.Context, _ bool) (aws.Config,
 func TestDetect(t *testing.T) {
 	// Minimal config for detector
 	cfg := Config{
-		MaxAttempts: 2,
-		MaxBackoff:  0,
 		ResourceAttributes: metadata.ResourceAttributesConfig{
 			K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
 			HostName:       metadata.ResourceAttributeConfig{Enabled: true},

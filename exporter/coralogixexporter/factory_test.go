@@ -93,7 +93,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -173,7 +173,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
@@ -187,7 +187,7 @@ func TestCreateTraces(t *testing.T) {
 			config: &Config{
 				Domain: "localhost",
 				DomainSettings: configgrpc.ClientConfig{
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},

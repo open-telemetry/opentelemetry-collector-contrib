@@ -269,7 +269,7 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 	cfg := &Config{
 		Profiles: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -325,7 +325,7 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 	cfg := &Config{
 		Profiles: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},

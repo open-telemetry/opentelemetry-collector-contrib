@@ -12,10 +12,10 @@ import (
 
 var runtimeAPIBuilderFactories = map[string]func() runtimeAPIBuilder{
 	"docker": func() runtimeAPIBuilder {
-		return &DockerConfig{}
+		return &dockerConfig{}
 	},
 	"cri": func() runtimeAPIBuilder {
-		return &CRIConfig{}
+		return &criConfig{}
 	},
 }
 
@@ -59,8 +59,8 @@ type baseRuntimeAPIConfig struct {
 	Type string `mapstructure:"type"`
 }
 
-// CRIConfig allows specifying how to connect to the CRI server.
-type CRIConfig struct {
+// criConfig allows specifying how to connect to the CRI server.
+type criConfig struct {
 	baseRuntimeAPIConfig `mapstructure:",squash"`
 
 	// Addr represents the address of the CRI endpoint.
@@ -74,23 +74,23 @@ type CRIConfig struct {
 	ContainerdState string `mapstructure:"containerd_state"`
 }
 
-func (c *CRIConfig) Validate() error {
+func (c *criConfig) Validate() error {
 	return nil
 }
 
-func (c *CRIConfig) Type() string {
+func (c *criConfig) Type() string {
 	return "cri"
 }
 
-func (c *CRIConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
+func (c *criConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
 	_ = logger
 	_ = hostRoot
 	// TODO implement me
 	panic("implement me")
 }
 
-// DockerConfig allows specifying how to connect to the Docker daemon.
-type DockerConfig struct {
+// dockerConfig allows specifying how to connect to the Docker daemon.
+type dockerConfig struct {
 	baseRuntimeAPIConfig `mapstructure:",squash"`
 
 	// Addr represents the address of the Docker daemon.
@@ -105,15 +105,15 @@ type DockerConfig struct {
 	ContainerdAddr string `mapstructure:"containerd_addr"`
 }
 
-func (c *DockerConfig) Validate() error {
+func (c *dockerConfig) Validate() error {
 	return nil
 }
 
-func (c *DockerConfig) Type() string {
+func (c *dockerConfig) Type() string {
 	return "docker"
 }
 
-func (c *DockerConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
+func (c *dockerConfig) NewClient(logger *zap.Logger, hostRoot string) (any, error) {
 	_ = logger
 	_ = hostRoot
 	// TODO implement me

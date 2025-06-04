@@ -47,7 +47,7 @@ func newTracesReceiver(
 	}
 
 	transport := "http"
-	if config.WebHook.TLSSetting != nil {
+	if config.WebHook.TLS != nil {
 		transport = "https"
 	}
 

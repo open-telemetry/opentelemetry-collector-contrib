@@ -33,7 +33,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		&Config{
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint: "localhost:8080",
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "test.crt",
 						KeyFile:  "test.key",
