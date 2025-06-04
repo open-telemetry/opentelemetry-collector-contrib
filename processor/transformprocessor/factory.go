@@ -136,7 +136,7 @@ func (f *transformProcessorFactory) createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 	if f.defaultLogFunctionsOverriden {
-		set.Logger.Sugar().Debug("non-default ottl log functions are set in \"transform\" processor")
+		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor")
 	}
 	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.logFunctions)
 	if err != nil {
@@ -159,7 +159,7 @@ func (f *transformProcessorFactory) createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 	if f.defaultSpanEventFunctionsOverriden || f.defaultSpanFunctionsOverriden {
-		set.Logger.Sugar().Debug("non-default ottl trace functions are set in \"transform\" processor")
+		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"transform\" processor")
 	}
 	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.spanFunctions, f.spanEventFunctions)
 	if err != nil {
@@ -183,7 +183,7 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
 	if f.defaultMetricFunctionsOverriden || f.defaultDataPointFunctionsOverriden {
-		set.Logger.Sugar().Debug("non-default ottl metric functions are set in \"transform\" processor")
+		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"transform\" processor")
 	}
 	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.metricFunctions, f.dataPointFunctions)
 	if err != nil {
