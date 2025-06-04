@@ -1954,7 +1954,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
 
 	gotSpans := []string{}
-	expectedSpans := []string{"Start", "getBootstrapInfo", "startOpAMPClient", "startOpAMPServer", "onMessage", "createEffectiveConfigMsg"}
+	expectedSpans := []string{"GetBootstrapInfo", "onMessage"}
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
 		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
 	}, 10*time.Second, 250*time.Millisecond)
@@ -2135,7 +2135,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
 
-	expectedSpans := []string{"Start", "getBootstrapInfo", "startOpAMPClient", "startOpAMPServer"}
+	expectedSpans := []string{"GetBootstrapInfo"}
 
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
 		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
@@ -2157,6 +2157,6 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 			gotSpan = true
 			require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
 		}
-		require.True(t, gotSpan)
+		require.Truef(t, gotSpan, "expected to find span '%s', but did not find it", expectedSpan)
 	}
 }
