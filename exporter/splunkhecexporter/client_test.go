@@ -1324,6 +1324,59 @@ func TestErrorReceived(t *testing.T) {
 	assert.EqualError(t, err, errMsg)
 }
 
+func TestErrorReceivedForbidden(t *testing.T) {
+	rr := make(chan receivedRequest)
+	capture := capturingData{receivedRequest: rr, statusCode: 403}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	defer s.Close()
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			assert.NoError(t, e)
+		}
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
+	// otherwise we will not see the error.
+	cfg.QueueSettings.Enabled = false
+	// Disable retries to not wait too much time for the return error.
+	cfg.Enabled = false
+	cfg.DisableCompression = true
+	cfg.Token = "1234-1234"
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	td := createTraceData(1, 3)
+
+	err = exporter.ConsumeTraces(context.Background(), td)
+	select {
+	case <-rr:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Should have received request")
+	}
+	errMsg := fmt.Sprintf("Permanent error: HTTP \"/services/collector\" %d %q",
+		http.StatusForbidden,
+		http.StatusText(http.StatusForbidden),
+	)
+	assert.EqualError(t, err, errMsg)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
 func TestInvalidLogs(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = false
@@ -1399,7 +1452,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
-		fmt.Sprintf("%s: heartbeat on startup failed: HTTP \"/services/collector\" 403 \"Forbidden\"",
+		fmt.Sprintf("%s: heartbeat on startup failed: Permanent error: HTTP \"/services/collector\" 403 \"Forbidden\"",
 			params.ID.String(),
 		),
 	)

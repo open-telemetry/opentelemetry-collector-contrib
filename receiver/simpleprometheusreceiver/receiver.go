@@ -61,7 +61,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
-		cfg.TLSSetting = configtls.ClientConfig{
+		cfg.TLS = configtls.ClientConfig{
 			Config: configtls.Config{
 				CAFile:   cfg.TLSConfig.CAFile,
 				CertFile: cfg.TLSConfig.CertFile,
@@ -92,17 +92,17 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	tlsConfig, err := cfg.TLSSetting.LoadTLSConfig(context.Background())
+	tlsConfig, err := cfg.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("tls config is not valid: %w", err)
 	}
 	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.TLSSetting.CAFile,
-			CertFile:           cfg.TLSSetting.CertFile,
-			KeyFile:            cfg.TLSSetting.KeyFile,
-			InsecureSkipVerify: cfg.TLSSetting.InsecureSkipVerify,
+			CAFile:             cfg.TLS.CAFile,
+			CertFile:           cfg.TLS.CertFile,
+			KeyFile:            cfg.TLS.KeyFile,
+			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 		}
 	}
 

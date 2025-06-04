@@ -114,7 +114,7 @@ func TestLoadConfig(t *testing.T) {
 							Endpoint:  "localhost:9876",
 							Transport: confignet.TransportTypeTCP,
 						},
-						TLSSetting: &configtls.ServerConfig{
+						TLS: &configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "/test.crt",
 								KeyFile:  "/test.key",
