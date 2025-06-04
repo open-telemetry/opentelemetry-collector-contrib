@@ -111,8 +111,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 				}
 			}
 		}
-		// TODO implement
-		// addResourceTargetInfov2(resource, settings, mostRecentTimestamp, c)
+		addResourceTargetInfoV2(resource, settings, mostRecentTimestamp, c)
 	}
 
 	return
