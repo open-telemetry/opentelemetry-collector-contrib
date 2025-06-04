@@ -36,16 +36,6 @@ const (
 	pipelinesKind  = "pipelines"
 )
 
-var kindsToKind = map[string]string{
-	receiversKind:  receiverKind,
-	processorsKind: processorKind,
-	exportersKind:  exporterKind,
-	extensionsKind: extensionKind,
-	connectorsKind: connectorKind,
-	providersKind:  providerKind,
-	convertersKind: converterKind,
-}
-
 func isComponentConfigured(typ component.Type, c map[component.ID]component.Config) bool {
 	// Check if at least one of the component type is configured in the config map
 	// Note, there could be more than one component of the same type, this function
@@ -57,55 +47,6 @@ func isComponentConfigured(typ component.Type, c map[component.ID]component.Conf
 		}
 	}
 	return false
-}
-
-func getComponentHealthStatus(id string, componentsKind string, pipelineName string, componentStatus map[string]any) map[string]any {
-	result := map[string]any{}
-	componentsConfig, componentsConfigExists := componentStatus["components"].(map[string]any)
-	if !componentsConfigExists {
-		return result
-	}
-
-	componentKind, kindLookupExists := kindsToKind[componentsKind]
-	if !kindLookupExists {
-		return result
-	}
-	componentNameInPipeline := componentKind + ":" + id
-
-	if componentsKind == extensionsKind {
-		kindsStatus, kindStatusExists := componentsConfig[componentsKind].(map[string]any)
-		if !kindStatusExists {
-			return result
-		}
-		componentsStatus, componentStatusExistsForKind := kindsStatus["components"].(map[string]any)
-		if !componentStatusExistsForKind {
-			return result
-		}
-		status, statusExistsForExtension := componentsStatus[componentNameInPipeline].(map[string]any)
-		if statusExistsForExtension {
-			return status
-		}
-		return result
-	}
-
-	// otherwise, if not an extension, it is going to be in a pipeline
-	fullPipelineName := "pipeline:" + pipelineName
-	pipelineMap, pipelineStatusesExistInComponentsConfig := componentsConfig[fullPipelineName].(map[string]any)
-	if !pipelineStatusesExistInComponentsConfig {
-		return result
-	}
-	components, componentsStatusExistInPipeline := pipelineMap["components"].(map[string]any)
-	if !componentsStatusExistInPipeline {
-		return result
-	}
-	componentStatus, statusExistsForComponentInPipeline := components[componentNameInPipeline].(map[string]any)
-	if statusExistsForComponentInPipeline {
-		// Add the component's status under the pipeline key
-		result[fullPipelineName] = map[string]any{
-			componentNameInPipeline: componentStatus,
-		}
-	}
-	return result
 }
 
 // DataToFlattenedJSONString is a helper function to ensure payload strings are
@@ -184,7 +125,7 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 			extension.Gomod = "unknown"
 			extension.Version = "unknown"
 		}
-		extension.ComponentStatus = DataToFlattenedJSONString(getComponentHealthStatus(extension.ID, extensionsKind, "", componentStatus))
+		// TODO: Add component status parsing, potentially via pkg/status
 		serviceComponents = append(serviceComponents, extension)
 	}
 
@@ -249,7 +190,7 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 					// This component exists but is the wrong type (e.g. a connector in the exporters pipeline)
 					return nil, fmt.Errorf("component not found in Module Info, something has gone wrong with status parsing for component ID: %s", componentID.String())
 				}
-				component.ComponentStatus = DataToFlattenedJSONString(getComponentHealthStatus(component.ID, pc.kindPlural, component.Pipeline, componentStatus))
+				// TODO: Add component status parsing, potentially via pkg/status
 				serviceComponents = append(serviceComponents, component)
 			}
 		}

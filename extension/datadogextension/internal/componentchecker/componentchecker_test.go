@@ -15,117 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
 
-func TestGetComponentHealthStatus(t *testing.T) {
-	tests := []struct {
-		name            string
-		componentStatus map[string]any
-		id              string
-		componentsKind  string
-		expectedStatus  map[string]any
-		pipeline        string
-	}{
-		{
-			name: "Health status found for extension",
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"extensions": map[string]any{
-						"components": map[string]any{
-							"extension:exampleextension": map[string]any{
-								"status": "healthy",
-							},
-						},
-					},
-				},
-			},
-			id:             "exampleextension",
-			componentsKind: "extensions",
-			expectedStatus: map[string]any{
-				"status": "healthy",
-			},
-		},
-		{
-			name: "Health status found for receiver in pipeline",
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"pipeline:traces": map[string]any{
-						"components": map[string]any{
-							"receiver:examplereceiver": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-						},
-					},
-				},
-			},
-			id:             "examplereceiver",
-			componentsKind: "receivers",
-			expectedStatus: map[string]any{
-				"pipeline:traces": map[string]any{
-					"receiver:examplereceiver": map[string]any{
-						"healthy": true,
-						"status":  "StatusStarting",
-					},
-				},
-			},
-			pipeline: "traces",
-		},
-		{
-			name: "Health status not found",
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"extensions": map[string]any{
-						"components": map[string]any{
-							"extension:otherextension": map[string]any{
-								"status": "healthy",
-							},
-						},
-					},
-				},
-			},
-			id:             "exampleextension",
-			componentsKind: "extensions",
-			expectedStatus: map[string]any{},
-		},
-		{
-			name: "Invalid component kind",
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"extensions": map[string]any{
-						"components": map[string]any{
-							"extension:exampleextension": map[string]any{
-								"status": "healthy",
-							},
-						},
-					},
-				},
-			},
-			id:             "exampleextension",
-			componentsKind: "invalidkind",
-			expectedStatus: map[string]any{},
-		},
-		{
-			name: "Invalid component status structure",
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"extensions": []any{
-						"extension:exampleextension",
-					},
-				},
-			},
-			id:             "exampleextension",
-			componentsKind: "extensions",
-			expectedStatus: map[string]any{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			status := getComponentHealthStatus(tt.id, tt.componentsKind, tt.pipeline, tt.componentStatus)
-			assert.Equal(t, tt.expectedStatus, status)
-		})
-	}
-}
-
 func TestDataToFlattenedJSONString(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -358,43 +247,43 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			expectedComponents: []payload.ServiceComponent{
 				{
-					ID:              "exampleextension",
-					Name:            "",
-					Type:            "exampleextension",
-					Kind:            "extension",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					ComponentStatus: `{"status":"healthy"}`,
+					ID:      "exampleextension",
+					Name:    "",
+					Type:    "exampleextension",
+					Kind:    "extension",
+					Gomod:   "example.com/module",
+					Version: "v1.0.0",
+					// ComponentStatus: `{"status":"healthy"}`,
 				},
 				{
-					ID:              "examplereceiver",
-					Name:            "",
-					Type:            "examplereceiver",
-					Kind:            "receiver",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "traces",
-					ComponentStatus: `{"pipeline:traces":{"receiver:examplereceiver":{"healthy":true,"status":"StatusStarting"}}}`,
+					ID:       "examplereceiver",
+					Name:     "",
+					Type:     "examplereceiver",
+					Kind:     "receiver",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "traces",
+					// ComponentStatus: `{"pipeline:traces":{"receiver:examplereceiver":{"healthy":true,"status":"StatusStarting"}}}`,
 				},
 				{
-					ID:              "exampleprocessor",
-					Name:            "",
-					Type:            "exampleprocessor",
-					Kind:            "processor",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "traces",
-					ComponentStatus: `{"pipeline:traces":{"processor:exampleprocessor":{"healthy":true,"status":"StatusStarting"}}}`,
+					ID:       "exampleprocessor",
+					Name:     "",
+					Type:     "exampleprocessor",
+					Kind:     "processor",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "traces",
+					// ComponentStatus: `{"pipeline:traces":{"processor:exampleprocessor":{"healthy":true,"status":"StatusStarting"}}}`,
 				},
 				{
-					ID:              "exampleexporter",
-					Name:            "",
-					Type:            "exampleexporter",
-					Kind:            "exporter",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "traces",
-					ComponentStatus: `{"pipeline:traces":{"exporter:exampleexporter":{"healthy":true,"status":"StatusStarting"}}}`,
+					ID:       "exampleexporter",
+					Name:     "",
+					Type:     "exampleexporter",
+					Kind:     "exporter",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "traces",
+					// ComponentStatus: `{"pipeline:traces":{"exporter:exampleexporter":{"healthy":true,"status":"StatusStarting"}}}`,
 				},
 			},
 			expectedError: "",
@@ -622,73 +511,66 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			expectedComponents: []payload.ServiceComponent{
 				{
-					ID:              "exampleextension",
-					Name:            "",
-					Type:            "exampleextension",
-					Kind:            "extension",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					ComponentStatus: `{"status":"healthy"}`,
+					ID:      "exampleextension",
+					Name:    "",
+					Type:    "exampleextension",
+					Kind:    "extension",
+					Gomod:   "example.com/module",
+					Version: "v1.0.0",
 				},
 				{
-					ID:              "examplereceiver",
-					Name:            "",
-					Type:            "examplereceiver",
-					Kind:            "receiver",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "traces",
-					ComponentStatus: `{"pipeline:traces":{"receiver:examplereceiver":{"healthy":true,"status":"StatusStarting"}}}`,
+					ID:       "examplereceiver",
+					Name:     "",
+					Type:     "examplereceiver",
+					Kind:     "receiver",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "traces",
 				},
 				{
-					ID:              "exampleprocessor",
-					Name:            "",
-					Type:            "exampleprocessor",
-					Kind:            "processor",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "traces",
-					ComponentStatus: `{"pipeline:traces":{"processor:exampleprocessor":{"healthy":true,"status":"StatusStarting"}}}`,
+					ID:       "exampleprocessor",
+					Name:     "",
+					Type:     "exampleprocessor",
+					Kind:     "processor",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "traces",
 				},
 				{
-					ID:              "exampleprocessor",
-					Name:            "",
-					Type:            "exampleprocessor",
-					Kind:            "processor",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "metrics",
-					ComponentStatus: `{"pipeline:metrics":{"processor:exampleprocessor":{"healthy":true,"status":"StatusStarting"}}}`,
+					ID:       "exampleprocessor",
+					Name:     "",
+					Type:     "exampleprocessor",
+					Kind:     "processor",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "metrics",
 				},
 				{
-					ID:              "exampleconnector",
-					Name:            "",
-					Type:            "exampleconnector",
-					Kind:            "connector",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "traces",
-					ComponentStatus: `{"pipeline:traces":{"connector:exampleconnector":{"healthy":true,"status":"StatusRunning"}}}`,
+					ID:       "exampleconnector",
+					Name:     "",
+					Type:     "exampleconnector",
+					Kind:     "connector",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "traces",
 				},
 				{
-					ID:              "exampleconnector",
-					Name:            "",
-					Type:            "exampleconnector",
-					Kind:            "connector",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "metrics",
-					ComponentStatus: `{"pipeline:metrics":{"connector:exampleconnector":{"healthy":true,"status":"StatusRunning"}}}`,
+					ID:       "exampleconnector",
+					Name:     "",
+					Type:     "exampleconnector",
+					Kind:     "connector",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "metrics",
 				},
 				{
-					ID:              "exampleexporter",
-					Name:            "",
-					Type:            "exampleexporter",
-					Kind:            "exporter",
-					Gomod:           "example.com/module",
-					Version:         "v1.0.0",
-					Pipeline:        "metrics",
-					ComponentStatus: `{"pipeline:metrics":{"exporter:exampleexporter":{"healthy":true,"status":"StatusRunning"}}}`,
+					ID:       "exampleexporter",
+					Name:     "",
+					Type:     "exampleexporter",
+					Kind:     "exporter",
+					Gomod:    "example.com/module",
+					Version:  "v1.0.0",
+					Pipeline: "metrics",
 				},
 			},
 			expectedError: "",
