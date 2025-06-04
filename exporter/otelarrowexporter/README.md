@@ -275,7 +275,7 @@ Arrow compression.
 
 In the default configuration, without a persistent storage extension,
 the exporter uses an in-memory queue and will respond to the caller
-before the export completes. 
+before the export completes.
 
 In the `sending_queue` structure, the default settings set by this
 component are:
@@ -305,32 +305,32 @@ exporters:
     sending_queue:
       enabled: true
 
-	  # Use wait_for_result: true for additional safety, otherwise
-	  # a collector crash will cause loss of data.
-	  wait_for_result: true
+          # Use wait_for_result: true for additional safety, otherwise
+          # a collector crash will cause loss of data.
+          wait_for_result: true
 
-	  # This is the default setting, it ensures the exporter will
-	  # block the pipeline (subject to deadline) instead of failing
-	  # fast when overflow data arrives.
-	  block_on_overflow: true
-	  
-	  # The queue will admit 1 million items into the queue and return
-	  # success before blocking new requests.
-	  sizer: items
-	  queue_size: 1_000_000
+          # This is the default setting, it ensures the exporter will
+          # block the pipeline (subject to deadline) instead of failing
+          # fast when overflow data arrives.
+          block_on_overflow: true
 
-	  # Use relatively large batches, improves compression.
+          # The queue will admit 1 million items into the queue and return
+          # success before blocking new requests.
+          sizer: items
+          queue_size: 1_000_000
+
+          # Use relatively large batches, improves compression.
       batch:
-	    flush_timeout: 1s
-		min_size: 4_000
-		max_size: 5_000
+            flush_timeout: 1s
+            min_size: 4_000
+            max_size: 5_000
 
       # With max-size batches, we need 200 consumers to keep the
-	  # OTel-Arrow streams busy. There will be (num_consumers / 
-	  # num_streams) pending requests per stream on average.
-	  num_consumers: 200
+          # OTel-Arrow streams busy. There will be (num_consumers /
+          # num_streams) pending requests per stream on average.
+          num_consumers: 200
 
-	  # Optional persistent storage. If this is set, you
-	  # can safely use wait_for_result: false above.
-	  # storage: name_of_extension
+          # Optional persistent storage. If this is set, you
+          # can safely use wait_for_result: false above.
+          # storage: name_of_extension
 ```
