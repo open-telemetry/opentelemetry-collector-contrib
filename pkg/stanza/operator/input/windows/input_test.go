@@ -241,9 +241,10 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
-		Attributes: make(map[string]any),
+		Attributes: map[string]any{
+			"log.record.original": eventXML.Original,
+		},
 	}
-	expectedEntry.Attributes["log.record.original"] = eventXML.Original
 
 	// Verify that log.record.original attribute exists and contains the original XML
 	fake.ExpectEntry(t, expectedEntry)
@@ -279,7 +280,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
-		Attributes: make(map[string]any),
+		Attributes: map[string]any{},
 	}
 
 	// Verify that log.record.original attribute does not exist
