@@ -157,7 +157,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
-			colLogger.Info(line)
+			colLogger.Error(line)
 		}
 		if err := scanner.Err(); err != nil {
 			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
