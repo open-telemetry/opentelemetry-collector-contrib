@@ -241,7 +241,29 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
-		Attributes: map[string]any{
+		Timestamp: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Body: map[string]interface{}{
+			"channel":    "",
+			"computer":   "",
+			"event_data": map[string]interface{}{},
+			"event_id": map[string]interface{}{
+				"id":         uint32(0),
+				"qualifiers": uint16(0),
+			},
+			"keywords": []string(nil),
+			"level":    "",
+			"message":  "",
+			"opcode":   "",
+			"provider": map[string]interface{}{
+				"event_source": "",
+				"guid":         "",
+				"name":         "",
+			},
+			"record_id":   uint64(0),
+			"system_time": "2024-01-01T00:00:00Z",
+			"task":        "",
+		},
+		Attributes: map[string]interface{}{
 			"log.record.original": eventXML.Original,
 		},
 	}
@@ -280,7 +302,29 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
-		Attributes: map[string]any{},
+		Timestamp: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Body: map[string]interface{}{
+			"channel":    "",
+			"computer":   "",
+			"event_data": map[string]interface{}{},
+			"event_id": map[string]interface{}{
+				"id":         uint32(0),
+				"qualifiers": uint16(0),
+			},
+			"keywords": []string(nil),
+			"level":    "",
+			"message":  "",
+			"opcode":   "",
+			"provider": map[string]interface{}{
+				"event_source": "",
+				"guid":         "",
+				"name":         "",
+			},
+			"record_id":   uint64(0),
+			"system_time": "2024-01-01T00:00:00Z",
+			"task":        "",
+		},
+		Attributes: map[string]interface{}{},
 	}
 
 	// Verify that log.record.original attribute does not exist
