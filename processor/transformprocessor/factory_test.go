@@ -27,6 +27,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
+func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
+	t.Helper()
+	for _, f := range DefaultLogFunctions() {
+		assert.Contains(t, config.logFunctions, f.Name(), "missing log function %v", f.Name())
+	}
+	for _, f := range DefaultDataPointFunctions() {
+		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
+	}
+	for _, f := range DefaultMetricFunctions() {
+		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
+	}
+	for _, f := range DefaultSpanFunctions() {
+		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
+	}
+	for _, f := range DefaultSpanEventFunctions() {
+		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
+	}
+}
+
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
 	assert.Equal(t, factory.Type(), metadata.Type)
@@ -41,6 +60,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		MetricStatements: []common.ContextStatements{},
 		LogStatements:    []common.ContextStatements{},
 	}, cfg)
+	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
