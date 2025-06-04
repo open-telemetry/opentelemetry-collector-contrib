@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -54,7 +55,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[component.ID]component.Component{
-					component.MustNewID("nop"): MockExporter{},
+					component.MustNewID("nop"): mockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -270,7 +271,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
-		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0"},
+		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", string(conventions.K8SNodeNameKey): "test-node"},
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
@@ -298,6 +299,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected = map[string]any{
 		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
@@ -324,7 +326,7 @@ func TestObjMetadata(t *testing.T) {
 					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
-					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace"}),
+					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace", string(conventions.K8SNodeNameKey): "test-node"}),
 				},
 				experimentalmetricmetadata.ResourceID("container-id"): {
 					EntityType:    "container",
@@ -353,21 +355,22 @@ func TestObjMetadata(t *testing.T) {
 					Name: "test-statefulset-0",
 					UID:  "test-statefulset-0-uid",
 				},
-			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{Phase: corev1.PodFailed, Reason: "Evicted"})),
+			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{NodeName: "test-node"}, &corev1.PodStatus{Phase: corev1.PodFailed, Reason: "Evicted"})),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
 					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.workload.kind":     "StatefulSet",
-						"k8s.workload.name":     "test-statefulset-0",
-						"k8s.statefulset.name":  "test-statefulset-0",
-						"k8s.statefulset.uid":   "test-statefulset-0-uid",
-						"k8s.pod.phase":         "Failed",
-						"k8s.pod.status_reason": "Evicted",
-						"k8s.pod.name":          "test-pod-0",
-						"k8s.namespace.name":    "test-namespace",
+						"k8s.workload.kind":                "StatefulSet",
+						"k8s.workload.name":                "test-statefulset-0",
+						"k8s.statefulset.name":             "test-statefulset-0",
+						"k8s.statefulset.uid":              "test-statefulset-0-uid",
+						"k8s.pod.phase":                    "Failed",
+						"k8s.pod.status_reason":            "Evicted",
+						"k8s.pod.name":                     "test-pod-0",
+						"k8s.namespace.name":               "test-namespace",
+						string(conventions.K8SNodeNameKey): "test-node",
 					}),
 				},
 			},
@@ -396,7 +399,7 @@ func TestObjMetadata(t *testing.T) {
 			}(),
 			resource: podWithAdditionalLabels(
 				map[string]string{"k8s-app": "my-app"},
-				testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{Phase: corev1.PodRunning}),
+				testutils.NewPodWithContainer("0", &corev1.PodSpec{NodeName: "test-node"}, &corev1.PodStatus{Phase: corev1.PodRunning}),
 			),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
@@ -404,11 +407,12 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.service.test-service": "",
-						"k8s-app":                  "my-app",
-						"k8s.pod.phase":            "Running",
-						"k8s.namespace.name":       "test-namespace",
-						"k8s.pod.name":             "test-pod-0",
+						"k8s.service.test-service":         "",
+						"k8s-app":                          "my-app",
+						"k8s.pod.phase":                    "Running",
+						"k8s.namespace.name":               "test-namespace",
+						"k8s.pod.name":                     "test-pod-0",
+						string(conventions.K8SNodeNameKey): "test-node",
 					}),
 				},
 			},

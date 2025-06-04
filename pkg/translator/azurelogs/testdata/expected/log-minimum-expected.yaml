@@ -1,18 +1,18 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
-          - attributes:
-              - key: cloud.resource_id
-                value:
-                  stringValue: /RESOURCE_ID
-              - key: cloud.provider
-                value:
-                  stringValue: azure
-              - key: event.name
-                value:
-                  stringValue: az.resource.log
-            body:
+          - body:
               kvlistValue:
                 values:
                   - key: category

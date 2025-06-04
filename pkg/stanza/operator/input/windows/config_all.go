@@ -37,6 +37,7 @@ type Config struct {
 	SuppressRenderingInfo bool          `mapstructure:"suppress_rendering_info,omitempty"`
 	ExcludeProviders      []string      `mapstructure:"exclude_providers,omitempty"`
 	Remote                RemoteConfig  `mapstructure:"remote,omitempty"`
+	Query                 *string       `mapstructure:"query,omitempty"`
 }
 
 // RemoteConfig is the configuration for a remote server.

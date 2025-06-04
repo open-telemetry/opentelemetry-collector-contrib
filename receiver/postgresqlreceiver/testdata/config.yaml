@@ -4,6 +4,9 @@ postgresql/minimal:
   password: ${env:POSTGRESQL_PASSWORD}
   query_sample_collection:
     enabled: true
+  top_query_collection:
+    enabled: true
+    top_n_query: 1234
 postgresql/pool:
   endpoint: localhost:5432
   transport: tcp

@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	serviceNameKey                 = conventions.AttributeServiceName
+	serviceNameKey                 = string(conventions.ServiceNameKey)
 	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
@@ -73,6 +73,12 @@ type connectorImp struct {
 
 	// Event dimensions to add to the events metric.
 	eDimensions []utilattri.Dimension
+
+	// Calls dimensions to add to the events metric.
+	callsDimensions []utilattri.Dimension
+
+	// duration dimensions to add to the events metric.
+	durationDimensions []utilattri.Dimension
 
 	events EventsConfig
 
@@ -144,6 +150,8 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		callsDimensions:              newDimensions(cfg.CallsDimensions),
+		durationDimensions:           newDimensions(cfg.Histogram.Dimensions),
 		events:                       cfg.Events,
 	}, nil
 }
@@ -157,7 +165,7 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 		if cfg.Histogram.Exponential.MaxSize != 0 {
 			maxSize = cfg.Histogram.Exponential.MaxSize
 		}
-		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint)
+		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 	}
 
 	var bounds []float64
@@ -175,7 +183,7 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 		}
 	}
 
-	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint)
+	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
@@ -364,7 +372,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
-		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
+		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
 		if !ok {
 			continue
 		}
@@ -390,48 +398,34 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
-				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
-				var attributesFun metrics.BuildAttributesFun
-
-				// Note: we check cardinality limit here for sums metrics but it is the same
-				// for histograms because both use the same key and attributes.
-				if rm.sums.IsCardinalityLimitReached() {
-					attributesFun = func() pcommon.Map {
-						attributes := pcommon.NewMap()
-						for _, d := range p.dimensions {
-							if v, exists := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttr); exists {
-								v.CopyTo(attributes.PutEmpty(d.Name))
-							}
-						}
-						attributes.PutBool(overflowKey, true)
-
-						return attributes
-					}
-				} else {
-					attributesFun = func() pcommon.Map {
-						attributes := p.buildAttributes(
-							serviceName,
-							span,
-							resourceAttr,
-							p.dimensions,
-							ils.Scope(),
-						)
-						return attributes
-					}
+				callsDimensions := p.dimensions
+				callsDimensions = append(callsDimensions, p.callsDimensions...)
+				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
+				attributesFun := func() pcommon.Map {
+					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope())
 				}
 
-				if !p.config.Histogram.Disable {
-					// aggregate histogram metrics
-					h := histograms.GetOrCreate(key, attributesFun, startTimestamp)
-					p.addExemplar(span, duration, h)
-					h.Observe(duration)
-				}
 				// aggregate sums metrics
-				s := sums.GetOrCreate(key, attributesFun, startTimestamp)
-				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+				s, limitReached := sums.GetOrCreate(key, attributesFun, startTimestamp)
+				if !limitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 				s.Add(1)
+
+				// aggregate histogram metrics
+				if !p.config.Histogram.Disable {
+					durationDimensions := p.dimensions
+					durationDimensions = append(durationDimensions, p.durationDimensions...)
+					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
+					attributesFun = func() pcommon.Map {
+						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope())
+					}
+					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
+					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+						p.addExemplar(span, duration, h)
+					}
+					h.Observe(duration)
+				}
 
 				// aggregate events metrics
 				if p.events.Enabled {
@@ -444,28 +438,18 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
 						resourceAttr.CopyTo(rscAndEventAttrs)
-						// We cannot use CopyTo because it overrides the existing keys.
+						// We cannot use event.Attributes().CopyTo(rscAdnEventAttrs) because it overrides the existing keys.
 						event.Attributes().Range(func(k string, v pcommon.Value) bool {
-							rscAndEventAttrs.PutStr(k, v.Str())
+							v.CopyTo(rscAndEventAttrs.PutEmpty(k))
 							return true
 						})
 
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
-						if rm.events.IsCardinalityLimitReached() {
-							attributesFun = func() pcommon.Map {
-								attributes := pcommon.NewMap()
-								rscAndEventAttrs.CopyTo(attributes)
-								attributes.PutBool(overflowKey, true)
-
-								return attributes
-							}
-						} else {
-							attributesFun = func() pcommon.Map {
-								return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
-							}
+						attributesFun = func() pcommon.Map {
+							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
 						}
-						e := events.GetOrCreate(eKey, attributesFun, startTimestamp)
-						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp)
+						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
 						e.Add(1)

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"k8s.io/client-go/tools/cache"
 	framework "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -54,7 +55,7 @@ func TestExtensionObserveServices(t *testing.T) {
 
 	obs := ext.(*k8sObserver)
 	serviceListerWatcher := framework.NewFakeControllerSource()
-	obs.serviceListerWatcher = serviceListerWatcher
+	obs.serviceListerWatchers = []cache.ListerWatcher{serviceListerWatcher}
 
 	serviceListerWatcher.Add(serviceWithClusterIP)
 
@@ -143,7 +144,7 @@ func TestExtensionObservePods(t *testing.T) {
 
 	obs := ext.(*k8sObserver)
 	podListerWatcher := framework.NewFakeControllerSource()
-	obs.podListerWatcher = podListerWatcher
+	obs.podListerWatchers = []cache.ListerWatcher{podListerWatcher}
 
 	podListerWatcher.Add(pod1V1)
 
@@ -211,6 +212,32 @@ func TestExtensionObservePods(t *testing.T) {
 
 	require.NoError(t, ext.Shutdown(context.Background()))
 	obs.StopListAndWatch()
+}
+
+func TestExtensionInitNamespacedListWatchers(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+
+	config.Namespaces = []string{"my-namespace", "my-other-namespace"}
+	config.ObservePods = true
+	config.ObserveIngresses = true
+	config.ObserveServices = true
+
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+
+	// as the namespace is an internal attribute of the created list watchers, we cannot verify this here, but
+	// make sure we have the expected number of watchers
+	require.Len(t, obs.podListerWatchers, 2)
+	require.Len(t, obs.ingressListerWatchers, 2)
+	require.Len(t, obs.serviceListerWatchers, 2)
 }
 
 func TestExtensionObserveNodes(t *testing.T) {
@@ -328,7 +355,7 @@ func TestExtensionObserveIngresses(t *testing.T) {
 
 	obs := ext.(*k8sObserver)
 	ingressListerWatcher := framework.NewFakeControllerSource()
-	obs.ingressListerWatcher = ingressListerWatcher
+	obs.ingressListerWatchers = []cache.ListerWatcher{ingressListerWatcher}
 
 	ingressListerWatcher.Add(ingress)
 

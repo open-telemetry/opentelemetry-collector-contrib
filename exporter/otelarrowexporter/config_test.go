@@ -71,7 +71,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "none",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
@@ -84,7 +84,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
+				Auth:            &configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
 			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 				Enabled:      true,

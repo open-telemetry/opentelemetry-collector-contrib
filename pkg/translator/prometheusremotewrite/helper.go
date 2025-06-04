@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
@@ -109,8 +109,8 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	ignoreAttrs []string, logOnOverwrite bool, extras ...string,
 ) []prompb.Label {
 	resourceAttrs := resource.Attributes()
-	serviceName, haveServiceName := resourceAttrs.Get(conventions.AttributeServiceName)
-	instance, haveInstanceID := resourceAttrs.Get(conventions.AttributeServiceInstanceID)
+	serviceName, haveServiceName := resourceAttrs.Get(string(conventions.ServiceNameKey))
+	instance, haveInstanceID := resourceAttrs.Get(string(conventions.ServiceInstanceIDKey))
 
 	// Calculate the maximum possible number of labels we could return so we can preallocate l
 	maxLabelCount := attributes.Len() + len(externalLabels) + len(extras)/2
@@ -153,7 +153,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	// Map service.name + service.namespace to job
 	if haveServiceName {
 		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
+		if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
 			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
 		}
 		l[model.JobLabel] = val
@@ -498,9 +498,9 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 
 	attributes := resource.Attributes()
 	identifyingAttrs := []string{
-		conventions.AttributeServiceNamespace,
-		conventions.AttributeServiceName,
-		conventions.AttributeServiceInstanceID,
+		string(conventions.ServiceNamespaceKey),
+		string(conventions.ServiceNameKey),
+		string(conventions.ServiceInstanceIDKey),
 	}
 	nonIdentifyingAttrsCount := attributes.Len()
 	for _, a := range identifyingAttrs {

@@ -22,9 +22,10 @@ type AttributeKeyValue struct {
 }
 
 type MetricKey struct {
-	Name string
-	Type pmetric.MetricType
-	Unit string
+	Name        string
+	Type        pmetric.MetricType
+	Unit        string
+	Description string
 }
 
 type ExplicitHistogram[K any] struct {
@@ -105,15 +106,35 @@ func (s *Sum[K]) fromConfig(
 	return nil
 }
 
+type Gauge[K any] struct {
+	Value *ottl.ValueExpression[K]
+}
+
+func (s *Gauge[K]) fromConfig(
+	mi *config.Gauge,
+	parser ottl.Parser[K],
+) error {
+	if mi == nil {
+		return nil
+	}
+
+	var err error
+	s.Value, err = parser.ParseValueExpression(mi.Value)
+	if err != nil {
+		return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
+	}
+	return nil
+}
+
 type MetricDef[K any] struct {
 	Key                       MetricKey
-	Description               string
 	IncludeResourceAttributes []AttributeKeyValue
 	Attributes                []AttributeKeyValue
 	Conditions                *ottl.ConditionSequence[K]
 	ExponentialHistogram      *ExponentialHistogram[K]
 	ExplicitHistogram         *ExplicitHistogram[K]
 	Sum                       *Sum[K]
+	Gauge                     *Gauge[K]
 }
 
 func (md *MetricDef[K]) FromMetricInfo(
@@ -123,7 +144,7 @@ func (md *MetricDef[K]) FromMetricInfo(
 ) error {
 	md.Key.Name = mi.Name
 	md.Key.Unit = mi.Unit
-	md.Description = mi.Description
+	md.Key.Description = mi.Description
 
 	var err error
 	md.IncludeResourceAttributes, err = parseAttributeConfigs(mi.IncludeResourceAttributes)
@@ -165,6 +186,13 @@ func (md *MetricDef[K]) FromMetricInfo(
 		md.Sum = new(Sum[K])
 		if err := md.Sum.fromConfig(mi.Sum, parser); err != nil {
 			return fmt.Errorf("failed to parse sum config: %w", err)
+		}
+	}
+	if mi.Gauge != nil {
+		md.Key.Type = pmetric.MetricTypeGauge
+		md.Gauge = new(Gauge[K])
+		if err := md.Gauge.fromConfig(mi.Gauge, parser); err != nil {
+			return fmt.Errorf("failed to parse gauge config: %w", err)
 		}
 	}
 	return nil

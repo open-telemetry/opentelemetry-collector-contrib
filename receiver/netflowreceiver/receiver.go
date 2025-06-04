@@ -108,7 +108,7 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 
 	// the otel log producer converts those messages into OpenTelemetry logs
 	// it is a wrapper around the protobuf producer
-	otelLogsProducer := newOtelLogsProducer(protoProducer, nr.logConsumer, nr.logger)
+	otelLogsProducer := newOtelLogsProducer(protoProducer, nr.logConsumer, nr.logger, nr.config.SendRaw)
 
 	cfgPipe := &utils.PipeConfig{
 		Producer: otelLogsProducer,

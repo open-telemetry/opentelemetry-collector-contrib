@@ -1,10 +1,18 @@
 signaltometrics:
   spans:
-    - name: with_resource_foo_only
+    - name: with_resource_filter # with resource.foo filter
       description: Spans with resource attribute including resource.foo as a histogram metric
       unit: ms
       include_resource_attributes:
         - key: resource.foo
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)
+    - name: with_resource_filter # with resource.bar filter
+      description: Spans with resource attribute including resource.bar as a histogram metric
+      unit: ms
+      include_resource_attributes:
+        - key: resource.bar
       histogram:
         count: "Int(AdjustedCount())"
         value: Milliseconds(end_time - start_time)

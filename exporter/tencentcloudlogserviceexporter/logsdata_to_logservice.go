@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
@@ -64,17 +64,17 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 	attrs := resource.Attributes()
 
 	var hostname, serviceName string
-	if host, ok := attrs.Get(conventions.AttributeHostName); ok {
+	if host, ok := attrs.Get(string(conventions.HostNameKey)); ok {
 		hostname = host.AsString()
 	}
 
-	if service, ok := attrs.Get(conventions.AttributeServiceName); ok {
+	if service, ok := attrs.Get(string(conventions.ServiceNameKey)); ok {
 		serviceName = service.AsString()
 	}
 
 	fields := map[string]any{}
 	for k, v := range attrs.All() {
-		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
+		if k == string(conventions.ServiceNameKey) || k == string(conventions.HostNameKey) {
 			continue
 		}
 		fields[k] = v.AsString()

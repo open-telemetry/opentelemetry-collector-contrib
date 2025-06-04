@@ -30,7 +30,8 @@ func createDefaultConfig() component.Config {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8126",
 		},
-		ReadTimeout: 60 * time.Second,
+		ReadTimeout:      60 * time.Second,
+		TraceIDCacheSize: 100,
 	}
 }
 
