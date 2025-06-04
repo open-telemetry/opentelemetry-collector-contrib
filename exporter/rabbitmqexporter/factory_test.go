@@ -79,7 +79,7 @@ func TestCreateExporterWithConnectionName(t *testing.T) {
 	assert.NotNil(t, te)
 }
 
-func TestCreateExporterWithTLSSettings(t *testing.T) {
+func TestCreateExporterWithTLSs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Connection.TLSConfig = &configtls.ClientConfig{}

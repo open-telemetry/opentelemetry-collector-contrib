@@ -135,7 +135,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					},
 				},
@@ -175,7 +175,7 @@ func TestValidate(t *testing.T) {
 					MaxIdleConnsPerHost: maxIdleConnPerHost,
 					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
-					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+					TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 				},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -232,7 +232,7 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
 	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
-	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
+	cfgWithHTTPConfigs.TLS.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {
@@ -467,7 +467,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			HostnameSource: HostnameSourceConfigOrSystem,
 			ReporterPeriod: 30 * time.Minute,
 		},
-		OnlyMetadata: false,
+		HostnameDetectionTimeout: 25 * time.Second,
+		OnlyMetadata:             false,
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -542,7 +543,8 @@ func TestLoadConfig(t *testing.T) {
 					HostnameSource: HostnameSourceConfigOrSystem,
 					ReporterPeriod: 30 * time.Minute,
 				},
-				OnlyMetadata: false,
+				HostnameDetectionTimeout: 25 * time.Second,
+				OnlyMetadata:             false,
 			},
 		},
 		{
@@ -610,6 +612,7 @@ func TestLoadConfig(t *testing.T) {
 					HostnameSource: HostnameSourceConfigOrSystem,
 					ReporterPeriod: 30 * time.Minute,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
 			},
 		},
 		{
@@ -675,6 +678,7 @@ func TestLoadConfig(t *testing.T) {
 					Tags:           []string{"example:tag"},
 					ReporterPeriod: 30 * time.Minute,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
 			},
 		},
 		{
@@ -734,7 +738,8 @@ func TestLoadConfig(t *testing.T) {
 					HostnameSource: HostnameSourceConfigOrSystem,
 					ReporterPeriod: 10 * time.Minute,
 				},
-				OnlyMetadata: false,
+				HostnameDetectionTimeout: 25 * time.Second,
+				OnlyMetadata:             false,
 			},
 		},
 	}

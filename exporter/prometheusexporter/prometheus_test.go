@@ -22,40 +22,45 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestPrometheusExporter(t *testing.T) {
 	tests := []struct {
-		config       *Config
+		config       func() *Config
 		wantErr      string
 		wantStartErr string
 	}{
 		{
-			config: &Config{
-				Namespace: "test",
-				ConstLabels: map[string]string{
-					"foo0":  "bar0",
-					"code0": "one0",
-				},
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8999",
-				},
-				SendTimestamps:   false,
-				MetricExpiration: 60 * time.Second,
+			config: func() *Config {
+				return &Config{
+					Namespace: "test",
+					ConstLabels: map[string]string{
+						"foo0":  "bar0",
+						"code0": "one0",
+					},
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: testutil.GetAvailableLocalAddress(t),
+					},
+					SendTimestamps:   false,
+					MetricExpiration: 60 * time.Second,
+				}
 			},
 		},
 		{
-			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:88999",
-				},
+			config: func() *Config {
+				return &Config{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:88999",
+					},
+				}
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
-			config:  &Config{},
+			config:  func() *Config { return &Config{} },
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
@@ -65,7 +70,8 @@ func TestPrometheusExporter(t *testing.T) {
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
-			exp, err := factory.CreateMetrics(context.Background(), set, tt.config)
+			cfg := tt.config()
+			exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 
 			if tt.wantErr != "" {
 				require.Error(t, err)
@@ -90,6 +96,7 @@ func TestPrometheusExporter(t *testing.T) {
 }
 
 func TestPrometheusExporter_WithTLS(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
@@ -97,8 +104,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"code2": "one2",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:7777",
-			TLSSetting: &configtls.ServerConfig{
+			Endpoint: addr,
+			TLS: &configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
@@ -146,7 +153,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-	rsp, err := httpClient.Get("https://localhost:7777/metrics")
+	rsp, err := httpClient.Get("https://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	assert.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
@@ -168,6 +175,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4986
 func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
@@ -175,7 +183,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"code1": "one1",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:7777",
+			Endpoint: addr,
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -201,7 +209,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8081")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
@@ -231,7 +239,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	res, err := http.Get("http://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
@@ -241,6 +249,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
@@ -248,7 +257,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:7777",
+			Endpoint: addr,
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -272,7 +281,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	for delta := 0; delta <= 20; delta += 10 {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
@@ -298,7 +307,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	res, err := http.Get("http://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
@@ -308,6 +317,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
@@ -315,7 +325,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"code2": "one2",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:7777",
+			Endpoint: addr,
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -340,7 +350,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	for delta := 0; delta <= 20; delta += 10 {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		res, err1 := http.Get("http://" + addr + "/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
@@ -366,7 +376,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	res, err := http.Get("http://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
@@ -376,6 +386,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 }
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
@@ -383,7 +394,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"code2": "one2",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:7777",
+			Endpoint: addr,
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -409,7 +420,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-	rsp, err := http.Get("http://localhost:7777/metrics")
+	rsp, err := http.Get("http://" + addr + "/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	assert.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
