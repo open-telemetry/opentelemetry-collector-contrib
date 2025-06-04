@@ -399,7 +399,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 	cfg := &Config{
 		Profiles: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
