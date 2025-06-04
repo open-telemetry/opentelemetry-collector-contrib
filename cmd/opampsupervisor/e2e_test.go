@@ -1645,6 +1645,8 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 
 func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	agentCfgChan := make(chan string, 1)
+	var healthReport atomic.Value
+	var remoteConfigStatus atomic.Value
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -1659,7 +1661,12 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 						}
 					}
 				}
-
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -1732,6 +1739,18 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 		} else {
 			assert.ErrorContains(tt, err, "No connection could be made")
 		}
+	}, 3*time.Second, 250*time.Millisecond)
+
+	// Verify we have a healthy status (if it was ran with the empty config it would be healthy)
+	require.Eventually(t, func() bool {
+		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+		return ok && health.Healthy
+	}, 3*time.Second, 250*time.Millisecond)
+
+	// Verify the status is set to APPLIED (if it was ran with the empty config it would be APPLIED)
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
 	}, 3*time.Second, 250*time.Millisecond)
 }
 

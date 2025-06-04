@@ -1374,6 +1374,15 @@ func (s *Supervisor) runAgentProcess() {
 				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
 					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
 				}
+				// need to clear exit channel to avoid triggering `s.commander.Exited()` case
+				// because we stopped the agent and aren't restarting it this case will trigger
+				// and report an unhealthy status (collector would be healthy, just choosing to not run)
+				if len(s.commander.Exited()) > 0 {
+					select {
+					case <-s.commander.Exited():
+					default:
+					}
+				}
 			}
 
 		case <-s.commander.Exited():
