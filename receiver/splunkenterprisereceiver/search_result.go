@@ -178,6 +178,10 @@ type dispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+	AdhocSize          string `json:"adhoc_size_mb"`
+	ScheduledSize      string `json:"scheduled_size_mb"`
+	CompletedSize      string `json:"completed_size_mb"`
+	IncompleteSize     string `json:"incomplete_size_mb"`
 }
 
 // '/services/server/health/splunkd/details'
