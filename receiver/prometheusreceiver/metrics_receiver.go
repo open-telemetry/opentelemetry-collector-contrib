@@ -231,10 +231,7 @@ func (r *pReceiver) initScrapeOptions() *scrape.Options {
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
 		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
-	}
-
-	if enableNativeHistogramsGate.IsEnabled() {
-		opts.EnableNativeHistogramsIngestion = true
+		EnableNativeHistogramsIngestion:     enableNativeHistogramsGate.IsEnabled(),
 	}
 
 	return opts
