@@ -402,7 +402,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 	cfg := &Config{
 		Metrics: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},

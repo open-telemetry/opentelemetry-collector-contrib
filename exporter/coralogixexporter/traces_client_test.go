@@ -387,7 +387,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	cfg := &Config{
 		Traces: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
