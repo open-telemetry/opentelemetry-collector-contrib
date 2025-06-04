@@ -169,7 +169,6 @@ func TestNewFranzGoSyncProducerCompression(t *testing.T) {
 			cluster, clientConfig := kafkatest.NewCluster(t,
 				kfake.SeedTopics(1, validTopic),
 			)
-			clientConfig.Brokers = []string{"localhost:9092"} // Use a valid broker address
 			prodCfg := configkafka.NewDefaultProducerConfig()
 			prodCfg.Compression = compressionAlgo
 
