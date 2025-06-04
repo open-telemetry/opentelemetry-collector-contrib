@@ -62,27 +62,27 @@ type messenger[T any] interface {
 }
 
 type kafkaExporter[T any] struct {
-	cfg         Config
-	logger      *zap.Logger
-	newMessager func(host component.Host) (messenger[T], error)
-	messenger   messenger[T]
-	producer    producer
+	cfg          Config
+	logger       *zap.Logger
+	newMessenger func(host component.Host) (messenger[T], error)
+	messenger    messenger[T]
+	producer     producer
 }
 
 func newKafkaExporter[T any](
 	config Config,
 	set exporter.Settings,
-	newMessager func(component.Host) (messenger[T], error),
+	newMessenger func(component.Host) (messenger[T], error),
 ) *kafkaExporter[T] {
 	return &kafkaExporter[T]{
-		cfg:         config,
-		logger:      set.Logger,
-		newMessager: newMessager,
+		cfg:          config,
+		logger:       set.Logger,
+		newMessenger: newMessenger,
 	}
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
-	if e.messenger, err = e.newMessager(host); err != nil {
+	if e.messenger, err = e.newMessenger(host); err != nil {
 		return err
 	}
 
@@ -154,27 +154,27 @@ func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptra
 		if err != nil {
 			return nil, err
 		}
-		return &kafkaTracesMessager{
+		return &kafkaTracesMessenger{
 			config:    config,
 			marshaler: marshaler,
 		}, nil
 	})
 }
 
-type kafkaTracesMessager struct {
+type kafkaTracesMessenger struct {
 	config    Config
 	marshaler marshaler.TracesMarshaler
 }
 
-func (e *kafkaTracesMessager) marshalData(td ptrace.Traces) ([]marshaler.Message, error) {
+func (e *kafkaTracesMessenger) marshalData(td ptrace.Traces) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalTraces(td)
 }
 
-func (e *kafkaTracesMessager) getTopic(ctx context.Context, td ptrace.Traces) string {
+func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) string {
 	return getTopic(ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
 }
 
-func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
+func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
 	return func(yield func([]byte, ptrace.Traces) bool) {
 		if !e.config.PartitionTracesByID {
 			yield(nil, td)
@@ -199,27 +199,27 @@ func newLogsExporter(config Config, set exporter.Settings) *kafkaExporter[plog.L
 		if err != nil {
 			return nil, err
 		}
-		return &kafkaLogsMessager{
+		return &kafkaLogsMessenger{
 			config:    config,
 			marshaler: marshaler,
 		}, nil
 	})
 }
 
-type kafkaLogsMessager struct {
+type kafkaLogsMessenger struct {
 	config    Config
 	marshaler marshaler.LogsMarshaler
 }
 
-func (e *kafkaLogsMessager) marshalData(ld plog.Logs) ([]marshaler.Message, error) {
+func (e *kafkaLogsMessenger) marshalData(ld plog.Logs) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalLogs(ld)
 }
 
-func (e *kafkaLogsMessager) getTopic(ctx context.Context, ld plog.Logs) string {
+func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string {
 	return getTopic(ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
 }
 
-func (e *kafkaLogsMessager) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
+func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
 		if !e.config.PartitionLogsByResourceAttributes {
 			yield(nil, ld)
@@ -242,27 +242,27 @@ func newMetricsExporter(config Config, set exporter.Settings) *kafkaExporter[pme
 		if err != nil {
 			return nil, err
 		}
-		return &kafkaMetricsMessager{
+		return &kafkaMetricsMessenger{
 			config:    config,
 			marshaler: marshaler,
 		}, nil
 	})
 }
 
-type kafkaMetricsMessager struct {
+type kafkaMetricsMessenger struct {
 	config    Config
 	marshaler marshaler.MetricsMarshaler
 }
 
-func (e *kafkaMetricsMessager) marshalData(md pmetric.Metrics) ([]marshaler.Message, error) {
+func (e *kafkaMetricsMessenger) marshalData(md pmetric.Metrics) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalMetrics(md)
 }
 
-func (e *kafkaMetricsMessager) getTopic(ctx context.Context, md pmetric.Metrics) string {
+func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics) string {
 	return getTopic(ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
 }
 
-func (e *kafkaMetricsMessager) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
+func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
 	return func(yield func([]byte, pmetric.Metrics) bool) {
 		if !e.config.PartitionMetricsByResourceAttributes {
 			yield(nil, md)

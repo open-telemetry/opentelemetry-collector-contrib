@@ -140,8 +140,6 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 
 	records := fetchKgoRecords(t,
 		fakeCluster.ListenAddrs(), expectedTopicFromAttribute,
-		"test-traces-attr-group-kgo",
-		kgo.ClientID("kgo-test-consumer-traces-attr"),
 	)
 	fakeCluster.Close()
 
@@ -172,8 +170,6 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 
 		records := fetchKgoRecords(t,
 			fakeCluster.ListenAddrs(), expectedTopicFromCtx,
-			"test-traces-ctx-topic-group-kgo",
-			kgo.ClientID("kgo-test-consumer-traces-ctx-topic"),
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -203,8 +199,6 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 
 		records := fetchKgoRecords(t,
 			fakeCluster.ListenAddrs(), defaultTopic,
-			"test-traces-ctx-metadata-group-kgo",
-			kgo.ClientID("kgo-test-consumer-traces-ctx-metadata"),
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -594,8 +588,6 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 
 	records := fetchKgoRecords(t,
 		fakeCluster.ListenAddrs(), expectedTopic,
-		"test-metrics-pusher-group-kgo",
-		kgo.ClientID("kgo-test-consumer-metrics"),
 	)
 	fakeCluster.Close()
 
@@ -634,8 +626,6 @@ func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
 	consumerSeedBrokers := fakeCluster.ListenAddrs()
 	records := fetchKgoRecords(t,
 		consumerSeedBrokers, expectedTopicFromAttribute,
-		"test-metrics-attr-group-kgo",
-		kgo.ClientID("kgo-test-consumer-metrics-attr"),
 	)
 
 	require.Len(t, records, 1, "expected one message to be produced")
@@ -664,8 +654,6 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 		consumerSeedBrokers := fakeCluster.ListenAddrs()
 		records := fetchKgoRecords(t,
 			consumerSeedBrokers, expectedTopicFromCtx,
-			"test-metrics-ctx-topic-group-kgo",
-			kgo.ClientID("kgo-test-consumer-metrics-ctx-topic"),
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -695,8 +683,6 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 		consumerSeedBrokers := fakeCluster.ListenAddrs()
 		records := fetchKgoRecords(t,
 			consumerSeedBrokers, config.Metrics.Topic,
-			"test-metrics-ctx-metadata-group-kgo",
-			kgo.ClientID("kgo-test-consumer-metrics-ctx-metadata"),
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -814,8 +800,6 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 
 	records := fetchKgoRecords(t,
 		fakeCluster.ListenAddrs(), expectedTopicFromAttribute,
-		"test-logs-attr-group-kgo",
-		kgo.ClientID("kgo-test-consumer-logs-attr"),
 	)
 	fakeCluster.Close()
 
@@ -846,8 +830,6 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 
 		records := fetchKgoRecords(t,
 			fakeCluster.ListenAddrs(), expectedTopicFromCtx,
-			"test-logs-ctx-topic-group-kgo",
-			kgo.ClientID("kgo-test-consumer-logs-ctx-topic"),
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -877,8 +859,6 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 
 		records := fetchKgoRecords(t,
 			fakeCluster.ListenAddrs(), defaultTopic,
-			"test-logs-ctx-metadata-group-kgo",
-			kgo.ClientID("kgo-test-consumer-logs-ctx-metadata"),
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -1214,9 +1194,9 @@ func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafk
 	exp := newTracesExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
 	// Fake starting the exporter.
-	messager, err := exp.newMessager(host)
+	messenger, err := exp.newMessenger(host)
 	require.NoError(t, err)
-	exp.messenger = messager
+	exp.messenger = messenger
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
@@ -1232,9 +1212,9 @@ func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kaf
 	exp := newMetricsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
 	// Fake starting the exporter.
-	messager, err := exp.newMessager(host)
+	messenger, err := exp.newMessenger(host)
 	require.NoError(t, err)
-	exp.messenger = messager
+	exp.messenger = messenger
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
@@ -1250,9 +1230,9 @@ func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaE
 	exp := newLogsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
 	// Fake starting the exporter.
-	messager, err := exp.newMessager(host)
+	messenger, err := exp.newMessenger(host)
 	require.NoError(t, err)
-	exp.messenger = messager
+	exp.messenger = messenger
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
@@ -1295,10 +1275,10 @@ func configureExporter[T any](tb testing.TB,
 	client, err := kgo.NewClient(kgoClientOpts...)
 	require.NoError(tb, err, "failed to create kgo.Client with fake cluster addresses")
 
-	messager, err := exp.newMessager(host) // messager implements Marshaler[pmetric.Metrics]
-	require.NoError(tb, err, "failed to create messager for metrics")
+	messenger, err := exp.newMessenger(host) // messenger implements Marshaler[pmetric.Metrics]
+	require.NoError(tb, err, "failed to create messenger for metrics")
 
-	exp.messenger = messager
+	exp.messenger = messenger
 	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys)
 
 	tb.Cleanup(func() { assert.NoError(tb, exp.Close(context.Background())) })
@@ -1306,14 +1286,13 @@ func configureExporter[T any](tb testing.TB,
 }
 
 // fetchKgoRecords polls a franz-go topic for up to 5 seconds and returns all records produced to that topic.
-func fetchKgoRecords(tb testing.TB, brokers []string,
-	topic, group string, opts ...kgo.Opt,
+func fetchKgoRecords(tb testing.TB,
+	brokers []string, topic string, opts ...kgo.Opt,
 ) []*kgo.Record {
 	clientOpts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumeTopics(topic),
-		kgo.ConsumerGroup(group),
-		kgo.FetchMaxBytes(10 * 1024 * 1024),
+		kgo.ConsumerGroup("group-id" + topic),
 	}
 	clientOpts = append(clientOpts, opts...)
 	consumerClient, err := kgo.NewClient(clientOpts...)

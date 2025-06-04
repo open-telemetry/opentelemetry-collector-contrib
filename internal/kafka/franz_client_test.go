@@ -165,22 +165,15 @@ func TestNewFranzGoSyncProducerCompression(t *testing.T) {
 	for i, compressionAlgo := range compressionAlgos {
 		t.Run(compressionAlgo, func(t *testing.T) {
 			t.Parallel()
-			validTopic := fmt.Sprintf("test-topic-%d", i)
-			// Create a cluster with a superuser that uses PLAIN authentication.
-			cluster, clientConfig := kafkatest.NewCluster(t, kfake.EnableSASL(),
-				kfake.Superuser(PLAIN, "plain_user", "plain_password"),
+			validTopic := fmt.Sprintf("test-topic-%s", compressionAlgo)
+			cluster, clientConfig := kafkatest.NewCluster(t,
 				kfake.SeedTopics(1, validTopic),
 			)
-			clientConfig.Authentication.SASL = &configkafka.SASLConfig{
-				Mechanism: PLAIN,
-				Username:  "plain_user",
-				Password:  "plain_password",
-				Version:   1, // kfake only supports version 1
-			}
+			clientConfig.Brokers = []string{"localhost:9092"} // Use a valid broker address
 			prodCfg := configkafka.NewDefaultProducerConfig()
 			prodCfg.Compression = compressionAlgo
 
-			tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+			tl := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
 			client, err := NewFranzSyncProducer(clientConfig, prodCfg, time.Second, tl)
 			require.NoError(t, err)
 			defer client.Close()
@@ -191,7 +184,9 @@ func TestNewFranzGoSyncProducerCompression(t *testing.T) {
 			defer cancel()
 			require.NoError(t, client.Ping(ctx))
 
-			body := "test message"
+			// Franz-go only send the compressed message if the compressed size
+			// is smaller than the uncompressed size.
+			body := "test message: This is a sample message used for testing Kafka compression algorithms. The content is intentionally long to ensure that compression is applied and can be verified during the test. The message contains a variety of words and phrases to simulate realistic payloads that might be encountered in production environments. This helps ensure that the compression logic works as expected and that the system can handle typical workloads safely and efficiently."
 			cluster.ControlKey(int16(kmsg.Produce), func(kreq kmsg.Request) (kmsg.Response, error, bool) {
 				preq := kreq.(*kmsg.ProduceRequest)
 				assert.Len(t, preq.Topics, 1, "expected one topic in produce request")
@@ -201,17 +196,18 @@ func TestNewFranzGoSyncProducerCompression(t *testing.T) {
 
 				var rb kmsg.RecordBatch
 				require.NoError(t, rb.ReadFrom(preq.Topics[0].Partitions[0].Records))
+				// Check the compression bits (lowest 3 bits)
+				compressionBits := rb.Attributes & 0x07
+				assert.Equal(t, int16(i), compressionBits)
 				assert.Equal(t, int32(1), rb.NumRecords, "expected one record in produce request")
-
-				var record kmsg.Record
-				require.NoError(t, record.ReadFrom(rb.Records))
-				assert.Equal(t, []byte(body), record.Value, "produced wrong value")
 
 				return &kmsg.ProduceResponse{
 					Version: kreq.GetVersion(),
 					Topics: []kmsg.ProduceResponseTopic{{
-						Topic:      validTopic,
-						Partitions: []kmsg.ProduceResponseTopicPartition{{}},
+						Topic: validTopic,
+						Partitions: []kmsg.ProduceResponseTopicPartition{
+							kmsg.NewProduceResponseTopicPartition(),
+						},
 					}},
 				}, nil, true
 			})
@@ -219,11 +215,13 @@ func TestNewFranzGoSyncProducerCompression(t *testing.T) {
 			result := client.ProduceSync(ctx, &kgo.Record{
 				Topic: validTopic, Value: []byte(body),
 			})
-			for _, v := range result {
-				require.NoError(t, v.Err, "failed to produce message: %v", v.Err)
-				assert.Equal(t, validTopic, v.Record.Topic, "produced message to wrong topic")
-				assert.Equal(t, []byte(body), v.Record.Value, "produced message with wrong value")
-			}
+			client.Close()
+			require.Len(t, result, 1, "expected one produce result")
+			res := result[0]
+			require.NoError(t, res.Err, "failed to produce message: %v", res.Err)
+			assert.Equal(t, validTopic, res.Record.Topic, "produced message to wrong topic")
+			assert.Equal(t, uint8(i), res.Record.Attrs.CompressionType())
+			assert.Equal(t, []byte(body), res.Record.Value, "produced message with wrong value")
 		})
 	}
 }

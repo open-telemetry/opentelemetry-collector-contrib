@@ -21,15 +21,15 @@ type FranzSyncProducer struct {
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
-) FranzSyncProducer {
-	return FranzSyncProducer{
+) *FranzSyncProducer {
+	return &FranzSyncProducer{
 		client:       client,
 		metadataKeys: metadataKeys,
 	}
 }
 
 // ExportData sends a batch of messages to Kafka
-func (p FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
+func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
 	messages := makeFranzMessages(msgs)
 	setMessageHeaders(ctx, messages, p.metadataKeys,
 		func(key string, value []byte) kgo.RecordHeader {
@@ -49,7 +49,7 @@ func (p FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error 
 }
 
 // Close shuts down the producer and flushes any remaining messages.
-func (p FranzSyncProducer) Close() error {
+func (p *FranzSyncProducer) Close() error {
 	p.client.Close()
 	return nil
 }
