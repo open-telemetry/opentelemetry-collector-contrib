@@ -297,6 +297,7 @@ func TestLoadConfig(t *testing.T) {
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
+				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
 		})
 	}
