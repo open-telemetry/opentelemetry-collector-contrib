@@ -66,7 +66,7 @@ func GetObjectFromStore(namespace, objName string, stores map[string]cache.Store
 	if !exists {
 		// check if there is a store for the namespace object
 		if store, ok := stores[namespace]; ok {
-			obj, exists, err = store.GetByKey(GetIDForCache(namespace, objName))
+			obj, _, err = store.GetByKey(GetIDForCache(namespace, objName))
 			if err != nil {
 				return nil, err
 			}
