@@ -46,3 +46,31 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_writes:
+      enabled: true
+      description: Number of WAL writes
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes_failures:
+      enabled: true
+      description: Number of WAL writes that failed
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_reads:
+      enabled: true
+      description: Number of WAL reads
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_reads_failures:
+      enabled: true
+      description: Number of WAL reads that failed
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true

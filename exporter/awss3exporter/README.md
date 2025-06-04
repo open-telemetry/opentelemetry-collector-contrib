@@ -20,26 +20,29 @@ This exporter targets to support proto/json format.
 
 The following exporter configuration parameters are supported.
 
-| Name                      | Description                                                                                                                                | Default                                     |
-|:--------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
-| `region`                  | AWS region.                                                                                                                                | "us-east-1"                                 |
-| `s3_bucket`               | S3 bucket                                                                                                                                  |                                             |
-| `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                      |                                             |
-| `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification. | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
-| `role_arn`                | the Role ARN to be assumed                                                                                                                 |                                             |
-| `file_prefix`             | file prefix defined by user                                                                                                                |                                             |
-| `marshaler`               | marshaler used to produce output data                                                                                                      | `otlp_json`                                 |
-| `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |                                             |
-| `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.               |                                             |
-| `endpoint`                | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                   |                                             |
-| `storage_class`           | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)                                          | STANDARD                                    |
-| `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                 | none (does not set by default)              |
-| `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false                                       |
-| `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                    | false                                       |
-| `compression`             | should the file be compressed                                                                                                              | none                                        |
-| `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled                                    |
-| `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | 5s                                          |
-| `resource_attrs_to_s3`        | determines the mapping of S3 configuration values to resource attribute values for uploading operations.                                   |                                             |
+| Name                      | Description                                                                                                                                                                                                                | Default                                     |
+|:--------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
+| `region`                  | AWS region.                                                                                                                                                                                                                | "us-east-1"                                 |
+| `s3_bucket`               | S3 bucket                                                                                                                                                                                                                  |                                             |
+| `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                                                                                                      |                                             |
+| `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
+| `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
+| `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
+| `marshaler`               | marshaler used to produce output data                                                                                                                                                                                      | `otlp_json`                                 |
+| `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                                                                                                          |                                             |
+| `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.                                                                                               |                                             |
+| `endpoint`                | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                                                                                   |                                             |
+| `storage_class`           | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)                                                                                                                          | STANDARD                                    |
+| `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                                                                                                 | none (does not set by default)              |
+| `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html)                                                                                 | false                                       |
+| `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                                                                                                    | false                                       |
+| `compression`             | should the file be compressed                                                                                                                                                                                              | none                                        |
+| `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)                                                                                          | disabled                                    |
+| `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)                                                                                          | 5s                                          |
+| `resource_attrs_to_s3`    | determines the mapping of S3 configuration values to resource attribute values for uploading operations.                                                                                                                   |                                             |
+| `retry_mode`              | The retryer implementation, the supported values are "standard", "adaptive" and "nop". "nop" will set the retryer as `aws.NopRetryer`, which effectively disable the retry.                                                | standard                                    |
+| `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set. Setting max attempts to 0 will allow the SDK to retry all retryable errors until the request succeeds, or a non-retryable error is returned. | 3                                           |
+| `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
 
 ### Marshaler
 
@@ -141,6 +144,23 @@ metric/YYYY/MM/DD/HH/mm
 ...
 ```
 
+## Retry
+
+Standard is the default retryer implementation used by service clients. See the [retry](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/aws/retry) package documentation for details on what errors are considered as retryable by the standard retryer implementation.
+
+See also the [aws-sdk-go reference](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html) for more information.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: 'eu-central-1'
+      s3_bucket: 'databucket'
+      s3_prefix: 'metric'
+      retry_mode: "standard"
+      retry_max_attempts: 5
+      retry_max_backoff: "30s"
+```
 
 ## AWS Credential Configuration
 

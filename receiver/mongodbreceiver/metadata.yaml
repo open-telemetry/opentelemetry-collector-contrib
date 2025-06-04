@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [schmikei]
+    active: [justinianvoss22]
     seeking_new: true
 
 resource_attributes:
@@ -184,7 +184,7 @@ metrics:
     enabled: false
     gauge:
       value_type: int
-    attributes: [ operation_latency ]
+    attributes: [operation_latency]
   mongodb.operation.count:
     description: The number of operations executed.
     unit: "{operations}"
@@ -202,7 +202,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: true
-    attributes: [ operation ]
+    attributes: [operation]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size.
@@ -342,13 +342,12 @@ metrics:
   mongodb.health:
     enabled: false
     description: The health status of the server.
-    extended_documentation:
-      A value of '1' indicates healthy.
+    extended_documentation: A value of '1' indicates healthy.
       A value of '0' indicates unhealthy.
     unit: "1"
     gauge:
       value_type: int
-    attributes: [ ]
+    attributes: []
   mongodb.uptime:
     enabled: false
     description: The amount of time that the server has been running.
@@ -357,7 +356,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [ ]   
+    attributes: []
   mongodb.repl_queries_per_sec:
     description: The number of replicated queries executed per second.
     unit: "{query}/s"
@@ -397,7 +396,7 @@ metrics:
     gauge:
       value_type: double
       aggregation_temporality: delta
-      monotonic: false 
+      monotonic: false
   mongodb.repl_updates_per_sec:
     description: The number of replicated updates executed per second.
     unit: "{update}/s"
@@ -445,7 +444,7 @@ metrics:
     gauge:
       value_type: double
       aggregation_temporality: delta
-      monotonic: false 
+      monotonic: false
   mongodb.updates.rate:
     description: The number of updates executed per second.
     unit: "{update}/s"
@@ -479,7 +478,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: []      
+    attributes: []
   mongodb.wtcache.bytes.read:
     description: The number of bytes read into the WiredTiger cache.
     unit: "By"
@@ -497,7 +496,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: []    
+    attributes: []
 
 tests:
   config:

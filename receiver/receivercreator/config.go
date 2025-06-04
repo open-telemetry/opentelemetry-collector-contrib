@@ -90,8 +90,9 @@ type Config struct {
 }
 
 type DiscoveryConfig struct {
-	Enabled         bool     `mapstructure:"enabled"`
-	IgnoreReceivers []string `mapstructure:"ignore_receivers"`
+	Enabled            bool              `mapstructure:"enabled"`
+	IgnoreReceivers    []string          `mapstructure:"ignore_receivers"`
+	DefaultAnnotations map[string]string `mapstructure:"default_annotations"`
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {

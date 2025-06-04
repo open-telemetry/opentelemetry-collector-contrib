@@ -778,7 +778,7 @@ func TestFlushing(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := &tsBuffer{b: &bytes.Buffer{}}
-	buf := &NopWriteCloser{bbuf}
+	buf := &nopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
@@ -833,7 +833,7 @@ func TestAppend(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := &tsBuffer{b: &bytes.Buffer{}}
-	buf := &NopWriteCloser{bbuf}
+	buf := &nopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
