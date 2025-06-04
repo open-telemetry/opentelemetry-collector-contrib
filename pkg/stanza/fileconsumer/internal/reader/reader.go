@@ -168,7 +168,7 @@ func (r *Reader) createGzipReader() (int64, error) {
 				toRead = bytesToSkip
 			}
 			n, err := gzipReader.Read(buf[:toRead])
-			if err != nil && err != io.EOF {
+			if err != nil && !errors.Is(err, io.EOF) {
 				r.set.Logger.Error("failed to skip bytes in gzip reader", zap.Error(err))
 				return 0, err
 			}
