@@ -200,7 +200,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: tlsCreds,
+		TLS: tlsCreds,
 	}
 
 	config := Protocols{
