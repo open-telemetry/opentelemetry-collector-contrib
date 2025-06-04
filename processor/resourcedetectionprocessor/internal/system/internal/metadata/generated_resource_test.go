@@ -24,7 +24,9 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostIP([]any{"host.ip-item1", "host.ip-item2"})
 			rb.SetHostMac([]any{"host.mac-item1", "host.mac-item2"})
 			rb.SetHostName("host.name-val")
+			rb.SetOsBuildID("os.build.id-val")
 			rb.SetOsDescription("os.description-val")
+			rb.SetOsName("os.name-val")
 			rb.SetOsType("os.type-val")
 			rb.SetOsVersion("os.version-val")
 
@@ -35,7 +37,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 14, res.Attributes().Len())
+				assert.Equal(t, 16, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -98,10 +100,20 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "host.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("os.build.id")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "os.build.id-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("os.description")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "os.description-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("os.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "os.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("os.type")
 			assert.True(t, ok)
