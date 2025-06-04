@@ -1,0 +1,45 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
+cpu: Apple M2 Pro
+BenchmarkLogs-12       	   20713	     56367 ns/op	    5944 B/op	      54 allocs/op
+BenchmarkLogs-12       	   20863	     58386 ns/op	    5940 B/op	      54 allocs/op
+BenchmarkLogs-12       	   20119	     56314 ns/op	    5939 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21519	     56059 ns/op	    5940 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21454	     56288 ns/op	    5942 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21567	     55635 ns/op	    5941 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21500	     55758 ns/op	    5941 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21356	     56103 ns/op	    5938 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21324	     55658 ns/op	    5938 B/op	      54 allocs/op
+BenchmarkLogs-12       	   21516	     55403 ns/op	    5939 B/op	      54 allocs/op
+BenchmarkMetrics-12    	   21258	     54154 ns/op	    9778 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21943	     55092 ns/op	    9784 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21819	     54797 ns/op	    9768 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21778	     56111 ns/op	    9773 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21669	     54837 ns/op	    9782 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   22140	     54707 ns/op	    9783 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21854	     55845 ns/op	    9784 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21495	     56008 ns/op	    9782 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21537	     56684 ns/op	    9779 B/op	      57 allocs/op
+BenchmarkMetrics-12    	   21436	     80444 ns/op	    9761 B/op	      56 allocs/op
+BenchmarkTraces-12     	   20830	     54802 ns/op	    7513 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21826	     55130 ns/op	    7526 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21669	     55911 ns/op	    7510 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21484	     55397 ns/op	    7512 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21360	     55659 ns/op	    7519 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21669	     58534 ns/op	    7516 B/op	      54 allocs/op
+BenchmarkTraces-12     	   20425	     55482 ns/op	    7513 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21210	     56386 ns/op	    7521 B/op	      54 allocs/op
+BenchmarkTraces-12     	   20272	     55159 ns/op	    7516 B/op	      54 allocs/op
+BenchmarkTraces-12     	   21122	     57247 ns/op	    7512 B/op	      54 allocs/op
+PASS
+goleak: Errors on successful test run: found unexpected goroutines:
+[Goroutine 50 in state chan receive, with github.com/rcrowley/go-metrics.(*meterArbiter).tick on top of the stack:
+github.com/rcrowley/go-metrics.(*meterArbiter).tick(...)
+	/Users/marclop/go/pkg/mod/github.com/rcrowley/go-metrics@v0.0.0-20201227073835-cf1acfcdf475/meter.go:239
+created by github.com/rcrowley/go-metrics.NewMeter in goroutine 49
+	/Users/marclop/go/pkg/mod/github.com/rcrowley/go-metrics@v0.0.0-20201227073835-cf1acfcdf475/meter.go:46 +0xc8
+]
+exit status 1
+FAIL	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter	55.213s
+FAIL

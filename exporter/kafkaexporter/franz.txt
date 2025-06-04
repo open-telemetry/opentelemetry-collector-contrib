@@ -1,0 +1,36 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
+cpu: Apple M2 Pro
+BenchmarkLogs-12       	   37905	     32798 ns/op	    2247 B/op	      28 allocs/op
+BenchmarkLogs-12       	   33573	     33944 ns/op	    2190 B/op	      28 allocs/op
+BenchmarkLogs-12       	   32331	     34712 ns/op	    2148 B/op	      28 allocs/op
+BenchmarkLogs-12       	   33314	     32738 ns/op	    2292 B/op	      28 allocs/op
+BenchmarkLogs-12       	   38329	     35597 ns/op	    2239 B/op	      28 allocs/op
+BenchmarkLogs-12       	   25082	     40580 ns/op	    2095 B/op	      28 allocs/op
+BenchmarkLogs-12       	   29698	     37757 ns/op	    2087 B/op	      28 allocs/op
+BenchmarkLogs-12       	   30644	     44639 ns/op	    2070 B/op	      28 allocs/op
+BenchmarkLogs-12       	   34958	     33982 ns/op	    2277 B/op	      28 allocs/op
+BenchmarkLogs-12       	   31616	     33788 ns/op	    2250 B/op	      28 allocs/op
+BenchmarkMetrics-12    	   27564	     46025 ns/op	    3737 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   25002	     49322 ns/op	    3642 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   23720	     53326 ns/op	    3699 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   23220	     47419 ns/op	    3605 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   24519	     45852 ns/op	    3615 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   25384	     43660 ns/op	    3637 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   23386	     49247 ns/op	    3571 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   25801	     47621 ns/op	    3638 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   24204	     44978 ns/op	    3534 B/op	      31 allocs/op
+BenchmarkMetrics-12    	   28026	     40926 ns/op	    3718 B/op	      31 allocs/op
+BenchmarkTraces-12     	   35709	     34335 ns/op	    3093 B/op	      28 allocs/op
+BenchmarkTraces-12     	   33123	     54130 ns/op	    3085 B/op	      28 allocs/op
+BenchmarkTraces-12     	   31818	     38882 ns/op	    2865 B/op	      28 allocs/op
+BenchmarkTraces-12     	   30544	     40119 ns/op	    2733 B/op	      28 allocs/op
+BenchmarkTraces-12     	   29344	     38750 ns/op	    3190 B/op	      28 allocs/op
+BenchmarkTraces-12     	   25266	     39842 ns/op	    2693 B/op	      28 allocs/op
+BenchmarkTraces-12     	   31450	     34433 ns/op	    3003 B/op	      28 allocs/op
+BenchmarkTraces-12     	   33896	     32715 ns/op	    3034 B/op	      28 allocs/op
+BenchmarkTraces-12     	   35269	     33231 ns/op	    3012 B/op	      28 allocs/op
+BenchmarkTraces-12     	   36985	     33120 ns/op	    3054 B/op	      28 allocs/op
+PASS
+ok  	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter	49.604s

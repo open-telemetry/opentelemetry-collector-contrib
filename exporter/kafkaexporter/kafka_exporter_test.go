@@ -1286,15 +1286,12 @@ func configureExporter[T any](tb testing.TB,
 }
 
 // fetchKgoRecords polls a franz-go topic for up to 5 seconds and returns all records produced to that topic.
-func fetchKgoRecords(tb testing.TB,
-	brokers []string, topic string, opts ...kgo.Opt,
-) []*kgo.Record {
+func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Record {
 	clientOpts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumeTopics(topic),
 		kgo.ConsumerGroup("group-id" + topic),
 	}
-	clientOpts = append(clientOpts, opts...)
 	consumerClient, err := kgo.NewClient(clientOpts...)
 	require.NoError(tb, err, "failed to create kgo consumer client")
 	defer consumerClient.Close()
