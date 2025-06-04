@@ -327,6 +327,11 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
 	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
 
+	// // Initialize Attributes map if it's nil
+	if e.Attributes == nil {
+		e.Attributes = make(map[string]any)
+	}
+
 	if i.remote.Server != "" {
 		e.Attributes["server.address"] = i.remote.Server
 	}
