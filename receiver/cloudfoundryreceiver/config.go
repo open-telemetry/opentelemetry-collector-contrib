@@ -32,8 +32,8 @@ type LimitedTLSClientSetting struct {
 // LimitedClientConfig is a subset of ClientConfig, implemented as a separate type due to the library this
 // configuration is used with not taking a preconfigured http.Client as input, but only taking these specific options
 type LimitedClientConfig struct {
-	Endpoint   string                  `mapstructure:"endpoint"`
-	TLSSetting LimitedTLSClientSetting `mapstructure:"tls"`
+	Endpoint string                  `mapstructure:"endpoint"`
+	TLS      LimitedTLSClientSetting `mapstructure:"tls"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
