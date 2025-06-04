@@ -610,7 +610,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("parse server endpoint: %w", err)
 	}
 	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
-		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+		tlsConfig, err = s.config.Server.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return err
 		}
@@ -905,17 +905,17 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	}
 	if settings.Certificate != nil {
 		if len(settings.Certificate.CaCert) != 0 {
-			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaCert)
+			newServerConfig.TLS.CAPem = configopaque.String(settings.Certificate.CaCert)
 		}
 		if len(settings.Certificate.Cert) != 0 {
-			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.Cert)
+			newServerConfig.TLS.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
-			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
+			newServerConfig.TLS.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
 	} else {
-		newServerConfig.TLSSetting = configtls.NewDefaultClientConfig()
-		newServerConfig.TLSSetting.InsecureSkipVerify = true
+		newServerConfig.TLS = configtls.NewDefaultClientConfig()
+		newServerConfig.TLS.InsecureSkipVerify = true
 	}
 
 	if err := newServerConfig.Validate(); err != nil {
