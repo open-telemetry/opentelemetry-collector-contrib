@@ -152,7 +152,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 		name                     string
 		collectorConfigStringMap map[string]any
 		moduleInfoJSON           *payload.ModuleInfoJSON
-		componentStatus          map[string]any
 		expectedComponents       []payload.ServiceComponent
 		expectedError            string
 	}{
@@ -218,33 +217,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				})
 				return mij
 			}(),
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"extensions": map[string]any{
-						"components": map[string]any{
-							"extension:exampleextension": map[string]any{
-								"status": "healthy",
-							},
-						},
-					},
-					"pipeline:traces": map[string]any{
-						"components": map[string]any{
-							"receiver:examplereceiver": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-							"processor:exampleprocessor": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-							"exporter:exampleexporter": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-						},
-					},
-				},
-			},
 			expectedComponents: []payload.ServiceComponent{
 				{
 					ID:      "exampleextension",
@@ -294,7 +266,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				"receivers": map[string]any{},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "",
 		},
@@ -306,7 +277,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "'service.extensions': source data must be an array or slice, got map",
 		},
@@ -320,7 +290,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "'service.extensions[0]' expected a map, got 'int'",
 		},
@@ -332,7 +301,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "'service.pipelines' expected a map, got 'slice'",
 		},
@@ -346,7 +314,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "'service.pipelines[traces]' expected a map, got 'slice'",
 		},
@@ -362,7 +329,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "'service.pipelines[traces].receivers': source data must be an array or slice, got map",
 		},
@@ -380,7 +346,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				},
 			},
 			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			componentStatus:    map[string]any{},
 			expectedComponents: []payload.ServiceComponent{},
 			expectedError:      "'service.pipelines[traces].receivers[0]' expected a map, got 'int'",
 		},
@@ -466,49 +431,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 				})
 				return mij
 			}(),
-			componentStatus: map[string]any{
-				"components": map[string]any{
-					"extensions": map[string]any{
-						"components": map[string]any{
-							"extension:exampleextension": map[string]any{
-								"status": "healthy",
-							},
-						},
-					},
-					"pipeline:traces": map[string]any{
-						"components": map[string]any{
-							"receiver:examplereceiver": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-							"processor:exampleprocessor": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-							"connector:exampleconnector": map[string]any{
-								"healthy": true,
-								"status":  "StatusRunning",
-							},
-						},
-					},
-					"pipeline:metrics": map[string]any{
-						"components": map[string]any{
-							"connector:exampleconnector": map[string]any{
-								"healthy": true,
-								"status":  "StatusRunning",
-							},
-							"processor:exampleprocessor": map[string]any{
-								"healthy": true,
-								"status":  "StatusStarting",
-							},
-							"exporter:exampleexporter": map[string]any{
-								"healthy": true,
-								"status":  "StatusRunning",
-							},
-						},
-					},
-				},
-			},
 			expectedComponents: []payload.ServiceComponent{
 				{
 					ID:      "exampleextension",
@@ -580,7 +502,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			confMap := confmap.NewFromStringMap(tt.collectorConfigStringMap)
-			activeComponents, err := PopulateActiveComponents(confMap, tt.moduleInfoJSON, tt.componentStatus)
+			activeComponents, err := PopulateActiveComponents(confMap, tt.moduleInfoJSON)
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tt.expectedError)

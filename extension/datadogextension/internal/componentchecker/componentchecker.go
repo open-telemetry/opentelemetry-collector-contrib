@@ -100,7 +100,7 @@ func PopulateFullComponentsJSON(moduleInfo service.ModuleInfos, c *confmap.Conf)
 
 // PopulateActiveComponents gets a list of active components in the collector service
 // configuration and returns a list of ServiceComponent structs for inclusion in a fleet payload
-func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInfoJSON, componentStatus map[string]any) (*[]payload.ServiceComponent, error) {
+func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInfoJSON) (*[]payload.ServiceComponent, error) {
 	oc := otelcol.Config{}
 	var serviceComponents []payload.ServiceComponent
 	if err := c.Unmarshal(&oc); err != nil {
