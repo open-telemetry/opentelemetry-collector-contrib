@@ -318,7 +318,7 @@ func TestReception(t *testing.T) {
 				config: &Config{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
-						TLSSetting: &configtls.ServerConfig{
+						TLS: &configtls.ServerConfig{
 							Config: configtls.Config{
 								CAFile:   "./testdata/ca.crt",
 								CertFile: "./testdata/server.crt",

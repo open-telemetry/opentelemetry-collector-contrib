@@ -35,7 +35,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 func TestNewCouchDBClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},

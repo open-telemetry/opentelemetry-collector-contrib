@@ -135,7 +135,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					},
 				},
@@ -175,7 +175,7 @@ func TestValidate(t *testing.T) {
 					MaxIdleConnsPerHost: maxIdleConnPerHost,
 					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
-					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+					TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 				},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -232,7 +232,7 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
 	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
-	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
+	cfgWithHTTPConfigs.TLS.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {
