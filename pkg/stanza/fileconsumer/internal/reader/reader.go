@@ -71,31 +71,25 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 
 	switch r.compression {
-	case "gzip":
+	case "gzip", "auto":
+		// For auto compression, only use gzip if the file has .gz extension
+		if r.compression == "auto" && r.FileType != gzipExtension {
+			r.reader = r.file
+			break
+		}
+
 		currentEOF, err := r.createGzipReader()
 		if err != nil {
 			return
 		}
-		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-		// we need to set the offset to the end of the file.
+		// For gzip files, we track offset based on decompressed bytes read
+		// The offset will be updated by the scanner as it reads tokens
 		defer func() {
-			r.Offset = currentEOF
-		}()
-	case "auto":
-		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
-		if r.FileType == gzipExtension {
-			currentEOF, err := r.createGzipReader()
-			if err != nil {
-				return
-			}
-			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-			// we need to set the offset to the end of the file.
-			defer func() {
+			// Only update to EOF if we've actually read everything
+			if r.Offset >= currentEOF {
 				r.Offset = currentEOF
-			}()
-		} else {
-			r.reader = r.file
-		}
+			}
+		}()
 	default:
 		r.reader = r.file
 	}
@@ -122,23 +116,73 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 // createGzipReader creates gzip reader and returns the file offset
 func (r *Reader) createGzipReader() (int64, error) {
-	// We need to create a gzip reader each time ReadToEnd is called because the underlying
-	// SectionReader can only read a fixed window (from previous offset to EOF).
 	info, err := r.file.Stat()
 	if err != nil {
 		r.set.Logger.Error("failed to stat", zap.Error(err))
 		return 0, err
 	}
 	currentEOF := info.Size()
-	// use a gzip Reader with an underlying SectionReader to pick up at the last
-	// offset of a gzip compressed file
-	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
-	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
-		}
+
+	// We need to create a gzip reader each time ReadToEnd is called because the underlying
+	// SectionReader can only read a fixed window (from previous offset to EOF).
+	sectionReader := io.NewSectionReader(r.file, r.Offset, currentEOF-r.Offset)
+	gzipReader, err := gzip.NewReader(sectionReader)
+	if err == nil {
+		r.reader = gzipReader
+		return currentEOF, nil
+	}
+
+	if errors.Is(err, io.EOF) {
 		return 0, err
 	}
+
+	// If we get here, reading from offset failed. Generally this means the file's metadata is incorrect but the file is still valid but needs to be read from the start
+	r.set.Logger.Debug("failed to read gzip from offset, falling back to reading from start",
+		zap.String("file", r.fileName),
+		zap.Int64("offset", r.Offset),
+		zap.Error(err))
+
+	if _, err := r.file.Seek(0, 0); err != nil {
+		r.set.Logger.Error("failed to seek to start of file", zap.Error(err))
+		return 0, err
+	}
+
+	// create a new gzip reader from the start of the file
+	gzipReader, err = gzip.NewReader(r.file)
+	if err != nil {
+		r.set.Logger.Error("failed to create gzip reader from start", zap.Error(err))
+		return 0, err
+	}
+
+	// if we have an offset > 0, we need to skip the bytes we've already read
+	if r.Offset > 0 {
+		// discard bytes from the offset to the start of where we want to read from
+		remainingSize := currentEOF - r.Offset
+		bufSize := int(remainingSize)
+		if bufSize > r.initialBufferSize {
+			bufSize = r.initialBufferSize
+		}
+		buf := make([]byte, bufSize)
+
+		bytesToSkip := r.Offset
+		for bytesToSkip > 0 {
+			toRead := int64(len(buf))
+			if toRead > bytesToSkip {
+				toRead = bytesToSkip
+			}
+			n, err := gzipReader.Read(buf[:toRead])
+			if err != nil && err != io.EOF {
+				r.set.Logger.Error("failed to skip bytes in gzip reader", zap.Error(err))
+				return 0, err
+			}
+			bytesToSkip -= int64(n)
+			if n == 0 {
+				// If we can't read any more bytes, we've hit EOF
+				break
+			}
+		}
+	}
+
 	r.reader = gzipReader
 	return currentEOF, nil
 }

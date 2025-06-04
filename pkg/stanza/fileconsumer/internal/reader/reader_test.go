@@ -4,9 +4,11 @@
 package reader
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -328,6 +330,64 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	// Finally, since we haven't seen new data, flusher should emit the token
 	r.ReadToEnd(context.Background())
 	sink.ExpectToken(t, append(content, additionalContext...))
+
+	sink.ExpectNoCalls(t)
+}
+
+func TestGzipReadFallback(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create a test file with some content
+	content := "test line 1\ntest line 2\ntest line 3\n"
+	tempPath := filepath.Join(tempDir, "test.log")
+	err := os.WriteFile(tempPath, []byte(content), 0x600)
+	require.NoError(t, err)
+
+	// Create a gzipped version of the file
+	gzipPath := tempPath + ".gz"
+	gzipFile, err := os.Create(gzipPath)
+	require.NoError(t, err)
+	defer os.Remove(gzipPath)
+
+	gzipWriter := gzip.NewWriter(gzipFile)
+	_, err = gzipWriter.Write([]byte(content))
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+	require.NoError(t, gzipFile.Close())
+
+	// Create a factory with gzip compression enabled
+	f, sink := testFactory(t)
+	f.Compression = "gzip"
+
+	// Open the gzipped file
+	file, err := os.Open(gzipPath)
+	require.NoError(t, err)
+	defer file.Close()
+
+	// Create a fingerprint and reader
+	fp, err := f.NewFingerprint(file)
+	require.NoError(t, err)
+
+	reader, err := f.NewReader(file, fp)
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// First read should work from start
+	reader.ReadToEnd(context.Background())
+	firstToken := sink.NextToken(t)
+	require.NotEmpty(t, firstToken)
+	require.Equal(t, []byte("test line 1"), firstToken)
+
+	// Second read should fall back to reading from start but skip to offset
+	reader.ReadToEnd(context.Background())
+	secondToken := sink.NextToken(t)
+	require.NotEmpty(t, secondToken)
+	require.Equal(t, []byte("test line 2"), secondToken)
+
+	// Read the rest of the content
+	thirdToken := sink.NextToken(t)
+	require.NotEmpty(t, thirdToken)
+	require.Equal(t, []byte("test line 3"), thirdToken)
 
 	sink.ExpectNoCalls(t)
 }
