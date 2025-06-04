@@ -268,8 +268,13 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 		},
 	}
 
-	// Verify that log.record.original attribute exists and contains the original XML
-	fake.ExpectEntry(t, expectedEntry)
+	select {
+	case actualEntry := <-fake.Received:
+		actualEntry.ObservedTimestamp = time.Time{}
+		assert.Equal(t, expectedEntry, actualEntry)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry")
+	}
 
 	err = input.Stop()
 	require.NoError(t, err)
