@@ -266,7 +266,7 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 	cfg := &Config{
 		Logs: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -319,7 +319,7 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 	cfg := &Config{
 		Logs: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},

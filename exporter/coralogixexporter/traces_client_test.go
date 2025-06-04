@@ -268,7 +268,7 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 	cfg := &Config{
 		Traces: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -332,7 +332,7 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	cfg := &Config{
 		Traces: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
