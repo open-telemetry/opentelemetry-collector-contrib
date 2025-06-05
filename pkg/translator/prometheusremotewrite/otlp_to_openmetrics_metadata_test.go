@@ -152,10 +152,10 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 func TestOtelMetricsToMetadata(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	tests := []struct {
-		name    string
-		metrics pmetric.Metrics
-		want    []*prompb.MetricMetadata
-		suffix  string
+		name      string
+		metrics   pmetric.Metrics
+		want      []*prompb.MetricMetadata
+		namespace string
 	}{
 		{
 			name:    "all types§",
@@ -238,12 +238,12 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Help: "gauge description",
 				},
 			},
-			suffix: "ns",
+			namespace: "ns",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.suffix)
+			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
 
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
