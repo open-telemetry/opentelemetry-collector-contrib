@@ -105,6 +105,7 @@ func (t *fileTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
 	// exclude duplicate fingerprints
 	for _, f := range t.unmatchedFps {
 		if fp.Equal(f) {
+			t.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
 			return
 		}
 	}

@@ -253,6 +253,9 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 
 		if md != nil {
 			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
+			if m.tracker.Name() != tracker.NoStateTracker {
+				m.set.Logger.Info("File found in archive. Started watching file again", zap.String("path", file.Name()))
+			}
 		} else {
 			if m.tracker.Name() != tracker.NoStateTracker {
 				m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
