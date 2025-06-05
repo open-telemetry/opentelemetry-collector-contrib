@@ -152,7 +152,7 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
-	if cfg.LogstashFormat.Enabled && cfg.LogsIndex != "" {
+	if cfg.LogstashFormat.Enabled && cfg.LogsIndex == "" {
 		return errIndexFormatInvalid
 	}
 
