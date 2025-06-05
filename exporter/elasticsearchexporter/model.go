@@ -234,6 +234,41 @@ func (e ecsModeEncoder) encodeLog(
 	return document.Serialize(buf, true)
 }
 
+// TODO: ADDED
+func (e ecsModeEncoder) encodeSpan(
+	ec encodingContext,
+	span ptrace.Span,
+	idx elasticsearch.Index,
+	buf *bytes.Buffer) error {
+	var document objmodel.Document
+
+	// First, try to map resource-level attributes to ECS fields.
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Then, try to map scope-level attributes to ECS fields.
+	scopeAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Finally, try to map record-level attributes to ECS fields.
+	recordAttrsConversionMap := map[string]string{
+		"event.name":                           "event.action",
+		string(semconv.ExceptionMessageKey):    "error.message",
+		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
+		string(semconv.ExceptionTypeKey):       "error.type",
+		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
+	}
+	encodeAttributesECSMode(&document, span.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	addDataStreamAttributes(&document, "", idx)
+
+	document.AddTimestamp("@timestamp", span.StartTimestamp())
+	document.AddTraceID("trace.id", span.TraceID())
+	document.AddSpanID("span.id", span.SpanID())
+
+	return document.Serialize(buf, true)
+}
+
 func (e otelModeEncoder) encodeLog(
 	ec encodingContext,
 	record plog.LogRecord,
