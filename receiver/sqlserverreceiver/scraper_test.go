@@ -107,6 +107,9 @@ func TestSuccessfulScrape(t *testing.T) {
 		{
 			removeServerResourceAttributeFeatureGate: true,
 		},
+		{
+			removeServerResourceAttributeFeatureGate: false,
+		},
 	}
 
 	for _, test := range tests {
