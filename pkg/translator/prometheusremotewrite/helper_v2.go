@@ -62,8 +62,7 @@ func addResourceTargetInfoV2(resource pcommon.Resource, settings Settings, times
 		Timestamp: convertTimeStamp(timestamp),
 	}
 	converter.addSample(sample, labels, metadata{
-		Type: writev2.Metadata_METRIC_TYPE_INFO,
-		Help: "Target metadata", // TODO is this okay
-		Unit: "",                // TODO what should this be?
+		Type: writev2.Metadata_METRIC_TYPE_GAUGE,
+		Help: "Target metadata",
 	})
 }

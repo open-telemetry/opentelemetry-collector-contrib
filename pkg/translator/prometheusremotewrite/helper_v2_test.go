@@ -141,7 +141,7 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 						},
 					},
 					Metadata: writev2.Metadata{
-						Type:    writev2.Metadata_METRIC_TYPE_INFO,
+						Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
 						HelpRef: tc.wantHelpRef,
 						UnitRef: 0,
 					},
