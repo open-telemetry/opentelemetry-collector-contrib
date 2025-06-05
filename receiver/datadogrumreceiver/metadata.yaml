@@ -1,0 +1,14 @@
+type: datadogrum
+
+status:
+  class: receiver
+  stability:
+    development: [logs, traces, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [IbraheemA, dd-jasminesun]
+
+tests:
+  skip_lifecycle: true # Skip lifecycle tests since there are multiple receivers that run on the same port
+  goleak:
+    skip: true # see https://github.com/cihub/seelog/issues/182
