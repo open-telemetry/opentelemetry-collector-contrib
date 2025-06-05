@@ -17,7 +17,7 @@ issues: [40416]
 # Use pipe (|) for multiline entries.
 subtext: |
   Renamed `top_query_collection.enabled` to `events."db.server.top_query".enabled` in top query collection.
-  Removed `query_sample_collection.enabled` in favor of `events."db.server.query_sample".enabled` in query sample collection.
+  Renamed `query_sample_collection.enabled` to `events."db.server.query_sample".enabled` in query sample collection.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
