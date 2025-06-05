@@ -147,7 +147,6 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 					},
 				},
 			}
-			println(expected)
 			assert.Exactly(t, expected, converter.unique)
 			// TODO check when conflicts handling is implemented
 			// assert.Empty(t, converter.conflicts)
