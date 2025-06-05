@@ -7,6 +7,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/shirou/gopsutil/v4 v4.25.5
 	github.com/stretchr/testify v1.10.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.124.0
 	go.opentelemetry.io/collector/component v1.33.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250603105141-605011a1fea8
 	go.opentelemetry.io/collector/config/confighttp v0.127.1-0.20250603105141-605011a1fea8
