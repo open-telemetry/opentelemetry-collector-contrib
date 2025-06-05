@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -369,6 +370,9 @@ func (f *factory) createMetricsExporter(
 			},
 			TimeoutConfig: exporterhelper.TimeoutConfig{
 				Timeout: cfg.Timeout,
+			},
+			ClientConfig: configtls.ClientConfig{
+				InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
 			},
 			QueueBatchConfig: cfg.QueueSettings,
 			API:              cfg.API,
