@@ -836,7 +836,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := Config{
 		ServerConfig: configgrpc.ServerConfig{
-			TLSSetting: &configtls.ServerConfig{
+			TLS: &configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "willfail",
 				},
