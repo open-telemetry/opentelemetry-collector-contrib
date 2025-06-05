@@ -53,13 +53,12 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint    = errors.New("endpoint must be specified")
-	errDatasetNoValue      = errors.New("dataset must be specified")
-	errNamespaceNoValue    = errors.New("namespace must be specified")
-	errBulkActionInvalid   = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid  = errors.New("mapping.mode is invalid")
-	errIndexFormatInvalid  = errors.New("When index_date_format is set to true, the index_log field is required.")
-	errIndexPatternInvalid = errors.New("Check index pattern or index_date_format.")
+	errConfigNoEndpoint   = errors.New("endpoint must be specified")
+	errDatasetNoValue     = errors.New("dataset must be specified")
+	errNamespaceNoValue   = errors.New("namespace must be specified")
+	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid = errors.New("mapping.mode is invalid")
+	errIndexFormatInvalid = errors.New("When LogstashFormat.Enabled is set to true, the index_log field is required.")
 )
 
 type MappingsSettings struct {
@@ -151,6 +150,10 @@ func (cfg *Config) Validate() error {
 
 	if _, ok := mappingModes[cfg.Mode]; !ok {
 		multiErr = append(multiErr, errMappingModeInvalid)
+	}
+
+	if cfg.LogstashFormat.Enabled && cfg.LogsIndex != "" {
+		return errIndexFormatInvalid
 	}
 
 	return errors.Join(multiErr...)
