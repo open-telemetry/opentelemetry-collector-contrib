@@ -109,7 +109,7 @@ func TestScrape(t *testing.T) {
 			assertPagingUsageMetricValid(t, metrics.At(pagingUsageMetricIdx))
 			if runtime.GOOS != "windows" {
 				// On Windows, page faults do not have the same timestamp as paging operations
-				internal.AssertSameTimeStampForMetrics(t, metrics, pagingOperationsMetricIdx, pagingOperationsMetricIdx+2)
+				internal.AssertSameTimeStampForMetrics(t, metrics, pagingFaultsMetricIdx, pagingFaultsMetricIdx+2)
 			}
 
 			assertPagingUtilizationMetricValid(t, metrics.At(pagingUtilizationMetricIdx))
