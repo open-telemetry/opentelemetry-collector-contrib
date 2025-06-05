@@ -372,7 +372,7 @@ func (f *factory) createMetricsExporter(
 				Timeout: cfg.Timeout,
 			},
 			ClientConfig: configtls.ClientConfig{
-				InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
+				InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 			},
 			QueueBatchConfig: cfg.QueueSettings,
 			API:              cfg.API,
