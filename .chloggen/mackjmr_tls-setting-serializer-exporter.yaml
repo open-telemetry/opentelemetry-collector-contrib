@@ -10,7 +10,7 @@ component: datadogexporter
 note: config `tls::insecure_skip_verify` is now taken into account in metrics path.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [40507]
+issues: [40507, 40085]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
