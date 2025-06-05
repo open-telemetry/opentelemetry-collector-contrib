@@ -234,6 +234,8 @@ Each item is specified as a config of tag_name (representing the tag name to tag
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
 The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset" and "node" and defaults to "pod" if none is specified.
 
+By default, extracting metadata from `Deployments` and `StatefulSets` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
+
 A few examples to use this config are as follows:
 
 ```yaml
