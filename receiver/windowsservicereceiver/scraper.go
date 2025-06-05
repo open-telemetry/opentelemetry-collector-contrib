@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //revive:disable:unused-parameter
-//nolint:unused,unparam
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -17,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver/internal/metadata"
 )
 
+//nolint:unused
 type windowsServiceScraper struct {
 	scm      serviceManager
 	settings receiver.Settings
@@ -24,21 +24,25 @@ type windowsServiceScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newWindowsServiceScraper(settings receiver.Settings, cfg *Config) windowsServiceScraper {
+//nolint:unused
+func newWindowsServiceScraper(settings receiver.Settings, _ *Config) windowsServiceScraper {
 	return windowsServiceScraper{
 		settings: settings,
 		mb:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 	}
 }
 
+//nolint:unused
 func (ws *windowsServiceScraper) start(ctx context.Context, _ component.Host) (err error) {
 	return nil
 }
 
+//nolint:unused
 func (ws *windowsServiceScraper) shutdown(ctx context.Context) (err error) {
 	return nil
 }
 
+//nolint:unused
 func (ws *windowsServiceScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return ws.mb.Emit(), nil
 }
