@@ -69,7 +69,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.124.0/go.mod h1:RDou18f13EnC+TDHQEvNunf2RnFCf2TTRvBOo+eGWwE=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.127.0 h1:NBajEvl10TiDHYfeP881F9+7qMQIm8QIyStff4wn/yA=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.127.0/go.mod h1:9B8KgQ/+KhvCcSIXx5DVvQEiYOmyEPlGM7HHfmjKKno=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=
 github.com/pierrec/lz4/v4 v4.1.22/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -98,6 +99,8 @@ go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8 h1:uP
 go.opentelemetry.io/collector/client v1.33.1-0.20250603105141-605011a1fea8/go.mod h1:3/dln0NjQt7kDqZamXEO4Cakp7tr/tz+b5qWiLohAZY=
 go.opentelemetry.io/collector/component v1.33.1-0.20250603105141-605011a1fea8 h1:U8p+tdFU/ECSNfHyAbV9yWi9QzgfaXo+/ueO2CGJPyM=
 go.opentelemetry.io/collector/component v1.33.1-0.20250603105141-605011a1fea8/go.mod h1:Mw34zg+euXK4x9xp1uPvv4R9sPtRztjnkgBAWeNQysc=
+go.opentelemetry.io/collector/component/componentstatus v0.127.0 h1:3oZU2b7Giyc+tnrStYDWJAPHt2QxWOWuhTumGiHl9OQ=
+go.opentelemetry.io/collector/component/componentstatus v0.127.0/go.mod h1:9afwixYMvsb1xvmxxg33XzMU7ZTe4pBitkugj5DDZdQ=
 go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250603105141-605011a1fea8 h1:28e9TdPL/f/o+pL7cZrDR977Xdu9SNa4fQHYT9PcUmw=
 go.opentelemetry.io/collector/component/componenttest v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:Kz1htXkERf/SIX4fo25ObRmPUyf1c2sQwe/D+nSBhog=
 go.opentelemetry.io/collector/config/configauth v0.127.1-0.20250603105141-605011a1fea8 h1:v/9o7j1gPP/MOeTvL6qyvhxZRs0u2izgWiMPbPKeNZs=
