@@ -8,7 +8,7 @@ component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: |
-  update metrics resource attributes for `host.name`, `server.address`, and `server.port`
+  add feature gate for removing metrics resource attributes `server.address`, and `server.port`
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40141]
 
@@ -16,9 +16,7 @@ issues: [40141]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: | 
-  - add `host.name` resource attributes in the exported metrics. in document it says this attribute is exported but actually not.
   - add feature gate to remove the `server.address` and `server.port` resource attributes, as they are not resource attributes according to the semantic conventions. To enable this feature gate, when running the otel collector, pass the following argument `--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute`.
-  - when the above feature gate is disabled, database io metrics will also contain `host.name` resource attribute, which was not reported previously.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
