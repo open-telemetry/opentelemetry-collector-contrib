@@ -86,11 +86,15 @@ This metric is only available when running on Windows.
 
 Time a page will stay in the buffer pool.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| performance_counter.object_name | Category to which this counter belongs | Any Str |
 
 ### sqlserver.page.operation.rate
 
@@ -524,6 +528,16 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | “{transactions}/s” | Gauge | Double |
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
 
 ## Resource Attributes
 

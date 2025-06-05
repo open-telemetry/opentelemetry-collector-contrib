@@ -104,18 +104,18 @@ func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 				case "link":
 					return "span_link"
 				}
-				logger.Warn("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
+				logger.Debug("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
 				return "span"
 			}
 			return "span"
 		case "log":
 			return "log"
 		default:
-			logger.Warn("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
+			logger.Debug("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
 			return "log"
 		}
 	}
-	logger.Warn("missing meta.signal_type and meta.annotation_type")
+	logger.Debug("missing meta.signal_type and meta.annotation_type")
 	return "log"
 }
 
@@ -251,7 +251,7 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		case bool:
 			newLog.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
+			logger.Debug("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
 		}
 	}
 	return nil
@@ -378,7 +378,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		case bool:
 			newSpan.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
+			logger.Debug("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
 		}
 	}
 	return nil

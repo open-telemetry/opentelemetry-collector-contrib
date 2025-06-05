@@ -87,7 +87,7 @@ func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphtt
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	cfg.ClientConfig.Compression = ods.compression
@@ -219,7 +219,7 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg
