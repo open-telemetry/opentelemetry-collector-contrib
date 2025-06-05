@@ -24,7 +24,7 @@ func TestGenerateTraces(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	rCfg := f.CreateDefaultConfig()
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	GetOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
+	getOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
 	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())

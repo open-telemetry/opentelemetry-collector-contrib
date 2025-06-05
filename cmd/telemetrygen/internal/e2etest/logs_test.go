@@ -21,8 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
-// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
-func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+// getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
 	if opt.HasValue() {
 		return opt.Get()
 	}
@@ -39,7 +39,7 @@ func TestGenerateLogs(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	rCfg := f.CreateDefaultConfig()
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	GetOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
+	getOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
 	r, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
