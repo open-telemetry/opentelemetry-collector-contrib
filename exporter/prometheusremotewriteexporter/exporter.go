@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -343,7 +345,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 
 					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+						errs = multierr.Append(errs, errExecute)
 						mu.Unlock()
 					}
 				}
@@ -404,8 +406,10 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 
 		resp, err := prwe.client.Do(req)
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
+		// This is most of the time a network error (timeout, dnsresolution, hostUnreachable) due to temporary unavailability or configuration error
+		// Retryable
 		if err != nil {
-			return err
+			return status.New(codes.Unavailable, err.Error()).Err()
 		}
 		defer func() {
 			_, _ = io.Copy(io.Discard, resp.Body)
@@ -423,13 +427,13 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			return rerr
+			return status.New(codes.Unavailable, rerr.Error()).Err()
 		}
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
 		if prwe.retryOnHTTP429 && resp.StatusCode == http.StatusTooManyRequests {
-			return rerr
+			return status.New(codes.ResourceExhausted, rerr.Error()).Err()
 		}
 
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
@@ -452,7 +456,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	}
 
 	if err != nil {
-		return consumererror.NewPermanent(err)
+		return err
 	}
 
 	return err

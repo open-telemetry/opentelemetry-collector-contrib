@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/config"
@@ -41,6 +42,8 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
@@ -255,6 +258,111 @@ func Test_Shutdown(t *testing.T) {
 
 // Test whether or not the Server receives the correct TimeSeries.
 // Currently considering making this test an iterative for loop of multiple TimeSeries much akin to Test_PushMetrics
+func Test_PushMetrics_StatusCodes(t *testing.T) {
+	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
+	sample1 := getSample(floatVal1, msTime1)
+	sample2 := getSample(floatVal2, msTime2)
+	ts1 := getTimeSeries(labels, sample1, sample2)
+
+	// First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
+	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
+		w.WriteHeader(code)
+	}
+
+	// Create in test table format to check if different HTTP response codes or server errors
+	// are properly identified
+	tests := []struct {
+		name             string
+		ts               prompb.TimeSeries
+		serverUp         bool
+		httpResponseCode int
+		retryOn429       bool
+		getExpectedError func(string) error
+	}{
+		{
+			"Success",
+			*ts1,
+			true,
+			200,
+			false,
+			func(s string) error {
+				return nil
+			},
+		},
+		{
+			"ServiceUnavailable",
+			*ts1,
+			true,
+			http.StatusServiceUnavailable,
+			false,
+			func(s string) error {
+				return status.New(codes.Unavailable, `remote write returned HTTP status 503 Service Unavailable; err = %!w(<nil>): `).Err()
+			},
+		},
+		{
+			"Throttled - FeatureGateDisabled",
+			*ts1,
+			true,
+			http.StatusTooManyRequests,
+			false,
+			func(s string) error {
+				rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", "429 Too Many Requests", nil, []byte{})
+				return backoff.Permanent(consumererror.NewPermanent(rerr))
+			},
+		},
+		{
+			"Throttled - FeatureGateEnabled",
+			*ts1,
+			true,
+			http.StatusTooManyRequests,
+			true,
+			func(s string) error {
+				return status.New(codes.ResourceExhausted, `remote write returned HTTP status 429 Too Many Requests; err = %!w(<nil>): `).Err()
+			},
+		},
+		{
+			"ServerDown",
+			*ts1,
+			false,
+			-1, // Server is Down
+			false,
+			func(s string) error {
+				return status.New(codes.Unavailable, fmt.Sprintf(`Post "http://%s": dial tcp %s: connect: connection refused`, s, s)).Err()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if handleFunc != nil {
+					handleFunc(w, r, tt.httpResponseCode)
+				}
+			}))
+			defer server.Close()
+			serverURL, uErr := url.Parse(server.URL)
+
+			assert.NoError(t, uErr)
+			if !tt.serverUp {
+				server.Close()
+			}
+
+			err := runExportPipeline(ts1, serverURL, &configretry.BackOffConfig{
+				Enabled: false,
+			}, tt.retryOn429)
+
+			expectedErr := tt.getExpectedError(serverURL.Host)
+			if expectedErr != nil {
+				assert.Equal(t, err, expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+// Test whether or not the Server receives the correct TimeSeries.
+// Currently considering making this test an iterative for loop of multiple TimeSeries much akin to Test_PushMetrics
 func Test_export(t *testing.T) {
 	// First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
 	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
@@ -331,7 +439,7 @@ func Test_export(t *testing.T) {
 			if !tt.serverUp {
 				server.Close()
 			}
-			err := runExportPipeline(ts1, serverURL)
+			err := runExportPipeline(ts1, serverURL, nil, false)
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return
@@ -348,10 +456,10 @@ func TestNoMetricsNoError(t *testing.T) {
 	defer server.Close()
 	serverURL, uErr := url.Parse(server.URL)
 	assert.NoError(t, uErr)
-	assert.NoError(t, runExportPipeline(nil, serverURL))
+	assert.NoError(t, runExportPipeline(nil, serverURL, nil, false))
 }
 
-func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
+func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL, backoffConfig *configretry.BackOffConfig, retryOn429FeatureGateEnabled bool) error {
 	// First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
 	if ts != nil {
@@ -361,11 +469,15 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
-	cfg.BackOffConfig = configretry.BackOffConfig{
-		Enabled:         true,
-		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
-		MaxInterval:     1 * time.Second,        // Shorter max interval
-		MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+	if backoffConfig != nil {
+		cfg.BackOffConfig = *backoffConfig
+	} else {
+		cfg.BackOffConfig = configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 100 * time.Millisecond, // Shorter initial interval
+			MaxInterval:     1 * time.Second,        // Shorter max interval
+			MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+		}
 	}
 
 	buildInfo := component.BuildInfo{
@@ -376,6 +488,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := newPRWExporter(cfg, set)
+	prwe.retryOnHTTP429 = retryOn429FeatureGateEnabled
 	if err != nil {
 		return err
 	}
@@ -1098,6 +1211,10 @@ func assertPermanentConsumerError(t assert.TestingT, err error, _ ...any) bool {
 	return assert.True(t, consumererror.IsPermanent(err), "error should be consumererror.Permanent")
 }
 
+func assertRetryableError(t assert.TestingT, err error, _ ...any) bool {
+	return assert.Equal(t, err, status.New(codes.Unavailable, "remote write returned HTTP status 500 Internal Server Error; err = %!w(<nil>): Internal Server Error\n").Err())
+}
+
 func TestRetries(t *testing.T) {
 	tts := []struct {
 		name             string
@@ -1105,6 +1222,7 @@ func TestRetries(t *testing.T) {
 		expectedAttempts int
 		httpStatus       int
 		RetryOnHTTP429   bool
+		BackOffConfig    configretry.BackOffConfig
 		assertError      assert.ErrorAssertionFunc
 		assertErrorType  assert.ErrorAssertionFunc
 		ctx              context.Context
@@ -1115,6 +1233,7 @@ func TestRetries(t *testing.T) {
 			4,
 			http.StatusInternalServerError,
 			false,
+			configretry.BackOffConfig{Enabled: true},
 			assert.NoError,
 			assert.NoError,
 			context.Background(),
@@ -1125,6 +1244,7 @@ func TestRetries(t *testing.T) {
 			4,
 			http.StatusTooManyRequests,
 			true,
+			configretry.BackOffConfig{Enabled: true},
 			assert.NoError,
 			assert.NoError,
 			context.Background(),
@@ -1135,6 +1255,7 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusTooManyRequests,
 			false,
+			configretry.BackOffConfig{Enabled: true},
 			assert.Error,
 			assertPermanentConsumerError,
 			context.Background(),
@@ -1145,19 +1266,21 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusBadRequest,
 			false,
+			configretry.BackOffConfig{Enabled: true},
 			assert.Error,
 			assertPermanentConsumerError,
 			context.Background(),
 		},
 		{
-			"test timeout context should not execute",
-			4,
-			0,
+			"atest timeout context should retry",
+			1,
+			1,
 			http.StatusInternalServerError,
 			false,
+			configretry.BackOffConfig{Enabled: false},
 			assert.Error,
-			assertPermanentConsumerError,
-			canceledContext(),
+			assertRetryableError,
+			context.TODO(),
 		},
 	}
 
@@ -1188,10 +1311,8 @@ func TestRetries(t *testing.T) {
 				endpointURL:    endpointURL,
 				client:         http.DefaultClient,
 				retryOnHTTP429: tt.RetryOnHTTP429,
-				retrySettings: configretry.BackOffConfig{
-					Enabled: true,
-				},
-				telemetry: telemetry,
+				retrySettings:  tt.BackOffConfig,
+				telemetry:      telemetry,
 			}
 			buf := bufferPool.Get().(*buffer)
 			buf.protobuf.Reset()

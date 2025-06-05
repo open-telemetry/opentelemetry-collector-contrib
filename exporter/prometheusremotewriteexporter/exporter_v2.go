@@ -74,7 +74,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 
 					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+						errs = multierr.Append(errs, errExecute)
 						mu.Unlock()
 					}
 					bufferPool.Put(buf)
