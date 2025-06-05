@@ -4,17 +4,17 @@ go 1.23.0
 
 require (
 	github.com/IBM/sarama v1.45.1
-	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.3
+	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.127.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/config/configcompression v1.32.1-0.20250515040533-97a6accbc082
-	go.opentelemetry.io/collector/config/configopaque v1.32.1-0.20250515040533-97a6accbc082
-	go.opentelemetry.io/collector/config/configtls v1.32.1-0.20250515040533-97a6accbc082
+	go.opentelemetry.io/collector/config/configcompression v1.33.0
+	go.opentelemetry.io/collector/config/configopaque v1.33.0
+	go.opentelemetry.io/collector/config/configtls v1.33.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -63,8 +63,8 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.9.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/confmap v1.32.1-0.20250515040533-97a6accbc082 // indirect
-	go.opentelemetry.io/collector/featuregate v1.32.1-0.20250515040533-97a6accbc082 // indirect
+	go.opentelemetry.io/collector/confmap v1.33.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.33.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
