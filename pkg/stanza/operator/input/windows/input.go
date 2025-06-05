@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
@@ -327,17 +328,12 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
 	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
 
-	// // Initialize Attributes map if it's nil
-	if e.Attributes == nil {
-		e.Attributes = make(map[string]any)
-	}
-
 	if i.remote.Server != "" {
-		e.Attributes["server.address"] = i.remote.Server
+		e.AddAttribute("server.address", i.remote.Server)
 	}
 
 	if i.includeLogRecordOriginal {
-		e.Attributes["log.record.original"] = eventXML.Original
+		e.AddAttribute(string(semconv.LogRecordOriginalKey), eventXML.Original)
 	}
 
 	return i.Write(ctx, e)
