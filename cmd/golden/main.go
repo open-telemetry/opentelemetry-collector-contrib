@@ -12,6 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
@@ -20,6 +22,16 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden/internal"
 )
+
+// InsertDefault is a helper function to insert a default value for a configoptional.Optional type.
+func InsertDefault[T any](opt *configoptional.Optional[T]) error {
+	if opt.HasValue() {
+		return nil
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	return empty.Unmarshal(opt)
+}
 
 func main() {
 	if err := run(os.Args); err != nil {
@@ -41,14 +53,17 @@ func run(args []string) error {
 	factory := otlpreceiver.NewFactory()
 	receiverConfig := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if cfg.OTLPHTTPEndoint != "" {
-		receiverConfig.HTTP.ServerConfig.Endpoint = cfg.OTLPHTTPEndoint
-	} else {
-		receiverConfig.HTTP = nil
+		if err := InsertDefault(&receiverConfig.HTTP); err != nil {
+			return err
+		}
+		receiverConfig.HTTP.Get().ServerConfig.Endpoint = cfg.OTLPHTTPEndoint
 	}
+
 	if cfg.OTLPEndpoint != "" {
-		receiverConfig.GRPC.NetAddr.Endpoint = cfg.OTLPEndpoint
-	} else {
-		receiverConfig.GRPC = nil
+		if err := InsertDefault(&receiverConfig.GRPC); err != nil {
+			return err
+		}
+		receiverConfig.GRPC.Get().NetAddr.Endpoint = cfg.OTLPEndpoint
 	}
 
 	logger, err := zap.NewDevelopment()
