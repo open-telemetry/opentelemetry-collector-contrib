@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "https://log-stream.sys.example.internal"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 	}
 	clientConfig.Timeout = time.Second * 20
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				UAA: UAAConfig{
 					LimitedClientConfig: LimitedClientConfig{
 						Endpoint: "https://uaa.sys.example.internal",
-						TLSSetting: LimitedTLSClientSetting{
+						TLS: LimitedTLSClientSetting{
 							InsecureSkipVerify: true,
 						},
 					},
@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				UAA: UAAConfig{
 					LimitedClientConfig: LimitedClientConfig{
 						Endpoint: "https://uaa.sys.example.internal",
-						TLSSetting: LimitedTLSClientSetting{
+						TLS: LimitedTLSClientSetting{
 							InsecureSkipVerify: true,
 						},
 					},
@@ -131,7 +131,7 @@ func TestHTTPConfigurationStructConsistency(t *testing.T) {
 	// LimitedClientConfig must have the same structure as ClientConfig, but without the fields that the UAA
 	// library does not support.
 	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
-	checkTypeFieldMatch(t, "TLSSetting", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
+	checkTypeFieldMatch(t, "TLS", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.NewDefaultClientConfig()))
 	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.ClientConfig{}))
 }
 
@@ -139,7 +139,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "https://log-stream.sys.example.internal"
 	clientConfig.Timeout = time.Second * 20
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 	}
 	configuration := &Config{
@@ -150,7 +150,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 		UAA: UAAConfig{
 			LimitedClientConfig: LimitedClientConfig{
 				Endpoint: "https://uaa.sys.example.internal",
-				TLSSetting: LimitedTLSClientSetting{
+				TLS: LimitedTLSClientSetting{
 					InsecureSkipVerify: true,
 				},
 			},

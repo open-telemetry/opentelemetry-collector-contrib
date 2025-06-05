@@ -31,8 +31,8 @@ func TestConfig(t *testing.T) {
 			expectedConfig: func() *Config {
 				cfg := createDefaultConfig().(*Config)
 				tls := configtls.NewDefaultServerConfig()
-				cfg.TLSSetting = &tls
-				cfg.TLSSetting.KeyFile = "server.key"
+				cfg.TLS = &tls
+				cfg.TLS.KeyFile = "server.key"
 				return cfg
 			}(),
 		},

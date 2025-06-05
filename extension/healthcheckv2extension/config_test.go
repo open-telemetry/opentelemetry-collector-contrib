@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: http.LegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:13",
-						TLSSetting: &configtls.ServerConfig{
+						TLS: &configtls.ServerConfig{
 							Config: configtls.Config{
 								CAFile:   "/path/to/ca",
 								CertFile: "/path/to/cert",

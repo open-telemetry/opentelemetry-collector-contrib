@@ -103,7 +103,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.ServerConfig{
+		TLS: &configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
@@ -122,7 +122,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 
 	cfg.(*Config).ThriftHTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:14268",
-		TLSSetting: &configtls.ServerConfig{
+		TLS: &configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",

@@ -39,12 +39,12 @@ const (
 
 func TestNewClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.TLS = configtls.ClientConfig{}
 	clientConfig.Endpoint = defaultEndpoint
 
 	clientConfigNonExistentCA := confighttp.NewDefaultClientConfig()
 	clientConfigNonExistentCA.Endpoint = defaultEndpoint
-	clientConfigNonExistentCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNonExistentCA.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},

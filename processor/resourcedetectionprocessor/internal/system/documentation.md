@@ -19,6 +19,8 @@
 | host.ip | IP addresses for the host | Any Slice | false |
 | host.mac | MAC addresses for the host | Any Slice | false |
 | host.name | The host.name | Any Str | true |
+| os.build.id | The os.build.id | Any Str | false |
 | os.description | Human readable OS version information. | Any Str | false |
+| os.name | The os.name | Any Str | false |
 | os.type | The os.type | Any Str | true |
 | os.version | The os.version | Any Str | false |

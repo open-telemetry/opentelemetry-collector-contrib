@@ -44,7 +44,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
 				ExpiryBuffer:   10 * time.Second,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: testCertFile,
@@ -66,7 +66,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
 				ExpiryBuffer: 15 * time.Second,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: "nonexistent.cert",
@@ -100,7 +100,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig(context.Background())
+			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})

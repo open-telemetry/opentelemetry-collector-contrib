@@ -37,8 +37,8 @@ type Config struct {
 	// Whether or not to enable RFC 6587 Octet Counting.
 	EnableOctetCounting bool `mapstructure:"enable_octet_counting"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
+	// TLS struct exposes TLS client configuration.
+	TLS configtls.ClientConfig `mapstructure:"tls"`
 
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`

@@ -16,7 +16,7 @@ import (
 const (
 	PbContentType      = "application/x-protobuf"
 	JSONContentType    = "application/json"
-	MsgpackContentType = "application/x-msgpack"
+	MsgpackContentType = "application/msgpack"
 )
 
 var (

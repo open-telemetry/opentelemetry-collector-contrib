@@ -138,7 +138,7 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	exporterCfg.Endpoint = addr
 	exporterCfg.WaitForReady = true
-	exporterCfg.TLSSetting.Insecure = true
+	exporterCfg.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
 	exporterCfg.RetryConfig.Enabled = true

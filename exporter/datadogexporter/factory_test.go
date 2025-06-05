@@ -303,8 +303,8 @@ func TestOnlyMetadata(t *testing.T) {
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
 		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
 	}
-	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
 	expTraces, err := factory.CreateTraces(
 		ctx,

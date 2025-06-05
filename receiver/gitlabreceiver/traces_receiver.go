@@ -53,7 +53,7 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 	}
 
 	transport := "http"
-	if cfg.WebHook.TLSSetting != nil {
+	if cfg.WebHook.TLS != nil {
 		transport = "https"
 	}
 

@@ -27,6 +27,7 @@ pkg/batchperresourceattr
 pkg/core/xidutils
 pkg/translator/jaeger
 exporter/sapmexporter
+internal/gopsutilenv
 pkg/experimentalmetricmetadata
 pkg/translator/signalfx
 exporter/signalfxexporter
@@ -70,7 +71,6 @@ processor/transformprocessor
 internal/docker
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
-internal/gopsutilenv
 pkg/winperfcounters
 receiver/hostmetricsreceiver
 internal/datadog

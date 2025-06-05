@@ -4,7 +4,9 @@
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 
 import (
+	"bytes"
 	"context"
+	"encoding/xml"
 	"fmt"
 	"net"
 	"os"
@@ -77,6 +79,12 @@ type Provider interface {
 
 	// CPUInfo returns the host's CPU info
 	CPUInfo(ctx context.Context) ([]cpu.InfoStat, error)
+
+	// OSName returns the OS name according to semantic conventions.
+	OSName(ctx context.Context) (string, error)
+
+	// OSBuildID returns the OS build ID according to semantic conventions.
+	OSBuildID(ctx context.Context) (string, error)
 }
 
 type systemMetadataProvider struct {
@@ -176,6 +184,85 @@ func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
 
 func (p systemMetadataProvider) OSDescription(ctx context.Context) (string, error) {
 	return p.fromOption(ctx, resource.WithOSDescription(), string(conventions.OSDescriptionKey))
+}
+
+// OSName returns the OS name from host metadata.
+func (p systemMetadataProvider) OSName(ctx context.Context) (string, error) {
+	info, err := host.InfoWithContext(ctx)
+	if err != nil {
+		return "", fmt.Errorf("OSName failed to get platform: %w", err)
+	}
+	return info.Platform, nil
+}
+
+// OSBuildID returns the OS build ID based on the platform.
+func (p systemMetadataProvider) OSBuildID(ctx context.Context) (string, error) {
+	info, err := host.InfoWithContext(ctx)
+	if err != nil {
+		return "", fmt.Errorf("OSBuildID failed to get host info: %w", err)
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		// macOS: read ProductBuildVersion from SystemVersion.plist
+		data, err := os.ReadFile("/System/Library/CoreServices/SystemVersion.plist")
+		if err != nil {
+			return info.KernelVersion, nil
+		}
+		if v := parsePlistValue(data, "ProductBuildVersion"); v != "" {
+			return v, nil
+		}
+		return info.KernelVersion, nil
+	case "linux":
+		// Linux: read BUILD_ID from /etc/os-release
+		data, err := os.ReadFile("/etc/os-release")
+		if err != nil {
+			return info.KernelVersion, nil
+		}
+		if v := parseOSReleaseValue(data, "BUILD_ID"); v != "" {
+			return v, nil
+		}
+		return info.KernelVersion, nil
+	default:
+		return info.KernelVersion, nil
+	}
+}
+
+// parsePlistValue parses the XML plist and returns the <string> value after the given <key>.
+func parsePlistValue(data []byte, key string) string {
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	var currKey string
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		if se, ok := tok.(xml.StartElement); ok {
+			if se.Name.Local == "key" {
+				var k string
+				if err2 := decoder.DecodeElement(&k, &se); err2 == nil {
+					currKey = k
+				}
+			} else if se.Name.Local == "string" && currKey == key {
+				var v string
+				if err2 := decoder.DecodeElement(&v, &se); err2 == nil {
+					return v
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// parseOSReleaseValue parses key=value pairs from os-release data.
+func parseOSReleaseValue(data []byte, key string) string {
+	lines := strings.Split(string(data), "\n")
+	prefix := key + "="
+	for _, line := range lines {
+		if strings.HasPrefix(line, prefix) {
+			return strings.Trim(line[len(prefix):], `"`)
+		}
+	}
+	return ""
 }
 
 func (systemMetadataProvider) HostArch() (string, error) {

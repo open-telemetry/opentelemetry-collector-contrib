@@ -51,7 +51,7 @@ func createReceiver(t *testing.T, endpoint string) (receiver.Metrics, *consumert
 func createExporter(t *testing.T, endpoint string) exporter.Metrics {
 	cfg := stefexporter.NewFactory().CreateDefaultConfig().(*stefexporter.Config)
 	cfg.Endpoint = endpoint
-	cfg.TLSSetting.Insecure = true
+	cfg.TLS.Insecure = true
 	settings := exportertest.NewNopSettings(metadata.Type)
 	settings.Logger, _ = zap.NewDevelopment()
 	exp, err := stefexporter.NewFactory().CreateMetrics(context.Background(), settings, cfg)

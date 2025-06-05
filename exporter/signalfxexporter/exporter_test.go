@@ -1520,12 +1520,12 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.ClientConfig{
+				IngestTLSs: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
-				APITLSSettings: configtls.ClientConfig{
+				APITLSs: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
@@ -1540,7 +1540,7 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.ClientConfig{
+				IngestTLSs: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "./testdata/certs/missingfile",
 					},
@@ -1556,7 +1556,7 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.ClientConfig{
+				IngestTLSs: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "./testdata/certs/invalid-ca.pem",
 					},
@@ -1628,7 +1628,7 @@ func TestTLSIngestConnection(t *testing.T) {
 			config: &Config{
 				APIURL:    serverURL,
 				IngestURL: serverURL,
-				IngestTLSSettings: configtls.ClientConfig{
+				IngestTLSs: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
@@ -1742,7 +1742,7 @@ func TestTLSAPIConnection(t *testing.T) {
 				IngestURL:        server.URL,
 				AccessToken:      "random",
 				SyncHostMetadata: true,
-				APITLSSettings: configtls.ClientConfig{
+				APITLSs: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
@@ -1767,7 +1767,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 			logger := zap.New(observedZapCore)
-			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfig(context.Background())
+			apiTLSCfg, err := tt.config.APITLSs.LoadTLSConfig(context.Background())
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)

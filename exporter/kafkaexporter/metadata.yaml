@@ -11,3 +11,10 @@ status:
 tests:
   config:
   skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        - github.com/twmb/franz-go/pkg/kfake.(*group).manage
+        # Only happens when the benchmarks are run with Sarama. Will eventually
+        # remove once Franz-go is the main client.
+        - github.com/rcrowley/go-metrics.(*meterArbiter).tick

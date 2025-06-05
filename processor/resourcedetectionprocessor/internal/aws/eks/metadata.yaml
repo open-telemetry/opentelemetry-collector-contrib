@@ -15,6 +15,30 @@ resource_attributes:
     description: The cloud account id
     type: string
     enabled: false
+  cloud.region:
+    description: The cloud region
+    type: string
+    enabled: false
+  cloud.availability_zone:
+    description: The cloud availability zone
+    type: string
+    enabled: false
+  host.name:
+    description: The hostname
+    type: string
+    enabled: false
+  host.id:
+    description: The host.id
+    type: string
+    enabled: false
+  host.image.id:
+    description: The host image id
+    type: string
+    enabled: false
+  host.type:
+    description: The host id
+    type: string
+    enabled: false
   k8s.cluster.name:
     description: The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action.
     type: string

@@ -373,7 +373,9 @@ tests:
   config:
   goleak:
     ignore:
-      any: "github.com/godbus/dbus.(*Conn).inWorker"
+      any: 
+      - "github.com/godbus/dbus.(*Conn).inWorker"
+      - github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].func1
       top:
         # Can be removed once the following issue is resolved:
         # https://github.com/snowflakedb/gosnowflake/issues/1369

@@ -635,6 +635,22 @@ Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must 
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
 | splunk.splunkd.version | The splunkd version number | Any Str |
 
+### splunk.server.searchartifacts.adhoc.size
+
+Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
 ### splunk.server.searchartifacts.completed
 
 Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
@@ -651,9 +667,41 @@ Gauge tracking number of artifacts currently on disk that belong to finished sea
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
 | splunk.splunkd.version | The splunkd version number | Any Str |
 
+### splunk.server.searchartifacts.completed.size
+
+Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
 ### splunk.server.searchartifacts.incomplete
 
 Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.server.searchartifacts.incomplete.size
+
+Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -735,6 +783,22 @@ Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of sche
 ### splunk.server.searchartifacts.scheduled
 
 Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.server.searchartifacts.scheduled.size
+
+Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

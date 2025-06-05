@@ -47,9 +47,9 @@ type Config struct {
 	// Token is used to identify against the openshift api server
 	Token string `mapstructure:"token"`
 
-	// TLSSettings contains TLS configurations that are specific to client
+	// TLSs contains TLS configurations that are specific to client
 	// connection used to communicate with the OpenShift API.
-	TLSSettings configtls.ClientConfig `mapstructure:"tls"`
+	TLSs configtls.ClientConfig `mapstructure:"tls"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
@@ -72,8 +72,8 @@ func (c *Config) MergeWithDefaults() error {
 		c.Address = addr
 	}
 
-	if !c.TLSSettings.Insecure && c.TLSSettings.CAFile == "" {
-		c.TLSSettings.CAFile = defaultCAPath
+	if !c.TLSs.Insecure && c.TLSs.CAFile == "" {
+		c.TLSs.CAFile = defaultCAPath
 	}
 	return nil
 }

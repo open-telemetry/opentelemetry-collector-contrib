@@ -23,6 +23,14 @@ resource_attributes:
     description: The os.version
     type: string
     enabled: false
+  os.build.id:
+    description: The os.build.id
+    type: string
+    enabled: false
+  os.name:
+    description: The os.name
+    type: string
+    enabled: false
   host.arch:
     description: The host.arch
     type: string
