@@ -6,7 +6,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
-	"reflect"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -53,17 +52,18 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 			}
 			return int64(strings.Index(s, v)), nil
 		case pcommon.Slice:
-			return findIndexInPCommonSlice(s, valueVal), nil
+			return findIndexInSlice(s, valueVal), nil
 		default:
 			return nil, errors.New("source must be string or slice type")
 		}
 	}
 }
 
-func findIndexInPCommonSlice(slice pcommon.Slice, value any) int64 {
+func findIndexInSlice(slice pcommon.Slice, value any) int64 {
+	comparator := ottl.NewValueComparator()
 	for i := 0; i < slice.Len(); i++ {
-		rawValue := slice.At(i).AsRaw()
-		if reflect.DeepEqual(rawValue, value) {
+		sliceValue := slice.At(i).AsRaw()
+		if comparator.Equal(sliceValue, value) {
 			return int64(i)
 		}
 	}
