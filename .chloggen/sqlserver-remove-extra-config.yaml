@@ -16,7 +16,7 @@ issues: [40416]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Removed `top_query_collection.enabled` in favor of `events."db.server.top_query".enabled` in top query collection.
+  Renamed `top_query_collection.enabled` to `events."db.server.top_query".enabled` in top query collection.
   Removed `query_sample_collection.enabled` in favor of `events."db.server.query_sample".enabled` in query sample collection.
 
 # If your change doesn't affect end users or the exported elements of any package,
