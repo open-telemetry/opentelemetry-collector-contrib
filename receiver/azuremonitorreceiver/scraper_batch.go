@@ -441,6 +441,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 					opts := newQueryResourcesOptions(
 						compositeKey.dimensions,
 						compositeKey.timeGrain,
+						compositeKey.aggregations,
 						startTime,
 						now,
 						s.cfg.MaximumNumberOfRecordsPerResource,
@@ -493,7 +494,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 								attributes["timegrain"] = &compositeKey.timeGrain
 								for i := len(timeseriesElement.Data) - 1; i >= 0; i-- { // reverse for loop because newest timestamp is at the end of the slice
 									metricValue := timeseriesElement.Data[i]
-									if metricValue.Average != nil {
+									if metricValueIsNotEmpty(metricValue) {
 										s.processQueryTimeseriesData(resID, metric, metricValue, attributes)
 										break
 									}
@@ -513,27 +514,26 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 func newQueryResourcesOptions(
 	dimensionsStr string,
 	timeGrain string,
+	aggregationsStr string,
 	start time.Time,
 	end time.Time,
 	top int32,
 ) azmetrics.QueryResourcesOptions {
 	return azmetrics.QueryResourcesOptions{
-		Aggregation: to.Ptr(strings.Join(
-			[]string{
-				string(armmonitor.AggregationTypeAverage),
-				string(armmonitor.AggregationTypeMaximum),
-				string(armmonitor.AggregationTypeMinimum),
-				string(armmonitor.AggregationTypeTotal),
-				string(armmonitor.AggregationTypeCount),
-			},
-			",",
-		)),
-		StartTime: to.Ptr(start.Format(time.RFC3339)),
-		EndTime:   to.Ptr(end.Format(time.RFC3339)),
-		Interval:  to.Ptr(timeGrain),
-		Top:       to.Ptr(top), // Defaults to 10 (may be limiting results)
-		Filter:    buildDimensionsFilter(dimensionsStr),
+		Aggregation: to.Ptr(aggregationsStr),
+		StartTime:   to.Ptr(start.Format(time.RFC3339)),
+		EndTime:     to.Ptr(end.Format(time.RFC3339)),
+		Interval:    to.Ptr(timeGrain),
+		Top:         to.Ptr(top), // Defaults to 10 (may be limiting results)
+		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
+}
+
+// metricValueIsNotEmpty checks if the metric value is empty.
+// This is necessary to compensate for the fact that Azure Monitor sometimes returns empty values.
+func metricValueIsNotEmpty(metricValue azmetrics.MetricValue) bool {
+	// Using an "or" chain is a bet on performance improvement. Assuming that it's not checking others if one is not nil. Not strictly verified though.
+	return metricValue.Average != nil || metricValue.Count != nil || metricValue.Maximum != nil || metricValue.Minimum != nil || metricValue.Total != nil
 }
 
 func (s *azureBatchScraper) processQueryTimeseriesData(

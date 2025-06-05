@@ -51,15 +51,15 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySample: QuerySample{
-			Enabled:         false,
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			Enabled:             false,
 			LookbackTime:        uint(2 * cfg.CollectionInterval / time.Second),
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
+			CollectionInterval:  time.Minute,
 		},
 	}
 }
@@ -79,17 +79,21 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
+	if isWaitStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
 func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
-	if cfg.QuerySample.Enabled {
+	if cfg.Events.DbServerQuerySample.Enabled {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
-	if cfg.TopQueryCollection.Enabled {
+	if cfg.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
@@ -267,6 +271,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
+		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
@@ -278,9 +283,18 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverReplicaDataRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
 		metrics.SqlserverUserConnectionCount.Enabled
+}
+
+func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverOsWaitDuration.Enabled
 }

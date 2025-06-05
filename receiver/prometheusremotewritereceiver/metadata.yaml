@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [dashpole, ArthurSens]
+    active: [dashpole, ArthurSens, perebaj]
 tests:
   config:
   goleak:

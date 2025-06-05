@@ -6,7 +6,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    active: [colelaven]
+    emeritus: [djaglowski]
 
 resource_attributes:
     apache.server.name:
