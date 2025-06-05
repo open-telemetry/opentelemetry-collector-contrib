@@ -1280,6 +1280,13 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutInt("indexof", 1)
 			},
 		},
+		{
+			// slice contains a map
+			statement: `set(attributes["indexof"], Index(attributes["slices"], attributes["slices"][2]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("indexof", 2)
+			},
+		},
 	}
 
 	for _, tt := range tests {
