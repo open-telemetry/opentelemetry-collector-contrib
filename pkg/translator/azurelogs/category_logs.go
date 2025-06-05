@@ -299,7 +299,7 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	if err := putInt(string(conventions.HTTPRequestSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.ResponseBytes, record); err != nil {
 		return err
 	}
 	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
@@ -397,7 +397,7 @@ func addFrontDoorAccessLogProperties(data []byte, record plog.LogRecord) error {
 	if err := putInt(string(conventions.HTTPRequestSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.ResponseBytes, record); err != nil {
 		return err
 	}
 	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
