@@ -329,7 +329,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 			"system_time": "2024-01-01T00:00:00Z",
 			"task":        "",
 		},
-		Attributes: map[string]interface{}{},
+		Attributes: nil,
 	}
 
 	// Verify that log.record.original attribute does not exist
