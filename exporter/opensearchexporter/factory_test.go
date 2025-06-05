@@ -51,8 +51,8 @@ func TestFactory_CreateLogs_DateFormat(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = "https://opensearch.example.com:9200"
-		cfg.LogsIndex = "testlog-%{yyyy}"
-		cfg.LogDateFormat = true
+		cfg.LogsIndex = "testlog-%Y-%m-%d"
+		cfg.LogstashFormat.Enabled = true
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(context.Background(), params, cfg)

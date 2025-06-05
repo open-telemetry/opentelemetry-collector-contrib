@@ -30,12 +30,16 @@ func NewFactory() exporter.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ClientConfig:     confighttp.NewDefaultClientConfig(),
-		Dataset:          defaultDataset,
-		Namespace:        defaultNamespace,
-		BulkAction:       defaultBulkAction,
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		LogDateFormat:    defaultLogDateFormat,
+		ClientConfig:  confighttp.NewDefaultClientConfig(),
+		Dataset:       defaultDataset,
+		Namespace:     defaultNamespace,
+		BulkAction:    defaultBulkAction,
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		LogstashFormat: LogstashFormatSettings{
+			Enabled:         false,
+			PrefixSeparator: "-",
+			DateFormat:      "%Y.%m.%d",
+		},
 		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
 	}
 }

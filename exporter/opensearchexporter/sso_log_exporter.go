@@ -38,7 +38,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 
 	return &logExporter{
 		telemetry:    set.TelemetrySettings,
-		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex, cfg.LogDateFormat, time.Now()),
+		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex, &cfg.LogstashFormat, time.Now()),
 		bulkAction:   cfg.BulkAction,
 		httpSettings: cfg.ClientConfig,
 		model:        model,
@@ -71,12 +71,11 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return indexer.joinedError()
 }
 
-func getIndexName(dataset, namespace, index string, dateformat bool, t time.Time) string {
-	if dateformat {
-		return FormatIndexName(index, t)
-	}
-
+func getIndexName(dataset, namespace, index string, logstashFormat *LogstashFormatSettings, t time.Time) string {
 	if len(index) != 0 {
+		if logstashFormat.Enabled {
+			return GenerateIndexWithLogstashFormat(index, logstashFormat, t)
+		}
 		return index
 	}
 

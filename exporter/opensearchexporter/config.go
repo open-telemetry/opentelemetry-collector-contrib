@@ -24,8 +24,6 @@ const (
 
 	// defaultMappingMode value is used when component.Config.MappingSettings.Mode is not set.
 	defaultMappingMode = "ss4o"
-
-	defaultLogDateFormat = false
 )
 
 // Config defines configuration for OpenSearch exporter.
@@ -47,7 +45,7 @@ type Config struct {
 	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
 	LogsIndex string `mapstructure:"logs_index"`
 
-	LogDateFormat bool `mapstructure:"log_date_format"`
+	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
@@ -151,17 +149,18 @@ func (cfg *Config) Validate() error {
 		return errBulkActionInvalid
 	}
 
-	if len(cfg.LogsIndex) == 0 && cfg.LogDateFormat {
-		return errIndexFormatInvalid
-	}
-
-	if ContainsIndexPattern(cfg.LogsIndex) && !cfg.LogDateFormat {
-		return errIndexPatternInvalid
-	}
-
 	if _, ok := mappingModes[cfg.Mode]; !ok {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
 	return errors.Join(multiErr...)
+}
+
+type LogstashFormatSettings struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	PrefixSeparator string `mapstructure:"prefix_separator"`
+	DateFormat      string `mapstructure:"date_format"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
