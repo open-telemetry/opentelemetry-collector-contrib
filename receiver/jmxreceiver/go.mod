@@ -81,6 +81,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -95,6 +96,7 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.127.1-0.20250605124916-efac6c7d44f1 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.127.1-0.20250605124916-efac6c7d44f1 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250605124916-efac6c7d44f1 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.0.0-20250605110633-e8ca607b7989 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.33.1-0.20250605124916-efac6c7d44f1 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.33.1-0.20250605124916-efac6c7d44f1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.127.1-0.20250605124916-efac6c7d44f1 // indirect

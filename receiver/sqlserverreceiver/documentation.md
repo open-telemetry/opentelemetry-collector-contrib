@@ -539,6 +539,82 @@ events:
     enabled: false
 ```
 
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.query_sample
+
+query sample
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| client.address | Hostname or address of the client. | Any Str |
+| client.port | TCP port used by the client. | Any Int |
+| db.namespace | The database name. | Any Str |
+| db.query.text | The text of the database query being executed. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| network.peer.address | IP address of the peer client. | Any Str |
+| network.peer.port | TCP port used by the peer client. | Any Int |
+| sqlserver.blocking_session_id | Session ID that is blocking the current session. 0 if none. | Any Int |
+| sqlserver.context_info | Context information for the session, represented as a hexadecimal string. | Any Str |
+| sqlserver.command | SQL command type being executed. | Any Str |
+| sqlserver.cpu_time | CPU time consumed by the query, in seconds. | Any Double |
+| sqlserver.deadlock_priority | Deadlock priority value for the session. | Any Int |
+| sqlserver.estimated_completion_time | Estimated time remaining for the request to complete, in seconds. | Any Double |
+| sqlserver.lock_timeout | Lock timeout value in seconds. | Any Double |
+| sqlserver.logical_reads | Number of logical reads (data read from cache/memory). | Any Int |
+| sqlserver.open_transaction_count | Number of transactions currently open in the session. | Any Int |
+| sqlserver.percent_complete | Percentage of work completed. | Any Double |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| sqlserver.query_start | Timestamp of when the SQL query started (ISO 8601 format). | Any Str |
+| sqlserver.reads | Number of physical reads performed by the query. | Any Int |
+| sqlserver.request_status | Status of the request (e.g., running, suspended). | Any Str |
+| sqlserver.row_count | Number of rows affected or returned by the query. | Any Int |
+| sqlserver.session_id | ID of the SQL Server session. | Any Int |
+| sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str |
+| sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double |
+| sqlserver.transaction_id | Unique ID of the active transaction. | Any Int |
+| sqlserver.transaction_isolation_level | Transaction isolation level used in the session. Represented as numeric constant. | Any Int |
+| sqlserver.wait_resource | The resource for which the session is waiting. | Any Str |
+| sqlserver.wait_time | Duration in seconds the request has been waiting. | Any Double |
+| sqlserver.wait_type | Type of wait encountered by the request. Empty if none. | Any Str |
+| sqlserver.writes | Number of writes performed by the query. | Any Int |
+| user.name | Login name associated with the SQL Server session. | Any Str |
+
+### db.server.top_query
+
+top query
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double |
+| db.query.text | The text of the database query being executed. | Any Str |
+| sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int |
+| sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.total_physical_reads | Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str |
+| sqlserver.query_plan | The query execution plan used by the SQL Server. | Any Str |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| sqlserver.total_rows | Total number of rows returned by the query, reported in delta value. | Any Int |
+| sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double |
+| sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int |
+| server.address | The network address of the server hosting the database. | Any Str |
+| server.port | The port number on which the server is listening. | Any Int |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
