@@ -6,7 +6,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
-	"reflect"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -31,6 +30,8 @@ func createContainsValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 }
 
 func containsValue[K any](target ottl.PSliceGetter[K], itemGetter ottl.Getter[K]) ottl.ExprFunc[K] {
+	comparator := ottl.NewValueComparator()
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		slice, sliceErr := target.Get(ctx, tCtx)
 		if sliceErr != nil {
@@ -43,7 +44,7 @@ func containsValue[K any](target ottl.PSliceGetter[K], itemGetter ottl.Getter[K]
 
 		for i := 0; i < slice.Len(); i++ {
 			val := slice.At(i).AsRaw()
-			if reflect.DeepEqual(val, item) {
+			if comparator.Equal(val, item) {
 				return true, nil
 			}
 		}
