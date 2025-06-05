@@ -43,7 +43,8 @@ type Config struct {
 	// LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
 	// https://opensearch.org/docs/latest/im-plugin/index/
 	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
-	LogsIndex string `mapstructure:"logs_index"`
+	LogsIndex      string                 `mapstructure:"logs_index"`
+	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
@@ -56,6 +57,7 @@ var (
 	errNamespaceNoValue   = errors.New("namespace must be specified")
 	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
 	errMappingModeInvalid = errors.New("mapping.mode is invalid")
+	errIndexFormatInvalid = errors.New("when LogstashFormat.Enabled is set to true, the index_log field is required")
 )
 
 type MappingsSettings struct {
@@ -149,5 +151,18 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
+	if cfg.LogstashFormat.Enabled && cfg.LogsIndex == "" {
+		return errIndexFormatInvalid
+	}
+
 	return errors.Join(multiErr...)
+}
+
+type LogstashFormatSettings struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	PrefixSeparator string `mapstructure:"prefix_separator"`
+	DateFormat      string `mapstructure:"date_format"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

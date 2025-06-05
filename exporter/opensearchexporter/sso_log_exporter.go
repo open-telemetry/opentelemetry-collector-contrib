@@ -6,6 +6,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"go.opentelemetry.io/collector/component"
@@ -37,7 +38,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 
 	return &logExporter{
 		telemetry:    set.TelemetrySettings,
-		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex),
+		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex, &cfg.LogstashFormat, time.Now()),
 		bulkAction:   cfg.BulkAction,
 		httpSettings: cfg.ClientConfig,
 		model:        model,
@@ -70,8 +71,12 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return indexer.joinedError()
 }
 
-func getIndexName(dataset, namespace, index string) string {
+func getIndexName(dataset, namespace, index string, logstashFormat *LogstashFormatSettings, t time.Time) string {
 	if len(index) != 0 {
+		if logstashFormat.Enabled {
+			return GenerateIndexWithLogstashFormat(index, logstashFormat, t)
+		}
+		
 		return index
 	}
 
