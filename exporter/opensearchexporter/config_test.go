@@ -75,6 +75,11 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          1.5,
 					RandomizationFactor: 0.5,
 				},
+                                LogstashFormat: LogstashFormatSettings{
+					Enabled: false,
+					PrefixSeparator: "-",
+					DateFormat: "%Y.%m.%d",
+				},
 				BulkAction: defaultBulkAction,
 				MappingsSettings: MappingsSettings{
 					Mode: "ss4o",

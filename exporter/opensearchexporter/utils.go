@@ -5,8 +5,9 @@ package opensearchexporter
 import (
 	"bytes"
 	"fmt"
-	"github.com/lestrrat-go/strftime"
 	"time"
+
+	"github.com/lestrrat-go/strftime"
 )
 
 func GenerateIndexWithLogstashFormat(index string, conf *LogstashFormatSettings, t time.Time) string {

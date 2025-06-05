@@ -58,7 +58,7 @@ var (
 	errNamespaceNoValue   = errors.New("namespace must be specified")
 	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
 	errMappingModeInvalid = errors.New("mapping.mode is invalid")
-	errIndexFormatInvalid = errors.New("When LogstashFormat.Enabled is set to true, the index_log field is required.")
+	errIndexFormatInvalid = errors.New("when LogstashFormat.Enabled is set to true, the index_log field is required")
 )
 
 type MappingsSettings struct {
