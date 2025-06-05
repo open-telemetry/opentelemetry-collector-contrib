@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
 var MetricsInfo = metricsInfo{
@@ -36,7 +36,7 @@ type metricSystemNfsNetCount struct {
 func (m *metricSystemNfsNetCount) init() {
 	m.data.SetName("system.nfs.net.count")
 	m.data.SetDescription("Reports the count of kernel NFS client network requests handled")
-	m.data.SetUnit("{rpc}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 

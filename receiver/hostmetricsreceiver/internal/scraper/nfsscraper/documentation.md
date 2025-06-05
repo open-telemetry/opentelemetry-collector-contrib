@@ -18,4 +18,4 @@ Reports the count of kernel NFS client network requests handled
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {rpc} | Gauge | Int |
+| {request} | Gauge | Int |
