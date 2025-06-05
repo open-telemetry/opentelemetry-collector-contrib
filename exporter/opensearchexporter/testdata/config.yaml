@@ -43,3 +43,27 @@ opensearch/trace:
     enabled: true
     initial_interval: 100000000
     randomization_factor: 0.5
+
+
+opensearch/log:
+  http:
+    endpoint: https://opensearch.example.com:9200
+    tls:
+      insecure: false
+    auth:
+      authenticator: sample_basic_auth
+  logs_index: test-log
+
+
+opensearch/logstash:
+  http:
+    endpoint: https://opensearch.example.com:9200
+    tls:
+      insecure: false
+    auth:
+      authenticator: sample_basic_auth
+  logs_index: test-log
+  logstash_format:
+    enabled: true
+    prefix_separator: .
+    date_format: "%Y.%m"
