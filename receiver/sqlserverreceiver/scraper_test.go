@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-func configureAllScraperMetrics(cfg *Config, enabled bool) {
+func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
@@ -78,8 +78,10 @@ func configureAllScraperMetrics(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.Metrics.SqlserverUserConnectionCount.Enabled = enabled
 
-	cfg.TopQueryCollection.Enabled = enabled
-	cfg.QuerySample.Enabled = enabled
+	cfg.Events.DbServerTopQuery.Enabled = enabled
+	cfg.Events.DbServerQuerySample.Enabled = enabled
+	// cfg.TopQueryCollection.Enabled = enabled
+	// cfg.QuerySample.Enabled = enabled
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -94,7 +96,7 @@ func TestEmptyScrape(t *testing.T) {
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
 	// Disable all metrics manually that are enabled by default
-	configureAllScraperMetrics(cfg, false)
+	configureAllScraperMetricsAndEvents(cfg, false)
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
@@ -111,7 +113,7 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
-	configureAllScraperMetrics(cfg, true)
+	configureAllScraperMetricsAndEvents(cfg, true)
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -167,7 +169,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 
 	assert.NoError(t, cfg.Validate())
 
-	configureAllScraperMetrics(cfg, true)
+	configureAllScraperMetricsAndEvents(cfg, true)
 	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
@@ -194,12 +196,12 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.TopQueryCollection.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
-	configureAllScraperMetrics(cfg, false)
+	configureAllScraperMetricsAndEvents(cfg, false)
 
-	cfg.TopQueryCollection.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
@@ -349,11 +351,11 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.TopQueryCollection.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
-	configureAllScraperMetrics(cfg, false)
-	cfg.TopQueryCollection.Enabled = true
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -409,11 +411,11 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.TopQueryCollection.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
-	configureAllScraperMetrics(cfg, false)
-	cfg.TopQueryCollection.Enabled = true
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerTopQuery.Enabled = true
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
@@ -508,8 +510,8 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 			assert.NoError(t, cfg.Validate())
 
-			configureAllScraperMetrics(cfg, false)
-			cfg.QuerySample.Enabled = true
+			configureAllScraperMetricsAndEvents(cfg, false)
+			cfg.Events.DbServerQuerySample.Enabled = true
 
 			scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 			assert.NotNil(t, scrapers)

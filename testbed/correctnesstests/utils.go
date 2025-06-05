@@ -77,7 +77,12 @@ connectors:%v
 service:
   telemetry:
     metrics:
-      address: 127.0.0.1:%d
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '127.0.0.1'
+                port: %d
     logs:
       level: "debug"
   extensions:
@@ -118,7 +123,12 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: 127.0.0.1:%d
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '127.0.0.1'
+                port: %d
   extensions:
   pipelines:
     %s:
@@ -222,10 +232,10 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	switch exporter {
 	case "otlp":
 		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-	case "opencensus":
-		receiver = datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t))
 	case "stef":
 		receiver = datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
+	case "opencensus":
+		receiver = datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t))
 	case "jaeger":
 		receiver = datareceivers.NewJaegerDataReceiver(testutil.GetAvailablePort(t))
 	case "zipkin":
