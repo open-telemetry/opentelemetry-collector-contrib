@@ -53,15 +53,15 @@ func run(args []string) error {
 	factory := otlpreceiver.NewFactory()
 	receiverConfig := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if cfg.OTLPHTTPEndoint != "" {
-		if err := insertDefault(&receiverConfig.HTTP); err != nil {
-			return err
+		if insertErr := insertDefault(&receiverConfig.HTTP); insertErr != nil {
+			return insertErr
 		}
 		receiverConfig.HTTP.Get().ServerConfig.Endpoint = cfg.OTLPHTTPEndoint
 	}
 
 	if cfg.OTLPEndpoint != "" {
-		if err := insertDefault(&receiverConfig.GRPC); err != nil {
-			return err
+		if insertErr := insertDefault(&receiverConfig.GRPC); insertErr != nil {
+			return insertErr
 		}
 		receiverConfig.GRPC.Get().NetAddr.Endpoint = cfg.OTLPEndpoint
 	}
