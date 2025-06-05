@@ -76,7 +76,6 @@ func getIndexName(dataset, namespace, index string, logstashFormat *LogstashForm
 		if logstashFormat.Enabled {
 			return GenerateIndexWithLogstashFormat(index, logstashFormat, t)
 		}
-		
 		return index
 	}
 
