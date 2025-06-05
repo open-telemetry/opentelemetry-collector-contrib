@@ -12,7 +12,7 @@ import (
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-// addResourceTargetInfo converts the resource to the target info metric.
+// addResourceTargetInfoV2 converts the resource to the target info metric.
 func addResourceTargetInfoV2(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverterV2) {
 	if settings.DisableTargetInfo || timestamp == 0 {
 		return
