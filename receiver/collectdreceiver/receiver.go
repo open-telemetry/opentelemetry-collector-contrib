@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -28,6 +29,7 @@ var _ receiver.Metrics = (*collectdReceiver)(nil)
 type collectdReceiver struct {
 	logger             *zap.Logger
 	server             *http.Server
+	shutdownWG         sync.WaitGroup
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
@@ -74,7 +76,9 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
+	cdr.shutdownWG.Add(1)
 	go func() {
+		defer cdr.shutdownWG.Done()
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
@@ -87,7 +91,9 @@ func (cdr *collectdReceiver) Shutdown(context.Context) error {
 	if cdr.server == nil {
 		return nil
 	}
-	return cdr.server.Shutdown(context.Background())
+	err := cdr.server.Shutdown(context.Background())
+	cdr.shutdownWG.Wait()
+	return err
 }
 
 // ServeHTTP acts as the default and only HTTP handler for the CollectD receiver.
