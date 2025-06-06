@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -218,7 +220,41 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	if len(a.ConfigFiles) == 0 {
+		a.ConfigFiles = []string{
+			string(SpecialConfigFileRemoteConfig),
+			string(SpecialConfigFileOwnMetrics),
+			string(SpecialConfigFileBuiltin),
+			string(SpecialConfigFileOpAMPExtension),
+		}
+	}
+
+	for _, file := range a.ConfigFiles {
+		if !strings.HasPrefix(file, "$") {
+			continue
+		}
+		if !slices.Contains(SpecialConfigFiles, SpecialConfigFile(file)) {
+			return fmt.Errorf("agent::config_files contains invalid special file: %q. Must be one of %v", file, SpecialConfigFiles)
+		}
+	}
+
 	return nil
+}
+
+type SpecialConfigFile string
+
+const (
+	SpecialConfigFileBuiltin        SpecialConfigFile = "$BUILTIN_CONFIG"
+	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
+	SpecialConfigFileOwnMetrics     SpecialConfigFile = "$OWN_METRICS_CONFIG"
+	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
+)
+
+var SpecialConfigFiles = []SpecialConfigFile{
+	SpecialConfigFileOwnMetrics,
+	SpecialConfigFileBuiltin,
+	SpecialConfigFileOpAMPExtension,
+	SpecialConfigFileRemoteConfig,
 }
 
 type AgentDescription struct {

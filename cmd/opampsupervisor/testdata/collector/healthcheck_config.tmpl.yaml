@@ -1,0 +1,20 @@
+{{- if .nopPipeline }}
+receivers:
+  nop:
+
+exporters:
+  nop:
+{{- end }}
+
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+
+service:
+  extensions: [health_check]
+{{- if .nopPipeline }}
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+{{- end }}
