@@ -1345,7 +1345,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.lastHealthFromClient.Store(nil)
+			previousHealth := s.lastHealthFromClient.Swap(nil)
 			if !configApplyTimeoutTimer.Stop() {
 				select {
 				case <-configApplyTimeoutTimer.C: // Try to drain the channel
@@ -1356,19 +1356,30 @@ func (s *Supervisor) runAgentProcess() {
 
 			s.telemetrySettings.Logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
-			s.stopAgentApplyConfig()
+
+			if s.config.Agent.UseHUPRestart {
+				err := s.hupRestartAgent(previousHealth)
+				if err != nil {
+					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
+					s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+					continue
+				}
+			} else {
+				s.stopAgentApplyConfig()
+			}
+
+			s.telemetrySettings.Logger.Debug("Agent is not running, starting new instance")
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				continue
 			}
-
 			if status == agentNotStarting {
 				// not starting agent because of nop config, clear timer
 				configApplyTimeoutTimer.Stop()
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 			}
-
 		case <-s.commander.Exited():
 			// the agent process exit is expected for restart command and will not attempt to restart
 			if s.agentRestarting.Load() {
@@ -1423,17 +1434,69 @@ func (s *Supervisor) runAgentProcess() {
 	}
 }
 
-func (s *Supervisor) stopAgentApplyConfig() {
-	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
+func (s *Supervisor) hupRestartAgent(previousHealth *protobufs.ComponentHealth) error {
+	err := s.writeAgentConfig()
+	if err != nil {
+		s.telemetrySettings.Logger.Error("failed to write agent new config", zap.Error(err))
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		return err
+	}
+
+	if s.commander.IsRunning() {
+		if previousHealth == nil {
+			s.telemetrySettings.Logger.Debug("Agent is running, but no health reported yet, delaying reload")
+			// If a remote configuration arrives before the agent has reported health, reloading the config
+			// with SIGHUP might cause the agent to crash. So we wait for health to be reported, which
+			// should mean all the internal components of the agent have been initialized.
+			bootstrapDeadline := time.Now().Add(s.config.Agent.BootstrapTimeout)
+			for time.Now().Before(bootstrapDeadline) {
+				if s.lastHealthFromClient.Load() != nil {
+					break
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+
+		s.telemetrySettings.Logger.Debug("agent is running, reloading config")
+		err = s.reloadAgentConfig()
+		if err != nil {
+			s.telemetrySettings.Logger.Error("reloading agent config failed", zap.Error(err))
+			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		}
+	}
+
+	return nil
+}
+
+func (s *Supervisor) reloadAgentConfig() error {
+	s.telemetrySettings.Logger.Debug("Reloading the agent config")
+	err := s.commander.ReloadConfigFile(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Supervisor) writeAgentConfig() error {
 	cfgState := s.cfgState.Load().(*configState)
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Supervisor) stopAgentApplyConfig() error {
+	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
 	err := s.commander.Stop(context.Background())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
-		s.telemetrySettings.Logger.Error("Failed to write agent config.", zap.Error(err))
+	if err := s.writeAgentConfig(); err != nil {
+		s.telemetrySettings.Logger.Error("Failed to write agent config", zap.Error(err))
 	}
+
+	return nil
 }
 
 func (s *Supervisor) Shutdown() {
