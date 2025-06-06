@@ -8,10 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -32,6 +34,7 @@ type Commander struct {
 	doneCh  chan struct{}
 	exitCh  chan struct{}
 	running *atomic.Int64
+	lastErr string
 }
 
 func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
@@ -42,8 +45,9 @@ func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...
 		args:    args,
 		running: &atomic.Int64{},
 		// Buffer channels so we can send messages without blocking on listeners.
-		doneCh: make(chan struct{}, 1),
-		exitCh: make(chan struct{}, 1),
+		doneCh:  make(chan struct{}, 1),
+		exitCh:  make(chan struct{}, 1),
+		lastErr: "",
 	}, nil
 }
 
@@ -79,11 +83,20 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
-	// PassthroughLogging changes how collector start up happens
-	if c.cfg.PassthroughLogs {
-		return c.startWithPassthroughLogging()
+	// grab cmd pipes
+	stdoutPipe, err := c.cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdoutPipe: %w", err)
 	}
-	return c.startNormal()
+	stderrPipe, err := c.cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderrPipe: %w", err)
+	}
+
+	if c.cfg.PassthroughLogs {
+		return c.startWithPassthroughLogging(stdoutPipe, stderrPipe)
+	}
+	return c.startNormal(stdoutPipe, stderrPipe)
 }
 
 func (c *Commander) Restart(ctx context.Context) error {
@@ -95,76 +108,100 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) startNormal() error {
+func (c *Commander) startNormal(stdout, stderr io.ReadCloser) error {
 	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	stdoutFile, err := os.Create(logFilePath)
+	logFile, err := os.Create(logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
 	}
+	logWriter := bufio.NewWriter(logFile)
 
-	// Capture standard output and standard error.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
-	c.cmd.Stdout = stdoutFile
-	c.cmd.Stderr = stdoutFile
-
+	// start agent
 	if err := c.cmd.Start(); err != nil {
-		stdoutFile.Close()
+		logFile.Close()
 		return fmt.Errorf("startNormal: %w", err)
 	}
-
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
+	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+
+	// Scanner for stdout
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			_, err := logWriter.WriteString(line + "\n")
+			if err != nil {
+				c.logger.Error("Error writing to agent log file", zap.Error(err))
+			}
+		}
+		// only error if not EOF or file already closed
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !strings.Contains(err.Error(), "file already closed") {
+			c.logger.Error("Error reading agent stdout", zap.Error(err))
+		}
+	}()
+
+	// Scanner for stderr
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			_, err := logWriter.WriteString(line + "\n")
+			if err != nil {
+				c.logger.Error("Error writing to agent log file", zap.Error(err))
+			}
+			c.lastErr = line
+		}
+		// only error if not EOF or file already closed
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !strings.Contains(err.Error(), "file already closed") {
+			c.logger.Error("Error reading agent stderr", zap.Error(err))
+		}
+	}()
 
 	go func() {
-		defer stdoutFile.Close()
+		defer logWriter.Flush()
+		defer logFile.Close()
 		c.watch()
 	}()
 
 	return nil
 }
 
-func (c *Commander) startWithPassthroughLogging() error {
-	// grab cmd pipes
-	stdoutPipe, err := c.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("stdoutPipe: %w", err)
-	}
-	stderrPipe, err := c.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("stderrPipe: %w", err)
-	}
+func (c *Commander) startWithPassthroughLogging(stdout, stderr io.ReadCloser) error {
+	colLogger := c.logger.Named("collector")
 
 	// start agent
 	if err := c.cmd.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)
 	}
 	c.running.Store(1)
-
-	colLogger := c.logger.Named("collector")
-
-	// capture agent output
-	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			line := scanner.Text()
-			colLogger.Info(line)
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
-		}
-	}()
-	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			line := scanner.Text()
-			colLogger.Info(line)
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
-		}
-	}()
-
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+
+	// Scanner for stdout
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			colLogger.Info(line)
+		}
+		// only error if not EOF or file already closed
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !strings.Contains(err.Error(), "file already closed") {
+			c.logger.Error("Error reading agent stdout", zap.Error(err))
+		}
+	}()
+
+	// Scanner for stderr
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			colLogger.Error(line)
+			c.lastErr = line
+		}
+		// only error if not EOF or file already closed
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !strings.Contains(err.Error(), "file already closed") {
+			c.logger.Error("Error reading agent stderr", zap.Error(err))
+		}
+	}()
 
 	go c.watch()
 	return nil
@@ -211,29 +248,33 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, nil, fmt.Errorf("start: %w", err)
 	}
-	// capture agent output
+	c.logger.Debug("Agent process started", zap.Int("pid", cmd.Process.Pid))
+
+	// Scanner for stdout
 	go func() {
 		scanner := bufio.NewScanner(stdoutPipe)
 		for scanner.Scan() {
 			stdout = append(stdout, scanner.Bytes()...)
 			stdout = append(stdout, byte('\n'))
 		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
+		// only error if not EOF or file already closed
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !strings.Contains(err.Error(), "file already closed") {
+			c.logger.Error("Error reading agent stdout", zap.Error(err))
 		}
 	}()
+
+	// Scanner for stderr
 	go func() {
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			stderr = append(stderr, scanner.Bytes()...)
 			stderr = append(stderr, byte('\n'))
 		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
+		// only error if not EOF or file already closed
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !strings.Contains(err.Error(), "file already closed") {
+			c.logger.Error("Error reading agent stderr", zap.Error(err))
 		}
 	}()
-
-	c.logger.Debug("Agent process started", zap.Int("pid", cmd.Process.Pid))
 
 	doneCh := make(chan struct{}, 1)
 
@@ -361,4 +402,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 	cancel()
 
 	return innerErr
+}
+
+func (c *Commander) LastErr() string {
+	return c.lastErr
 }
