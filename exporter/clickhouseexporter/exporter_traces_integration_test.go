@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build integration
+
 package clickhouseexporter
 
 import (
@@ -24,9 +26,10 @@ func TestTracesExporter(t *testing.T) {
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
-	require.NoError(t, exporter.start(context.TODO(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
+	require.NoError(t, exporter.start(context.Background(), nil))
+
+	t.Cleanup(func() { _ = exporter.shutdown(context.Background()) })
 	return exporter
 }
 

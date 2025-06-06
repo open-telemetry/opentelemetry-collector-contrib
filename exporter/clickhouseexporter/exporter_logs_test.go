@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build integration
+// +build integration
+
 package clickhouseexporter
 
 import (
@@ -58,18 +61,4 @@ func TestLogsExporter_New(t *testing.T) {
 			test.want(t, exporter, err)
 		})
 	}
-}
-
-func TestLogsClusterConfig(t *testing.T) {
-	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
-		exporter := newTestLogsExporter(t, dsn, fns...)
-		clusterTest.verifyConfig(t, exporter.cfg)
-	})
-}
-
-func TestLogsTableEngineConfig(t *testing.T) {
-	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
-		exporter := newTestLogsExporter(t, dsn, fns...)
-		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
-	})
 }

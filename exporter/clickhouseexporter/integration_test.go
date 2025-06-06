@@ -1,8 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-////go:build integration
-// +//build integration
+//go:build integration
 
 package clickhouseexporter
 
@@ -11,8 +10,8 @@ import (
 	"fmt"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/goleak"
 	"math/rand/v2"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -87,8 +86,6 @@ var theEndpoint string
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
 func TestMain(m *testing.M) {
-	//defer goleak.VerifyTestMain(m)
-
 	c, endpoint, err := createClickhouseContainer("clickhouse/clickhouse-server:25.5-alpine")
 	if err != nil {
 		panic(fmt.Errorf("failed to create ClickHouse container: %w", err))
@@ -102,5 +99,6 @@ func TestMain(m *testing.M) {
 
 	theEndpoint = endpoint
 
-	os.Exit(m.Run())
+	// Verify all integration tests, ignoring test container reaper
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"))
 }

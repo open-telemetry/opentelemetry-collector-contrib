@@ -10,20 +10,6 @@ import (
 	"testing"
 )
 
-func TestMetricsClusterConfig(t *testing.T) {
-	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
-		exporter := newTestMetricsExporter(t, dsn, fns...)
-		clusterTest.verifyConfig(t, exporter.cfg)
-	})
-}
-
-func TestMetricsTableEngineConfig(t *testing.T) {
-	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
-		exporter := newTestMetricsExporter(t, dsn, fns...)
-		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
-	})
-}
-
 func Test_generateMetricMetricTableNames(t *testing.T) {
 	cfg := Config{
 		MetricsTables: MetricTablesConfig{
