@@ -232,7 +232,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	ctx := context.Background()
 	persister := testutil.NewMockPersister("")
 	fake := testutil.NewFakeOutput(t)
-	input.WriterOperator.OutputOperators = []operator.Operator{fake}
+	input.OutputOperators = []operator.Operator{fake}
 
 	err := input.Start(persister)
 	require.NoError(t, err)
@@ -242,11 +242,11 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 
 	expectedEntry := &entry.Entry{
 		Timestamp: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
-		Body: map[string]interface{}{
+		Body: map[string]any{
 			"channel":    "",
 			"computer":   "",
-			"event_data": map[string]interface{}{},
-			"event_id": map[string]interface{}{
+			"event_data": map[string]any{},
+			"event_id": map[string]any{
 				"id":         uint32(0),
 				"qualifiers": uint16(0),
 			},
@@ -254,7 +254,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 			"level":    "",
 			"message":  "",
 			"opcode":   "",
-			"provider": map[string]interface{}{
+			"provider": map[string]any{
 				"event_source": "",
 				"guid":         "",
 				"name":         "",
@@ -263,7 +263,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 			"system_time": "2024-01-01T00:00:00Z",
 			"task":        "",
 		},
-		Attributes: map[string]interface{}{
+		Attributes: map[string]any{
 			"log.record.original": eventXML.Original,
 		},
 	}
@@ -298,7 +298,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	ctx := context.Background()
 	persister := testutil.NewMockPersister("")
 	fake := testutil.NewFakeOutput(t)
-	input.WriterOperator.OutputOperators = []operator.Operator{fake}
+	input.OutputOperators = []operator.Operator{fake}
 
 	err := input.Start(persister)
 	require.NoError(t, err)
@@ -308,11 +308,11 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 
 	expectedEntry := &entry.Entry{
 		Timestamp: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
-		Body: map[string]interface{}{
+		Body: map[string]any{
 			"channel":    "",
 			"computer":   "",
-			"event_data": map[string]interface{}{},
-			"event_id": map[string]interface{}{
+			"event_data": map[string]any{},
+			"event_id": map[string]any{
 				"id":         uint32(0),
 				"qualifiers": uint16(0),
 			},
@@ -320,7 +320,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 			"level":    "",
 			"message":  "",
 			"opcode":   "",
-			"provider": map[string]interface{}{
+			"provider": map[string]any{
 				"event_source": "",
 				"guid":         "",
 				"name":         "",
