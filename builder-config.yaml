@@ -1,0 +1,28 @@
+# builder-config.yaml
+dist:
+ name: "cloudwatch-metric-collector"
+ description: "Custom OpenTelemetry Collector with AWS CloudWatch Metrics Receiver"
+ version: "0.0.1"
+ output_path: ./otelcol-dev
+
+
+receivers:
+ # Standard OTLP receiver - using the version required by your awscloudwatchmetricsreceiver
+ - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.127.0
+ # Your awscloudwatchmetricsreceiver - use the exact module path from your go.mod
+ # When building from source, v0.0.0 often works to pick up the local module.
+ - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver v0.127.0
+ - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.127.0
+
+
+processors:
+ - gomod:
+     go.opentelemetry.io/collector/processor/batchprocessor v0.127.0
+
+
+exporters:
+ - gomod:
+     # NOTE: Prior to v0.86.0 use the `loggingexporter` instead of `debugexporter`.
+     go.opentelemetry.io/collector/exporter/debugexporter v0.127.0
+ - gomod:
+     go.opentelemetry.io/collector/exporter/otlpexporter v0.127.0

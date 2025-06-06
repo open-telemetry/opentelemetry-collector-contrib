@@ -1,0 +1,45 @@
+receivers:
+   awscloudwatch:
+     region: us-west-1
+     logs:
+       poll_interval: 5s
+       groups:
+         autodiscover:
+           limit: 100
+           prefix: /aws/eks/
+           streams:
+             prefixes: [kube-api-controller]
+ # AWS CloudWatch Metrics receiver configuration
+ # awscloudwatchmetrics:
+ #   region: cn-northwest-1 # Ensure this is the correct region
+ #   poll_interval: 1m      # Adjust as needed
+ #   metrics:
+ #     named:
+ #       - namespace: "AWS/Lambda"
+ #         metric_name: "Duration"   # Example: Lambda function execution time
+ #         period: "1m"
+ #         aws_aggregation: "Average"
+ #       - namespace: "AWS/Lambda"
+ #         metric_name: "Invocations" # Example: Number of times function was invoked
+ #         period: "1m"
+ #         aws_aggregation: "Sum"
+ #       # Add other Lambda metrics as needed (Errors, Throttles, etc.)
+
+
+processors:
+
+
+exporters:
+ debug:
+   verbosity: detailed
+
+
+service:
+ pipelines:
+   logs:
+     receivers: [awscloudwatch]
+     processors: []
+     exporters: [debug]
+ telemetry:
+   logs:
+     level: "debug"
