@@ -260,6 +260,7 @@ body:
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
+      - receiver/hostmetrics/internal/scraper/nfsscraper
       - receiver/hostmetrics/internal/scraper/pagingscraper
       - receiver/hostmetrics/internal/scraper/processesscraper
       - receiver/hostmetrics/internal/scraper/processscraper
