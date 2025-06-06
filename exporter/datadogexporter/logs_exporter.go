@@ -180,8 +180,14 @@ func newLogsAgentExporter(
 	sourceProvider source.Provider,
 	_ *attributes.GatewayUsage,
 ) (logsagentpipeline.LogsAgent, *logsagentexporter.Exporter, error) {
-	logComponent := newLogComponent(params.TelemetrySettings)
-	cfgComponent := newConfigComponent(params.TelemetrySettings, cfg)
+	logComponent := NewLogComponent(params.TelemetrySettings)
+	cfgComponent := NewConfigComponent(
+		WithAPIConfig(cfg),
+		WithLogLevel(params.TelemetrySettings),
+		WithLogsConfig(cfg),
+		WithLogsDefaults(),
+		WithProxyFromEnv(),
+	)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,

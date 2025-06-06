@@ -19,45 +19,92 @@ import (
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
-func newLogComponent(set component.TelemetrySettings) corelog.Component {
+// ConfigOption is a function that configures the Datadog agent config component.
+// This allows for flexible configuration by different modules.
+type ConfigOption func(pkgconfigmodel.Config)
+
+func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 	zlog := &pkgdatadog.Zaplogger{
 		Logger: set.Logger,
 	}
 	return zlog
 }
 
-func newConfigComponent(set component.TelemetrySettings, cfg *datadogconfig.Config) coreconfig.Component {
+// NewConfigComponent creates a new Datadog agent config component with the given options.
+// This function uses the options pattern to allow different modules to configure
+// the component with their specific needs.
+func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
 	pkgconfig := viperconfig.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
 
-	// Set the API Key
-	pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
-	pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("log_level", set.Logger.Level().String(), pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.batch_wait", cfg.Logs.BatchWait, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.use_compression", cfg.Logs.UseCompression, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.logs_dd_url", cfg.Logs.Endpoint, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.auditor_ttl", pkgconfigsetup.DefaultAuditorTTL, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.batch_max_content_size", pkgconfigsetup.DefaultBatchMaxContentSize, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.batch_max_size", pkgconfigsetup.DefaultBatchMaxSize, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.force_use_http", true, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.input_chan_size", pkgconfigsetup.DefaultInputChanSize, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.max_message_size_bytes", pkgconfigsetup.DefaultMaxMessageSizeBytes, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.run_path", "/opt/datadog-agent/run", pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.sender_backoff_factor", pkgconfigsetup.DefaultLogsSenderBackoffFactor, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.sender_backoff_base", pkgconfigsetup.DefaultLogsSenderBackoffBase, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.sender_backoff_max", pkgconfigsetup.DefaultLogsSenderBackoffMax, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.sender_recovery_interval", pkgconfigsetup.DefaultForwarderRecoveryInterval, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.stop_grace_period", 30, pkgconfigmodel.SourceDefault)
-	pkgconfig.Set("logs_config.use_v2_api", true, pkgconfigmodel.SourceDefault)
-	pkgconfig.SetKnown("logs_config.dev_mode_no_ssl")
-	// add logs config pipelines config value, see https://github.com/DataDog/datadog-agent/pull/31190
-	logsPipelines := min(4, runtime.GOMAXPROCS(0))
-	pkgconfig.Set("logs_config.pipelines", logsPipelines, pkgconfigmodel.SourceDefault)
-	setProxyFromEnv(pkgconfig)
+	// Apply all configuration options
+	for _, opt := range options {
+		opt(pkgconfig)
+	}
 
 	return pkgconfig
+}
+
+// WithAPIConfig configures API-related settings
+func WithAPIConfig(cfg *datadogconfig.Config) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
+		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
+	}
+}
+
+// WithLogsConfig configures logs-related settings
+func WithLogsConfig(cfg *datadogconfig.Config) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.batch_wait", cfg.Logs.BatchWait, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("logs_config.use_compression", cfg.Logs.UseCompression, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("logs_config.logs_dd_url", cfg.Logs.Endpoint, pkgconfigmodel.SourceFile)
+	}
+}
+
+// WithLogsDefaults configures logs default settings
+func WithLogsDefaults() ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("logs_config.auditor_ttl", pkgconfigsetup.DefaultAuditorTTL, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.batch_max_content_size", pkgconfigsetup.DefaultBatchMaxContentSize, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.batch_max_size", pkgconfigsetup.DefaultBatchMaxSize, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.force_use_http", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.input_chan_size", pkgconfigsetup.DefaultInputChanSize, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.max_message_size_bytes", pkgconfigsetup.DefaultMaxMessageSizeBytes, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.run_path", "/opt/datadog-agent/run", pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.sender_backoff_factor", pkgconfigsetup.DefaultLogsSenderBackoffFactor, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.sender_backoff_base", pkgconfigsetup.DefaultLogsSenderBackoffBase, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.sender_backoff_max", pkgconfigsetup.DefaultLogsSenderBackoffMax, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.sender_recovery_interval", pkgconfigsetup.DefaultForwarderRecoveryInterval, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.stop_grace_period", 30, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.use_v2_api", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.SetKnown("logs_config.dev_mode_no_ssl")
+		// add logs config pipelines config value, see https://github.com/DataDog/datadog-agent/pull/31190
+		logsPipelines := min(4, runtime.GOMAXPROCS(0))
+		pkgconfig.Set("logs_config.pipelines", logsPipelines, pkgconfigmodel.SourceDefault)
+	}
+}
+
+// WithLogLevel configures log level settings
+func WithLogLevel(set component.TelemetrySettings) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("log_level", set.Logger.Level().String(), pkgconfigmodel.SourceFile)
+	}
+}
+
+// WithProxyFromEnv configures proxy settings from environment variables
+func WithProxyFromEnv() ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		setProxyFromEnv(pkgconfig)
+	}
+}
+
+// WithCustomConfig allows setting arbitrary configuration values
+func WithCustomConfig(key string, value interface{}, source pkgconfigmodel.Source) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set(key, value, source)
+	}
 }
 
 func setProxyFromEnv(config pkgconfigmodel.Config) {
