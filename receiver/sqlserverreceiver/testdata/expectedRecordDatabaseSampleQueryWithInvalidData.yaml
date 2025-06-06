@@ -115,7 +115,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: ""
-            timeUnixNano: "1749224040956087000"
+            timeUnixNano: "1748221339132048638"
             traceId: ""
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
