@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 			K8sAPI:      k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 			RuntimeAPIs: []RuntimeAPIConfig{
 				{
-					&CRIConfig{
+					&criConfig{
 						baseRuntimeAPIConfig: baseRuntimeAPIConfig{
 							Type: "cri",
 						},

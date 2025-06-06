@@ -102,7 +102,7 @@ func TestRemote(t *testing.T) {
 			cfg.Source.ReloadInterval = tc.reloadInterval
 			cfg.Source.Remote = &configgrpc.ClientConfig{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true, // test only
 				},
 				WaitForReady: true,

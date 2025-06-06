@@ -119,6 +119,8 @@ func createExportRequest(resourceAttributeCount int, histogramCount int, nonHist
 	for i := 1; i <= nonHistogramCount; i++ {
 		m := metrics.AppendEmpty()
 		m.SetEmptySum()
+		m.SetDescription("test sum description")
+		m.SetUnit("By")
 		m.SetName(fmt.Sprintf("sum-%v", i))
 		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		point := m.Sum().DataPoints().AppendEmpty()
@@ -131,6 +133,8 @@ func createExportRequest(resourceAttributeCount int, histogramCount int, nonHist
 	for i := 1; i <= nonHistogramCount; i++ {
 		m := metrics.AppendEmpty()
 		m.SetEmptyGauge()
+		m.SetDescription("test gauge description")
+		m.SetUnit("By")
 		m.SetName(fmt.Sprintf("gauge-%v", i))
 		point := m.Gauge().DataPoints().AppendEmpty()
 		point.SetTimestamp(timestamp)
