@@ -79,34 +79,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 
 		// Handler for modifying and forwarding requests
 		Director: func(req *http.Request) {
-			if req != nil && req.URL != nil {
-				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(req.URL)))
-			}
-
-			// Remove connection header before signing request, otherwise the
-			// reverse-proxy will remove the header before forwarding to X-Ray
-			// resulting in a signed header being missing from the request.
-			req.Header.Del(connHeader)
-
-			// Set req url to xray endpoint
-			req.URL.Scheme = awsURL.Scheme
-			req.URL.Host = awsURL.Host
-			req.Host = awsURL.Host
-
-			// Consume body and convert to io.ReadSeeker for signer to consume
-			body, err := consume(req.Body)
-			if err != nil {
-				logger.Error("Unable to consume request body", zap.Error(err))
-
-				// Forward unsigned request
-				return
-			}
-
-			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
-			if err != nil {
-				logger.Error("Unable to sign request", zap.Error(err))
-			}
+			handlerDirector(req, awsURL, signer, cfg.ServiceName, *awsCfg.Region, logger)
 		},
 	}
 
@@ -115,6 +88,43 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		Handler:           handler,
 		ReadHeaderTimeout: 20 * time.Second,
 	}, nil
+}
+
+// handlerDirectory is responsible for modifying the request header and do the SigV4 signing
+func handlerDirector(req *http.Request, awsURL *url.URL, signer *v4.Signer, serviceName, region string, logger *zap.Logger) {
+	if req != nil && req.URL != nil {
+		logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(req.URL)))
+	}
+
+	// Remove connection header before signing request, otherwise the
+	// reverse-proxy will remove the header before forwarding to X-Ray
+	// resulting in a signed header being missing from the request.
+	req.Header.Del(connHeader)
+
+	// Set req url to xray endpoint
+	req.URL.Scheme = awsURL.Scheme
+	req.URL.Host = awsURL.Host
+	req.Host = awsURL.Host
+
+	// Sig4 requires Content-Length to empty/non-existent for empty bodies.
+	if req.Header.Get("Content-Length") == "0" {
+		req.Header.Del("Content-Length")
+	}
+
+	// Consume body and convert to io.ReadSeeker for signer to consume
+	body, err := consume(req.Body)
+	if err != nil {
+		logger.Error("Unable to consume request body", zap.Error(err))
+
+		// Forward unsigned request
+		return
+	}
+
+	// Sign request. signer.Sign() also repopulates the request body.
+	_, err = signer.Sign(req, body, serviceName, region, time.Now())
+	if err != nil {
+		logger.Error("Unable to sign request", zap.Error(err))
+	}
 }
 
 // getServiceEndpoint returns X-Ray service endpoint.
