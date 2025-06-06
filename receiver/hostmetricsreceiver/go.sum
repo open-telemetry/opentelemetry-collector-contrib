@@ -188,8 +188,6 @@ go.opentelemetry.io/collector/scraper/scraperhelper v0.127.1-0.20250603105141-60
 go.opentelemetry.io/collector/scraper/scraperhelper v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:+lzaUrKQuPt6d+cMZC7hHahKf/0zuwVdWFR3roQORoQ=
 go.opentelemetry.io/collector/scraper/scrapertest v0.127.1-0.20250603105141-605011a1fea8 h1:0lUmNXnXu/QHJYCqu2oqjG7kcSwv9qTVfQMp9Z4oQFs=
 go.opentelemetry.io/collector/scraper/scrapertest v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:en2QYWkgLGAzuaPT+E5OL0mZsXQnzrCdK108htR8AM4=
-go.opentelemetry.io/collector/semconv v0.127.1-0.20250603105141-605011a1fea8 h1:3GaI4p7/DDBrOplShafNpKPwZm7WVrJLv5m3XFZZ15o=
-go.opentelemetry.io/collector/semconv v0.127.1-0.20250603105141-605011a1fea8/go.mod h1:OPXer4l43X23cnjLXIZnRj/qQOjSuq4TgBLI76P9hns=
 go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 h1:u2E32P7j1a/gRgZDWhIXC+Shd4rLg70mnE7QLI/Ssnw=
 go.opentelemetry.io/contrib/bridges/otelzap v0.11.0/go.mod h1:pJPCLM8gzX4ASqLlyAXjHBEYxgbOQJ/9bidWxD6PEPQ=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 h1:UP6IpuHFkUgOQL9FFQFrZ+5LiwhhYRbi7VZSIx6Nj5s=
