@@ -18,7 +18,7 @@ resourceLogs:
                   doubleValue: 0
               - key: db.query.text
                 value:
-                  stringValue: SELECT cpu_time AS [CPU Usage (time)]
+                  stringValue: SELECT cpu_time AS [CPU Usage (time)
               - key: sqlserver.execution_count
                 value:
                   intValue: "0"
@@ -61,7 +61,7 @@ resourceLogs:
             body: {}
             eventName: db.server.top_query
             spanId: ""
-            timeUnixNano: "1748501969782683000"
+            timeUnixNano: "1749224038686572000"
             traceId: ""
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

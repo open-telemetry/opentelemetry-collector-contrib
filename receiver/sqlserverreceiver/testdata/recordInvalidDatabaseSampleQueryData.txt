@@ -11,7 +11,7 @@
     "request_status": "running",
     "host_name": "DESKTOP-GHAEGRD",
     "command": "SELECT",
-    "statement_text": "SELECT cpu_time AS [CPU Usage (time)]",
+    "statement_text": "SELECT cpu_time AS [CPU Usage (time)",
     "blocking_session_id": "a0",
     "wait_type": "",
     "wait_time": "a0",
