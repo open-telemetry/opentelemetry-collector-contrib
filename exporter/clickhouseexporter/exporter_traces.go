@@ -73,6 +73,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	if err != nil {
 		return err
 	}
+	defer func(batch driver.Batch) {
+		err := batch.Close()
+		if err != nil {
+			e.logger.Warn("failed to close traces batch", zap.Error(err))
+		}
+	}(batch)
 
 	processStart := time.Now()
 

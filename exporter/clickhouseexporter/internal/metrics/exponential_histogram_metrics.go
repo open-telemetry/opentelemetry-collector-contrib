@@ -40,6 +40,12 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn) error 
 	if err != nil {
 		return err
 	}
+	defer func(batch driver.Batch) {
+		err := batch.Close()
+		if err != nil {
+			logger.Warn("failed to close exponential histogram metrics batch", zap.Error(err))
+		}
+	}(batch)
 
 	for _, model := range e.expHistogramModels {
 		resAttr := AttributesToMap(model.metadata.ResAttr)

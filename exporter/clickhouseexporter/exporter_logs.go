@@ -72,6 +72,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
+	defer func(batch driver.Batch) {
+		err := batch.Close()
+		if err != nil {
+			e.logger.Warn("failed to close logs batch", zap.Error(err))
+		}
+	}(batch)
 
 	processStart := time.Now()
 

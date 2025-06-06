@@ -40,6 +40,12 @@ func (h *histogramMetrics) insert(ctx context.Context, db driver.Conn) error {
 	if err != nil {
 		return err
 	}
+	defer func(batch driver.Batch) {
+		err := batch.Close()
+		if err != nil {
+			logger.Warn("failed to close histogram metrics batch", zap.Error(err))
+		}
+	}(batch)
 
 	for _, model := range h.histogramModel {
 		resAttr := AttributesToMap(model.metadata.ResAttr)

@@ -41,6 +41,12 @@ func (g *gaugeMetrics) insert(ctx context.Context, db driver.Conn) error {
 	if err != nil {
 		return err
 	}
+	defer func(batch driver.Batch) {
+		err := batch.Close()
+		if err != nil {
+			logger.Warn("failed to close gauge metrics batch", zap.Error(err))
+		}
+	}(batch)
 
 	for _, model := range g.gaugeModels {
 		resAttr := AttributesToMap(model.metadata.ResAttr)
