@@ -92,12 +92,28 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 	require.Len(t, m.rms, 5)
 }
 
+func TestDurationInf(t *testing.T) {
+	cfg := &Config{
+		Config: common.Config{
+			TotalDuration: common.DurationWithInf(-1),
+		},
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
+}
+
 func TestRateOfMetrics(t *testing.T) {
 	// arrange
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: time.Second / 2,
+			TotalDuration: common.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		MetricType: MetricTypeSum,
@@ -187,7 +203,7 @@ func TestUnthrottled(t *testing.T) {
 	// arrange
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: 1 * time.Second,
+			TotalDuration: common.DurationWithInf(1 * time.Second),
 			WorkerCount:   1,
 		},
 		MetricType: MetricTypeSum,
@@ -392,7 +408,7 @@ func TestValidate(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name: "No duration or NumMetrics",
+			name: "No duration, NumMetrics, or Continuous",
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
