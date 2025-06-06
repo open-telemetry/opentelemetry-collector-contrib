@@ -19,3 +19,6 @@ storage:
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
   config_apply_timeout: {{.config_apply_timeout}}
+  {{- if .hupRestart }}
+  use_hup_restart: {{ .hupRestart }}
+  {{- end }}
