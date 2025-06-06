@@ -100,9 +100,6 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 		return &serviceComponents, err
 	}
 
-	// Extract the service configuration
-	// serviceConfig := oc.Service
-
 	// Process extensions
 	for _, extensionID := range oc.Service.Extensions {
 		extension := payload.ServiceComponent{

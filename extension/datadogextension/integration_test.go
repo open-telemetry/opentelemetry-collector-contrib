@@ -160,7 +160,7 @@ func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
 	assert.NotContains(t, jsonString, "\r", "JSON string should not contain carriage returns")
 
 	// Verify it's valid JSON by attempting to unmarshal
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal([]byte(jsonString), &result)
 	assert.NoError(t, err, "flattened JSON should be valid JSON")
 }
