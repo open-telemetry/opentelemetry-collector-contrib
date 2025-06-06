@@ -115,7 +115,7 @@ func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 }
 
 func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces) {
-	err := exporter.pushTraceData(context.TODO(), td)
+	err := exporter.pushTraceData(context.Background(), td)
 	require.NoError(t, err)
 }
 

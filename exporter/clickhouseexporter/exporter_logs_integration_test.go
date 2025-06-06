@@ -88,7 +88,7 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter) {
 }
 
 func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
-	err := exporter.pushLogsData(context.TODO(), ld)
+	err := exporter.pushLogsData(context.Background(), ld)
 	require.NoError(t, err)
 }
 

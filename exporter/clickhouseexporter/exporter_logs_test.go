@@ -49,9 +49,9 @@ func TestLogsExporter_New(t *testing.T) {
 			exporter := newLogsExporter(zap.NewNop(), test.config)
 
 			if exporter != nil {
-				err = errors.Join(err, exporter.start(context.TODO(), nil))
+				err = errors.Join(err, exporter.start(context.Background(), nil))
 				defer func() {
-					require.NoError(t, exporter.shutdown(context.TODO()))
+					require.NoError(t, exporter.shutdown(context.Background()))
 				}()
 			}
 
