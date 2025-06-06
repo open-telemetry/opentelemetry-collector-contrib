@@ -101,7 +101,12 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m)
 					}
 				case pmetric.MetricTypeHistogram:
-					// TODO implement
+					dataPoints := metric.Histogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						break
+					}
+					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)
 				case pmetric.MetricTypeExponentialHistogram:
 					// TODO implement
 				case pmetric.MetricTypeSummary:
