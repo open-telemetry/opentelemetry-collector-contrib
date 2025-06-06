@@ -1,0 +1,23 @@
+type: opsrampmetrics
+
+status:
+  class: exporter
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+
+metrics:
+  metrics.success:
+    enabled: true
+    description: Number of metrics successfully converted to OpsRamp format
+    extended_documentation: Counts the number of metrics successfully converted and exported in the OpsRamp format.
+    unit: "{metrics}"
+    gauge:
+      value_type: int
+  metrics.failure:
+    enabled: true
+    description: Number of metrics that failed to be converted to OpsRamp format
+    extended_documentation: Counts the number of metrics that failed to be converted to the OpsRamp format.
+    unit: "{metrics}"
+    gauge:
+      value_type: int

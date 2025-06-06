@@ -1,0 +1,13 @@
+default:
+all_set:
+  metrics:
+    metrics.failure:
+      enabled: true
+    metrics.success:
+      enabled: true
+none_set:
+  metrics:
+    metrics.failure:
+      enabled: false
+    metrics.success:
+      enabled: false
