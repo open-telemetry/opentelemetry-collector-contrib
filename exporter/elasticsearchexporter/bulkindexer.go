@@ -101,47 +101,88 @@ func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Val
 }
 
 func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {
-	return &syncBulkIndexer{
-		config:                bulkIndexerConfig(client, config, requireDataStream),
-		flushTimeout:          config.Timeout,
-		flushBytes:            config.Flush.Bytes,
-		retryConfig:           config.Retry,
-		logger:                logger,
-		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+	numWorkers := config.NumWorkers
+	if numWorkers == 0 {
+		numWorkers = runtime.NumCPU()
 	}
+
+	pool := &syncBulkIndexer{
+		wg:             sync.WaitGroup{},
+		bulkIndexerCfg: bulkIndexerConfig(client, config, requireDataStream),
+		// create a channel with buffer equal to num_workers
+		items:  make(chan docappender.BulkIndexerItem, numWorkers),
+		config: config,
+		logger: logger,
+	}
+
+	return pool
 }
 
 type syncBulkIndexer struct {
-	config                docappender.BulkIndexerConfig
-	flushTimeout          time.Duration
-	flushBytes            int
-	retryConfig           RetrySettings
-	logger                *zap.Logger
-	failedDocsInputLogger *zap.Logger
+	wg             sync.WaitGroup
+	items          chan docappender.BulkIndexerItem
+	bulkIndexerCfg docappender.BulkIndexerConfig
+	logger         *zap.Logger
+	config         *Config
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
 // it with a syncBulkIndexerSession.
-func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
-	bi, err := docappender.NewBulkIndexer(s.config)
-	if err != nil {
-		// This should never happen in practice:
-		// NewBulkIndexer should only fail if the
-		// config is invalid, and we expect it to
-		// always be valid at this point.
-		return errBulkIndexerSession{err: err}
+func (s *syncBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
+	numWorkers := s.config.NumWorkers
+	if numWorkers == 0 {
+		numWorkers = runtime.NumCPU()
 	}
-	return &syncBulkIndexerSession{s: s, bi: bi}
+
+	s.wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		bulkIndexer, err := docappender.NewBulkIndexer(s.bulkIndexerCfg)
+		if err != nil {
+			// This should never happen in practice:
+			// NewBulkIndexer should only fail if the
+			// config is invalid, and we expect it to
+			// always be valid at this point.
+			return errBulkIndexerSession{err: err}
+		}
+		worker := &syncBulkIndexerWorker{
+			indexer:               bulkIndexer,
+			items:                 s.items,
+			logger:                s.logger,
+			httpFlushTimeout:      s.config.Timeout,
+			batcherFlushTimeout:   s.config.Batcher.FlushTimeout,
+			flushBytes:            s.config.Flush.Bytes,
+			retryConfig:           s.config.Retry,
+			failedDocsInputLogger: newFailedDocsInputLogger(s.logger, s.config),
+		}
+
+		go func() {
+			defer s.wg.Done()
+			worker.run(ctx)
+		}()
+
+	}
+
+	return &syncBulkIndexerSession{s: s}
 }
 
-// Close is a no-op.
-func (s *syncBulkIndexer) Close(context.Context) error {
-	return nil
+// Close closes the syncBulkIndexer and active sessions
+func (s *syncBulkIndexer) Close(ctx context.Context) error {
+	close(s.items)
+	doneCh := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(doneCh)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-doneCh:
+		return nil
+	}
 }
 
 type syncBulkIndexerSession struct {
-	s  *syncBulkIndexer
-	bi *docappender.BulkIndexer
+	s *syncBulkIndexer
 }
 
 // Add adds an item to the sync bulk indexer session.
@@ -154,16 +195,13 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 		Action:           action,
 		Pipeline:         pipeline,
 	}
-	err := s.bi.Add(doc)
-	if err != nil {
-		return err
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case s.s.items <- doc:
+		return nil
 	}
-	// flush bytes should operate on uncompressed length
-	// as Elasticsearch http.max_content_length measures uncompressed length.
-	if s.bi.UncompressedLen() >= s.s.flushBytes {
-		return s.Flush(ctx)
-	}
-	return nil
 }
 
 // End is a no-op.
@@ -172,18 +210,69 @@ func (s *syncBulkIndexerSession) End() {
 }
 
 // Flush flushes documents added to the bulk indexer session.
-func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
+func (s *syncBulkIndexerSession) Flush(_ context.Context) error {
+	return nil
+}
+
+type syncBulkIndexerWorker struct {
+	indexer             *docappender.BulkIndexer
+	items               <-chan docappender.BulkIndexerItem
+	httpFlushTimeout    time.Duration
+	batcherFlushTimeout time.Duration
+	flushBytes          int
+	retryConfig         RetrySettings
+
+	logger                *zap.Logger
+	failedDocsInputLogger *zap.Logger
+}
+
+func (w *syncBulkIndexerWorker) run(ctx context.Context) {
+	flushTick := time.NewTicker(w.batcherFlushTimeout)
+	defer flushTick.Stop()
+	for {
+		select {
+		case item, ok := <-w.items:
+			// if channel is closed, flush and return
+			if !ok {
+				// we don't check flush error here as the channel has been closed.
+				w.flush(ctx)
+				return
+			}
+
+			if err := w.indexer.Add(item); err != nil {
+				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
+			}
+
+			// flush bytes should operate on uncompressed length
+			// as Elasticsearch http.max_content_length measures uncompressed length.
+			if w.indexer.UncompressedLen() >= w.flushBytes {
+				err := w.flush(ctx)
+				if err != nil {
+					w.logger.Error("error flushing document", zap.Error(err))
+				}
+				flushTick.Reset(w.batcherFlushTimeout)
+			}
+		case <-flushTick.C:
+			err := w.flush(ctx)
+			if err != nil {
+				w.logger.Error("error flushing document", zap.Error(err))
+			}
+		}
+	}
+}
+
+func (w *syncBulkIndexerWorker) flush(ctx context.Context) error {
 	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
-		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger, s.s.failedDocsInputLogger); err != nil {
+		if _, err := flushBulkIndexer(ctx, w.indexer, w.httpFlushTimeout, w.logger, w.failedDocsInputLogger); err != nil {
 			return err
 		}
-		if s.bi.Items() == 0 {
+		if w.indexer.Items() == 0 {
 			// No documents in buffer waiting for per-document retry, exit retry loop.
 			return nil
 		}
 		if retryBackoff == nil {
-			retryBackoff = createElasticsearchBackoffFunc(&s.s.retryConfig)
+			retryBackoff = createElasticsearchBackoffFunc(&w.retryConfig)
 			if retryBackoff == nil {
 				// BUG: This should never happen in practice.
 				// When retry is disabled / document level retry limit is reached,
