@@ -18,13 +18,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const clickhouseDriverName = "clickhouse"
-
 // Config defines configuration for clickhouse exporter.
 type Config struct {
 	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
 	collectorVersion string
-	driverName       string // for testing
 
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -106,7 +103,6 @@ var (
 func createDefaultConfig() component.Config {
 	return &Config{
 		collectorVersion: "unknown",
-		driverName:       clickhouseDriverName,
 
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
