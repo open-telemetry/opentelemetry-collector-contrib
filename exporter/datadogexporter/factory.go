@@ -370,6 +370,7 @@ func (f *factory) createMetricsExporter(
 			TimeoutConfig: exporterhelper.TimeoutConfig{
 				Timeout: cfg.Timeout,
 			},
+			ClientConfig:     cfg.TLS,
 			QueueBatchConfig: cfg.QueueSettings,
 			API:              cfg.API,
 			HostProvider: func(ctx context.Context) (string, error) {

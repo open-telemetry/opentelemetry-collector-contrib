@@ -31,6 +31,12 @@ func TestObfuscateInvalidSQL(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Empty(t, result)
+
+	sql = "SELECT cpu_time AS [CPU Usage Time]"
+	expected := "SELECT cpu_time"
+	result, err = obfuscateSQL(sql)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
 }
 
 func TestObfuscateQueryPlan(t *testing.T) {

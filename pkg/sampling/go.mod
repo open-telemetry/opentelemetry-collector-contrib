@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.33.1-0.20250603105141-605011a1fea8
+	go.opentelemetry.io/collector/pdata v1.33.1-0.20250605124916-efac6c7d44f1
 	go.uber.org/multierr v1.11.0
 )
 

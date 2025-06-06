@@ -231,14 +231,17 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-//
-//nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
 		otelMetrics      = pmetric.NewMetrics()
 		labelsBuilder    = labels.NewScratchBuilder(0)
-		stats            = promremote.WriteResponseStats{}
+		// More about stats: https://github.com/prometheus/docs/blob/main/docs/specs/prw/remote_write_spec_2_0.md#required-written-response-headers
+		// TODO: add histograms and exemplars to the stats. Histograms can be added after this PR be merged. Ref #39864
+		// Exemplars should be implemented to add them to the stats.
+		stats = promremote.WriteResponseStats{
+			Confirmed: true,
+		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
@@ -367,9 +370,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
@@ -400,7 +403,7 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 }
 
 // addNumberDatapoints adds the labels to the datapoints attributes.
-func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
@@ -418,6 +421,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 			}
 			attributes.PutStr(l.Name, l.Value)
 		}
+		stats.Samples++
 	}
 }
 
