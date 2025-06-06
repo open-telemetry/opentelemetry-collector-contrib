@@ -328,6 +328,13 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("failed loading initial config: %w", err)
 	}
 
+	if s.config.Agent.ValidateConfig {
+		err = s.validateConfig()
+		if err != nil {
+			return err
+		}
+	}
+
 	s.commander, err = commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
@@ -354,17 +361,7 @@ func (s *Supervisor) Start() error {
 }
 
 func (s *Supervisor) getFeatureGates() error {
-	cmd, err := commander.NewCommander(
-		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
-		s.config.Agent,
-		"featuregate",
-	)
-	if err != nil {
-		return err
-	}
-
-	stdout, _, err := cmd.StartOneShot()
+	stdout, _, err := s.runCommand("featuregate")
 	if err != nil {
 		return err
 	}
@@ -386,6 +383,28 @@ func (s *Supervisor) getFeatureGates() error {
 	}
 
 	return nil
+}
+
+func (s *Supervisor) validateConfig() error {
+	_, stderr, err := s.runCommand("validate", "--config", s.agentConfigFilePath())
+	if err != nil {
+		return fmt.Errorf("error running validate command:%s", stderr)
+	}
+	return nil
+}
+
+func (s *Supervisor) runCommand(args ...string) ([]byte, []byte, error) {
+	cmd, err := commander.NewCommander(
+		s.telemetrySettings.Logger,
+		s.config.Storage.Directory,
+		s.config.Agent,
+		args...,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cmd.StartOneShot()
 }
 
 func (s *Supervisor) createTemplates() error {
@@ -1566,6 +1585,13 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+		}
+
+		if s.config.Agent.ValidateConfig {
+			err = s.validateConfig()
+			if err != nil {
+				s.telemetrySettings.Logger.Error("The OpAMP client failed to validate the effective config", zap.Error(err))
+			}
 		}
 
 		s.telemetrySettings.Logger.Debug("Config is changed. Signal to restart the agent")
