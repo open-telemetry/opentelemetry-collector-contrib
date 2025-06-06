@@ -500,6 +500,13 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.volume.used:
+    enabled: false
+    description: "The number of used bytes in the volume."
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
   k8s.volume.inodes:
     enabled: true
     description: "The total inodes in the filesystem."
