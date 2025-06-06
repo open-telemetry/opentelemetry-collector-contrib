@@ -45,15 +45,14 @@ type emfExporter struct {
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
-func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error) {
+func newEmfExporter(ctx context.Context, config *Config, set exporter.Settings) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
 
 	config.logger = set.Logger
 
-	// create AWS session
-	awsConfig, err := awsutil.GetAWSConfig(set.Logger, &config.AWSSessionSettings)
+	awsConfig, err := awsutil.GetAWSConfig(ctx, set.Logger, &config.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
