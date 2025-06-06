@@ -121,6 +121,8 @@ all_set:
       enabled: true
     k8s.volume.inodes.used:
       enabled: true
+    k8s.volume.used:
+      enabled: true
   resource_attributes:
     aws.volume.id:
       enabled: true
@@ -273,6 +275,8 @@ none_set:
     k8s.volume.inodes.free:
       enabled: false
     k8s.volume.inodes.used:
+      enabled: false
+    k8s.volume.used:
       enabled: false
   resource_attributes:
     aws.volume.id:

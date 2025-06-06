@@ -219,6 +219,9 @@ var MetricsInfo = metricsInfo{
 	K8sVolumeInodesUsed: metricInfo{
 		Name: "k8s.volume.inodes.used",
 	},
+	K8sVolumeUsed: metricInfo{
+		Name: "k8s.volume.used",
+	},
 }
 
 type metricsInfo struct {
@@ -282,6 +285,7 @@ type metricsInfo struct {
 	K8sVolumeInodes                      metricInfo
 	K8sVolumeInodesFree                  metricInfo
 	K8sVolumeInodesUsed                  metricInfo
+	K8sVolumeUsed                        metricInfo
 }
 
 type metricInfo struct {
@@ -3260,6 +3264,55 @@ func newMetricK8sVolumeInodesUsed(cfg MetricConfig) metricK8sVolumeInodesUsed {
 	return m
 }
 
+type metricK8sVolumeUsed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.volume.used metric with initial data.
+func (m *metricK8sVolumeUsed) init() {
+	m.data.SetName("k8s.volume.used")
+	m.data.SetDescription("The number of used bytes in the volume.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sVolumeUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sVolumeUsed) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sVolumeUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sVolumeUsed(cfg MetricConfig) metricK8sVolumeUsed {
+	m := metricK8sVolumeUsed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -3330,6 +3383,7 @@ type MetricsBuilder struct {
 	metricK8sVolumeInodes                      metricK8sVolumeInodes
 	metricK8sVolumeInodesFree                  metricK8sVolumeInodesFree
 	metricK8sVolumeInodesUsed                  metricK8sVolumeInodesUsed
+	metricK8sVolumeUsed                        metricK8sVolumeUsed
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -3415,6 +3469,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sVolumeInodes:                      newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
 		metricK8sVolumeInodesFree:                  newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
 		metricK8sVolumeInodesUsed:                  newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
+		metricK8sVolumeUsed:                        newMetricK8sVolumeUsed(mbc.Metrics.K8sVolumeUsed),
 		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
@@ -3637,6 +3692,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesFree.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesUsed.emit(ils.Metrics())
+	mb.metricK8sVolumeUsed.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -3966,6 +4022,11 @@ func (mb *MetricsBuilder) RecordK8sVolumeInodesFreeDataPoint(ts pcommon.Timestam
 // RecordK8sVolumeInodesUsedDataPoint adds a data point to k8s.volume.inodes.used metric.
 func (mb *MetricsBuilder) RecordK8sVolumeInodesUsedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sVolumeInodesUsed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sVolumeUsedDataPoint adds a data point to k8s.volume.used metric.
+func (mb *MetricsBuilder) RecordK8sVolumeUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sVolumeUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
