@@ -112,6 +112,8 @@ correctly associate the matching container to the resource:
    - container.image.name
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
+   - container.ports
+   - k8s.container.cpu.request
    - service.version
    - service.instance.id
 2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
@@ -119,6 +121,8 @@ correctly associate the matching container to the resource:
    - container.image.name
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
+   - container.ports
+   - k8s.container.cpu.request
    - service.version
    - service.instance.id
 3. If the `k8s.container.restart_count` resource attribute is provided, it can be used to associate with a particular container
