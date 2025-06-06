@@ -27,7 +27,7 @@ var supportedMetricTypes = map[pmetric.MetricType]string{
 	pmetric.MetricTypeSum:                  sql_templates.MetricsSumCreateTable,
 	pmetric.MetricTypeHistogram:            sql_templates.MetricsHistogramCreateTable,
 	pmetric.MetricTypeExponentialHistogram: sql_templates.MetricsExpHistogramCreateTable,
-	pmetric.MetricTypeSummary:              sql_templates.MetricsSumCreateTable,
+	pmetric.MetricTypeSummary:              sql_templates.MetricsSummaryCreateTable,
 }
 
 var logger *zap.Logger
