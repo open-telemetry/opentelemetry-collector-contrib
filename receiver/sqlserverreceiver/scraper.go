@@ -672,7 +672,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			obfuscated, err := obfuscateSQL(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return statement, nil
+				return "", nil
 			}
 
 			return obfuscated, nil
@@ -968,7 +968,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			obfuscated, err := obfuscateSQL(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return statement, nil
+				return "", nil
 			}
 			return obfuscated, nil
 		}).(string)
