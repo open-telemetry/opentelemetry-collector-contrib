@@ -25,7 +25,7 @@ type windowsServiceScraper struct {
 }
 
 //nolint:unused
-func newWindowsServiceScraper(settings receiver.Settings, cfg *Config) windowsServiceScraper {
+func newWindowsServiceScraper(settings receiver.Settings, _ *Config) windowsServiceScraper {
 	return windowsServiceScraper{
 		settings: settings,
 		mb:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
