@@ -46,7 +46,6 @@ require (
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.33.1-0.20250605211604-c9aaed834963 // indirect
 	go.opentelemetry.io/collector/consumer v1.33.1-0.20250605211604-c9aaed834963 // indirect

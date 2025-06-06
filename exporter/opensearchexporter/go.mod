@@ -34,7 +34,6 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.127.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
-	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.33.1-0.20250605211604-c9aaed834963 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.1-0.20250605211604-c9aaed834963 // indirect
