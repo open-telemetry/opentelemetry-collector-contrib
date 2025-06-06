@@ -371,12 +371,7 @@ func setupReceiver(client *fake.Clientset, osQuotaClient quotaclientset.Interfac
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}
 
-	if len(namespaces) == 1 {
-		// if there is only ony namespace in the provided namespaces array, use the deprecated field to still cover the code related to that
-		config.Namespace = namespaces[0]
-	} else if len(namespaces) > 1 {
-		config.Namespaces = namespaces
-	}
+	config.Namespaces = namespaces
 
 	if leaderElector.Type().String() == "k8s_leader_elector" {
 		config.K8sLeaderElector = &leaderElector
