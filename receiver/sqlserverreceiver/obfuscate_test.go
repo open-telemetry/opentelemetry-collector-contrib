@@ -71,7 +71,7 @@ func TestInvalidQueryPlans(t *testing.T) {
 	// obfuscate failure, return empty string
 	plan = `<ShowPlanXML StatementText="[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]/(10000)*(3600)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(10000)/(100)*(60)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(100)"></ShowPlanXML>`
 	result, err = obfuscateXMLPlan(plan)
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 	assert.NoError(t, err)
 }
 
