@@ -6,9 +6,10 @@ package internal
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"time"
 )
 
 const DefaultDatabase = "default"

@@ -7,7 +7,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -33,10 +33,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp, err := newLogsExporter(set.Logger, c)
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
-	}
+	exp := newLogsExporter(set.Logger, c)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -58,10 +55,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp, err := newTracesExporter(set.Logger, c)
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure clickhouse traces exporter: %w", err)
-	}
+	exp := newTracesExporter(set.Logger, c)
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -83,10 +77,7 @@ func createMetricExporter(
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp, err := newMetricsExporter(set.Logger, c)
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure clickhouse metrics exporter: %w", err)
-	}
+	exp := newMetricsExporter(set.Logger, c)
 
 	return exporterhelper.NewMetrics(
 		ctx,

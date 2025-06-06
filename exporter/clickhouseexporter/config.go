@@ -6,16 +6,17 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
-	"go.opentelemetry.io/collector/component"
 	"net/url"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
 // Config defines configuration for clickhouse exporter.

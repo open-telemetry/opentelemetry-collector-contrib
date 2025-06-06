@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -41,9 +41,9 @@ func (h *histogramMetrics) insert(ctx context.Context, db driver.Conn) error {
 		return err
 	}
 	defer func(batch driver.Batch) {
-		err := batch.Close()
-		if err != nil {
-			logger.Warn("failed to close histogram metrics batch", zap.Error(err))
+		closeErr := batch.Close()
+		if closeErr != nil {
+			logger.Warn("failed to close histogram metrics batch", zap.Error(closeErr))
 		}
 	}(batch)
 

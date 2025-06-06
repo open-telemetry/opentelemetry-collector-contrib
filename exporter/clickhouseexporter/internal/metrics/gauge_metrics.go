@@ -5,12 +5,11 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -42,9 +41,9 @@ func (g *gaugeMetrics) insert(ctx context.Context, db driver.Conn) error {
 		return err
 	}
 	defer func(batch driver.Batch) {
-		err := batch.Close()
-		if err != nil {
-			logger.Warn("failed to close gauge metrics batch", zap.Error(err))
+		closeErr := batch.Close()
+		if closeErr != nil {
+			logger.Warn("failed to close gauge metrics batch", zap.Error(closeErr))
 		}
 	}(batch)
 
@@ -56,7 +55,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db driver.Conn) error {
 		for i := 0; i < model.gauge.DataPoints().Len(); i++ {
 			dp := model.gauge.DataPoints().At(i)
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			err := batch.Append(
+			appendErr := batch.Append(
 				resAttr,
 				model.metadata.ResURL,
 				model.metadata.ScopeInstr.Name(),
@@ -79,16 +78,16 @@ func (g *gaugeMetrics) insert(ctx context.Context, db driver.Conn) error {
 				spanIDs,
 				traceIDs,
 			)
-			if err != nil {
-				return fmt.Errorf("failed to append gauge metric: %w", err)
+			if appendErr != nil {
+				return fmt.Errorf("failed to append gauge metric: %w", appendErr)
 			}
 		}
 	}
 
 	processDuration := time.Since(processStart)
 	networkStart := time.Now()
-	if err := batch.Send(); err != nil {
-		return fmt.Errorf("gauge metric insert failed: %w", err)
+	if sendErr := batch.Send(); sendErr != nil {
+		return fmt.Errorf("gauge metric insert failed: %w", sendErr)
 	}
 
 	networkDuration := time.Since(networkStart)

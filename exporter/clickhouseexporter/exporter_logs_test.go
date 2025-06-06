@@ -9,9 +9,10 @@ package clickhouseexporter
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestLogsExporter_New(t *testing.T) {
@@ -48,8 +49,7 @@ func TestLogsExporter_New(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var err error
-			exporter, err := newLogsExporter(zap.NewNop(), test.config)
-			err = errors.Join(err, err)
+			exporter := newLogsExporter(zap.NewNop(), test.config)
 
 			if exporter != nil {
 				err = errors.Join(err, exporter.start(context.TODO(), nil))

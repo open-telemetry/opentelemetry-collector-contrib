@@ -7,24 +7,22 @@ package clickhouseexporter
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
-	"testing"
-	"time"
 )
 
 func TestMetricsExporter(t *testing.T) {
 	exporter := newTestMetricsExporter(t, theEndpoint)
 	verifyExporterMetrics(t, exporter)
-
-	// TODO: verify database + table creation
 }
 
 func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
-	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
-	require.NoError(t, err)
+	exporter := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
 	require.NoError(t, exporter.start(context.Background(), nil))
 
@@ -455,7 +453,7 @@ func verifyGaugeMetric(t *testing.T, exporter *metricsExporter) {
 		ExemplarsValue:    []float64{54},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_metrics_gauge")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_metrics_gauge")
 	require.NoError(t, row.Err())
 
 	var actualGauge gauge
@@ -528,7 +526,7 @@ func verifySumMetric(t *testing.T, exporter *metricsExporter) {
 		ExemplarsValue:    []float64{54},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_metrics_sum")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_metrics_sum")
 	require.NoError(t, row.Err())
 
 	var actualSum sum
@@ -611,7 +609,7 @@ func verifyHistogramMetric(t *testing.T, exporter *metricsExporter) {
 		ExemplarsValue:    []float64{55.22},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_metrics_histogram")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_metrics_histogram")
 	require.NoError(t, row.Err())
 
 	var actualHistogram histogram
@@ -702,7 +700,7 @@ func verifyExphistogramMetric(t *testing.T, exporter *metricsExporter) {
 		ExemplarsValue:    []float64{54},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_metrics_exponential_histogram")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_metrics_exponential_histogram")
 	require.NoError(t, row.Err())
 
 	var actualExpHistogram expHistogram
@@ -765,7 +763,7 @@ func verifySummaryMetric(t *testing.T, exporter *metricsExporter) {
 		Flags:          0,
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_metrics_summary")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_metrics_summary")
 	require.NoError(t, row.Err())
 
 	var actualSummary summary

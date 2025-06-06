@@ -6,13 +6,14 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
 type metricsExporter struct {
@@ -23,14 +24,14 @@ type metricsExporter struct {
 	tablesConfig metrics.MetricTablesConfigMapper
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
+func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 	tablesConfig := generateMetricTablesConfigMapper(cfg)
 
 	return &metricsExporter{
 		logger:       logger,
 		cfg:          cfg,
 		tablesConfig: tablesConfig,
-	}, nil
+	}
 }
 
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {

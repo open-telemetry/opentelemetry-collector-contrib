@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -41,9 +41,9 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn) error 
 		return err
 	}
 	defer func(batch driver.Batch) {
-		err := batch.Close()
-		if err != nil {
-			logger.Warn("failed to close exponential histogram metrics batch", zap.Error(err))
+		closeErr := batch.Close()
+		if closeErr != nil {
+			logger.Warn("failed to close exponential histogram metrics batch", zap.Error(closeErr))
 		}
 	}(batch)
 
@@ -56,7 +56,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn) error 
 			dp := model.expHistogram.DataPoints().At(i)
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 
-			err := batch.Append(
+			appendErr := batch.Append(
 				resAttr,
 				model.metadata.ResURL,
 				model.metadata.ScopeInstr.Name(),
@@ -89,16 +89,16 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn) error 
 				dp.Max(),
 				int32(model.expHistogram.AggregationTemporality()),
 			)
-			if err != nil {
-				return fmt.Errorf("failed to append exponential histogram metric: %w", err)
+			if appendErr != nil {
+				return fmt.Errorf("failed to append exponential histogram metric: %w", appendErr)
 			}
 		}
 	}
 
 	processDuration := time.Since(processStart)
 	networkStart := time.Now()
-	if err := batch.Send(); err != nil {
-		return fmt.Errorf("exponential histogram metric insert failed: %w", err)
+	if sendErr := batch.Send(); sendErr != nil {
+		return fmt.Errorf("exponential histogram metric insert failed: %w", sendErr)
 	}
 
 	networkDuration := time.Since(networkStart)

@@ -8,13 +8,14 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
-	"go.uber.org/goleak"
 	"math/rand/v2"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/goleak"
 )
 
 func randPort() string {
@@ -66,7 +67,7 @@ func createClickhouseContainer(image string) (testcontainers.Container, string, 
 		return nil, "", fmt.Errorf("failed to read container host address: %w", err)
 	}
 
-	endpoint := fmt.Sprintf("tcp://%s:%s?username=default&password=otel", host, port)
+	endpoint := fmt.Sprintf("tcp://%s:%s?username=default&password=otel&database=otel_int_test", host, port)
 
 	return c, endpoint, nil
 }
@@ -83,6 +84,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 var theEndpoint string
+
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
 func TestMain(m *testing.M) {

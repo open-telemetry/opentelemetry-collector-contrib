@@ -5,18 +5,17 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sql_templates"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -28,12 +27,12 @@ type tracesExporter struct {
 	cfg    *Config
 }
 
-func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
+func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 	return &tracesExporter{
 		insertSQL: renderInsertTracesSQL(cfg),
 		logger:    logger,
 		cfg:       cfg,
-	}, nil
+	}
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
@@ -74,9 +73,9 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		return err
 	}
 	defer func(batch driver.Batch) {
-		err := batch.Close()
-		if err != nil {
-			e.logger.Warn("failed to close traces batch", zap.Error(err))
+		closeErr := batch.Close()
+		if closeErr != nil {
+			e.logger.Warn("failed to close traces batch", zap.Error(closeErr))
 		}
 	}(batch)
 
@@ -110,7 +109,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				eventTimes, eventNames, eventAttrs := convertEvents(span.Events())
 				linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(span.Links())
 
-				err := batch.Append(
+				appendErr := batch.Append(
 					span.StartTimestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
@@ -134,8 +133,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					linksTraceStates,
 					linksAttrs,
 				)
-				if err != nil {
-					return fmt.Errorf("failed to append trace row: %w", err)
+				if appendErr != nil {
+					return fmt.Errorf("failed to append trace row: %w", appendErr)
 				}
 
 				spanCount++
@@ -145,8 +144,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 
 	processDuration := time.Since(processStart)
 	networkStart := time.Now()
-	if err := batch.Send(); err != nil {
-		return fmt.Errorf("traces insert failed: %w", err)
+	if sendErr := batch.Send(); sendErr != nil {
+		return fmt.Errorf("traces insert failed: %w", sendErr)
 	}
 
 	networkDuration := time.Since(networkStart)
@@ -184,12 +183,12 @@ func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []stri
 }
 
 func renderInsertTracesSQL(cfg *Config) string {
-	return fmt.Sprintf(sql_templates.TracesInsert, cfg.database(), cfg.TracesTableName)
+	return fmt.Sprintf(sqltemplates.TracesInsert, cfg.database(), cfg.TracesTableName)
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(sql_templates.TracesCreateTable,
+	return fmt.Sprintf(sqltemplates.TracesCreateTable,
 		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
@@ -198,7 +197,7 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
-	return fmt.Sprintf(sql_templates.TracesCreateTsTable,
+	return fmt.Sprintf(sqltemplates.TracesCreateTsTable,
 		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
@@ -207,7 +206,7 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
 	database := cfg.database()
-	return fmt.Sprintf(sql_templates.TracesCreateTsView,
+	return fmt.Sprintf(sqltemplates.TracesCreateTsView,
 		database, cfg.TracesTableName, cfg.clusterString(),
 		database, cfg.TracesTableName,
 		database, cfg.TracesTableName,

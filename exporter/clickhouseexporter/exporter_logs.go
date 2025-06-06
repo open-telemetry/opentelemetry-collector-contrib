@@ -5,17 +5,16 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sql_templates"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -27,12 +26,12 @@ type logsExporter struct {
 	cfg    *Config
 }
 
-func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
+func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 	return &logsExporter{
 		insertSQL: renderInsertLogsSQL(cfg),
 		logger:    logger,
 		cfg:       cfg,
-	}, nil
+	}
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
@@ -73,9 +72,9 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return err
 	}
 	defer func(batch driver.Batch) {
-		err := batch.Close()
-		if err != nil {
-			e.logger.Warn("failed to close logs batch", zap.Error(err))
+		closeErr := batch.Close()
+		if closeErr != nil {
+			e.logger.Warn("failed to close logs batch", zap.Error(closeErr))
 		}
 	}(batch)
 
@@ -112,7 +111,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					timestamp = r.ObservedTimestamp()
 				}
 
-				err := batch.Append(
+				appendErr := batch.Append(
 					timestamp.AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
@@ -129,8 +128,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					scopeAttrMap,
 					logAttrMap,
 				)
-				if err != nil {
-					return fmt.Errorf("failed to append log row: %w", err)
+				if appendErr != nil {
+					return fmt.Errorf("failed to append log row: %w", appendErr)
 				}
 
 				logCount++
@@ -140,8 +139,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 
 	processDuration := time.Since(processStart)
 	networkStart := time.Now()
-	if err := batch.Send(); err != nil {
-		return fmt.Errorf("logs insert failed: %w", err)
+	if sendErr := batch.Send(); sendErr != nil {
+		return fmt.Errorf("logs insert failed: %w", sendErr)
 	}
 
 	networkDuration := time.Since(networkStart)
@@ -156,12 +155,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(sql_templates.LogsInsert, cfg.database(), cfg.LogsTableName)
+	return fmt.Sprintf(sqltemplates.LogsInsert, cfg.database(), cfg.LogsTableName)
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "TimestampTime")
-	return fmt.Sprintf(sql_templates.LogsCreateTable,
+	return fmt.Sprintf(sqltemplates.LogsCreateTable,
 		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,

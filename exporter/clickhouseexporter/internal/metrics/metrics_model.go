@@ -8,26 +8,27 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sql_templates"
 	"strings"
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
 var supportedMetricTypes = map[pmetric.MetricType]string{
-	pmetric.MetricTypeGauge:                sql_templates.MetricsGaugeCreateTable,
-	pmetric.MetricTypeSum:                  sql_templates.MetricsSumCreateTable,
-	pmetric.MetricTypeHistogram:            sql_templates.MetricsHistogramCreateTable,
-	pmetric.MetricTypeExponentialHistogram: sql_templates.MetricsExpHistogramCreateTable,
-	pmetric.MetricTypeSummary:              sql_templates.MetricsSummaryCreateTable,
+	pmetric.MetricTypeGauge:                sqltemplates.MetricsGaugeCreateTable,
+	pmetric.MetricTypeSum:                  sqltemplates.MetricsSumCreateTable,
+	pmetric.MetricTypeHistogram:            sqltemplates.MetricsHistogramCreateTable,
+	pmetric.MetricTypeExponentialHistogram: sqltemplates.MetricsExpHistogramCreateTable,
+	pmetric.MetricTypeSummary:              sqltemplates.MetricsSummaryCreateTable,
 }
 
 var logger *zap.Logger
@@ -75,19 +76,19 @@ func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper,
 func NewMetricsModel(tablesConfig MetricTablesConfigMapper, database string) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsGaugeInsert, database, tablesConfig[pmetric.MetricTypeGauge].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsGaugeInsert, database, tablesConfig[pmetric.MetricTypeGauge].Name),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsSumInsert, database, tablesConfig[pmetric.MetricTypeSum].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsSumInsert, database, tablesConfig[pmetric.MetricTypeSum].Name),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsHistogramInsert, database, tablesConfig[pmetric.MetricTypeHistogram].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsHistogramInsert, database, tablesConfig[pmetric.MetricTypeHistogram].Name),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsExpHistogramInsert, database, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsExpHistogramInsert, database, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(sql_templates.MetricsSummaryInsert, database, tablesConfig[pmetric.MetricTypeSummary].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsSummaryInsert, database, tablesConfig[pmetric.MetricTypeSummary].Name),
 		},
 	}
 }

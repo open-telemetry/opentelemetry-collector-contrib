@@ -7,25 +7,23 @@ package clickhouseexporter
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap/zaptest"
-	"testing"
-	"time"
 )
 
 func TestTracesExporter(t *testing.T) {
 	exporter := newTestTracesExporter(t, theEndpoint)
 	verifyExportTraces(t, exporter)
-
-	// TODO: verify database + table creation
 }
 
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
-	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
-	require.NoError(t, err)
+	exporter := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
 	require.NoError(t, exporter.start(context.Background(), nil))
 
@@ -106,7 +104,7 @@ func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 		},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_traces")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_traces")
 	require.NoError(t, row.Err())
 
 	var actualTrace trace

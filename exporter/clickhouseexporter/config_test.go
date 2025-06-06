@@ -5,7 +5,6 @@ package clickhouseexporter
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
 const defaultEndpoint = "clickhouse://127.0.0.1:9000"
@@ -648,6 +648,60 @@ func TestClusterString(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
+		})
+	}
+}
+
+func TestConfigDatabase(t *testing.T) {
+	t.Parallel()
+
+	// TODO: implement test
+
+	caseDefault := createDefaultConfig().(*Config)
+	caseDefault.Endpoint = defaultEndpoint
+	caseCreateSchemaTrue := createDefaultConfig().(*Config)
+	caseCreateSchemaTrue.CreateSchema = true
+	caseCreateSchemaTrue.Endpoint = defaultEndpoint
+	caseCreateSchemaFalse := createDefaultConfig().(*Config)
+	caseCreateSchemaFalse.CreateSchema = false
+	caseCreateSchemaFalse.Endpoint = defaultEndpoint
+
+	tests := []struct {
+		name     string
+		input    *Config
+		expected string
+	}{
+		{
+			name:     "default",
+			input:    caseDefault,
+			expected: "default",
+		},
+		{
+			name:     "config default, dsn default",
+			input:    caseCreateSchemaTrue,
+			expected: "default",
+		},
+		{
+			name:     "config unique, dsn default",
+			input:    caseCreateSchemaFalse,
+			expected: "default",
+		},
+		{
+			name:     "config default, dsn unique",
+			input:    caseCreateSchemaFalse,
+			expected: "default",
+		},
+		{
+			name:     "config unique, dsn unique",
+			input:    caseCreateSchemaFalse,
+			expected: "default",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Config database case %s", tt.name), func(t *testing.T) {
+			assert.NoError(t, xconfmap.Validate(tt))
+			assert.Equal(t, tt.expected, tt.input.database())
 		})
 	}
 }

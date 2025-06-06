@@ -4,10 +4,12 @@
 package clickhouseexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
 func Test_generateMetricMetricTableNames(t *testing.T) {

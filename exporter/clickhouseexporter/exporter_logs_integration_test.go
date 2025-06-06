@@ -7,25 +7,23 @@ package clickhouseexporter
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap/zaptest"
-	"testing"
-	"time"
 )
 
 func TestLogsExporter(t *testing.T) {
 	exporter := newTestLogsExporter(t, theEndpoint)
 	verifyExportLogs(t, exporter)
-
-	// TODO: verify database + table creation
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
-	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
-	require.NoError(t, err)
+	exporter := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
 	require.NoError(t, exporter.start(context.Background(), nil))
 
@@ -79,7 +77,7 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter) {
 		},
 	}
 
-	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM default.otel_logs")
+	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_logs")
 	require.NoError(t, row.Err())
 
 	var actualLog log
@@ -117,60 +115,5 @@ func simpleLogs(count int) plog.Logs {
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
 	}
-	return logs
-}
-
-func simpleLogsWithNoTimestamp(count int) plog.Logs {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
-	rl.Resource().Attributes().PutStr("service.name", "test-service")
-	sl := rl.ScopeLogs().AppendEmpty()
-	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
-	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
-	sl.Scope().SetVersion("1.0.0")
-	sl.Scope().Attributes().PutStr("lib", "clickhouse")
-	timestamp := telemetryTimestamp
-
-	for i := 0; i < count; i++ {
-		r := sl.LogRecords().AppendEmpty()
-		// Call SetObservedTimestamp, but not SetTimestamp.
-		// The exporter should use observed timestamp.
-		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
-		r.SetSeverityNumber(plog.SeverityNumberError2)
-		r.SetSeverityText("error")
-		r.Body().SetStr("error message")
-		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
-		r.SetFlags(plog.DefaultLogRecordFlags)
-		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
-		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
-	}
-
-	return logs
-}
-
-func multipleLogsWithDifferentServiceName(count int) plog.Logs {
-	logs := simpleLogs(count)
-	rl := logs.ResourceLogs().AppendEmpty()
-	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
-	sl := rl.ScopeLogs().AppendEmpty()
-	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
-	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
-	sl.Scope().SetVersion("1.0.0")
-	sl.Scope().Attributes().PutStr("lib", "clickhouse")
-	timestamp := telemetryTimestamp
-
-	for i := 0; i < count; i++ {
-		r := sl.LogRecords().AppendEmpty()
-		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
-		r.SetSeverityNumber(plog.SeverityNumberError2)
-		r.SetSeverityText("error")
-		r.Body().SetStr("empty ServiceName")
-		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
-		r.SetFlags(plog.DefaultLogRecordFlags)
-		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
-		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
-	}
-
 	return logs
 }

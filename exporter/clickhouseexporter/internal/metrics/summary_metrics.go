@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -41,9 +41,9 @@ func (s *summaryMetrics) insert(ctx context.Context, db driver.Conn) error {
 		return err
 	}
 	defer func(batch driver.Batch) {
-		err := batch.Close()
-		if err != nil {
-			logger.Warn("failed to close summary metrics batch", zap.Error(err))
+		closeErr := batch.Close()
+		if closeErr != nil {
+			logger.Warn("failed to close summary metrics batch", zap.Error(closeErr))
 		}
 	}(batch)
 
@@ -56,7 +56,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db driver.Conn) error {
 			dp := model.summary.DataPoints().At(i)
 			quantiles, values := convertValueAtQuantile(dp.QuantileValues())
 
-			err := batch.Append(
+			appendErr := batch.Append(
 				resAttr,
 				model.metadata.ResURL,
 				model.metadata.ScopeInstr.Name(),
@@ -77,16 +77,16 @@ func (s *summaryMetrics) insert(ctx context.Context, db driver.Conn) error {
 				values,
 				uint32(dp.Flags()),
 			)
-			if err != nil {
-				return fmt.Errorf("failed to append summary metric: %w", err)
+			if appendErr != nil {
+				return fmt.Errorf("failed to append summary metric: %w", appendErr)
 			}
 		}
 	}
 
 	processDuration := time.Since(processStart)
 	networkStart := time.Now()
-	if err := batch.Send(); err != nil {
-		return fmt.Errorf("summary metric insert failed: %w", err)
+	if sendErr := batch.Send(); sendErr != nil {
+		return fmt.Errorf("summary metric insert failed: %w", sendErr)
 	}
 
 	networkDuration := time.Since(networkStart)
