@@ -61,7 +61,7 @@ jobs:
         run: ./.github/workflows/scripts/setup_e2e_tests.sh
 
   loadtest:
-    runs-on: github-benchmark-runner
+    runs-on: equinix-bare-metal
     needs: [setup-environment]
     strategy:
       fail-fast: false
