@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 go 1.23.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.66.0
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.66.1
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.28.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.127.0
@@ -27,9 +27,9 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.66.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.66.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.66.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.38.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0 // indirect
