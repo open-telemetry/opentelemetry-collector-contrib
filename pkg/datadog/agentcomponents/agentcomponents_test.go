@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogexporter
+package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (
 	"testing"
@@ -69,7 +69,7 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 				assert.False(t, config.IsConfigured("logs_config.auditor_ttl"))
 				assert.False(t, config.IsConfigured("logs_config.batch_max_content_size"))
 				assert.False(t, config.IsConfigured("logs_config.use_v2_api"))
-				assert.Equal(t, true, config.GetBool("logs_config.use_v2_api"))
+				assert.True(t, config.GetBool("logs_config.use_v2_api"))
 			},
 		},
 		{
@@ -128,9 +128,6 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 }
 
 func TestConfigOptions_ModularUsage(t *testing.T) {
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zap.NewNop()
-
 	// Example: A metrics-only module that only needs API config
 	metricsConfig := NewConfigComponent(
 		WithAPIConfig(&datadogconfig.Config{
@@ -144,7 +141,7 @@ func TestConfigOptions_ModularUsage(t *testing.T) {
 
 	config := metricsConfig.(pkgconfigmodel.Config)
 	assert.Equal(t, "metrics-api-key", config.GetString("api_key"))
-	assert.Equal(t, true, config.GetBool("metrics.enabled"))
+	assert.True(t, config.GetBool("metrics.enabled"))
 	// Should not have logs defaults
 	assert.False(t, config.IsConfigured("logs_config.use_v2_api"))
 
@@ -163,7 +160,7 @@ func TestConfigOptions_ModularUsage(t *testing.T) {
 	tracesConfigModel := tracesConfig.(pkgconfigmodel.Config)
 	assert.Equal(t, "traces-api-key", tracesConfigModel.GetString("api_key"))
 	assert.Equal(t, "datadoghq.eu", tracesConfigModel.GetString("site"))
-	assert.Equal(t, true, tracesConfigModel.GetBool("traces.enabled"))
+	assert.True(t, tracesConfigModel.GetBool("traces.enabled"))
 	assert.Equal(t, 0.1, tracesConfigModel.GetFloat64("traces.sample_rate"))
 }
 

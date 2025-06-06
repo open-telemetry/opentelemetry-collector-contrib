@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (
 	"runtime"
@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"golang.org/x/net/http/httpproxy"
 
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -24,7 +23,7 @@ import (
 type ConfigOption func(pkgconfigmodel.Config)
 
 func NewLogComponent(set component.TelemetrySettings) corelog.Component {
-	zlog := &pkgdatadog.Zaplogger{
+	zlog := &ZapLogger{
 		Logger: set.Logger,
 	}
 	return zlog
@@ -101,7 +100,7 @@ func WithProxyFromEnv() ConfigOption {
 }
 
 // WithCustomConfig allows setting arbitrary configuration values
-func WithCustomConfig(key string, value interface{}, source pkgconfigmodel.Source) ConfigOption {
+func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set(key, value, source)
 	}
@@ -114,7 +113,7 @@ func setProxyFromEnv(config pkgconfigmodel.Config) {
 
 	// If this is set to an empty []string, viper will have a type conflict when merging
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
-	// []interface{}, which will then conflict with type []string and fail to merge.
+	// []any, which will then conflict with type []string and fail to merge.
 	var noProxy []any
 	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)

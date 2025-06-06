@@ -1,7 +1,7 @@
 This file provides examples of how to use the NewConfigComponent options pattern for modules that need Datadog agent configurations.
 
 ```
-package datadogexporter
+package agentcomponents
 
 import (
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
