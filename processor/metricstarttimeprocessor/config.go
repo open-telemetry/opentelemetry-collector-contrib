@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/offset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
@@ -17,6 +18,7 @@ import (
 // Config holds configuration of the metric start time processor.
 type Config struct {
 	Strategy   string        `mapstructure:"strategy"`
+	Offset     time.Duration `mapstructure:"offset"`
 	GCInterval time.Duration `mapstructure:"gc_interval"`
 }
 
@@ -34,6 +36,10 @@ func (cfg *Config) Validate() error {
 	switch cfg.Strategy {
 	case truereset.Type:
 	case subtractinitial.Type:
+	case offset.Type:
+		if cfg.Offset == 0 {
+			cfg.Offset = time.Minute
+		}
 	default:
 		return fmt.Errorf("%q is not a valid strategy", cfg.Strategy)
 	}
