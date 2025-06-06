@@ -1449,11 +1449,16 @@ func (s *Supervisor) hupRestartAgent(previousHealth *protobufs.ComponentHealth) 
 			// with SIGHUP might cause the agent to crash. So we wait for health to be reported, which
 			// should mean all the internal components of the agent have been initialized.
 			bootstrapDeadline := time.Now().Add(s.config.Agent.BootstrapTimeout)
+			gotHealth := false
 			for time.Now().Before(bootstrapDeadline) {
-				if s.lastHealthFromClient.Load() != nil {
+				if currentHealth := s.lastHealthFromClient.Load(); currentHealth != nil {
+					gotHealth = true
 					break
 				}
 				time.Sleep(100 * time.Millisecond)
+			}
+			if !gotHealth {
+				return fmt.Errorf("agent is running, but no health reported yet, can't reload config")
 			}
 		}
 
