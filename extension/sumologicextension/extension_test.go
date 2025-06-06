@@ -137,10 +137,36 @@ func TestBasicStart(t *testing.T) {
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
 	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, se.Ready())
 	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialID)
 	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialKey)
 	assert.NotEmpty(t, se.registrationInfo.CollectorID)
+	assert.NotEmpty(t, se.healthCheck.statusSubscriptionWg)
+	assert.NotEmpty(t, se.healthCheck.componentHealthWg)
 	require.NoError(t, se.Shutdown(context.Background()))
+
+	assert.NotEmpty(t, se.healthCheck.statusAggregator)
+	assert.Empty(t, se.healthCheck.statusSubscriptionWg)
+	assert.Empty(t, se.healthCheck.componentHealthWg)
+
+	select {
+	case _, ok := <-se.healthCheck.componentStatusCh:
+		if !ok {
+			t.Log("componentStatusCh is closed")
+		} else {
+			t.Error("expected componentStatusCh to be closed, but it's still open")
+		}
+	}
+
+	select {
+	case _, ok := <-se.healthCheck.readyCh:
+		if !ok {
+			t.Log("healthCheck.readyCh is closed")
+		} else {
+			t.Error("expected healthCheck.readyCh to be closed, but it's still open")
+		}
+	}
+
 }
 
 func TestStoreCredentials(t *testing.T) {

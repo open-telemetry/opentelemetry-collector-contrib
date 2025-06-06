@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"io"
 	"net"
 	"net/http"
@@ -61,10 +62,11 @@ type SumologicExtension struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	closeChan chan struct{}
-	closeOnce sync.Once
-	backOff   *backoff.ExponentialBackOff
-	id        component.ID
+	closeChan   chan struct{}
+	closeOnce   sync.Once
+	backOff     *backoff.ExponentialBackOff
+	id          component.ID
+	healthCheck SumoHealthCheck
 }
 
 const (
@@ -153,7 +155,7 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 	backOff.MaxElapsedTime = conf.BackOff.MaxElapsedTime
 	backOff.MaxInterval = conf.BackOff.MaxInterval
 
-	return &SumologicExtension{
+	sumologicExtension := SumologicExtension{
 		collectorName:     collectorName,
 		buildVersion:      buildVersion,
 		baseURL:           strings.TrimSuffix(conf.APIBaseURL, "/"),
@@ -167,7 +169,19 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 		closeChan:         make(chan struct{}),
 		backOff:           backOff,
 		id:                id,
-	}, nil
+	}
+
+	sumologicExtension.healthCheck = SumoHealthCheck{
+		closeChan:            sumologicExtension.closeChan,
+		logger:               logger,
+		statusSubscriptionWg: &sync.WaitGroup{},
+		componentHealthWg:    &sync.WaitGroup{},
+		readyCh:              make(chan struct{}),
+	}
+
+	sumologicExtension.healthCheck.initHealthReporting()
+
+	return &sumologicExtension, nil
 }
 
 func createHashKey(conf *Config) string {
@@ -220,6 +234,8 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 // Shutdown is invoked during service shutdown.
 func (se *SumologicExtension) Shutdown(ctx context.Context) error {
 	se.closeOnce.Do(func() { close(se.closeChan) })
+	se.healthCheck.shutdown()
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -1126,4 +1142,30 @@ func cleanupBuildVersion(version string) string {
 	}
 
 	return version
+}
+
+func (se *SumologicExtension) ComponentStatusChanged(
+	source *componentstatus.InstanceID,
+	event *componentstatus.Event,
+) {
+	defer func() {
+		if r := recover(); r != nil {
+			se.logger.Info(
+				"discarding event received after shutdown",
+				zap.Any("source", source),
+				zap.Any("event", event),
+			)
+		}
+	}()
+	se.healthCheck.componentStatusCh <- &eventSourcePair{source: source, event: event}
+}
+
+func (se *SumologicExtension) Ready() error {
+	se.healthCheck.ready()
+	return nil
+}
+
+func (se *SumologicExtension) NotReady() error {
+	se.healthCheck.notReady()
+	return nil
 }
