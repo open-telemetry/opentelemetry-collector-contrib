@@ -29,7 +29,7 @@ type serviceManager struct {
 
 // get SCM database handle
 //
-//nolint:unused
+//nolint:unused,unparam
 func scmConnect() (*serviceManager, error) {
 	var h windows.Handle
 	return &serviceManager{
