@@ -96,9 +96,9 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func (c *Commander) ReloadConfigFile(ctx context.Context) error {
+func (c *Commander) ReloadConfigFile() error {
 	if c.cmd == nil || c.cmd.Process == nil {
-		return fmt.Errorf("agent process is not running")
+		return errors.New("agent process is not running")
 	}
 
 	c.logger.Debug("Sending SIGHUP to agent process to reload config", zap.Int("pid", c.cmd.Process.Pid))

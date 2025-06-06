@@ -1458,7 +1458,7 @@ func (s *Supervisor) hupRestartAgent(previousHealth *protobufs.ComponentHealth) 
 				time.Sleep(100 * time.Millisecond)
 			}
 			if !gotHealth {
-				return fmt.Errorf("agent is running, but no health reported yet, can't reload config")
+				return errors.New("agent is running, but no health reported yet, can't reload config")
 			}
 		}
 
@@ -1475,7 +1475,7 @@ func (s *Supervisor) hupRestartAgent(previousHealth *protobufs.ComponentHealth) 
 
 func (s *Supervisor) reloadAgentConfig() error {
 	s.telemetrySettings.Logger.Debug("Reloading the agent config")
-	err := s.commander.ReloadConfigFile(context.Background())
+	err := s.commander.ReloadConfigFile()
 	if err != nil {
 		return err
 	}
@@ -1490,7 +1490,7 @@ func (s *Supervisor) writeAgentConfig() error {
 	return nil
 }
 
-func (s *Supervisor) stopAgentApplyConfig() error {
+func (s *Supervisor) stopAgentApplyConfig() {
 	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
 	err := s.commander.Stop(context.Background())
 	if err != nil {
@@ -1500,8 +1500,6 @@ func (s *Supervisor) stopAgentApplyConfig() error {
 	if err := s.writeAgentConfig(); err != nil {
 		s.telemetrySettings.Logger.Error("Failed to write agent config", zap.Error(err))
 	}
-
-	return nil
 }
 
 func (s *Supervisor) Shutdown() {
