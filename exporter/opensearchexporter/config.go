@@ -43,7 +43,9 @@ type Config struct {
 	// LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
 	// https://opensearch.org/docs/latest/im-plugin/index/
 	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
-	LogsIndex string `mapstructure:"logs_index"`
+	LogsIndex           string `mapstructure:"logs_index"`
+	LogsIndexFallback   string `mapstructure:"logs_index_fallback"`
+	LogsIndexTimeFormat string `mapstructure:"logs_index_time_format"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
