@@ -7,7 +7,7 @@ change_type: bug_fix
 component: snowflakereceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: fixes bug regarding a bad type conversion and adds guard rails to prevent future similar bugs
+note: adds a pre-scrape check to see if metrics are enabled.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40418]
