@@ -26,7 +26,7 @@ func TestObfuscateSQL(t *testing.T) {
 }
 
 func TestObfuscateInvalidSQL(t *testing.T) {
-	sql := "SELECT cpu_time AS [CPU Usage (time)]"
+	sql := "SELECT cpu_time AS [CPU Usage (time)"
 	result, err := obfuscateSQL(sql)
 
 	assert.Error(t, err)
