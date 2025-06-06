@@ -19,21 +19,14 @@ import (
 )
 
 const (
-	receiverKind   = "receiver"
-	receiversKind  = "receivers"
-	processorKind  = "processor"
-	processorsKind = "processors"
-	exporterKind   = "exporter"
-	exportersKind  = "exporters"
-	extensionKind  = "extension"
-	extensionsKind = "extensions"
-	connectorKind  = "connector"
-	connectorsKind = "connectors"
-	providerKind   = "provider"
-	providersKind  = "providers"
-	converterKind  = "converter"
-	convertersKind = "converters"
-	pipelinesKind  = "pipelines"
+	receiverKind  = "receiver"
+	processorKind = "processor"
+	exporterKind  = "exporter"
+	extensionKind = "extension"
+	connectorKind = "connector"
+	providerKind  = "provider"
+	converterKind = "converter"
+	pipelinesKind = "pipelines"
 )
 
 func isComponentConfigured(typ component.Type, c map[component.ID]component.Config) bool {
@@ -108,10 +101,10 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 	}
 
 	// Extract the service configuration
-	serviceConfig := oc.Service
+	// serviceConfig := oc.Service
 
 	// Process extensions
-	for _, extensionID := range serviceConfig.Extensions {
+	for _, extensionID := range oc.Service.Extensions {
 		extension := payload.ServiceComponent{
 			ID:   extensionID.String(),
 			Name: extensionID.Name(),
@@ -122,8 +115,7 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 			extension.Gomod = module.Gomod
 			extension.Version = module.Version
 		} else {
-			extension.Gomod = "unknown"
-			extension.Version = "unknown"
+			return nil, fmt.Errorf("extension not found in Module Info, something has gone wrong with status parsing for extension ID: %s", extensionID.String())
 		}
 		// TODO: Add component status parsing, potentially via pkg/status
 		serviceComponents = append(serviceComponents, extension)
@@ -132,7 +124,6 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 	// Define a struct to generalize processing of pipeline components
 	type pipelineComponent struct {
 		kind       string
-		kindPlural string
 		components map[component.ID]component.Config
 		getIDs     func(pipeline *pipelines.PipelineConfig) []component.ID
 	}
@@ -141,25 +132,21 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 	pipelineComponents := []pipelineComponent{
 		{
 			kind:       receiverKind,
-			kindPlural: receiversKind,
 			components: oc.Receivers,
 			getIDs:     func(pipeline *pipelines.PipelineConfig) []component.ID { return pipeline.Receivers },
 		},
 		{
 			kind:       processorKind,
-			kindPlural: processorsKind,
 			components: oc.Processors,
 			getIDs:     func(pipeline *pipelines.PipelineConfig) []component.ID { return pipeline.Processors },
 		},
 		{
 			kind:       exporterKind,
-			kindPlural: exportersKind,
 			components: oc.Exporters,
 			getIDs:     func(pipeline *pipelines.PipelineConfig) []component.ID { return pipeline.Exporters },
 		},
 		{
 			kind:       connectorKind,
-			kindPlural: connectorsKind,
 			components: oc.Connectors,
 			getIDs: func(pipeline *pipelines.PipelineConfig) []component.ID {
 				// Connectors can act as both receivers and exporters, so we need to handle them separately
@@ -169,9 +156,14 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 	}
 
 	// Process pipelines
-	for pipelineName, pipeline := range serviceConfig.Pipelines {
+	for pipelineName, pipeline := range oc.Service.Pipelines {
 		for _, pc := range pipelineComponents {
 			for _, componentID := range pc.getIDs(pipeline) {
+				if _, exists := pc.components[componentID]; !exists {
+					// This check exists solely for Connectors; since getIDs returns all receivers and exporters,
+					// we only want to match the components that are actually connectors.
+					continue
+				}
 				component := payload.ServiceComponent{
 					ID:       componentID.String(),
 					Name:     componentID.Name(),
@@ -179,16 +171,12 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 					Kind:     pc.kind,
 					Pipeline: pipelineName.String(),
 				}
-				if _, exists := pc.components[componentID]; !exists {
-					// Skip components that are not actually part of the specified kind's components
-					continue
-				}
 				if module, ok := moduleInfoJSON.GetComponent(component.Type, component.Kind); ok {
 					component.Gomod = module.Gomod
 					component.Version = module.Version
 				} else {
 					// This component exists but is the wrong type (e.g. a connector in the exporters pipeline)
-					return nil, fmt.Errorf("component not found in Module Info, something has gone wrong with status parsing for component ID: %s", componentID.String())
+					continue
 				}
 				// TODO: Add component status parsing, potentially via pkg/status
 				serviceComponents = append(serviceComponents, component)

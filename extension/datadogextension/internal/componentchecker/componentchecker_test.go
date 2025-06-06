@@ -225,7 +225,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 					Kind:    "extension",
 					Gomod:   "example.com/module",
 					Version: "v1.0.0",
-					// ComponentStatus: `{"status":"healthy"}`,
 				},
 				{
 					ID:       "examplereceiver",
@@ -235,7 +234,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 					Gomod:    "example.com/module",
 					Version:  "v1.0.0",
 					Pipeline: "traces",
-					// ComponentStatus: `{"pipeline:traces":{"receiver:examplereceiver":{"healthy":true,"status":"StatusStarting"}}}`,
 				},
 				{
 					ID:       "exampleprocessor",
@@ -245,7 +243,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 					Gomod:    "example.com/module",
 					Version:  "v1.0.0",
 					Pipeline: "traces",
-					// ComponentStatus: `{"pipeline:traces":{"processor:exampleprocessor":{"healthy":true,"status":"StatusStarting"}}}`,
 				},
 				{
 					ID:       "exampleexporter",
@@ -255,7 +252,6 @@ func TestPopulateActiveComponents(t *testing.T) {
 					Gomod:    "example.com/module",
 					Version:  "v1.0.0",
 					Pipeline: "traces",
-					// ComponentStatus: `{"pipeline:traces":{"exporter:exampleexporter":{"healthy":true,"status":"StatusStarting"}}}`,
 				},
 			},
 			expectedError: "",
