@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //revive:disable:unused-parameter
-//nolint:unused
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -16,20 +15,25 @@ import "golang.org/x/sys/windows/svc/mgr"
 **/
 
 // receiver representation of a service
+//
+//nolint:unused
 type winService struct {
 	service       *mgr.Service
 	serviceStatus uint32
 	startType     uint32
 }
 
+//nolint:unused
 func getService(mgr *serviceManager, sname string) (*winService, error) {
 	return &winService{}, nil
 }
 
+//nolint:unused
 func (w *winService) getStatus() error {
 	return nil
 }
 
+//nolint:unused
 func (w *winService) getConfig() error {
 	return nil
 }
