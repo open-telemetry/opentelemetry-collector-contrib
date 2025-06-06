@@ -23,7 +23,7 @@ permissions: read-all
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: self-hosted
+    runs-on: equinix-bare-metal
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
@@ -61,7 +61,7 @@ jobs:
         run: ./.github/workflows/scripts/setup_e2e_tests.sh
 
   loadtest:
-    runs-on: self-hosted
+    runs-on: equinix-bare-metal
     needs: [setup-environment]
     strategy:
       fail-fast: false
