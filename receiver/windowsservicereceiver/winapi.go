@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //revive:disable:unused-parameter
-//nolint:unused,unparam
 //go:build windows
 
 package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
@@ -22,11 +21,15 @@ import (
 **/
 
 // service manager "client"
+//
+//nolint:unused
 type serviceManager struct {
 	handle windows.Handle // handle to SCM database
 }
 
 // get SCM database handle
+//
+//nolint:unused
 func scmConnect() (*serviceManager, error) {
 	var h windows.Handle
 	return &serviceManager{
@@ -34,15 +37,18 @@ func scmConnect() (*serviceManager, error) {
 	}, nil
 }
 
+//nolint:unused
 func (sm *serviceManager) disconnect() error {
 	return nil
 }
 
+//nolint:unused
 func (sm *serviceManager) listServices() ([]string, error) {
 	var s []string
 	return s, nil
 }
 
+//nolint:unused
 func (sm *serviceManager) openService() (*mgr.Service, error) {
 	return nil, nil
 }
