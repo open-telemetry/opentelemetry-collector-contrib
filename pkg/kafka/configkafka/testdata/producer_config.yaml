@@ -11,6 +11,8 @@ kafka/default_compression_level:
   required_acks: 0
   compression: zstd
   flush_max_messages: 2
+kafka/snappy_compression:
+  compression: snappy
 kafka/invalid_compression_level:
   max_message_bytes: 1
   required_acks: 0

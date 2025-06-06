@@ -20,10 +20,12 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -63,6 +65,16 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	assert.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
 	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
 
 	// Add cleanup to ensure LRU cache is properly purged
@@ -75,34 +87,65 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 
 func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	for _, tc := range []struct {
-		name         string
-		contentType  string
-		expectedCode int
+		name          string
+		contentType   string
+		expectedCode  int
+		expectedStats remote.WriteResponseStats
 	}{
 		{
 			name:         "no content type",
 			contentType:  "",
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "unsupported content type",
 			contentType:  "application/json",
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "x-protobuf/no proto parameter",
 			contentType:  "application/x-protobuf",
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "x-protobuf/v1 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV1),
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "x-protobuf/v2 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
 			expectedCode: http.StatusNoContent,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -158,6 +201,12 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectError: "missing metric name in labels",
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "duplicate label",
@@ -171,6 +220,12 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectError: `duplicate label "__name__" in labels`,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "UnitRef bigger than symbols length",
@@ -254,7 +309,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return expected
 			}(),
-			expectedStats: remote.WriteResponseStats{},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    3,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "timeseries with different scopes",
@@ -330,7 +390,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return expected
 			}(),
-			expectedStats: remote.WriteResponseStats{},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    3,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "separate timeseries - same labels - should be same datapointslice",
@@ -414,6 +479,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return expected
 			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    3,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "service with target_info metric",
@@ -476,6 +547,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return metrics
 			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

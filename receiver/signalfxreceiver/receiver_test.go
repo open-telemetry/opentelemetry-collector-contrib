@@ -621,7 +621,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSSetting = &configtls.ServerConfig{
+	cfg.TLS = &configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
