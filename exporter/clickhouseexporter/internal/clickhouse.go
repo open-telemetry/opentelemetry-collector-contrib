@@ -31,6 +31,7 @@ func NewClickhouseClient(dsn string) (driver.Conn, error) {
 	}
 
 	// Always connect to default database since configured database may not exist yet.
+	// TODO: only do this if createSchema is true
 	opt.Auth.Database = DefaultDatabase
 
 	conn, err := clickhouse.Open(opt)
