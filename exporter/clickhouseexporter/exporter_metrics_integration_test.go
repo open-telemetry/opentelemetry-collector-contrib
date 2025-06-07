@@ -17,7 +17,7 @@ import (
 )
 
 func TestMetricsExporter(t *testing.T) {
-	exporter := newTestMetricsExporter(t, theEndpoint)
+	exporter := newTestMetricsExporter(t, integrationTestEndpoint)
 	verifyExporterMetrics(t, exporter)
 }
 

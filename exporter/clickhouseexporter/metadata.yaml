@@ -10,4 +10,5 @@ status:
     active: [hanjm, dmitryax, Frapschen, SpencerTorres]
 
 tests:
-  skip_lifecycle: false
+  config:
+    endpoint: clickhouse://localhost:9000

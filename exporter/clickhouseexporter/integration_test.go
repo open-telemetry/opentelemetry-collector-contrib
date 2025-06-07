@@ -83,7 +83,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-var theEndpoint string
+var integrationTestEndpoint string
 
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
@@ -99,7 +99,7 @@ func TestMain(m *testing.M) {
 		}
 	}(c)
 
-	theEndpoint = endpoint
+	integrationTestEndpoint = endpoint
 
 	// Verify all integration tests, ignoring test container reaper
 	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"))

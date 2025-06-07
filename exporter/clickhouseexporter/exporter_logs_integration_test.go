@@ -18,7 +18,7 @@ import (
 )
 
 func TestLogsExporter(t *testing.T) {
-	exporter := newTestLogsExporter(t, theEndpoint)
+	exporter := newTestLogsExporter(t, integrationTestEndpoint)
 	verifyExportLogs(t, exporter)
 }
 
