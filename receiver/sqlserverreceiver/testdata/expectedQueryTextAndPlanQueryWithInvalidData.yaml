@@ -18,7 +18,7 @@ resourceLogs:
                   doubleValue: 0
               - key: db.query.text
                 value:
-                  stringValue: SELECT cpu_time AS [CPU Usage (time)]
+                  stringValue: ""
               - key: sqlserver.execution_count
                 value:
                   intValue: "0"
