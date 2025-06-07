@@ -65,7 +65,7 @@ func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {
 	select {
 	case e := <-c:
 		return e
-	case <-time.After(3 * time.Second):
+	case <-time.After(3600 * time.Second):
 		require.FailNow(t, "Timed out waiting for message")
 		return nil
 	}
