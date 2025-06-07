@@ -505,7 +505,7 @@ as tags.
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
 
-## Feature Gate
+## Feature Gates
 
 ### `k8sattr.fieldExtractConfigRegex.disallow`
 
@@ -536,3 +536,15 @@ can be converted with the usage of `ExtractPatterns` function:
   - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
   - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
 ```
+
+### `k8sattr.labelsAnnotationsSingular.allow`
+
+The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+
+The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
+
+Affected resources are:
+
+- namespaces
+- nodes
+- pods
