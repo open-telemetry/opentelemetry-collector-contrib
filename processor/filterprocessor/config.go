@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 // Config defines configuration for Resource processor.
@@ -36,6 +37,12 @@ type Config struct {
 	Spans filterconfig.MatchConfig `mapstructure:"spans"`
 
 	Traces TraceFilters `mapstructure:"traces"`
+
+	MetricConditions []common.ContextConditions `mapstructure:"metric_conditions"`
+
+	LogConditions []common.ContextConditions `mapstructure:"log_conditions"`
+
+	TraceConditions []common.ContextConditions `mapstructure:"trace_conditions"`
 }
 
 // MetricFilters filters by Metric properties.
@@ -266,6 +273,17 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	// TODO: The old format should be deprecated and removed.
+	if cfg.TraceConditions != nil && (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) {
+		return errors.New("cannot use inferred context trace conditions and old format at the same time")
+	}
+	if cfg.MetricConditions != nil && (cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil) {
+		return errors.New("cannot use inferred context metric conditions and old format at the same time")
+	}
+	if cfg.LogConditions != nil && (cfg.Logs.LogConditions != nil) {
+		return errors.New("cannot use inferred context log conditions and old format at the same time")
+	}
+
 	if (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
 		return errors.New("cannot use ottl conditions and include/exclude for spans at the same time")
 	}
@@ -277,6 +295,45 @@ func (cfg *Config) Validate() error {
 	}
 
 	var errors error
+
+	if len(cfg.TraceConditions) > 0 {
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+		if err != nil {
+			return err
+		}
+		for _, cs := range cfg.TraceConditions {
+			_, err = pc.ParseContextConditions(cs)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			}
+		}
+	}
+
+	if len(cfg.MetricConditions) > 0 {
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
+		if err != nil {
+			return err
+		}
+		for _, cs := range cfg.MetricConditions {
+			_, err := pc.ParseContextConditions(cs)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			}
+		}
+	}
+
+	if len(cfg.LogConditions) > 0 {
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(filterottl.StandardLogFuncs()))
+		if err != nil {
+			return err
+		}
+		for _, cs := range cfg.LogConditions {
+			_, err = pc.ParseContextConditions(cs)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			}
+		}
+	}
 
 	if cfg.Traces.SpanConditions != nil {
 		_, err := filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
