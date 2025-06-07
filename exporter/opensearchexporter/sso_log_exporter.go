@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 type logExporter struct {
@@ -74,7 +74,16 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	// Collect attributes from resource/log record
 	attrs := collectAttributes(ld)
 	logTimestamp := time.Now() // Replace with actual log timestamp extraction
-	indexName := resolveLogIndexName(l.config, attrs, logTimestamp)
+
+	// Index name resolution
+	// If LogsIndex is not set, use the default index name, otherwise resolve it using the config and attributes.
+	// This allows for dynamic index naming based on log attributes.
+	var indexName string
+	if l.config.LogsIndex == "" {
+		indexName = l.Index
+	} else {
+		indexName = resolveLogIndexName(l.config, attrs, logTimestamp)
+	}
 	indexer.index = indexName
 	indexer.submit(ctx, ld)
 	indexer.close(ctx)

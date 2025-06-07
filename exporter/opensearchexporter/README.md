@@ -35,7 +35,7 @@ LogsIndex configures the index, index alias, or data stream name logs should be 
 
 - `logs_index` a user-provided label to specify name of the destination index or data stream.
 
-## Dynamic Log Indexing
+#### Dynamic Log Indexing
 
 The OpenSearch exporter supports dynamic log index names using placeholders in the `logs_index` config. You can use any attribute or context key as a placeholder to construct index names dynamically per log record.
 
@@ -45,21 +45,44 @@ The OpenSearch exporter supports dynamic log index names using placeholders in t
   - The value is looked up from a context map (resource attributes, log attributes, etc.).
   - If the key is missing, the value from `logs_index_fallback` is used (or `unknown` if not set).
 
-- Time Suffix: You can append a time-formatted suffix to the index name using the `logs_index_time_format` option.
-  - `logs_index_time_format`: If set, appends a time suffix to the resolved index name using the specified format (default is no suffix).
+- **Optional logs_index**: If `logs_index` is not set, the exporter will use the default naming pattern: `ss4o_{type}-{dataset}-{namespace}` (e.g., `ss4o_logs-default-namespace`). This ensures backward compatibility and a predictable index naming scheme.
 
-### Example Configuration
+#### Time Suffix: logs_index_time_format
 
-````yaml
+You can append a time-formatted suffix to the index name using the `logs_index_time_format` option.
+
+- `logs_index_time_format`: If set, appends a time suffix to the resolved index name using the specified format (default is no suffix).
+- **Valid tokens** (case-sensitive):
+  - `yyyy` (4-digit year)
+  - `yy` (2-digit year)
+  - `MM` (2-digit month)
+  - `dd` (2-digit day)
+  - `HH` (2-digit hour, 24h)
+  - `mm` (2-digit minute)
+  - `ss` (2-digit second)
+- **Allowed separators**: `-`, `.`, `_`, `+`
+- **Examples:**
+  - `yyyy.MM.dd` → `2024.06.07`
+  - `yyyy-MM` → `2024-06`
+  - `yyMMdd` → `240607`
+  - `yyyy_MM_dd+HH` → `2024_06_07+15`
+- Any other characters or tokens will result in a configuration error.
+
+##### Example Configuration
+
+```yaml
 exporters:
   opensearch:
     http:
-      endpoint: https://opensearch.example.com:9200
+      endpoint: http://opensearch.example.com:9200
     logs_index: "otel-logs-%{service.name}"
-    logs_index_fallback: "default-service" # optional, if not set default is ss4o_logs-default-namespace
+    logs_index_fallback: "default-service" # optional, if not set default is `unknown`
     logs_index_time_format: "yyyy.MM.dd" # optional, if set appends time suffix
+```
 
 This will create log indexes like `otel-logs-myservice-2024.06.07`. If `service.name` is missing, `otel-logs-default-service-2024.06.07` will be used.
+
+If `logs_index` is not set, the exporter will use the default pattern, e.g. `ss4o_logs-default-namespace-2024.06.07` if `logs_index_time_format` is set.
 
 ### HTTP Connection Options
 
@@ -109,4 +132,4 @@ service:
       receivers: [otlp]
       exporters: [opensearch/trace]
       processors: [batch]
-````
+```
