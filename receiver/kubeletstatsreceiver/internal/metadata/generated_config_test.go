@@ -87,6 +87,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sVolumeInodes:                      MetricConfig{Enabled: true},
 					K8sVolumeInodesFree:                  MetricConfig{Enabled: true},
 					K8sVolumeInodesUsed:                  MetricConfig{Enabled: true},
+					K8sVolumeUsed:                        MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
@@ -171,6 +172,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sVolumeInodes:                      MetricConfig{Enabled: false},
 					K8sVolumeInodesFree:                  MetricConfig{Enabled: false},
 					K8sVolumeInodesUsed:                  MetricConfig{Enabled: false},
+					K8sVolumeUsed:                        MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
