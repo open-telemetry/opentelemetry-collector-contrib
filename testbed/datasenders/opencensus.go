@@ -23,7 +23,7 @@ type ocDataSender struct {
 
 func (ods *ocDataSender) fillConfig(cfg *opencensusexporter.Config) *opencensusexporter.Config {
 	cfg.Endpoint = ods.GetEndpoint().String()
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg

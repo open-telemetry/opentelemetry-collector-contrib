@@ -86,7 +86,7 @@ func CompareProfiles(expected, actual pprofile.Profiles, options ...CompareProfi
 
 	for ar, er := range matchingResources {
 		errPrefix := fmt.Sprintf(`resource "%v"`, er.Resource().Attributes().AsRaw())
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceProfiles(er, ar)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceProfiles(exp.ProfilesDictionary(), act.ProfilesDictionary(), er, ar)))
 	}
 
 	return errs
@@ -94,7 +94,7 @@ func CompareProfiles(expected, actual pprofile.Profiles, options ...CompareProfi
 
 // CompareResourceProfiles compares each part of two given ResourceProfiles and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareResourceProfiles(expected, actual pprofile.ResourceProfiles) error {
+func CompareResourceProfiles(expectedDic, actualDic pprofile.ProfilesDictionary, expected, actual pprofile.ResourceProfiles) error {
 	errs := multierr.Combine(
 		internal.CompareResource(expected.Resource(), actual.Resource()),
 		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
@@ -154,7 +154,7 @@ func CompareResourceProfiles(expected, actual pprofile.ResourceProfiles) error {
 
 	for i := 0; i < esls.Len(); i++ {
 		errPrefix := fmt.Sprintf(`scope "%s"`, esls.At(i).Scope().Name())
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareScopeProfiles(esls.At(i), asls.At(i))))
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareScopeProfiles(expectedDic, actualDic, esls.At(i), asls.At(i))))
 	}
 
 	return errs
@@ -162,7 +162,7 @@ func CompareResourceProfiles(expected, actual pprofile.ResourceProfiles) error {
 
 // CompareScopeProfiles compares each part of two given ProfilesSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
+func CompareScopeProfiles(expectedDic, actualDic pprofile.ProfilesDictionary, expected, actual pprofile.ScopeProfiles) error {
 	errs := multierr.Combine(
 		internal.CompareInstrumentationScope(expected.Scope(), actual.Scope()),
 		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
@@ -182,17 +182,17 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	var outOfOrderErrs error
 	for e := 0; e < numProfiles; e++ {
 		elr := expected.Profiles().At(e)
-		errs = multierr.Append(errs, ValidateProfile(elr))
-		em := profileAttributesToMap(elr)
+		errs = multierr.Append(errs, ValidateProfile(expectedDic, elr))
+		em := profileAttributesToMap(expectedDic, elr)
 
 		var foundMatch bool
 		for a := 0; a < numProfiles; a++ {
 			alr := actual.Profiles().At(a)
-			errs = multierr.Append(errs, ValidateProfile(alr))
+			errs = multierr.Append(errs, ValidateProfile(actualDic, alr))
 			if _, ok := matchingProfiles[alr]; ok {
 				continue
 			}
-			am := profileAttributesToMap(alr)
+			am := profileAttributesToMap(actualDic, alr)
 
 			if reflect.DeepEqual(em, am) {
 				foundMatch = true
@@ -213,7 +213,7 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	for i := 0; i < numProfiles; i++ {
 		if _, ok := matchingProfiles[actual.Profiles().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected profile: %v",
-				profileAttributesToMap(actual.Profiles().At(i))))
+				profileAttributesToMap(actualDic, actual.Profiles().At(i))))
 		}
 	}
 
@@ -225,15 +225,15 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	}
 
 	for alr, elr := range matchingProfiles {
-		errPrefix := fmt.Sprintf(`profile "%v"`, profileAttributesToMap(elr))
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfile(elr, alr)))
+		errPrefix := fmt.Sprintf(`profile "%v"`, profileAttributesToMap(expectedDic, elr))
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfile(expectedDic, actualDic, elr, alr)))
 	}
 	return errs
 }
 
-func compareAttributes(a, b pprofile.Profile) error {
-	aa := profileAttributesToMap(a)
-	ba := profileAttributesToMap(b)
+func compareAttributes(expectedDic, actualDic pprofile.ProfilesDictionary, a, b pprofile.Profile) error {
+	aa := profileAttributesToMap(expectedDic, a)
+	ba := profileAttributesToMap(actualDic, b)
 
 	if !reflect.DeepEqual(aa, ba) {
 		return fmt.Errorf("attributes don't match expected: %v, actual: %v", aa, ba)
@@ -242,9 +242,9 @@ func compareAttributes(a, b pprofile.Profile) error {
 	return nil
 }
 
-func CompareProfile(expected, actual pprofile.Profile) error {
+func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected, actual pprofile.Profile) error {
 	errs := multierr.Combine(
-		compareAttributes(expected, actual),
+		compareAttributes(expectedDic, actualDic, expected, actual),
 		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
 	)
 
@@ -268,10 +268,6 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 		errs = multierr.Append(errs, fmt.Errorf("time doesn't match expected: %d, actual: %d", expected.Time(), actual.Time()))
 	}
 
-	if !reflect.DeepEqual(expected.StringTable(), actual.StringTable()) {
-		errs = multierr.Append(errs, fmt.Errorf("stringTable '%v' does not match expected '%v'", actual.StringTable().AsRaw(), expected.StringTable().AsRaw()))
-	}
-
 	if expected.OriginalPayloadFormat() != actual.OriginalPayloadFormat() {
 		errs = multierr.Append(errs, fmt.Errorf("originalPayloadFormat does not match expected '%s', actual '%s'", expected.OriginalPayloadFormat(), actual.OriginalPayloadFormat()))
 	}
@@ -292,8 +288,8 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 		errs = multierr.Append(errs, fmt.Errorf("period does not match expected '%d', actual '%d'", expected.Period(), actual.Period()))
 	}
 
-	if expected.DefaultSampleTypeStrindex() != actual.DefaultSampleTypeStrindex() {
-		errs = multierr.Append(errs, fmt.Errorf("defaultSampleType does not match expected '%d', actual '%d'", expected.DefaultSampleTypeStrindex(), actual.DefaultSampleTypeStrindex()))
+	if expected.DefaultSampleTypeIndex() != actual.DefaultSampleTypeIndex() {
+		errs = multierr.Append(errs, fmt.Errorf("defaultSampleType does not match expected '%d', actual '%d'", expected.DefaultSampleTypeIndex(), actual.DefaultSampleTypeIndex()))
 	}
 
 	if expected.PeriodType().TypeStrindex() != actual.PeriodType().TypeStrindex() ||
@@ -307,16 +303,6 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 	errs = multierr.Append(errs, internal.AddErrPrefix("sampleType", CompareProfileValueTypeSlice(expected.SampleType(), actual.SampleType())))
 
 	errs = multierr.Append(errs, internal.AddErrPrefix("sample", CompareProfileSampleSlice(expected.Sample(), actual.Sample())))
-
-	errs = multierr.Append(errs, internal.AddErrPrefix("mapping", CompareProfileMappingSlice(expected.MappingTable(), actual.MappingTable())))
-
-	errs = multierr.Append(errs, internal.AddErrPrefix("location", CompareProfileLocationSlice(expected.LocationTable(), actual.LocationTable())))
-
-	errs = multierr.Append(errs, internal.AddErrPrefix("function", CompareProfileFunctionSlice(expected.FunctionTable(), actual.FunctionTable())))
-
-	errs = multierr.Append(errs, internal.AddErrPrefix("attributeUnits", CompareProfileAttributeUnitSlice(expected.AttributeUnits(), actual.AttributeUnits())))
-
-	errs = multierr.Append(errs, internal.AddErrPrefix("linkTable", CompareProfileLinkSlice(expected.LinkTable(), actual.LinkTable())))
 
 	return errs
 }

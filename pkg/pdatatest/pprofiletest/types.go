@@ -29,7 +29,7 @@ type ResourceProfile struct {
 func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfiles {
 	prp := pp.ResourceProfiles().AppendEmpty()
 	for _, sp := range rp.ScopeProfiles {
-		sp.Transform(prp)
+		sp.Transform(pp.ProfilesDictionary(), prp)
 	}
 	for _, a := range rp.Resource.Attributes {
 		if prp.Resource().Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
@@ -50,10 +50,10 @@ type ScopeProfile struct {
 	SchemaURL string
 }
 
-func (sp ScopeProfile) Transform(prp pprofile.ResourceProfiles) pprofile.ScopeProfiles {
+func (sp ScopeProfile) Transform(dic pprofile.ProfilesDictionary, prp pprofile.ResourceProfiles) pprofile.ScopeProfiles {
 	psp := prp.ScopeProfiles().AppendEmpty()
 	for _, p := range sp.Profile {
-		p.Transform(psp)
+		p.Transform(dic, psp)
 	}
 	sp.Scope.Transform(psp)
 	psp.SetSchemaUrl(sp.SchemaURL)
@@ -100,11 +100,11 @@ type Profile struct {
 	AttributeUnits         []AttributeUnit
 }
 
-func (p *Profile) Transform(psp pprofile.ScopeProfiles) pprofile.Profile {
+func (p *Profile) Transform(dic pprofile.ProfilesDictionary, psp pprofile.ScopeProfiles) pprofile.Profile {
 	pp := psp.Profiles().AppendEmpty()
 
 	// Avoids that 0 (default) string indices point to nowhere.
-	addString(pp, "")
+	addString(dic, "")
 
 	// If valueTypes are not set, set them to the default value.
 	defaultValueType := ValueType{Typ: "samples", Unit: "count", AggregationTemporality: pprofile.AggregationTemporalityDelta}
@@ -115,47 +115,47 @@ func (p *Profile) Transform(psp pprofile.ScopeProfiles) pprofile.Profile {
 		p.DefaultSampleType = defaultValueType
 	}
 
-	p.SampleType.Transform(pp)
+	p.SampleType.Transform(dic, pp)
 	for _, sa := range p.Sample {
-		sa.Transform(pp)
+		sa.Transform(dic, pp)
 	}
 	pp.SetTime(p.TimeNanos)
 	pp.SetDuration(p.DurationNanos)
-	p.PeriodType.CopyTo(pp, pp.PeriodType())
+	p.PeriodType.CopyTo(dic, pp.PeriodType())
 	pp.SetPeriod(p.Period)
 	for _, c := range p.Comment {
-		pp.CommentStrindices().Append(addString(pp, c))
+		pp.CommentStrindices().Append(addString(dic, c))
 	}
-	p.DefaultSampleType.Transform(pp)
+	p.DefaultSampleType.Transform(dic, pp)
 	pp.SetProfileID(p.ProfileID)
 	pp.SetDroppedAttributesCount(p.DroppedAttributesCount)
 	pp.SetOriginalPayloadFormat(p.OriginalPayloadFormat)
 	pp.OriginalPayload().FromRaw(p.OriginalPayload)
 	for _, at := range p.Attributes {
-		pp.AttributeIndices().Append(at.Transform(pp))
+		pp.AttributeIndices().Append(at.Transform(dic))
 	}
 	for _, au := range p.AttributeUnits {
-		au.Transform(pp)
+		au.Transform(dic)
 	}
 
 	return pp
 }
 
-func addString(pp pprofile.Profile, s string) int32 {
-	for i := range pp.StringTable().Len() {
-		if pp.StringTable().At(i) == s {
+func addString(dic pprofile.ProfilesDictionary, s string) int32 {
+	for i := range dic.StringTable().Len() {
+		if dic.StringTable().At(i) == s {
 			return int32(i)
 		}
 	}
-	pp.StringTable().Append(s)
-	return int32(pp.StringTable().Len() - 1)
+	dic.StringTable().Append(s)
+	return int32(dic.StringTable().Len() - 1)
 }
 
 type ValueTypes []ValueType
 
-func (vts *ValueTypes) Transform(pp pprofile.Profile) {
+func (vts *ValueTypes) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile) {
 	for _, vt := range *vts {
-		vt.Transform(pp)
+		vt.Transform(dic, pp)
 	}
 }
 
@@ -165,11 +165,11 @@ type ValueType struct {
 	AggregationTemporality pprofile.AggregationTemporality
 }
 
-func (vt *ValueType) exists(pp pprofile.Profile) bool {
+func (vt *ValueType) exists(dic pprofile.ProfilesDictionary, pp pprofile.Profile) bool {
 	for i := range pp.SampleType().Len() {
 		st := pp.SampleType().At(i)
-		if vt.Typ == pp.StringTable().At(int(st.TypeStrindex())) &&
-			vt.Unit == pp.StringTable().At(int(st.UnitStrindex())) &&
+		if vt.Typ == dic.StringTable().At(int(st.TypeStrindex())) &&
+			vt.Unit == dic.StringTable().At(int(st.UnitStrindex())) &&
 			vt.AggregationTemporality == st.AggregationTemporality() {
 			return true
 		}
@@ -177,15 +177,15 @@ func (vt *ValueType) exists(pp pprofile.Profile) bool {
 	return false
 }
 
-func (vt *ValueType) CopyTo(pp pprofile.Profile, pvt pprofile.ValueType) {
-	pvt.SetTypeStrindex(addString(pp, vt.Typ))
-	pvt.SetUnitStrindex(addString(pp, vt.Unit))
+func (vt *ValueType) CopyTo(dic pprofile.ProfilesDictionary, pvt pprofile.ValueType) {
+	pvt.SetTypeStrindex(addString(dic, vt.Typ))
+	pvt.SetUnitStrindex(addString(dic, vt.Unit))
 	pvt.SetAggregationTemporality(vt.AggregationTemporality)
 }
 
-func (vt *ValueType) Transform(pp pprofile.Profile) {
-	if !vt.exists(pp) {
-		vt.CopyTo(pp, pp.SampleType().AppendEmpty())
+func (vt *ValueType) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile) {
+	if !vt.exists(dic, pp) {
+		vt.CopyTo(dic, pp.SampleType().AppendEmpty())
 	}
 }
 
@@ -197,7 +197,7 @@ type Sample struct {
 	TimestampsUnixNano []uint64
 }
 
-func (sa *Sample) Transform(pp pprofile.Profile) {
+func (sa *Sample) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile) {
 	if len(sa.Value) != pp.SampleType().Len() {
 		panic("length of profile.sample_type must be equal to the length of sample.value")
 	}
@@ -205,9 +205,9 @@ func (sa *Sample) Transform(pp pprofile.Profile) {
 	psa.SetLocationsStartIndex(int32(pp.LocationIndices().Len()))
 	for _, loc := range sa.Locations {
 		pp.LocationIndices().Append(int32(pp.LocationIndices().Len()))
-		ploc := pp.LocationTable().AppendEmpty()
+		ploc := dic.LocationTable().AppendEmpty()
 		if loc.Mapping != nil {
-			loc.Mapping.Transform(pp)
+			loc.Mapping.Transform(dic)
 		}
 		ploc.SetAddress(loc.Address)
 		ploc.SetIsFolded(loc.IsFolded)
@@ -215,16 +215,16 @@ func (sa *Sample) Transform(pp pprofile.Profile) {
 			pl := ploc.Line().AppendEmpty()
 			pl.SetLine(l.Line)
 			pl.SetColumn(l.Column)
-			pl.SetFunctionIndex(l.Function.Transform(pp))
+			pl.SetFunctionIndex(l.Function.Transform(dic))
 		}
 		for _, at := range loc.Attributes {
-			ploc.AttributeIndices().Append(at.Transform(pp))
+			ploc.AttributeIndices().Append(at.Transform(dic))
 		}
 	}
 	psa.SetLocationsLength(int32(pp.LocationIndices().Len()) - psa.LocationsStartIndex())
 	psa.Value().FromRaw(sa.Value)
 	for _, at := range sa.Attributes {
-		psa.AttributeIndices().Append(at.Transform(pp))
+		psa.AttributeIndices().Append(at.Transform(dic))
 	}
 	//nolint:revive,staticcheck
 	if sa.Link != nil {
@@ -246,11 +246,11 @@ type Link struct {
 	SpanID  pcommon.SpanID
 }
 
-func (l *Link) Transform(pp pprofile.Profile) int32 {
-	pl := pp.LinkTable().AppendEmpty()
+func (l *Link) Transform(dic pprofile.ProfilesDictionary) int32 {
+	pl := dic.LinkTable().AppendEmpty()
 	pl.SetTraceID(l.TraceID)
 	pl.SetSpanID(l.SpanID)
-	return int32(pp.LinkTable().Len() - 1)
+	return int32(dic.LinkTable().Len() - 1)
 }
 
 type Mapping struct {
@@ -265,14 +265,14 @@ type Mapping struct {
 	HasInlineFrames bool
 }
 
-func (m *Mapping) Transform(pp pprofile.Profile) {
-	pm := pp.MappingTable().AppendEmpty()
+func (m *Mapping) Transform(dic pprofile.ProfilesDictionary) {
+	pm := dic.MappingTable().AppendEmpty()
 	pm.SetMemoryStart(m.MemoryStart)
 	pm.SetMemoryLimit(m.MemoryLimit)
 	pm.SetFileOffset(m.FileOffset)
-	pm.SetFilenameStrindex(addString(pp, m.Filename))
+	pm.SetFilenameStrindex(addString(dic, m.Filename))
 	for _, at := range m.Attributes {
-		pm.AttributeIndices().Append(at.Transform(pp))
+		pm.AttributeIndices().Append(at.Transform(dic))
 	}
 	pm.SetHasFunctions(m.HasFunctions)
 	pm.SetHasFilenames(m.HasFileNames)
@@ -285,14 +285,14 @@ type Attribute struct {
 	Value any
 }
 
-func (a *Attribute) Transform(pp pprofile.Profile) int32 {
-	pa := pp.AttributeTable().AppendEmpty()
+func (a *Attribute) Transform(dic pprofile.ProfilesDictionary) int32 {
+	pa := dic.AttributeTable().AppendEmpty()
 	pa.SetKey(a.Key)
 	if pa.Value().FromRaw(a.Value) != nil {
 		panic(fmt.Sprintf("unsupported attribute value: {%s: %v (type %T)}",
 			a.Key, a.Value, a.Value))
 	}
-	return int32(pp.AttributeTable().Len() - 1)
+	return int32(dic.AttributeTable().Len() - 1)
 }
 
 type AttributeUnit struct {
@@ -300,11 +300,11 @@ type AttributeUnit struct {
 	Unit         string
 }
 
-func (a *AttributeUnit) Transform(pp pprofile.Profile) int32 {
-	pa := pp.AttributeUnits().AppendEmpty()
-	pa.SetAttributeKeyStrindex(addString(pp, a.AttributeKey))
-	pa.SetUnitStrindex(addString(pp, a.Unit))
-	return int32(pp.AttributeTable().Len() - 1)
+func (a *AttributeUnit) Transform(dic pprofile.ProfilesDictionary) int32 {
+	pa := dic.AttributeUnits().AppendEmpty()
+	pa.SetAttributeKeyStrindex(addString(dic, a.AttributeKey))
+	pa.SetUnitStrindex(addString(dic, a.Unit))
+	return int32(dic.AttributeTable().Len() - 1)
 }
 
 type Line struct {
@@ -320,11 +320,11 @@ type Function struct {
 	StartLine  int64
 }
 
-func (f *Function) Transform(pp pprofile.Profile) int32 {
-	pf := pp.FunctionTable().AppendEmpty()
-	pf.SetNameStrindex(addString(pp, f.Name))
-	pf.SetSystemNameStrindex(addString(pp, f.SystemName))
-	pf.SetFilenameStrindex(addString(pp, f.Filename))
+func (f *Function) Transform(dic pprofile.ProfilesDictionary) int32 {
+	pf := dic.FunctionTable().AppendEmpty()
+	pf.SetNameStrindex(addString(dic, f.Name))
+	pf.SetSystemNameStrindex(addString(dic, f.SystemName))
+	pf.SetFilenameStrindex(addString(dic, f.Filename))
 	pf.SetStartLine(f.StartLine)
-	return int32(pp.FunctionTable().Len() - 1)
+	return int32(dic.FunctionTable().Len() - 1)
 }
