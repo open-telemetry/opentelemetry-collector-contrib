@@ -312,10 +312,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServerAddress: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServerPort: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		SqlserverComputerName: ResourceAttributeConfig{
 			Enabled: false,

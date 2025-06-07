@@ -25,11 +25,11 @@ resource_attributes:
     type: string
   server.address:
     description: Name of the database host.
-    enabled: false
+    enabled: true
     type: string
   server.port:
     description: Server port number.
-    enabled: false
+    enabled: true
     type: int
   host.name:
     description: The host name of SQL Server

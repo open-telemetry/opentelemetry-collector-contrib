@@ -4,12 +4,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -143,12 +137,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -282,12 +270,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: model
@@ -421,12 +403,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: model
@@ -560,12 +536,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: msdb
@@ -699,12 +669,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: msdb
@@ -838,12 +802,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -977,12 +935,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1116,12 +1068,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1255,12 +1201,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1394,12 +1334,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1533,12 +1467,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1672,12 +1600,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1811,12 +1733,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
@@ -1950,12 +1866,6 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
         - key: sqlserver.database.name
           value:
             stringValue: tempdb
