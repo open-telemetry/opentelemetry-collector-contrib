@@ -196,6 +196,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
+
+	statefulset := getStatefulSetUID(pod, resource.Attributes())
+	if statefulset != "" {
+		attrsToAdd := kp.getAttributesForPodsStatefulSet(statefulset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key string, val string) {
@@ -224,6 +232,13 @@ func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.DeploymentUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
+}
+
+func getStatefulSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.StatefulSetUID != "" {
+		return pod.StatefulSetUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SStatefulSetUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -320,6 +335,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 
 func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID string) map[string]string {
 	d, ok := kp.kc.GetDeployment(deploymentUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsStatefulSet(statefulsetUID string) map[string]string {
+	d, ok := kp.kc.GetStatefulSet(statefulsetUID)
 	if !ok {
 		return nil
 	}
