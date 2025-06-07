@@ -534,6 +534,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -630,6 +634,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -793,6 +801,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -1494,6 +1506,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
             processors:
                 - batch:
                     exporter:
