@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
@@ -64,7 +65,7 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count", "system.nfs.net.count", "system.nfs.net.udp.count", "system.nfs.net.tcp.count", "system.nfs.net.tcp.connection.count", "system.nfs.rpc.count", "system.nfs.rpc.retransmit.count", "system.nfs.rpc.authrefresh.count", "system.nfs.procedure.count", "system.nfs.operation.count", "system.nfsd.repcache.hits", "system.nfsd.repcache.misses", "system.nfsd.repcache.nocache", "system.nfsd.fh.stale.count", "system.nfsd.io.read.count", "system.nfsd.io.write.count", "system.nfsd.thread.count", "system.nfsd.net.count", "system.nfsd.net.udp.count", "system.nfsd.net.tcp.count", "system.nfsd.net.tcp.connection.count", "system.nfsd.rpc.count", "system.nfsd.rpc.bad.count", "system.nfsd.rpc.badfmt.count", "system.nfsd.rpc.badauth.count", "system.nfsd.rpc.badclient.count", "system.nfsd.procedure.count", "system.nfsd.operation.count"},
 	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
@@ -88,6 +89,11 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			pagingscraper.NewFactory(),
 			processesscraper.NewFactory(),
 		),
+	}
+
+	if runtime.GOOS == "linux" {
+		f := nfsscraper.NewFactory()
+		cfg.Scrapers[f.Type()] = f.CreateDefaultConfig()
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
@@ -325,6 +331,19 @@ func Benchmark_ScrapePagingMetrics(b *testing.B) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Scrapers:         newScrapersConfigs(pagingscraper.NewFactory()),
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
+func Benchmark_ScrapeNFSMetrics(b *testing.B) {
+	if runtime.GOOS != "linux" {
+		b.Skip("skipping test on non linux")
+	}
+
+	cfg := &Config{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Scrapers:         newScrapersConfigs(nfsscraper.NewFactory()),
 	}
 
 	benchmarkScrapeMetrics(b, cfg)
