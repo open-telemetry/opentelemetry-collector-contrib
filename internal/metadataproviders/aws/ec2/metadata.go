@@ -16,6 +16,7 @@ type Provider interface {
 	Get(ctx context.Context) (imds.InstanceIdentityDocument, error)
 	Hostname(ctx context.Context) (string, error)
 	InstanceID(ctx context.Context) (string, error)
+	InstanceLifeCycle(ctx context.Context) (string, error)
 }
 
 type metadataClient struct {
@@ -51,6 +52,10 @@ func (c *metadataClient) InstanceID(ctx context.Context) (string, error) {
 
 func (c *metadataClient) Hostname(ctx context.Context) (string, error) {
 	return c.getMetadata(ctx, "hostname")
+}
+
+func (c *metadataClient) InstanceLifeCycle(ctx context.Context) (string, error) {
+	return c.getMetadata(ctx, "instance-life-cycle")
 }
 
 func (c *metadataClient) Get(ctx context.Context) (imds.InstanceIdentityDocument, error) {

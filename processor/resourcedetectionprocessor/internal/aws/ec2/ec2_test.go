@@ -57,6 +57,13 @@ func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
 	return "", nil
 }
 
+func (mm mockMetadata) InstanceLifeCycle(_ context.Context) (string, error) {
+	if !mm.isAvailable {
+		return "", errUnavailable
+	}
+	return "on-demand", nil
+}
+
 func (mm mockMetadata) Get(_ context.Context) (imds.InstanceIdentityDocument, error) {
 	if mm.retErrIDDoc != nil {
 		return imds.InstanceIdentityDocument{}, mm.retErrIDDoc
@@ -180,6 +187,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
+				attr.PutStr("aws.ec2.instance_life_cycle", "on-demand")
 				attr.PutStr("cloud.account.id", "account1234")
 				attr.PutStr("cloud.provider", "aws")
 				attr.PutStr("cloud.platform", "aws_ec2")
@@ -211,6 +219,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
+				attr.PutStr("aws.ec2.instance_life_cycle", "on-demand")
 				attr.PutStr("cloud.account.id", "account1234")
 				attr.PutStr("cloud.provider", "aws")
 				attr.PutStr("cloud.platform", "aws_ec2")
@@ -244,6 +253,7 @@ func TestDetector_Detect(t *testing.T) {
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
+				attr.PutStr("aws.ec2.instance_life_cycle", "on-demand")
 				attr.PutStr("cloud.account.id", "account1234")
 				attr.PutStr("cloud.provider", "aws")
 				attr.PutStr("cloud.platform", "aws_ec2")
