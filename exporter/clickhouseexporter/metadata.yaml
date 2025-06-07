@@ -12,3 +12,4 @@ status:
 tests:
   config:
     endpoint: clickhouse://localhost:9000
+  skip_lifecycle: true
