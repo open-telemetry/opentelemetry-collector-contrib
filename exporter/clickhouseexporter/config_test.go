@@ -655,16 +655,36 @@ func TestClusterString(t *testing.T) {
 func TestConfigDatabase(t *testing.T) {
 	t.Parallel()
 
-	// TODO: implement test
-
 	caseDefault := createDefaultConfig().(*Config)
 	caseDefault.Endpoint = defaultEndpoint
-	caseCreateSchemaTrue := createDefaultConfig().(*Config)
-	caseCreateSchemaTrue.CreateSchema = true
-	caseCreateSchemaTrue.Endpoint = defaultEndpoint
-	caseCreateSchemaFalse := createDefaultConfig().(*Config)
-	caseCreateSchemaFalse.CreateSchema = false
-	caseCreateSchemaFalse.Endpoint = defaultEndpoint
+
+	caseDatabaseSet := createDefaultConfig().(*Config)
+	caseDatabaseSet.Endpoint = defaultEndpoint
+	caseDatabaseSet.Database = "otel"
+
+	caseDatabaseSetToDefault := createDefaultConfig().(*Config)
+	caseDatabaseSetToDefault.Endpoint = defaultEndpoint
+	caseDatabaseSetToDefault.Database = defaultDatabase
+
+	caseDSNWithDatabase := createDefaultConfig().(*Config)
+	caseDSNWithDatabase.Endpoint = "clickhouse://localhost:9000/dsndb"
+
+	caseDSNWithDefaultDatabase := createDefaultConfig().(*Config)
+	caseDSNWithDefaultDatabase.Endpoint = "clickhouse://localhost:9000/default"
+
+	caseDatabaseAndDSN := createDefaultConfig().(*Config)
+	caseDatabaseAndDSN.Database = "configdb"
+	caseDatabaseAndDSN.Endpoint = "clickhouse://localhost:9000/dsndb"
+
+	caseDatabaseSetToDefaultWithDSN := createDefaultConfig().(*Config)
+	caseDatabaseSetToDefaultWithDSN.Database = defaultDatabase
+	caseDatabaseSetToDefaultWithDSN.Endpoint = "clickhouse://localhost:9000/dsndb"
+
+	caseInvalidDSN := createDefaultConfig().(*Config)
+	caseInvalidDSN.Endpoint = "invalid-dsn-format"
+
+	caseEmptyDSNDatabase := createDefaultConfig().(*Config)
+	caseEmptyDSNDatabase.Endpoint = "clickhouse://localhost:9000"
 
 	tests := []struct {
 		name     string
@@ -672,36 +692,60 @@ func TestConfigDatabase(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "default",
+			name:     "default config returns default database",
 			input:    caseDefault,
-			expected: "default",
+			expected: defaultDatabase,
 		},
 		{
-			name:     "config default, dsn default",
-			input:    caseCreateSchemaTrue,
-			expected: "default",
+			name:     "config database takes precedence",
+			input:    caseDatabaseSet,
+			expected: "otel",
 		},
 		{
-			name:     "config unique, dsn default",
-			input:    caseCreateSchemaFalse,
-			expected: "default",
+			name:     "config database set to default falls back to DSN",
+			input:    caseDatabaseSetToDefault,
+			expected: defaultDatabase,
 		},
 		{
-			name:     "config default, dsn unique",
-			input:    caseCreateSchemaFalse,
-			expected: "default",
+			name:     "DSN database used when config database not set",
+			input:    caseDSNWithDatabase,
+			expected: "dsndb",
 		},
 		{
-			name:     "config unique, dsn unique",
-			input:    caseCreateSchemaFalse,
-			expected: "default",
+			name:     "DSN with default database falls back to default",
+			input:    caseDSNWithDefaultDatabase,
+			expected: defaultDatabase,
+		},
+		{
+			name:     "config database takes precedence over DSN database",
+			input:    caseDatabaseAndDSN,
+			expected: "configdb",
+		},
+		{
+			name:     "config database set to default with DSN falls back to DSN database",
+			input:    caseDatabaseSetToDefaultWithDSN,
+			expected: "dsndb",
+		},
+		{
+			name:     "invalid DSN returns empty string",
+			input:    caseInvalidDSN,
+			expected: "",
+		},
+		{
+			name:     "empty DSN database falls back to default",
+			input:    caseEmptyDSNDatabase,
+			expected: defaultDatabase,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("Config database case %s", tt.name), func(t *testing.T) {
-			assert.NoError(t, xconfmap.Validate(tt))
-			assert.Equal(t, tt.expected, tt.input.database())
+		t.Run(fmt.Sprintf("database case %s", tt.name), func(t *testing.T) {
+			if tt.expected != "" {
+				assert.NoError(t, tt.input.Validate())
+			}
+
+			result := tt.input.database()
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
