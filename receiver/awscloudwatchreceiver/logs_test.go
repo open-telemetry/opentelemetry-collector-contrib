@@ -5,6 +5,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go.uber.org/zap/zaptest/observer"
 	"path/filepath"
@@ -403,6 +404,43 @@ func TestUpdateGroupRequests(t *testing.T) {
 			require.Equal(t, expected.message, actual.Message)
 			require.Equal(t, expected.groupName, actual.ContextMap()["groupName"])
 		}
+	}
+}
+
+func TestPollForLogsResourceNotFoundNoBlock(t *testing.T) {
+	mc := &mockClient{}
+	resourceNotFoundErr := &types.ResourceNotFoundException{
+		Message: aws.String(""),
+	}
+	mc.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.FilterLogEventsOutput{
+			NextToken: nil,
+		},
+		resourceNotFoundErr,
+	)
+
+	logsReceiver := &logsReceiver{
+		settings: receiver.Settings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: zap.NewNop(),
+			},
+		},
+		groupRequests: []groupRequest{},
+		client:        mc,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		err := logsReceiver.pollForLogs(context.Background(), &mockGroupRequest{name: "group1"}, time.UnixMilli(0), time.UnixMilli(0))
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		var nf *types.ResourceNotFoundException
+		require.True(t, errors.As(err, &nf))
+	case <-time.After(2 * time.Second):
+		t.Fatal("pollForLogs did not return within expected time")
 	}
 }
 

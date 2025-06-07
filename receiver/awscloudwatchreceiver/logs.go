@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -193,7 +194,6 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 				}
 				l.updateGroupRequests(groups)
 			}
-
 			err := l.poll(ctx)
 			if err != nil {
 				l.settings.Logger.Error("there was an error during the poll", zap.Error(err))
@@ -316,6 +316,14 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 				l.settings.Logger.Error("unable to retrieve logs from cloudatch",
 					zap.String("logGroup", logGroup),
 					zap.Error(err))
+
+				var nf *types.ResourceNotFoundException
+				if errors.As(err, &nf) {
+					l.settings.Logger.Error("log group was deleted while messages were being requested",
+						zap.String("logGroup", logGroup),
+						zap.Error(err))
+					return err
+				}
 				break
 			}
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
