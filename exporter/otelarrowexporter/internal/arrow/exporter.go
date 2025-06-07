@@ -40,6 +40,12 @@ var (
 )
 
 const (
+	// DefaultProducersPerStream is the factor used to configure
+	// the combined exporterhelper batch/queue function, which has
+	// a num_consumers parameter. That field is set to this factor
+	// times the number of streams by default.
+	DefaultProducersPerStream = 10
+
 	// DefaultMaxStreamLifetime is 30 seconds, because the
 	// marginal compression benefit of a longer OTel-Arrow stream
 	// is limited after 100s of batches.

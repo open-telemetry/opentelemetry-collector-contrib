@@ -2851,7 +2851,7 @@
   },
   {
     "computer_name": "abcde",
-    "counter": "CPU Usage (time)",
+    "counter": "CPU Usage Time",
     "counter_type": "1",
     "instance": "default",
     "measurement": "sqlserver_performance",
@@ -3001,7 +3001,7 @@
   },
   {
     "computer_name": "abcde",
-    "counter": "CPU Usage (time)",
+    "counter": "CPU Usage Time",
     "counter_type": "1",
     "instance": "internal",
     "measurement": "sqlserver_performance",
