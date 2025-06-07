@@ -14,8 +14,10 @@ import (
 )
 
 type QuerySample struct {
-	Enabled         bool   `mapstructure:"enabled"`
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TopQueryCollection struct {
@@ -24,7 +26,6 @@ type TopQueryCollection struct {
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	Enabled             bool          `mapstructure:"enabled"`
 	LookbackTime        uint          `mapstructure:"lookback_time"`
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`

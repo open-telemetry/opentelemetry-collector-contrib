@@ -136,7 +136,7 @@ attributes:
   ## query sample
   client.address:
     description: Hostname or address of the client.
-    type: string 
+    type: string
   client.port:
     description: TCP port used by the client.
     type: int
@@ -221,7 +221,7 @@ attributes:
 
 events:
   db.server.top_query:
-    enabled: true
+    enabled: false
     description: top query
     attributes:
       - sqlserver.total_worker_time
@@ -240,7 +240,7 @@ events:
       - server.port
       - db.system.name
   db.server.query_sample:
-    enabled: true
+    enabled: false
     description: query sample
     attributes:
       - client.address
