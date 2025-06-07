@@ -13,7 +13,7 @@ import (
 )
 
 // addResourceTargetInfoV2 converts the resource to the target info metric.
-func addResourceTargetInfoV2(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverterV2) {
+func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp) {
 	if settings.DisableTargetInfo || timestamp == 0 {
 		return
 	}
@@ -61,7 +61,7 @@ func addResourceTargetInfoV2(resource pcommon.Resource, settings Settings, times
 		// convert ns to ms
 		Timestamp: convertTimeStamp(timestamp),
 	}
-	converter.addSample(sample, labels, metadata{
+	c.addSample(sample, labels, metadata{
 		Type: writev2.Metadata_METRIC_TYPE_GAUGE,
 		Help: "Target metadata",
 	})

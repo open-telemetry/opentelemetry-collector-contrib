@@ -124,7 +124,7 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverterV2()
 
-			addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp, converter)
+			converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
 				assert.Empty(t, converter.timeSeries())
