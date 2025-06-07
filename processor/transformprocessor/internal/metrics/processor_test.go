@@ -346,6 +346,62 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				dataPoints.CopyTo(m.Sum().DataPoints())
 			},
 		},
+		{
+			statements: []string{`drop_histogram_buckets(".*") where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
+				m.Histogram().DataPoints().At(0).SetCount(1)
+				m.Histogram().DataPoints().At(0).SetSum(5)
+				m.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(0).BucketCounts().FromRaw([]uint64{})
+
+				m.Histogram().DataPoints().At(1).SetCount(3)
+				m.Histogram().DataPoints().At(1).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(1).BucketCounts().FromRaw([]uint64{})
+			},
+		},
+		{
+			statements: []string{`drop_histogram_buckets("^[0-9]+$") where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
+				m.Histogram().DataPoints().At(0).SetCount(1)
+				m.Histogram().DataPoints().At(0).SetSum(5)
+				m.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(0).BucketCounts().FromRaw([]uint64{})
+
+				m.Histogram().DataPoints().At(1).SetCount(3)
+				m.Histogram().DataPoints().At(1).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(1).BucketCounts().FromRaw([]uint64{})
+			},
+		},
+		{
+			statements: []string{`drop_histogram_buckets("^[0-9]+\\.[0-9]+$") where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
+				m.Histogram().DataPoints().At(0).SetCount(1)
+				m.Histogram().DataPoints().At(0).SetSum(5)
+				m.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(0).BucketCounts().FromRaw([]uint64{})
+
+				m.Histogram().DataPoints().At(1).SetCount(3)
+				m.Histogram().DataPoints().At(1).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(1).BucketCounts().FromRaw([]uint64{})
+			},
+		},
+		{
+			statements: []string{`drop_histogram_buckets("^(10|20)$") where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
+				m.Histogram().DataPoints().At(0).SetCount(1)
+				m.Histogram().DataPoints().At(0).SetSum(5)
+				m.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(0).BucketCounts().FromRaw([]uint64{})
+
+				m.Histogram().DataPoints().At(1).SetCount(3)
+				m.Histogram().DataPoints().At(1).ExplicitBounds().FromRaw([]float64{})
+				m.Histogram().DataPoints().At(1).BucketCounts().FromRaw([]uint64{})
+			},
+		},
 	}
 
 	for _, tt := range tests {
