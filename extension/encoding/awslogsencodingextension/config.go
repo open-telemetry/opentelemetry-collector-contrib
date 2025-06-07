@@ -16,13 +16,19 @@ const (
 	formatCloudWatchLogsSubscriptionFilter = "cloudwatch_logs_subscription_filter"
 	formatVPCFlowLog                       = "vpc_flow_log"
 	formatS3AccessLog                      = "s3_access_log"
+	formatWAFLog                           = "waf_log"
 
 	fileFormatPlainText = "plain-text"
 	fileFormatParquet   = "parquet"
 )
 
 var (
-	supportedLogFormats           = []string{formatCloudWatchLogsSubscriptionFilter, formatVPCFlowLog, formatS3AccessLog}
+	supportedLogFormats = []string{
+		formatCloudWatchLogsSubscriptionFilter,
+		formatVPCFlowLog,
+		formatS3AccessLog,
+		formatWAFLog,
+	}
 	supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
 )
 
@@ -33,6 +39,7 @@ type Config struct {
 	// - cloudwatch_logs_subscription_filter
 	// - vpc_flow_log
 	// - s3_access_log
+	// - waf_log
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpc_flow_log"`
@@ -61,6 +68,7 @@ func (cfg *Config) Validate() error {
 	case formatCloudWatchLogsSubscriptionFilter: // valid
 	case formatVPCFlowLog: // valid
 	case formatS3AccessLog: // valid
+	case formatWAFLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}
