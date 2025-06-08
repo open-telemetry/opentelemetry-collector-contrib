@@ -8,7 +8,6 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"go.uber.org/goleak"
 	"math/rand/v2"
 	"strconv"
 	"testing"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/goleak"
 )
 
 func randPort() string {
