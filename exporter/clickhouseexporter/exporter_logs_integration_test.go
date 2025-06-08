@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func TestLogsExporter(t *testing.T) {
+func testLogsExporter(t *testing.T) {
 	exporter := newTestLogsExporter(t, integrationTestEndpoint)
 	verifyExportLogs(t, exporter)
 }

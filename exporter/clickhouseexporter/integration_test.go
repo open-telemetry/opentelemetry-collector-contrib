@@ -8,6 +8,7 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
+	"go.uber.org/goleak"
 	"math/rand/v2"
 	"strconv"
 	"testing"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.uber.org/goleak"
 )
 
 func randPort() string {
@@ -87,7 +87,7 @@ var integrationTestEndpoint string
 
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
-func TestMain(m *testing.M) {
+func TestIntegration(t *testing.T) {
 	c, endpoint, err := createClickhouseContainer("clickhouse/clickhouse-server:25.5-alpine")
 	if err != nil {
 		panic(fmt.Errorf("failed to create ClickHouse container: %w", err))
@@ -101,6 +101,10 @@ func TestMain(m *testing.M) {
 
 	integrationTestEndpoint = endpoint
 
+	t.Run("TestLogsExporter", testLogsExporter)
+	t.Run("TestTracesExporter", testTracesExporter)
+	t.Run("TestMetricsExporter", testMetricsExporter)
+
 	// Verify all integration tests, ignoring test container reaper
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"))
+	goleak.VerifyNone(t, goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"))
 }
