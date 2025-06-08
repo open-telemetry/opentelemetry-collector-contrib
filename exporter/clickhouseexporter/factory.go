@@ -7,6 +7,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -33,7 +34,12 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp := newLogsExporter(set.Logger, c)
+
+	// TODO: branch on feature flag or config
+	exp, err := newLogsJSONExporter(set.Logger, c)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure clickhouse json logs exporter: %w", err)
+	}
 
 	return exporterhelper.NewLogs(
 		ctx,

@@ -12,6 +12,12 @@ var LogsCreateTable string
 //go:embed logs_insert.sql
 var LogsInsert string
 
+//go:embed logs_json_table.sql
+var LogsJSONCreateTable string
+
+//go:embed logs_json_insert.sql
+var LogsJSONInsert string
+
 // TRACES
 
 //go:embed traces_table.sql
