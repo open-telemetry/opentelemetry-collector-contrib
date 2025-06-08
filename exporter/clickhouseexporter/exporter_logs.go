@@ -99,7 +99,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			scopeName := scopeLogScope.Name()
 			scopeVersion := scopeLogScope.Version()
 			scopeLogRecords := scopeLog.LogRecords()
-			scopeAttrMap := internal.AttributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
+			scopeAttrMap := internal.AttributesToMap(scopeLogScope.Attributes())
 
 			slrLen := scopeLogRecords.Len()
 			for k := 0; k < slrLen; k++ {
