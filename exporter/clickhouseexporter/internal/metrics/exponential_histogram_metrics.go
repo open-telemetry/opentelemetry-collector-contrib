@@ -41,8 +41,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db driver.Conn) error 
 		return err
 	}
 	defer func(batch driver.Batch) {
-		closeErr := batch.Close()
-		if closeErr != nil {
+		if closeErr := batch.Close(); closeErr != nil {
 			logger.Warn("failed to close exponential histogram metrics batch", zap.Error(closeErr))
 		}
 	}(batch)
