@@ -13,6 +13,8 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -87,15 +89,15 @@ func TestSetKeyAttributes(t *testing.T) {
 
 	tests := map[string]struct {
 		webACLID   string
-		key        resourceKey
+		expectsMap map[string]any
 		expectsErr string
 	}{
 		"valid": {
 			webACLID: "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
-			key: resourceKey{
-				region:     "us-east-1",
-				accountID:  "1234",
-				resourceID: "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
+			expectsMap: map[string]any{
+				string(conventions.CloudRegionKey):     "us-east-1",
+				string(conventions.CloudAccountIDKey):  "1234",
+				string(conventions.CloudResourceIDKey): "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			},
 		},
 		"unexpected_prefix": {
@@ -118,8 +120,8 @@ func TestSetKeyAttributes(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			res := &resourceKey{}
-			err := setKeyAttributes(test.webACLID, res)
+			rl := plog.NewResourceLogs()
+			err := setResourceAttributes(rl, test.webACLID)
 
 			if test.expectsErr != "" {
 				require.ErrorContains(t, err, test.expectsErr)
@@ -127,7 +129,7 @@ func TestSetKeyAttributes(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, test.key, *res)
+			require.Equal(t, test.expectsMap, rl.Resource().Attributes().AsRaw())
 		})
 	}
 }

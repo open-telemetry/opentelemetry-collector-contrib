@@ -83,12 +83,6 @@ func (w *wafLogUnmarshaler) UnmarshalLogs(content []byte) (plog.Logs, error) {
 	return w.unmarshalWAFLogs(gzipReader)
 }
 
-type resourceKey struct {
-	region     string
-	accountID  string
-	resourceID string
-}
-
 func (w *wafLogUnmarshaler) unmarshalWAFLogs(reader io.Reader) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
@@ -102,41 +96,39 @@ func (w *wafLogUnmarshaler) unmarshalWAFLogs(reader io.Reader) (plog.Logs, error
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
 
-	key := &resourceKey{}
-	setKey := true
 	scanner := bufio.NewScanner(reader)
+	webACLID := ""
 	for scanner.Scan() {
 		logLine := scanner.Bytes()
+
 		var log wafLog
 		if err := gojson.Unmarshal(logLine, &log); err != nil {
 			return plog.Logs{}, fmt.Errorf("failed to unmarshal WAF log: %w", err)
 		}
+		if webACLID != "" && log.WebACLID != webACLID {
+			return plog.Logs{}, fmt.Errorf(
+				"unexpected: new web acl id %q is different than previous one %q",
+				webACLID,
+				log.WebACLID,
+			)
+		}
+		webACLID = log.WebACLID
 
 		record := scopeLogs.LogRecords().AppendEmpty()
-		if err := w.addWAFLog(log, record, key, setKey); err != nil {
+		if err := w.addWAFLog(log, record); err != nil {
 			return plog.Logs{}, err
 		}
-		// no need to keep parsing the webACLID value for the resource attributes
-		// after parsing the first log, since they are all the same
-		setKey = false
 	}
 
-	// set the resource attributes
-	if key.resourceID != "" {
-		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), key.resourceID)
-	}
-	if key.accountID != "" {
-		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), key.accountID)
-	}
-	if key.region != "" {
-		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudRegionKey), key.region)
+	if err := setResourceAttributes(resourceLogs, webACLID); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to get resource attributes: %w", err)
 	}
 
 	return logs, nil
 }
 
-// setKeyAttributes based on the web ACL ID
-func setKeyAttributes(webACLID string, key *resourceKey) error {
+// setResourceAttributes based on the web ACL ID
+func setResourceAttributes(resourceLogs plog.ResourceLogs, webACLID string) error {
 	expectedFormat := "arn:aws:wafv2:<region>:<account>:<scope>/webacl/<name>/<id>"
 	value, remaining, _ := strings.Cut(webACLID, "arn:aws:wafv2:")
 	if value != "" {
@@ -150,23 +142,23 @@ func setKeyAttributes(webACLID string, key *resourceKey) error {
 	if value == "" {
 		return fmt.Errorf("could not find region in webaclId %q", webACLID)
 	}
-	key.region = value
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudRegionKey), value)
 
 	value, remaining, _ = strings.Cut(remaining, ":")
 	if value == "" {
 		return fmt.Errorf("could not find account in webaclId %q", webACLID)
 	}
-	key.accountID = value
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
 
 	if remaining == "" {
 		return fmt.Errorf("webaclId %q does not have expected format %q", webACLID, expectedFormat)
 	}
 
-	key.resourceID = webACLID
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), webACLID)
 	return nil
 }
 
-func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord, key *resourceKey, setKey bool) error {
+func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 	// timestamp is in milliseconds, so we need to convert it to ns first
 	nanos := log.Timestamp * 1_000_000
 	ts := pcommon.Timestamp(nanos)
@@ -210,8 +202,5 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord, key *re
 	putStr(string(conventions.URLSchemeKey), log.HTTPRequest.Scheme)
 	putStr("geo.country.iso_code", log.HTTPRequest.Country)
 
-	if !setKey {
-		return nil
-	}
-	return setKeyAttributes(log.WebACLID, key)
+	return nil
 }
