@@ -23,12 +23,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
-type MockClient struct {
+type mockClient struct {
 	mock.Mock
 }
 
 // Close provides a mock function with given fields:
-func (_m *MockClient) Close() error {
+func (_m *mockClient) Close() error {
 	ret := _m.Called()
 
 	var r0 error
@@ -42,7 +42,7 @@ func (_m *MockClient) Close() error {
 }
 
 // Connect provides a mock function with given fields:
-func (_m *MockClient) Connect() error {
+func (_m *mockClient) Connect() error {
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -55,7 +55,7 @@ func (_m *MockClient) Connect() error {
 }
 
 // GetIndexedData provides a mock function with given fields: oids, scraperErrors
-func (_m *MockClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
+func (_m *mockClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
 	ret := _m.Called(oids, scraperErrors)
 
 	var r0 []snmpData
@@ -69,7 +69,7 @@ func (_m *MockClient) GetIndexedData(oids []string, scraperErrors *scrapererror.
 }
 
 // GetScalarData provides a mock function with given fields: oids, scraperErrors
-func (_m *MockClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
+func (_m *mockClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
 	ret := _m.Called(oids, scraperErrors)
 
 	var r0 []snmpData
@@ -125,7 +125,7 @@ func TestScrape(t *testing.T) {
 			// Config is responsible for making sure this would never happen
 			desc: "No Metric Configs returns no metrics with no error",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
@@ -142,7 +142,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape errors and no indexed metric configs adds error",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting scrape data")
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
@@ -177,7 +177,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape returns string data does not create metric",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				oid := "1"
 				clientSNMPData := snmpData{
 					oid:       oid,
@@ -213,7 +213,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape creates int gauge metric (1)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
@@ -260,7 +260,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape with non '.' prefixed OID still creates metric (1)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
@@ -307,7 +307,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape creates float cumulative monotonic sum metric (2)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     float64(1.0),
@@ -357,7 +357,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape creates int delta non-monotonic sum metric (3)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
@@ -407,7 +407,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape creates multiple metrics (4)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData1 := snmpData{
 					oid:       ".1",
 					value:     int64(1),
@@ -471,7 +471,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape creates metric with attributes (5)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
@@ -537,7 +537,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape creates metric with multiple data points (6)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData1 := snmpData{
 					oid:       ".1",
 					value:     int64(1),
@@ -610,7 +610,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed scrape errors and no scalar metric configs adds error",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
@@ -644,7 +644,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape returns string data does not create metric",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				columnOID := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
@@ -692,7 +692,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape creates int gauge metric on new no attribute resource (7)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
@@ -756,7 +756,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape with non '.' prefixed OID still creates metric (7)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
@@ -820,7 +820,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape creates float cumulative monotonic sum metric (8)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
@@ -887,7 +887,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape creates int delta non-monotonic sum metric (9)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
@@ -954,7 +954,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape creates metric on existing resource if scalar metrics were scraped (10)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					oid:       ".0",
 					value:     int64(0),
@@ -1037,7 +1037,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape creates multiple metrics on same no attribute resource (11)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -1131,7 +1131,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape creates with all attribute config creates metric with all attributes (12)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -1223,7 +1223,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed attribute scrape error does not create metric datapoints",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
 				columnOID := ".1"
 				oid1 := ".1.1"
@@ -1294,7 +1294,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed attribute scrape returning bad value type does not create metric data points",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				columnOID1 := ".0"
 				columnOID2 := ".1"
 				oid1 := ".0.1"
@@ -1378,7 +1378,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed scrape for metric and attributes creates a metric with indexed attributes (13)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -1456,7 +1456,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape with non '.' prefixed OID for attribute still creates metric (13)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -1534,7 +1534,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "SNMP float value for indexed attribute still creates metric (14)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -1612,7 +1612,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "SNMP integer value for indexed attribute still creates metric (15)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -1690,7 +1690,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Resource attribute with prefix creates new resources with created metrics (16)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
@@ -1776,7 +1776,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed resource attribute scrape error will not create metrics or resources",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
 				columnOID := ".1"
 				oid1 := ".1.1"
@@ -1843,7 +1843,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed resource attribute scrape returning bad value type will not create metrics or resources",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				columnOID1 := ".0"
 				columnOID2 := ".1"
 				oid1 := ".0.1"
@@ -1923,7 +1923,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Resource attribute with column OID creates new resource with multiple metrics (17)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -2021,7 +2021,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Resource attribute with column OID without . prefix still creates metrics (17)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -2119,7 +2119,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed config with both column OID and prefix resource attributes creates metric (18)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
@@ -2196,7 +2196,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) resource attribute creates metric (19)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
@@ -2278,7 +2278,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (int) resource attribute attached to ColumnOID metric alongside a ColumnOID (int) resource attribute creates metric (20)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".0",
 					value:     int64(5),
@@ -2360,7 +2360,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (float) resource attribute attached to ColumnOID metric alongside a ColumnOID (float) resource attribute creates metric (21)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".0",
 					value:     float64(5.0),
@@ -2442,7 +2442,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
@@ -2511,7 +2511,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Multiple ScalarOID (string) resource attributes attached to ColumnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
@@ -2616,7 +2616,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) attribute creates metric (24)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
@@ -2705,7 +2705,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
@@ -2781,7 +2781,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ScalarOID metric creates metric (26)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
@@ -2840,7 +2840,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
@@ -2907,7 +2907,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Two scalar oid metrics with the same resource attribute get added to a single resource (28)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
@@ -2984,7 +2984,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Metric does not use all available scalar RAs and still behaves properly (near copy of (24)) (29)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
