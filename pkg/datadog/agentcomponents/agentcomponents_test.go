@@ -6,12 +6,16 @@ package agentcomponents // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"testing"
 
+	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	implgzip "github.com/DataDog/datadog-agent/pkg/util/compression/impl-gzip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -173,4 +177,140 @@ func TestConfigOptions_OrderMatters(t *testing.T) {
 
 	configModel := config.(pkgconfigmodel.Config)
 	assert.Equal(t, "second", configModel.GetString("test.value"))
+}
+
+func TestAgentComponents_NewSerializer(t *testing.T) {
+	// Create a zap logger for testing
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	logger, err := config.Build()
+	if err != nil {
+		t.Fatalf("Failed to build logger: %v", err)
+	}
+
+	// Create a TelemetrySettings with the test logger
+	telemetrySettings := component.TelemetrySettings{
+		Logger: logger,
+	}
+	zlog := &ZapLogger{
+		Logger: logger,
+	}
+
+	configOptions := []ConfigOption{
+		WithAPIConfig(&datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key:  configopaque.String("abcdef1234567890"),
+				Site: "test-site",
+			},
+		}),
+		WithLogsEnabled(),
+		WithLogLevel(telemetrySettings),
+		WithForwarderConfig(),
+		WithPayloadsConfig(),
+	}
+	// Create a config component
+	configComponent := NewConfigComponent(configOptions...)
+
+	// Create a log component
+	logComponent := NewLogComponent(telemetrySettings)
+
+	// Create a forwarder
+	forwarder := NewForwarderComponent(configComponent, logComponent)
+
+	// Create a compressor
+	compressor := NewCompressorComponent()
+
+	// Call NewSerializer
+	serial := NewSerializerComponent(forwarder, compressor, configComponent, zlog, "test-hostname")
+
+	// Assert that the returned serializer is not nil
+	assert.NotNil(t, serial)
+
+	// Assert that the serializer has the correct configuration
+	assert.Equal(t, forwarder, serial.Forwarder)
+	assert.Equal(t, compressor, serial.Strategy)
+}
+
+func TestAgentComponents_NewCompressor(t *testing.T) {
+	// Call NewCompressor
+	compressor := NewCompressorComponent()
+
+	// Assert that the returned compressor is not nil
+	assert.NotNil(t, compressor)
+
+	// Assert that the returned compressor is of type *compression.GzipCompressor
+	_, ok := compressor.(*implgzip.GzipStrategy)
+	assert.True(t, ok, "Expected compressor to be of type *compression.GzipCompressor")
+}
+
+func TestAgentComponents_NewForwarder(t *testing.T) {
+	// Create a zap logger for testing
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	logger, err := config.Build()
+	if err != nil {
+		t.Fatalf("Failed to build logger: %v", err)
+	}
+
+	// Create a TelemetrySettings with the test logger
+	telemetrySettings := component.TelemetrySettings{
+		Logger: logger,
+	}
+
+	configOptions := []ConfigOption{
+		WithAPIConfig(&datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key:  configopaque.String("abcdef1234567890"),
+				Site: "test-site",
+			},
+		}),
+		WithLogsEnabled(),
+		WithLogLevel(telemetrySettings),
+		WithForwarderConfig(),
+		WithPayloadsConfig(),
+	}
+
+	// Create a config component
+	configComponent := NewConfigComponent(configOptions...)
+
+	// Create a log component
+	logComponent := NewLogComponent(telemetrySettings)
+
+	// Call NewForwarder
+	forwarder := NewForwarderComponent(configComponent, logComponent)
+
+	// Assert that the returned forwarder is not nil
+	assert.NotNil(t, forwarder)
+
+	// Assert that the returned forwarder is of type *defaultforwarder.DefaultForwarder
+	_, ok := forwarder.(*defaultforwarder.DefaultForwarder)
+	assert.True(t, ok, "Expected forwarder to be of type *defaultforwarder.DefaultForwarder")
+}
+
+func TestAgentComponents_NewLogComponent(t *testing.T) {
+	// Create a zap logger for testing
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	logger, err := config.Build()
+	if err != nil {
+		t.Fatalf("Failed to build logger: %v", err)
+	}
+
+	// Create a TelemetrySettings with the test logger
+	telemetrySettings := component.TelemetrySettings{
+		Logger: logger,
+	}
+
+	// Call NewLogComponent
+	logComponent := NewLogComponent(telemetrySettings)
+
+	// Assert that the returned component is not nil
+	assert.NotNil(t, logComponent)
+
+	// Assert that the returned component is of type *datadog.Zaplogger
+	zlog, ok := logComponent.(*ZapLogger)
+	assert.True(t, ok, "Expected logComponent to be of type *datadog.Zaplogger")
+
+	// Assert that the logger is correctly set
+	assert.Equal(t, logger, zlog.Logger)
 }

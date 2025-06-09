@@ -4,14 +4,20 @@
 package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (
+	"compress/gzip"
 	"runtime"
 	"strings"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
+	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
+	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
+	"github.com/DataDog/datadog-agent/pkg/util/compression/selector"
 	"go.opentelemetry.io/collector/component"
 	"golang.org/x/net/http/httpproxy"
 
@@ -27,6 +33,26 @@ func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 		Logger: set.Logger,
 	}
 	return zlog
+}
+
+// NewForwarderComponent creates a new forwarder that sends payloads to Datadog backend
+func NewForwarderComponent(cfg coreconfig.Component, log corelog.Component) defaultforwarder.Forwarder {
+	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
+		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
+	}
+	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
+	forwarderOptions.DisableAPIKeyChecking = true
+	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
+}
+
+// NewCompressorComponent creates a new compressor with Gzip strategy, best compression
+func NewCompressorComponent() compression.Compressor {
+	return selector.NewCompressor(compression.GzipKind, gzip.BestCompression)
+}
+
+// NewSerializerComponent creates a new serializer that serializes payloads prior to being forwarded
+func NewSerializerComponent(fwd defaultforwarder.Forwarder, cmp compression.Compressor, cfg coreconfig.Component, logger corelog.Component, hostname string) *serializer.Serializer {
+	return serializer.NewSerializer(fwd, nil, cmp, cfg, logger, hostname)
 }
 
 // NewConfigComponent creates a new Datadog agent config component with the given options.
@@ -51,10 +77,28 @@ func WithAPIConfig(cfg *datadogconfig.Config) ConfigOption {
 	}
 }
 
-// WithLogsConfig configures logs-related settings
-func WithLogsConfig(cfg *datadogconfig.Config) ConfigOption {
+// WithForwarderConfig configures forwarder-related settings
+func WithForwarderConfig() ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("forwarder_apikey_validation_interval", 60, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_num_workers", 1, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_backoff_factor", 2, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_backoff_base", 2, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_backoff_max", 64, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_recovery_interval", 2, pkgconfigmodel.SourceDefault)
+	}
+}
+
+// WithLogsEnabled enables logs for agent config
+func WithLogsEnabled() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceDefault)
+	}
+}
+
+// WithLogsConfig configures logs-related settings (requires WithLogsEnabled)
+func WithLogsConfig(cfg *datadogconfig.Config) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("logs_config.batch_wait", cfg.Logs.BatchWait, pkgconfigmodel.SourceFile)
 		pkgconfig.Set("logs_config.use_compression", cfg.Logs.UseCompression, pkgconfigmodel.SourceFile)
 		pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
@@ -62,7 +106,7 @@ func WithLogsConfig(cfg *datadogconfig.Config) ConfigOption {
 	}
 }
 
-// WithLogsDefaults configures logs default settings
+// WithLogsDefaults configures logs default settings (requires WithLogsEnabled)
 func WithLogsDefaults() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("logs_config.auditor_ttl", pkgconfigsetup.DefaultAuditorTTL, pkgconfigmodel.SourceDefault)
@@ -85,10 +129,19 @@ func WithLogsDefaults() ConfigOption {
 	}
 }
 
-// WithLogLevel configures log level settings
+// WithLogLevel configures log level settings (requires WithLogsEnabled)
 func WithLogLevel(set component.TelemetrySettings) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("log_level", set.Logger.Level().String(), pkgconfigmodel.SourceFile)
+	}
+}
+
+// WithPayloadsConfig configures payload settings
+func WithPayloadsConfig() ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		pkgconfig.Set("enable_payloads.events", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("enable_payloads.json_to_v1_intake", true, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("enable_sketch_stream_payload_serialization", true, pkgconfigmodel.SourceDefault)
 	}
 }
 

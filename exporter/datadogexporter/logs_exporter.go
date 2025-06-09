@@ -184,6 +184,7 @@ func newLogsAgentExporter(
 	logComponent := agentcomponents.NewLogComponent(params.TelemetrySettings)
 	cfgComponent := agentcomponents.NewConfigComponent(
 		agentcomponents.WithAPIConfig(cfg),
+		agentcomponents.WithLogsEnabled(),
 		agentcomponents.WithLogLevel(params.TelemetrySettings),
 		agentcomponents.WithLogsConfig(cfg),
 		agentcomponents.WithLogsDefaults(),
