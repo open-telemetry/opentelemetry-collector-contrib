@@ -7,7 +7,7 @@ change_type: breaking
 component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: SQL Server receiver now reports empty strings for query texts and query plans when obfuscation failed.
+note: Only empty strings for query texts and query plans when obfuscation failed.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40527]
