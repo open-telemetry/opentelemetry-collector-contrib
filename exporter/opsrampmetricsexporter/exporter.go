@@ -17,6 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
+var OpsRampMetricsChannel = make(chan *[]OpsRampMetricsList, 1000)
+
 type opsrampMetricsExporter struct {
 	cfg               *Config
 	settings          component.TelemetrySettings
@@ -54,37 +56,47 @@ func (e *opsrampMetricsExporter) pushMetricsData(ctx context.Context, md pmetric
 	}
 
 	// Print the JSON representation of all metrics
-	fmt.Printf("OpsRampMetrics JSON:\n%s\n\n", string(jsonBytes))
+	//fmt.Printf("OpsRampMetrics JSON:\n%s\n\n", string(jsonBytes))
 
 	// Also log at debug level
 	e.logger.Debug("Converted metrics",
 		zap.Int("count", len(opsrampMetrics)),
 		zap.String("json", string(jsonBytes)))
 
+	select {
+	case OpsRampMetricsChannel <- &opsrampMetrics:
+		e.logger.Debug("#######OpsRampMetricsExporter: Successfully sent to opsramp metrics channel")
+	default:
+		e.logger.Error("#######OpsRampMetricsExporter: failed sent to opsramp metrics channel")
+	}
+
 	return nil
 }
 
 // convertToOpsRampMetrics converts OTLP metrics to our OpsRampMetric format
-func (e *opsrampMetricsExporter) convertToOpsRampMetrics(md pmetric.Metrics) ([]OpsRampMetric, error) {
-	opsrampMetrics := []OpsRampMetric{}
+func (e *opsrampMetricsExporter) convertToOpsRampMetrics(md pmetric.Metrics) ([]OpsRampMetricsList, error) {
+	opsrampMetricsList := []OpsRampMetricsList{}
 
 	// Process each resource spans
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
+		var opsRampMetrics OpsRampMetricsList
 		rm := rms.At(i)
 		resource := rm.Resource()
-		resourceLabels := attributeMapToLabels(resource.Attributes())
+		opsRampMetrics.ResourceLabels = attributeMapToLabels(resource.Attributes())
 
 		// Process each instrumentation library spans
 		ilms := rm.ScopeMetrics()
+		opsrampMetrics := []OpsRampMetric{}
+
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-
+			metricLabels := make(map[string]string)
 			// Check if we have a scope (instrumentation library) name
 			if ilm.Scope().Name() != "" {
-				resourceLabels[prometheus.ScopeNameLabelKey] = ilm.Scope().Name()
+				metricLabels[prometheus.ScopeNameLabelKey] = ilm.Scope().Name()
 				if ilm.Scope().Version() != "" {
-					resourceLabels[prometheus.ScopeVersionLabelKey] = ilm.Scope().Version()
+					metricLabels[prometheus.ScopeVersionLabelKey] = ilm.Scope().Version()
 				}
 			}
 
@@ -97,13 +109,13 @@ func (e *opsrampMetricsExporter) convertToOpsRampMetrics(md pmetric.Metrics) ([]
 				// Process based on metric type
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
-					opsrampMetrics = append(opsrampMetrics, e.convertGaugeMetric(metricName, metric.Gauge(), resourceLabels)...)
+					opsrampMetrics = append(opsrampMetrics, e.convertGaugeMetric(metricName, metric.Gauge(), metricLabels)...)
 				case pmetric.MetricTypeSum:
-					opsrampMetrics = append(opsrampMetrics, e.convertSumMetric(metricName, metric.Sum(), resourceLabels)...)
+					opsrampMetrics = append(opsrampMetrics, e.convertSumMetric(metricName, metric.Sum(), metricLabels)...)
 				case pmetric.MetricTypeHistogram:
-					opsrampMetrics = append(opsrampMetrics, e.convertHistogramMetric(metricName, metric.Histogram(), resourceLabels)...)
+					opsrampMetrics = append(opsrampMetrics, e.convertHistogramMetric(metricName, metric.Histogram(), metricLabels)...)
 				case pmetric.MetricTypeSummary:
-					opsrampMetrics = append(opsrampMetrics, e.convertSummaryMetric(metricName, metric.Summary(), resourceLabels)...)
+					opsrampMetrics = append(opsrampMetrics, e.convertSummaryMetric(metricName, metric.Summary(), metricLabels)...)
 				case pmetric.MetricTypeEmpty:
 					// Skip empty metrics
 				case pmetric.MetricTypeExponentialHistogram:
@@ -111,10 +123,12 @@ func (e *opsrampMetricsExporter) convertToOpsRampMetrics(md pmetric.Metrics) ([]
 					// You could add support for these if needed
 				}
 			}
+			opsRampMetrics.Metrics = append(opsRampMetrics.Metrics, opsrampMetrics...)
 		}
+		opsrampMetricsList = append(opsrampMetricsList, opsRampMetrics)
 	}
 
-	return opsrampMetrics, nil
+	return opsrampMetricsList, nil
 }
 
 // convertGaugeMetric converts gauge metrics to OpsRampMetric format

@@ -11,3 +11,8 @@ type OpsRampMetric struct {
 	Timestamp  int64             `json:"timestamp"`
 	Labels     map[string]string `json:"labels"`
 }
+
+type OpsRampMetricsList struct {
+	ResourceLabels map[string]string `json:"resourceLabels"`
+	Metrics        []OpsRampMetric   `json:"metrics"`
+}
