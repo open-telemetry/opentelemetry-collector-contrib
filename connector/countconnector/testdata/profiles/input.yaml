@@ -10,58 +10,31 @@ resourceProfiles:
     scopeProfiles:
       - profiles:
           - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: bar
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: notbar
+          - attributeIndices: [0, 2]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: notfoo
+          - attributeIndices: [3]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
           - attributeIndices: []
-            attributeTable: []
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 100
         scope: {}
 
@@ -76,58 +49,31 @@ resourceProfiles:
     scopeProfiles:
       - profiles:
           - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: bar
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: notbar
+          - attributeIndices: [0, 2]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: notfoo
+          - attributeIndices: [3]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
           - attributeIndices: []
-            attributeTable: []
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 100
         scope: {}
 
@@ -139,58 +85,31 @@ resourceProfiles:
     scopeProfiles:
       - profiles:
           - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: bar
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: notbar
+          - attributeIndices: [0, 2]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: notfoo
+          - attributeIndices: [3]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
           - attributeIndices: []
-            attributeTable: []
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 100
         scope: {}
 
@@ -198,57 +117,46 @@ resourceProfiles:
     scopeProfiles:
       - profiles:
           - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: bar
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0, 1]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: foo
-              - key: profile.optional
-                value:
-                  stringValue: notbar
+          - attributeIndices: [0, 2]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 10000
-          - attributeIndices: [0]
-            attributeTable:
-              - key: profile.required
-                value:
-                  stringValue: notfoo
+          - attributeIndices: [3]
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
           - attributeIndices: []
-            attributeTable: []
             sample:
               - locationsLength: 0
                 timestampsUnixNano: ["0"]
             sampleType:
               - unitStrindex: 0
-            stringTable:
-              - count
             duration: 100
         scope: {}
+dictionary:
+  attributeTable:
+    - key: profile.required
+      value:
+        stringValue: foo
+    - key: profile.optional
+      value:
+        stringValue: bar
+    - key: profile.optional
+      value:
+        stringValue: notbar
+    - key: profile.required
+      value:
+        stringValue: notfoo
+  stringTable:
+    - count

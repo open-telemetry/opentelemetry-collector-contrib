@@ -38,6 +38,22 @@ Number of Prometheus time series that were translated from OTel metrics
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_exporter_prometheusremotewrite_wal_reads
+
+Number of WAL reads
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_reads_failures
+
+Number of WAL reads that failed
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### otelcol_exporter_prometheusremotewrite_wal_writes
 
 Number of WAL writes

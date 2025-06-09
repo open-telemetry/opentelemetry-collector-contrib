@@ -26,13 +26,13 @@ func newMetricsExporter(cfg component.Config, set exporter.Settings) (*metricsEx
 	}
 
 	return &metricsExporter{
-		signalExporter: *signalExporter,
+		signalExporter: signalExporter,
 	}, nil
 }
 
 type metricsExporter struct {
 	metricExporter pmetricotlp.GRPCClient
-	signalExporter
+	*signalExporter
 }
 
 func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
@@ -45,6 +45,10 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 }
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := md.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
 		resourceMetric := rss.At(i)
@@ -55,14 +59,28 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 
 	resp, err := e.metricExporter.Export(e.enhanceContext(ctx), pmetricotlp.NewExportRequestFromMetrics(md), e.callOptions...)
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
+		var metricNames []string
+		rss := md.ResourceMetrics()
+		for i := 0; i < rss.Len(); i++ {
+			rm := rss.At(i)
+			sm := rm.ScopeMetrics()
+			for j := 0; j < sm.Len(); j++ {
+				metrics := sm.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					metricNames = append(metricNames, metrics.At(k).Name())
+				}
+			}
+		}
+
 		e.settings.Logger.Error("Partial success response from Coralogix",
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_data_points", partialSuccess.RejectedDataPoints()),
+			zap.Strings("metric_names", metricNames),
 		)
 	}
 

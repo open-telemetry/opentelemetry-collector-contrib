@@ -3,9 +3,10 @@ type: tcplog
 status:
   class: receiver
   stability:
-    unmaintained: [logs]
+    alpha: [logs]
   distributions: [contrib]
   codeowners:
+    active: [VihasMakwana]
     emeritus: [djaglowski]
     seeking_new: true
 

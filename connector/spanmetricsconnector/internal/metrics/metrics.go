@@ -391,7 +391,7 @@ func (m *SumMetrics) BuildMetrics(
 		startTimeStamp := startTimeStampGenerator(k, s.startTimestamp)
 		dp.SetStartTimestamp(startTimeStamp)
 		dp.SetTimestamp(timestamp)
-		if s.isFirst {
+		if temporality == pmetric.AggregationTemporalityCumulative && s.isFirst {
 			dp.SetIntValue(0)
 			s.isFirst = false
 		} else {

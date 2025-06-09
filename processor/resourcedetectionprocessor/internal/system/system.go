@@ -120,6 +120,17 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 
+	var hostInterfaceAttribute []any
+	if d.cfg.ResourceAttributes.HostInterface.Enabled {
+		interfaces, errInterfaces := d.provider.HostInterfaces()
+		if errInterfaces != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get host network interfaces: %w", errInterfaces)
+		}
+		for _, iface := range interfaces {
+			hostInterfaceAttribute = append(hostInterfaceAttribute, iface.Name)
+		}
+	}
+
 	osDescription, err := d.provider.OSDescription(ctx)
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
@@ -152,7 +163,22 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetHostArch(hostArch)
 			d.rb.SetHostIP(hostIPAttribute)
 			d.rb.SetHostMac(hostMACAttribute)
+			d.rb.SetHostInterface(hostInterfaceAttribute)
 			d.rb.SetOsDescription(osDescription)
+			if d.cfg.ResourceAttributes.OsName.Enabled {
+				if osName, err2 := d.provider.OSName(ctx); err2 == nil {
+					d.rb.SetOsName(osName)
+				} else {
+					d.logger.Warn("failed to get OS name", zap.Error(err2))
+				}
+			}
+			if d.cfg.ResourceAttributes.OsBuildID.Enabled {
+				if osBuildID, err2 := d.provider.OSBuildID(ctx); err2 == nil {
+					d.rb.SetOsBuildID(osBuildID)
+				} else {
+					d.logger.Warn("failed to get OS build id", zap.Error(err2))
+				}
+			}
 			if len(cpuInfo) > 0 {
 				setHostCPUInfo(d, cpuInfo[0])
 			}
