@@ -4,11 +4,12 @@
 package chjson
 
 import (
+	"testing"
+
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"testing"
 )
 
 func testMap() pcommon.Map {
@@ -86,7 +87,7 @@ func TestAttributesToJSON(t *testing.T) {
 func TestAppendSpanIDToHex(t *testing.T) {
 	hexBuf := make([]byte, 0, 128)
 
-	var spanID = pcommon.SpanID{
+	spanID := pcommon.SpanID{
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
 	}
 
@@ -102,7 +103,7 @@ func TestAppendSpanIDToHex(t *testing.T) {
 func TestAppendTraceIDToHex(t *testing.T) {
 	hexBuf := make([]byte, 0, 128)
 
-	var traceID = pcommon.TraceID{
+	traceID := pcommon.TraceID{
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
 		0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 	}
@@ -119,7 +120,7 @@ func TestAppendTraceIDToHex(t *testing.T) {
 func BenchmarkAppendSpanIDToHex(b *testing.B) {
 	hexBuf := make([]byte, 0, 128)
 
-	var spanID = pcommon.SpanID{
+	spanID := pcommon.SpanID{
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
 	}
 
@@ -133,7 +134,7 @@ func BenchmarkAppendSpanIDToHex(b *testing.B) {
 func BenchmarkAppendTraceIDToHex(b *testing.B) {
 	hexBuf := make([]byte, 0, 128)
 
-	var traceID = pcommon.TraceID{
+	traceID := pcommon.TraceID{
 		0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
 		0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
 	}

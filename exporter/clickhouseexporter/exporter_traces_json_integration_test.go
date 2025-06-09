@@ -27,8 +27,7 @@ func testTracesJSONExporter(t *testing.T) {
 }
 
 func newTestTracesJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesJSONExporter {
-	exporter, err := newTracesJSONExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
-	require.NoError(t, err)
+	exporter := newTracesJSONExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
 	require.NoError(t, exporter.start(context.Background(), nil))
 

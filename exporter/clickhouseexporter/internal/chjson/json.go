@@ -6,9 +6,10 @@ package chjson
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // AppendSpanIDToHex writes a hex encoded byte slice of SpanID.

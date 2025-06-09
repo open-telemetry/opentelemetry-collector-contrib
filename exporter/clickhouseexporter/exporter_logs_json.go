@@ -6,7 +6,6 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/chjson"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -15,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/chjson"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
@@ -31,7 +31,7 @@ type logsJSONExporter struct {
 	spanHexBufferPool            *internal.ExporterStructPool[[]byte]
 }
 
-func newLogsJSONExporter(logger *zap.Logger, cfg *Config) (*logsJSONExporter, error) {
+func newLogsJSONExporter(logger *zap.Logger, cfg *Config) *logsJSONExporter {
 	numConsumers := cfg.QueueSettings.NumConsumers
 
 	newJSONBuffer := func() (*chjson.JSONBuffer, error) {
@@ -56,7 +56,7 @@ func newLogsJSONExporter(logger *zap.Logger, cfg *Config) (*logsJSONExporter, er
 		logAttributesBufferPool:      logAttributesBufferPool,
 		traceHexBufferPool:           traceHexBufferPool,
 		spanHexBufferPool:            spanHexBufferPool,
-	}, nil
+	}
 }
 
 func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
