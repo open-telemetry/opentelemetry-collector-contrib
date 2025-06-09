@@ -104,6 +104,8 @@ func TestIntegration(t *testing.T) {
 	t.Run("TestLogsExporter", testLogsExporter)
 	t.Run("TestTracesExporter", testTracesExporter)
 	t.Run("TestMetricsExporter", testMetricsExporter)
+	t.Run("TestLogsJSONExporter", testLogsJSONExporter)
+	t.Run("TestTracesJSONExporter", testTracesJSONExporter)
 
 	// Verify all integration tests, ignoring test container reaper
 	goleak.VerifyNone(t, goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"))

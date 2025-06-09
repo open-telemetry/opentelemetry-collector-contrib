@@ -173,7 +173,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 
 				traceHexBuffer = chjson.AppendTraceIDToHex(traceHexBuffer[:0], span.TraceID())
 				spanHexBuffer = chjson.AppendSpanIDToHex(spanHexBuffer[:0], span.SpanID())
-				parentSpanHexBuffer = chjson.AppendSpanIDToHex(spanHexBuffer[:0], span.ParentSpanID())
+				parentSpanHexBuffer = chjson.AppendSpanIDToHex(parentSpanHexBuffer[:0], span.ParentSpanID())
 
 				appendErr := batch.Append(
 					span.StartTimestamp().AsTime(),
