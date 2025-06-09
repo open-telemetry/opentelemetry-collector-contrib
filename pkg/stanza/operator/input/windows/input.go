@@ -137,21 +137,23 @@ func (i *Input) Start(persister operator.Persister) error {
 	}
 
 	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				errorString = fmt.Sprintf("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+				errorString = fmt.Sprintf("Failed to open subscription for remote server: %s, error: %v", i.remote.Server, err)
 			}
-			errorString = fmt.Sprintf("Failed to open local subscription", zap.Error(err))
-			if !ignoreChannelErrors {
+			errorString = fmt.Sprintf("Failed to open local subscription: %s", err)
+			if !i.ignoreChannelErrors {
 				return fmt.Errorf(errorString)
 			}
 			subscriptionError = true
 			i.Logger().Warn(errorString)
-		}
-		if i.isRemote() {
-			i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
 		} else {
-			i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
+			if i.isRemote() {
+				i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+			} else {
+				i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
+			}
 		}
 	}
 
