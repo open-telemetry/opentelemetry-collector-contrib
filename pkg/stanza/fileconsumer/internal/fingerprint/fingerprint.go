@@ -39,7 +39,7 @@ func New(first []byte) *Fingerprint {
 }
 
 // NewFromFile computes fingerprint of the given file using first 'N' bytes
-// To decompress data for compressed files before computing its fingerprint, set decompressData to true
+// Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
 func NewFromFile(file *os.File, size int, decompressData bool) (*Fingerprint, error) {
 	buf := make([]byte, size)
 	if DecompressedFingerprintFeatureGate.IsEnabled() {

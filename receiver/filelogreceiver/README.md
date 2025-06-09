@@ -218,7 +218,7 @@ Here is some of the information the file log receiver stores:
   - The byte offset from the start of the file, indicating the position in the file from where the
     file log receiver continues reading the file (`Offset`).
   - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
-  - Enabled feature gate `filelog.decompressFingerprint` to decompress data of compressed files before computing its fingerprint. Note, it is important to set `compression` to a non-empty value for it to work.
+  - Enabled feature gate `filelog.decompressFingerprint` to compute fingerprint of compressed files by decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
 Exactly how this information is serialized depends on the type of storage being used.
 
 ## Troubleshooting
