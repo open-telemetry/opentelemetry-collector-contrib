@@ -411,6 +411,28 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			resp.Body.Close()
 		}()
 
+		// Per the Prometheus remote write 2.0 specification, the response should contain X-Prometheus-Remote-Write-Samples-Written header.
+		// If the header is missing, it suggests that the endpoint does not support RW2 or the implementation is not compliant with the specification.
+		// Reference: https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
+		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
+			samplesWritten := resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written")
+			if samplesWritten == "" {
+				prwe.settings.Logger.Warn(
+					"X-Prometheus-Remote-Write-Samples-Written header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
+					zap.String("url", resp.Request.URL.String()),
+				)
+			} else {
+				prwe.settings.Logger.Debug("X-Prometheus-Remote-Write-Samples-Written", zap.String("samples_written", samplesWritten))
+				// If the X-Prometheus-Remote-Write-Samples-Written header is present, we can also check and log if the other headers are present.
+				if histogramsWritten := resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"); histogramsWritten != "" {
+					prwe.settings.Logger.Debug("X-Prometheus-Remote-Write-Histograms-Written", zap.String("histograms_written", histogramsWritten))
+				}
+				if exemplarsWritten := resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"); exemplarsWritten != "" {
+					prwe.settings.Logger.Debug("X-Prometheus-Remote-Write-Exemplars-Written", zap.String("exemplars_written", exemplarsWritten))
+				}
+			}
+		}
+
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry
 		// Reference for different behavior according to status code:
