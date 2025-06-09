@@ -64,7 +64,7 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
-| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.                                                          |
+| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -218,7 +218,7 @@ Here is some of the information the file log receiver stores:
   - The byte offset from the start of the file, indicating the position in the file from where the
     file log receiver continues reading the file (`Offset`).
   - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
-
+  - Enabled feature gate `filelog.decompressFingerprint` to decompress data of compressed files before computing its fingerprint. Note, it is important to set `compression` to a non-empty value for it to work.
 Exactly how this information is serialized depends on the type of storage being used.
 
 ## Troubleshooting
