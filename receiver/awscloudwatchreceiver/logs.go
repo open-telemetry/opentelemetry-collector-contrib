@@ -277,10 +277,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				l.settings.Logger.Error("unable to retrieve logs from cloudwatch",
-					zap.String("logGroup", logGroup),
-					zap.Error(err))
-
 				var resourceNotFoundException *types.ResourceNotFoundException
 				if errors.As(err, &resourceNotFoundException) {
 					l.settings.Logger.Warn("log group no longer exists, skipping",
