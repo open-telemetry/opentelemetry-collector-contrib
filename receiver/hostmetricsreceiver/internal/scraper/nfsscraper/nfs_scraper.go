@@ -22,7 +22,7 @@ type nfsScraper struct {
 	// for mocking
 }
 
-// newNfsScraper creates an Uptime related metric
+// newNfsScraper creates a metric scraper for NFS metrics.
 func newNfsScraper(_ context.Context, settings scraper.Settings, cfg *Config) *nfsScraper {
 	return &nfsScraper{settings: settings, config: cfg}
 }
