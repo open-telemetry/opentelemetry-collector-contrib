@@ -24,25 +24,26 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark            Bookmark
-	buffer              *Buffer
-	channel             string
-	query               *string
-	maxReads            int
-	currentMaxReads     int
-	startAt             string
-	raw                 bool
-	excludeProviders    map[string]struct{}
-	pollInterval        time.Duration
-	persister           operator.Persister
-	publisherCache      publisherCache
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	subscription        Subscription
-	remote              RemoteConfig
-	remoteSessionHandle windows.Handle
-	startRemoteSession  func() error
-	processEvent        func(context.Context, Event) error
+	bookmark             Bookmark
+	buffer               *Buffer
+	channel              string
+	ignoreChannelErrors  bool
+	query                *string
+	maxReads             int
+	currentMaxReads      int
+	startAt              string
+	raw                  bool
+	excludeProviders     map[string]struct{}
+	pollInterval         time.Duration
+	persister            operator.Persister
+	publisherCache       publisherCache
+	cancel               context.CancelFunc
+	wg                   sync.WaitGroup
+	subscription         Subscription
+	remote               RemoteConfig
+	remoteSessionHandle  windows.Handle
+	startRemoteSession   func() error
+	processEvent         func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -129,6 +130,7 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.publisherCache = newPublisherCache()
 
+	subscriptionError := false
 	subscription := NewLocalSubscription()
 	if i.isRemote() {
 		subscription = NewRemoteSubscription(i.remote.Server)
@@ -137,9 +139,14 @@ func (i *Input) Start(persister operator.Persister) error {
 	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
+				errorString = fmt.Sprintf("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 			}
-			return fmt.Errorf("failed to open local subscription: %w", err)
+			errorString = fmt.Sprintf("Failed to open local subscription", zap.Error(err))
+			if !ignoreChannelErrors {
+				return fmt.Errorf(errorString)
+			}
+			subscriptionError = true
+			i.Logger().Warn(errorString)
 		}
 		if i.isRemote() {
 			i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
@@ -148,9 +155,11 @@ func (i *Input) Start(persister operator.Persister) error {
 		}
 	}
 
-	i.subscription = subscription
-	i.wg.Add(1)
-	go i.readOnInterval(ctx)
+	if !subscriptionError {
+		i.subscription = subscription
+		i.wg.Add(1)
+		go i.readOnInterval(ctx)
+	}
 
 	return nil
 }
