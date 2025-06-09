@@ -10,12 +10,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.127.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.127.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.33.1-0.20250605211604-c9aaed834963
-	go.opentelemetry.io/collector/confmap v1.33.1-0.20250605211604-c9aaed834963
-	go.opentelemetry.io/collector/consumer v1.33.1-0.20250605211604-c9aaed834963
-	go.opentelemetry.io/collector/featuregate v1.33.1-0.20250605211604-c9aaed834963
-	go.opentelemetry.io/collector/pdata v1.33.1-0.20250605211604-c9aaed834963
-	go.opentelemetry.io/collector/processor v1.33.1-0.20250605211604-c9aaed834963
+	go.opentelemetry.io/collector/component v1.34.0
+	go.opentelemetry.io/collector/confmap v1.34.0
+	go.opentelemetry.io/collector/consumer v1.34.0
+	go.opentelemetry.io/collector/featuregate v1.34.0
+	go.opentelemetry.io/collector/pdata v1.34.0
+	go.opentelemetry.io/collector/processor v1.34.0
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/goleak v1.3.0
