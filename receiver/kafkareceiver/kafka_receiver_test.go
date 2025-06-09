@@ -597,7 +597,7 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	kafkaClient := mustNewClient(tb, cluster)
 	tb.Cleanup(func() { deleteConsumerGroups(tb, kafkaClient) })
 
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = clientConfig
 	cfg.InitialOffset = "earliest"
 	cfg.MaxFetchWait = time.Millisecond
