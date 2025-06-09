@@ -19,6 +19,8 @@ import (
 )
 
 type logsJSONExporter struct {
+	cfg       *Config
+	logger    *zap.Logger
 	db        driver.Conn
 	insertSQL string
 
@@ -27,9 +29,6 @@ type logsJSONExporter struct {
 	logAttributesBufferPool      *internal.ExporterStructPool[*chjson.JSONBuffer]
 	traceHexBufferPool           *internal.ExporterStructPool[[]byte]
 	spanHexBufferPool            *internal.ExporterStructPool[[]byte]
-
-	logger *zap.Logger
-	cfg    *Config
 }
 
 func newLogsJSONExporter(logger *zap.Logger, cfg *Config) (*logsJSONExporter, error) {
@@ -49,14 +48,14 @@ func newLogsJSONExporter(logger *zap.Logger, cfg *Config) (*logsJSONExporter, er
 	spanHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
 
 	return &logsJSONExporter{
+		cfg:                          cfg,
+		logger:                       logger,
 		insertSQL:                    renderInsertLogsJSONSQL(cfg),
 		resourceAttributesBufferPool: resourceAttributesBufferPool,
 		scopeAttributesBufferPool:    scopeAttributesBufferPool,
 		logAttributesBufferPool:      logAttributesBufferPool,
 		traceHexBufferPool:           traceHexBufferPool,
 		spanHexBufferPool:            spanHexBufferPool,
-		logger:                       logger,
-		cfg:                          cfg,
 	}, nil
 }
 
@@ -179,7 +178,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					logAttributesBuffer.Bytes(),
 				)
 				if appendErr != nil {
-					return fmt.Errorf("failed to append log row: %w", appendErr)
+					return fmt.Errorf("failed to append json log row: %w", appendErr)
 				}
 
 				logCount++
@@ -209,7 +208,7 @@ func renderInsertLogsJSONSQL(cfg *Config) string {
 }
 
 func renderCreateLogsJSONTableSQL(cfg *Config) string {
-	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "TimestampTime")
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "Timestamp")
 	return fmt.Sprintf(sqltemplates.LogsJSONCreateTable,
 		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
