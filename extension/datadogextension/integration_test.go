@@ -72,7 +72,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	// - datadog/connector: 2 times (traces exporter, metrics receiver)
 	// Total: 2 + 3 + 1 + 3 + 3 + 3 + 3 + 2 = 20
 	expectedComponentCount := 20
-	require.Len(t, *activeComponents, expectedComponentCount, "should have expected number of active components")
+	assert.Len(t, *activeComponents, expectedComponentCount, "should have expected number of active components")
 
 	// Verify that extensions are present
 	hasHealthCheck := false
@@ -90,55 +90,55 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 		switch component.Type {
 		case "health_check":
 			hasHealthCheck = true
-			require.Equal(t, "extension", component.Kind)
-			require.Empty(t, component.Pipeline) // Extensions don't have pipelines
+			assert.Equal(t, "extension", component.Kind)
+			assert.Empty(t, component.Pipeline) // Extensions don't have pipelines
 		case "pprof":
 			hasPprof = true
-			require.Equal(t, "extension", component.Kind)
-			require.Empty(t, component.Pipeline)
+			assert.Equal(t, "extension", component.Kind)
+			assert.Empty(t, component.Pipeline)
 		case "otlp":
 			hasOtlp = true
-			require.Equal(t, "receiver", component.Kind)
-			require.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
+			assert.Equal(t, "receiver", component.Kind)
+			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
 		case "hostmetrics":
 			hasHostmetrics = true
-			require.Equal(t, "receiver", component.Kind)
-			require.Equal(t, "metrics", component.Pipeline)
+			assert.Equal(t, "receiver", component.Kind)
+			assert.Equal(t, "metrics", component.Pipeline)
 		case "batch":
 			hasBatch = true
-			require.Equal(t, "processor", component.Kind)
-			require.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
+			assert.Equal(t, "processor", component.Kind)
+			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
 		case "memory_limiter":
 			hasMemoryLimiter = true
-			require.Equal(t, "processor", component.Kind)
-			require.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
+			assert.Equal(t, "processor", component.Kind)
+			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
 		case "debug":
 			hasDebug = true
-			require.Equal(t, "exporter", component.Kind)
-			require.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
+			assert.Equal(t, "exporter", component.Kind)
+			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
 		case "otlphttp":
 			hasOtlphttp = true
-			require.Equal(t, "exporter", component.Kind)
-			require.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
+			assert.Equal(t, "exporter", component.Kind)
+			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
 		}
 
 		// Verify that all components have module information
-		require.NotEmpty(t, component.Gomod, "component %s should have gomod info", component.Type)
-		require.NotEmpty(t, component.Version, "component %s should have version info", component.Type)
-		require.NotEmpty(t, component.ID, "component %s should have ID", component.Type)
-		require.NotEmpty(t, component.Type, "component should have type")
-		require.NotEmpty(t, component.Kind, "component should have kind")
+		assert.NotEmpty(t, component.Gomod, "component %s should have gomod info", component.Type)
+		assert.NotEmpty(t, component.Version, "component %s should have version info", component.Type)
+		assert.NotEmpty(t, component.ID, "component %s should have ID", component.Type)
+		assert.NotEmpty(t, component.Type, "component should have type")
+		assert.NotEmpty(t, component.Kind, "component should have kind")
 	}
 
 	// Assert that all expected components are present
-	require.True(t, hasHealthCheck, "should have health_check extension")
-	require.True(t, hasPprof, "should have pprof extension")
-	require.True(t, hasOtlp, "should have otlp receiver")
-	require.True(t, hasHostmetrics, "should have hostmetrics receiver")
-	require.True(t, hasBatch, "should have batch processor")
-	require.True(t, hasMemoryLimiter, "should have memory_limiter processor")
-	require.True(t, hasDebug, "should have debug exporter")
-	require.True(t, hasOtlphttp, "should have otlphttp exporter")
+	assert.True(t, hasHealthCheck, "should have health_check extension")
+	assert.True(t, hasPprof, "should have pprof extension")
+	assert.True(t, hasOtlp, "should have otlp receiver")
+	assert.True(t, hasHostmetrics, "should have hostmetrics receiver")
+	assert.True(t, hasBatch, "should have batch processor")
+	assert.True(t, hasMemoryLimiter, "should have memory_limiter processor")
+	assert.True(t, hasDebug, "should have debug exporter")
+	assert.True(t, hasOtlphttp, "should have otlphttp exporter")
 }
 
 func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
@@ -164,9 +164,9 @@ func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
 	jsonString := componentchecker.DataToFlattenedJSONString(confMap.ToStringMap())
 
 	// Verify that the result is valid JSON and doesn't contain newlines or carriage returns
-	require.NotEmpty(t, jsonString, "JSON string should not be empty")
-	require.NotContains(t, jsonString, "\n", "JSON string should not contain newlines")
-	require.NotContains(t, jsonString, "\r", "JSON string should not contain carriage returns")
+	assert.NotEmpty(t, jsonString, "JSON string should not be empty")
+	assert.NotContains(t, jsonString, "\n", "JSON string should not contain newlines")
+	assert.NotContains(t, jsonString, "\r", "JSON string should not contain carriage returns")
 
 	// Verify it's valid JSON by attempting to unmarshal
 	var result map[string]any
@@ -219,17 +219,17 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 
 	// Step 1: Create a full OtelCollectorPayload with realistic data
 	testPayload := createTestOtelCollectorPayload()
-	require.NotNil(t, testPayload)
+	assert.NotNil(t, testPayload)
 
 	// Verify the payload structure
-	require.NotEmpty(t, testPayload.Hostname)
-	require.NotZero(t, testPayload.Timestamp)
-	require.NotEmpty(t, testPayload.UUID)
-	require.NotEmpty(t, testPayload.Metadata.CollectorID)
-	require.NotEmpty(t, testPayload.Metadata.CollectorVersion)
-	require.NotEmpty(t, testPayload.Metadata.FullConfiguration)
-	require.NotEmpty(t, testPayload.Metadata.FullComponents)
-	require.NotEmpty(t, testPayload.Metadata.ActiveComponents)
+	assert.NotEmpty(t, testPayload.Hostname)
+	assert.NotZero(t, testPayload.Timestamp)
+	assert.NotEmpty(t, testPayload.UUID)
+	assert.NotEmpty(t, testPayload.Metadata.CollectorID)
+	assert.NotEmpty(t, testPayload.Metadata.CollectorVersion)
+	assert.NotEmpty(t, testPayload.Metadata.FullConfiguration)
+	assert.NotEmpty(t, testPayload.Metadata.FullComponents)
+	assert.NotEmpty(t, testPayload.Metadata.ActiveComponents)
 
 	// Step 2: Create mock Datadog agent components
 
@@ -263,24 +263,24 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	// Step 3: Verify we can marshal the payload (simulating serialization)
 	marshaledPayload, err := testPayload.MarshalJSON()
 	require.NoError(t, err)
-	require.NotEmpty(t, marshaledPayload)
+	assert.NotEmpty(t, marshaledPayload)
 
 	// Verify the marshaled payload can be unmarshaled back
 	var unmarshaledPayload payload.OtelCollectorPayload
 	err = json.Unmarshal(marshaledPayload, &unmarshaledPayload)
 	require.NoError(t, err)
-	require.Equal(t, testPayload.Hostname, unmarshaledPayload.Hostname)
-	require.Equal(t, testPayload.UUID, unmarshaledPayload.UUID)
+	assert.Equal(t, testPayload.Hostname, unmarshaledPayload.Hostname)
+	assert.Equal(t, testPayload.UUID, unmarshaledPayload.UUID)
 
 	// Step 4: Test that the components work together
 	// Verify config component has correct settings
-	require.Equal(t, "test-api-key-12345", configComponent.GetString("api_key"))
-	require.True(t, configComponent.GetBool("logs_enabled"))
-	require.True(t, configComponent.GetBool("enable_payloads.json_to_v1_intake"))
+	assert.Equal(t, "test-api-key-12345", configComponent.GetString("api_key"))
+	assert.True(t, configComponent.GetBool("logs_enabled"))
+	assert.True(t, configComponent.GetBool("enable_payloads.json_to_v1_intake"))
 
 	// Verify serializer configuration
-	require.Equal(t, forwarder, serializer.Forwarder)
-	require.Equal(t, compressor, serializer.Strategy)
+	assert.Equal(t, forwarder, serializer.Forwarder)
+	assert.Equal(t, compressor, serializer.Strategy)
 
 	// Step 5: Simulate sending payload (in a real scenario, this would use serializer.SendEvents or similar)
 	// For this test, we simulate the HTTP request that would be made
@@ -297,23 +297,23 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	defer resp.Body.Close()
 
 	// Verify the response
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Wait a bit for the mock server to process
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify that our mock backend received the request
 	mu.Lock()
-	require.Len(t, receivedPayloads, 1, "should have received one payload")
+	assert.Len(t, receivedPayloads, 1, "should have received one payload")
 	mu.Unlock()
 
 	// Verify the received payload structure
 	if len(receivedPayloads) > 0 {
 		receivedPayload := receivedPayloads[0]
-		require.Equal(t, testPayload.Hostname, receivedPayload.Hostname)
-		require.Equal(t, testPayload.UUID, receivedPayload.UUID)
-		require.NotEmpty(t, receivedPayload.Metadata.FullComponents)
-		require.NotEmpty(t, receivedPayload.Metadata.ActiveComponents)
+		assert.Equal(t, testPayload.Hostname, receivedPayload.Hostname)
+		assert.Equal(t, testPayload.UUID, receivedPayload.UUID)
+		assert.NotEmpty(t, receivedPayload.Metadata.FullComponents)
+		assert.NotEmpty(t, receivedPayload.Metadata.ActiveComponents)
 	}
 }
 
