@@ -58,10 +58,16 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxElapsedTime:      10 * time.Minute,
 			},
 			QueueSettings: exporterhelper.QueueBatchConfig{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-				Sizer:        exporterhelper.RequestSizerTypeRequests,
+				Enabled:         true,
+				NumConsumers:    2,
+				QueueSize:       10,
+				Sizer:           exporterhelper.RequestSizerTypeItems,
+				BlockOnOverflow: true,
+				Batch: &exporterhelper.BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					MinSize:      1000,
+					MaxSize:      10000,
+				},
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
@@ -71,7 +77,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "none",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
@@ -85,15 +91,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
 				Auth:            &configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
-			},
-			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-				Enabled:      true,
-				FlushTimeout: 200 * time.Millisecond,
-				SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-					Sizer:   exporterhelper.RequestSizerTypeItems,
-					MinSize: 1000,
-					MaxSize: 10000,
-				},
 			},
 			Arrow: ArrowConfig{
 				NumStreams:         2,

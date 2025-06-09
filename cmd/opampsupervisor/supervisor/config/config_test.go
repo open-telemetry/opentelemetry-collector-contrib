@@ -35,7 +35,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -58,7 +58,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -82,7 +82,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -106,7 +106,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -130,7 +130,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: true,
 						Config: configtls.Config{
 							MaxVersion: "1.2",
@@ -160,7 +160,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "",
@@ -185,7 +185,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "./path/does/not/exist",
@@ -210,7 +210,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -234,7 +234,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -258,7 +258,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -282,7 +282,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -356,7 +356,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: tlsConfig,
+					TLS: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -541,6 +541,7 @@ agent:
 telemetry:
   logs:
     level: warn
+    error_output_paths: ["stderr"]
     output_paths: ["stdout"]
 `
 				config = fmt.Sprintf(config, filepath.Join(tmpDir, "storage"), executablePath)
@@ -548,7 +549,7 @@ telemetry:
 				expected := Supervisor{
 					Server: OpAMPServer{
 						Endpoint: "ws://localhost/v1/opamp",
-						TLSSetting: configtls.ClientConfig{
+						TLS: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},
@@ -584,8 +585,9 @@ telemetry:
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
-							Level:       zapcore.WarnLevel,
-							OutputPaths: []string{"stdout"},
+							Level:            zapcore.WarnLevel,
+							OutputPaths:      []string{"stdout"},
+							ErrorOutputPaths: []string{"stderr"},
 						},
 					},
 				}

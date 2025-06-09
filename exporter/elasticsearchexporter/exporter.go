@@ -505,6 +505,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	// the specified mapping mode.
 	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
 	defer scopeMappingModeSessions.End()
+	dic := pd.ProfilesDictionary()
 
 	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
@@ -526,7 +527,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 					scopeSchemaURL:    sp.SchemaUrl(),
 				}
 				if err := e.pushProfileRecord(
-					ctx, encoder, ec, profile, defaultSession, eventsSession,
+					ctx, encoder, ec, dic, profile, defaultSession, eventsSession,
 					stackTracesSession, stackFramesSession, executablesSession,
 				); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
@@ -557,10 +558,11 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	ctx context.Context,
 	encoder documentEncoder,
 	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
 	profile pprofile.Profile,
 	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
 ) error {
-	return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
+	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
 		case otelserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)

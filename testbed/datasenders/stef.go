@@ -37,7 +37,7 @@ func (sds *stefDataSender) Start() error {
 	factory := stefexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*stefexporter.Config)
 	cfg.Endpoint = sds.GetEndpoint().String()
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	params := exportertest.NewNopSettings(factory.Type())

@@ -21,7 +21,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -208,12 +212,36 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 
 type mockTracesServer struct {
 	ptraceotlp.UnimplementedGRPCServer
-	recvCount int
+	recvCount      int
+	partialSuccess *ptraceotlp.ExportPartialSuccess
+	t              testing.TB
 }
 
-func (m *mockTracesServer) Export(_ context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
-	m.recvCount += req.Traces().ResourceSpans().Len()
-	return ptraceotlp.NewExportResponse(), nil
+func (m *mockTracesServer) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		m.t.Error("No metadata found in context")
+		return ptraceotlp.NewExportResponse(), errors.New("no metadata found")
+	}
+
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		m.t.Error("No Authorization header found")
+		return ptraceotlp.NewExportResponse(), errors.New("no authorization header")
+	}
+
+	if authHeader[0] != "Bearer test-key" {
+		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
+		return ptraceotlp.NewExportResponse(), errors.New("invalid authorization header")
+	}
+
+	m.recvCount += req.Traces().SpanCount()
+	resp := ptraceotlp.NewExportResponse()
+	if m.partialSuccess != nil {
+		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
+		resp.PartialSuccess().SetRejectedSpans(m.partialSuccess.RejectedSpans())
+	}
+	return resp, nil
 }
 
 func startMockOtlpTracesServer(tb testing.TB) (endpoint string, stopFn func(), srv *mockTracesServer) {
@@ -222,7 +250,7 @@ func startMockOtlpTracesServer(tb testing.TB) (endpoint string, stopFn func(), s
 		tb.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	srv = &mockTracesServer{}
+	srv = &mockTracesServer{t: tb}
 	ptraceotlp.RegisterGRPCServer(grpcServer, srv)
 	go func() {
 		_ = grpcServer.Serve(ln)
@@ -233,6 +261,70 @@ func startMockOtlpTracesServer(tb testing.TB) (endpoint string, stopFn func(), s
 	}, srv
 }
 
+func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Traces: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	rs := resourceSpans.AppendEmpty()
+	resource := rs.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeSpans := rs.ScopeSpans().AppendEmpty()
+	scopeSpans.Scope().SetName("test-scope")
+
+	span1 := scopeSpans.Spans().AppendEmpty()
+	span1.SetName("span1")
+	span2 := scopeSpans.Spans().AppendEmpty()
+	span2.SetName("span2")
+
+	partialSuccess := ptraceotlp.NewExportPartialSuccess()
+	partialSuccess.SetErrorMessage("some spans were rejected")
+	partialSuccess.SetRejectedSpans(1)
+	mockSrv.partialSuccess = &partialSuccess
+
+	core, observed := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+	exp.settings.Logger = logger
+
+	err = exp.pushTraces(context.Background(), traces)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	found := false
+	for _, entry := range entries {
+		if entry.Message == "Partial success response from Coralogix" &&
+			entry.Level == zapcore.ErrorLevel &&
+			entry.ContextMap()["message"] == "some spans were rejected" &&
+			entry.ContextMap()["rejected_spans"] == int64(1) {
+			found = true
+		}
+	}
+	assert.True(t, found, "Expected partial success log with correct fields")
+}
+
 func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(b)
 	defer stopFn()
@@ -240,7 +332,7 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	cfg := &Config{
 		Traces: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -286,4 +378,122 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 		})
 	}
 	b.Logf("Total traces received by mock server: %d", mockSrv.recvCount)
+}
+
+func TestTracesExporter_PushTraces_Performance(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Traces: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 3,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	t.Run("Under rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", "test-service")
+		ss := rs.ScopeSpans().AppendEmpty()
+
+		spanCount := 3000
+		for i := 0; i < spanCount; i++ {
+			span := ss.Spans().AppendEmpty()
+			span.SetName(fmt.Sprintf("test_span_%d", i))
+			span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, byte(i % 256)})
+			span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, byte(i % 256)})
+			span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		}
+
+		start := time.Now()
+		err = exp.pushTraces(context.Background(), traces)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, spanCount, mockSrv.recvCount, "Expected to receive exactly %d spans", spanCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+
+	t.Run("Over rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+
+		rateLimitErr := errors.New("rate limit exceeded")
+		for i := 0; i < 5; i++ {
+			exp.EnableRateLimit(rateLimitErr)
+		}
+
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", "test-service")
+		ss := rs.ScopeSpans().AppendEmpty()
+
+		spanCount := 7000
+		for i := 0; i < spanCount; i++ {
+			span := ss.Spans().AppendEmpty()
+			span.SetName(fmt.Sprintf("test_span_%d", i))
+			span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, byte(i % 256)})
+			span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, byte(i % 256)})
+			span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		}
+
+		start := time.Now()
+		err = exp.pushTraces(context.Background(), traces)
+		duration := time.Since(start)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "rate limit exceeded")
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+		assert.Zero(t, mockSrv.recvCount, "Expected no spans to be received due to rate limiting")
+	})
+
+	t.Run("Rate limit reset", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		time.Sleep(2 * time.Second)
+
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", "test-service")
+		ss := rs.ScopeSpans().AppendEmpty()
+
+		spanCount := 3000 // Under the threshold again
+		for i := 0; i < spanCount; i++ {
+			span := ss.Spans().AppendEmpty()
+			span.SetName(fmt.Sprintf("test_span_%d", i))
+			span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, byte(i % 256)})
+			span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, byte(i % 256)})
+			span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		}
+
+		start := time.Now()
+		err = exp.pushTraces(context.Background(), traces)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, spanCount, mockSrv.recvCount, "Expected to receive exactly %d spans after rate limit reset", spanCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
 }
