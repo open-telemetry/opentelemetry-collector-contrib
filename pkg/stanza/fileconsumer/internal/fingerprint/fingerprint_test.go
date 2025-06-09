@@ -42,7 +42,7 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	_, err = temp.Seek(0, 0)
 	require.NoError(t, err)
 
-	fp, err := NewFromFile(temp, len(fingerprint), "")
+	fp, err := NewFromFile(temp, len(fingerprint), false)
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
@@ -136,7 +136,7 @@ func TestNewFromFile(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.fileSize, int(info.Size()))
 
-			fp, err := NewFromFile(temp, tc.fingerprintSize, "")
+			fp, err := NewFromFile(temp, tc.fingerprintSize, false)
 			require.NoError(t, err)
 
 			require.Len(t, fp.firstBytes, tc.expectedLen)
@@ -269,7 +269,7 @@ func TestStartsWith_FromFile(t *testing.T) {
 	_, err = fullFile.Write(content)
 	require.NoError(t, err)
 
-	fff, err := NewFromFile(fullFile, fingerprintSize, "")
+	fff, err := NewFromFile(fullFile, fingerprintSize, false)
 	require.NoError(t, err)
 
 	partialFile, err := os.CreateTemp(tempDir, "")
@@ -287,7 +287,7 @@ func TestStartsWith_FromFile(t *testing.T) {
 		_, err = partialFile.Write(content[i:i])
 		require.NoError(t, err)
 
-		pff, err := NewFromFile(partialFile, fingerprintSize, "")
+		pff, err := NewFromFile(partialFile, fingerprintSize, false)
 		require.NoError(t, err)
 
 		require.True(t, fff.StartsWith(pff))
@@ -333,7 +333,7 @@ func TestCompressionFingerprint(t *testing.T) {
 	_, err = compressedFile.Seek(0, io.SeekStart)
 	require.NoError(t, err)
 
-	compressedFP, err := NewFromFile(compressedFile, len(data), "auto")
+	compressedFP, err := NewFromFile(compressedFile, len(data), true)
 	require.NoError(t, err)
 
 	uncompressedFP := New(data)

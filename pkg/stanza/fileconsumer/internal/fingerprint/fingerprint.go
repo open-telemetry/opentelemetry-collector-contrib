@@ -38,10 +38,12 @@ func New(first []byte) *Fingerprint {
 	return &Fingerprint{firstBytes: first}
 }
 
-func NewFromFile(file *os.File, size int, compression string) (*Fingerprint, error) {
+// NewFromFile computes fingerprint of the given file using first 'N' bytes
+// To decompress data for compressed files before computing its fingerprint, set decompressData to true
+func NewFromFile(file *os.File, size int, decompressData bool) (*Fingerprint, error) {
 	buf := make([]byte, size)
 	if DecompressedFingerprintFeatureGate.IsEnabled() {
-		if compression != "" {
+		if decompressData {
 			if hasGzipExtension(file.Name()) {
 				// If the file is of compressed type, uncompress the data before creating its fingerprint
 				uncompressedData, err := gzip.NewReader(file)
