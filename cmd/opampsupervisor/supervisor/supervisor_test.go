@@ -29,10 +29,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -741,6 +743,13 @@ service:
 
 		configStorageDir := t.TempDir()
 
+		mp := metric.NewMeterProvider()
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+		defer func() {
+			_ = mp.Shutdown(context.Background())
+		}()
+
 		s := Supervisor{
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
@@ -758,6 +767,7 @@ service:
 			cfgState:                     &atomic.Value{},
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
+			metrics:                      metrics,
 		}
 
 		require.NoError(t, s.createTemplates())
@@ -1095,6 +1105,12 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		mp := metric.NewMeterProvider()
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+		defer func() {
+			_ = mp.Shutdown(context.Background())
+		}()
 		s := Supervisor{
 			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
@@ -1107,6 +1123,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                  mc,
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
+			metrics:                      metrics,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
