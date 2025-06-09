@@ -140,9 +140,9 @@ func (i *Input) Start(persister operator.Persister) error {
 		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				errorString = fmt.Sprintf("Failed to open subscription for remote server: %s, error: %v", i.remote.Server, err)
+				errorString = fmt.Sprintf("failed to open subscription for remote server: %s, error: %v", i.remote.Server, err)
 			}
-			errorString = fmt.Sprintf("Failed to open local subscription: %s", err)
+			errorString = fmt.Sprintf("failed to open local subscription: %s", err)
 			if !i.ignoreChannelErrors {
 				return fmt.Errorf(errorString)
 			}
