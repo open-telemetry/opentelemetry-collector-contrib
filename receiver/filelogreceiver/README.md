@@ -218,7 +218,7 @@ Here is some of the information the file log receiver stores:
   - The byte offset from the start of the file, indicating the position in the file from where the
     file log receiver continues reading the file (`Offset`).
   - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
-  - Enabled feature gate `filelog.decompressFingerprint` to compute fingerprint of compressed files by decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
+
 Exactly how this information is serialized depends on the type of storage being used.
 
 ## Troubleshooting
@@ -232,3 +232,13 @@ Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-te
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
+
+## Feature Gates
+
+`filelog.decompressFingerprint`
+
+When this feature flag is enabled, the fingerprint of compressed file is computed by first decompressing it's data. Note, it is important to set `compression` to a non-empty value for it to work.
+
+This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+
+
