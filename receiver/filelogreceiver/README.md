@@ -235,10 +235,13 @@ are provided.
 
 ## Feature Gates
 
-`filelog.decompressFingerprint`
+### `filelog.decompressFingerprint`
 
-When this feature flag is enabled, the fingerprint of compressed file is computed by first decompressing it's data. Note, it is important to set `compression` to a non-empty value for it to work.
+When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing it's data. Note, it is important to set `compression` to a non-empty value for it to work.
 
 This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
 
+Schedule for this feature gate is:
 
+- Introduce as `Alpha` (disabled by default) in `v0.128.0`
+- Move to `Beta` (enabled by default) in `v0.129.0`
