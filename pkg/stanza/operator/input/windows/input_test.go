@@ -46,7 +46,7 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	assert.ErrorContains(t, err, "The specified channel could not be found")
 }
 
-// TestInputStart_NoErrorIfIgnoreChannelErrorsEnabled ensures no error is thrown when ignore_channel_error flag is enabled
+// TestInputStart_NoErrorIfIgnoreChannelErrorsEnabled ensures no error is thrown when ignore_channel_errors flag is enabled
 // Other existing tests ensures the default behaviour of error out when any error occurs while subscribing to the channel
 func TestInputStart_NoErrorIfIgnoreChannelErrorEnabled(t *testing.T) {
 	persister := testutil.NewMockPersister("")
