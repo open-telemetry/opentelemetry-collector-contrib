@@ -541,6 +541,7 @@ agent:
 telemetry:
   logs:
     level: warn
+    error_output_paths: ["stderr"]
     output_paths: ["stdout"]
 `
 				config = fmt.Sprintf(config, filepath.Join(tmpDir, "storage"), executablePath)
@@ -584,8 +585,9 @@ telemetry:
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
-							Level:       zapcore.WarnLevel,
-							OutputPaths: []string{"stdout"},
+							Level:            zapcore.WarnLevel,
+							OutputPaths:      []string{"stdout"},
+							ErrorOutputPaths: []string{"stderr"},
 						},
 					},
 				}
