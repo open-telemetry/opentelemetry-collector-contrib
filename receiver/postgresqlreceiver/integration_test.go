@@ -185,6 +185,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		TopQueryCollection: TopQueryCollection{
 			Enabled: true,
 		},
+		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
