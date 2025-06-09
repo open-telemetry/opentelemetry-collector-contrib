@@ -12,4 +12,5 @@ import (
 var _ tracelog.Logger = &Zaplogger{}
 
 // Zaplogger is an alias for agentcomponents.Zaplogger for backwards compatibility
+// Deprecated: Use agentcomponents.ZapLogger instead
 type Zaplogger = agentcomponents.ZapLogger
