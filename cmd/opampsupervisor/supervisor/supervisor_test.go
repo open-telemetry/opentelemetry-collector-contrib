@@ -283,7 +283,6 @@ service:
 			})
 			s.agentDescription = agentDesc
 
-			s.loadRemoteConfig()
 			require.NoError(t, s.createTemplates())
 			require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
