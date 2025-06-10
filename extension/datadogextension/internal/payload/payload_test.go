@@ -5,6 +5,7 @@ package payload // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -75,4 +76,28 @@ func TestOtelCollectorPayload_MarshalJSON(t *testing.T) {
 	assert.Equal(t, oc.Hostname, unmarshaled.Hostname)
 	assert.Equal(t, oc.UUID, unmarshaled.UUID)
 	assert.Equal(t, oc.Metadata.FullComponents, unmarshaled.Metadata.FullComponents)
+}
+
+func TestOtelCollectorPayload_UnmarshalAndMarshal(t *testing.T) {
+	// Read the sample JSON payload from file
+	filePath := "testdata/sample-otelcollectorpayload.json"
+	data, err := os.ReadFile(filePath)
+	require.NoError(t, err)
+
+	// Unmarshal the JSON into an OtelCollectorPayload struct
+	var payload OtelCollectorPayload
+	err = json.Unmarshal(data, &payload)
+	require.NoError(t, err)
+
+	// Marshal the struct back into JSON
+	marshaledJSON, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	// Unmarshal the marshaled JSON back into a struct
+	var unmarshaledPayload OtelCollectorPayload
+	err = json.Unmarshal(marshaledJSON, &unmarshaledPayload)
+	require.NoError(t, err)
+
+	// Assert that the original and unmarshaled structs are equal
+	assert.Equal(t, payload, unmarshaledPayload)
 }

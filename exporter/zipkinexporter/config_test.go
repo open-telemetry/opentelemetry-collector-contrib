@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 					config.Endpoint = "https://somedest:1234/api/v2/spans"
 					config.WriteBufferSize = 524288
 					config.Timeout = 5 * time.Second
-					config.TLSSetting = configtls.ClientConfig{
+					config.TLS = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
 					config.MaxIdleConns = maxIdleConns
