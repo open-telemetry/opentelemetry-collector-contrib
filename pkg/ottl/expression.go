@@ -16,6 +16,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"golang.org/x/exp/constraints"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
@@ -249,25 +250,57 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 			return v.Slice(), nil
 		}
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %v", v.Type()))
-	default:
-		reflectVal := reflect.ValueOf(val)
-		if reflectVal.Kind() == reflect.Slice {
-			s := pcommon.NewSlice()
-			anySlice := make([]any, reflectVal.Len())
-
-			for i := 0; i < reflectVal.Len(); i++ {
-				anySlice[i] = reflectVal.Index(i).Interface()
-			}
-
-			err := s.FromRaw(anySlice)
-			if err != nil {
-				return pcommon.Slice{}, err
-			}
-			return s, nil
+	case []any:
+		s := pcommon.NewSlice()
+		err = s.FromRaw(v)
+		if err != nil {
+			return pcommon.Slice{}, err
 		}
-
+		return s, nil
+		// Handle common slice types returned by OTTL functions
+	case []string:
+		return newPSliceFrom(v, func(target *pcommon.Value, value string) { target.SetStr(value) })
+	case []int:
+		return newPSliceFromIntegers(v)
+	case []int16:
+		return newPSliceFromIntegers(v)
+	case []int32:
+		return newPSliceFromIntegers(v)
+	case []int64:
+		return newPSliceFromIntegers(v)
+	case []uint:
+		return newPSliceFromIntegers(v)
+	case []uint16:
+		return newPSliceFromIntegers(v)
+	case []uint32:
+		return newPSliceFromIntegers(v)
+	case []uint64:
+		return newPSliceFromIntegers(v)
+	case []float32:
+		return newPSliceFrom(v, func(target *pcommon.Value, value float32) { target.SetDouble(float64(value)) })
+	case []float64:
+		return newPSliceFrom(v, func(target *pcommon.Value, value float64) { target.SetDouble(value) })
+	case []bool:
+		return newPSliceFrom(v, func(target *pcommon.Value, value bool) { target.SetBool(value) })
+	default:
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
 	}
+}
+
+func newPSliceFromIntegers[T constraints.Integer](source []T) (pcommon.Slice, error) {
+	return newPSliceFrom(source, func(target *pcommon.Value, value T) {
+		target.SetInt(int64(value))
+	})
+}
+
+func newPSliceFrom[T any](source []T, set func(target *pcommon.Value, value T)) (pcommon.Slice, error) {
+	s := pcommon.NewSlice()
+	s.EnsureCapacity(len(source))
+	for _, v := range source {
+		empty := s.AppendEmpty()
+		set(&empty, v)
+	}
+	return s, nil
 }
 
 // TypeError represents that a value was not an expected type.
