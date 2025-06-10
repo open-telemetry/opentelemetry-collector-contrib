@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +17,7 @@ func TestSplitPayloadInterface(t *testing.T) {
 	payload := &OtelCollectorPayload{}
 	_, err := payload.SplitPayload(1)
 	require.Error(t, err)
-	require.ErrorContains(t, err, payloadSplitErr)
+	assert.ErrorContains(t, err, payloadSplitErr)
 }
 
 func TestOtelCollectorPayload_MarshalJSON(t *testing.T) {
@@ -43,9 +44,9 @@ func TestOtelCollectorPayload_MarshalJSON(t *testing.T) {
 	var unmarshaled OtelCollectorPayload
 	err = json.Unmarshal(jsonData, &unmarshaled)
 	require.NoError(t, err)
-	require.Equal(t, oc.Hostname, unmarshaled.Hostname)
-	require.Equal(t, oc.UUID, unmarshaled.UUID)
-	require.Equal(t, oc.Metadata.FullComponents, unmarshaled.Metadata.FullComponents)
+	assert.Equal(t, oc.Hostname, unmarshaled.Hostname)
+	assert.Equal(t, oc.UUID, unmarshaled.UUID)
+	assert.Equal(t, oc.Metadata.FullComponents, unmarshaled.Metadata.FullComponents)
 }
 
 func TestOtelCollectorPayload_UnmarshalAndMarshal(t *testing.T) {
@@ -69,7 +70,7 @@ func TestOtelCollectorPayload_UnmarshalAndMarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert that the original and unmarshaled structs are equal
-	require.Equal(t, payload, unmarshaledPayload)
+	assert.Equal(t, payload, unmarshaledPayload)
 }
 
 // TestCompleteOtelCollectorPayload tests the creation of a full OtelCollectorPayload
@@ -282,44 +283,44 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	}
 
 	// Test that all fields are properly set
-	require.Equal(t, hostname, testPayload.Hostname)
-	require.NotZero(t, testPayload.Timestamp)
-	require.Equal(t, extensionUUID, testPayload.UUID)
+	assert.Equal(t, hostname, testPayload.Hostname)
+	assert.NotZero(t, testPayload.Timestamp)
+	assert.Equal(t, extensionUUID, testPayload.UUID)
 
 	// Test metadata fields
-	require.Equal(t, hostname, testPayload.Metadata.Hostname)
-	require.Equal(t, hostnameSource, testPayload.Metadata.HostnameSource)
-	require.Equal(t, hostname+"-"+extensionUUID, testPayload.Metadata.CollectorID)
-	require.Equal(t, version, testPayload.Metadata.CollectorVersion)
-	require.Equal(t, site, testPayload.Metadata.ConfigSite)
-	require.Equal(t, buildInfo, testPayload.Metadata.BuildInfo)
-	require.Equal(t, fullConfig, testPayload.Metadata.FullConfiguration)
-	require.Contains(t, testPayload.Metadata.HealthStatus, "healthy")
+	assert.Equal(t, hostname, testPayload.Metadata.Hostname)
+	assert.Equal(t, hostnameSource, testPayload.Metadata.HostnameSource)
+	assert.Equal(t, hostname+"-"+extensionUUID, testPayload.Metadata.CollectorID)
+	assert.Equal(t, version, testPayload.Metadata.CollectorVersion)
+	assert.Equal(t, site, testPayload.Metadata.ConfigSite)
+	assert.Equal(t, buildInfo, testPayload.Metadata.BuildInfo)
+	assert.Equal(t, fullConfig, testPayload.Metadata.FullConfiguration)
+	assert.Contains(t, testPayload.Metadata.HealthStatus, "healthy")
 
 	// Test full components
-	require.Len(t, testPayload.Metadata.FullComponents, 6)
-	require.Contains(t, testPayload.Metadata.FullComponents, fullComponents[0]) // otlp receiver
-	require.Contains(t, testPayload.Metadata.FullComponents, fullComponents[1]) // hostmetrics receiver
-	require.Contains(t, testPayload.Metadata.FullComponents, fullComponents[2]) // batch processor
-	require.Contains(t, testPayload.Metadata.FullComponents, fullComponents[3]) // memory_limiter processor
-	require.Contains(t, testPayload.Metadata.FullComponents, fullComponents[4]) // debug exporter
-	require.Contains(t, testPayload.Metadata.FullComponents, fullComponents[5]) // otlphttp exporter
+	assert.Len(t, testPayload.Metadata.FullComponents, 6)
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[0]) // otlp receiver
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[1]) // hostmetrics receiver
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[2]) // batch processor
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[3]) // memory_limiter processor
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[4]) // debug exporter
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[5]) // otlphttp exporter
 
 	// Test active components
-	require.Len(t, testPayload.Metadata.ActiveComponents, 7)
+	assert.Len(t, testPayload.Metadata.ActiveComponents, 7)
 
 	// Verify that each component type appears in the expected pipelines
 	tracesPipelineComponents := 0
 	metricsPipelineComponents := 0
 
 	for _, comp := range testPayload.Metadata.ActiveComponents {
-		require.NotEmpty(t, comp.ID)
-		require.NotEmpty(t, comp.Type)
-		require.NotEmpty(t, comp.Kind)
-		require.NotEmpty(t, comp.Pipeline)
-		require.NotEmpty(t, comp.Gomod)
-		require.NotEmpty(t, comp.Version)
-		require.Equal(t, "active", comp.ComponentStatus)
+		assert.NotEmpty(t, comp.ID)
+		assert.NotEmpty(t, comp.Type)
+		assert.NotEmpty(t, comp.Kind)
+		assert.NotEmpty(t, comp.Pipeline)
+		assert.NotEmpty(t, comp.Gomod)
+		assert.NotEmpty(t, comp.Version)
+		assert.Equal(t, "active", comp.ComponentStatus)
 
 		switch comp.Pipeline {
 		case "traces":
@@ -331,13 +332,13 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	}
 
 	// Verify pipeline component counts
-	require.Equal(t, 3, tracesPipelineComponents, "traces pipeline should have 3 components (otlp, batch, debug)")
-	require.Equal(t, 4, metricsPipelineComponents, "metrics pipeline should have 4 components (otlp, hostmetrics, batch, debug)")
+	assert.Equal(t, 3, tracesPipelineComponents, "traces pipeline should have 3 components (otlp, batch, debug)")
+	assert.Equal(t, 4, metricsPipelineComponents, "metrics pipeline should have 4 components (otlp, hostmetrics, batch, debug)")
 
 	// Test JSON serialization
 	jsonData, err := testPayload.MarshalJSON()
 	require.NoError(t, err)
-	require.NotEmpty(t, jsonData)
+	assert.NotEmpty(t, jsonData)
 
 	// Test that the JSON can be unmarshaled back
 	var unmarshaledPayload OtelCollectorPayload
@@ -345,31 +346,31 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify key fields after unmarshaling
-	require.Equal(t, testPayload.Hostname, unmarshaledPayload.Hostname)
-	require.Equal(t, testPayload.UUID, unmarshaledPayload.UUID)
-	require.Equal(t, testPayload.Metadata.CollectorID, unmarshaledPayload.Metadata.CollectorID)
-	require.Equal(t, testPayload.Metadata.CollectorVersion, unmarshaledPayload.Metadata.CollectorVersion)
-	require.Len(t, unmarshaledPayload.Metadata.FullComponents, len(testPayload.Metadata.FullComponents))
-	require.Len(t, unmarshaledPayload.Metadata.ActiveComponents, len(testPayload.Metadata.ActiveComponents))
+	assert.Equal(t, testPayload.Hostname, unmarshaledPayload.Hostname)
+	assert.Equal(t, testPayload.UUID, unmarshaledPayload.UUID)
+	assert.Equal(t, testPayload.Metadata.CollectorID, unmarshaledPayload.Metadata.CollectorID)
+	assert.Equal(t, testPayload.Metadata.CollectorVersion, unmarshaledPayload.Metadata.CollectorVersion)
+	assert.Len(t, unmarshaledPayload.Metadata.FullComponents, len(testPayload.Metadata.FullComponents))
+	assert.Len(t, unmarshaledPayload.Metadata.ActiveComponents, len(testPayload.Metadata.ActiveComponents))
 
 	// Verify JSON structure contains expected top-level fields
 	var jsonMap map[string]any
 	err = json.Unmarshal(jsonData, &jsonMap)
 	require.NoError(t, err)
 
-	require.Contains(t, jsonMap, "hostname")
-	require.Contains(t, jsonMap, "timestamp")
-	require.Contains(t, jsonMap, "uuid")
-	require.Contains(t, jsonMap, "otel_collector")
+	assert.Contains(t, jsonMap, "hostname")
+	assert.Contains(t, jsonMap, "timestamp")
+	assert.Contains(t, jsonMap, "uuid")
+	assert.Contains(t, jsonMap, "otel_collector")
 
 	// Verify metadata structure
 	metadataMap, ok := jsonMap["otel_collector"].(map[string]any)
-	require.True(t, ok, "metadata should be a map")
-	require.Contains(t, metadataMap, "collector_id")
-	require.Contains(t, metadataMap, "collector_version")
-	require.Contains(t, metadataMap, "full_components")
-	require.Contains(t, metadataMap, "active_components")
-	require.Contains(t, metadataMap, "build_info")
-	require.Contains(t, metadataMap, "full_configuration")
-	require.Contains(t, metadataMap, "health_status")
+	assert.True(t, ok, "metadata should be a map")
+	assert.Contains(t, metadataMap, "collector_id")
+	assert.Contains(t, metadataMap, "collector_version")
+	assert.Contains(t, metadataMap, "full_components")
+	assert.Contains(t, metadataMap, "active_components")
+	assert.Contains(t, metadataMap, "build_info")
+	assert.Contains(t, metadataMap, "full_configuration")
+	assert.Contains(t, metadataMap, "health_status")
 }
