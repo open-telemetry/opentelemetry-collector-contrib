@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
-	github.com/aws/aws-sdk-go-v2/config v1.29.14
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
+	github.com/aws/aws-sdk-go-v2/config v1.29.15
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.68
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250610090210-188191247685
