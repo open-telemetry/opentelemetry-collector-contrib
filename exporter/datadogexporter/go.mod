@@ -4,9 +4,7 @@ go 1.23.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.155
-	github.com/DataDog/datadog-agent/comp/core/config v0.66.1
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.66.1
-	github.com/DataDog/datadog-agent/comp/core/log/def v0.66.1
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.67.0-devel.0.20250507144401-a64863d1e01a
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.67.0-devel.0.20250507144401-a64863d1e01a
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.67.0-devel.0.20250507144401-a64863d1e01a
@@ -16,9 +14,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.1
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.66.1
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.66.1
-	github.com/DataDog/datadog-agent/pkg/config/model v0.66.1
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.66.1
-	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.66.1
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.67.0-devel.0.20250507144401-a64863d1e01a
 	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.66.1
@@ -67,7 +62,6 @@ require (
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.40.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -84,8 +78,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/config v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/log/def v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/status v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.66.1 // indirect
@@ -104,10 +100,13 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/create v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/mock v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/model v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/structure v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/fips v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.67.0-devel.0.20250507144401-a64863d1e01a // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/client v0.67.0-devel.0.20250507144401-a64863d1e01a // indirect
@@ -471,6 +470,7 @@ require (
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
