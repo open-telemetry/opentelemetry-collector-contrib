@@ -22,7 +22,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestNewProfilesExporter(t *testing.T) {
@@ -209,12 +213,36 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 
 type mockProfilesServer struct {
 	pprofileotlp.UnimplementedGRPCServer
-	recvCount int
+	recvCount      int
+	partialSuccess *pprofileotlp.ExportPartialSuccess
+	t              testing.TB
 }
 
-func (m *mockProfilesServer) Export(_ context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
+func (m *mockProfilesServer) Export(ctx context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		m.t.Error("No metadata found in context")
+		return pprofileotlp.NewExportResponse(), errors.New("no metadata found")
+	}
+
+	authHeader := md.Get("authorization")
+	if len(authHeader) == 0 {
+		m.t.Error("No Authorization header found")
+		return pprofileotlp.NewExportResponse(), errors.New("no authorization header")
+	}
+
+	if authHeader[0] != "Bearer test-key" {
+		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
+		return pprofileotlp.NewExportResponse(), errors.New("invalid authorization header")
+	}
+
 	m.recvCount += req.Profiles().ResourceProfiles().Len()
-	return pprofileotlp.NewExportResponse(), nil
+	resp := pprofileotlp.NewExportResponse()
+	if m.partialSuccess != nil {
+		resp.PartialSuccess().SetErrorMessage(m.partialSuccess.ErrorMessage())
+		resp.PartialSuccess().SetRejectedProfiles(m.partialSuccess.RejectedProfiles())
+	}
+	return resp, nil
 }
 
 func startMockOtlpProfilesServer(tb testing.TB) (endpoint string, stopFn func(), srv *mockProfilesServer) {
@@ -223,7 +251,7 @@ func startMockOtlpProfilesServer(tb testing.TB) (endpoint string, stopFn func(),
 		tb.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	srv = &mockProfilesServer{}
+	srv = &mockProfilesServer{t: tb}
 	pprofileotlp.RegisterGRPCServer(grpcServer, srv)
 	go func() {
 		_ = grpcServer.Serve(ln)
@@ -288,4 +316,72 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 		})
 	}
 	b.Logf("Total profiles received by mock server: %d", mockSrv.recvCount)
+}
+
+func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpProfilesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Profiles: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLSSetting: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	profiles := pprofile.NewProfiles()
+	resourceProfiles := profiles.ResourceProfiles()
+	rm := resourceProfiles.AppendEmpty()
+	resource := rm.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeProfiles := rm.ScopeProfiles().AppendEmpty()
+	scopeProfiles.Scope().SetName("test-scope")
+
+	profile1 := scopeProfiles.Profiles().AppendEmpty()
+	var id1 [16]byte
+	copy(id1[:], []byte("profile1-unique"))
+	profile1.SetProfileID(id1)
+	profile2 := scopeProfiles.Profiles().AppendEmpty()
+	var id2 [16]byte
+	copy(id2[:], []byte("profile2-unique"))
+	profile2.SetProfileID(id2)
+
+	partialSuccess := pprofileotlp.NewExportPartialSuccess()
+	partialSuccess.SetErrorMessage("some profiles were rejected")
+	partialSuccess.SetRejectedProfiles(1)
+	mockSrv.partialSuccess = &partialSuccess
+
+	core, observed := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+	exp.settings.Logger = logger
+
+	err = exp.pushProfiles(context.Background(), profiles)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	found := false
+	for _, entry := range entries {
+		if entry.Message == "Partial success response from Coralogix" &&
+			entry.Level == zapcore.ErrorLevel &&
+			entry.ContextMap()["message"] == "some profiles were rejected" &&
+			entry.ContextMap()["rejected_profiles"] == int64(1) {
+			found = true
+		}
+	}
+	assert.True(t, found, "Expected partial success log with correct fields")
 }

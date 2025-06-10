@@ -73,6 +73,8 @@ const (
 type ResourceAttrsToS3 struct {
 	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
 	S3Prefix string `mapstructure:"s3_prefix"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config contains the main configuration options for the s3 exporter

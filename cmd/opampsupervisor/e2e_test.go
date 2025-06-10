@@ -457,6 +457,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	// create server
 	var agentConfig atomic.Value
+	var remoteConfigStatus atomic.Value
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -468,7 +469,9 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 						agentConfig.Store(string(config.Body))
 					}
 				}
-
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -498,6 +501,12 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// verify that the supervisor reports the remote config as applied and the correct hash
+	require.Eventually(t, func() bool {
+		status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return status != nil && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, hash)
+	}, 20*time.Second, 500*time.Millisecond, "Remote config status never became applied")
 
 	for _, port := range []int{healthcheckPort, secondHealthcheckPort} {
 		require.Eventually(t, func() bool {
@@ -1261,6 +1270,13 @@ func TestSupervisorRestartCommand(t *testing.T) {
 			Type: protobufs.CommandType_CommandType_Restart,
 		},
 	})
+
+	// Here we will wait for the supervisor connection to go away and come back.
+	// This helps us check that the restart logic is actually restarting the agent.
+	// Note: this also helps the data race detector confirm that access to the
+	// [Supervisor.lastHealthFromClient] has to be synchronized to prevent races.
+	waitForSupervisorConnection(server.supervisorConnected, false)
+	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
