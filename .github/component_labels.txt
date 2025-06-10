@@ -235,6 +235,7 @@ receiver/hostmetricsreceiver/internal/scraper/filesystemscraper receiver/hostmet
 receiver/hostmetricsreceiver/internal/scraper/loadscraper receiver/hostmetrics/internal/scraper/loadscraper
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper receiver/hostmetrics/internal/scraper/memory
 receiver/hostmetricsreceiver/internal/scraper/networkscraper receiver/hostmetrics/internal/scraper/network
+receiver/hostmetricsreceiver/internal/scraper/nfsscraper receiver/hostmetrics/internal/scraper/nfsscraper
 receiver/hostmetricsreceiver/internal/scraper/pagingscraper receiver/hostmetrics/internal/scraper/paging
 receiver/hostmetricsreceiver/internal/scraper/processesscraper receiver/hostmetrics/internal/scraper/processes
 receiver/hostmetricsreceiver/internal/scraper/processscraper receiver/hostmetrics/internal/scraper/process
