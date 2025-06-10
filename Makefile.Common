@@ -222,7 +222,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.22.0
+	$(GOCMD) mod tidy -compat=1.23.0
 
 .PHONY: toolchain
 toolchain:
