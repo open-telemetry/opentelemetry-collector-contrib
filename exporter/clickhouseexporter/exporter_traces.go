@@ -155,7 +155,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		zap.String("network_cost", networkDuration.String()),
 		zap.String("total_cost", totalDuration.String()))
 
-	return err
+	return nil
 }
 
 func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []column.IterableOrderedMap) {
