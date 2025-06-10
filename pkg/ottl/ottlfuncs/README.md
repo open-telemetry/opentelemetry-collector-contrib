@@ -456,7 +456,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
 - [Concat](#concat)
-- [Contains](#contains)
+- [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
 - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
 - [ConvertTextToElementsXML](#converttexttoelementsxml)
@@ -589,20 +589,20 @@ Examples:
 
 ### ContainsValue
 
-`Contains(target, item)`
+`ContainsValue(target, item)`
 
-The Contains function checks if an item is present in a given slice `target`. It returns true if the `item` is found, and false otherwise.
+The `ContainsValue` Converter checks if an item is present in a given slice `target` using OTTL [comparison rules](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/LANGUAGE.md#comparison-rules). It returns `true` if the `item` is found, and `false` otherwise.
 
-`target` is a slice of primitive-typed values.
+`target` is a slice of any type described in the OTTL comparison rules.
 
-`item` is the primitive-typed value to check for in the `target`.
+`item` is the value to check for in the `target`.
 
 Examples:
 
-- `Contains(attributes["tags"], "staging")`
-- `Contains([1, 2, 3, 4, 5], 3)`
-- `Contains([1.1, 2.2, 3.3, 4.4], 4.4)`
-- `Contains(["GET", "PUT", "POST"], "GET")`
+- `ContainsValue(attributes["tags"], "staging")`
+- `ContainsValue([1, 2, 3, 4, 5], 3)`
+- `ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`
+- `ContainsValue(["GET", "PUT", "POST"], "GET")`
 
 ### ConvertCase
 
