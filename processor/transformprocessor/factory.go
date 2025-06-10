@@ -28,71 +28,76 @@ import (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 type transformProcessorFactory struct {
-	dataPointFunctions                 map[string]ottl.Factory[ottldatapoint.TransformContext]
-	logFunctions                       map[string]ottl.Factory[ottllog.TransformContext]
-	metricFunctions                    map[string]ottl.Factory[ottlmetric.TransformContext]
-	spanEventFunctions                 map[string]ottl.Factory[ottlspanevent.TransformContext]
-	spanFunctions                      map[string]ottl.Factory[ottlspan.TransformContext]
-	defaultDataPointFunctionsOverriden bool
-	defaultLogFunctionsOverriden       bool
-	defaultMetricFunctionsOverriden    bool
-	defaultSpanEventFunctionsOverriden bool
-	defaultSpanFunctionsOverriden      bool
+	dataPointFunctions                  map[string]ottl.Factory[ottldatapoint.TransformContext]
+	logFunctions                        map[string]ottl.Factory[ottllog.TransformContext]
+	metricFunctions                     map[string]ottl.Factory[ottlmetric.TransformContext]
+	spanEventFunctions                  map[string]ottl.Factory[ottlspanevent.TransformContext]
+	spanFunctions                       map[string]ottl.Factory[ottlspan.TransformContext]
+	defaultDataPointFunctionsOverridden bool
+	defaultLogFunctionsOverridden       bool
+	defaultMetricFunctionsOverridden    bool
+	defaultSpanEventFunctionsOverridden bool
+	defaultSpanFunctionsOverridden      bool
 }
 
 // FactoryOption applies changes to transformProcessorFactory.
 type FactoryOption func(factory *transformProcessorFactory)
 
-// WithDataPointFunctions set ottl datapoint functions in resulting processor.
+// WithDataPointFunctions will override the default ottl datapoint context functions with the provided dataPointFunctions in resulting processor.
+// Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
 func WithDataPointFunctions(dataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
-		if !factory.defaultDataPointFunctionsOverriden {
+		if !factory.defaultDataPointFunctionsOverridden {
 			factory.dataPointFunctions = map[string]ottl.Factory[ottldatapoint.TransformContext]{}
-			factory.defaultDataPointFunctionsOverriden = true
+			factory.defaultDataPointFunctionsOverridden = true
 		}
 		factory.dataPointFunctions = mergeFunctionsToMap(factory.dataPointFunctions, dataPointFunctions)
 	}
 }
 
-// WithLogFunctions set ottl log functions in resulting processor.
+// WithLogFunctions will override the default ottl log context functions with the provided logFunctions in the resulting processor.
+// Subsequent uses of WithLogFunctions will merge the provided logFunctions with the previously registered functions.
 func WithLogFunctions(logFunctions []ottl.Factory[ottllog.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
-		if !factory.defaultLogFunctionsOverriden {
+		if !factory.defaultLogFunctionsOverridden {
 			factory.logFunctions = map[string]ottl.Factory[ottllog.TransformContext]{}
-			factory.defaultLogFunctionsOverriden = true
+			factory.defaultLogFunctionsOverridden = true
 		}
 		factory.logFunctions = mergeFunctionsToMap(factory.logFunctions, logFunctions)
 	}
 }
 
-// WithMetricFunctions set ottl metric functions in resulting processor.
+// WithMetricFunctions will override the default ottl metric context functions with the provided metricFunctions in the resulting processor.
+// Subsequent uses of WithMetricFunctions will merge the provided metricFunctions with the previously registered functions.
 func WithMetricFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
-		if !factory.defaultMetricFunctionsOverriden {
+		if !factory.defaultMetricFunctionsOverridden {
 			factory.metricFunctions = map[string]ottl.Factory[ottlmetric.TransformContext]{}
-			factory.defaultMetricFunctionsOverriden = true
+			factory.defaultMetricFunctionsOverridden = true
 		}
 		factory.metricFunctions = mergeFunctionsToMap(factory.metricFunctions, metricFunctions)
 	}
 }
 
-// WithSpanEventFunctions set ottl span event functions in resulting processor.
+// WithSpanEventFunctions will override the default ottl spanevent context functions with the provided spanEventFunctions in the resulting processor.
+// Subsequent uses of WithSpanEventFunctions will merge the provided spanEventFunctions with the previously registered functions.
 func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
-		if !factory.defaultSpanEventFunctionsOverriden {
+		if !factory.defaultSpanEventFunctionsOverridden {
 			factory.spanEventFunctions = map[string]ottl.Factory[ottlspanevent.TransformContext]{}
-			factory.defaultSpanEventFunctionsOverriden = true
+			factory.defaultSpanEventFunctionsOverridden = true
 		}
 		factory.spanEventFunctions = mergeFunctionsToMap(factory.spanEventFunctions, spanEventFunctions)
 	}
 }
 
-// WithSpanFunctions set ottl span functions in resulting processor.
+// WithSpanFunctions will override the default ottl span context functions with the provided spanFunctions in the resulting processor.
+// Subsequent uses of WithSpanFunctions will merge the provided spanFunctions with the previously registered functions.
 func WithSpanFunctions(spanFunctions []ottl.Factory[ottlspan.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
-		if !factory.defaultSpanFunctionsOverriden {
+		if !factory.defaultSpanFunctionsOverridden {
 			factory.spanFunctions = map[string]ottl.Factory[ottlspan.TransformContext]{}
-			factory.defaultSpanFunctionsOverriden = true
+			factory.defaultSpanFunctionsOverridden = true
 		}
 		factory.spanFunctions = mergeFunctionsToMap(factory.spanFunctions, spanFunctions)
 	}
@@ -102,19 +107,14 @@ func NewFactory() processor.Factory {
 	return NewFactoryWithOptions()
 }
 
-// NewFactoryWithOptions can receive FactoryOption like With*Functions to set ottl functions in the resulting processor.
+// NewFactoryWithOptions can receive FactoryOption like With*Functions to register non-default ottl functions in the resulting processor.
 func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 	f := &transformProcessorFactory{
-		dataPointFunctions:                 defaultDataPointFunctionsMap(),
-		logFunctions:                       defaultLogFunctionsMap(),
-		metricFunctions:                    defaultMetricFunctionsMap(),
-		spanEventFunctions:                 defaultSpanEventFunctionsMap(),
-		spanFunctions:                      defaultSpanFunctionsMap(),
-		defaultDataPointFunctionsOverriden: false,
-		defaultLogFunctionsOverriden:       false,
-		defaultMetricFunctionsOverriden:    false,
-		defaultSpanEventFunctionsOverriden: false,
-		defaultSpanFunctionsOverriden:      false,
+		dataPointFunctions: defaultDataPointFunctionsMap(),
+		logFunctions:       defaultLogFunctionsMap(),
+		metricFunctions:    defaultMetricFunctionsMap(),
+		spanEventFunctions: defaultSpanEventFunctionsMap(),
+		spanFunctions:      defaultSpanFunctionsMap(),
 	}
 	for _, o := range options {
 		o(f)
@@ -150,8 +150,8 @@ func (f *transformProcessorFactory) createLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
-	if f.defaultLogFunctionsOverriden {
-		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor")
+	if f.defaultLogFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL log context functions have been registered in the \"transform\" processor")
 	}
 	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.logFunctions)
 	if err != nil {
@@ -173,8 +173,11 @@ func (f *transformProcessorFactory) createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-	if f.defaultSpanEventFunctionsOverriden || f.defaultSpanFunctionsOverriden {
-		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"transform\" processor")
+	if f.defaultSpanEventFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL spanevent context functions have been registered in the \"transform\" processor")
+	}
+	if f.defaultSpanFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL span context functions have been registered in the \"transform\" processor")
 	}
 	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.spanFunctions, f.spanEventFunctions)
 	if err != nil {
@@ -197,8 +200,11 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
-	if f.defaultMetricFunctionsOverriden || f.defaultDataPointFunctionsOverriden {
-		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"transform\" processor")
+	if f.defaultMetricFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL metric context functions have been registered in the \"transform\" processor")
+	}
+	if f.defaultDataPointFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL datapoint context functions have been registered in the \"transform\" processor")
 	}
 	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.metricFunctions, f.dataPointFunctions)
 	if err != nil {
