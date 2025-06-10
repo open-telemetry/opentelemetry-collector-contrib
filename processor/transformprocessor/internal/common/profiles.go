@@ -31,13 +31,10 @@ func (l profileStatements) Context() ContextID {
 
 func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
 	dic := ld.ProfilesDictionary()
-	for i := 0; i < ld.ResourceProfiles().Len(); i++ {
-		rprofiles := ld.ResourceProfiles().At(i)
-		for j := 0; j < rprofiles.ScopeProfiles().Len(); j++ {
-			sprofiles := rprofiles.ScopeProfiles().At(j)
-			profiles := sprofiles.Profiles()
-			for k := 0; k < profiles.Len(); k++ {
-				tCtx := ottlprofile.NewTransformContext(profiles.At(k), dic, sprofiles.Scope(), rprofiles.Resource(), sprofiles, rprofiles)
+	for _, rprofiles := range ld.ResourceProfiles().All() {
+		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
+			for _, profile := range sprofiles.Profiles().All() {
+				tCtx := ottlprofile.NewTransformContext(profile, dic, sprofiles.Scope(), rprofiles.Resource(), sprofiles, rprofiles)
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					return err
