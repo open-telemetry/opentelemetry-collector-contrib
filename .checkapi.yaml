@@ -71,3 +71,4 @@ ignored_functions:
 unkeyed_literal_initialization:
   enabled: true
   limit: 1 # this limit will increase over time to 5.
+component_api: true
