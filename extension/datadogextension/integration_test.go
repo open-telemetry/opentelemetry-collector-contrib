@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -23,9 +24,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/agentcomponents"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestPopulateActiveComponentsIntegration(t *testing.T) {
@@ -237,27 +239,28 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	backendURL := mockBackend.URL
 
 	// Create configuration component with test API key and site
-	configComponent := agentcomponents.NewConfigComponent(telemetrySettings, "test-api-key-12345", "datadoghq.com")
-
+	cfg := datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
+	cfg.API.Key = "test-api-key-12345"
 	// Override the site URL to point to our mock backend
 	// We need to extract just the host:port from the test server URL
 	testSite := backendURL[7:] // Remove "http://" prefix
-	configComponent.Set("dd_url", testSite+"/api/v1/otel_collector", "default")
+
+	cfgOptions := []agentcomponents.ConfigOption{
+		agentcomponents.WithAPIConfig(cfg),
+		agentcomponents.WithLogsEnabled(),
+		agentcomponents.WithLogLevel(telemetrySettings),
+		agentcomponents.WithPayloadsConfig(),
+		agentcomponents.WithForwarderConfig(),
+		agentcomponents.WithCustomConfig("dd_url", testSite+"/api/v1/otel_collector", pkgconfigmodel.SourceDefault),
+	}
+	configComponent := agentcomponents.NewConfigComponent(cfgOptions...)
 
 	// Create log component
 	logComponent := agentcomponents.NewLogComponent(telemetrySettings)
 	require.NotNil(t, logComponent)
 
-	// Create compressor
-	compressor := agentcomponents.NewCompressor()
-	require.NotNil(t, compressor)
-
-	// Create forwarder with mock backend configuration
-	forwarder := agentcomponents.NewForwarder(configComponent, logComponent)
-	require.NotNil(t, forwarder)
-
 	// Create serializer
-	serializer := agentcomponents.NewSerializer(forwarder, compressor, configComponent, logComponent, testPayload.Hostname)
+	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, testPayload.Hostname)
 	require.NotNil(t, serializer)
 
 	// Step 3: Verify we can marshal the payload (simulating serialization)
@@ -277,10 +280,6 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 	assert.Equal(t, "test-api-key-12345", configComponent.GetString("api_key"))
 	assert.True(t, configComponent.GetBool("logs_enabled"))
 	assert.True(t, configComponent.GetBool("enable_payloads.json_to_v1_intake"))
-
-	// Verify serializer configuration
-	assert.Equal(t, forwarder, serializer.Forwarder)
-	assert.Equal(t, compressor, serializer.Strategy)
 
 	// Step 5: Simulate sending payload (in a real scenario, this would use serializer.SendEvents or similar)
 	// For this test, we simulate the HTTP request that would be made
