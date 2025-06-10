@@ -392,7 +392,7 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 			},
 		},
 		NextToken: nil,
-	}, nil).Run(func(args mock.Arguments) {
+	}, nil).Run(func(_ mock.Arguments) {
 		close(firstPollDone)
 	})
 
