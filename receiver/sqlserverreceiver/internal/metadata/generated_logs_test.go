@@ -132,10 +132,10 @@ func TestLogsBuilder(t *testing.T) {
 
 			defaultEventsCount := 0
 			allEventsCount := 0
-			defaultEventsCount++
+
 			allEventsCount++
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, "db.namespace-val", "db.query.text-val", "db.system.name-val", "network.peer.address-val", 17, 29, "sqlserver.context_info-val", "sqlserver.command-val", 18.100000, 27, 35.100000, 22.100000, 23, 32, 26.100000, "sqlserver.query_hash-val", "sqlserver.query_plan_hash-val", "sqlserver.query_start-val", 15, "sqlserver.request_status-val", 19, 20, "sqlserver.session_status-val", 28.100000, 24, 37, "sqlserver.wait_resource-val", 19.100000, "sqlserver.wait_type-val", 16, "user.name-val")
-			defaultEventsCount++
+
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "server.address-val", 11, "db.system.name-val")
 
@@ -149,7 +149,7 @@ func TestLogsBuilder(t *testing.T) {
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
-			if tt.expectEmpty {
+			if tt.expectEmpty || ((tt.name == "default" || tt.name == "filter_set_include") && defaultEventsCount == 0) {
 				assert.Equal(t, 0, logs.ResourceLogs().Len())
 				return
 			}

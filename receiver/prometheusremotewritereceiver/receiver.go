@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
@@ -35,6 +36,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
 	}
+
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -55,6 +57,7 @@ type prometheusRemoteWriteReceiver struct {
 	wg     sync.WaitGroup
 
 	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
+	obsrecv *receiverhelper.ObsReport
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric
@@ -101,6 +104,14 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
 	var err error
+	prw.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             prw.settings.ID,
+		ReceiverCreateSettings: prw.settings,
+		Transport:              "http",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create obsreport: %w", err)
+	}
 
 	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux)
 	if err != nil {
@@ -179,8 +190,13 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	// TODO(@perebaj): Evaluate if we should use the obsreport here. Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38812#discussion_r2053094391
-	_ = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+
+	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+	if err != nil {
+		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+	}
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -215,14 +231,17 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-//
-//nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
 		otelMetrics      = pmetric.NewMetrics()
 		labelsBuilder    = labels.NewScratchBuilder(0)
-		stats            = promremote.WriteResponseStats{}
+		// More about stats: https://github.com/prometheus/docs/blob/main/docs/specs/prw/remote_write_spec_2_0.md#required-written-response-headers
+		// TODO: add histograms and exemplars to the stats. Histograms can be added after this PR be merged. Ref #39864
+		// Exemplars should be implemented to add them to the stats.
+		stats = promremote.WriteResponseStats{
+			Confirmed: true,
+		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
@@ -351,9 +370,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
@@ -384,7 +403,7 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 }
 
 // addNumberDatapoints adds the labels to the datapoints attributes.
-func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
@@ -402,6 +421,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 			}
 			attributes.PutStr(l.Name, l.Value)
 		}
+		stats.Samples++
 	}
 }
 
