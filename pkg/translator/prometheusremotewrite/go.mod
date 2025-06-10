@@ -5,13 +5,11 @@ go 1.23.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.128.0
 	github.com/prometheus/common v0.64.0
 	github.com/prometheus/prometheus v0.304.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/pdata v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
@@ -28,6 +26,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
+	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250610090210-188191247685 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
