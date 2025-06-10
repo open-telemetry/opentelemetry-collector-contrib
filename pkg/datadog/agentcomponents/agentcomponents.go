@@ -28,6 +28,7 @@ import (
 // This allows for flexible configuration by different modules.
 type ConfigOption func(pkgconfigmodel.Config)
 
+// NewLogComponent creates a new log component for collector that uses the provided telemetry settings.
 func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 	zlog := &ZapLogger{
 		Logger: set.Logger,
