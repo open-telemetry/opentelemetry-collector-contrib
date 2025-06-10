@@ -56,6 +56,10 @@ func TestUnmarshalLogs(t *testing.T) {
 			record:           getLogFromFile(t, dir, "valid_log.json"),
 			expectedFilename: "valid_log_expected.yaml",
 		},
+		"missing_web_acl_id": {
+			record:      getLogFromFile(t, dir, "missing_webaclid_log.json"),
+			expectedErr: "invalid WAF log: empty webaclId field",
+		},
 		"invalid_gzip": {
 			record:      []byte("invalid"),
 			expectedErr: "failed to decompress content",

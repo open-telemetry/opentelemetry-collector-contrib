@@ -6,6 +6,7 @@ package waf // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -59,6 +60,9 @@ type wafLog struct {
 		Scheme      string `json:"scheme"`
 		Host        string `json:"host"`
 	} `json:"httpRequest"`
+	ResponseCodeSent *int64 `json:"responseCodeSent"`
+	Ja3Fingerprint   string `json:"ja3Fingerprint"`
+	Ja4Fingerprint   string `json:"ja4Fingerprint"`
 }
 
 func (w *wafLogUnmarshaler) UnmarshalLogs(content []byte) (plog.Logs, error) {
@@ -105,9 +109,12 @@ func (w *wafLogUnmarshaler) unmarshalWAFLogs(reader io.Reader) (plog.Logs, error
 		if err := gojson.Unmarshal(logLine, &log); err != nil {
 			return plog.Logs{}, fmt.Errorf("failed to unmarshal WAF log: %w", err)
 		}
+		if log.WebACLID == "" {
+			return plog.Logs{}, errors.New("invalid WAF log: empty webaclId field")
+		}
 		if webACLID != "" && log.WebACLID != webACLID {
 			return plog.Logs{}, fmt.Errorf(
-				"unexpected: new web acl id %q is different than previous one %q",
+				"unexpected: new webaclId %q is different than previous one %q",
 				webACLID,
 				log.WebACLID,
 			)
@@ -176,6 +183,10 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 		record.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	}
 
+	if log.ResponseCodeSent != nil {
+		record.Attributes().PutInt(string(conventions.HTTPResponseStatusCodeKey), *log.ResponseCodeSent)
+	}
+
 	putStr := func(name string, value string) {
 		if value != "" {
 			record.Attributes().PutStr(name, value)
@@ -201,6 +212,9 @@ func (w *wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 	putStr(string(conventions.URLFragmentKey), log.HTTPRequest.Fragment)
 	putStr(string(conventions.URLSchemeKey), log.HTTPRequest.Scheme)
 	putStr("geo.country.iso_code", log.HTTPRequest.Country)
+
+	putStr(string(conventions.TLSClientJa3Key), log.Ja3Fingerprint)
+	putStr("tls.client.ja4", log.Ja4Fingerprint)
 
 	return nil
 }

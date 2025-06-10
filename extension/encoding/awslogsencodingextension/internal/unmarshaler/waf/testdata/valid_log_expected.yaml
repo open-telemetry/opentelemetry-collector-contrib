@@ -4,15 +4,15 @@ resourceLogs:
         - key: cloud.provider
           value:
             stringValue: aws
-        - key: cloud.resource_id
-          value:
-            stringValue: arn:aws:wafv2:us-east-1:123456789101:global/webacl/open-telemetry-waf/e3132a63-134d-4da9-a0c4-b166ddd6de6c
-        - key: cloud.account.id
-          value:
-            stringValue: "123456789101"
         - key: cloud.region
           value:
             stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789101"
+        - key: cloud.resource_id
+          value:
+            stringValue: arn:aws:wafv2:us-east-1:123456789101:global/webacl/open-telemetry-waf/e3132a63-134d-4da9-a0c4-b166ddd6de6c
     scopeLogs:
       - logRecords:
           - attributes:
@@ -97,6 +97,12 @@ resourceLogs:
               - key: geo.country.iso_code
                 value:
                   stringValue: NL
+              - key: tls.client.ja3
+                value:
+                  stringValue: 6f7889b9fb1a62a9577e685c1fcfa919
+              - key: tls.client.ja4
+                value:
+                  stringValue: t13d1717h2_5b57614c22b0_3cbfd9057e0d
             body: {}
             spanId: ""
             timeUnixNano: "1748208718574000000"
