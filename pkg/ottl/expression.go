@@ -226,7 +226,7 @@ type PSliceGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Slice, error)
 }
 
-// PStandardSliceGetter is a basic implementation of PSliceGetter
+// StandardPSliceGetter is a basic implementation of PSliceGetter
 type StandardPSliceGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
