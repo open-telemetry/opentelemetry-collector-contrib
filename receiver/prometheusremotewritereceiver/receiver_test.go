@@ -652,7 +652,25 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectError: "this flow just support the conversion of native histograms to exponential histograms. classic histograms will be dropped",
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				return metrics
+			}(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

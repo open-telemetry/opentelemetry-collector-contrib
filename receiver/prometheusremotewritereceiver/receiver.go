@@ -328,7 +328,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-				metric.SetEmptyExponentialHistogram()
+				// Histograms that comes with samples are considered as classic histograms and are not supported.
+				if len(ts.Samples) == 0 {
+					metric.SetEmptyExponentialHistogram()
+				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				metric.SetEmptySummary()
 			}
@@ -349,9 +352,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			if len(ts.Samples) > 0 {
-				badRequestErrors = errors.Join(badRequestErrors, errors.New("this flow just support the conversion of native histograms to exponential histograms. classic histograms will be dropped"))
-			} else {
+			// Histograms that comes with samples are considered as classic histograms and are not supported.
+			if len(ts.Samples) == 0 {
 				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
 			}
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
