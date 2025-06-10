@@ -587,7 +587,7 @@ Examples:
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
 
-### Contains
+### ContainsValue
 
 `Contains(target, item)`
 
