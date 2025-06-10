@@ -36,24 +36,11 @@ func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 	return zlog
 }
 
-// NewForwarderComponent creates a new forwarder that sends payloads to Datadog backend
-func NewForwarderComponent(cfg coreconfig.Component, log corelog.Component) defaultforwarder.Forwarder {
-	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
-		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
-	}
-	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
-	forwarderOptions.DisableAPIKeyChecking = true
-	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
-}
-
-// NewCompressorComponent creates a new compressor with Gzip strategy, best compression
-func NewCompressorComponent() compression.Compressor {
-	return selector.NewCompressor(compression.GzipKind, gzip.BestCompression)
-}
-
-// NewSerializerComponent creates a new serializer that serializes payloads prior to being forwarded
-func NewSerializerComponent(fwd defaultforwarder.Forwarder, cmp compression.Compressor, cfg coreconfig.Component, logger corelog.Component, hostname string) *serializer.Serializer {
-	return serializer.NewSerializer(fwd, nil, cmp, cfg, logger, hostname)
+// NewSerializerComponent creates a new serializer that serializes and compresses payloads prior to being forwarded
+func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, hostname string) serializer.MetricSerializer {
+	forwarder := newForwarderComponent(cfg, logger)
+	compressor := newCompressorComponent()
+	return serializer.NewSerializer(forwarder, nil, compressor, cfg, logger, hostname)
 }
 
 // NewConfigComponent creates a new Datadog agent config component with the given options.
@@ -173,4 +160,19 @@ func setProxyFromEnv(config pkgconfigmodel.Config) {
 		noProxy = append(noProxy, v)
 	}
 	config.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+}
+
+// newForwarderComponent creates a new forwarder that sends payloads to Datadog backend
+func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) defaultforwarder.Forwarder {
+	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
+		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
+	}
+	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
+	forwarderOptions.DisableAPIKeyChecking = true
+	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
+}
+
+// newCompressorComponent creates a new compressor with Gzip strategy, best compression
+func newCompressorComponent() compression.Compressor {
+	return selector.NewCompressor(compression.GzipKind, gzip.BestCompression)
 }

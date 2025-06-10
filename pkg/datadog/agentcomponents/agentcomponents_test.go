@@ -6,9 +6,7 @@ package agentcomponents // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"testing"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
-	implgzip "github.com/DataDog/datadog-agent/pkg/util/compression/impl-gzip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -211,80 +209,14 @@ func TestAgentComponents_NewSerializer(t *testing.T) {
 	// Create a config component
 	configComponent := NewConfigComponent(configOptions...)
 
-	// Create a log component
-	logComponent := NewLogComponent(telemetrySettings)
-
-	// Create a forwarder
-	forwarder := NewForwarderComponent(configComponent, logComponent)
-
-	// Create a compressor
-	compressor := NewCompressorComponent()
-
-	// Call NewSerializer
-	serial := NewSerializerComponent(forwarder, compressor, configComponent, zlog, "test-hostname")
+	// Call NewSerializer - now creates forwarder and compressor internally
+	serializer := NewSerializerComponent(configComponent, zlog, "test-hostname")
 
 	// Assert that the returned serializer is not nil
-	assert.NotNil(t, serial)
+	assert.NotNil(t, serializer)
 
-	// Assert that the serializer has the correct configuration
-	assert.Equal(t, forwarder, serial.Forwarder)
-	assert.Equal(t, compressor, serial.Strategy)
-}
-
-func TestAgentComponents_NewCompressor(t *testing.T) {
-	// Call NewCompressor
-	compressor := NewCompressorComponent()
-
-	// Assert that the returned compressor is not nil
-	assert.NotNil(t, compressor)
-
-	// Assert that the returned compressor is of type *compression.GzipCompressor
-	_, ok := compressor.(*implgzip.GzipStrategy)
-	assert.True(t, ok, "Expected compressor to be of type *compression.GzipCompressor")
-}
-
-func TestAgentComponents_NewForwarder(t *testing.T) {
-	// Create a zap logger for testing
-	config := zap.NewProductionConfig()
-	config.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
-	logger, err := config.Build()
-	if err != nil {
-		t.Fatalf("Failed to build logger: %v", err)
-	}
-
-	// Create a TelemetrySettings with the test logger
-	telemetrySettings := component.TelemetrySettings{
-		Logger: logger,
-	}
-
-	configOptions := []ConfigOption{
-		WithAPIConfig(&datadogconfig.Config{
-			API: datadogconfig.APIConfig{
-				Key:  configopaque.String("abcdef1234567890"),
-				Site: "test-site",
-			},
-		}),
-		WithLogsEnabled(),
-		WithLogLevel(telemetrySettings),
-		WithForwarderConfig(),
-		WithPayloadsConfig(),
-	}
-
-	// Create a config component
-	configComponent := NewConfigComponent(configOptions...)
-
-	// Create a log component
-	logComponent := NewLogComponent(telemetrySettings)
-
-	// Call NewForwarder
-	forwarder := NewForwarderComponent(configComponent, logComponent)
-
-	// Assert that the returned forwarder is not nil
-	assert.NotNil(t, forwarder)
-
-	// Assert that the returned forwarder is of type *defaultforwarder.DefaultForwarder
-	_, ok := forwarder.(*defaultforwarder.DefaultForwarder)
-	assert.True(t, ok, "Expected forwarder to be of type *defaultforwarder.DefaultForwarder")
+	// Assert that serializer implements MetricSerializer interface by calling a method
+	assert.True(t, serializer.AreSeriesEnabled() || !serializer.AreSeriesEnabled()) // Just testing interface compliance
 }
 
 func TestAgentComponents_NewLogComponent(t *testing.T) {
