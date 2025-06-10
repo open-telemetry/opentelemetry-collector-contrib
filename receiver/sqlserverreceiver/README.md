@@ -114,7 +114,7 @@ Top query collection enabled:
 
 ## Feature Gate
 
-A new feature gate was added in `v0.128.0` for removing the `server.address` and `server.port` 
+A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port` 
 resource attributes, as they are not identified as resources attributes in the semantic conventions.
 To enable it, pass the following argument to the Collector:
 

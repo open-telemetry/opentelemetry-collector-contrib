@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -19,6 +22,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -37,6 +43,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -59,6 +68,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -81,6 +93,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -99,6 +114,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -117,6 +135,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -139,6 +160,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -157,6 +181,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -179,6 +206,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -197,6 +227,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -216,6 +249,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -234,6 +270,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -252,6 +291,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -270,6 +312,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -288,6 +333,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -306,6 +354,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -324,6 +375,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -342,6 +396,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -360,6 +417,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -378,6 +438,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -404,6 +467,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -422,6 +488,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -440,6 +509,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -458,6 +530,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -476,6 +551,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -494,6 +572,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -512,6 +593,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -530,6 +614,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -549,6 +636,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -568,6 +658,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -586,6 +679,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -608,6 +704,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -626,6 +725,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -648,6 +750,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -670,6 +775,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -688,6 +796,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -710,6 +821,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -728,6 +842,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -747,6 +864,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -765,6 +885,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -783,6 +906,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -801,6 +927,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -824,6 +953,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -842,6 +974,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426
@@ -862,6 +997,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.instance.name
           value:
             stringValue: d26d40521426

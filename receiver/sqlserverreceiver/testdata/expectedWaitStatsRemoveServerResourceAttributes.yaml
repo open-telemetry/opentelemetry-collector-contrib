@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -31,6 +34,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -61,6 +67,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -91,6 +100,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -121,6 +133,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -151,6 +166,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -181,6 +199,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -211,6 +232,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -241,6 +265,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -271,6 +298,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -301,6 +331,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -331,6 +364,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -361,6 +397,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -391,6 +430,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -421,6 +463,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -451,6 +496,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -481,6 +529,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -511,6 +562,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -541,6 +595,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -571,6 +628,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -601,6 +661,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -631,6 +694,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -661,6 +727,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
@@ -691,6 +760,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
         - key: sqlserver.database.name
           value:
             stringValue: master
