@@ -5,9 +5,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"go.uber.org/zap/zaptest/observer"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,8 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -24,6 +20,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestStart(t *testing.T) {
@@ -390,8 +390,8 @@ func TestUpdateGroupRequests(t *testing.T) {
 		infoLogs := observedLogs.FilterLevelExact(zap.InfoLevel).All()
 		warnLogs := observedLogs.FilterLevelExact(zap.WarnLevel).All()
 
-		require.Equal(t, len(tt.expectedInfo), len(infoLogs))
-		require.Equal(t, len(tt.expectedWarn), len(warnLogs))
+		require.Len(t, infoLogs, len(tt.expectedInfo))
+		require.Len(t, warnLogs, len(tt.expectedWarn))
 
 		for i, expected := range tt.expectedInfo {
 			actual := observedLogs.FilterLevelExact(zap.InfoLevel).All()[i]
@@ -438,7 +438,7 @@ func TestPollForLogsResourceNotFoundNoBlock(t *testing.T) {
 	select {
 	case err := <-errCh:
 		var nf *types.ResourceNotFoundException
-		require.True(t, errors.As(err, &nf))
+		require.ErrorAs(t, err, &nf)
 	case <-time.After(2 * time.Second):
 		t.Fatal("pollForLogs did not return within expected time")
 	}

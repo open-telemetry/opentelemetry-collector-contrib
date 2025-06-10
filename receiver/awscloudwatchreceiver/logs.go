@@ -208,14 +208,15 @@ func (l *logsReceiver) updateGroupRequests(groups []groupRequest) {
 	gNew := 0
 
 	for gCurr < len(l.groupRequests) && gNew < len(groups) {
-		if l.groupRequests[gCurr].groupName() == groups[gNew].groupName() {
+		switch {
+		case l.groupRequests[gCurr].groupName() == groups[gNew].groupName():
 			gCurr++
 			gNew++
-		} else if l.groupRequests[gCurr].groupName() < groups[gNew].groupName() {
+		case l.groupRequests[gCurr].groupName() < groups[gNew].groupName():
 			l.settings.Logger.Warn("log group no longer exists",
 				zap.String("groupName", l.groupRequests[gCurr].groupName()))
 			gCurr++
-		} else if l.groupRequests[gCurr].groupName() > groups[gNew].groupName() {
+		case l.groupRequests[gCurr].groupName() > groups[gNew].groupName():
 			l.settings.Logger.Info("new log group found",
 				zap.String("groupName", groups[gNew].groupName()))
 			gNew++
