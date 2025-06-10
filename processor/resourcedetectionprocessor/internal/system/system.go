@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/shirou/gopsutil/v4/cpu"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
@@ -20,15 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.hostCPUSteppingAsString",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
-	featuregate.WithRegisterFromVersion("v0.95.0"),
-	featuregate.WithRegisterToVersion("v0.110.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
 )
 
 const (
