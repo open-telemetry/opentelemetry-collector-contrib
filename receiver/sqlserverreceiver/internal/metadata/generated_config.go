@@ -255,10 +255,10 @@ type EventsConfig struct {
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
 		DbServerQuerySample: EventConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

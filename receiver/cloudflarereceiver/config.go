@@ -26,6 +26,7 @@ type LogsConfig struct {
 	TLS            *configtls.ServerConfig `mapstructure:"tls"`
 	Attributes     map[string]string       `mapstructure:"attributes"`
 	TimestampField string                  `mapstructure:"timestamp_field"`
+	Separator      string                  `mapstructure:"separator"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -37,6 +38,7 @@ var (
 	errNoKey      = errors.New("tls was configured, but no key file was specified")
 
 	defaultTimestampField = "EdgeStartTimestamp"
+	defaultSeparator      = "."
 )
 
 func (c *Config) Validate() error {
