@@ -59,13 +59,15 @@ confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
 internal/filter
 connector/countconnector
+internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
+internal/datadog
+pkg/datadog
 pkg/xk8stest
 processor/k8sattributesprocessor
 pkg/sampling
 processor/probabilisticsamplerprocessor
-internal/aws/ecsutil
 processor/resourcedetectionprocessor
 processor/transformprocessor
 internal/docker
@@ -73,8 +75,6 @@ receiver/dockerstatsreceiver
 receiver/filelogreceiver
 pkg/winperfcounters
 receiver/hostmetricsreceiver
-internal/datadog
-pkg/datadog
 processor/tailsamplingprocessor
 exporter/datadogexporter
 connector/datadogconnector

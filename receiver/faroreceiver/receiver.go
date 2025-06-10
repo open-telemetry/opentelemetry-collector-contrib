@@ -40,7 +40,7 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 	}
 
 	transport := "http"
-	if cfg.TLSSetting != nil {
+	if cfg.TLS != nil {
 		transport = "https"
 	}
 
