@@ -266,7 +266,7 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 	cfg := &Config{
 		Logs: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -319,7 +319,7 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 	cfg := &Config{
 		Logs: configgrpc.ClientConfig{
 			Endpoint: endpoint,
-			TLSSetting: configtls.ClientConfig{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Headers: map[string]configopaque.String{},
@@ -374,4 +374,116 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "Expected partial success log with correct fields")
+}
+
+func TestLogsExporter_PushLogs_Performance(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpLogsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Logs: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 3,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	t.Run("Under rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "test-service")
+		sl := rl.ScopeLogs().AppendEmpty()
+
+		logCount := 3000
+		for i := 0; i < logCount; i++ {
+			logRecord := sl.LogRecords().AppendEmpty()
+			logRecord.Body().SetStr(fmt.Sprintf("test log message %d", i))
+			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			logRecord.SetSeverityText("INFO")
+		}
+
+		start := time.Now()
+		err = exp.pushLogs(context.Background(), logs)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, logCount, mockSrv.recvCount, "Expected to receive exactly %d logs", logCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+
+	t.Run("Over rate limit", func(t *testing.T) {
+		mockSrv.recvCount = 0
+
+		rateLimitErr := errors.New("rate limit exceeded")
+		for i := 0; i < 5; i++ {
+			exp.EnableRateLimit(rateLimitErr)
+		}
+
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "test-service")
+		sl := rl.ScopeLogs().AppendEmpty()
+
+		logCount := 7000
+		for i := 0; i < logCount; i++ {
+			logRecord := sl.LogRecords().AppendEmpty()
+			logRecord.Body().SetStr(fmt.Sprintf("test log message %d", i))
+			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			logRecord.SetSeverityText("INFO")
+		}
+
+		start := time.Now()
+		err = exp.pushLogs(context.Background(), logs)
+		duration := time.Since(start)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "rate limit exceeded")
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+		assert.Zero(t, mockSrv.recvCount, "Expected no logs to be received due to rate limiting")
+	})
+
+	t.Run("Rate limit reset", func(t *testing.T) {
+		mockSrv.recvCount = 0
+		time.Sleep(2 * time.Second)
+
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "test-service")
+		sl := rl.ScopeLogs().AppendEmpty()
+
+		logCount := 3000
+		for i := 0; i < logCount; i++ {
+			logRecord := sl.LogRecords().AppendEmpty()
+			logRecord.Body().SetStr(fmt.Sprintf("test log message %d", i))
+			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			logRecord.SetSeverityText("INFO")
+		}
+
+		start := time.Now()
+		err = exp.pushLogs(context.Background(), logs)
+		duration := time.Since(start)
+
+		require.NoError(t, err)
+		assert.Equal(t, logCount, mockSrv.recvCount, "Expected to receive exactly %d logs after rate limit reset", logCount)
+		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
 }

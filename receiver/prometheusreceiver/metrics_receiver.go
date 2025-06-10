@@ -184,18 +184,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		return err
 	}
 
-	opts := &scrape.Options{
-		PassMetadataInContext: true,
-		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
-		HTTPClientOptions: []commonconfig.HTTPClientOption{
-			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
-		},
-		EnableCreatedTimestampZeroIngestion: true,
-	}
-
-	if enableNativeHistogramsGate.IsEnabled() {
-		opts.EnableNativeHistogramsIngestion = true
-	}
+	opts := r.initScrapeOptions()
 
 	// for testing only
 	if r.skipOffsetting {
@@ -232,6 +221,20 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	}()
 
 	return nil
+}
+
+func (r *pReceiver) initScrapeOptions() *scrape.Options {
+	opts := &scrape.Options{
+		PassMetadataInContext: true,
+		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
+		HTTPClientOptions: []commonconfig.HTTPClientOption{
+			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
+		},
+		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
+		EnableNativeHistogramsIngestion:     enableNativeHistogramsGate.IsEnabled(),
+	}
+
+	return opts
 }
 
 func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) error {

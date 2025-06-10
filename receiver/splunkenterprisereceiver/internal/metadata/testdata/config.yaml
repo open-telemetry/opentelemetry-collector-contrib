@@ -77,9 +77,15 @@ all_set:
       enabled: true
     splunk.server.searchartifacts.adhoc:
       enabled: true
+    splunk.server.searchartifacts.adhoc.size:
+      enabled: true
     splunk.server.searchartifacts.completed:
       enabled: true
+    splunk.server.searchartifacts.completed.size:
+      enabled: true
     splunk.server.searchartifacts.incomplete:
+      enabled: true
+    splunk.server.searchartifacts.incomplete.size:
       enabled: true
     splunk.server.searchartifacts.invalid:
       enabled: true
@@ -90,6 +96,8 @@ all_set:
     splunk.server.searchartifacts.savedsearches:
       enabled: true
     splunk.server.searchartifacts.scheduled:
+      enabled: true
+    splunk.server.searchartifacts.scheduled.size:
       enabled: true
     splunk.typing.queue.ratio:
       enabled: true
@@ -171,9 +179,15 @@ none_set:
       enabled: false
     splunk.server.searchartifacts.adhoc:
       enabled: false
+    splunk.server.searchartifacts.adhoc.size:
+      enabled: false
     splunk.server.searchartifacts.completed:
       enabled: false
+    splunk.server.searchartifacts.completed.size:
+      enabled: false
     splunk.server.searchartifacts.incomplete:
+      enabled: false
+    splunk.server.searchartifacts.incomplete.size:
       enabled: false
     splunk.server.searchartifacts.invalid:
       enabled: false
@@ -184,6 +198,8 @@ none_set:
     splunk.server.searchartifacts.savedsearches:
       enabled: false
     splunk.server.searchartifacts.scheduled:
+      enabled: false
+    splunk.server.searchartifacts.scheduled.size:
       enabled: false
     splunk.typing.queue.ratio:
       enabled: false
