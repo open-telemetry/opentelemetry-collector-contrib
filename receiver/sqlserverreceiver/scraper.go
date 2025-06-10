@@ -185,6 +185,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetHostName(s.config.Server)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -274,6 +275,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetHostName(s.config.Server)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -550,6 +552,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetHostName(s.config.Server)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
@@ -592,6 +595,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetHostName(s.config.Server)
 
 		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
 			rb.SetServerAddress(s.config.Server)
