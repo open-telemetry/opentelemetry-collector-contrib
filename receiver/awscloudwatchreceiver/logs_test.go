@@ -297,7 +297,6 @@ func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 	}, sink)
 	mc := &mockClient{}
 
-	// setup mock for non-deleted group to return normal logs
 	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
 		return *input.LogGroupName == "existing-group"
 	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
@@ -312,7 +311,6 @@ func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 		NextToken: nil,
 	}, nil)
 
-	// Setup mock for deleted-group to return ResourceNotFoundException
 	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
 		return *input.LogGroupName == "deleted-group"
 	}), mock.Anything).Return((*cloudwatchlogs.FilterLogEventsOutput)(nil), &types.ResourceNotFoundException{
@@ -324,12 +322,9 @@ func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	// Wait for logs to be received
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
-
-	// Verify we got logs from the non-deleted group
 	logs := sink.AllLogs()
 	require.Len(t, logs, 1)
 	require.Equal(t, 1, logs[0].LogRecordCount())
@@ -350,10 +345,12 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 	cfg.Logs.PollInterval = 1 * time.Second
 	cfg.Logs.Groups = GroupConfig{
 		AutodiscoverConfig: &AutodiscoverConfig{
-			Limit:  2,
+			Limit:  3,
 			Prefix: "/aws/",
 		},
 	}
+
+	firstPollDone := make(chan struct{}, 1)
 
 	sink := &consumertest.LogsSink{}
 	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
@@ -362,8 +359,6 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 		},
 	}, sink)
 
-	firstPollDone := make(chan struct{})
-	secondPollDone := make(chan struct{})
 	mc := &mockClient{}
 
 	// First DescribeLogGroups call returns two groups
@@ -372,24 +367,38 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
 		LogGroups: []types.LogGroup{
 			{
-				LogGroupName: aws.String("/aws/existing-group"),
+				LogGroupName: aws.String("/aws/working-group"),
 			},
 			{
-				LogGroupName: aws.String("/aws/deleted-group"),
+				LogGroupName: aws.String("/aws/delete-group"),
+			},
+			{
+				LogGroupName: aws.String("/aws/third-group"),
+			},
+		},
+		NextToken: nil,
+	}, nil).Once()
+
+	// Second DescribeLogGroups call returns working group plus a new group
+	mc.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+		return input.LogGroupNamePrefix != nil && *input.LogGroupNamePrefix == "/aws/"
+	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
+		LogGroups: []types.LogGroup{
+			{
+				LogGroupName: aws.String("/aws/working-group"),
+			},
+			{
+				LogGroupName: aws.String("/aws/third-group"),
 			},
 		},
 		NextToken: nil,
 	}, nil).Run(func(args mock.Arguments) {
-		select {
-		case <-firstPollDone:
-		default:
-			close(firstPollDone)
-		}
-	}).Once()
+		close(firstPollDone)
+	})
 
-	// Setup mock for existing-group to return normal logs
+	// Setup mock for working-group to return normal logs
 	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
-		return *input.LogGroupName == "/aws/existing-group"
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/working-group"
 	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
 		Events: []types.FilteredLogEvent{
 			{
@@ -402,71 +411,82 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 		NextToken: nil,
 	}, nil)
 
-	// setup mock for deleted-group to return ResourceNotFoundException
+	// Setup mock for /aws/delete-group to return ResourceNotFoundException
 	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
-		return *input.LogGroupName == "/aws/deleted-group"
-	}), mock.Anything).Return((*cloudwatchlogs.FilterLogEventsOutput)(nil), &types.ResourceNotFoundException{
-		Message: aws.String("The specified log group does not exist"),
-	})
-
-	// Any further calls to DescribeLogGroups should return the removed group response but also close the secondPollDone channel
-	mc.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
-		return input.LogGroupNamePrefix != nil && *input.LogGroupNamePrefix == "/aws/"
-	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
-		LogGroups: []types.LogGroup{
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/delete-group"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
 			{
-				LogGroupName: aws.String("/aws/existing-group"),
+				EventId:       aws.String("event1"),
+				LogStreamName: aws.String("stream1"),
+				Message:       aws.String("test message"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
 			},
+		},
+		NextToken: aws.String("next"),
+	}, nil).Once()
+
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/delete-group" && input.NextToken != nil && *input.NextToken == "next"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{}, &types.ResourceNotFoundException{
+		Message: aws.String("The specified log group does not exist"),
+	}).Once()
+
+	// Setup mock for /aws/working-group or /aws/third-group to return normal logs
+	mc.On("FilterLogEvents",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+			return input.LogGroupName != nil && (*input.LogGroupName == "/aws/working-group" || *input.LogGroupName == "/aws/third-group")
+		}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
 			{
-				LogGroupName: aws.String("/aws/third-group"),
+				EventId:       aws.String("event2"),
+				LogStreamName: aws.String("stream2"),
+				Message:       aws.String("test message from group"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
 			},
 		},
 		NextToken: nil,
-	}, nil).Run(func(args mock.Arguments) {
-		select {
-		case <-secondPollDone:
-		default:
-			close(secondPollDone)
-		}
-	}).Once()
+	}, nil)
 
 	logsRcvr.client = mc
 
 	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	select {
-	case <-firstPollDone:
-	case <-time.After(2 * time.Second):
-		t.Fatal("Timeout waiting for first poll to complete")
-	}
-
+	// Wait for first poll to complete
 	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() > 0
-	}, 2*time.Second, 10*time.Millisecond)
+		select {
+		case <-firstPollDone:
+			return true
+		default:
+			return false
+		}
+	}, 15*time.Second, 10*time.Millisecond)
 
-	logs := sink.AllLogs()
-	require.Len(t, logs, 1)
-	require.Equal(t, 1, logs[0].LogRecordCount())
+	err = logsRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
 
-	logRecord := logs[0].ResourceLogs().At(0)
-	require.Equal(t, "/aws/existing-group", logRecord.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
-
-	select {
-	case <-secondPollDone:
-	case <-time.After(2 * time.Second):
-		t.Fatal("Timeout waiting for second poll to complete")
-	}
-
-	require.Len(t, logsRcvr.groupRequests, 2)
 	groupNames := make([]string, 0, len(logsRcvr.groupRequests))
 	for _, gr := range logsRcvr.groupRequests {
 		groupNames = append(groupNames, gr.groupName())
 	}
-	require.ElementsMatch(t, []string{"/aws/existing-group", "/aws/third-group"}, groupNames)
+	// validate deleted group is not in the groupRequests
+	require.ElementsMatch(t, []string{"/aws/working-group", "/aws/third-group"}, groupNames)
+	logs := sink.AllLogs()
+	require.GreaterOrEqual(t, len(logs), 3)
 
-	err = logsRcvr.Shutdown(context.Background())
-	require.NoError(t, err)
+	firstWorkingGroupLog := logs[0].ResourceLogs().At(0)
+	require.Equal(t, "/aws/working-group", firstWorkingGroupLog.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+	require.Equal(t, 1, firstWorkingGroupLog.ScopeLogs().Len())
+
+	secondWorkingGroupLog := logs[1].ResourceLogs().At(0)
+	require.Equal(t, "/aws/delete-group", secondWorkingGroupLog.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+	require.Equal(t, 1, secondWorkingGroupLog.ScopeLogs().Len())
+
+	thirdWorkingGroupLog := logs[2].ResourceLogs().At(0)
+	require.Equal(t, "/aws/third-group", thirdWorkingGroupLog.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
+	require.Equal(t, 1, thirdWorkingGroupLog.ScopeLogs().Len())
 
 	mc.AssertExpectations(t)
 }
