@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.155
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.66.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.66.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.66.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.66.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.38.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -37,11 +37,11 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.66.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.66.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.66.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.66.0 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.66.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
