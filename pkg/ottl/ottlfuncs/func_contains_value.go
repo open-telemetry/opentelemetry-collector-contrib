@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ContainsArguments[K any] struct {
+type ContainsValueArguments[K any] struct {
 	Target ottl.PSliceGetter[K]
 	Item   ottl.Getter[K]
 }
