@@ -4,7 +4,6 @@
 package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (
-	"compress/gzip"
 	"runtime"
 	"strings"
 
@@ -16,8 +15,7 @@ import (
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
-	"github.com/DataDog/datadog-agent/pkg/util/compression"
-	"github.com/DataDog/datadog-agent/pkg/util/compression/selector"
+	zlib "github.com/DataDog/datadog-agent/pkg/util/compression/impl-zlib"
 	"go.opentelemetry.io/collector/component"
 	"golang.org/x/net/http/httpproxy"
 
@@ -39,7 +37,7 @@ func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 // NewSerializerComponent creates a new serializer that serializes and compresses payloads prior to being forwarded
 func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, hostname string) serializer.MetricSerializer {
 	forwarder := newForwarderComponent(cfg, logger)
-	compressor := newCompressorComponent()
+	compressor := zlib.New()
 	return serializer.NewSerializer(forwarder, nil, compressor, cfg, logger, hostname)
 }
 
@@ -170,9 +168,4 @@ func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) defa
 	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
 	forwarderOptions.DisableAPIKeyChecking = true
 	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
-}
-
-// newCompressorComponent creates a new compressor with Gzip strategy, best compression
-func newCompressorComponent() compression.Compressor {
-	return selector.NewCompressor(compression.GzipKind, gzip.BestCompression)
 }
