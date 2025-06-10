@@ -173,7 +173,7 @@ func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
 	// Verify it's valid JSON by attempting to unmarshal
 	var result map[string]any
 	err = json.Unmarshal([]byte(jsonString), &result)
-	require.NoError(t, err, "flattened JSON should be valid JSON")
+	assert.NoError(t, err, "flattened JSON should be valid JSON")
 }
 
 // TestFullOtelCollectorPayloadIntegration tests the complete end-to-end flow of:
