@@ -16,11 +16,11 @@ type ContainsValueArguments[K any] struct {
 }
 
 func NewContainsValueFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ContainsValue", &ContainsArguments[K]{}, createContainsValueFunction[K])
+	return ottl.NewFactory("ContainsValue", &ContainsValueArguments[K]{}, createContainsValueFunction[K])
 }
 
 func createContainsValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ContainsArguments[K])
+	args, ok := oArgs.(*ContainsValueArguments[K])
 
 	if !ok {
 		return nil, errors.New("ContainsValueFactory args must be of type *ContainsArguments[K]")
