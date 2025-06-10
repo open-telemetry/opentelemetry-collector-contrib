@@ -192,6 +192,12 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	var ms []datadogV2.MetricSeries
 	ms, sl = consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
 	if len(ms) > 0 {
+		interval := exp.cfg.Metrics.ExporterConfig.Interval
+		if interval != 0 {
+			for i := range ms {
+				ms[i].SetInterval(interval)
+			}
+		}
 		exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
 		_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 			ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
