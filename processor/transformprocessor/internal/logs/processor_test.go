@@ -1211,7 +1211,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		wantErrorWith string
 	}
 
-	contextsTests := map[string][]testCase{"log": nil}
+	contextsTests := map[string][]testCase{"log": nil, "resource": nil, "scope": nil}
 	for ctx := range contextsTests {
 		contextsTests[ctx] = []testCase{
 			{
