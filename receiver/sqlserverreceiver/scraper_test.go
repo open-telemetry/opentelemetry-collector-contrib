@@ -15,15 +15,15 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
@@ -103,58 +103,78 @@ func TestEmptyScrape(t *testing.T) {
 }
 
 func TestSuccessfulScrape(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Username = "sa"
-	cfg.Password = "password"
-	cfg.Port = 1433
-	cfg.Server = "0.0.0.0"
-	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
-	assert.NoError(t, cfg.Validate())
+	tests := []struct {
+		removeServerResourceAttributeFeatureGate bool
+	}{
+		{
+			removeServerResourceAttributeFeatureGate: true,
+		},
+		{
+			removeServerResourceAttributeFeatureGate: false,
+		},
+	}
 
-	configureAllScraperMetricsAndEvents(cfg, true)
+	for _, test := range tests {
+		t.Run("TestSuccessfulScrape/"+strconv.FormatBool(test.removeServerResourceAttributeFeatureGate), func(t *testing.T) {
+			testutil.SetFeatureGateForTest(t, removeServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
+			cfg := createDefaultConfig().(*Config)
+			cfg.Username = "sa"
+			cfg.Password = "password"
+			cfg.Port = 1433
+			cfg.Server = "0.0.0.0"
+			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+			assert.NoError(t, cfg.Validate())
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
-	assert.NotEmpty(t, scrapers)
+			configureAllScraperMetricsAndEvents(cfg, true)
 
-	for _, scraper := range scrapers {
-		err := scraper.Start(context.Background(), componenttest.NewNopHost())
-		assert.NoError(t, err)
-		defer assert.NoError(t, scraper.Shutdown(context.Background()))
+			scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			assert.NotEmpty(t, scrapers)
 
-		scraper.client = mockClient{
-			instanceName:        scraper.config.InstanceName,
-			SQL:                 scraper.sqlQuery,
-			maxQuerySampleCount: 1000,
-			lookbackTime:        20,
-		}
+			for _, scraper := range scrapers {
+				err := scraper.Start(context.Background(), componenttest.NewNopHost())
+				assert.NoError(t, err)
+				defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
-		actualMetrics, err := scraper.ScrapeMetrics(context.Background())
-		assert.NoError(t, err)
+				scraper.client = mockClient{
+					instanceName:        scraper.config.InstanceName,
+					SQL:                 scraper.sqlQuery,
+					maxQuerySampleCount: 1000,
+					lookbackTime:        20,
+				}
 
-		var expectedFile string
-		switch scraper.sqlQuery {
-		case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
-			expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
-		case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
-			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
-		case getSQLServerPropertiesQuery(scraper.config.InstanceName):
-			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
-		case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
-			expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
-		}
+				actualMetrics, err := scraper.ScrapeMetrics(context.Background())
+				assert.NoError(t, err)
+				fileSuffix := ".yaml"
+				if test.removeServerResourceAttributeFeatureGate {
+					fileSuffix = "RemoveServerResourceAttributes.yaml"
+				}
+				var expectedFile string
+				switch scraper.sqlQuery {
+				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedDatabaseIO")
+				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedPerfCounters")
+				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedProperties")
+				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+				}
+				expectedFile = expectedFile + fileSuffix
 
-		// Uncomment line below to re-generate expected metrics.
-		// golden.WriteMetrics(t, expectedFile, actualMetrics)
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		assert.NoError(t, err)
+				// Uncomment line below to re-generate expected metrics.
+				// golden.WriteMetrics(t, expectedFile, actualMetrics)
+				expectedMetrics, err := golden.ReadMetrics(expectedFile)
+				assert.NoError(t, err)
 
-		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreResourceMetricsOrder()))
+				assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+					pmetrictest.IgnoreMetricDataPointsOrder(),
+					pmetrictest.IgnoreStartTimestamp(),
+					pmetrictest.IgnoreTimestamp(),
+					pmetrictest.IgnoreResourceMetricsOrder()), expectedFile)
+			}
+		})
 	}
 }
 
