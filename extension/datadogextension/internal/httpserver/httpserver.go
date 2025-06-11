@@ -25,24 +25,22 @@ var nowFunc = time.Now
 
 // Server provides local metadata server functionality (display the otel_collector payload locally) as well as
 // functions to serialize and export this metadata to Datadog backend.
-// Specifically, making a request to the local endpoint, configured in config.go, will both display the
-// otel_collector payload as well as submit it to the Datadog backend.
-// Server provides local metadata server functionality (display the otel_collector payload locally) as well as
-// functions to serialize and export this metadata to Datadog backend.
-// Specifically, making a request to the local endpoint, configured in config.go, will both display the
-// otel_collector payload as well as submit it to the Datadog backend.
 type Server struct {
-	server               *http.Server
-	logger               *zap.Logger
-	serializer           agentcomponents.SerializerWithForwarder
-	cancel               context.CancelFunc
-	config               *Config
-	hostnameSource       string
-	hostname             string
-	uuid                 string
-	componentStatus      map[string]any
-	moduleInfo           *service.ModuleInfos
-	collectorConfig      *confmap.Conf
+	server     *http.Server
+	logger     *zap.Logger
+	serializer agentcomponents.SerializerWithForwarder
+	// config is the httpserver configuration values
+	config *Config
+
+	// hostname and uuid are required to send the payload to Datadog
+	hostname string
+	uuid     string
+
+	// moduleInfo is a list of configured modules available to collector
+	moduleInfo *service.ModuleInfos
+	// collectorConfig is the full configuration for the collector, usually received by NotifyConfig interface
+	collectorConfig *confmap.Conf
+	// otelCollectorPayload is the collector metadata required to send to Datadog backend
 	otelCollectorPayload *payload.OtelCollector
 }
 
@@ -63,10 +61,8 @@ func NewServer(
 		logger:               logger,
 		serializer:           s,
 		config:               config,
-		hostnameSource:       hs,
 		hostname:             hn,
 		uuid:                 UUID,
-		componentStatus:      componentstatus,
 		moduleInfo:           moduleinfo,
 		collectorConfig:      collectorconfig,
 		otelCollectorPayload: collectorpayload,
@@ -76,9 +72,6 @@ func NewServer(
 
 // Start starts the HTTP server and begins sending payloads periodically
 func (s *Server) Start() {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.cancel = cancel
-
 	// Create a mux to handle only the specific path
 	mux := http.NewServeMux()
 	mux.HandleFunc(s.config.Path, s.HandleMetadata)
@@ -88,7 +81,7 @@ func (s *Server) Start() {
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		BaseContext:  func(net.Listener) context.Context { return ctx },
+		BaseContext:  func(net.Listener) context.Context { return context.Background() },
 	}
 
 	// Start HTTP server
@@ -98,28 +91,32 @@ func (s *Server) Start() {
 		}
 	}()
 
-	// Monitor context cancellation
-	go func() {
-		<-ctx.Done()
-		if err := s.server.Shutdown(context.Background()); err != nil {
-			s.logger.Error("Error during server shutdown", zap.Error(err))
-		}
-	}()
-
 	s.logger.Info("HTTP Server started at " + s.config.Endpoint + s.config.Path)
 }
 
 // Stop shuts down the HTTP server
-func (s *Server) Stop() {
+func (s *Server) Stop(ctx context.Context) {
 	if s.server != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := s.server.Shutdown(ctx); err != nil {
-			s.logger.Error("Failed to shutdown HTTP server", zap.Error(err))
+		// Create a channel to signal shutdown completion
+		shutdownDone := make(chan struct{})
+
+		// Start shutdown in a goroutine
+		go func() {
+			if err := s.server.Shutdown(ctx); err != nil {
+				s.logger.Error("Failed to shutdown HTTP server", zap.Error(err))
+			}
+			close(shutdownDone)
+		}()
+
+		// Wait for either shutdown completion or context cancellation
+		select {
+		case <-shutdownDone:
+			// Shutdown completed successfully
+		case <-ctx.Done():
+			// Context was cancelled, log and continue
+			s.logger.Warn("Context cancelled while waiting for server shutdown")
+			close(shutdownDone)
 		}
-	}
-	if s.cancel != nil {
-		s.cancel()
 	}
 }
 
@@ -141,9 +138,6 @@ func (s *Server) PrepareAndSendFleetAutomationPayloads() (*payload.OtelCollector
 	if activeComponents != nil {
 		otelCollectorPayload.ActiveComponents = *activeComponents
 	}
-
-	healthStatus := componentchecker.DataToFlattenedJSONString(s.componentStatus)
-	otelCollectorPayload.HealthStatus = healthStatus
 
 	oc := payload.OtelCollectorPayload{
 		Hostname:  s.hostname,

@@ -4,6 +4,7 @@
 package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -80,7 +81,7 @@ func TestServerStart(t *testing.T) {
 			}
 
 			// Stop the server
-			s.Stop()
+			s.Stop(context.Background())
 		})
 	}
 }
@@ -215,7 +216,7 @@ const successfulInstanceResponse = `{
     "version": ""
   },
   "full_configuration": "",
-  "health_status": "{}"
+  "health_status": ""
 }`
 
 func TestHandleMetadata(t *testing.T) {
@@ -278,10 +279,8 @@ func TestHandleMetadata(t *testing.T) {
 			srv := &Server{
 				logger:               logger,
 				serializer:           serializer,
-				hostnameSource:       tt.hostnameSource,
 				hostname:             "test-hostname",
 				uuid:                 "test-uuid",
-				componentStatus:      map[string]any{},
 				moduleInfo:           &service.ModuleInfos{},
 				collectorConfig:      c,
 				otelCollectorPayload: &payload.OtelCollector{},
