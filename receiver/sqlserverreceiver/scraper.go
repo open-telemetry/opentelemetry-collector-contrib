@@ -176,6 +176,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -262,6 +263,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -535,6 +537,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -574,6 +577,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {
