@@ -34,6 +34,7 @@ type Input struct {
 	currentMaxReads      int
 	startAt              string
 	raw                  bool
+	includeLogRecordOriginal bool
 	excludeProviders     map[string]struct{}
 	pollInterval         time.Duration
 	persister            operator.Persister
@@ -141,14 +142,15 @@ func (i *Input) Start(persister operator.Persister) error {
 		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				errorString = fmt.Sprintf("failed to open subscription for remote server: %s, error: %v", i.remote.Server, err)
+				errorString = fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
+			} else {
+				errorString = fmt.Sprintf("failed to open local subscription")
 			}
-			errorString = fmt.Sprintf("failed to open local subscription: %s", err)
 			if !i.ignoreChannelErrors {
-				return fmt.Errorf(errorString)
+				return fmt.Errorf("%s, error: %w", errorString, err)
 			}
 			subscriptionError = true
-			i.Logger().Warn(errorString)
+			i.Logger().Warn(errorString, zap.Error(err))
 		} else {
 			if i.isRemote() {
 				i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
