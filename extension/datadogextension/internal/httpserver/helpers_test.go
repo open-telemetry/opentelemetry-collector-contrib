@@ -4,10 +4,7 @@
 package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 
 import (
-	"net/http"
-
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/transaction"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
 	"github.com/DataDog/datadog-agent/pkg/metrics/servicecheck"
@@ -86,91 +83,4 @@ func (m *mockSerializer) State() uint32 {
 
 func (m *mockSerializer) Stop() {
 	m.state = defaultforwarder.Stopped
-}
-
-type mockForwarder struct {
-	state uint32
-}
-
-func (m *mockForwarder) Start() error {
-	return nil
-}
-
-func (m *mockForwarder) State() uint32 {
-	return m.state
-}
-
-func (m *mockForwarder) Stop() {
-}
-
-func (m *mockForwarder) SubmitV1Series(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitV1Intake(transaction.BytesPayloads, transaction.Kind, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitV1CheckRuns(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitSeries(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitSketchSeries(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitHostMetadata(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitAgentChecksMetadata(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitMetadata(transaction.BytesPayloads, http.Header) error {
-	return nil
-}
-
-func (m *mockForwarder) SubmitProcessChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitProcessDiscoveryChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitProcessEventChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitRTProcessChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitContainerChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitRTContainerChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitConnectionChecks(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitOrchestratorChecks(transaction.BytesPayloads, http.Header, int) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-func (m *mockForwarder) SubmitOrchestratorManifests(transaction.BytesPayloads, http.Header) (chan defaultforwarder.Response, error) {
-	return nil, nil
-}
-
-type invalidForwarder struct {
-	defaultforwarder.Forwarder
 }
