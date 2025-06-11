@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -151,7 +152,7 @@ func (f *transformProcessorFactory) createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 	if f.defaultLogFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL log context functions have been registered in the \"transform\" processor")
+		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor", zap.Bool("log", f.defaultLogFunctionsOverridden))
 	}
 	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.logFunctions)
 	if err != nil {
@@ -173,11 +174,11 @@ func (f *transformProcessorFactory) createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-	if f.defaultSpanEventFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL spanevent context functions have been registered in the \"transform\" processor")
-	}
-	if f.defaultSpanFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL span context functions have been registered in the \"transform\" processor")
+	if f.defaultSpanEventFunctionsOverridden || f.defaultSpanFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL traces functions have been registered in the \"transform\" processor",
+			zap.Bool("span", f.defaultSpanFunctionsOverridden),
+			zap.Bool("spanevent", f.defaultSpanEventFunctionsOverridden),
+		)
 	}
 	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.spanFunctions, f.spanEventFunctions)
 	if err != nil {
@@ -200,11 +201,11 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
-	if f.defaultMetricFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL metric context functions have been registered in the \"transform\" processor")
-	}
-	if f.defaultDataPointFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL datapoint context functions have been registered in the \"transform\" processor")
+	if f.defaultDataPointFunctionsOverridden || f.defaultMetricFunctionsOverridden {
+		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"transform\" processor",
+			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
+			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
+		)
 	}
 	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.metricFunctions, f.dataPointFunctions)
 	if err != nil {
