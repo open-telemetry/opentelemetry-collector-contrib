@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
-	"github.com/DataDog/datadog-agent/pkg/serializer"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -22,6 +20,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
 func TestServerStart(t *testing.T) {
@@ -49,11 +48,10 @@ func TestServerStart(t *testing.T) {
 						Path: "/metadata",
 					},
 					&mockSerializer{},
-					&mockForwarder{},
 					"test-hostname-source",
 					"test-hostname",
 					"test-uuid",
-					&map[string]any{},
+					map[string]any{},
 					&service.ModuleInfos{},
 					c,
 					&payload.OtelCollector{},
@@ -90,7 +88,7 @@ func TestServerStart(t *testing.T) {
 func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 	tests := []struct {
 		name               string
-		setupTest          func() (*zap.Logger, *observer.ObservedLogs, serializer.MetricSerializer, defaultForwarderInterface)
+		setupTest          func() (*zap.Logger, *observer.ObservedLogs, agentcomponents.SerializerWithForwarder)
 		expectedError      string
 		expectedLogs       []string
 		serverResponseCode int
@@ -98,16 +96,16 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 	}{
 		{
 			name: "Successful payload preparation and sending",
-			setupTest: func() (*zap.Logger, *observer.ObservedLogs, serializer.MetricSerializer, defaultForwarderInterface) {
+			setupTest: func() (*zap.Logger, *observer.ObservedLogs, agentcomponents.SerializerWithForwarder) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
-				return logger, logs, &mockSerializer{
-						sendMetadataFunc: func(any) error {
-							return nil
-						},
-					}, &mockForwarder{
-						state: 1,
-					}
+				serializer := &mockSerializer{
+					sendMetadataFunc: func(any) error {
+						return nil
+					},
+				}
+				serializer.Start()
+				return logger, logs, serializer
 			},
 			expectedError:      "",
 			expectedLogs:       []string{},
@@ -116,16 +114,16 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 		},
 		{
 			name: "Failed to get health check status",
-			setupTest: func() (*zap.Logger, *observer.ObservedLogs, serializer.MetricSerializer, defaultForwarderInterface) {
+			setupTest: func() (*zap.Logger, *observer.ObservedLogs, agentcomponents.SerializerWithForwarder) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
-				return logger, logs, &mockSerializer{
-						sendMetadataFunc: func(any) error {
-							return nil
-						},
-					}, &mockForwarder{
-						state: defaultforwarder.Started,
-					}
+				serializer := &mockSerializer{
+					sendMetadataFunc: func(any) error {
+						return nil
+					},
+				}
+				serializer.Start()
+				return logger, logs, serializer
 			},
 			expectedError:      "",
 			expectedLogs:       []string{},
@@ -134,19 +132,19 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 		},
 		{
 			name: "Failed to send payload",
-			setupTest: func() (*zap.Logger, *observer.ObservedLogs, serializer.MetricSerializer, defaultForwarderInterface) {
+			setupTest: func() (*zap.Logger, *observer.ObservedLogs, agentcomponents.SerializerWithForwarder) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
-				return logger, logs, &mockSerializer{
-						sendMetadataFunc: func(pl any) error {
-							if _, ok := pl.(*payload.OtelCollectorPayload); ok {
-								return errors.New("failed to send payload")
-							}
-							return nil
-						},
-					}, &mockForwarder{
-						state: defaultforwarder.Started,
-					}
+				serializer := &mockSerializer{
+					sendMetadataFunc: func(pl any) error {
+						if _, ok := pl.(*payload.OtelCollectorPayload); ok {
+							return errors.New("failed to send payload")
+						}
+						return nil
+					},
+				}
+				serializer.Start()
+				return logger, logs, serializer
 			},
 			expectedError:      "failed to send otel_collector payload: failed to send payload",
 			expectedLogs:       []string{},
@@ -157,7 +155,7 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger, logs, serializer, forwarder := tt.setupTest()
+			logger, logs, serializer := tt.setupTest()
 			componentStatus := map[string]any{
 				"status": "ok",
 			}
@@ -171,11 +169,10 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 					Path: "/metadata",
 				},
 				serializer,
-				forwarder,
 				"test-hostname-source",
 				"test-hostname",
 				"test-uuid",
-				&componentStatus,
+				componentStatus,
 				&service.ModuleInfos{},
 				c,
 				&payload.OtelCollector{},
@@ -231,23 +228,23 @@ func TestHandleMetadata(t *testing.T) {
 	}()
 	tests := []struct {
 		name           string
-		setupTest      func() (*zap.Logger, serializer.MetricSerializer, defaultForwarderInterface)
+		setupTest      func() (*zap.Logger, agentcomponents.SerializerWithForwarder)
 		hostnameSource string
 		expectedCode   int
 		expectedBody   string
 	}{
 		{
 			name: "Successful metadata handling",
-			setupTest: func() (*zap.Logger, serializer.MetricSerializer, defaultForwarderInterface) {
+			setupTest: func() (*zap.Logger, agentcomponents.SerializerWithForwarder) {
 				core, _ := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
-				return logger, &mockSerializer{
-						sendMetadataFunc: func(any) error {
-							return nil
-						},
-					}, &mockForwarder{
-						state: defaultforwarder.Started,
-					}
+				serializer := &mockSerializer{
+					sendMetadataFunc: func(any) error {
+						return nil
+					},
+				}
+				serializer.Start()
+				return logger, serializer
 			},
 			hostnameSource: "config",
 			expectedCode:   http.StatusOK,
@@ -255,16 +252,16 @@ func TestHandleMetadata(t *testing.T) {
 		},
 		{
 			name: "Failed metadata handling - serializer error",
-			setupTest: func() (*zap.Logger, serializer.MetricSerializer, defaultForwarderInterface) {
+			setupTest: func() (*zap.Logger, agentcomponents.SerializerWithForwarder) {
 				core, _ := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
-				return logger, &mockSerializer{
-						sendMetadataFunc: func(any) error {
-							return fmt.Errorf("failed to send metadata")
-						},
-					}, &mockForwarder{
-						state: defaultforwarder.Started,
-					}
+				serializer := &mockSerializer{
+					sendMetadataFunc: func(any) error {
+						return fmt.Errorf("failed to send metadata")
+					},
+				}
+				serializer.Start()
+				return logger, serializer
 			},
 			hostnameSource: "config",
 			expectedCode:   http.StatusInternalServerError,
@@ -273,7 +270,7 @@ func TestHandleMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger, serializer, forwarder := tt.setupTest()
+			logger, serializer := tt.setupTest()
 			c := confmap.New()
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodGet, "/metadata", nil)
@@ -281,11 +278,10 @@ func TestHandleMetadata(t *testing.T) {
 			srv := &Server{
 				logger:               logger,
 				serializer:           serializer,
-				forwarder:            forwarder,
 				hostnameSource:       tt.hostnameSource,
 				hostname:             "test-hostname",
 				uuid:                 "test-uuid",
-				componentStatus:      &map[string]any{},
+				componentStatus:      map[string]any{},
 				moduleInfo:           &service.ModuleInfos{},
 				collectorConfig:      c,
 				otelCollectorPayload: &payload.OtelCollector{},

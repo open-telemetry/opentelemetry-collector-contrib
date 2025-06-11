@@ -13,10 +13,15 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/metrics/servicecheck"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"github.com/DataDog/datadog-agent/pkg/serializer/types"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
+
+var _ agentcomponents.SerializerWithForwarder = (*mockSerializer)(nil)
 
 type mockSerializer struct {
 	sendMetadataFunc func(pl any) error
+	state            uint32
 }
 
 func (m *mockSerializer) SendMetadata(jm marshaler.JSONMarshaler) error {
@@ -68,6 +73,19 @@ func (m *mockSerializer) SendOrchestratorMetadata([]types.ProcessMessageBody, st
 
 func (m *mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, string, string) error {
 	return nil
+}
+
+func (m *mockSerializer) Start() error {
+	m.state = defaultforwarder.Started
+	return nil
+}
+
+func (m *mockSerializer) State() uint32 {
+	return m.state
+}
+
+func (m *mockSerializer) Stop() {
+	m.state = defaultforwarder.Stopped
 }
 
 type mockForwarder struct {

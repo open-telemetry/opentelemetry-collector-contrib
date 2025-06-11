@@ -12,24 +12,16 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
-	"github.com/DataDog/datadog-agent/pkg/serializer"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
 var nowFunc = time.Now
-
-// defaultForwarderInterface is wrapper for methods in datadog-agent DefaultForwarder struct
-type defaultForwarderInterface interface {
-	defaultforwarder.Forwarder
-	Start() error
-	State() uint32
-	Stop()
-}
 
 // Server provides local metadata server functionality (display the otel_collector payload locally) as well as
 // functions to serialize and export this metadata to Datadog backend.
@@ -42,14 +34,13 @@ type defaultForwarderInterface interface {
 type Server struct {
 	server               *http.Server
 	logger               *zap.Logger
-	serializer           serializer.MetricSerializer
-	forwarder            defaultForwarderInterface
+	serializer           agentcomponents.SerializerWithForwarder
 	cancel               context.CancelFunc
 	config               *Config
 	hostnameSource       string
 	hostname             string
 	uuid                 string
-	componentStatus      *map[string]any
+	componentStatus      map[string]any
 	moduleInfo           *service.ModuleInfos
 	collectorConfig      *confmap.Conf
 	otelCollectorPayload *payload.OtelCollector
@@ -59,12 +50,11 @@ type Server struct {
 func NewServer(
 	logger *zap.Logger,
 	config *Config,
-	s serializer.MetricSerializer,
-	f defaultForwarderInterface,
+	s agentcomponents.SerializerWithForwarder,
 	hs string,
 	hn string,
 	UUID string,
-	componentstatus *map[string]any,
+	componentstatus map[string]any,
 	moduleinfo *service.ModuleInfos,
 	collectorconfig *confmap.Conf,
 	collectorpayload *payload.OtelCollector,
@@ -72,7 +62,6 @@ func NewServer(
 	srv := &Server{
 		logger:               logger,
 		serializer:           s,
-		forwarder:            f,
 		config:               config,
 		hostnameSource:       hs,
 		hostname:             hn,
@@ -153,7 +142,7 @@ func (s *Server) PrepareAndSendFleetAutomationPayloads() (*payload.OtelCollector
 		otelCollectorPayload.ActiveComponents = *activeComponents
 	}
 
-	healthStatus := componentchecker.DataToFlattenedJSONString(*s.componentStatus)
+	healthStatus := componentchecker.DataToFlattenedJSONString(s.componentStatus)
 	otelCollectorPayload.HealthStatus = healthStatus
 
 	oc := payload.OtelCollectorPayload{
@@ -164,7 +153,7 @@ func (s *Server) PrepareAndSendFleetAutomationPayloads() (*payload.OtelCollector
 	}
 
 	// Use datadog-agent serializer to send these payloads
-	if s.forwarder.State() != defaultforwarder.Started {
+	if s.serializer.State() != defaultforwarder.Started {
 		return nil, fmt.Errorf("forwarder is not started, extension cannot send payloads to Datadog: %w", err)
 	}
 	err = s.serializer.SendMetadata(&oc)
