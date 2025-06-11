@@ -174,6 +174,14 @@ The number of InnoDB log operations.
 | ---- | ----------- | ------ |
 | operation | The log operation types. | Str: ``waits``, ``write_requests``, ``writes`` |
 
+### mysql.max_used_connections
+
+Maximum number of connections used simultaneously since the server started.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
 ### mysql.mysqlx_connections
 
 The number of mysqlx connections.
