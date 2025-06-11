@@ -89,13 +89,13 @@ func (c *epClient) refresh() {
 
 	for _, obj := range objsList {
 		ep := obj.(*endpointInfo)
-		serviceName := ep.name
+		serviceName := ep.serviceName
 		namespace := ep.namespace
 
 		// each obj should be a uniq service.
 		// ignore the service which has 0 pods.
 		if len(ep.podKeyList) > 0 {
-			serviceToPodNumMapNew[NewService(serviceName, namespace)] = len(ep.podKeyList)
+			serviceToPodNumMapNew[NewService(serviceName, namespace)] += len(ep.podKeyList)
 		}
 
 		for _, podKey := range ep.podKeyList {
@@ -156,7 +156,9 @@ func transformFuncEndpoint(obj any) (any, error) {
 		return nil, fmt.Errorf("input obj %v is not Endpoint type", obj)
 	}
 	info := new(endpointInfo)
-	info.name = endpointSlice.Name
+	if serviceName := endpointSlice.Labels["kubernetes.io/service-name"]; serviceName != "" {
+		info.serviceName = serviceName
+	}
 	info.namespace = endpointSlice.Namespace
 	info.podKeyList = []string{}
 	if endpoints := endpointSlice.Endpoints; endpoints != nil {
