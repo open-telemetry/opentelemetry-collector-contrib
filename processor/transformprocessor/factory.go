@@ -43,7 +43,7 @@ type transformProcessorFactory struct {
 // FactoryOption applies changes to transformProcessorFactory.
 type FactoryOption func(factory *transformProcessorFactory)
 
-// WithDataPointFunctions will override the default ottl datapoint context functions with the provided dataPointFunctions in resulting processor.
+// WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
 // Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
 func WithDataPointFunctions(dataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
@@ -55,7 +55,7 @@ func WithDataPointFunctions(dataPointFunctions []ottl.Factory[ottldatapoint.Tran
 	}
 }
 
-// WithLogFunctions will override the default ottl log context functions with the provided logFunctions in the resulting processor.
+// WithLogFunctions will override the default OTTL log context functions with the provided logFunctions in the resulting processor.
 // Subsequent uses of WithLogFunctions will merge the provided logFunctions with the previously registered functions.
 func WithLogFunctions(logFunctions []ottl.Factory[ottllog.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
@@ -67,7 +67,7 @@ func WithLogFunctions(logFunctions []ottl.Factory[ottllog.TransformContext]) Fac
 	}
 }
 
-// WithMetricFunctions will override the default ottl metric context functions with the provided metricFunctions in the resulting processor.
+// WithMetricFunctions will override the default OTTL metric context functions with the provided metricFunctions in the resulting processor.
 // Subsequent uses of WithMetricFunctions will merge the provided metricFunctions with the previously registered functions.
 func WithMetricFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
@@ -79,7 +79,7 @@ func WithMetricFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformCont
 	}
 }
 
-// WithSpanEventFunctions will override the default ottl spanevent context functions with the provided spanEventFunctions in the resulting processor.
+// WithSpanEventFunctions will override the default OTTL spanevent context functions with the provided spanEventFunctions in the resulting processor.
 // Subsequent uses of WithSpanEventFunctions will merge the provided spanEventFunctions with the previously registered functions.
 func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
@@ -91,7 +91,7 @@ func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[ottlspanevent.Tran
 	}
 }
 
-// WithSpanFunctions will override the default ottl span context functions with the provided spanFunctions in the resulting processor.
+// WithSpanFunctions will override the default OTTL span context functions with the provided spanFunctions in the resulting processor.
 // Subsequent uses of WithSpanFunctions will merge the provided spanFunctions with the previously registered functions.
 func WithSpanFunctions(spanFunctions []ottl.Factory[ottlspan.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
@@ -107,7 +107,7 @@ func NewFactory() processor.Factory {
 	return NewFactoryWithOptions()
 }
 
-// NewFactoryWithOptions can receive FactoryOption like With*Functions to register non-default ottl functions in the resulting processor.
+// NewFactoryWithOptions can receive FactoryOption like With*Functions to register non-default OTTL functions in the resulting processor.
 func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 	f := &transformProcessorFactory{
 		dataPointFunctions: defaultDataPointFunctionsMap(),
