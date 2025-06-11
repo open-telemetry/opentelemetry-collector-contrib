@@ -82,7 +82,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 	// }
 
 	// kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
-  cacheObj := cache.GetCacheInstance(kp.redisConfig.PrimaryCacheSize, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheSize, kp.redisConfig.SecondaryCacheEvictionTime)
+	cacheObj := cache.GetCacheInstance(kp.redisConfig.PrimaryCacheSize, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheSize, kp.redisConfig.SecondaryCacheEvictionTime)
 
 	if cacheObj == nil {
 		kp.logger.Error("Failed to initilize the cache with GetInstance()")
@@ -319,7 +319,7 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 		if resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, dsname, "daemonset"); resourceUuid == "" {
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("daemonset", dsname.Str()))
 		}
-		resourceType = "daemonset" /// namespace event hanbdling
+		resourceType = "daemonset"
 	} else {
 		if resourceUuid = kp.redisConfig.ClusterUid; resourceUuid == "" {
 			kp.logger.Debug("opsramp resourceuuid not found", zap.Any("clustername", kp.redisConfig.ClusterName))
@@ -444,6 +444,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingPodMoid(ctx context.Context, 
 	var found bool
 
 	if namespace, found = resource.Attributes().Get("k8s.namespace.name"); !found {
+		op.logger.Debug("k8s.namespace.name not found in resource attributes hence not able to get resource uuid using pod moid")
 		return
 	}
 	if podname, found = resource.Attributes().Get("k8s.pod.name"); !found {
@@ -473,6 +474,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingWorkloadMoid(ctx context.Cont
 	var found bool
 
 	if namespace, found = resource.Attributes().Get("k8s.namespace.name"); !found {
+		op.logger.Debug("k8s.namespace.name not found in resource attributes hence not able to get resource uuid using workload moid")
 		return
 	}
 
@@ -501,6 +503,7 @@ func (op *kubernetesprocessor) GetResourceUuidUsingResourceNodeMoid(ctx context.
 	var nodename pcommon.Value
 	var found bool
 	if nodename, found = resource.Attributes().Get("k8s.node.name"); !found {
+		op.logger.Debug("k8s.node.name not found in resource attributes hence not able to get resource uuid using node moid")
 		return
 	}
 
