@@ -379,7 +379,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 			// Histograms that comes with samples are considered as classic histograms and are not supported.
 			if len(ts.Samples) == 0 {
-				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
+				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts, &stats)
 			}
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
@@ -421,13 +421,14 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 		attributes := dp.Attributes()
 		extractAttributes(ls).CopyTo(attributes)
 	}
+	stats.Samples += len(ts.Samples)
 }
 
 func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	for _, histogram := range ts.Histograms {
 		dp := datapoints.AppendEmpty()
 		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
@@ -474,6 +475,7 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		}
 
 		attributes := dp.Attributes()
+		stats.Histograms++
 		extractAttributes(ls).CopyTo(attributes)
 	}
 }

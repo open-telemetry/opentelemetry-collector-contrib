@@ -594,6 +594,12 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
 			expectedMetrics: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
@@ -704,7 +710,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return metrics
 			}(),
-			expectedStats: remote.WriteResponseStats{},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "classic histogram - should be dropped",
@@ -734,6 +745,12 @@ func TestTranslateV2(t *testing.T) {
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 					},
 				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
 			},
 			expectedMetrics: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()
