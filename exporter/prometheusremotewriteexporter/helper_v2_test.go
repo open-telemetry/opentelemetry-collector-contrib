@@ -50,7 +50,7 @@ func Test_batchTimeSeriesV2(t *testing.T) {
 		{
 			"two_requests",
 			tsMap3,
-			150,
+			170,
 			2,
 			false,
 		},
