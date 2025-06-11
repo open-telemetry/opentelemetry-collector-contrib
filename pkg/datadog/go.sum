@@ -136,6 +136,8 @@ github.com/DataDog/datadog-agent/pkg/util/fxutil v0.66.1 h1:f6Oq+xyBuYj/u00X9Iuv
 github.com/DataDog/datadog-agent/pkg/util/fxutil v0.66.1/go.mod h1:Ct7RWfLYL3YC/lqOsl2cC3/hp1nKGHpuvZ0fFvBaCEY=
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.1 h1:jkLeNKcdhumN10yUnmdhrZy4Mdyx1RC8dUIPiAu0nNU=
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.1/go.mod h1:BM5wWuxM0Cr9Z/TXICBBQPTyDzm/tACLERoG+64AmSI=
+github.com/DataDog/datadog-agent/pkg/util/http v0.66.1 h1:/D7F/O3ANwk+3EP/dOcckmxi6x8sofdVyyj3ofWL/wE=
+github.com/DataDog/datadog-agent/pkg/util/http v0.66.1/go.mod h1:dGpIYtb60Dmzt56p7TL0OhVJALdfVzZAH5N38zquXFY=
 github.com/DataDog/datadog-agent/pkg/util/json v0.66.1 h1:FbPisjDaIKm3IR5e0vLFTOwBIUyt5nKPZrVaZ6PHMqU=
 github.com/DataDog/datadog-agent/pkg/util/json v0.66.1/go.mod h1:S8PH94Gt+BsYWNbMwfYII9vnwohypmkf5EnqdwBsdP0=
 github.com/DataDog/datadog-agent/pkg/util/log v0.66.1 h1:QE97RJCDO2ZplOqlQM2Oq3S/JKDpI3okdpj+y6rmncU=
