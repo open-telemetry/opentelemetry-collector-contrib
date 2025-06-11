@@ -175,7 +175,7 @@ func (f *transformProcessorFactory) createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 	if f.defaultSpanEventFunctionsOverridden || f.defaultSpanFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL traces functions have been registered in the \"transform\" processor",
+		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"transform\" processor",
 			zap.Bool("span", f.defaultSpanFunctionsOverridden),
 			zap.Bool("spanevent", f.defaultSpanEventFunctionsOverridden),
 		)
