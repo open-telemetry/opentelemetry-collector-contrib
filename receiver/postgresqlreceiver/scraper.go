@@ -39,12 +39,13 @@ var separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 type postgreSQLScraper struct {
-	logger        *zap.Logger
-	config        *Config
-	clientFactory postgreSQLClientFactory
-	mb            *metadata.MetricsBuilder
-	excludes      map[string]struct{}
-	cache         *lru.Cache[string, float64]
+	logger               *zap.Logger
+	config               *Config
+	clientFactory        postgreSQLClientFactory
+	mb                   *metadata.MetricsBuilder
+	excludes             map[string]struct{}
+	cache                *lru.Cache[string, float64]
+	newestQueryTimeStamp float64
 	// if enabled, uses a separated attribute for the schema
 	separateSchemaAttr bool
 	queryPlanCache     *expirable.LRU[string, string]
@@ -216,7 +217,8 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, logRecords *plog.LogRecordSlice, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, err := dbClient.getQuerySamples(ctx, limit, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimeStamp, logger)
+	p.newestQueryTimeStamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
 		return
