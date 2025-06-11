@@ -106,17 +106,20 @@ func TestEmptyScrape(t *testing.T) {
 func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
 		removeServerResourceAttributeFeatureGate bool
+		name                                     string
 	}{
 		{
+			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate on",
 			removeServerResourceAttributeFeatureGate: true,
 		},
 		{
+			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate off",
 			removeServerResourceAttributeFeatureGate: false,
 		},
 	}
 
 	for _, test := range tests {
-		t.Run("TestSuccessfulScrape/"+strconv.FormatBool(test.removeServerResourceAttributeFeatureGate), func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			testutil.SetFeatureGateForTest(t, removeServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
 			cfg := createDefaultConfig().(*Config)
 			cfg.Username = "sa"
