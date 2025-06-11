@@ -47,6 +47,9 @@ type forwarderWithLifecycle interface {
 // Compile-time check to ensure DefaultForwarder implements ForwarderWithLifecycle
 var _ forwarderWithLifecycle = (*defaultforwarder.DefaultForwarder)(nil)
 
+// Compile-time check to ensure datadogSerializer implements SerializerWithForwarder
+var _ SerializerWithForwarder = (*datadogSerializer)(nil)
+
 // datadogSerializer is a concrete implementation of SerializerWithForwarder that wraps
 // a MetricSerializer and provides access to the underlying forwarder's lifecycle methods
 type datadogSerializer struct {
