@@ -793,9 +793,6 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
-	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
-	// in this query, we should only gather query after 8:15
 	if err := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimeStamp": newestQueryTimeStamp,
