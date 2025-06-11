@@ -484,28 +484,24 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 	serializer := NewSerializerComponent(configComponent, zlog, "test-hostname")
 	require.NotNil(t, serializer)
 
-	// Test that it implements SerializerWithForwarder
-	serializerWithForwarder, ok := serializer.(SerializerWithForwarder)
-	require.True(t, ok, "Expected serializer to implement SerializerWithForwarder interface")
-
 	// Test initial state - should be stopped
-	assert.Equal(t, defaultforwarder.Stopped, serializerWithForwarder.State())
+	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
 
 	// Test Start method
-	err = serializerWithForwarder.Start()
+	err = serializer.Start()
 	assert.NoError(t, err, "Start should succeed")
-	assert.Equal(t, defaultforwarder.Started, serializerWithForwarder.State())
+	assert.Equal(t, defaultforwarder.Started, serializer.State())
 
 	// Test that we can call Start again (should return error or be idempotent)
-	err = serializerWithForwarder.Start()
+	err = serializer.Start()
 	assert.Error(t, err, "Starting an already started forwarder should return an error")
 
 	// Test Stop method
-	serializerWithForwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, serializerWithForwarder.State())
+	serializer.Stop()
+	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
 
 	// Test that we can stop again (should be safe)
-	serializerWithForwarder.Stop() // Should not panic
+	serializer.Stop() // Should not panic
 }
 
 func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
