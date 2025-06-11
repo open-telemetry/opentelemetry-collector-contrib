@@ -853,16 +853,16 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 				errs = append(errs, err)
 			}
 		}
-		_query_start_timestamp := float64(0)
+		_queryStartTimestamp := float64(0)
 		if row["_query_start_timestamp"] != "" {
-			_query_start_timestamp, err = strconv.ParseFloat(row["_query_start_timestamp"], 64)
+			_queryStartTimestamp, err = strconv.ParseFloat(row["_query_start_timestamp"], 64)
 			if err != nil {
 				logger.Warn("failed to convert _query_start_timestamp", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
-		if _query_start_timestamp > newestQueryTimeStamp {
-			newestQueryTimeStamp = _query_start_timestamp
+		if _queryStartTimestamp > newestQueryTimeStamp {
+			newestQueryTimeStamp = _queryStartTimestamp
 		}
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row["query"])
