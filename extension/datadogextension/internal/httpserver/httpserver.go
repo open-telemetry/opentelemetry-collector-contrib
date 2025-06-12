@@ -9,14 +9,13 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/service"
+	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
@@ -26,51 +25,51 @@ var nowFunc = time.Now
 // Server provides local metadata server functionality (display the otel_collector payload locally) as well as
 // functions to serialize and export this metadata to Datadog backend.
 type Server struct {
-	server     *http.Server
-	logger     *zap.Logger
+	// server is used to respond to local metadata requests
+	server *http.Server
+	// logger is passed from the extension to allow logging
+	logger *zap.Logger
+	// serializer is a datadog-agent component used to forward payloads to Datadog backend
 	serializer agentcomponents.SerializerWithForwarder
-	// config is the httpserver configuration values
+	// config contains the httpserver configuration values
 	config *Config
 
-	// hostname and uuid are required to send the payload to Datadog
-	hostname string
-	uuid     string
+	// payload is the metadata to send to Datadog backend
+	// TODO: support generic payloads
+	payload payload.OtelCollectorPayload
 
-	// moduleInfo is a list of configured modules available to collector
-	moduleInfo *service.ModuleInfos
-	// collectorConfig is the full configuration for the collector, usually received by NotifyConfig interface
-	collectorConfig *confmap.Conf
-	// otelCollectorPayload is the collector metadata required to send to Datadog backend
-	otelCollectorPayload *payload.OtelCollector
+	// mu protects concurrent access to the serializer
+	// Note: Only protects serializer operations, not field reads since they're set once during initialization
+	mu sync.Mutex
 }
 
-// NewServer creates a new HTTP server instance
+// NewServer creates a new HTTP server instance.
+// It should be called after NotifyConfig has received full configuration.
+// TODO: support generic payloads
 func NewServer(
 	logger *zap.Logger,
-	config *Config,
 	s agentcomponents.SerializerWithForwarder,
-	hs string,
-	hn string,
+	config *Config,
+	hostname string,
 	UUID string,
-	componentstatus map[string]any,
-	moduleinfo *service.ModuleInfos,
-	collectorconfig *confmap.Conf,
-	collectorpayload *payload.OtelCollector,
+	p payload.OtelCollector,
 ) *Server {
+	oc := payload.OtelCollectorPayload{
+		Hostname:  hostname,
+		Timestamp: nowFunc().UnixNano(),
+		Metadata:  p,
+		UUID:      UUID,
+	}
 	srv := &Server{
-		logger:               logger,
-		serializer:           s,
-		config:               config,
-		hostname:             hn,
-		uuid:                 UUID,
-		moduleInfo:           moduleinfo,
-		collectorConfig:      collectorconfig,
-		otelCollectorPayload: collectorpayload,
+		logger:     logger,
+		serializer: s,
+		config:     config,
+		payload:    oc,
 	}
 	return srv
 }
 
-// Start starts the HTTP server and begins sending payloads periodically
+// Start starts the HTTP server and begins sending payloads periodically.
 func (s *Server) Start() {
 	// Create a mux to handle only the specific path
 	mux := http.NewServeMux()
@@ -94,7 +93,7 @@ func (s *Server) Start() {
 	s.logger.Info("HTTP Server started at " + s.config.Endpoint + s.config.Path)
 }
 
-// Stop shuts down the HTTP server
+// Stop shuts down the HTTP server, pass a context to allow for cancellation.
 func (s *Server) Stop(ctx context.Context) {
 	if s.server != nil {
 		// Create a channel to signal shutdown completion
@@ -102,10 +101,10 @@ func (s *Server) Stop(ctx context.Context) {
 
 		// Start shutdown in a goroutine
 		go func() {
+			defer close(shutdownDone) // Ensure channel is always closed
 			if err := s.server.Shutdown(ctx); err != nil {
 				s.logger.Error("Failed to shutdown HTTP server", zap.Error(err))
 			}
-			close(shutdownDone)
 		}()
 
 		// Wait for either shutdown completion or context cancellation
@@ -115,51 +114,36 @@ func (s *Server) Stop(ctx context.Context) {
 		case <-ctx.Done():
 			// Context was cancelled, log and continue
 			s.logger.Warn("Context cancelled while waiting for server shutdown")
-			close(shutdownDone)
+			// Wait for the goroutine to finish and close the channel
+			<-shutdownDone
 		}
 	}
 }
 
-// PrepareAndSendFleetAutomationPayloads prepares and sends the fleet automation payloads using Server's handlerDeps
-func (s *Server) PrepareAndSendFleetAutomationPayloads() (*payload.OtelCollector, error) {
-	logger := s.logger
-	otelCollectorPayload := *s.otelCollectorPayload
-
-	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(*s.moduleInfo, s.collectorConfig)
-	if err != nil {
-		logger.Error("Failed to populate full components JSON", zap.Error(err))
-	}
-	activeComponents, err := componentchecker.PopulateActiveComponents(s.collectorConfig, moduleInfoJSON)
-	if err != nil {
-		logger.Error("Failed to populate active components JSON", zap.Error(err))
-	}
-	// add remaining data to otelCollectorPayload
-	otelCollectorPayload.FullComponents = moduleInfoJSON.GetFullComponentsList()
-	if activeComponents != nil {
-		otelCollectorPayload.ActiveComponents = *activeComponents
-	}
-
-	oc := payload.OtelCollectorPayload{
-		Hostname:  s.hostname,
-		Timestamp: nowFunc().UnixNano(),
-		Metadata:  otelCollectorPayload,
-		UUID:      s.uuid,
-	}
+// SendPayload prepares and sends the fleet automation payloads using Server's handlerDeps
+// TODO: support generic payloads
+func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
+	// Get current time for payload
+	s.payload.Timestamp = nowFunc().UnixNano()
 
 	// Use datadog-agent serializer to send these payloads
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if s.serializer.State() != defaultforwarder.Started {
-		return nil, fmt.Errorf("forwarder is not started, extension cannot send payloads to Datadog: %w", err)
+		return nil, fmt.Errorf("forwarder is not started, extension cannot send payloads to Datadog")
 	}
-	err = s.serializer.SendMetadata(&oc)
+
+	err := s.serializer.SendMetadata(&s.payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send otel_collector payload: %w", err)
+		return nil, fmt.Errorf("failed to send payload to Datadog: %w", err)
 	}
-	return &otelCollectorPayload, nil
+	return &s.payload, nil
 }
 
 // HandleMetadata writes the metadata payloads to the response writer and sends them to the Datadog backend
 func (s *Server) HandleMetadata(w http.ResponseWriter, r *http.Request) {
-	fullPayload, err := s.PrepareAndSendFleetAutomationPayloads()
+	fullPayload, err := s.SendPayload()
 	if err != nil {
 		s.logger.Error("Failed to prepare and send fleet automation payload", zap.Error(err))
 		if w != nil {
