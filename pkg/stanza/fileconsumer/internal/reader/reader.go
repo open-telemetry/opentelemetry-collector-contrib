@@ -220,7 +220,7 @@ func (r *Reader) readContents(ctx context.Context) {
 	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc)
 
 	tokenBodies := make([][]byte, r.maxBatchSize)
-	tokenOffsets := make([]int64, r.maxBatchSize)
+	tokenOffsets := make([]int64, r.maxBatchSize+1)
 
 	numTokensBatched := 0
 	tokenOffsets[0] = r.Offset
