@@ -16,18 +16,18 @@ import (
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []ObjectConfig{
+	cfg.(*Config).PerfCounters = []objectConfig{
 		{
 			Object:   "object",
-			Counters: []counterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
+			Counters: []counterConfig{{Name: "counter", metricRep: metricRep{Name: "metric"}}},
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+	cfg.(*Config).MetricMetaData = map[string]metricConfig{
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge:       GaugeMetric{},
+			Gauge:       gaugeMetric{},
 		},
 	}
 	mReceiver, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
