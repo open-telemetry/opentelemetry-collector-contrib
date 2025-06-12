@@ -40,6 +40,15 @@ func TestNew_S3AccessLog(t *testing.T) {
 	require.ErrorContains(t, err, `failed to unmarshal logs as "s3_access_log" format`)
 }
 
+func TestNew_WAFLog(t *testing.T) {
+	e, err := newExtension(&Config{Format: formatWAFLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.NoError(t, err)
+	require.NotNil(t, e)
+
+	_, err = e.UnmarshalLogs([]byte("invalid"))
+	require.ErrorContains(t, err, `failed to unmarshal logs as "waf_log" format`)
+}
+
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)
