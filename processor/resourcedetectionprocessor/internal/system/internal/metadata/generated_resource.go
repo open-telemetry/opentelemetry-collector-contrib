@@ -140,6 +140,20 @@ func (rb *ResourceBuilder) SetOsVersion(val string) {
 	}
 }
 
+// SetSystemCPUCoreID sets provided value as "system.cpu.core.id" attribute.
+func (rb *ResourceBuilder) SetSystemCPUCoreID(val string) {
+	if rb.config.SystemCPUCoreID.Enabled {
+		rb.res.Attributes().PutStr("system.cpu.core.id", val)
+	}
+}
+
+// SetSystemCPUSocketID sets provided value as "system.cpu.socket.id" attribute.
+func (rb *ResourceBuilder) SetSystemCPUSocketID(val string) {
+	if rb.config.SystemCPUSocketID.Enabled {
+		rb.res.Attributes().PutStr("system.cpu.socket.id", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

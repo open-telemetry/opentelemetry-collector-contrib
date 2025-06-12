@@ -44,6 +44,8 @@ type ResourceAttributesConfig struct {
 	OsName             ResourceAttributeConfig `mapstructure:"os.name"`
 	OsType             ResourceAttributeConfig `mapstructure:"os.type"`
 	OsVersion          ResourceAttributeConfig `mapstructure:"os.version"`
+	SystemCPUCoreID    ResourceAttributeConfig `mapstructure:"system.cpu.core.id"`
+	SystemCPUSocketID  ResourceAttributeConfig `mapstructure:"system.cpu.socket.id"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -97,6 +99,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OsVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		SystemCPUCoreID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		SystemCPUSocketID: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}

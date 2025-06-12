@@ -25,3 +25,5 @@
 | os.name | The os.name | Any Str | false |
 | os.type | The os.type | Any Str | true |
 | os.version | The os.version | Any Str | false |
+| system.cpu.core.id | The system.cpu.core.id | Any Str | false |
+| system.cpu.socket.id | The system.cpu.socket.id | Any Str | false |
