@@ -1601,7 +1601,7 @@ service:
 
 		s.agentDescription = agentDesc
 
-		s.loadLastRecvdRemoteConfig()
+		s.loadRemoteConfig()
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
