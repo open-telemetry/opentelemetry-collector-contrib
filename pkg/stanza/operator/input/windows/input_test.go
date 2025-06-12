@@ -18,6 +18,8 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/sys/windows"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -210,4 +212,135 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	// Verify that a warning log was generated
 	require.Equal(t, 1, logs.Len())
 	assert.Contains(t, logs.All()[0].Message, "Encountered RPC_S_INVALID_BOUND")
+}
+
+// TestInputIncludeLogRecordOriginal tests that the log.record.original attribute is added when include_log_record_original is true
+func TestInputIncludeLogRecordOriginal(t *testing.T) {
+	input := newTestInput()
+	input.includeLogRecordOriginal = true
+	input.pollInterval = time.Second
+	input.buffer = NewBuffer() // Initialize buffer
+
+	// Create a mock event XML
+	eventXML := &EventXML{
+		Original: "<Event><System><Provider Name='TestProvider'/><EventID>1</EventID></System></Event>",
+		TimeCreated: TimeCreated{
+			SystemTime: "2024-01-01T00:00:00Z",
+		},
+	}
+
+	ctx := context.Background()
+	persister := testutil.NewMockPersister("")
+	fake := testutil.NewFakeOutput(t)
+	input.OutputOperators = []operator.Operator{fake}
+
+	err := input.Start(persister)
+	require.NoError(t, err)
+
+	err = input.sendEvent(ctx, eventXML)
+	require.NoError(t, err)
+
+	expectedEntry := &entry.Entry{
+		Timestamp: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Body: map[string]any{
+			"channel":    "",
+			"computer":   "",
+			"event_data": map[string]any{},
+			"event_id": map[string]any{
+				"id":         uint32(0),
+				"qualifiers": uint16(0),
+			},
+			"keywords": []string(nil),
+			"level":    "",
+			"message":  "",
+			"opcode":   "",
+			"provider": map[string]any{
+				"event_source": "",
+				"guid":         "",
+				"name":         "",
+			},
+			"record_id":   uint64(0),
+			"system_time": "2024-01-01T00:00:00Z",
+			"task":        "",
+		},
+		Attributes: map[string]any{
+			"log.record.original": eventXML.Original,
+		},
+	}
+
+	select {
+	case actualEntry := <-fake.Received:
+		actualEntry.ObservedTimestamp = time.Time{}
+		assert.Equal(t, expectedEntry, actualEntry)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry")
+	}
+
+	err = input.Stop()
+	require.NoError(t, err)
+}
+
+// TestInputIncludeLogRecordOriginalFalse tests that the log.record.original attribute is not added when include_log_record_original is false
+func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
+	input := newTestInput()
+	input.includeLogRecordOriginal = false
+	input.pollInterval = time.Second
+	input.buffer = NewBuffer() // Initialize buffer
+
+	// Create a mock event XML
+	eventXML := &EventXML{
+		Original: "<Event><System><Provider Name='TestProvider'/><EventID>1</EventID></System></Event>",
+		TimeCreated: TimeCreated{
+			SystemTime: "2024-01-01T00:00:00Z",
+		},
+	}
+
+	ctx := context.Background()
+	persister := testutil.NewMockPersister("")
+	fake := testutil.NewFakeOutput(t)
+	input.OutputOperators = []operator.Operator{fake}
+
+	err := input.Start(persister)
+	require.NoError(t, err)
+
+	err = input.sendEvent(ctx, eventXML)
+	require.NoError(t, err)
+
+	expectedEntry := &entry.Entry{
+		Timestamp: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Body: map[string]any{
+			"channel":    "",
+			"computer":   "",
+			"event_data": map[string]any{},
+			"event_id": map[string]any{
+				"id":         uint32(0),
+				"qualifiers": uint16(0),
+			},
+			"keywords": []string(nil),
+			"level":    "",
+			"message":  "",
+			"opcode":   "",
+			"provider": map[string]any{
+				"event_source": "",
+				"guid":         "",
+				"name":         "",
+			},
+			"record_id":   uint64(0),
+			"system_time": "2024-01-01T00:00:00Z",
+			"task":        "",
+		},
+		Attributes: nil,
+	}
+
+	// Verify that log.record.original attribute does not exist
+	select {
+	case actualEntry := <-fake.Received:
+		actualEntry.ObservedTimestamp = time.Time{}
+		assert.Equal(t, expectedEntry, actualEntry)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry")
+	}
+
+	err = input.Stop()
+	require.NoError(t, err)
 }
