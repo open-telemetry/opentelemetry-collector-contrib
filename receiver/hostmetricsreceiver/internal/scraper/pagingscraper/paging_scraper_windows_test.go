@@ -187,16 +187,16 @@ func TestScrape_Errors(t *testing.T) {
 			for i := 0; i < metrics.Len(); i++ {
 				metric := metrics.At(i)
 				switch metric.Name() {
-				case "system.paging.faults":
+				case metadata.MetricsInfo.SystemPagingFaults.Name:
 					assert.Equal(t, defaultPageMajPerSec, metric.Sum().DataPoints().At(0).IntValue())
 					assert.Equal(t, defaultPageFaultsPerSec-defaultPageMajPerSec, metric.Sum().DataPoints().At(1).IntValue())
-				case "system.paging.operations":
+				case metadata.MetricsInfo.SystemPagingOperations.Name:
 					assert.Equal(t, defaultPageReadsPerSec, metric.Sum().DataPoints().At(0).IntValue())
 					assert.Equal(t, defaultPageWritesPerSec, metric.Sum().DataPoints().At(1).IntValue())
-				case "system.paging.usage":
+				case metadata.MetricsInfo.SystemPagingUsage.Name:
 					assert.Equal(t, test.expectedUsedValue, metric.Sum().DataPoints().At(0).IntValue())
 					assert.Equal(t, test.expectedFreeValue, metric.Sum().DataPoints().At(1).IntValue())
-				case "system.paging.utilization":
+				case metadata.MetricsInfo.SystemPagingUtilization.Name:
 					assert.Equal(t, test.expectedUtilizationUsedValue, metric.Gauge().DataPoints().At(0).DoubleValue())
 					assert.Equal(t, test.expectedUtilizationFreeValue, metric.Gauge().DataPoints().At(1).DoubleValue())
 				default:
@@ -222,9 +222,9 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 
 	// Expected metric names for paging scraper.
 	expectedMetrics := map[string]bool{
-		"system.paging.operations": false,
-		"system.paging.usage":      false,
-		"system.paging.faults":     false,
+		metadata.MetricsInfo.SystemPagingOperations.Name: false,
+		metadata.MetricsInfo.SystemPagingUsage.Name:      false,
+		metadata.MetricsInfo.SystemPagingFaults.Name:     false,
 	}
 
 	internal.AssertExpectedMetrics(t, expectedMetrics, metrics)
