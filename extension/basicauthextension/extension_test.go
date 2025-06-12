@@ -54,7 +54,7 @@ func TestBasicAuth_Valid(t *testing.T) {
 		require.NoError(t, err)
 	}
 	htpasswdFile := filepath.Join(t.TempDir(), ".htpasswd")
-	err := os.WriteFile(htpasswdFile, buf.Bytes(), 0644)
+	err := os.WriteFile(htpasswdFile, buf.Bytes(), 0o600)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -151,7 +151,7 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	t.Parallel()
 
 	htpasswdFile := filepath.Join(t.TempDir(), ".htpasswd")
-	err := os.WriteFile(htpasswdFile, []byte("username:fromfile"), 0644)
+	err := os.WriteFile(htpasswdFile, []byte("username:fromfile"), 0o600)
 	require.NoError(t, err)
 
 	ext, err := newServerAuthExtension(&Config{
