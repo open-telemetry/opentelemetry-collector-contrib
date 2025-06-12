@@ -23,7 +23,7 @@ const instanceLabelName = "instance"
 
 type perfCounterMetricWatcher struct {
 	winperfcounters.PerfCounterWatcher
-	MetricRep
+	metricRep
 	recreate bool
 }
 
@@ -67,11 +67,11 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 
 				watcher := perfCounterMetricWatcher{
 					PerfCounterWatcher: pcw,
-					MetricRep:          MetricRep{Name: pcw.Path()},
+					metricRep:          metricRep{Name: pcw.Path()},
 					recreate:           counterCfg.RecreateQuery,
 				}
-				if counterCfg.MetricRep.Name != "" {
-					watcher.Name = counterCfg.MetricRep.Name
+				if counterCfg.metricRep.Name != "" {
+					watcher.Name = counterCfg.metricRep.Name
 					if counterCfg.Attributes != nil {
 						watcher.Attributes = counterCfg.Attributes
 					}
@@ -111,7 +111,7 @@ func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, e
 		builtMetric.SetDescription(metricCfg.Description)
 		builtMetric.SetUnit(metricCfg.Unit)
 
-		if (metricCfg.Sum != SumMetric{}) {
+		if (metricCfg.Sum != sumMetric{}) {
 			builtMetric.SetEmptySum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
 			switch metricCfg.Sum.Aggregation {
@@ -202,7 +202,7 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	dp.SetDoubleValue(counterValue.Value)
 }
 
-func instancesFromConfig(oc ObjectConfig) []string {
+func instancesFromConfig(oc objectConfig) []string {
 	if len(oc.Instances) == 0 {
 		return []string{""}
 	}

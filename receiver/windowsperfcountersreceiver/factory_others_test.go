@@ -19,7 +19,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
+			Counters: []counterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
 		},
 	}
 

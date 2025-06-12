@@ -94,27 +94,27 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "Standard",
 			cfg: &Config{
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"cpu.idle": {
 						Description: "percentage of time CPU is idle.",
 						Unit:        "%",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 					"bytes.committed": {
 						Description: "number of bytes committed to memory",
 						Unit:        "By",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 					"processor.time": {
 						Description: "amount of time processor is busy",
 						Unit:        "%",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 				},
-				PerfCounters: []ObjectConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", MetricRep: MetricRep{Name: "bytes.committed"}}}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{Name: "% Idle Time", MetricRep: MetricRep{Name: "cpu.idle"}}}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{Name: "% Processor Time", MetricRep: MetricRep{Name: "processor.time"}}}},
+				PerfCounters: []objectConfig{
+					{Object: "Memory", Counters: []counterConfig{{Name: "Committed Bytes", metricRep: metricRep{Name: "bytes.committed"}}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []counterConfig{{Name: "% Idle Time", metricRep: metricRep{Name: "cpu.idle"}}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []counterConfig{{Name: "% Processor Time", metricRep: metricRep{Name: "processor.time"}}}},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
 			},
@@ -123,15 +123,15 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "SumMetric",
 			cfg: &Config{
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"bytes.committed": {
 						Description: "number of bytes committed to memory",
 						Unit:        "By",
-						Sum:         SumMetric{Aggregation: "cumulative", Monotonic: true},
+						Sum:         sumMetric{Aggregation: "cumulative", Monotonic: true},
 					},
 				},
-				PerfCounters: []ObjectConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", MetricRep: MetricRep{Name: "bytes.committed"}}}},
+				PerfCounters: []objectConfig{
+					{Object: "Memory", Counters: []counterConfig{{Name: "Committed Bytes", metricRep: metricRep{Name: "bytes.committed"}}}},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
 			},
@@ -140,8 +140,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "NoMetricDefinition",
 			cfg: &Config{
-				PerfCounters: []ObjectConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes"}}},
+				PerfCounters: []objectConfig{
+					{Object: "Memory", Counters: []counterConfig{{Name: "Committed Bytes"}}},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
 			},
@@ -150,14 +150,14 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "InvalidCounter",
 			cfg: &Config{
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Committed Bytes", MetricRep: MetricRep{Name: "Committed Bytes"}}},
+						Counters: []counterConfig{{Name: "Committed Bytes", metricRep: metricRep{Name: "Committed Bytes"}}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []CounterConfig{{Name: "Invalid Counter", MetricRep: MetricRep{Name: "invalid"}}},
+						Counters: []counterConfig{{Name: "Invalid Counter", metricRep: metricRep{Name: "invalid"}}},
 					},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
@@ -168,17 +168,17 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "NoMatchingInstance",
 			cfg: &Config{
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"no.matching.instance": {
 						Unit:  "%",
-						Gauge: GaugeMetric{},
+						Gauge: gaugeMetric{},
 					},
 				},
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:    ".NET CLR Memory",
 						Instances: []string{"NoMatchingInstance*"},
-						Counters:  []CounterConfig{{Name: "% Time in GC", MetricRep: MetricRep{Name: "no.matching.instance"}}},
+						Counters:  []counterConfig{{Name: "% Time in GC", metricRep: metricRep{Name: "no.matching.instance"}}},
 					},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
@@ -188,20 +188,20 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "MetricDefinedButNoScrapedValue",
 			cfg: &Config{
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"cpu.idle": {
 						Description: "percentage of time CPU is idle.",
 						Unit:        "%",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 					"no.counter": {
 						Description: "there is no counter or data for this metric",
 						Unit:        "By",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 				},
-				PerfCounters: []ObjectConfig{
-					{Object: "Processor", Instances: []string{"_Total"}, Counters: []CounterConfig{{Name: "% Idle Time", MetricRep: MetricRep{Name: "cpu.idle"}}}},
+				PerfCounters: []objectConfig{
+					{Object: "Processor", Instances: []string{"_Total"}, Counters: []counterConfig{{Name: "% Idle Time", metricRep: metricRep{Name: "cpu.idle"}}}},
 				},
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
 			},
@@ -262,57 +262,57 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 func TestInitWatchers(t *testing.T) {
 	testCases := []struct {
 		name          string
-		cfgs          []ObjectConfig
+		cfgs          []objectConfig
 		expectedErr   string
 		expectedPaths []string
 	}{
 		{
 			name: "basicPath",
-			cfgs: []ObjectConfig{
+			cfgs: []objectConfig{
 				{
 					Object:   "Memory",
-					Counters: []CounterConfig{{Name: "Committed Bytes"}},
+					Counters: []counterConfig{{Name: "Committed Bytes"}},
 				},
 			},
 			expectedPaths: []string{"\\Memory\\Committed Bytes"},
 		},
 		{
 			name: "multiplePaths",
-			cfgs: []ObjectConfig{
+			cfgs: []objectConfig{
 				{
 					Object:   "Memory",
-					Counters: []CounterConfig{{Name: "Committed Bytes"}},
+					Counters: []counterConfig{{Name: "Committed Bytes"}},
 				},
 				{
 					Object:   "Memory",
-					Counters: []CounterConfig{{Name: "Available Bytes"}},
+					Counters: []counterConfig{{Name: "Available Bytes"}},
 				},
 			},
 			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
 		},
 		{
 			name: "multipleIndividualCounters",
-			cfgs: []ObjectConfig{
+			cfgs: []objectConfig{
 				{
 					Object: "Memory",
-					Counters: []CounterConfig{
+					Counters: []counterConfig{
 						{Name: "Committed Bytes"},
 						{Name: "Available Bytes"},
 					},
 				},
 				{
 					Object:   "Memory",
-					Counters: []CounterConfig{},
+					Counters: []counterConfig{},
 				},
 			},
 			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
 		},
 		{
 			name: "invalidCounter",
-			cfgs: []ObjectConfig{
+			cfgs: []objectConfig{
 				{
 					Object:   "Broken",
-					Counters: []CounterConfig{{Name: "Broken Counter"}},
+					Counters: []counterConfig{{Name: "Broken Counter"}},
 				},
 			},
 
@@ -320,14 +320,14 @@ func TestInitWatchers(t *testing.T) {
 		},
 		{
 			name: "multipleInvalidCounters",
-			cfgs: []ObjectConfig{
+			cfgs: []objectConfig{
 				{
 					Object:   "Broken",
-					Counters: []CounterConfig{{Name: "Broken Counter"}},
+					Counters: []counterConfig{{Name: "Broken Counter"}},
 				},
 				{
 					Object:   "Broken part 2",
-					Counters: []CounterConfig{{Name: "Broken again"}},
+					Counters: []counterConfig{{Name: "Broken again"}},
 				},
 			},
 			expectedErr: "failed to create perf counter with path \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n; failed to create perf counter with path \\Broken part 2\\Broken again: The specified object was not found on the computer.\r\n",
@@ -358,11 +358,11 @@ func TestWatcherResetFailure(t *testing.T) {
 	}
 
 	cfg := Config{
-		PerfCounters: []ObjectConfig{
+		PerfCounters: []objectConfig{
 			{
-				Counters: []CounterConfig{
+				Counters: []counterConfig{
 					{
-						MetricRep: MetricRep{
+						metricRep: metricRep{
 							Name: "metric",
 						},
 						RecreateQuery: true,
@@ -370,7 +370,7 @@ func TestWatcherResetFailure(t *testing.T) {
 				},
 			},
 		},
-		MetricMetaData: map[string]MetricConfig{
+		MetricMetaData: map[string]metricConfig{
 			"metric": {Description: "description", Unit: "1"},
 		},
 	}
@@ -401,16 +401,16 @@ func TestScrape(t *testing.T) {
 		{
 			name: "metricsWithoutInstance",
 			cfg: Config{
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
-						Counters: []CounterConfig{
+						Counters: []counterConfig{
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric1",
 								},
 							},
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric2",
 									Attributes: map[string]string{
 										"test.attribute": "test-value",
@@ -420,7 +420,7 @@ func TestScrape(t *testing.T) {
 						},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric1": {Description: "metric1 description", Unit: "1"},
 					"metric2": {Description: "metric2 description", Unit: "2"},
 				},
@@ -433,16 +433,16 @@ func TestScrape(t *testing.T) {
 		{
 			name: "metricsWithInstance",
 			cfg: Config{
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
-						Counters: []CounterConfig{
+						Counters: []counterConfig{
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric1",
 								},
 							},
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric2",
 									Attributes: map[string]string{
 										"test.attribute": "test-value",
@@ -452,7 +452,7 @@ func TestScrape(t *testing.T) {
 						},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric1": {Description: "metric1 description", Unit: "1"},
 					"metric2": {Description: "metric2 description", Unit: "2"},
 				},
@@ -465,16 +465,16 @@ func TestScrape(t *testing.T) {
 		{
 			name: "metricsWithSingleCounterFailure",
 			cfg: Config{
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
-						Counters: []CounterConfig{
+						Counters: []counterConfig{
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric1",
 								},
 							},
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric2",
 									Attributes: map[string]string{
 										"test.attribute": "test-value",
@@ -482,14 +482,14 @@ func TestScrape(t *testing.T) {
 								},
 							},
 							{
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric3",
 								},
 							},
 						},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric1": {Description: "metric1 description", Unit: "1"},
 					"metric2": {Description: "metric2 description", Unit: "2"},
 					"metric3": {Description: "metric3 description", Unit: "3"},
@@ -549,8 +549,8 @@ func TestScrape(t *testing.T) {
 					}
 
 					metric := metrics.At(curMetricsNum)
-					assert.Equal(t, counterCfg.MetricRep.Name, metric.Name())
-					metricData := test.cfg.MetricMetaData[counterCfg.MetricRep.Name]
+					assert.Equal(t, counterCfg.metricRep.Name, metric.Name())
+					metricData := test.cfg.MetricMetaData[counterCfg.metricRep.Name]
 					assert.Equal(t, metricData.Description, metric.Description())
 					assert.Equal(t, metricData.Unit, metric.Unit())
 					dps := metric.Gauge().DataPoints()

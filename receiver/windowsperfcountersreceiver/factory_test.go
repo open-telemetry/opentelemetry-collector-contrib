@@ -26,18 +26,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	cfg.(*Config).PerfCounters = []ObjectConfig{
+	cfg.(*Config).PerfCounters = []objectConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
+			Counters: []counterConfig{{Name: "counter", metricRep: metricRep{Name: "metric"}}},
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+	cfg.(*Config).MetricMetaData = map[string]metricConfig{
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge:       GaugeMetric{},
+			Gauge:       gaugeMetric{},
 		},
 	}
 
@@ -47,18 +47,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []ObjectConfig{
+	cfg.(*Config).PerfCounters = []objectConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
+			Counters: []counterConfig{{Name: "counter", metricRep: metricRep{Name: "metric"}}},
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+	cfg.(*Config).MetricMetaData = map[string]metricConfig{
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge:       GaugeMetric{},
+			Gauge:       gaugeMetric{},
 		},
 	}
 	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -70,10 +70,10 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateTracesNoMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []ObjectConfig{
+	cfg.(*Config).PerfCounters = []objectConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter"}},
+			Counters: []counterConfig{{Name: "counter"}},
 		},
 	}
 	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -85,18 +85,18 @@ func TestCreateTracesNoMetrics(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []ObjectConfig{
+	cfg.(*Config).PerfCounters = []objectConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
+			Counters: []counterConfig{{Name: "counter", metricRep: metricRep{Name: "metric"}}},
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+	cfg.(*Config).MetricMetaData = map[string]metricConfig{
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge:       GaugeMetric{},
+			Gauge:       gaugeMetric{},
 		},
 	}
 

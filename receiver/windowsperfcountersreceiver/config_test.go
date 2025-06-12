@@ -32,19 +32,19 @@ func TestLoadConfig(t *testing.T) {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	counterConfig := CounterConfig{
+	ctrCfg := counterConfig{
 		Name: "counter1",
-		MetricRep: MetricRep{
+		metricRep: metricRep{
 			Name: "metric",
 		},
 	}
 	singleObject := createDefaultConfig()
-	singleObject.(*Config).PerfCounters = []ObjectConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
-	singleObject.(*Config).MetricMetaData = map[string]MetricConfig{
+	singleObject.(*Config).PerfCounters = []objectConfig{{Object: "object", Counters: []counterConfig{ctrCfg}}}
+	singleObject.(*Config).MetricMetaData = map[string]metricConfig{
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge:       GaugeMetric{},
+			Gauge:       gaugeMetric{},
 		},
 	}
 
@@ -64,34 +64,34 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:   "object1",
-						Counters: []CounterConfig{counterConfig},
+						Counters: []counterConfig{ctrCfg},
 					},
 					{
 						Object: "object2",
-						Counters: []CounterConfig{
-							counterConfig,
+						Counters: []counterConfig{
+							ctrCfg,
 							{
 								Name: "counter2",
-								MetricRep: MetricRep{
+								metricRep: metricRep{
 									Name: "metric2",
 								},
 							},
 						},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric": {
 						Description: "desc",
 						Unit:        "1",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 					"metric2": {
 						Description: "desc",
 						Unit:        "1",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 				},
 			},
@@ -103,10 +103,10 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1"}},
+						Counters: []counterConfig{{Name: "counter1"}},
 					},
 				},
 			},
@@ -118,17 +118,17 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1"}},
+						Counters: []counterConfig{{Name: "counter1"}},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric": {
 						Description: "desc",
 						Unit:        "1",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 				},
 			},
@@ -140,17 +140,17 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
+						Counters: []counterConfig{{Name: "counter1", metricRep: metricRep{Name: "metric"}}},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric": {
 						Description: "desc",
 						Unit:        "1",
-						Sum: SumMetric{
+						Sum: sumMetric{
 							Aggregation: "cumulative",
 							Monotonic:   false,
 						},
@@ -165,17 +165,17 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				PerfCounters: []ObjectConfig{
+				PerfCounters: []objectConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
+						Counters: []counterConfig{{Name: "counter1", metricRep: metricRep{Name: "metric"}}},
 					},
 				},
-				MetricMetaData: map[string]MetricConfig{
+				MetricMetaData: map[string]metricConfig{
 					"metric": {
 						Description: "desc",
 						Unit:        "1",
-						Gauge:       GaugeMetric{},
+						Gauge:       gaugeMetric{},
 					},
 				},
 			},

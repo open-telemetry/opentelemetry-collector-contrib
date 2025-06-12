@@ -15,40 +15,40 @@ import (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
-	PerfCounters   []ObjectConfig          `mapstructure:"perfcounters"`
+	MetricMetaData map[string]metricConfig `mapstructure:"metrics"`
+	PerfCounters   []objectConfig          `mapstructure:"perfcounters"`
 }
 
 // MetricsConfig defines the configuration for a metric to be created.
-type MetricConfig struct {
+type metricConfig struct {
 	Unit        string      `mapstructure:"unit"`
 	Description string      `mapstructure:"description"`
-	Gauge       GaugeMetric `mapstructure:"gauge"`
-	Sum         SumMetric   `mapstructure:"sum"`
+	Gauge       gaugeMetric `mapstructure:"gauge"`
+	Sum         sumMetric   `mapstructure:"sum"`
 }
 
-type GaugeMetric struct{}
+type gaugeMetric struct{}
 
-type SumMetric struct {
+type sumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	Monotonic   bool   `mapstructure:"monotonic"`
 }
 
-// ObjectConfig defines configuration for a perf counter object.
-type ObjectConfig struct {
+// objectConfig defines configuration for a perf counter object.
+type objectConfig struct {
 	Object    string          `mapstructure:"object"`
 	Instances []string        `mapstructure:"instances"`
-	Counters  []CounterConfig `mapstructure:"counters"`
+	Counters  []counterConfig `mapstructure:"counters"`
 }
 
-// CounterConfig defines the individual counter in an object.
-type CounterConfig struct {
+// counterConfig defines the individual counter in an object.
+type counterConfig struct {
 	Name          string `mapstructure:"name"`
-	MetricRep     `mapstructure:",squash"`
+	metricRep     `mapstructure:",squash"`
 	RecreateQuery bool `mapstructure:"recreate_query"`
 }
 
-type MetricRep struct {
+type metricRep struct {
 	Name       string            `mapstructure:"metric"`
 	Attributes map[string]string `mapstructure:"attributes"`
 }
@@ -69,8 +69,8 @@ func (c *Config) Validate() error {
 			metric.Unit = "1"
 		}
 
-		if (metric.Sum != SumMetric{}) {
-			if (metric.Gauge != GaugeMetric{}) {
+		if (metric.Sum != sumMetric{}) {
+			if (metric.Gauge != gaugeMetric{}) {
 				errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", name))
 			}
 
@@ -92,13 +92,13 @@ func (c *Config) Validate() error {
 		}
 
 		for _, counter := range pc.Counters {
-			if counter.MetricRep.Name == "" {
+			if counter.metricRep.Name == "" {
 				continue
 			}
 
 			foundMatchingMetric := false
 			for name := range c.MetricMetaData {
-				if counter.MetricRep.Name == name {
+				if counter.metricRep.Name == name {
 					foundMatchingMetric = true
 				}
 			}
