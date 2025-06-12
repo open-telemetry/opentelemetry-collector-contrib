@@ -6,12 +6,10 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"net"
 
-	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
-	oldconventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const removeOldSemconvFeatureGateID = "receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
@@ -45,27 +43,30 @@ func isDiscernibleHost(host string) bool {
 
 // CreateResource creates the resource data added to OTLP payloads.
 func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
+	/*
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
 	}
+	*/
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(conventions.AttributeServiceName, job)
-	if isDiscernibleHost(host) {
-		if !removeOldSemconvFeatureGate.IsEnabled() {
-			attrs.PutStr(oldconventions.AttributeNetHostName, host)
-		}
-		attrs.PutStr(conventions.AttributeServerAddress, host)
-	}
 	attrs.PutStr(conventions.AttributeServiceInstanceID, instance)
-	if !removeOldSemconvFeatureGate.IsEnabled() {
-		attrs.PutStr(conventions.AttributeNetHostPort, port)
-		attrs.PutStr(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
-	}
-	attrs.PutStr(conventions.AttributeServerPort, port)
-	attrs.PutStr(conventions.AttributeURLScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
-
+	/*
+		if isDiscernibleHost(host) {
+			if !removeOldSemconvFeatureGate.IsEnabled() {
+				attrs.PutStr(oldconventions.AttributeNetHostName, host)
+			}
+			attrs.PutStr(conventions.AttributeServerAddress, host)
+		}
+		if !removeOldSemconvFeatureGate.IsEnabled() {
+			attrs.PutStr(conventions.AttributeNetHostPort, port)
+			attrs.PutStr(conventions.AttributeHTTPScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+		}
+		attrs.PutStr(conventions.AttributeServerPort, port)
+		attrs.PutStr(conventions.AttributeURLScheme, serviceDiscoveryLabels.Get(model.SchemeLabel))
+	*/
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
 	return resource
