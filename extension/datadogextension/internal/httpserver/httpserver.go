@@ -36,8 +36,7 @@ type Server struct {
 	config *Config
 
 	// payload is the metadata to send to Datadog backend
-	// TODO: support generic payloads
-	payload payload.OtelCollectorPayload
+	payload marshaler.JSONMarshaler
 
 	// mu protects concurrent access to the serializer
 	// Note: Only protects serializer operations, not field reads since they're set once during initialization
@@ -55,7 +54,7 @@ func NewServer(
 	uuid string,
 	p payload.OtelCollector,
 ) *Server {
-	oc := payload.OtelCollectorPayload{
+	oc := &payload.OtelCollectorPayload{
 		Hostname:  hostname,
 		Timestamp: nowFunc().UnixNano(),
 		Metadata:  p,
@@ -65,14 +64,13 @@ func NewServer(
 		logger:     logger,
 		serializer: s,
 		config:     config,
-		payload:    oc,
+		payload:    oc, // store as interface
 	}
 	return srv
 }
 
 // Start starts the HTTP server and begins sending payloads periodically.
 func (s *Server) Start() {
-	// Create a mux to handle only the specific path
 	mux := http.NewServeMux()
 	mux.HandleFunc(s.config.Path, s.HandleMetadata)
 
@@ -97,10 +95,8 @@ func (s *Server) Start() {
 // Stop shuts down the HTTP server, pass a context to allow for cancellation.
 func (s *Server) Stop(ctx context.Context) {
 	if s.server != nil {
-		// Create a channel to signal shutdown completion
 		shutdownDone := make(chan struct{})
 
-		// Start shutdown in a goroutine
 		go func() {
 			defer close(shutdownDone) // Ensure channel is always closed
 			if err := s.server.Shutdown(ctx); err != nil {
@@ -108,14 +104,10 @@ func (s *Server) Stop(ctx context.Context) {
 			}
 		}()
 
-		// Wait for either shutdown completion or context cancellation
 		select {
 		case <-shutdownDone:
-			// Shutdown completed successfully
 		case <-ctx.Done():
-			// Context was cancelled, log and continue
 			s.logger.Warn("Context cancelled while waiting for server shutdown")
-			// Wait for the goroutine to finish and close the channel
 			<-shutdownDone
 		}
 	}
@@ -128,21 +120,26 @@ func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Get current time for payload
-	s.payload.Timestamp = nowFunc().UnixNano()
+	// Clone the payload to avoid data races
+	var payloadCopy marshaler.JSONMarshaler
+	if oc, ok := s.payload.(*payload.OtelCollectorPayload); ok {
+		tmp := *oc // shallow copy is sufficient since fields are value types or slices (which are not mutated)
+		tmp.Timestamp = nowFunc().UnixNano()
+		payloadCopy = &tmp
+	} else {
+		payloadCopy = s.payload
+	}
 
 	if s.serializer.State() != defaultforwarder.Started {
 		return nil, errors.New("forwarder is not started, extension cannot send payloads to Datadog")
 	}
 
-	err := s.serializer.SendMetadata(&s.payload)
+	err := s.serializer.SendMetadata(payloadCopy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send payload to Datadog: %w", err)
 	}
 
-	// Return a copy to avoid race conditions during JSON marshaling
-	payloadCopy := s.payload
-	return &payloadCopy, nil
+	return payloadCopy, nil
 }
 
 // HandleMetadata writes the metadata payloads to the response writer and sends them to the Datadog backend

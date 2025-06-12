@@ -286,7 +286,7 @@ func TestHandleMetadata(t *testing.T) {
 			srv := &Server{
 				logger:     logger,
 				serializer: serializer,
-				payload: payload.OtelCollectorPayload{
+				payload: &payload.OtelCollectorPayload{
 					Hostname: "test-hostname",
 					UUID:     "test-uuid",
 					Metadata: payload.OtelCollector{
@@ -349,7 +349,7 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	srv := &Server{
 		logger:     logger,
 		serializer: serializer,
-		payload: payload.OtelCollectorPayload{
+		payload: &payload.OtelCollectorPayload{
 			Metadata: payload.OtelCollector{
 				FullComponents:   []payload.CollectorModule{},
 				ActiveComponents: []payload.ServiceComponent{},
@@ -662,4 +662,89 @@ func TestServerStopConcurrency(t *testing.T) {
 	assert.LessOrEqual(t, errorLogs, numStops, "Should not have excessive error logs")
 
 	t.Logf("Completed %d concurrent Stop calls with %d error logs", numStops, errorLogs)
+}
+
+func TestServer_SendPayload(t *testing.T) {
+	logger := zap.NewNop()
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:0",
+		},
+		Path: "/test",
+	}
+	pl := payload.OtelCollector{}           // or fill as needed
+	serializer := &mockSerializer{state: 1} // 1 == defaultforwarder.Started
+	called := false
+	serializer.sendMetadataFunc = func(jm any) error {
+		called = true
+		return nil
+	}
+
+	server := NewServer(logger, serializer, config, "host", "uuid", pl)
+
+	result, err := server.SendPayload()
+	assert.NoError(t, err)
+	assert.True(t, called)
+	// Check that result is a *payload.OtelCollectorPayload
+	oc, ok := result.(*payload.OtelCollectorPayload)
+	assert.True(t, ok)
+	assert.Equal(t, "host", oc.Hostname)
+	assert.Equal(t, "uuid", oc.UUID)
+}
+
+func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
+	logger := zap.NewNop()
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:0",
+		},
+		Path: "/test",
+	}
+	pl := payload.OtelCollector{}
+	serializer := &mockSerializer{state: 0} // 0 != defaultforwarder.Started
+
+	server := NewServer(logger, serializer, config, "host", "uuid", pl)
+
+	result, err := server.SendPayload()
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "forwarder is not started")
+}
+
+func TestHandleMetadata_JSONMarshalError(t *testing.T) {
+	core, logs := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+	serializer := &mockSerializer{
+		sendMetadataFunc: func(any) error {
+			return nil
+		},
+	}
+	err := serializer.Start()
+	if err != nil {
+		t.Fatalf("Failed to start serializer: %v", err)
+	}
+
+	srv := &Server{
+		logger:     logger,
+		serializer: serializer,
+		payload:    &mockJSONErrorPayload{},
+	}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/metadata", nil)
+	r.Header.Set("Content-Type", "application/json")
+
+	srv.HandleMetadata(w, r)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "Failed to marshal collector payload\n", w.Body.String())
+
+	found := false
+	for _, log := range logs.All() {
+		if log.Message == "Failed to marshal collector payload for local http response" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Expected error log for marshal failure")
 }
