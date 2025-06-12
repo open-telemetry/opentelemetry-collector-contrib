@@ -123,12 +123,12 @@ func (s *Server) Stop(ctx context.Context) {
 // SendPayload prepares and sends the fleet automation payloads using Server's handlerDeps
 // TODO: support generic payloads
 func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
-	// Get current time for payload
-	s.payload.Timestamp = nowFunc().UnixNano()
-
 	// Use datadog-agent serializer to send these payloads
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// Get current time for payload
+	s.payload.Timestamp = nowFunc().UnixNano()
 
 	if s.serializer.State() != defaultforwarder.Started {
 		return nil, fmt.Errorf("forwarder is not started, extension cannot send payloads to Datadog")
@@ -138,7 +138,10 @@ func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to send payload to Datadog: %w", err)
 	}
-	return &s.payload, nil
+
+	// Return a copy to avoid race conditions during JSON marshalling
+	payloadCopy := s.payload
+	return &payloadCopy, nil
 }
 
 // HandleMetadata writes the metadata payloads to the response writer and sends them to the Datadog backend
@@ -153,6 +156,7 @@ func (s *Server) HandleMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Marshal the combined payload to JSON
+	// Note: fullPayload is already thread-safe since SendPayload returned a marshaler interface
 	jsonData, err := json.MarshalIndent(fullPayload, "", "  ")
 	if err != nil {
 		s.logger.Error("Failed to marshal collector payload for local http response", zap.Error(err))
