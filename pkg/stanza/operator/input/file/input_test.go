@@ -101,7 +101,7 @@ func TestReadExistingLogsFileRecordOffset(t *testing.T) {
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
-	writeString(t, temp, "01234567\n89abcdef\n")
+	writeString(t, temp, "   01234567   \n01234567 \n01234567")
 
 	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
@@ -112,7 +112,10 @@ func TestReadExistingLogsFileRecordOffset(t *testing.T) {
 	require.Equal(t, int64(0), e.Attributes[attrs.LogFileRecordOffset])
 
 	e = waitForOne(t, logReceived)
-	require.Equal(t, int64(8), e.Attributes[attrs.LogFileRecordOffset])
+	require.Equal(t, int64(15), e.Attributes[attrs.LogFileRecordOffset])
+
+	e = waitForOne(t, logReceived)
+	require.Equal(t, int64(25), e.Attributes[attrs.LogFileRecordOffset])
 }
 
 // AddFileRecordNumber tests that the `log.file.record_number` is correctly included
