@@ -4,10 +4,19 @@
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
+	"go.uber.org/zap"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -71,4 +80,54 @@ func TestConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExtensionWithProxyConfig(t *testing.T) {
+	// Create config with proxy settings
+	cfg := &Config{
+		ClientConfig: confighttp.ClientConfig{
+			ProxyURL: "http://proxy.example.com:8080",
+			Timeout:  30 * time.Second,
+			TLS: configtls.ClientConfig{
+				InsecureSkipVerify: true,
+			},
+		},
+		API: datadogconfig.APIConfig{
+			Key:              "test-api-key-12345",
+			Site:             "datadoghq.com",
+			FailOnInvalidKey: true,
+		},
+		Hostname: "test-host",
+	}
+
+	// Create extension with proxy config
+	set := extension.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}
+	hostProvider := &mockSourceProvider{
+		source: source.Source{
+			Kind:       source.HostnameKind,
+			Identifier: "test-host",
+		},
+	}
+	uuidProvider := &mockUUIDProvider{
+		mockUUID: "test-uuid",
+	}
+
+	ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	// Verify the extension has a serializer
+	serializer := ext.GetSerializer()
+	require.NotNil(t, serializer)
+
+	// Start and stop the extension to test lifecycle
+	err = ext.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	err = ext.Shutdown(context.Background())
+	require.NoError(t, err)
 }
