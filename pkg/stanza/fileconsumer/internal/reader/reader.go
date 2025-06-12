@@ -238,11 +238,12 @@ func (r *Reader) readContents(ctx context.Context) {
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, r.Offset)
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, s.Offsets())
 				if err != nil {
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
 				}
 				r.Offset = s.Pos()
+				s.ClearOffsets()
 			}
 			return
 		}
@@ -252,17 +253,19 @@ func (r *Reader) readContents(ctx context.Context) {
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
+			s.ClearOffsets()
 			continue
 		}
 		numTokensBatched++
 
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
-			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, r.Offset); err != nil {
+			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, s.Offsets()); err != nil {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			numTokensBatched = 0
 			r.Offset = s.Pos()
+			s.ClearOffsets()
 		}
 	}
 }
