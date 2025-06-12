@@ -5,10 +5,12 @@ package prometheusremotewriteexporter
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -164,11 +166,39 @@ func getSample(v float64, t int64) prompb.Sample {
 	}
 }
 
+func getSampleV2(v float64, t int64) writev2.Sample {
+	return writev2.Sample{
+		Value:     v,
+		Timestamp: t,
+	}
+}
+
 func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.TimeSeries {
 	return &prompb.TimeSeries{
 		Labels:  labels,
 		Samples: samples,
 	}
+}
+
+func getTimeSeriesV2(labels []prompb.Label, samples ...writev2.Sample) (*writev2.TimeSeries, writev2.SymbolsTable) {
+	symbolsTable := writev2.NewSymbolTable()
+	buf := make([]uint32, 0, len(labels)*2)
+	sort.Slice(labels, func(i, j int) bool {
+		return labels[i].Name < labels[j].Name
+	})
+
+	var off uint32
+	for _, label := range labels {
+		off = symbolsTable.Symbolize(label.Name)
+		buf = append(buf, off)
+		off = symbolsTable.Symbolize(label.Value)
+		buf = append(buf, off)
+	}
+
+	return &writev2.TimeSeries{
+		LabelsRefs: buf,
+		Samples:    samples,
+	}, symbolsTable
 }
 
 func getMetricsFromMetricList(metricList ...pmetric.Metric) pmetric.Metrics {
@@ -386,6 +416,14 @@ func getQuantiles(bounds []float64, values []float64) pmetric.SummaryDataPointVa
 
 func getTimeseriesMap(timeseries []*prompb.TimeSeries) map[string]*prompb.TimeSeries {
 	tsMap := make(map[string]*prompb.TimeSeries)
+	for i, v := range timeseries {
+		tsMap[fmt.Sprintf("%s%d", "timeseries_name", i)] = v
+	}
+	return tsMap
+}
+
+func getTimeseriesMapV2(timeseries []*writev2.TimeSeries) map[string]*writev2.TimeSeries {
+	tsMap := make(map[string]*writev2.TimeSeries)
 	for i, v := range timeseries {
 		tsMap[fmt.Sprintf("%s%d", "timeseries_name", i)] = v
 	}

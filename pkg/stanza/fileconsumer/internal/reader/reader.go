@@ -324,7 +324,7 @@ func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return false
 	}
@@ -347,7 +347,7 @@ func (r *Reader) updateFingerprint() {
 	if r.file == nil {
 		return
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return
 	}
