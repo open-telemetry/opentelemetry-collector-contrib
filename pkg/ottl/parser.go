@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -273,13 +274,13 @@ func (p *Parser[K]) prependContextToValueExpressionPaths(context string, expr st
 }
 
 var (
-	parser                = newParser[parsedStatement]()
-	conditionParser       = newParser[booleanExpression]()
-	valueExpressionParser = newParser[value]()
+	parser                = sync.OnceValue(newParser[parsedStatement])
+	conditionParser       = sync.OnceValue(newParser[booleanExpression])
+	valueExpressionParser = sync.OnceValue(newParser[value])
 )
 
 func parseStatement(raw string) (*parsedStatement, error) {
-	parsed, err := parser.ParseString("", raw)
+	parsed, err := parser().ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
 	}
@@ -292,7 +293,7 @@ func parseStatement(raw string) (*parsedStatement, error) {
 }
 
 func parseCondition(raw string) (*booleanExpression, error) {
-	parsed, err := conditionParser.ParseString("", raw)
+	parsed, err := conditionParser().ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
@@ -305,7 +306,7 @@ func parseCondition(raw string) (*booleanExpression, error) {
 }
 
 func parseValueExpression(raw string) (*value, error) {
-	parsed, err := valueExpressionParser.ParseString("", raw)
+	parsed, err := valueExpressionParser().ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("expression has invalid syntax: %w", err)
 	}

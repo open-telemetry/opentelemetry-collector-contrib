@@ -533,6 +533,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -629,6 +633,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -792,6 +800,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -1493,6 +1505,10 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
             processors:
                 - batch:
                     exporter:
@@ -1585,6 +1601,7 @@ service:
 
 		s.agentDescription = agentDesc
 
+		s.loadRemoteConfig()
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 

@@ -33,7 +33,7 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 	typeLog := zap.String("type", set.ID.Type().String())
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
-	awsConfig, err := awsutil.GetAWSConfig(logger, &cfg.AWSSessionSettings)
+	awsConfig, err := awsutil.GetAWSConfig(ctx, logger, &cfg.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
