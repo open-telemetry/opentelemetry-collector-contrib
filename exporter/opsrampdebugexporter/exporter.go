@@ -23,6 +23,7 @@ import (
 var (
 	LogsOpsRampChannel   = make(chan plog.Logs, 1000)
 	EventsOpsRampChannel = make(chan plog.Logs, 100)
+	MetricsOpsRampChannel = make(chan *pmetric.Metrics, 1000)
 )
 
 type debugExporter struct {
@@ -76,6 +77,14 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 		zap.Int("resource metrics", md.ResourceMetrics().Len()),
 		zap.Int("metrics", md.MetricCount()),
 		zap.Int("data points", md.DataPointCount()))
+
+	select {
+	case MetricsOpsRampChannel <- &md:
+		s.logger.Info("#######opsrampdebugexporter - pushMetrics: Successfully sent to channel")
+	default:
+		s.logger.Info("#######opsrampdebugexporter - pushMetrics: failed sent to channel")
+	}
+	
 	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
