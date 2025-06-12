@@ -257,7 +257,7 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 			return pcommon.Slice{}, err
 		}
 		return s, nil
-		// Handle common slice types returned by OTTL functions
+	// Handle common slice types returned by OTTL functions
 	case []string:
 		return newPSliceFrom(v, func(target *pcommon.Value, value string) { target.SetStr(value) })
 	case []int:
