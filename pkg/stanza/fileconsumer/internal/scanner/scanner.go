@@ -15,36 +15,26 @@ const DefaultBufferSize = 16 * 1024
 
 // Scanner is a scanner that maintains position
 type Scanner struct {
-	offsets []int64
+	pos int64
 	*bufio.Scanner
 }
 
 // New creates a new positional scanner
 func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc) *Scanner {
-	s := &Scanner{Scanner: bufio.NewScanner(r), offsets: []int64{startOffset}}
+	s := &Scanner{Scanner: bufio.NewScanner(r), pos: startOffset}
 	s.Buffer(buf, maxLogSize)
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
-		if advance > 0 {
-			s.offsets = append(s.offsets, s.offsets[len(s.offsets)-1]+int64(advance))
-		}
+		s.pos += int64(advance)
 		return
 	}
 	s.Split(scanFunc)
 	return s
 }
 
-func (s *Scanner) Offsets() []int64 {
-	return s.offsets
-}
-
 // Pos returns the current position of the scanner
 func (s *Scanner) Pos() int64 {
-	return s.offsets[len(s.offsets)-1]
-}
-
-func (s *Scanner) ClearOffsets() {
-	s.offsets = s.offsets[len(s.offsets)-1:]
+	return s.pos
 }
 
 func (s *Scanner) Error() error {
