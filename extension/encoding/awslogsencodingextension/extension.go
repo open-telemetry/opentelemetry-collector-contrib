@@ -30,7 +30,7 @@ type encodingExtension struct {
 	format      string
 	gzipPool    sync.Pool
 
-	// if format is VPC, then content come in parquet or
+	// if format is VPC, then content can be in parquet or
 	// gzip encoding
 	vpcFormat string
 }
