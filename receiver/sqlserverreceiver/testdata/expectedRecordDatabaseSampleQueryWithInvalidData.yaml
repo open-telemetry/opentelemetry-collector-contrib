@@ -24,7 +24,7 @@ resourceLogs:
                   stringValue: master
               - key: db.query.text
                 value:
-                  stringValue: SELECT cpu_time AS [CPU Usage (time)]
+                  stringValue: ""
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
