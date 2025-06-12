@@ -352,7 +352,7 @@ func TestWithProxy(t *testing.T) {
 	tests := []struct {
 		name            string
 		envVars         map[string]string
-		proxyUrl        string
+		proxyURL        string
 		expectedHTTP    string
 		expectedHTTPS   string
 		expectedNoProxy []any
@@ -367,7 +367,7 @@ func TestWithProxy(t *testing.T) {
 			expectedHTTP:    "http://proxy.example.com:8080",
 			expectedHTTPS:   "https://secure-proxy.example.com:8443",
 			expectedNoProxy: []any{"localhost", "127.0.0.1", ".local"},
-			proxyUrl:        "",
+			proxyURL:        "",
 		},
 		{
 			name: "only HTTP_PROXY set",
@@ -377,7 +377,7 @@ func TestWithProxy(t *testing.T) {
 			expectedHTTP:    "http://proxy.example.com:3128",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{""},
-			proxyUrl:        "",
+			proxyURL:        "",
 		},
 		{
 			name:            "no proxy environment variables",
@@ -385,7 +385,7 @@ func TestWithProxy(t *testing.T) {
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{""},
-			proxyUrl:        "",
+			proxyURL:        "",
 		},
 		{
 			name: "single NO_PROXY entry",
@@ -395,7 +395,7 @@ func TestWithProxy(t *testing.T) {
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{"internal.company.com"},
-			proxyUrl:        "",
+			proxyURL:        "",
 		},
 		{
 			name:            "only proxy_url set",
@@ -403,7 +403,7 @@ func TestWithProxy(t *testing.T) {
 			expectedHTTP:    "http://proxyurl.example.com:3128",
 			expectedHTTPS:   "http://proxyurl.example.com:3128",
 			expectedNoProxy: []any{""},
-			proxyUrl:        "http://proxyurl.example.com:3128",
+			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 		{
 			name: "both proxy_url and proxy env vars set",
@@ -414,7 +414,7 @@ func TestWithProxy(t *testing.T) {
 			expectedHTTP:    "http://proxyurl.example.com:3128",
 			expectedHTTPS:   "http://proxyurl.example.com:3128",
 			expectedNoProxy: []any{""},
-			proxyUrl:        "http://proxyurl.example.com:3128",
+			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 	}
 
@@ -427,7 +427,7 @@ func TestWithProxy(t *testing.T) {
 
 			cfg := &datadogconfig.Config{
 				ClientConfig: confighttp.ClientConfig{
-					ProxyURL: tt.proxyUrl,
+					ProxyURL: tt.proxyURL,
 				},
 			}
 
