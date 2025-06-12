@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -13,11 +12,9 @@ import (
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
-	logsBuffer                     plog.Logs
-	logRecordsBuffer               plog.LogRecordSlice
-	buildInfo                      component.BuildInfo // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	logsBuffer       plog.Logs
+	logRecordsBuffer plog.LogRecordSlice
+	buildInfo        component.BuildInfo // contains version information.
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -27,11 +24,9 @@ type LogBuilderOption interface {
 
 func NewLogsBuilder(settings receiver.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
-		logsBuffer:                     plog.NewLogs(),
-		logRecordsBuffer:               plog.NewLogRecordSlice(),
-		buildInfo:                      settings.BuildInfo,
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		logsBuffer:       plog.NewLogs(),
+		logRecordsBuffer: plog.NewLogRecordSlice(),
+		buildInfo:        settings.BuildInfo,
 	}
 
 	return lb
@@ -84,17 +79,6 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	if lb.logRecordsBuffer.Len() > 0 {
 		lb.logRecordsBuffer.MoveAndAppendTo(ils.LogRecords())
 		lb.logRecordsBuffer = plog.NewLogRecordSlice()
-	}
-
-	for attr, filter := range lb.resourceAttributeIncludeFilter {
-		if val, ok := rl.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
-			return
-		}
-	}
-	for attr, filter := range lb.resourceAttributeExcludeFilter {
-		if val, ok := rl.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
-			return
-		}
 	}
 
 	if ils.LogRecords().Len() > 0 {
