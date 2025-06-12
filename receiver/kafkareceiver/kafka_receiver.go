@@ -345,15 +345,14 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 }
 
 func contextWithHeaders(ctx context.Context, headers messageHeaders) context.Context {
-	allHeaders := headers.all()
-	if len(allHeaders) == 0 {
-		return ctx
-	}
-	m := make(map[string][]string, len(allHeaders))
-	for _, header := range allHeaders {
+	m := make(map[string][]string)
+	for header := range headers.all() {
 		key := header.key
 		value := string(header.value)
 		m[key] = append(m[key], value)
+	}
+	if len(m) == 0 {
+		return ctx
 	}
 	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(m)})
 }

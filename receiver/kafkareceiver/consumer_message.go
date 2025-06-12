@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"iter"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -28,7 +29,7 @@ type header struct {
 // messageHeaders provides a generic interface for accessing Kafka message headers.
 type messageHeaders interface {
 	get(key string) (string, bool)
-	all() []header
+	all() iter.Seq[header]
 }
 
 // saramaMessage wraps a Sarama ConsumerMessage to implement KafkaMessage interface.
@@ -77,10 +78,12 @@ func (h saramaHeaders) get(key string) (string, bool) {
 	return "", false
 }
 
-func (h saramaHeaders) all() []header {
-	result := make([]header, 0, len(h.headers))
-	for _, h := range h.headers {
-		result = append(result, header{key: string(h.Key), value: h.Value})
+func (h saramaHeaders) all() iter.Seq[header] {
+	return func(yield func(header) bool) {
+		for _, hdr := range h.headers {
+			if !yield(header{key: string(hdr.Key), value: hdr.Value}) {
+				return
+			}
+		}
 	}
-	return result
 }
