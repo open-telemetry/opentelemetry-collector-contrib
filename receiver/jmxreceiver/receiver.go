@@ -15,6 +15,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -138,6 +140,16 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	return removeErr
 }
 
+// InsertDefault is a helper function to insert a default value for a configoptional.Optional type.
+func InsertDefault[T any](opt *configoptional.Optional[T]) error {
+	if opt.HasValue() {
+		return nil
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	return empty.Unmarshal(opt)
+}
+
 func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	host, port, err := net.SplitHostPort(endpoint)
@@ -162,8 +174,10 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 
 	factory := otlpreceiver.NewFactory()
 	config := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	config.GRPC.NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
-	config.HTTP = nil
+	if err := InsertDefault(&config.GRPC); err != nil {
+		return nil, err
+	}
+	config.GRPC.Get().NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
 
 	params := receiver.Settings{
 		ID:                component.NewIDWithName(factory.Type(), jmx.params.ID.String()),

@@ -17,7 +17,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
@@ -25,7 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraces(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createTracesReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
@@ -38,7 +38,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 	f := NewFactory()
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg := createDefaultConfig()
+		cfg := createDefaultConfig().(*Config)
 		cfg.Traces.Encoding = "custom"
 		receiver, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		tracesConsumer, ok := receiver.(*kafkaConsumer)
@@ -59,7 +59,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 }
 
 func TestCreateMetrics(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
@@ -72,7 +72,7 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 	f := NewFactory()
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg := createDefaultConfig()
+		cfg := createDefaultConfig().(*Config)
 		cfg.Metrics.Encoding = "custom"
 		receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		metricsConsumer, ok := receiver.(*kafkaConsumer)
@@ -93,7 +93,7 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 }
 
 func TestCreateLogs(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
@@ -106,7 +106,7 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 	f := NewFactory()
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg := createDefaultConfig()
+		cfg := createDefaultConfig().(*Config)
 		cfg.Logs.Encoding = "custom"
 		receiver, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		logsConsumer, ok := receiver.(*kafkaConsumer)

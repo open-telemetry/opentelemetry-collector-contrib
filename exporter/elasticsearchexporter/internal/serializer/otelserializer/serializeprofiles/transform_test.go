@@ -60,6 +60,7 @@ func TestTransform(t *testing.T) {
 	})
 	for _, tt := range []struct {
 		name                  string
+		buildDictionary       func() pprofile.ProfilesDictionary
 		buildResourceProfiles func() pprofile.ResourceProfiles
 
 		wantPayload []StackPayload
@@ -67,13 +68,18 @@ func TestTransform(t *testing.T) {
 	}{
 		{
 			name: "with an empty sample",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.StringTable().Append("samples", "count", "cpu", "nanoseconds")
 				st := p.SampleType().AppendEmpty()
 				st.SetTypeStrindex(0)
 				st.SetUnitStrindex(1)
@@ -91,13 +97,18 @@ func TestTransform(t *testing.T) {
 		},
 		{
 			name: "with an invalid profiling type",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append("off-CPU", "events")
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.StringTable().Append("off-CPU", "events")
 				st := p.SampleType().AppendEmpty()
 				st.SetTypeStrindex(0)
 				st.SetUnitStrindex(1)
@@ -112,13 +123,20 @@ func TestTransform(t *testing.T) {
 		},
 		{
 			name: "with no sample value and no line number on location",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
+				l := dic.LocationTable().AppendEmpty()
+				l.SetAddress(111)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.StringTable().Append("samples", "count", "cpu", "nanoseconds")
 				st := p.SampleType().AppendEmpty()
 				st.SetTypeStrindex(0)
 				st.SetUnitStrindex(1)
@@ -129,9 +147,6 @@ func TestTransform(t *testing.T) {
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 
-				l := p.LocationTable().AppendEmpty()
-				l.SetAddress(111)
-
 				return rp
 			},
 
@@ -140,45 +155,50 @@ func TestTransform(t *testing.T) {
 		},
 		{
 			name: "with a single indexed sample",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				a := dic.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildIDEncoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildID2Encoded)
+
+				dic.StringTable().Append("firefox", "libc.so", "samples", "count", "cpu", "nanoseconds")
+
+				m := dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(1)
+				m.SetFilenameStrindex(0)
+				m = dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(2)
+				m.SetFilenameStrindex(1)
+
+				l := dic.LocationTable().AppendEmpty()
+				l.SetAddress(address)
+				l.AttributeIndices().Append(0)
+				l.SetMappingIndex(0)
+				l = dic.LocationTable().AppendEmpty()
+				l.SetAddress(address2)
+				l.AttributeIndices().Append(0)
+				l.SetMappingIndex(1)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				a := p.AttributeTable().AppendEmpty()
-				a.SetKey("profile.frame.type")
-				a.Value().SetStr("native")
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
-				a.Value().SetStr(buildIDEncoded)
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
-				a.Value().SetStr(buildID2Encoded)
-
-				p.StringTable().Append("firefox", "libc.so", "samples", "count", "cpu", "nanoseconds")
 				st := p.SampleType().AppendEmpty()
 				st.SetTypeStrindex(2)
 				st.SetUnitStrindex(3)
 				pt := p.PeriodType()
 				pt.SetTypeStrindex(4)
 				pt.SetUnitStrindex(5)
-
-				m := p.MappingTable().AppendEmpty()
-				m.AttributeIndices().Append(1)
-				m.SetFilenameStrindex(0)
-				m = p.MappingTable().AppendEmpty()
-				m.AttributeIndices().Append(2)
-				m.SetFilenameStrindex(1)
-
-				l := p.LocationTable().AppendEmpty()
-				l.SetAddress(address)
-				l.AttributeIndices().Append(0)
-				l.SetMappingIndex(0)
-				l = p.LocationTable().AppendEmpty()
-				l.SetAddress(address2)
-				l.AttributeIndices().Append(0)
-				l.SetMappingIndex(1)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
@@ -248,10 +268,11 @@ func TestTransform(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			dic := tt.buildDictionary()
 			rp := tt.buildResourceProfiles()
 			sp := rp.ScopeProfiles().At(0)
 
-			payload, err := Transform(rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			payload, err := Transform(dic, rp.Resource(), sp.Scope(), sp.Profiles().At(0))
 			require.NoError(t, checkAndResetTimes(payload))
 			sortPayloads(payload)
 			sortPayloads(tt.wantPayload)
@@ -268,6 +289,7 @@ func TestStackPayloads(t *testing.T) {
 	})
 	for _, tt := range []struct {
 		name                  string
+		buildDictionary       func() pprofile.ProfilesDictionary
 		buildResourceProfiles func() pprofile.ResourceProfiles
 
 		wantPayload []StackPayload
@@ -275,41 +297,46 @@ func TestStackPayloads(t *testing.T) {
 	}{
 		{ //nolint:dupl
 			name: "with a single indexed sample",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so")
+
+				a := dic.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildIDEncoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildID2Encoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
+
+				l := dic.LocationTable().AppendEmpty()
+				l.SetMappingIndex(0)
+				l.SetAddress(address)
+				l.AttributeIndices().Append(3)
+				l = dic.LocationTable().AppendEmpty()
+				l.SetMappingIndex(1)
+				l.SetAddress(address2)
+				l.AttributeIndices().Append(3)
+
+				m := dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(1)
+				m.SetFilenameStrindex(1)
+				m = dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(2)
+				m.SetFilenameStrindex(2)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
-				p.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so")
-
-				a := p.AttributeTable().AppendEmpty()
-				a.SetKey("profile.frame.type")
-				a.Value().SetStr("native")
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
-				a.Value().SetStr(buildIDEncoded)
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
-				a.Value().SetStr(buildID2Encoded)
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("profile.frame.type")
-				a.Value().SetStr("native")
-
-				l := p.LocationTable().AppendEmpty()
-				l.SetMappingIndex(0)
-				l.SetAddress(address)
-				l.AttributeIndices().Append(3)
-				l = p.LocationTable().AppendEmpty()
-				l.SetMappingIndex(1)
-				l.SetAddress(address2)
-				l.AttributeIndices().Append(3)
-
-				m := p.MappingTable().AppendEmpty()
-				m.AttributeIndices().Append(1)
-				m.SetFilenameStrindex(1)
-				m = p.MappingTable().AppendEmpty()
-				m.AttributeIndices().Append(2)
-				m.SetFilenameStrindex(2)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
@@ -378,39 +405,43 @@ func TestStackPayloads(t *testing.T) {
 		},
 		{
 			name: "with a duplicated sample",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so")
+
+				a := dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildIDEncoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.htlhash")
+				a.Value().SetStr(buildID2Encoded)
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
+
+				l := dic.LocationTable().AppendEmpty()
+				l.SetMappingIndex(0)
+				l.SetAddress(address)
+				l.AttributeIndices().Append(2)
+				l = dic.LocationTable().AppendEmpty()
+				l.SetMappingIndex(1)
+				l.SetAddress(address2)
+				l.AttributeIndices().Append(2)
+
+				m := dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(0)
+				m.SetFilenameStrindex(1)
+				m = dic.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(1)
+				m.SetFilenameStrindex(2)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
-
-				p.StringTable().Append(stacktraceIDBase64, "firefox", "libc.so")
-
-				a := p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
-				a.Value().SetStr(buildIDEncoded)
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.htlhash")
-				a.Value().SetStr(buildID2Encoded)
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("profile.frame.type")
-				a.Value().SetStr("native")
-
-				l := p.LocationTable().AppendEmpty()
-				l.SetMappingIndex(0)
-				l.SetAddress(address)
-				l.AttributeIndices().Append(2)
-				l = p.LocationTable().AppendEmpty()
-				l.SetMappingIndex(1)
-				l.SetAddress(address2)
-				l.AttributeIndices().Append(2)
-
-				m := p.MappingTable().AppendEmpty()
-				m.AttributeIndices().Append(0)
-				m.SetFilenameStrindex(1)
-				m = p.MappingTable().AppendEmpty()
-				m.AttributeIndices().Append(1)
-				m.SetFilenameStrindex(2)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
@@ -479,10 +510,11 @@ func TestStackPayloads(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			dic := tt.buildDictionary()
 			rp := tt.buildResourceProfiles()
 			sp := rp.ScopeProfiles().At(0)
 
-			payloads, err := stackPayloads(rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			payloads, err := stackPayloads(dic, rp.Resource(), sp.Scope(), sp.Profiles().At(0))
 			require.NoError(t, checkAndResetTimes(payloads))
 			sortPayloads(payloads)
 			sortPayloads(tt.wantPayload)
@@ -496,12 +528,19 @@ func TestStackTraceEvent(t *testing.T) {
 	for _, tt := range []struct {
 		name                  string
 		timestamp             uint64
+		buildDictionary       func() pprofile.ProfilesDictionary
 		buildResourceProfiles func() pprofile.ResourceProfiles
 
 		wantEvent StackTraceEvent
 	}{
 		{
 			name: "sets host specific data",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
@@ -510,7 +549,6 @@ func TestStackTraceEvent(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
-				p.StringTable().Append(stacktraceIDBase64)
 
 				p.Sample().AppendEmpty()
 
@@ -526,11 +564,16 @@ func TestStackTraceEvent(t *testing.T) {
 		{
 			name:      "sets the timestamp",
 			timestamp: 1000000000,
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
-				p.StringTable().Append(stacktraceIDBase64)
 
 				p.Sample().AppendEmpty()
 
@@ -546,11 +589,16 @@ func TestStackTraceEvent(t *testing.T) {
 		},
 		{
 			name: "sets the stack trace ID",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64)
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
-				p.StringTable().Append(stacktraceIDBase64)
 
 				p.Sample().AppendEmpty()
 
@@ -565,24 +613,29 @@ func TestStackTraceEvent(t *testing.T) {
 		},
 		{
 			name: "sets event specific data",
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				dic.StringTable().Append(stacktraceIDBase64)
+
+				a := dic.AttributeTable().AppendEmpty()
+				a.SetKey(string(semconv.K8SPodNameKey))
+				a.Value().SetStr("my_pod")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey(string(semconv.ContainerNameKey))
+				a.Value().SetStr("my_container")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey(string(semconv.ThreadNameKey))
+				a.Value().SetStr("my_thread")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey(string(semconv.ServiceNameKey))
+				a.Value().SetStr("my_service")
+
+				return dic
+			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
-				p.StringTable().Append(stacktraceIDBase64)
-
-				a := p.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.K8SPodNameKey))
-				a.Value().SetStr("my_pod")
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.ContainerNameKey))
-				a.Value().SetStr("my_container")
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.ThreadNameKey))
-				a.Value().SetStr("my_thread")
-				a = p.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.ServiceNameKey))
-				a.Value().SetStr("my_service")
 
 				s := p.Sample().AppendEmpty()
 				s.AttributeIndices().Append(0, 1, 2, 3)
@@ -601,11 +654,12 @@ func TestStackTraceEvent(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			dic := tt.buildDictionary()
 			rp := tt.buildResourceProfiles()
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Sample().At(0)
 
-			event := stackTraceEvent(stacktraceIDBase64, p, s, map[string]string{})
+			event := stackTraceEvent(dic, stacktraceIDBase64, s, map[string]string{})
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
@@ -615,51 +669,51 @@ func TestStackTraceEvent(t *testing.T) {
 
 func TestStackTrace(t *testing.T) {
 	for _, tt := range []struct {
-		name         string
-		buildProfile func() pprofile.Profile
+		name            string
+		buildDictionary func() pprofile.ProfilesDictionary
+		buildProfile    func() pprofile.Profile
 
 		wantTrace StackTrace
 	}{
 		{
 			name: "creates a stack trace",
-			buildProfile: func() pprofile.Profile {
-				p := pprofile.NewProfile()
-
-				a := p.AttributeTable().AppendEmpty()
+			buildDictionary: func() pprofile.ProfilesDictionary {
+				dic := pprofile.NewProfilesDictionary()
+				a := dic.AttributeTable().AppendEmpty()
 				a.SetKey("profile.frame.type")
 				a.Value().SetStr("kernel")
-				a = p.AttributeTable().AppendEmpty()
+				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("profile.frame.type")
 				a.Value().SetStr("dotnet")
-				a = p.AttributeTable().AppendEmpty()
+				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("profile.frame.type")
 				a.Value().SetStr("native")
-				a = p.AttributeTable().AppendEmpty()
+				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildIDEncoded)
-				a = p.AttributeTable().AppendEmpty()
+				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildID2Encoded)
-				a = p.AttributeTable().AppendEmpty()
+				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildID3Encoded)
 
-				p.StringTable().Append(
+				dic.StringTable().Append(
 					stacktraceIDBase64,
 					"kernel",
 					"native",
 					"dotnet",
 				)
 
-				l := p.LocationTable().AppendEmpty()
+				l := dic.LocationTable().AppendEmpty()
 				l.SetMappingIndex(0)
 				l.SetAddress(address)
 				l.AttributeIndices().Append(0)
-				l = p.LocationTable().AppendEmpty()
+				l = dic.LocationTable().AppendEmpty()
 				l.SetMappingIndex(1)
 				l.SetAddress(address2)
 				l.AttributeIndices().Append(1)
-				l = p.LocationTable().AppendEmpty()
+				l = dic.LocationTable().AppendEmpty()
 				l.SetMappingIndex(2)
 				l.SetAddress(address3)
 				l.AttributeIndices().Append(2)
@@ -669,12 +723,17 @@ func TestStackTrace(t *testing.T) {
 				li = l.Line().AppendEmpty()
 				li.SetLine(3)
 
-				m := p.MappingTable().AppendEmpty()
+				m := dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(3)
-				m = p.MappingTable().AppendEmpty()
+				m = dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(4)
-				m = p.MappingTable().AppendEmpty()
+				m = dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(5)
+
+				return dic
+			},
+			buildProfile: func() pprofile.Profile {
+				p := pprofile.NewProfile()
 
 				s := p.Sample().AppendEmpty()
 				s.SetLocationsLength(3)
@@ -694,10 +753,11 @@ func TestStackTrace(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			dic := tt.buildDictionary()
 			p := tt.buildProfile()
 			s := p.Sample().At(0)
 
-			frames, frameTypes, _, err := stackFrames(p, s)
+			frames, frameTypes, _, err := stackFrames(dic, s)
 			require.NoError(t, err)
 
 			stacktrace := stackTrace("", frames, frameTypes)
@@ -720,31 +780,32 @@ func frameTypesToString(frameTypes []libpf.FrameType) string {
 }
 
 func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
+	dic := pprofile.NewProfilesDictionary()
 	p := pprofile.NewProfile()
 	s := p.Sample().AppendEmpty()
 	s.SetLocationsLength(int32(len(frameIDs)))
 
-	a := p.AttributeTable().AppendEmpty()
+	a := dic.AttributeTable().AppendEmpty()
 	a.SetKey("profile.frame.type")
 	a.Value().SetStr("native")
 
 	for i, frameID := range frameIDs {
-		p.StringTable().Append(frameID.FileID().StringNoQuotes())
+		dic.StringTable().Append(frameID.FileID().StringNoQuotes())
 
-		a := p.AttributeTable().AppendEmpty()
+		a := dic.AttributeTable().AppendEmpty()
 		a.SetKey("process.executable.build_id.htlhash")
 		a.Value().SetStr(frameID.FileID().StringNoQuotes())
 
-		m := p.MappingTable().AppendEmpty()
+		m := dic.MappingTable().AppendEmpty()
 		m.AttributeIndices().Append(int32(i + 1))
 
-		l := p.LocationTable().AppendEmpty()
+		l := dic.LocationTable().AppendEmpty()
 		l.SetMappingIndex(int32(i))
 		l.SetAddress(uint64(frameID.AddressOrLine()))
 		l.AttributeIndices().Append(0)
 	}
 
-	frames, _, _, err := stackFrames(p, s)
+	frames, _, _, err := stackFrames(dic, s)
 	require.NoError(t, err)
 
 	traceID, err := stackTraceID(frames)
