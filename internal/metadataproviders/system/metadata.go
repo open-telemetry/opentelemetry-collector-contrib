@@ -79,12 +79,14 @@ type Provider interface {
 
 	// CPUInfo returns the host's CPU info
 	CPUInfo(ctx context.Context) ([]cpu.InfoStat, error)
-
 	// OSName returns the OS name according to semantic conventions.
 	OSName(ctx context.Context) (string, error)
 
 	// OSBuildID returns the OS build ID according to semantic conventions.
 	OSBuildID(ctx context.Context) (string, error)
+
+	// HostInterfaces returns the host's Interfaces info
+	HostInterfaces() ([]net.Interface, error)
 }
 
 type systemMetadataProvider struct {
@@ -321,4 +323,8 @@ func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) 
 
 func (p systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
 	return cpu.InfoWithContext(ctx)
+}
+
+func (p systemMetadataProvider) HostInterfaces() ([]net.Interface, error) {
+	return net.Interfaces()
 }

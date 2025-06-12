@@ -539,6 +539,16 @@ events:
     enabled: false
 ```
 
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
 ### db.server.query_sample
 
 query sample

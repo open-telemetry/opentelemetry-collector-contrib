@@ -15,6 +15,7 @@ import (
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/waf"
 )
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -48,6 +49,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      formatS3AccessLog,
+		}, nil
+	case formatWAFLog:
+		return &encodingExtension{
+			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
+			format:      formatWAFLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,

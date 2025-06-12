@@ -21,6 +21,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostCPUStepping("host.cpu.stepping-val")
 			rb.SetHostCPUVendorID("host.cpu.vendor.id-val")
 			rb.SetHostID("host.id-val")
+			rb.SetHostInterface([]any{"host.interface-item1", "host.interface-item2"})
 			rb.SetHostIP([]any{"host.ip-item1", "host.ip-item2"})
 			rb.SetHostMac([]any{"host.mac-item1", "host.mac-item2"})
 			rb.SetHostName("host.name-val")
@@ -37,7 +38,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 16, res.Attributes().Len())
+				assert.Equal(t, 17, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -84,6 +85,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "host.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("host.interface")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, []any{"host.interface-item1", "host.interface-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("host.ip")
 			assert.Equal(t, tt == "all_set", ok)

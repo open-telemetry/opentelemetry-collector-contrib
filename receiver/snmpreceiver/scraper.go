@@ -151,7 +151,7 @@ func (s *snmpScraper) scrapeIndexedMetrics(
 // scalarDataToMetric will take one piece of SNMP scalar data and turn it into a datapoint for
 // either a new or existing metric with attributes based on the related configs
 func (s *snmpScraper) scalarDataToMetric(
-	data SNMPData,
+	data snmpData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,
 	scalarResourceAttributes map[string]string,
@@ -193,7 +193,7 @@ func (s *snmpScraper) scalarDataToMetric(
 // into a datapoint for either a new or existing metric with attributes that belongs to either
 // a new or existing resource
 func (s *snmpScraper) indexedDataToMetric(
-	data SNMPData,
+	data snmpData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,
 	columnOIDIndexedAttributeValues map[string]indexedAttributeValues,
@@ -246,7 +246,7 @@ func (s *snmpScraper) indexedDataToMetric(
 }
 
 func addMetricDataPointToResource(
-	data SNMPData,
+	data snmpData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,
 	metricName string,
@@ -404,7 +404,7 @@ func (s *snmpScraper) scrapeScalarResourceAttributes(
 // scalarDataToResourceAttribute provides a function which will take one piece of scalar OID SNMP data
 // (for a resource attribute) and store it in a map for later use
 func scalarDataToResourceAttribute(
-	data SNMPData,
+	data snmpData,
 	scalarOIDAttributeValues map[string]string,
 ) error {
 	// Get the string value of the SNMP data for the {resource} attribute value
@@ -458,7 +458,7 @@ func (s *snmpScraper) scrapeIndexedAttributes(
 // (for either an attribute or resource attribute) and stores it in a map for later use (keyed by both
 // {resource} attribute config column OID and OID index)
 func indexedDataToAttribute(
-	data SNMPData,
+	data snmpData,
 	columnOIDIndexedAttributeValues map[string]indexedAttributeValues,
 ) error {
 	// Get the string value of the SNMP data for the {resource} attribute value

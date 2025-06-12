@@ -8,17 +8,6 @@
 
 ## Metric name
 
-### Full normalization
-
-> **Warning**
->
-> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `pkg.translator.prometheus.NormalizeName`. It is currently enabled by default (beta stage).
->
->  Example of how to disable it:
-> ```shell-session
-> $ otelcol --config=config.yaml --feature-gates=-pkg.translator.prometheus.NormalizeName
-> ```
-
 #### List of transformations to convert OpenTelemetry metrics to Prometheus metrics
 
 | Case                                                     | Transformation                                                                                                                   | Example                                                                                   |
@@ -78,7 +67,7 @@ List of standard OpenTelemetry units that will be translated to [Prometheus stan
 
 ### Simple normalization
 
-If feature `pkg.translator.prometheus.NormalizeName` is not enabled, a simple sanitization of the OpenTelemetry metric name is performed to ensure it follows Prometheus naming conventions:
+A simple sanitization of the OpenTelemetry metric name is performed to ensure it follows Prometheus naming conventions:
 
 * Drop unsupported characters and replace with underscores (`_`)
 * Remove redundant, leading and trailing underscores

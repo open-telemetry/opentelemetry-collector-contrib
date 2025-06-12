@@ -176,6 +176,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -262,6 +263,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -535,6 +537,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -574,6 +577,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetServerAddress(s.config.Server)
 		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {
@@ -672,7 +676,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			obfuscated, err := obfuscateSQL(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return statement, nil
+				return "", nil
 			}
 
 			return obfuscated, nil
@@ -794,14 +798,14 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash st
 	return true, 0
 }
 
-type Item struct {
+type item struct {
 	row      sqlquery.StringMap
 	priority int64
 	index    int
 }
 
 // reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-type priorityQueue []*Item
+type priorityQueue []*item
 
 func (pq priorityQueue) Len() int { return len(pq) }
 
@@ -817,7 +821,7 @@ func (pq priorityQueue) Swap(i, j int) {
 
 func (pq *priorityQueue) Push(x any) {
 	n := len(*pq)
-	item := x.(*Item)
+	item := x.(*item)
 	item.index = n
 	*pq = append(*pq, item)
 }
@@ -847,7 +851,7 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	pq := make(priorityQueue, len(rows))
 	for i, row := range rows {
 		value := values[i]
-		pq[i] = &Item{
+		pq[i] = &item{
 			row:      row,
 			priority: value,
 			index:    i,
@@ -856,7 +860,7 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	heap.Init(&pq)
 
 	for pq.Len() > 0 && len(results) < int(maximum) {
-		item := heap.Pop(&pq).(*Item)
+		item := heap.Pop(&pq).(*item)
 		results = append(results, item.row)
 	}
 	return results
@@ -968,7 +972,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			obfuscated, err := obfuscateSQL(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return statement, nil
+				return "", nil
 			}
 			return obfuscated, nil
 		}).(string)

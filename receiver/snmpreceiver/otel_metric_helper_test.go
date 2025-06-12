@@ -278,7 +278,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 						ValueType: "int",
 					},
 				}
-				data := SNMPData{
+				data := snmpData{
 					valueType: integerVal,
 					value:     int64(10),
 				}
@@ -305,7 +305,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 						ValueType: "int",
 					},
 				}
-				data := SNMPData{
+				data := snmpData{
 					valueType: integerVal,
 					value:     int64(10),
 				}
@@ -336,7 +336,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 						ValueType: "int",
 					},
 				}
-				data := SNMPData{
+				data := snmpData{
 					valueType: integerVal,
 					value:     int64(10),
 				}
@@ -376,7 +376,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 						ValueType:   "double",
 					},
 				}
-				data := SNMPData{
+				data := snmpData{
 					valueType: floatVal,
 					value:     float64(10.0),
 				}
@@ -412,7 +412,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 						ValueType: "int",
 					},
 				}
-				data := SNMPData{
+				data := snmpData{
 					valueType: floatVal,
 					value:     float64(10.0),
 				}
@@ -448,7 +448,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 						ValueType: "double",
 					},
 				}
-				data := SNMPData{
+				data := snmpData{
 					valueType: integerVal,
 					value:     int64(10),
 				}
