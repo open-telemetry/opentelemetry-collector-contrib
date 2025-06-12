@@ -302,7 +302,7 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 
 func (s *Supervisor) Start() error {
 	var err error
-	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath())
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.telemetrySettings.Logger)
 	if err != nil {
 		return err
 	}
@@ -609,7 +609,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("parse server endpoint: %w", err)
 	}
 	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
-		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+		tlsConfig, err = s.config.Server.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return err
 		}
@@ -624,24 +624,13 @@ func (s *Supervisor) startOpAMPClient() error {
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
-	// load the last received remote config, this is needed for start settings
-	s.loadLastRecvdRemoteConfig()
-
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
-		OpAMPServerURL: s.config.Server.Endpoint,
-		Header:         s.config.Server.Headers,
-		TLSConfig:      tlsConfig,
-		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
-		RemoteConfigStatus: func() *protobufs.RemoteConfigStatus {
-			if s.remoteConfig != nil {
-				return &protobufs.RemoteConfigStatus{
-					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
-					LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
-				}
-			}
-			return nil
-		}(),
+		OpAMPServerURL:     s.config.Server.Endpoint,
+		Header:             s.config.Server.Headers,
+		TLSConfig:          tlsConfig,
+		InstanceUid:        types.InstanceUid(s.persistentState.InstanceID),
+		RemoteConfigStatus: s.persistentState.GetLastRemoteConfigStatus(),
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
 				s.telemetrySettings.Logger.Info("Connected to the server.")
@@ -904,17 +893,17 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	}
 	if settings.Certificate != nil {
 		if len(settings.Certificate.CaCert) != 0 {
-			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaCert)
+			newServerConfig.TLS.CAPem = configopaque.String(settings.Certificate.CaCert)
 		}
 		if len(settings.Certificate.Cert) != 0 {
-			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.Cert)
+			newServerConfig.TLS.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
-			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
+			newServerConfig.TLS.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
 	} else {
-		newServerConfig.TLSSetting = configtls.NewDefaultClientConfig()
-		newServerConfig.TLSSetting.InsecureSkipVerify = true
+		newServerConfig.TLS = configtls.NewDefaultClientConfig()
+		newServerConfig.TLS.InsecureSkipVerify = true
 	}
 
 	if err := newServerConfig.Validate(); err != nil {
@@ -1178,50 +1167,17 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 	return b, nil
 }
 
-func (s *Supervisor) loadLastRecvdRemoteConfig() {
-	var lastRecvRemoteConfig []byte
-	var err error
-
-	if s.config.Capabilities.AcceptsRemoteConfig {
-		// Try to load the last received remote config if it exists.
-		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
-		switch {
-		case err == nil:
-			config := &protobufs.AgentRemoteConfig{}
-			err = proto.Unmarshal(lastRecvRemoteConfig, config)
-			if err != nil {
-				s.telemetrySettings.Logger.Error("Cannot parse last received remote config", zap.Error(err))
-			} else {
-				s.remoteConfig = config
-			}
-		case errors.Is(err, os.ErrNotExist):
-			s.telemetrySettings.Logger.Info("No last received remote config found")
-		default:
-			s.telemetrySettings.Logger.Error("error while reading last received config", zap.Error(err))
-		}
-	} else {
-		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from file")
-	}
-}
-
+// loadAndWriteInitialMergedConfig loads and writes the initial config by
+// merging the last received remote config, last received own metrics config,
+// and any local configs.
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	if s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs {
-		// Try to load the last received own metrics config if it exists.
-		var lastRecvOwnTelemetryConfig []byte
-		lastRecvOwnTelemetryConfig, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnTelemetryConfigFile))
-		if err == nil {
-			set := &protobufs.ConnectionSettingsOffers{}
-			err = proto.Unmarshal(lastRecvOwnTelemetryConfig, set)
-			if err != nil {
-				s.telemetrySettings.Logger.Error("Cannot parse last received own telemetry config", zap.Error(err))
-			} else {
-				s.setupOwnTelemetry(context.Background(), set)
-			}
-		}
-	} else {
-		s.telemetrySettings.Logger.Debug("Own metrics is not supported, will not attempt to load config from file")
-	}
+	// load the last received remote config
+	s.loadRemoteConfig()
 
+	// load the last received own telemetry config
+	s.loadLastReceivedOwnTelemetryConfig()
+
+	// compose the initial merged config
 	_, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
@@ -1234,6 +1190,56 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	}
 
 	return nil
+}
+
+// loadRemoteConfig loads the last received remote config from file if the capability is supported.
+func (s *Supervisor) loadRemoteConfig() {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
+		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from file")
+		return
+	}
+
+	// Try to load the last received remote config if it exists.
+	var lastRecvRemoteConfig []byte
+	var err error
+	lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+	switch {
+	case err == nil:
+		config := &protobufs.AgentRemoteConfig{}
+		err = proto.Unmarshal(lastRecvRemoteConfig, config)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Cannot parse last received remote config", zap.Error(err))
+		} else {
+			s.remoteConfig = config
+		}
+	case errors.Is(err, os.ErrNotExist):
+		s.telemetrySettings.Logger.Info("No last received remote config found")
+	default:
+		s.telemetrySettings.Logger.Error("error while reading last received config", zap.Error(err))
+	}
+}
+
+// loadLastReceivedOwnTelemetryConfig loads the last received own telemetry config from file if the capability is supported.
+func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
+	// If none of the own telemetry capabilities are supported, do nothing.
+	if !s.config.Capabilities.ReportsOwnMetrics && !s.config.Capabilities.ReportsOwnTraces && !s.config.Capabilities.ReportsOwnLogs {
+		s.telemetrySettings.Logger.Debug("Own telemetry is not supported, will not attempt to load config from file")
+		return
+	}
+
+	// Try to load the last received own metrics config if it exists.
+	var lastRecvOwnTelemetryConfig []byte
+	var err error
+	lastRecvOwnTelemetryConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnTelemetryConfigFile))
+	if err == nil {
+		set := &protobufs.ConnectionSettingsOffers{}
+		err = proto.Unmarshal(lastRecvOwnTelemetryConfig, set)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Cannot parse last received own telemetry config", zap.Error(err))
+		} else {
+			s.setupOwnTelemetry(context.Background(), set)
+		}
+	}
 }
 
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
@@ -1405,7 +1411,7 @@ func (s *Supervisor) runAgentProcess() {
 		_, err := s.startAgent()
 		if err != nil {
 			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
-			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 		}
 	}
 
@@ -1433,13 +1439,25 @@ func (s *Supervisor) runAgentProcess() {
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
 
 			if status == agentNotStarting {
-				// not starting agent because of nop config, clear timer
+				// not starting agent because of nop config, clear timer, report applied status, report healthy status
 				configApplyTimeoutTimer.Stop()
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
+					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
+				}
+				// need to clear exit channel to avoid triggering `s.commander.Exited()` case
+				// because we stopped the agent and aren't restarting it this case will trigger
+				// and report an unhealthy status (collector would be healthy, just choosing to not run)
+				if len(s.commander.Exited()) > 0 {
+					select {
+					case <-s.commander.Exited():
+					default:
+					}
+				}
 			}
 
 		case <-s.commander.Exited():
@@ -1475,15 +1493,15 @@ func (s *Supervisor) runAgentProcess() {
 			_, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("restarting agent failed", zap.Error(err))
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
 
 		case <-configApplyTimeoutTimer.C:
 			lastHealth := s.lastHealthFromClient.Load()
 			if lastHealth == nil || !lastHealth.Healthy {
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
 			} else {
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 			}
 
 		case <-s.doneChan:
@@ -1601,16 +1619,23 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0o600)
 }
 
-func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+// saveAndReportConfigStatus saves the config status to the persistent state and reports it to the server.
+func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
 	if !s.config.Capabilities.ReportsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 	}
-	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+	rcs := &protobufs.RemoteConfigStatus{
 		LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
 		Status:               status,
 		ErrorMessage:         errorMessage,
-	})
-	if err != nil {
+	}
+
+	// save status to persistent state
+	if err := s.persistentState.SetLastRemoteConfigStatus(rcs); err != nil {
+		s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(err))
+	}
+	// report status to server
+	if err := s.opampClient.SetRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not report OpAMP remote config status", zap.Error(err))
 	}
 }
@@ -1690,11 +1715,11 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 	}
 	if configChanged {
 		// only report applying if the config has changed and will run agent with new config
-		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
+		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
 	return configChanged
