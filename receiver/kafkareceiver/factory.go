@@ -68,11 +68,7 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	r, err := newTracesReceiver(cfg.(*Config), set, nextConsumer)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+	return newTracesReceiver(cfg.(*Config), set, nextConsumer)
 }
 
 func createMetricsReceiver(
@@ -81,11 +77,7 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	r, err := newMetricsReceiver(cfg.(*Config), set, nextConsumer)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+	return newMetricsReceiver(cfg.(*Config), set, nextConsumer)
 }
 
 func createLogsReceiver(
@@ -94,9 +86,5 @@ func createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	r, err := newLogsReceiver(cfg.(*Config), set, nextConsumer)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
+	return newLogsReceiver(cfg.(*Config), set, nextConsumer)
 }

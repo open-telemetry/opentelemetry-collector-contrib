@@ -600,7 +600,7 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = clientConfig
 	cfg.InitialOffset = "earliest"
-	cfg.MaxFetchWait = time.Millisecond
+	cfg.MaxFetchWait = 10 * time.Millisecond
 	return kafkaClient, cfg
 }
 
