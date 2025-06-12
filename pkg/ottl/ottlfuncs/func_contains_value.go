@@ -23,7 +23,7 @@ func createContainsValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 	args, ok := oArgs.(*ContainsValueArguments[K])
 
 	if !ok {
-		return nil, errors.New("ContainsValueFactory args must be of type *ContainsArguments[K]")
+		return nil, errors.New("ContainsValueFactory args must be of type *ContainsValueArguments[K]")
 	}
 
 	return containsValue(args.Target, args.Item), nil
