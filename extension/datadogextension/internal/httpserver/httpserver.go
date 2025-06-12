@@ -6,6 +6,7 @@ package httpserver // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -51,14 +52,14 @@ func NewServer(
 	s agentcomponents.SerializerWithForwarder,
 	config *Config,
 	hostname string,
-	UUID string,
+	uuid string,
 	p payload.OtelCollector,
 ) *Server {
 	oc := payload.OtelCollectorPayload{
 		Hostname:  hostname,
 		Timestamp: nowFunc().UnixNano(),
 		Metadata:  p,
-		UUID:      UUID,
+		UUID:      uuid,
 	}
 	srv := &Server{
 		logger:     logger,
@@ -131,7 +132,7 @@ func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
 	s.payload.Timestamp = nowFunc().UnixNano()
 
 	if s.serializer.State() != defaultforwarder.Started {
-		return nil, fmt.Errorf("forwarder is not started, extension cannot send payloads to Datadog")
+		return nil, errors.New("forwarder is not started, extension cannot send payloads to Datadog")
 	}
 
 	err := s.serializer.SendMetadata(&s.payload)
@@ -139,13 +140,13 @@ func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
 		return nil, fmt.Errorf("failed to send payload to Datadog: %w", err)
 	}
 
-	// Return a copy to avoid race conditions during JSON marshalling
+	// Return a copy to avoid race conditions during JSON marshaling
 	payloadCopy := s.payload
 	return &payloadCopy, nil
 }
 
 // HandleMetadata writes the metadata payloads to the response writer and sends them to the Datadog backend
-func (s *Server) HandleMetadata(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleMetadata(w http.ResponseWriter, _ *http.Request) {
 	fullPayload, err := s.SendPayload()
 	if err != nil {
 		s.logger.Error("Failed to prepare and send fleet automation payload", zap.Error(err))

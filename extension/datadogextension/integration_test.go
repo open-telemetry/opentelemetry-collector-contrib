@@ -20,12 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -868,7 +867,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 			// Verify response is valid JSON
 			var payload payload.OtelCollectorPayload
 			if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
-				errors <- fmt.Errorf("routine %d: failed to unmarshal response: %v", routineID, err)
+				errors <- fmt.Errorf("routine %d: failed to unmarshal response: %w", routineID, err)
 				return
 			}
 

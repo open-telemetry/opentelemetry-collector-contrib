@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -100,7 +101,10 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 						return nil
 					},
 				}
-				serializer.Start()
+				err := serializer.Start()
+				if err != nil {
+					t.Fatalf("Failed to start serializer: %v", err)
+				}
 				return logger, logs, serializer
 			},
 			expectedError:      "",
@@ -118,7 +122,10 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 						return nil
 					},
 				}
-				serializer.Start()
+				err := serializer.Start()
+				if err != nil {
+					t.Fatalf("Failed to start serializer: %v", err)
+				}
 				return logger, logs, serializer
 			},
 			expectedError:      "",
@@ -139,7 +146,10 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 						return nil
 					},
 				}
-				serializer.Start()
+				err := serializer.Start()
+				if err != nil {
+					t.Fatalf("Failed to start serializer: %v", err)
+				}
 				return logger, logs, serializer
 			},
 			expectedError:      "failed to send payload to Datadog: failed to send payload",
@@ -236,7 +246,10 @@ func TestHandleMetadata(t *testing.T) {
 						return nil
 					},
 				}
-				serializer.Start()
+				err := serializer.Start()
+				if err != nil {
+					t.Fatalf("Failed to start serializer: %v", err)
+				}
 				return logger, serializer
 			},
 			hostnameSource: "config",
@@ -250,10 +263,13 @@ func TestHandleMetadata(t *testing.T) {
 				logger := zap.New(core)
 				serializer := &mockSerializer{
 					sendMetadataFunc: func(any) error {
-						return fmt.Errorf("failed to send metadata")
+						return errors.New("failed to send metadata")
 					},
 				}
-				serializer.Start()
+				err := serializer.Start()
+				if err != nil {
+					t.Fatalf("Failed to start serializer: %v", err)
+				}
 				return logger, serializer
 			},
 			hostnameSource: "config",
@@ -311,8 +327,8 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 
 			// Update max if this is higher
 			for {
-				max := atomic.LoadInt32(&maxConcurrentCalls)
-				if current <= max || atomic.CompareAndSwapInt32(&maxConcurrentCalls, max, current) {
+				maxVal := atomic.LoadInt32(&maxConcurrentCalls)
+				if current <= maxVal || atomic.CompareAndSwapInt32(&maxConcurrentCalls, maxVal, current) {
 					break
 				}
 			}
@@ -327,7 +343,8 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 			return nil
 		},
 	}
-	serializer.Start()
+	err := serializer.Start()
+	require.NoError(t, err)
 
 	srv := &Server{
 		logger:     logger,
@@ -411,10 +428,10 @@ func TestServerStop(t *testing.T) {
 
 				// Create a test server that will shut down quickly
 				mux := http.NewServeMux()
-				mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				})
-
+				//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 				server := &http.Server{
 					Addr:    "127.0.0.1:0", // Use any available port
 					Handler: mux,
@@ -439,10 +456,11 @@ func TestServerStop(t *testing.T) {
 
 				// Create a test server
 				mux := http.NewServeMux()
-				mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				})
 
+				//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 				server := &http.Server{
 					Addr:    "127.0.0.1:0",
 					Handler: mux,
@@ -480,7 +498,7 @@ func TestServerStop(t *testing.T) {
 				// Start the server in a goroutine
 				go func() {
 					if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-						// Expected when server is shut down
+						t.Logf("Unexpected server error: %v", err)
 					}
 				}()
 				// Give the server a moment to start
@@ -522,10 +540,11 @@ func TestServerStopChannelBehavior(t *testing.T) {
 
 	// Create a custom server implementation to test channel behavior
 	mux := http.NewServeMux()
-	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 	server := &http.Server{
 		Addr:    "127.0.0.1:0",
 		Handler: mux,
@@ -579,10 +598,11 @@ func TestServerStopConcurrency(t *testing.T) {
 	logger := zap.New(core)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 	server := &http.Server{
 		Addr:    "127.0.0.1:0",
 		Handler: mux,
@@ -596,7 +616,7 @@ func TestServerStopConcurrency(t *testing.T) {
 	// Start the server
 	go func() {
 		if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			// Expected during shutdown
+			t.Logf("Unexpected server error: %v", err)
 		}
 	}()
 	time.Sleep(10 * time.Millisecond)
@@ -607,7 +627,7 @@ func TestServerStopConcurrency(t *testing.T) {
 
 	for i := 0; i < numStops; i++ {
 		wg.Add(1)
-		go func(index int) {
+		go func(_ int) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 			defer cancel()
