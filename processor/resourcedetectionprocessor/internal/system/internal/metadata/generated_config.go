@@ -35,6 +35,7 @@ type ResourceAttributesConfig struct {
 	HostCPUStepping    ResourceAttributeConfig `mapstructure:"host.cpu.stepping"`
 	HostCPUVendorID    ResourceAttributeConfig `mapstructure:"host.cpu.vendor.id"`
 	HostID             ResourceAttributeConfig `mapstructure:"host.id"`
+	HostInterface      ResourceAttributeConfig `mapstructure:"host.interface"`
 	HostIP             ResourceAttributeConfig `mapstructure:"host.ip"`
 	HostMac            ResourceAttributeConfig `mapstructure:"host.mac"`
 	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
@@ -69,6 +70,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostInterface: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		HostIP: ResourceAttributeConfig{
