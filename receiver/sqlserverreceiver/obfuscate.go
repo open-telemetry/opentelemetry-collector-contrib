@@ -76,7 +76,7 @@ func obfuscateXMLPlan(rawPlan string) (string, error) {
 						val, err := obfuscateSQL(elem.Attr[i].Value)
 						if err != nil {
 							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							continue
+							return "", nil
 						}
 						elem.Attr[i].Value = val
 					}

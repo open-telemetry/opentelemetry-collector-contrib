@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -253,6 +254,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
-	tracelog.SetLogger(&datadog.Zaplogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
+	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }
