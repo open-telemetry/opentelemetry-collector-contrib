@@ -32,7 +32,6 @@ func TestNewFactory(t *testing.T) {
 	require.NoError(t, err)
 
 	config := factory.CreateDefaultConfig().(*Config)
-	config.TopQueryCollection.Enabled = true
 	_, logsErr := factory.CreateLogs(
 		context.Background(),
 		receiver.Settings{

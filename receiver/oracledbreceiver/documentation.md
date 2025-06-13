@@ -379,36 +379,6 @@ events:
     enabled: false
 ```
 
-### db.server.top_query
-
-top query
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| db.query.text | The text of the database query being executed. | Any Str |
-| oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str |
-| oracledb.query.sql_id | The SQL ID of the query. | Any Str |
-| oracledb.query.child_number | The child number of the query. | Any Str |
-| oracledb.query.application_wait_time | The total time (in microseconds) a query spent waiting on the application before it could proceed with execution (reporting delta). | Any Double |
-| oracledb.query.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int |
-| oracledb.query.cluster_wait_time | Total time (in microseconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta). | Any Double |
-| oracledb.query.concurrency_wait_time | Total time (in microseconds) a query spent waiting on concurrency-related events (reporting delta). | Any Double |
-| oracledb.query.cpu_time | Total time (in microseconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double |
-| oracledb.query.direct_reads | The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta). | Any Int |
-| oracledb.query.direct_writes | The number of direct path write operations, where data is written directly to disk from user memory (reporting delta). | Any Int |
-| oracledb.query.disk_reads | The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta). | Any Int |
-| oracledb.query.elapsed_time | The total time (in microseconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta). | Any Double |
-| oracledb.query.executions | The number of times a specific SQL query has been executed (reporting delta). | Any Int |
-| oracledb.query.physical_read_bytes | The total number of bytes read from disk by a query (reporting delta). | Any Int |
-| oracledb.query.physical_read_requests | The number of physical I/O read operations performed by a query (reporting delta). | Any Int |
-| oracledb.query.physical_write_bytes | The total number of bytes written to disk by a query (reporting delta). | Any Int |
-| oracledb.query.physical_write_requests | The number of times a query requested to write data to disk (reporting delta). | Any Int |
-| oracledb.query.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int |
-| oracledb.query.user_io_wait_time | The total time (in microseconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta). | Any Double |
-| db.server.name | The name of the server hosting the database. | Any Str |
-
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

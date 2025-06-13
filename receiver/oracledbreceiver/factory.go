@@ -45,12 +45,10 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		TopQueryCollection: TopQueryCollection{
-			Enabled:             false,
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
 			QueryCacheSize:      5000,
 		},
-		querySample: newQuerySample(true),
 	}
 }
 
@@ -101,11 +99,6 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 	) (receiver.Logs, error) {
 		sqlCfg := cfg.(*Config)
 
-		if !sqlCfg.Events.DbServerTopQuery.Enabled && !sqlCfg.querySample.Enabled {
-			settings.Logger.Debug("TopQueryCollection and QuerySample are not enabled for Oracle receiver.Skipping Log scrapper")
-			return nil, nil
-		}
-
 		logsBuilder := metadata.NewLogsBuilder(sqlCfg.LogsBuilderConfig, settings)
 
 		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
@@ -127,7 +120,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 
 		mp, err := newLogsScraper(logsBuilder, sqlCfg.LogsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
-		}, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, sqlCfg.querySample, hostName)
+		}, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, hostName)
 		if err != nil {
 			return nil, err
 		}

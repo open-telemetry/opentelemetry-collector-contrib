@@ -128,7 +128,10 @@ func TestLogsBuilder(t *testing.T) {
 
 			defaultEventsCount := 0
 			allEventsCount := 0
-			defaultEventsCount++
+
+			allEventsCount++
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "db.query.plan_hash_value-val", "db.machine-val", "db.query.id-val", "oracledb.query.child_number-val", "db.query.session_id-val", "db.query.serial_number-val", "db.query.process-val", "oracledb.username-val", "oracledb.schema_name-val", "oracledb.query.program-val", "oracledb.query.module-val", "oracledb.query.status-val", "oracledb.query.state-val", "oracledb.query.wait_class-val", "oracledb.query.event-val", "oracledb.query.object_name-val", "oracledb.query.object_type-val", "oracledb.query.os_user-val", 23.100000)
+
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.query.text-val", "oracledb.query_plan-val", "oracledb.query.sql_id-val", "oracledb.query.child_number-val", 36.100000, 26, 32.100000, 36.100000, 23.100000, 27, 28, 25, 27.100000, 25, 34, 37, 35, 38, 29, 32.100000, "db.server.name-val")
 
@@ -157,6 +160,76 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
+				case "db.server.query_sample":
+					assert.False(t, validatedEvents["db.server.query_sample"], "Found a duplicate in the events slice: db.server.query_sample")
+					validatedEvents["db.server.query_sample"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.query.text")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.system.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.plan_hash_value")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.plan_hash_value-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.machine")
+					assert.True(t, ok)
+					assert.Equal(t, "db.machine-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.id")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.id-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.child_number")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.child_number-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.session_id")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.session_id-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.serial_number")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.serial_number-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.process")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.process-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.username")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.username-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.schema_name")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.schema_name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.program")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.program-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.module")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.module-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.status")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.status-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.state")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.state-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.wait_class")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.wait_class-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.event")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.event-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.object_name")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.object_name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.object_type")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.object_type-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.os_user")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query.os_user-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query.duration")
+					assert.True(t, ok)
+					assert.Equal(t, 23.100000, attrVal.Double())
 				case "db.server.top_query":
 					assert.False(t, validatedEvents["db.server.top_query"], "Found a duplicate in the events slice: db.server.top_query")
 					validatedEvents["db.server.top_query"] = true

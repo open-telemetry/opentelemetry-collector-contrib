@@ -130,7 +130,6 @@ type oracleScraper struct {
 	logsBuilderConfig          metadata.LogsBuilderConfig
 	metricCache                *lru.Cache[string, map[string]int64]
 	topQueryCollectCfg         TopQueryCollection
-	querySampleCfg             querySample
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, hostName string) (scraper.Metrics, error) {
@@ -149,7 +148,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 
 func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadata.LogsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig,
 	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, metricCache *lru.Cache[string, map[string]int64],
-	topQueryCollectCfg TopQueryCollection, querySampleCfg querySample, hostName string,
+	topQueryCollectCfg TopQueryCollection, hostName string,
 ) (scraper.Logs, error) {
 	s := &oracleScraper{
 		lb:                 logsBuilder,
@@ -161,7 +160,6 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		instanceName:       instanceName,
 		metricCache:        metricCache,
 		topQueryCollectCfg: topQueryCollectCfg,
-		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
@@ -518,26 +516,28 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var scrapeErrors []error
 
-	if s.topQueryCollectCfg.Enabled {
-		topNLogs, topNCollectionErr := s.collectTopNMetricData(ctx)
-		if topNCollectionErr != nil {
-			scrapeErrors = append(scrapeErrors, topNCollectionErr)
+	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
+		topNLogs, topNCollectionErrors := s.collectTopNMetricData(ctx)
+		if topNCollectionErrors != nil {
+			scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 		} else {
 			topNLogs.ResourceLogs().CopyTo(logs.ResourceLogs())
 		}
 	}
 
-	if s.querySampleCfg.Enabled {
-		samplesCollectionErrors := s.collectQuerySamples(ctx, logs)
+	if s.logsBuilderConfig.Events.DbServerQuerySample.Enabled {
+		sampleLogs, samplesCollectionErrors := s.collectQuerySamples(ctx)
 		if samplesCollectionErrors != nil {
 			scrapeErrors = append(scrapeErrors, samplesCollectionErrors)
+		} else {
+			sampleLogs.ResourceLogs().CopyTo(logs.ResourceLogs())
 		}
 	}
 
 	return logs, errors.Join(scrapeErrors...)
 }
 
-func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs) error {
+func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, error) {
 	const duration = "DURATION_SEC"
 	const event = "EVENT"
 	const hostName = "MACHINE"
@@ -562,21 +562,16 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	var scrapeErrors []error
 
 	dbClients := s.samplesQueryClient
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	rows, err := dbClients.metricRows(ctx)
 	if err != nil {
 		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
 	}
 
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-	resourceAttributes := resourceLog.Resource().Attributes()
-
-	resourceAttributes.PutStr(dbPrefix+"instance.name", s.instanceName)
-	resourceAttributes.PutStr("host.name", s.hostName)
-
-	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("0.0.1")
+	rb := s.lb.NewResourceBuilder()
+	rb.SetOracledbInstanceName(s.instanceName)
+	rb.SetHostName(s.hostName)
 
 	for _, row := range rows {
 		obfuscatedSQL, err := ObfuscateSQL(row[sqlText])
@@ -586,68 +581,20 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		}
 
 		queryPlanHashVal := hex.EncodeToString([]byte(row[planHashValue]))
-		record := scopedLog.LogRecords().AppendEmpty()
-		record.SetEventName("db.server.query_sample")
-		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
-		record.Attributes().PutStr(strings.ToLower("db.query.text"), obfuscatedSQL)
-
-		record.Attributes().PutStr("db.system.name", "oracle")
-		// reporting human-readable query  hash plan
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+planHashValue), queryPlanHashVal)
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+hostName), row[hostName])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"id"), row[sqlID])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"child_number"), row[sqlChildNumber])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+sid), row[sid])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"serial_number"), row[serialNumber])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+process), row[process])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"id"), row[sqlID])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"child_number"), row[sqlChildNumber])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+sid), row[sid])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"serial_number"), row[serialNumber])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+process), row[process])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+username), row[username])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+schemaName), row[schemaName])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+program), row[program])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+module), row[module])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+status), row[status])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+state), row[state])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+waitclass), row[waitclass])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+event), row[event])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+objectName), row[objectName])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+objectType), row[objectType])
-
-		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+osUser), row[osUser])
-
-		i, err := strconv.ParseFloat(row[duration], 64)
+		queryDuration, err := strconv.ParseFloat(row[duration], 64)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for Duration, value was %s: %w", row[duration], err))
 		}
-		record.Attributes().PutDouble(dbPrefix+queryPrefix+"duration", i)
+
+		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, queryPlanHashVal, row[hostName], row[sqlID], row[sqlChildNumber],
+			row[sid], row[serialNumber], row[process], row[username], row[schemaName], row[program], row[module], row[status], row[state], row[waitclass],
+			row[event], row[objectName], row[objectType], row[osUser], queryDuration)
 	}
 
-	return errors.Join(scrapeErrors...)
+	out := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+
+	return out, errors.Join(scrapeErrors...)
 }
 
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, error) {

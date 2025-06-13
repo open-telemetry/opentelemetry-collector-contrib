@@ -94,10 +94,67 @@ attributes:
   db.server.name:
     description: The name of the server hosting the database.
     type: string
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
+    type: string
+  db.query.plan_hash_value:
+    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    type: string
+  db.machine:
+    description: Identifies the name of the machine (host) from which the database client is connecting to the Oracle database.
+    type: string
+  db.query.id:
+    description: Unique ID of the executed query.
+    type: string
+  db.query.session_id:
+    description: ID of the Oracle Server session.
+    type: string
+  db.query.serial_number:
+    description: Serial number associated with a session.
+    type: string
+  db.query.process:
+    description: The operating system process ID (PID) associated with a session.
+    type: string
+  oracledb.username:
+    description: Database user name under which a session is connected to
+    type: string
+  oracledb.schema_name:
+   description: Oracle schema under which SQL statements are being executed
+   type: string
+  oracledb.query.program:
+   description: Name of the client program or tool that initiated the Oracle database session.
+   type: string
+  oracledb.query.module:
+   description: Logical module name of the client application that initiated a query or session.
+   type: string
+  oracledb.query.status:
+   description: Execution state or result of a database query or session.
+   type: string
+  oracledb.query.state:
+   description: Current state of the query or the session executing it.
+   type: string
+  oracledb.query.wait_class:
+   description: The category of wait events a query or session is currently experiencing in Oracle Database.
+   type: string
+  oracledb.query.event:
+   description: The specific wait event that a query or session is currently experiencing.
+   type: string
+  oracledb.query.object_name:
+   description: Name of the database object that a query is accessing.
+   type: string
+  oracledb.query.object_type:
+   description: Type of the database object that a query is accessing.
+   type: string
+  oracledb.query.os_user:
+   description: Name of the operating system user that initiated or is running the Oracle database session.
+   type: string
+  oracledb.query.duration:
+    description: Total time taken by a database query to execute.
+    type: double
 
 events:
   db.server.top_query:
-    enabled: true
+    enabled: false
     description: top query
     attributes:
       - db.query.text
@@ -121,7 +178,31 @@ events:
       - oracledb.query.rows_processed
       - oracledb.query.user_io_wait_time
       - db.server.name
-
+  db.server.query_sample:
+    enabled: false
+    description: sample query
+    attributes:
+      - db.query.text
+      - db.system.name
+      - db.query.plan_hash_value
+      - db.machine
+      - db.query.id
+      - oracledb.query.child_number
+      - db.query.session_id
+      - db.query.serial_number
+      - db.query.process
+      - oracledb.username
+      - oracledb.schema_name
+      - oracledb.query.program
+      - oracledb.query.module
+      - oracledb.query.status
+      - oracledb.query.state
+      - oracledb.query.wait_class
+      - oracledb.query.event
+      - oracledb.query.object_name
+      - oracledb.query.object_type
+      - oracledb.query.os_user
+      - oracledb.query.duration
 metrics:
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds
