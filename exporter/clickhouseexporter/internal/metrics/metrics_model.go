@@ -1,11 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 
 import (
 	"context"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -15,18 +14,21 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
 var supportedMetricTypes = map[pmetric.MetricType]string{
-	pmetric.MetricTypeGauge:                createGaugeTableSQL,
-	pmetric.MetricTypeSum:                  createSumTableSQL,
-	pmetric.MetricTypeHistogram:            createHistogramTableSQL,
-	pmetric.MetricTypeExponentialHistogram: createExpHistogramTableSQL,
-	pmetric.MetricTypeSummary:              createSummaryTableSQL,
+	pmetric.MetricTypeGauge:                sqltemplates.MetricsGaugeCreateTable,
+	pmetric.MetricTypeSum:                  sqltemplates.MetricsSumCreateTable,
+	pmetric.MetricTypeHistogram:            sqltemplates.MetricsHistogramCreateTable,
+	pmetric.MetricTypeExponentialHistogram: sqltemplates.MetricsExpHistogramCreateTable,
+	pmetric.MetricTypeSummary:              sqltemplates.MetricsSummaryCreateTable,
 }
 
 var logger *zap.Logger
@@ -43,7 +45,7 @@ type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
 	Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
 	// insert is used to insert metric data to clickhouse
-	insert(ctx context.Context, db *sql.DB) error
+	insert(ctx context.Context, db driver.Conn) error
 }
 
 // MetricsMetaData contain specific metric data
@@ -60,10 +62,10 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
-	for key, queryTemplate := range supportedMetricTypes {
-		query := fmt.Sprintf(queryTemplate, tablesConfig[key].Name, cluster, engine, ttlExpr)
-		if _, err := db.ExecContext(ctx, query); err != nil {
+func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, database, cluster, engine, ttlExpr string, db driver.Conn) error {
+	for key, ddlTemplate := range supportedMetricTypes {
+		query := fmt.Sprintf(ddlTemplate, database, tablesConfig[key].Name, cluster, engine, ttlExpr)
+		if err := db.Exec(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
 	}
@@ -71,28 +73,28 @@ func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper,
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tablesConfig MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tablesConfig MetricTablesConfigMapper, database string) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tablesConfig[pmetric.MetricTypeGauge].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsGaugeInsert, database, tablesConfig[pmetric.MetricTypeGauge].Name),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(insertSumTableSQL, tablesConfig[pmetric.MetricTypeSum].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsSumInsert, database, tablesConfig[pmetric.MetricTypeSum].Name),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tablesConfig[pmetric.MetricTypeHistogram].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsHistogramInsert, database, tablesConfig[pmetric.MetricTypeHistogram].Name),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsExpHistogramInsert, database, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tablesConfig[pmetric.MetricTypeSummary].Name),
+			insertSQL: fmt.Sprintf(sqltemplates.MetricsSummaryInsert, database, tablesConfig[pmetric.MetricTypeSummary].Name),
 		},
 	}
 }
 
 // InsertMetrics insert metric data into clickhouse concurrently
-func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel) error {
+func InsertMetrics(ctx context.Context, db driver.Conn, metricsMap map[pmetric.MetricType]MetricsModel) error {
 	errsChan := make(chan error, len(supportedMetricTypes))
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
@@ -177,12 +179,11 @@ func AttributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
 }
 
 func GetServiceName(resAttr pcommon.Map) string {
-	var serviceName string
 	if v, ok := resAttr.Get(string(conventions.ServiceNameKey)); ok {
-		serviceName = v.AsString()
+		return v.AsString()
 	}
 
-	return serviceName
+	return ""
 }
 
 func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {
@@ -204,23 +205,6 @@ func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuant
 		values = append(values, value.Value())
 	}
 	return quantiles, values
-}
-
-// doWithTx is a copy of clickhouseexporter.doWithTx, it starts a transaction to exec SQL in fn.
-// This function is in a temporary status, after this PR get merged,
-// there will be a PR to move all db function and tool function to internal package.
-func doWithTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("db.Begin: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-	if err := fn(tx); err != nil {
-		return err
-	}
-	return tx.Commit()
 }
 
 func newPlaceholder(count int) *string {
