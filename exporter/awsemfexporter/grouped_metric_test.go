@@ -6,6 +6,7 @@ package awsemfexporter
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -430,13 +431,24 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 		assert.Len(t, groupedMetrics, 2)
 		expectedLabels := map[string]string{"label1": "value1"}
-		idx := 0
+
+		// Sort metadata list to prevent race condition
+		var metadataList []cWMetricMetadata
+		for _, v := range groupedMetrics {
+			metadataList = append(metadataList, v.metadata)
+		}
+		sort.Slice(metadataList, func(i, j int) bool {
+			return metadataList[i].batchIndex < metadataList[j].batchIndex
+		})
+
+		for i, metadata := range metadataList {
+			expectedMetadata := generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), i)
+			assert.Equal(t, expectedMetadata, metadata)
+		}
 		for _, v := range groupedMetrics {
 			assert.Len(t, v.metrics, 1)
 			assert.Len(t, v.labels, 1)
-			assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), idx), v.metadata)
 			assert.Equal(t, expectedLabels, v.labels)
-			idx++
 		}
 	})
 

@@ -91,6 +91,15 @@ func addToGroupedMetric(
 				// them together into one EMF log event, so don't set batchIndex when it's a summary metric
 				metadata.batchIndex = i
 			}
+
+			// Handle metric types with container insights
+			if metadata.receiver == containerInsightsReceiver {
+				// For container insights, treat gauge metrics as sum to keep metrics in the same EMF record
+				if metadata.metricDataType == pmetric.MetricTypeGauge {
+					metadata.metricDataType = pmetric.MetricTypeSum
+				}
+			}
+
 			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log

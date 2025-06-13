@@ -278,6 +278,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	neuronMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNeuronMonitorScraper")
 	kueueMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
 	kueueMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKueueMetricsScraper")
+	nvmeMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
+	nvmeMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeExporterScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -395,6 +397,19 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			"myServiceNS/containerInsightsKueueMetricsScraper",
 			containerInsightsReceiver,
 		},
+		{
+			"nvme receiver",
+			nvmeMetric,
+			map[string]string{
+				"isItAnError": "false",
+				"spanName":    "testSpan",
+			},
+			map[string]string{
+				"spanName": "testSpan",
+			},
+			"myServiceNS/containerInsightsNVMeExporterScraper",
+			containerInsightsReceiver,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -414,6 +429,25 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 						// round the metrics, the floats can get off by a very small amount
 						metric.value = math.Round(mv*100000) / 100000
 					}
+				}
+
+				// container insights has special handling such as converting gauges to sum
+				if tc.expectedReceiver == containerInsightsReceiver {
+					switch v.metadata.metricDataType {
+					case pmetric.MetricTypeSum:
+						assert.Len(t, v.metrics, 2)
+						assert.Equal(t, tc.counterLabels, v.labels)
+						assert.True(t, reflect.DeepEqual(counterSumMetrics, v.metrics) ||
+							reflect.DeepEqual(counterGaugeMetrics, v.metrics),
+						)
+					case pmetric.MetricTypeHistogram:
+						assert.Len(t, v.metrics, 1)
+						assert.Equal(t, tc.timerLabels, v.labels)
+						assert.Equal(t, timerMetrics, v.metrics)
+					default:
+						assert.Fail(t, fmt.Sprintf("Unhandled metric type %s not expected", v.metadata.metricDataType))
+					}
+					continue
 				}
 
 				switch v.metadata.metricDataType {
