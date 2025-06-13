@@ -129,9 +129,8 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		ServiceDiscoveryConfigs: discovery.Configs{
 			discovery.StaticConfig{
 				{
-					Targets: []model.LabelSet{
-						labels,
-					},
+					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.Endpoint)}},
+					Labels:  labels,
 				},
 			},
 		},
