@@ -7,6 +7,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,6 +47,9 @@ func TestLoadConfig(t *testing.T) {
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -87,6 +91,9 @@ func TestConfig(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -119,6 +126,9 @@ func TestConfigS3StorageClass(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
@@ -154,6 +164,9 @@ func TestConfigS3ACL(t *testing.T) {
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
 			ACL:               "bucket-owner-read",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
@@ -189,6 +202,9 @@ func TestConfigS3ACLDefined(t *testing.T) {
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
 			ACL:               "bucket-owner-full-control",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
@@ -227,6 +243,9 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 			S3ForcePathStyle:  true,
 			DisableSSL:        true,
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -340,6 +359,9 @@ func TestMarshallerName(t *testing.T) {
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "sumo_ic",
 	}, e,
@@ -355,6 +377,9 @@ func TestMarshallerName(t *testing.T) {
 			S3Bucket:          "bar",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_proto",
 	}, e,
@@ -388,6 +413,9 @@ func TestCompressionName(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "gzip",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -404,6 +432,9 @@ func TestCompressionName(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "none",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_proto",
 	}, e,
@@ -438,11 +469,51 @@ func TestResourceAttrsToS3(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
 		ResourceAttrsToS3: ResourceAttrsToS3{
 			S3Prefix: "com.awss3.prefix",
 		},
+	}, e,
+	)
+}
+
+func TestRetry(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "retry.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+
+	assert.Equal(t, &Config{
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD_IA",
+			RetryMode:         "standard",
+			RetryMaxAttempts:  5,
+			RetryMaxBackoff:   30 * time.Second,
+		},
+		MarshalerName: "otlp_json",
 	}, e,
 	)
 }

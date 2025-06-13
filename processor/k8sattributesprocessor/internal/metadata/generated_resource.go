@@ -196,6 +196,34 @@ func (rb *ResourceBuilder) SetK8sStatefulsetUID(val string) {
 	}
 }
 
+// SetServiceInstanceID sets provided value as "service.instance.id" attribute.
+func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
+	if rb.config.ServiceInstanceID.Enabled {
+		rb.res.Attributes().PutStr("service.instance.id", val)
+	}
+}
+
+// SetServiceName sets provided value as "service.name" attribute.
+func (rb *ResourceBuilder) SetServiceName(val string) {
+	if rb.config.ServiceName.Enabled {
+		rb.res.Attributes().PutStr("service.name", val)
+	}
+}
+
+// SetServiceNamespace sets provided value as "service.namespace" attribute.
+func (rb *ResourceBuilder) SetServiceNamespace(val string) {
+	if rb.config.ServiceNamespace.Enabled {
+		rb.res.Attributes().PutStr("service.namespace", val)
+	}
+}
+
+// SetServiceVersion sets provided value as "service.version" attribute.
+func (rb *ResourceBuilder) SetServiceVersion(val string) {
+	if rb.config.ServiceVersion.Enabled {
+		rb.res.Attributes().PutStr("service.version", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

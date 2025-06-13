@@ -12,9 +12,10 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - ArthurSens
+    - braydonk
     - ChrsMark
     - crobert-1
-    # - dashpole on leave
+    - dashpole
     - dehaansa
     - edmocosta
     - mwear
@@ -24,7 +25,6 @@ assigneeGroups:
     - atoulme
     - bogdandrutu
     - codeboten
-    - djaglowski
     - dmitryax
     - evan-bradley
     - MovieStoreGuy

@@ -25,11 +25,13 @@ const (
 
 	// GitLab default headers: https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#delivery-headers
 	defaultUserAgentHeader         = "User-Agent"
-	defaultGitlabInstanceHeader    = "X-Gitlab-Instance"
-	defaultGitlabWebhookUUIDHeader = "X-Gitlab-Webhook-UUID"
-	defaultGitlabEventHeader       = "X-Gitlab-Event"
-	defaultGitlabEventUUIDHeader   = "X-Gitlab-Event-UUID"
+	defaultGitLabInstanceHeader    = "X-Gitlab-Instance"
+	defaultGitLabWebhookUUIDHeader = "X-Gitlab-Webhook-UUID"
+	defaultGitLabEventHeader       = "X-Gitlab-Event"
+	defaultGitLabEventUUIDHeader   = "X-Gitlab-Event-UUID"
 	defaultIdempotencyKeyHeader    = "Idempotency-Key"
+	// #nosec G101 - Not an actual secret, just the name of a header: https://docs.gitlab.com/user/project/integrations/webhooks/#create-a-webhook
+	defaultGitLabSecretTokenHeader = "X-Gitlab-Token"
 )
 
 var (
@@ -43,6 +45,9 @@ var (
 // Config that is exposed to this gitlab receiver through the OTEL config.yaml
 type Config struct {
 	WebHook WebHook `mapstructure:"webhook"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type WebHook struct {
@@ -60,6 +65,9 @@ type WebHook struct {
 type GitlabHeaders struct {
 	Customizable map[string]string `mapstructure:","` // can be overwritten via required_headers
 	Fixed        map[string]string `mapstructure:","` // are not allowed to be overwritten
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func createDefaultConfig() component.Config {
@@ -73,12 +81,12 @@ func createDefaultConfig() component.Config {
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
-					defaultGitlabInstanceHeader: "https://gitlab.com",
+					defaultGitLabInstanceHeader: "https://gitlab.com",
 				},
 				Fixed: map[string]string{
-					defaultGitlabWebhookUUIDHeader: "",
-					defaultGitlabEventHeader:       "Pipeline Hook",
-					defaultGitlabEventUUIDHeader:   "",
+					defaultGitLabWebhookUUIDHeader: "",
+					defaultGitLabEventHeader:       "Pipeline Hook",
+					defaultGitLabEventUUIDHeader:   "",
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},

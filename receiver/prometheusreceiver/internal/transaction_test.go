@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
@@ -25,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -42,16 +43,16 @@ const (
 
 var (
 	target = scrape.NewTarget(
-		// processedLabels contain label values after processing (e.g. relabeling)
 		labels.FromMap(map[string]string{
 			model.InstanceLabel: "localhost:8080",
 		}),
-		// discoveredLabels contain labels prior to any processing
-		labels.FromMap(map[string]string{
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
 			model.AddressLabel: "address:8080",
 			model.SchemeLabel:  "http",
-		}),
-		nil)
+		},
+		nil,
+	)
 
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
@@ -217,10 +218,10 @@ func testTransactionAppendMultipleResources(t *testing.T, enableNativeHistograms
 
 	for _, expectedResource := range expectedResources {
 		foundResource := false
-		expectedServiceName, _ := expectedResource.Attributes().Get(conventions.AttributeServiceName)
+		expectedServiceName, _ := expectedResource.Attributes().Get(string(conventions.ServiceNameKey))
 		for i := 0; i < mds[0].ResourceMetrics().Len(); i++ {
 			res := mds[0].ResourceMetrics().At(i).Resource()
-			if serviceName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
+			if serviceName, ok := res.Attributes().Get(string(conventions.ServiceNameKey)); ok {
 				if serviceName.AsString() == expectedServiceName.AsString() {
 					foundResource = true
 					require.Equal(t, expectedResource, res)
@@ -454,17 +455,17 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 	sink := new(consumertest.MetricsSink)
 
 	scrapeTarget := scrape.NewTarget(
-		// processedLabels contain label values after processing (e.g. relabeling)
 		labels.FromMap(map[string]string{
 			model.InstanceLabel: "localhost:8080",
 			model.JobLabel:      "federate",
 		}),
-		// discoveredLabels contain labels prior to any processing
-		labels.FromMap(map[string]string{
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
 			model.AddressLabel: "address:8080",
 			model.SchemeLabel:  "http",
-		}),
-		nil)
+		},
+		nil,
+	)
 
 	ctx := scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), scrapeTarget),

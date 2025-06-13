@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -182,19 +182,19 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        propertiesRaw,
 			},
 			expected: map[string]any{
-				azureTenantID:                           "tenant.id",
-				azureOperationName:                      "operation.name",
-				azureOperationVersion:                   "operation.version",
-				azureCategory:                           "category",
-				azureCorrelationID:                      correlationID,
-				azureResultType:                         "result.type",
-				azureResultSignature:                    "result.signature",
-				azureResultDescription:                  "result.description",
-				azureDuration:                           int64(1234),
-				conventions.AttributeNetworkPeerAddress: "127.0.0.1",
-				azureIdentity:                           "someone",
-				conventions.AttributeCloudRegion:        "location",
-				azureProperties:                         properties,
+				azureTenantID:                             "tenant.id",
+				azureOperationName:                        "operation.name",
+				azureOperationVersion:                     "operation.version",
+				azureCategory:                             "category",
+				azureCorrelationID:                        correlationID,
+				azureResultType:                           "result.type",
+				azureResultSignature:                      "result.signature",
+				azureResultDescription:                    "result.description",
+				azureDuration:                             int64(1234),
+				string(conventions.NetworkPeerAddressKey): "127.0.0.1",
+				azureIdentity:                             "someone",
+				string(conventions.CloudRegionKey):        "location",
+				azureProperties:                           properties,
 			},
 		},
 		{
@@ -318,6 +318,47 @@ func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogs_FrontDoorWebApplicationFirewallLog(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/frontdoorwebapplicationfirewalllog"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+		expectsErr       string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+
+			if test.expectsErr != "" {
+				require.ErrorContains(t, err, test.expectsErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+		})
+	}
+}
+
 func TestUnmarshalLogs_Files(t *testing.T) {
 	// TODO @constanca-m Eventually this test function will be fully
 	// replaced with TestUnmarshalLogs_<category>, once all the currently supported
@@ -362,10 +403,6 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 		"front_door_health_probe_logs": {
 			logFilename:      "log-frontdoorhealthprobelog.json",
 			expectedFilename: "front-door-health-probe-log-expected.yaml",
-		},
-		"front_door_way_logs": {
-			logFilename:      "log-frontdoorwaflog.json",
-			expectedFilename: "front-door-waf-log-expected.yaml",
 		},
 		"log_bad_time": {
 			logFilename:      "log-bad-time.json",

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
@@ -62,17 +62,17 @@ func TestDetectAzureAvailable(t *testing.T) {
 	mp.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
-		conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformAzureVM,
-		conventions.AttributeHostName:       "name",
-		conventions.AttributeCloudRegion:    "location",
-		conventions.AttributeHostID:         "vmID",
-		conventions.AttributeCloudAccountID: "subscriptionID",
-		"azure.vm.name":                     "name",
-		"azure.vm.size":                     "vmSize",
-		"azure.resourcegroup.name":          "resourceGroup",
-		"azure.vm.scaleset.name":            "myScaleset",
-		"azure.tag.tag1key":                 "value1",
+		string(conventions.CloudProviderKey):  conventions.CloudProviderAzure.Value.AsString(),
+		string(conventions.CloudPlatformKey):  conventions.CloudPlatformAzureVM.Value.AsString(),
+		string(conventions.HostNameKey):       "name",
+		string(conventions.CloudRegionKey):    "location",
+		string(conventions.HostIDKey):         "vmID",
+		string(conventions.CloudAccountIDKey): "subscriptionID",
+		"azure.vm.name":                       "name",
+		"azure.vm.size":                       "vmSize",
+		"azure.resourcegroup.name":            "resourceGroup",
+		"azure.vm.scaleset.name":              "myScaleset",
+		"azure.tag.tag1key":                   "value1",
 	}
 
 	notExpected := map[string]any{

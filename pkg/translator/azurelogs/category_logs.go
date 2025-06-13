@@ -13,7 +13,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 	categoryAzureCdnAccessLog                  = "AzureCdnAccessLog"
 	categoryFrontDoorAccessLog                 = "FrontDoorAccessLog"
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
-	categoryFrontdoorWebApplicationFirewallLog = "FrontdoorWebApplicationFirewallLog"
+	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
 	categoryAppServiceAppLogs                  = "AppServiceAppLogs"
 	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
 	categoryAppServiceAuthenticationLogs       = "AppServiceAuthenticationLogs"
@@ -57,6 +57,25 @@ const (
 	attributeTLSServerName = "tls.server.name"
 
 	missingPort = "missing port in address"
+)
+
+const (
+	// azure front door WAF attributes
+
+	// attributeAzureFrontDoorWAFRuleName holds the name of the WAF rule that
+	// the request matched.
+	attributeAzureFrontDoorWAFRuleName = "azure.frontdoor.waf.rule.name"
+
+	// attributeAzureFrontDoorWAFPolicyName holds the name of the WAF policy
+	// that processed the request.
+	attributeAzureFrontDoorWAFPolicyName = "azure.frontdoor.waf.policy.name"
+
+	// attributeAzureFrontDoorWAFPolicyMode holds the operations mode of the
+	// WAF policy.
+	attributeAzureFrontDoorWAFPolicyMode = "azure.frontdoor.waf.policy.mode"
+
+	// attributeAzureFrontDoorWAFAction holds the action taken on the request.
+	attributeAzureFrontDoorWAFAction = "azure.frontdoor.waf.action"
 )
 
 var (
@@ -173,18 +192,18 @@ func addRequestURIProperties(uri string, record plog.LogRecord) error {
 	if errURL != nil {
 		return fmt.Errorf("failed to parse request URI %q: %w", uri, errURL)
 	}
-	record.Attributes().PutStr(conventions.AttributeURLOriginal, uri)
+	record.Attributes().PutStr(string(conventions.URLOriginalKey), uri)
 
 	if port := u.Port(); port != "" {
-		if err := putInt(conventions.AttributeURLPort, u.Port(), record); err != nil {
+		if err := putInt(string(conventions.URLPortKey), u.Port(), record); err != nil {
 			return fmt.Errorf("failed to get port number from value %q: %w", port, err)
 		}
 	}
 
-	putStr(conventions.AttributeURLScheme, u.Scheme, record)
-	putStr(conventions.AttributeURLPath, u.Path, record)
-	putStr(conventions.AttributeURLQuery, u.RawQuery, record)
-	putStr(conventions.AttributeURLFragment, u.Fragment, record)
+	putStr(string(conventions.URLSchemeKey), u.Scheme, record)
+	putStr(string(conventions.URLPathKey), u.Path, record)
+	putStr(string(conventions.URLQueryKey), u.RawQuery, record)
+	putStr(string(conventions.URLFragmentKey), u.Fragment, record)
 
 	return nil
 }
@@ -203,8 +222,8 @@ func addSecurityProtocolProperties(securityProtocol string, record plog.LogRecor
 		return fmt.Errorf(`security protocol %q has invalid format, expects "<name> <version>"`, securityProtocol)
 	}
 
-	record.Attributes().PutStr(conventions.AttributeTLSProtocolName, name)
-	record.Attributes().PutStr(conventions.AttributeTLSProtocolVersion, version)
+	record.Attributes().PutStr(string(conventions.TLSProtocolNameKey), name)
+	record.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), version)
 
 	return nil
 }
@@ -215,7 +234,7 @@ func addErrorInfoProperties(errorInfo string, record plog.LogRecord) {
 	if errorInfo == noError {
 		return
 	}
-	record.Attributes().PutStr(conventions.AttributeExceptionType, errorInfo)
+	record.Attributes().PutStr(string(conventions.ExceptionTypeKey), errorInfo)
 }
 
 // handleDestination puts the value for the backend host name and endpoint
@@ -248,18 +267,18 @@ func handleDestination(backendHostname string, endpoint string, record plog.LogR
 		if endpoint == "" {
 			return nil
 		}
-		err := addFields(endpoint, conventions.AttributeDestinationAddress, conventions.AttributeDestinationPort)
+		err := addFields(endpoint, string(conventions.DestinationAddressKey), string(conventions.DestinationPortKey))
 		if err != nil {
 			return fmt.Errorf("failed to parse endpoint %q: %w", endpoint, err)
 		}
 	} else {
-		err := addFields(backendHostname, conventions.AttributeDestinationAddress, conventions.AttributeDestinationPort)
+		err := addFields(backendHostname, string(conventions.DestinationAddressKey), string(conventions.DestinationPortKey))
 		if err != nil {
 			return fmt.Errorf("failed to parse backend hostname %q: %w", backendHostname, err)
 		}
 
 		if endpoint != backendHostname && endpoint != "" {
-			err = addFields(endpoint, conventions.AttributeNetworkPeerAddress, conventions.AttributeNetworkPeerPort)
+			err = addFields(endpoint, string(conventions.NetworkPeerAddressKey), string(conventions.NetworkPeerPortKey))
 			if err != nil {
 				return fmt.Errorf("failed to parse endpoint %q: %w", endpoint, err)
 			}
@@ -277,16 +296,16 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse AzureCdnAccessLog properties: %w", err)
 	}
 
-	if err := putInt(conventions.AttributeHTTPRequestSize, properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPRequestSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(conventions.AttributeHTTPResponseSize, properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(conventions.AttributeClientPort, properties.ClientPort, record); err != nil {
+	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
 		return err
 	}
-	if err := putInt(conventions.AttributeHTTPResponseStatusCode, properties.HTTPStatusCode, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseStatusCodeKey), properties.HTTPStatusCode, record); err != nil {
 		return err
 	}
 
@@ -317,21 +336,21 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	}
 
 	putStr(attributeAzureRef, properties.TrackingReference, record)
-	putStr(conventions.AttributeHTTPRequestMethod, properties.HTTPMethod, record)
-	putStr(conventions.AttributeNetworkProtocolVersion, properties.HTTPVersion, record)
-	putStr(conventions.AttributeNetworkProtocolName, properties.RequestProtocol, record)
+	putStr(string(conventions.HTTPRequestMethodKey), properties.HTTPMethod, record)
+	putStr(string(conventions.NetworkProtocolVersionKey), properties.HTTPVersion, record)
+	putStr(string(conventions.NetworkProtocolNameKey), properties.RequestProtocol, record)
 	putStr(attributeTLSServerName, properties.SNI, record)
-	putStr(conventions.AttributeUserAgentOriginal, properties.UserAgent, record)
-	putStr(conventions.AttributeClientAddress, properties.ClientIP, record)
-	putStr(conventions.AttributeSourceAddress, properties.SocketIP, record)
+	putStr(string(conventions.UserAgentOriginalKey), properties.UserAgent, record)
+	putStr(string(conventions.ClientAddressKey), properties.ClientIP, record)
+	putStr(string(conventions.SourceAddressKey), properties.SocketIP, record)
 
 	putStr(attributeAzurePop, properties.Pop, record)
 	putStr(attributeCacheStatus, properties.CacheStatus, record)
 
 	if properties.IsReceivedFromClient {
-		record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "receive")
+		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
 	} else {
-		record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "transmit")
+		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
 	}
 
 	return nil
@@ -351,11 +370,46 @@ func addFrontDoorHealthProbeLogProperties(_ []byte, _ plog.LogRecord) error {
 	return errStillToImplement
 }
 
+// See https://learn.microsoft.com/en-us/azure/web-application-firewall/afds/waf-front-door-monitor?pivots=front-door-standard-premium#waf-logs
+type frontDoorWAFLogProperties struct {
+	ClientIP          string `json:"clientIP"`
+	ClientPort        string `json:"clientPort"`
+	SocketIP          string `json:"socketIP"`
+	RequestURI        string `json:"requestUri"`
+	RuleName          string `json:"ruleName"`
+	Policy            string `json:"policy"`
+	Action            string `json:"action"`
+	Host              string `json:"host"`
+	TrackingReference string `json:"trackingReference"`
+	PolicyMode        string `json:"policyMode"`
+}
+
 // addFrontDoorWAFLogProperties parses the Front Door access log, and adds
 // the relevant attributes to the record
-func addFrontDoorWAFLogProperties(_ []byte, _ plog.LogRecord) error {
-	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
-	return errStillToImplement
+func addFrontDoorWAFLogProperties(data []byte, record plog.LogRecord) error {
+	var properties frontDoorWAFLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse AzureCdnAccessLog properties: %w", err)
+	}
+
+	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
+		return err
+	}
+
+	if err := addRequestURIProperties(properties.RequestURI, record); err != nil {
+		return fmt.Errorf(`failed to handle "requestUri" field: %w`, err)
+	}
+
+	putStr(string(conventions.ClientAddressKey), properties.ClientIP, record)
+	putStr(string(conventions.SourceAddressKey), properties.SocketIP, record)
+	putStr(attributeAzureRef, properties.TrackingReference, record)
+	putStr("http.request.header.host", properties.Host, record)
+	putStr(attributeAzureFrontDoorWAFPolicyName, properties.Policy, record)
+	putStr(attributeAzureFrontDoorWAFPolicyMode, properties.PolicyMode, record)
+	putStr(attributeAzureFrontDoorWAFRuleName, properties.RuleName, record)
+	putStr(attributeAzureFrontDoorWAFAction, properties.Action, record)
+
+	return nil
 }
 
 // addAppServiceAppLogsProperties parses the App Service access log, and adds

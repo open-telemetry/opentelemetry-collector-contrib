@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -87,8 +87,9 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:    configkafka.NewDefaultClientConfig(),
 				Producer:        configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
-					Topic:    "legacy_topic",
-					Encoding: "otlp_proto",
+					Topic:                "legacy_topic",
+					Encoding:             "otlp_proto",
+					TopicFromMetadataKey: "metadata_key",
 				},
 				Metrics: SignalConfig{
 					Topic:    "metrics_topic",
