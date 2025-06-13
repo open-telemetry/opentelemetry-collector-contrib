@@ -259,6 +259,63 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	assert.Equal(t, 0, targetExemplar2.FilteredAttributes().Len())
 }
 
+func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_ZeroBoundsZeroCounts(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	ts := &monitoringpb.TimeSeries{
+		Metric: &metric.Metric{},
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 13},
+					EndTime:   &timestamppb.Timestamp{Seconds: 73},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_DistributionValue{
+						DistributionValue: &distribution.Distribution{
+							Count: int64(0),
+							BucketOptions: &distribution.Distribution_BucketOptions{
+								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+										Bounds: []float64{},
+									},
+								},
+							},
+							BucketCounts: []int64{},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertDistributionToMetrics(ts, m)
+
+	histogram := m.Histogram()
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, histogram.AggregationTemporality())
+	require.Equal(t, 1, histogram.DataPoints().Len())
+	targetDataPoint := histogram.DataPoints().At(0)
+
+	attributes := targetDataPoint.Attributes()
+	require.Equal(t, 0, attributes.Len())
+
+	assert.Equal(t, int64(13), targetDataPoint.StartTimestamp().AsTime().Unix())
+	assert.Equal(t, int64(73), targetDataPoint.Timestamp().AsTime().Unix())
+	assert.Equal(t, uint64(0), targetDataPoint.Count())
+
+	bucketCounts := targetDataPoint.BucketCounts()
+	require.Equal(t, 0, bucketCounts.Len())
+	bounds := targetDataPoint.ExplicitBounds()
+	require.Equal(t, 0, bounds.Len())
+
+	assert.False(t, targetDataPoint.HasSum())
+	assert.False(t, targetDataPoint.HasMin())
+	assert.False(t, targetDataPoint.HasMax())
+	assert.Equal(t, 0, targetDataPoint.Exemplars().Len())
+}
+
 func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_OnlyUnderAndOverflow(t *testing.T) {
 	logger := zap.NewNop()
 	mb := NewMetricsBuilder(logger)
