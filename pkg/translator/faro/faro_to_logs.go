@@ -19,10 +19,11 @@ import (
 )
 
 type kvTime struct {
-	kv   *keyVal
-	ts   time.Time
-	kind faroTypes.Kind
-	hash uint64
+	kv    *keyVal
+	ts    time.Time
+	kind  faroTypes.Kind
+	hash  uint64
+	level string
 }
 
 // TranslateToLogs converts faro.Payload into Logs pipeline data
@@ -33,32 +34,41 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 	var kvList []*kvTime
 
 	for _, logItem := range payload.Logs {
+		level := "error"
+		if logItem.LogLevel != "" {
+			level = string(logItem.LogLevel)
+		}
+
 		kvList = append(kvList, &kvTime{
-			kv:   logToKeyVal(logItem),
-			ts:   logItem.Timestamp,
-			kind: faroTypes.KindLog,
+			kv:    logToKeyVal(logItem),
+			ts:    logItem.Timestamp,
+			kind:  faroTypes.KindLog,
+			level: level,
 		})
 	}
 	for _, exception := range payload.Exceptions {
 		kvList = append(kvList, &kvTime{
-			kv:   exceptionToKeyVal(exception),
-			ts:   exception.Timestamp,
-			kind: faroTypes.KindException,
-			hash: xxh3.HashString(exception.Value),
+			kv:    exceptionToKeyVal(exception),
+			ts:    exception.Timestamp,
+			kind:  faroTypes.KindException,
+			level: "error",
+			hash:  xxh3.HashString(exception.Value),
 		})
 	}
 	for _, measurement := range payload.Measurements {
 		kvList = append(kvList, &kvTime{
-			kv:   measurementToKeyVal(measurement),
-			ts:   measurement.Timestamp,
-			kind: faroTypes.KindMeasurement,
+			kv:    measurementToKeyVal(measurement),
+			ts:    measurement.Timestamp,
+			kind:  faroTypes.KindMeasurement,
+			level: "info",
 		})
 	}
 	for _, event := range payload.Events {
 		kvList = append(kvList, &kvTime{
-			kv:   eventToKeyVal(event),
-			ts:   event.Timestamp,
-			kind: faroTypes.KindEvent,
+			kv:    eventToKeyVal(event),
+			ts:    event.Timestamp,
+			kind:  faroTypes.KindEvent,
+			level: "info",
 		})
 	}
 	span.SetAttributes(attribute.Int("count", len(kvList)))
