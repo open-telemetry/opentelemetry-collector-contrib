@@ -1,0 +1,12 @@
+type: kedascaler
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [ronkorland]
+
+tests:
+  expect_consumer_error: true
