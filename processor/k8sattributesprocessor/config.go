@@ -101,6 +101,7 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
 			string(conventions.ContainerImageNameKey), string(conventions.ContainerImageTagKey),
+			containerPorts, containerCPURequest
 			string(conventions.ServiceNamespaceKey), string(conventions.ServiceNameKey),
 			string(conventions.ServiceVersionKey), string(conventions.ServiceInstanceIDKey),
 			containerImageRepoDigests, clusterUID:
@@ -143,6 +144,7 @@ type ExtractConfig struct {
 	//   k8s.statefulset.name, k8s.statefulset.uid,
 	//   k8s.container.name, container.id, container.image.name,
 	//   container.image.tag, container.image.repo_digests
+	//   container.ports, k8s.container.cpu.request,
 	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
