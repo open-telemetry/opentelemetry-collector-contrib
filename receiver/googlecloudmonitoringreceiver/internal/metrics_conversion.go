@@ -195,10 +195,13 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 
 		mb.convertExemplars(distributionValue, &targetDataPoint)
 
+		sourceBucketCounts := distributionValue.GetBucketCounts()
+
 		switch bucketOptions.Options.(type) {
 		case *distribution.Distribution_BucketOptions_ExplicitBuckets:
 			mb.convertDistributionDataPointExplicitBuckets(
 				ts.Metric.Type,
+				len(sourceBucketCounts),
 				bucketOptions.GetExplicitBuckets(),
 				&targetDataPoint,
 			)
@@ -224,7 +227,6 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 		}
 
 		countTotal := uint64(0)
-		sourceBucketCounts := sourceValue.GetDistributionValue().GetBucketCounts()
 		targetBucketCounts := targetDataPoint.BucketCounts()
 		targetBucketCounts.EnsureCapacity(len(sourceBucketCounts))
 		for _, bucketCount := range sourceBucketCounts {
@@ -256,12 +258,13 @@ func convertDistributionLabels(sourceLabels map[string]string) pcommon.Map {
 
 func (mb *MetricsBuilder) convertDistributionDataPointExplicitBuckets(
 	metricType string,
+	numberOfSourceBucketCounts int,
 	buckets *distribution.Distribution_BucketOptions_Explicit,
 	targetDataPoint *pmetric.HistogramDataPoint,
 ) {
 	bounds := buckets.GetBounds()
-	if len(bounds) == 0 {
-		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point with explicit bucket type and zero buckets",
+	if len(bounds) == 0 && numberOfSourceBucketCounts > 0 {
+		mb.logger.Debug("Cannot transform Google Cloud Monitoring distribution data point with explicit bucket, 0 buckets and > 0 counts",
 			zap.String("name", metricType),
 		)
 		return
