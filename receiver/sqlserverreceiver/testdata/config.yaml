@@ -15,10 +15,8 @@ sqlserver/named:
     server.address:
       enabled: true
   top_query_collection:
-    enabled: true
     lookback_time: 60
     max_query_sample_count: 1000
     top_query_count: 200
   query_sample_collection:
-    enabled: true
     max_rows_per_query: 1450
