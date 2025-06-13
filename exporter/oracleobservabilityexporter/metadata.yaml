@@ -1,0 +1,9 @@
+type: oracleobservability
+
+status:
+  class: exporter
+  stability:
+    development: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: []
