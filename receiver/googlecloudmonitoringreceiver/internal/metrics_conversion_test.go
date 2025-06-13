@@ -5,7 +5,6 @@ package internal
 
 import (
 	"fmt"
-	"math"
 	"testing"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -224,11 +223,10 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	}
 
 	bounds := targetDataPoint.ExplicitBounds()
-	require.Equal(t, 4, bounds.Len())
+	require.Equal(t, 3, bounds.Len())
 	assert.Equal(t, 11.1, bounds.At(0))
 	assert.Equal(t, 22.2, bounds.At(1))
 	assert.Equal(t, 33.3, bounds.At(2))
-	assert.True(t, math.IsInf(bounds.At(3), 1))
 
 	assert.False(t, targetDataPoint.HasSum())
 	assert.False(t, targetDataPoint.HasMin())
@@ -322,9 +320,8 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	}
 
 	bounds := targetDataPoint.ExplicitBounds()
-	require.Equal(t, 2, bounds.Len())
+	require.Equal(t, 1, bounds.Len())
 	assert.Equal(t, 22.2, bounds.At(0))
-	assert.True(t, math.IsInf(bounds.At(1), 1))
 
 	assert.False(t, targetDataPoint.HasSum())
 	assert.False(t, targetDataPoint.HasMin())
@@ -412,11 +409,10 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDa
 		}
 
 		bounds := targetDataPoint.ExplicitBounds()
-		require.Equal(t, 4, bounds.Len())
+		require.Equal(t, 3, bounds.Len())
 		assert.Equal(t, boundsAllDataPoints[i][0], bounds.At(0))
 		assert.Equal(t, boundsAllDataPoints[i][1], bounds.At(1))
 		assert.Equal(t, boundsAllDataPoints[i][2], bounds.At(2))
-		assert.True(t, math.IsInf(bounds.At(3), 1))
 
 		assert.False(t, targetDataPoint.HasSum())
 		assert.False(t, targetDataPoint.HasMin())
@@ -499,11 +495,10 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	}
 
 	bounds := targetDataPoint.ExplicitBounds()
-	require.Equal(t, 4, bounds.Len())
+	require.Equal(t, 3, bounds.Len())
 	assert.Equal(t, 11.1, bounds.At(0))
 	assert.Equal(t, 18.8, bounds.At(1))
 	assert.Equal(t, 26.5, bounds.At(2))
-	assert.True(t, math.IsInf(bounds.At(3), 1))
 
 	assert.False(t, targetDataPoint.HasSum())
 	assert.False(t, targetDataPoint.HasMin())
@@ -575,9 +570,8 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	}
 
 	bounds := targetDataPoint.ExplicitBounds()
-	require.Equal(t, 2, bounds.Len())
+	require.Equal(t, 1, bounds.Len())
 	assert.Equal(t, 11.1, bounds.At(0))
-	assert.True(t, math.IsInf(bounds.At(1), 1))
 
 	assert.False(t, targetDataPoint.HasSum())
 	assert.False(t, targetDataPoint.HasMin())
@@ -659,11 +653,10 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	}
 
 	bounds := targetDataPoint.ExplicitBounds()
-	require.Equal(t, 4, bounds.Len())
+	require.Equal(t, 3, bounds.Len())
 	assert.Equal(t, float64(10), bounds.At(0))
 	assert.Equal(t, float64(12), bounds.At(1))
 	assert.InDelta(t, 14.4, bounds.At(2), 0.00000001, "explicit bound is '%f', expected 14.4", bounds.At(2))
-	assert.True(t, math.IsInf(bounds.At(3), 1))
 
 	assert.False(t, targetDataPoint.HasSum())
 	assert.False(t, targetDataPoint.HasMin())
@@ -735,9 +728,8 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	}
 
 	bounds := targetDataPoint.ExplicitBounds()
-	require.Equal(t, 2, bounds.Len())
+	require.Equal(t, 1, bounds.Len())
 	assert.Equal(t, float64(10), bounds.At(0))
-	assert.True(t, math.IsInf(bounds.At(1), 1))
 
 	assert.False(t, targetDataPoint.HasSum())
 	assert.False(t, targetDataPoint.HasMin())
