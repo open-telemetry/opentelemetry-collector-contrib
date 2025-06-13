@@ -6,7 +6,9 @@ package datadogextension
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
@@ -50,8 +52,8 @@ func TestNewExtension(t *testing.T) {
 		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		require.NotNil(t, ext)
-		assert.Equal(t, "test-host", ext.host.Identifier)
-		assert.Equal(t, "test-uuid", ext.uuid)
+		assert.Equal(t, "test-host", ext.info.host.Identifier)
+		assert.Equal(t, "test-uuid", ext.info.uuid)
 		assert.NotNil(t, ext.GetSerializer(), "serializer should be initialized")
 	})
 
@@ -91,7 +93,7 @@ func TestExtensionLifecycle(t *testing.T) {
 		err = ext.Start(context.Background(), host)
 		require.NoError(t, err)
 		assert.True(t, mockSerializer.startCalled, "serializer.Start should be called")
-		assert.NotEmpty(t, ext.moduleInfos.Receiver, "module infos should be populated")
+		assert.NotEmpty(t, ext.info.modules.Receiver, "module infos should be populated")
 
 		// NotifyConfig will create and start the http server
 		err = ext.NotifyConfig(context.Background(), confmap.New())
@@ -130,7 +132,7 @@ func TestExtensionLifecycle(t *testing.T) {
 		// NopHost does not implement hostcapabilities.ModuleInfo
 		err = ext.Start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err)
-		assert.Empty(t, ext.moduleInfos, "module infos should be empty")
+		assert.Empty(t, ext.info.modules, "module infos should be empty")
 	})
 }
 
@@ -158,13 +160,13 @@ func TestNotifyConfig(t *testing.T) {
 			"receivers": map[string]any{"otlp": nil},
 			"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
 		})
-		ext.moduleInfos = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
+		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 		}}
 
 		err = ext.NotifyConfig(context.Background(), conf)
 		require.NoError(t, err)
-		assert.NotNil(t, ext.collectorConfig)
+		assert.NotNil(t, ext.configs.collector)
 		assert.NotNil(t, ext.otelCollectorMetadata)
 		assert.Equal(t, "1.2.3", ext.otelCollectorMetadata.CollectorVersion)
 		assert.NotEmpty(t, ext.otelCollectorMetadata.FullComponents)
@@ -264,7 +266,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		ext.serializer = &mockSerializer{}
 
 		// Set moduleInfos to empty to trigger error path in PopulateFullComponentsJSON
-		ext.moduleInfos = service.ModuleInfos{}
+		ext.info.modules = service.ModuleInfos{}
 
 		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -310,7 +312,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 				},
 			},
 		})
-		ext.moduleInfos = service.ModuleInfos{
+		ext.info.modules = service.ModuleInfos{
 			Receiver: map[component.Type]service.ModuleInfo{
 				component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 			},
@@ -337,6 +339,176 @@ func TestRealUUIDProvider(t *testing.T) {
 	uuid := p.NewString()
 	assert.NotEmpty(t, uuid)
 	assert.Regexp(t, `^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`, uuid, "should be a valid UUID")
+}
+
+func TestPeriodicPayloadSending(t *testing.T) {
+	t.Run("periodic sending starts and stops properly", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+
+		mockSerializer := &mockSerializer{}
+		ext.serializer = mockSerializer
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		conf := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{"otlp": nil},
+			"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
+		})
+		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
+			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
+		}}
+
+		// NotifyConfig should start the periodic payload sending
+		err = ext.NotifyConfig(context.Background(), conf)
+		require.NoError(t, err)
+
+		// Verify periodic sending components are initialized
+		assert.NotNil(t, ext.payloadSender.ticker, "payload ticker should be initialized")
+		assert.NotNil(t, ext.payloadSender.ctx, "payload context should be initialized")
+		assert.NotNil(t, ext.payloadSender.cancel, "payload cancel function should be initialized")
+		assert.NotNil(t, ext.payloadSender.channel, "payload send channel should be initialized")
+
+		// Shutdown should stop periodic sending
+		err = ext.Shutdown(context.Background())
+		require.NoError(t, err)
+
+		// Verify context is cancelled
+		select {
+		case <-ext.payloadSender.ctx.Done():
+			// Context should be cancelled
+		default:
+			t.Fatal("payload context should be cancelled after shutdown")
+		}
+	})
+
+	t.Run("manual payload trigger works", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+
+		// Use a counting mock serializer to track payload sends
+		mockSerializer := &countingMockSerializer{}
+		ext.serializer = mockSerializer
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		conf := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{"otlp": nil},
+			"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
+		})
+		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
+			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
+		}}
+
+		// NotifyConfig will send the initial payload
+		err = ext.NotifyConfig(context.Background(), conf)
+		require.NoError(t, err)
+
+		initialCount := mockSerializer.GetSendCount()
+
+		// Trigger manual payload send
+		select {
+		case ext.payloadSender.channel <- struct{}{}:
+			// Successfully sent trigger
+		default:
+			t.Fatal("unable to send manual trigger")
+		}
+
+		// Give some time for the goroutine to process
+		require.Eventually(t, func() bool {
+			return mockSerializer.GetSendCount() > initialCount
+		}, time.Second, 10*time.Millisecond, "manual payload should be sent")
+
+		// Cleanup
+		err = ext.Shutdown(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("periodic sending handles errors gracefully", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+
+		// Mock serializer that fails after the first call
+		mockSerializer := &failAfterFirstCallSerializer{}
+		ext.serializer = mockSerializer
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		conf := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{"otlp": nil},
+			"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
+		})
+		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
+			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
+		}}
+
+		// NotifyConfig will succeed with the first payload
+		err = ext.NotifyConfig(context.Background(), conf)
+		require.NoError(t, err)
+
+		// Trigger manual payload send which should fail but not crash
+		select {
+		case ext.payloadSender.channel <- struct{}{}:
+			// Successfully sent trigger
+		default:
+			t.Fatal("unable to send manual trigger")
+		}
+
+		// Give some time for the error to be logged, but the extension should remain stable
+		time.Sleep(100 * time.Millisecond)
+
+		// Verify the extension is still functional by shutting down cleanly
+		err = ext.Shutdown(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("shutdown handles nil fields gracefully", func(t *testing.T) {
+		ext := &datadogExtension{}
+
+		// Should not panic even with nil fields
+		assert.NotPanics(t, func() {
+			ext.stopPeriodicPayloadSending()
+		})
+	})
 }
 
 // Mock providers for testing
@@ -367,23 +539,30 @@ func (p *mockUUIDProvider) NewString() string {
 var _ agentcomponents.SerializerWithForwarder = (*mockSerializer)(nil)
 
 type mockSerializer struct {
+	mu          sync.RWMutex
 	startCalled bool
 	stopCalled  bool
 	state       uint32
 }
 
 func (m *mockSerializer) Start() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.startCalled = true
 	m.state = defaultforwarder.Started
 	return nil
 }
 
 func (m *mockSerializer) Stop() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.stopCalled = true
 	m.state = defaultforwarder.Stopped
 }
 
 func (m *mockSerializer) State() uint32 {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.state
 }
 
@@ -412,4 +591,45 @@ type mockFailingSerializer struct {
 
 func (m *mockFailingSerializer) SendMetadata(marshaler.JSONMarshaler) error {
 	return errors.New("payload send failed")
+}
+
+// Mock serializer that counts the number of payload sends for testing periodic functionality
+type countingMockSerializer struct {
+	mockSerializer
+	sendCount int
+}
+
+func (m *countingMockSerializer) SendMetadata(marshaler.JSONMarshaler) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.sendCount++
+	return nil
+}
+
+func (m *countingMockSerializer) GetSendCount() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.sendCount
+}
+
+// Mock serializer that succeeds on the first call but fails on subsequent calls
+type failAfterFirstCallSerializer struct {
+	mockSerializer
+	callCount int
+}
+
+func (m *failAfterFirstCallSerializer) SendMetadata(marshaler.JSONMarshaler) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.callCount++
+	if m.callCount > 1 {
+		return errors.New("payload send failed after first call")
+	}
+	return nil
+}
+
+func (m *failAfterFirstCallSerializer) GetCallCount() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.callCount
 }

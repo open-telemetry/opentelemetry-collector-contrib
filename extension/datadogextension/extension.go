@@ -40,18 +40,43 @@ func (p *realUUIDProvider) NewString() string {
 	return uuid.New().String()
 }
 
+type configs struct {
+	collector *confmap.Conf
+	extension *Config
+}
+
+type info struct {
+	host           source.Source
+	hostnameSource string
+	uuid           string
+	build          component.BuildInfo
+	modules        service.ModuleInfos
+}
+
+type payloadSender struct {
+	ticker  *time.Ticker
+	ctx     context.Context
+	cancel  context.CancelFunc
+	channel chan struct{}
+}
+
 type datadogExtension struct {
-	extension.Extension   // Embed base Extension for common functionality.
-	collectorConfig       *confmap.Conf
-	extensionConfig       *Config
-	logger                *zap.Logger
-	serializer            agentcomponents.SerializerWithForwarder
-	host                  source.Source
-	uuid                  string
-	buildInfo             component.BuildInfo
-	moduleInfos           service.ModuleInfos // NOTE: This needs to be populated from the service if available
+	extension.Extension // Embed base Extension for common functionality.
+
+	// struct to store extension and collector configs
+	configs *configs
+
+	// components to assist in payload sending/logging
+	logger     *zap.Logger
+	serializer agentcomponents.SerializerWithForwarder
+
+	// struct to store extension info
+	info                  *info
 	otelCollectorMetadata *payload.OtelCollector
 	httpServer            *httpserver.Server
+
+	// Fields for periodic payload sending
+	payloadSender *payloadSender
 }
 
 var (
@@ -64,36 +89,30 @@ var (
 // this extension to be notified of the Collector's effective configuration.
 // This method is called during startup by the Collector's service after calling Start.
 func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
-	e.collectorConfig = conf
-
+	e.configs.collector = conf
 	// Create the build info struct for the payload
 	buildInfo := payload.CustomBuildInfo{
-		Command:     e.buildInfo.Command,
-		Description: e.buildInfo.Description,
-		Version:     e.buildInfo.Version,
+		Command:     e.info.build.Command,
+		Description: e.info.build.Description,
+		Version:     e.info.build.Version,
 	}
 
 	// Get the full collector configuration as a flattened JSON string
 	fullConfig := componentchecker.DataToFlattenedJSONString(conf.ToStringMap())
-	var hostnameSource string
-	if e.extensionConfig.Hostname != "" {
-		hostnameSource = "config"
-	} else {
-		hostnameSource = "inferred"
-	}
+
 	// Prepare the base payload
 	otelCollectorPayload := payload.PrepareOtelCollectorMetadata(
-		e.host.Identifier,
-		hostnameSource,
-		e.uuid,
-		e.buildInfo.Version,
-		e.extensionConfig.API.Site,
+		e.info.host.Identifier,
+		e.info.hostnameSource,
+		e.info.uuid,
+		e.info.build.Version, // This is the same version from buildInfo; it is possible we could want to set a different version here in the future
+		e.configs.extension.API.Site,
 		fullConfig,
 		buildInfo,
 	)
 
 	// Populate the full list of components available in the collector build
-	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(e.moduleInfos, conf)
+	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(e.info.modules, conf)
 	if err != nil {
 		e.logger.Warn("Failed to populate full components list", zap.Error(err))
 	} else {
@@ -115,16 +134,16 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	// Store the created payload in the extension struct
 	e.otelCollectorMetadata = &otelCollectorPayload
 	e.logger.Info("Datadog extension payload created", zap.Any("payload", e.otelCollectorMetadata))
-	if e.extensionConfig.HTTPConfig == nil {
+	if e.configs.extension.HTTPConfig == nil {
 		return errors.New("local HTTP server config is required to send payloads to Datadog")
 	}
 	// Create and start the HTTP server
 	e.httpServer = httpserver.NewServer(
 		e.logger,
 		e.serializer,
-		e.extensionConfig.HTTPConfig,
-		e.host.Identifier,
-		e.uuid,
+		e.configs.extension.HTTPConfig,
+		e.info.host.Identifier,
+		e.info.uuid,
 		otelCollectorPayload,
 	)
 	e.httpServer.Start()
@@ -132,6 +151,10 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	if err != nil {
 		return err
 	}
+
+	// Start periodic payload sending (every 30 minutes)
+	e.startPeriodicPayloadSending()
+
 	return nil
 }
 
@@ -156,7 +179,7 @@ func (e *datadogExtension) ComponentStatusChanged(
 func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
 	// Retrieve module information from the host
 	if mi, ok := host.(hostcapabilities.ModuleInfo); ok {
-		e.moduleInfos = mi.GetModuleInfos()
+		e.info.modules = mi.GetModuleInfos()
 	} else {
 		e.logger.Warn("Host does not implement hostcapabilities.ModuleInfo, component list in payload will be empty.")
 	}
@@ -174,6 +197,10 @@ func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
 func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+
+	// Stop periodic payload sending
+	e.stopPeriodicPayloadSending()
+
 	if e.httpServer != nil {
 		e.httpServer.Stop(ctxWithTimeout)
 	}
@@ -184,6 +211,51 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// startPeriodicPayloadSending starts a goroutine that sends payloads every 30 minutes
+func (e *datadogExtension) startPeriodicPayloadSending() {
+	go func() {
+		defer e.payloadSender.ticker.Stop()
+		for {
+			select {
+			case <-e.payloadSender.ticker.C:
+				e.logger.Debug("Sending periodic payload to Datadog")
+				if _, err := e.httpServer.SendPayload(); err != nil {
+					e.logger.Error("Failed to send periodic payload", zap.Error(err))
+				} else {
+					e.logger.Debug("Successfully sent periodic payload to Datadog")
+				}
+			case <-e.payloadSender.ctx.Done():
+				e.logger.Debug("Stopping periodic payload sending")
+				return
+			case <-e.payloadSender.channel:
+				// Allow manual triggering of payload sending if needed
+				e.logger.Debug("Manually triggered payload send")
+				if _, err := e.httpServer.SendPayload(); err != nil {
+					e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
+				}
+			}
+		}
+	}()
+
+	e.logger.Info("Started periodic payload sending every 30 minutes")
+}
+
+// stopPeriodicPayloadSending stops the periodic payload sending goroutine
+func (e *datadogExtension) stopPeriodicPayloadSending() {
+	if e.payloadSender == nil {
+		return
+	}
+	if e.payloadSender.cancel != nil {
+		e.payloadSender.cancel()
+	}
+	if e.payloadSender.ticker != nil {
+		e.payloadSender.ticker.Stop()
+	}
+	if e.payloadSender.channel != nil {
+		close(e.payloadSender.channel)
+	}
+}
+
 // GetSerializer returns the configured serializer with proxy settings from ClientConfig.
 // This allows other components (like exporters) to use the same serializer instance
 // with the same proxy configuration.
@@ -192,7 +264,7 @@ func (e *datadogExtension) GetSerializer() agentcomponents.SerializerWithForward
 }
 
 func newExtension(
-	_ context.Context,
+	ctx context.Context,
 	cfg *Config,
 	set extension.Settings,
 	hostProvider source.Provider,
@@ -207,6 +279,12 @@ func newExtension(
 	host, err := hostProvider.Source(context.Background())
 	if err != nil {
 		return nil, err
+	}
+	var hostnameSource string
+	if cfg.Hostname != "" {
+		hostnameSource = "config"
+	} else {
+		hostnameSource = "inferred"
 	}
 
 	// Create agent components with proxy configuration from ClientConfig
@@ -225,14 +303,28 @@ func newExtension(
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
+	// configure payloadSender struct
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+	ticker := time.NewTicker(30 * time.Minute)
+	channel := make(chan struct{}, 1)
+
 	e := &datadogExtension{
-		extensionConfig: cfg,
-		logger:          set.Logger,
-		serializer:      serializer,
-		host:            host,
-		moduleInfos:     service.ModuleInfos{}, // will be populated in Start
-		uuid:            uuidProvider.NewString(),
-		buildInfo:       set.BuildInfo,
+		configs:    &configs{extension: cfg},
+		logger:     set.Logger,
+		serializer: serializer,
+		info: &info{
+			host:           host,
+			hostnameSource: hostnameSource,
+			uuid:           uuidProvider.NewString(),
+			build:          set.BuildInfo,
+			modules:        service.ModuleInfos{}, // moduleInfos will be populated in Start()
+		},
+		payloadSender: &payloadSender{
+			ctx:     ctxWithCancel,
+			cancel:  cancel,
+			ticker:  ticker,
+			channel: channel,
+		},
 	}
 	return e, nil
 }
