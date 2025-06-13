@@ -5,6 +5,9 @@ package ottlmetric
 
 import (
 	"context"
+	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 
@@ -36,11 +39,13 @@ func Test_newPathGetSetter(t *testing.T) {
 	dataPoint.SetIntValue(1)
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(metric pmetric.Metric, cache pcommon.Map)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(metric pmetric.Metric, cache pcommon.Map)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "metric name",
@@ -52,6 +57,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.SetName("new name")
 			},
+			setStatement: `set(name, "new name")`,
+			getStatement: `name`,
 		},
 		{
 			name: "metric description",
@@ -63,6 +70,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.SetDescription("new description")
 			},
+			setStatement: `set(description, "new description")`,
+			getStatement: `description`,
 		},
 		{
 			name: "metric unit",
@@ -74,6 +83,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.SetUnit("new unit")
 			},
+			setStatement: `set(unit, "new unit")`,
+			getStatement: `unit`,
 		},
 		{
 			name: "metric type",
@@ -84,6 +95,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: int64(pmetric.MetricTypeSum),
 			modified: func(_ pmetric.Metric, _ pcommon.Map) {
 			},
+			setStatement: fmt.Sprintf("set(type, %d)", int64(pmetric.MetricTypeSum)),
+			getStatement: `type`,
 		},
 		{
 			name: "metric aggregation_temporality",
@@ -95,6 +108,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			},
+			setStatement: `set(aggregation_temporality, 1)`,
+			getStatement: `aggregation_temporality`,
 		},
 		{
 			name: "metric is_monotonic",
@@ -106,6 +121,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.Sum().SetIsMonotonic(false)
 			},
+			setStatement: `set(is_monotonic, false)`,
+			getStatement: `is_monotonic`,
 		},
 		{
 			name: "metric data points",
@@ -144,6 +161,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.Metadata().PutStr("temp", "new value")
 			},
+			setStatement: `set(metadata["temp"], "new value")`,
+			getStatement: `metadata["temp"]`,
 		},
 		{
 			name: "cache",
@@ -155,6 +174,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ pmetric.Metric, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
+			setStatement: `set(cache, {"temp": "value"})`,
+			getStatement: `cache`,
 		},
 		{
 			name: "cache access",
@@ -171,6 +192,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ pmetric.Metric, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
+			setStatement: `set(cache["temp"], "new value")`,
+			getStatement: `cache["temp"]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -213,6 +236,43 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exCache, testCache)
 		})
 	}
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				metric := createTelemetry()
+
+				ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				metric = createTelemetry()
+
+				ctx = NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
+}
+
+func createParser(t *testing.T) ottl.Parser[TransformContext] {
+	settings := componenttest.NewNopTelemetrySettings()
+	stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	require.NoError(t, err)
+	return stmtParser
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
@@ -225,9 +285,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	ctx := NewTransformContext(pmetric.NewMetric(), pmetric.NewMetricSlice(), instrumentationScope, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		expected any
+		name         string
+		path         ottl.Path[TransformContext]
+		expected     any
+		getStatement string
 	}{
 		{
 			name: "resource",
@@ -239,7 +300,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					},
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
 			name: "resource with context",
@@ -248,17 +310,20 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					S: ottltest.Strp("foo"),
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
-			name:     "instrumentation_scope",
-			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope",
+			path:         &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 		{
-			name:     "instrumentation_scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope with context",
+			path:         &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 	}
 
@@ -270,6 +335,18 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			getExpression, err := stmtParser.ParseValueExpression(tt.getStatement)
+			require.NoError(t, err)
+			require.NotNil(t, getExpression)
+			getResult, err := getExpression.Eval(context.Background(), ctx)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, getResult)
 		})
 	}
 }
