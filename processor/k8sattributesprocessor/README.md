@@ -283,7 +283,6 @@ The processor can be configured to set the
 
 ```yaml
 k8sattributes:
-k8sattributes/2:
   auth_type: "serviceAccount"
   passthrough: false
   filter:

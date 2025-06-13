@@ -23,12 +23,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
-type MockClient struct {
+type mockClient struct {
 	mock.Mock
 }
 
 // Close provides a mock function with given fields:
-func (_m *MockClient) Close() error {
+func (_m *mockClient) Close() error {
 	ret := _m.Called()
 
 	var r0 error
@@ -42,7 +42,7 @@ func (_m *MockClient) Close() error {
 }
 
 // Connect provides a mock function with given fields:
-func (_m *MockClient) Connect() error {
+func (_m *mockClient) Connect() error {
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -55,28 +55,28 @@ func (_m *MockClient) Connect() error {
 }
 
 // GetIndexedData provides a mock function with given fields: oids, scraperErrors
-func (_m *MockClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []SNMPData {
+func (_m *mockClient) GetIndexedData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
 	ret := _m.Called(oids, scraperErrors)
 
-	var r0 []SNMPData
-	if rf, ok := ret.Get(0).(func([]string, *scrapererror.ScrapeErrors) []SNMPData); ok {
+	var r0 []snmpData
+	if rf, ok := ret.Get(0).(func([]string, *scrapererror.ScrapeErrors) []snmpData); ok {
 		r0 = rf(oids, scraperErrors)
 	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]SNMPData)
+		r0 = ret.Get(0).([]snmpData)
 	}
 
 	return r0
 }
 
 // GetScalarData provides a mock function with given fields: oids, scraperErrors
-func (_m *MockClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []SNMPData {
+func (_m *mockClient) GetScalarData(oids []string, scraperErrors *scrapererror.ScrapeErrors) []snmpData {
 	ret := _m.Called(oids, scraperErrors)
 
-	var r0 []SNMPData
-	if rf, ok := ret.Get(0).(func([]string, *scrapererror.ScrapeErrors) []SNMPData); ok {
+	var r0 []snmpData
+	if rf, ok := ret.Get(0).(func([]string, *scrapererror.ScrapeErrors) []snmpData); ok {
 		r0 = rf(oids, scraperErrors)
 	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).([]SNMPData)
+		r0 = ret.Get(0).([]snmpData)
 	}
 
 	return r0
@@ -125,7 +125,7 @@ func TestScrape(t *testing.T) {
 			// Config is responsible for making sure this would never happen
 			desc: "No Metric Configs returns no metrics with no error",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
@@ -142,7 +142,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape errors and no indexed metric configs adds error",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting scrape data")
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
@@ -151,7 +151,7 @@ func TestScrape(t *testing.T) {
 						scraperErrors := args.Get(1).(*scrapererror.ScrapeErrors)
 						scraperErrors.AddPartial(1, clientErr)
 					},
-				).Return([]SNMPData{})
+				).Return([]snmpData{})
 
 				scraper := &snmpScraper{
 					cfg: &Config{
@@ -177,9 +177,9 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape returns string data does not create metric",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				oid := "1"
-				clientSNMPData := SNMPData{
+				clientSNMPData := snmpData{
 					oid:       oid,
 					value:     "test",
 					valueType: stringVal,
@@ -188,7 +188,7 @@ func TestScrape(t *testing.T) {
 				expectedScrapeErr := fmt.Errorf(errMsgScalarOIDProcessing, oid, innerError)
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{clientSNMPData})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -213,15 +213,15 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape creates int gauge metric (1)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				clientSNMPData := SNMPData{
+				mockClient := new(mockClient)
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{clientSNMPData})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -260,15 +260,15 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape with non '.' prefixed OID still creates metric (1)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				clientSNMPData := SNMPData{
+				mockClient := new(mockClient)
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{clientSNMPData})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -307,15 +307,15 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape creates float cumulative monotonic sum metric (2)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				clientSNMPData := SNMPData{
+				mockClient := new(mockClient)
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{clientSNMPData})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -357,15 +357,15 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple scalar scrape creates int delta non-monotonic sum metric (3)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				clientSNMPData := SNMPData{
+				mockClient := new(mockClient)
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{clientSNMPData})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -407,20 +407,20 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape creates multiple metrics (4)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData1 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData1 := snmpData{
 					oid:       ".1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					oid:       ".2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -471,15 +471,15 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape creates metric with attributes (5)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				clientSNMPData := SNMPData{
+				mockClient := new(mockClient)
+				clientSNMPData := snmpData{
 					oid:       ".1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{clientSNMPData})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -537,20 +537,20 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Scalar scrape creates metric with multiple data points (6)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData1 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData1 := snmpData{
 					oid:       ".1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					oid:       ".2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -610,7 +610,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed scrape errors and no scalar metric configs adds error",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
@@ -619,7 +619,7 @@ func TestScrape(t *testing.T) {
 						scraperErrors := args.Get(1).(*scrapererror.ScrapeErrors)
 						scraperErrors.AddPartial(1, clientErr)
 					},
-				).Return([]SNMPData{})
+				).Return([]snmpData{})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -644,17 +644,17 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape returns string data does not create metric",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				columnOID := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: columnOID,
 					oid:       oid1,
 					value:     "test1",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: columnOID,
 					oid:       oid2,
 					value:     "test2",
@@ -667,7 +667,7 @@ func TestScrape(t *testing.T) {
 				expectedScrapeErrMsg := expectedScrapeErr1.Error() + "; " + expectedScrapeErr2.Error()
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Metrics: map[string]*MetricConfig{
@@ -692,14 +692,14 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape creates int gauge metric on new no attribute resource (7)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData1 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -707,7 +707,7 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -756,14 +756,14 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape with non '.' prefixed OID still creates metric (7)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData1 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -771,7 +771,7 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -820,14 +820,14 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape creates float cumulative monotonic sum metric (8)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData1 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     float64(2.0),
@@ -835,7 +835,7 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -887,14 +887,14 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Simple indexed metric scrape creates int delta non-monotonic sum metric (9)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData1 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -902,7 +902,7 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -954,19 +954,19 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape creates metric on existing resource if scalar metrics were scraped (10)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					oid:       ".0",
 					value:     int64(0),
 					valueType: integerVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -974,8 +974,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0})
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData1, snmpData2})
+				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1037,26 +1037,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape creates multiple metrics on same no attribute resource (11)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     int64(0),
 					valueType: integerVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(3),
@@ -1064,7 +1064,7 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1, snmpData2, snmpData3})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1, snmpData2, snmpData3})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1131,26 +1131,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape creates with all attribute config creates metric with all attributes (12)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
 					valueType: stringVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -1158,8 +1158,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1223,18 +1223,18 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed attribute scrape error does not create metric datapoints",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
 				columnOID := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
-				snmpData0 := SNMPData{
+				snmpData0 := snmpData{
 					columnOID: columnOID,
 					oid:       oid1,
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: columnOID,
 					oid:       oid2,
 					value:     int64(2),
@@ -1247,13 +1247,13 @@ func TestScrape(t *testing.T) {
 						scraperErrors := args.Get(1).(*scrapererror.ScrapeErrors)
 						scraperErrors.AddPartial(1, clientErr)
 					},
-				).Return([]SNMPData{}).Once()
+				).Return([]snmpData{}).Once()
 				metricName := "metric1"
 				innerInnerErr := errors.New(errMsgAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDAttributeEmptyValue, metricName, innerInnerErr)
 				expectedErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOID, innerErr)
 				expectedErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOID, innerErr)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1294,7 +1294,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed attribute scrape returning bad value type does not create metric data points",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				columnOID1 := ".0"
 				columnOID2 := ".1"
 				oid1 := ".0.1"
@@ -1302,25 +1302,25 @@ func TestScrape(t *testing.T) {
 				oid3 := ".1.1"
 				oid4 := ".1.2"
 				metricName := "metric1"
-				snmpData0 := SNMPData{
+				snmpData0 := snmpData{
 					columnOID: columnOID1,
 					oid:       oid1,
 					value:     true,
 					valueType: notSupportedVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: columnOID1,
 					oid:       oid2,
 					value:     false,
 					valueType: notSupportedVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: columnOID2,
 					oid:       oid3,
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: columnOID2,
 					oid:       oid4,
 					value:     int64(2),
@@ -1332,12 +1332,12 @@ func TestScrape(t *testing.T) {
 				expectedErr1 := fmt.Errorf(errMsgIndexedAttributeOIDProcessing, oid1, columnOID1, innerErr1)
 				innerErr2 := fmt.Errorf(errMsgIndexedAttributesBadValueType, oid2, columnOID1)
 				expectedErr2 := fmt.Errorf(errMsgIndexedAttributeOIDProcessing, oid2, columnOID1, innerErr2)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
 				innerInnerErr := errors.New(errMsgAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDAttributeEmptyValue, metricName, innerInnerErr)
 				expectedErr3 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid3, columnOID2, innerErr)
 				expectedErr4 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid4, columnOID2, innerErr)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1378,26 +1378,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed scrape for metric and attributes creates a metric with indexed attributes (13)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
 					valueType: stringVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -1405,8 +1405,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1456,26 +1456,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed metric scrape with non '.' prefixed OID for attribute still creates metric (13)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
 					valueType: stringVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -1483,8 +1483,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1534,26 +1534,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "SNMP float value for indexed attribute still creates metric (14)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     1.11111111,
 					valueType: floatVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     2.22222222,
 					valueType: floatVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -1561,8 +1561,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1612,26 +1612,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "SNMP integer value for indexed attribute still creates metric (15)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -1639,8 +1639,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						Attributes: map[string]*AttributeConfig{
@@ -1690,26 +1690,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Resource attribute with prefix creates new resources with created metrics (16)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     float64(2.0),
@@ -1717,7 +1717,7 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1, snmpData2, snmpData3})
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1, snmpData2, snmpData3})
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -1776,19 +1776,19 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed resource attribute scrape error will not create metrics or resources",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
 				columnOID := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
 				metricName := "metric1"
-				snmpData0 := SNMPData{
+				snmpData0 := snmpData{
 					columnOID: columnOID,
 					oid:       oid1,
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: columnOID,
 					oid:       oid2,
 					value:     int64(2),
@@ -1801,12 +1801,12 @@ func TestScrape(t *testing.T) {
 						scraperErrors := args.Get(1).(*scrapererror.ScrapeErrors)
 						scraperErrors.AddPartial(1, clientErr)
 					},
-				).Return([]SNMPData{}).Once()
+				).Return([]snmpData{}).Once()
 				innerInnerErr := errors.New(errMsgResourceAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, innerInnerErr)
 				expectedErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOID, innerErr)
 				expectedErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOID, innerErr)
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -1843,7 +1843,7 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed resource attribute scrape returning bad value type will not create metrics or resources",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
+				mockClient := new(mockClient)
 				columnOID1 := ".0"
 				columnOID2 := ".1"
 				oid1 := ".0.1"
@@ -1851,25 +1851,25 @@ func TestScrape(t *testing.T) {
 				oid3 := ".1.1"
 				oid4 := ".1.2"
 				metricName := "metric1"
-				snmpData0 := SNMPData{
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     true,
 					valueType: notSupportedVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     false,
 					valueType: notSupportedVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -1881,12 +1881,12 @@ func TestScrape(t *testing.T) {
 				expectedErr1 := fmt.Errorf(errMsgIndexedAttributeOIDProcessing, oid1, columnOID1, innerErr1)
 				innerErr2 := fmt.Errorf(errMsgIndexedAttributesBadValueType, oid2, columnOID1)
 				expectedErr2 := fmt.Errorf(errMsgIndexedAttributeOIDProcessing, oid2, columnOID1, innerErr2)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
 				innerInnerErr := errors.New(errMsgResourceAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, innerInnerErr)
 				expectedErr3 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid3, columnOID2, innerErr)
 				expectedErr4 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid4, columnOID2, innerErr)
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -1923,38 +1923,38 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Resource attribute with column OID creates new resource with multiple metrics (17)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
 					valueType: stringVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				snmpData4 := SNMPData{
+				snmpData4 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
-				snmpData5 := SNMPData{
+				snmpData5 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     float64(2.0),
@@ -1962,8 +1962,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData2, snmpData3, snmpData4, snmpData5}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3, snmpData4, snmpData5}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2021,38 +2021,38 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Resource attribute with column OID without . prefix still creates metrics (17)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
 					valueType: stringVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				snmpData4 := SNMPData{
+				snmpData4 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
-				snmpData5 := SNMPData{
+				snmpData5 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     float64(2.0),
@@ -2060,8 +2060,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]SNMPData{snmpData2, snmpData3, snmpData4, snmpData5}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3, snmpData4, snmpData5}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2119,26 +2119,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Indexed config with both column OID and prefix resource attributes creates metric (18)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				snmpData0 := SNMPData{
+				mockClient := new(mockClient)
+				snmpData0 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.1",
 					value:     "thing1",
 					valueType: stringVal,
 				}
-				snmpData1 := SNMPData{
+				snmpData1 := snmpData{
 					columnOID: ".0",
 					oid:       ".0.2",
 					value:     "thing2",
 					valueType: stringVal,
 				}
-				snmpData2 := SNMPData{
+				snmpData2 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				snmpData3 := SNMPData{
+				snmpData3 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
@@ -2146,8 +2146,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]SNMPData{snmpData0, snmpData1}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{snmpData2, snmpData3}).Once()
+				mockClient.On("GetIndexedData", []string{".0"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2196,31 +2196,31 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) resource attribute creates metric (19)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				coidRA11 := SNMPData{
+				coidRA11 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     "string1",
 					valueType: stringVal,
 				}
-				coidRA12 := SNMPData{
+				coidRA12 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     "string2",
 					valueType: stringVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -2228,9 +2228,9 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{coidRA11, coidRA12}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{coidRA11, coidRA12}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2278,31 +2278,31 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (int) resource attribute attached to ColumnOID metric alongside a ColumnOID (int) resource attribute creates metric (20)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".0",
 					value:     int64(5),
 					valueType: integerVal,
 				}
-				coidRA11 := SNMPData{
+				coidRA11 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     int64(1),
 					valueType: integerVal,
 				}
-				coidRA12 := SNMPData{
+				coidRA12 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     int64(2),
 					valueType: integerVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -2310,9 +2310,9 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{coidRA11, coidRA12}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{coidRA11, coidRA12}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2360,31 +2360,31 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (float) resource attribute attached to ColumnOID metric alongside a ColumnOID (float) resource attribute creates metric (21)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".0",
 					value:     float64(5.0),
 					valueType: floatVal,
 				}
-				coidRA11 := SNMPData{
+				coidRA11 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     float64(1.0),
 					valueType: floatVal,
 				}
-				coidRA12 := SNMPData{
+				coidRA12 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     float64(2.0),
 					valueType: floatVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -2392,9 +2392,9 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{coidRA11, coidRA12}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{coidRA11, coidRA12}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2442,19 +2442,19 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -2462,8 +2462,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2511,48 +2511,48 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Multiple ScalarOID (string) resource attributes attached to ColumnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA1 := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA1 := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarRA2 := SNMPData{
+				scalarRA2 := snmpData{
 					oid:       ".6.0",
 					value:     "also scalar",
 					valueType: stringVal,
 				}
-				coidRA11 := SNMPData{
+				coidRA11 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     "string1",
 					valueType: stringVal,
 				}
-				coidRA12 := SNMPData{
+				coidRA12 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     "string2",
 					valueType: stringVal,
 				}
-				coidRA21 := SNMPData{
+				coidRA21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     "also a string1",
 					valueType: stringVal,
 				}
-				coidRA22 := SNMPData{
+				coidRA22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     "also a string2",
 					valueType: stringVal,
 				}
-				coid31 := SNMPData{
+				coid31 := snmpData{
 					columnOID: ".3",
 					oid:       ".3.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid32 := SNMPData{
+				coid32 := snmpData{
 					columnOID: ".3",
 					oid:       ".3.2",
 					value:     int64(4),
@@ -2560,9 +2560,9 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
-				mockClient.On("GetIndexedData", []string{".1", ".2"}, mock.Anything).Return([]SNMPData{coidRA11, coidRA12, coidRA21, coidRA22}).Once()
-				mockClient.On("GetIndexedData", []string{".3"}, mock.Anything).Return([]SNMPData{coid31, coid32}).Once()
+				mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]snmpData{scalarRA1, scalarRA2}).Once()
+				mockClient.On("GetIndexedData", []string{".1", ".2"}, mock.Anything).Return([]snmpData{coidRA11, coidRA12, coidRA21, coidRA22}).Once()
+				mockClient.On("GetIndexedData", []string{".3"}, mock.Anything).Return([]snmpData{coid31, coid32}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2616,31 +2616,31 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) attribute creates metric (24)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				coidAttr11 := SNMPData{
+				coidAttr11 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     "string1",
 					valueType: stringVal,
 				}
-				coidAttr12 := SNMPData{
+				coidAttr12 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     "string2",
 					valueType: stringVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -2648,9 +2648,9 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{coidAttr11, coidAttr12}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{coidAttr11, coidAttr12}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2705,19 +2705,19 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -2725,8 +2725,8 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2781,21 +2781,21 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "ScalarOID (string) resource attribute attached to ScalarOID metric creates metric (26)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarOID := SNMPData{
+				scalarOID := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]SNMPData{scalarOID}).Once()
+				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOID}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2840,26 +2840,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA1 := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA1 := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarRA2 := SNMPData{
+				scalarRA2 := snmpData{
 					oid:       ".7.0",
 					value:     "also scalar",
 					valueType: stringVal,
 				}
-				scalarOID := SNMPData{
+				scalarOID := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".5.0", ".7.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
-				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]SNMPData{scalarOID}).Once()
+				mockClient.On("GetScalarData", []string{".5.0", ".7.0"}, mock.Anything).Return([]snmpData{scalarRA1, scalarRA2}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOID}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2907,26 +2907,26 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Two scalar oid metrics with the same resource attribute get added to a single resource (28)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarOID1 := SNMPData{
+				scalarOID1 := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
 				}
-				scalarOID2 := SNMPData{
+				scalarOID2 := snmpData{
 					oid:       ".7.0",
 					value:     int64(7),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-				mockClient.On("GetScalarData", []string{".6.0", ".7.0"}, mock.Anything).Return([]SNMPData{scalarOID1, scalarOID2}).Once()
+				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
+				mockClient.On("GetScalarData", []string{".6.0", ".7.0"}, mock.Anything).Return([]snmpData{scalarOID1, scalarOID2}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
@@ -2984,36 +2984,36 @@ func TestScrape(t *testing.T) {
 		{
 			desc: "Metric does not use all available scalar RAs and still behaves properly (near copy of (24)) (29)",
 			testFunc: func(t *testing.T) {
-				mockClient := new(MockClient)
-				scalarRA1 := SNMPData{
+				mockClient := new(mockClient)
+				scalarRA1 := snmpData{
 					oid:       ".5.0",
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarRA2 := SNMPData{
+				scalarRA2 := snmpData{
 					oid:       ".6.0",
 					value:     "also scalar",
 					valueType: stringVal,
 				}
-				coidAttr11 := SNMPData{
+				coidAttr11 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.1",
 					value:     "string1",
 					valueType: stringVal,
 				}
-				coidAttr12 := SNMPData{
+				coidAttr12 := snmpData{
 					columnOID: ".1",
 					oid:       ".1.2",
 					value:     "string2",
 					valueType: stringVal,
 				}
-				coid21 := SNMPData{
+				coid21 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.1",
 					value:     int64(3),
 					valueType: integerVal,
 				}
-				coid22 := SNMPData{
+				coid22 := snmpData{
 					columnOID: ".2",
 					oid:       ".2.2",
 					value:     int64(4),
@@ -3021,9 +3021,9 @@ func TestScrape(t *testing.T) {
 				}
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
-				mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
-				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{coidAttr11, coidAttr12}).Once()
-				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]snmpData{scalarRA1, scalarRA2}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{coidAttr11, coidAttr12}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*ResourceAttributeConfig{
