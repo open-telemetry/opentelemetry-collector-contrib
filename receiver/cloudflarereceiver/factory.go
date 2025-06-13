@@ -36,6 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Logs: LogsConfig{
 			TimestampField: defaultTimestampField,
+			Separator:      defaultSeparator,
 		},
 	}
 }
