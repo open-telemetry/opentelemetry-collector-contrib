@@ -51,17 +51,39 @@ func RunDecoratorTestScenarios(ctx context.Context, t *testing.T, dc consumer.Me
 			want := wants.At(i)
 			assert.Equal(t, want.Name(), actual.Name())
 			assert.Equal(t, want.Unit(), actual.Unit())
-			assert.Equal(t, getDataValue(&want), getDataValue(&actual))
-			actualAttrs := getAttributesFromMetric(&actual)
-			wantAttrs := getAttributesFromMetric(&want)
-			assert.Equal(t, wantAttrs.Len(), actualAttrs.Len())
-			wantAttrs.Range(func(k string, v pcommon.Value) bool {
-				av, ok := actualAttrs.Get(k)
-				assert.True(t, ok)
-				assert.Equal(t, v, av)
-				return true
-			})
+			checkAssertions(t, want, actual)
 		}
+	}
+}
+
+func checkAssertions(t *testing.T, want pmetric.Metric, actual pmetric.Metric) {
+	var wantDps, actualDps pmetric.NumberDataPointSlice
+
+	// Get datapoints based on metric type
+	if want.Type() == pmetric.MetricTypeGauge {
+		wantDps = want.Gauge().DataPoints()
+		actualDps = actual.Gauge().DataPoints()
+	} else {
+		wantDps = want.Sum().DataPoints()
+		actualDps = actual.Sum().DataPoints()
+	}
+
+	assert.Equal(t, wantDps.Len(), actualDps.Len(), "Datapoint count mismatch")
+
+	// Iterate through all datapoints
+	for i := 0; i < wantDps.Len(); i++ {
+		wantDp := wantDps.At(i)
+		actualDp := actualDps.At(i)
+		assert.Equal(t, wantDp.DoubleValue(), actualDp.DoubleValue(), "Datapoint value mismatch")
+		wantAttrs := wantDp.Attributes()
+		actualAttrs := actualDp.Attributes()
+		assert.Equal(t, wantAttrs.Len(), actualAttrs.Len(), "Attribute count mismatch")
+		wantAttrs.Range(func(k string, v pcommon.Value) bool {
+			av, ok := actualAttrs.Get(k)
+			assert.True(t, ok, "Missing attribute: %s", k)
+			assert.Equal(t, v, av, "Attribute value mismatch for %s", k)
+			return true
+		})
 	}
 }
 
@@ -69,36 +91,27 @@ func GenerateMetrics(nameToDimsGauges map[MetricIdentifier][]map[string]string) 
 	md := pmetric.NewMetrics()
 	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	for metric, dims := range nameToDimsGauges {
+		m := ms.AppendEmpty()
+		var dps pmetric.NumberDataPointSlice
+		if metric.MetricType == pmetric.MetricTypeSum {
+			m.SetEmptySum()
+			dps = m.Sum().DataPoints()
+		} else {
+			m.SetEmptyGauge()
+			dps = m.Gauge().DataPoints()
+		}
+		m.SetName(metric.Name)
 		for _, dim := range dims {
-			m := ms.AppendEmpty()
-			m.SetName(metric.Name)
-			metricBody := m.SetEmptyGauge().DataPoints().AppendEmpty()
-			if metric.MetricType == pmetric.MetricTypeSum {
-				metricBody = m.SetEmptySum().DataPoints().AppendEmpty()
-			}
+			metricBody := dps.AppendEmpty()
 			metricBody.SetDoubleValue(metric.DataValue)
 			for k, v := range dim {
 				if k == "Unit" {
 					m.SetUnit(v)
-					continue
+				} else {
+					metricBody.Attributes().PutStr(k, v)
 				}
-				metricBody.Attributes().PutStr(k, v)
 			}
 		}
 	}
 	return md
-}
-
-func getAttributesFromMetric(m *pmetric.Metric) pcommon.Map {
-	if m.Type() == pmetric.MetricTypeGauge {
-		return m.Gauge().DataPoints().At(0).Attributes()
-	}
-	return m.Sum().DataPoints().At(0).Attributes()
-}
-
-func getDataValue(m *pmetric.Metric) float64 {
-	if m.Type() == pmetric.MetricTypeGauge {
-		return m.Gauge().DataPoints().At(0).DoubleValue()
-	}
-	return m.Sum().DataPoints().At(0).DoubleValue()
 }

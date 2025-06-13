@@ -17,14 +17,15 @@ import (
 )
 
 const (
-	neuronHardwareInfoKey         = "neuron_hardware"
-	neuronCorePerDeviceKey        = "neuroncore_per_device_count"
-	neuronCoreAttributeKey        = "NeuronCore"
-	neuronDeviceCountAttributeKey = "neuron_device_count"
-	neuronDeviceAttributeKey      = "NeuronDevice"
-	neuronCoreResourceName        = "aws.amazon.com/neuroncore"
-	neuronDeviceResourceName      = "aws.amazon.com/neurondevice"
-	neuronDeviceResourceNameAlt   = "aws.amazon.com/neuron"
+	neuronHardwareInfoKey          = "neuron_hardware"
+	neuronCorePerDeviceKey         = "neuroncore_per_device_count"
+	neuronCoreAttributeKey         = "NeuronCore"
+	neuronDeviceCountAttributeKey  = "neuron_device_count"
+	neuronDeviceAttributeKey       = "NeuronDevice"
+	neuronCoreOriginalAttributeKey = "neuroncore"
+	neuronCoreResourceName         = "aws.amazon.com/neuroncore"
+	neuronDeviceResourceName       = "aws.amazon.com/neurondevice"
+	neuronDeviceResourceNameAlt    = "aws.amazon.com/neuron"
 )
 
 type PodResourcesStoreInterface interface {
