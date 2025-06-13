@@ -8,7 +8,6 @@ import (
 	"math"
 	"reflect"
 	"regexp"
-	"strconv"
 	"time"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -16,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/api/distribution"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -369,7 +367,7 @@ func (mb *MetricsBuilder) convertExemplars(distributionValue *distribution.Distr
 			targetExemplarDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(sourceExemplar.GetTimestamp().AsTime()))
 			targetExemplarDataPoint.SetDoubleValue(sourceExemplar.GetValue())
 			sourceAttachments := sourceExemplar.GetAttachments()
-			for attachmentIdx, sourceAttachment := range sourceAttachments {
+			for _, sourceAttachment := range sourceAttachments {
 				if sourceAttachment == nil {
 					continue
 				}
@@ -385,7 +383,7 @@ func (mb *MetricsBuilder) convertExemplars(distributionValue *distribution.Distr
 				case droppedLabelsTypeURL:
 					mb.convertDistributionExemplarAttachmentDroppedLabels(sourceAttachment, &targetExemplarDataPoint)
 				default:
-					mb.convertArbitraryAttachment(typeURL, attachmentIdx, sourceAttachment, &targetExemplarDataPoint)
+					mb.logger.Debug("Discarding exemplar attachment with unsupported type URL", zap.String("type URL", typeURL))
 				}
 			}
 		}
@@ -445,30 +443,4 @@ func (mb *MetricsBuilder) convertDistributionExemplarAttachmentDroppedLabels(sou
 			zap.Error(err),
 		)
 	}
-}
-
-func (mb *MetricsBuilder) convertArbitraryAttachment(
-	typeURL string,
-	attachmentIdx int,
-	sourceValue *anypb.Any,
-	targetExemplarDataPoint *pmetric.Exemplar,
-) {
-	var attachmentKey string
-	if typeURL == "" {
-		attachmentKey = "attachment_" + strconv.Itoa(attachmentIdx)
-	} else {
-		attachmentKey = typeURL + "_" + strconv.Itoa(attachmentIdx)
-	}
-
-	// The source attachment can be any arbitrary protobuf message, so we (somewhat arbitrarily) convert it to JSON and store it
-	// the resulting byte slice in the target data point.
-	jsonBytes, err := protojson.Marshal(sourceValue)
-	if err != nil {
-		mb.logger.Debug(
-			"Failed to deserialize an exemplar attachment protobuf message in a Google Cloud Monitoring distribution data point",
-			zap.Error(err),
-		)
-	}
-	targetAttachmentBytes := targetExemplarDataPoint.FilteredAttributes().PutEmptyBytes(attachmentKey)
-	targetAttachmentBytes.FromRaw(jsonBytes)
 }
