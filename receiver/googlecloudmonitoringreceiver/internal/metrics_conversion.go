@@ -259,7 +259,7 @@ func (mb *MetricsBuilder) convertDistributionDataPointExplicitBuckets(
 		return
 	}
 	targetDataPoint.ExplicitBounds().FromRaw(buckets.GetBounds())
-	targetDataPoint.ExplicitBounds().Append(math.Inf(1))
+	// Note: There is also an implicit overflow bucket with boundary +Inf.
 }
 
 func (mb *MetricsBuilder) convertDistributionDataPointLinearBuckets(
@@ -302,8 +302,7 @@ func (mb *MetricsBuilder) convertDistributionDataPointLinearBuckets(
 	for i := 0; i <= int(numFiniteBuckets); i++ {
 		targetDataPoint.ExplicitBounds().Append(offset + width*float64(i))
 	}
-	// bucket N: [offset + (width * (N - 1)), +infinity)
-	targetDataPoint.ExplicitBounds().Append(math.Inf(1))
+	// bucket N: implicit overflow bucket [offset + (width * (N - 1)), +infinity)
 }
 
 func (mb *MetricsBuilder) convertDistributionDataPointExponentialBuckets(
@@ -354,8 +353,7 @@ func (mb *MetricsBuilder) convertDistributionDataPointExponentialBuckets(
 	for i := 0; i <= int(numFiniteBuckets); i++ {
 		targetDataPoint.ExplicitBounds().Append(scale * math.Pow(growthFactor, float64(i)))
 	}
-	// bucket N: [offset + (width * (N - 1)), +infinity)
-	targetDataPoint.ExplicitBounds().Append(math.Inf(1))
+	// bucket N: implicit overflow bucket [offset + (width * (N - 1)), +infinity)
 }
 
 func (mb *MetricsBuilder) convertExemplars(distributionValue *distribution.Distribution, targetDataPoint *pmetric.HistogramDataPoint) {
