@@ -422,8 +422,9 @@ func (mb *MetricsBuilder) convertDistributionExemplarAttachmentSpanContext(sourc
 			zap.String("parsed trace ID", string(traceIDRaw)),
 			zap.Error(err),
 		)
+	} else {
+		targetExemplarDataPoint.SetTraceID(pcommon.TraceID(traceID))
 	}
-	targetExemplarDataPoint.SetTraceID(pcommon.TraceID(traceID))
 	_, err = hex.Decode(spanID, spanIDRaw)
 	if err != nil {
 		mb.logger.Debug(
@@ -432,8 +433,9 @@ func (mb *MetricsBuilder) convertDistributionExemplarAttachmentSpanContext(sourc
 			zap.String("parsed span ID", string(spanIDRaw)),
 			zap.Error(err),
 		)
+	} else {
+		targetExemplarDataPoint.SetSpanID(pcommon.SpanID(spanID))
 	}
-	targetExemplarDataPoint.SetSpanID(pcommon.SpanID(spanID))
 }
 
 func (mb *MetricsBuilder) convertDistributionExemplarAttachmentDroppedLabels(sourceValue *anypb.Any, targetExemplarDataPoint *pmetric.Exemplar) {
@@ -443,6 +445,7 @@ func (mb *MetricsBuilder) convertDistributionExemplarAttachmentDroppedLabels(sou
 			"Failed to convert dropped labels from Google Cloud Monitoring distribution data point exemplar attachment",
 			zap.Error(err),
 		)
+		return
 	}
 	targetDroppedLabels := make(map[string]any, len(sourceDroppedLabels.Label))
 	for k, v := range sourceDroppedLabels.Label {
