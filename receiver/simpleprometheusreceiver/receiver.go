@@ -112,7 +112,6 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	for k, v := range cfg.Labels {
 		labels[model.LabelName(k)] = model.LabelValue(v)
 	}
-	labels[model.AddressLabel] = model.LabelValue(cfg.Endpoint)
 
 	jobName := cfg.JobName
 	if jobName == "" {
