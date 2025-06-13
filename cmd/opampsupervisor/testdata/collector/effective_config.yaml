@@ -4,8 +4,6 @@ exporters:
     file/2:
         path: ./foo
 extensions:
-    health_check:
-        endpoint: localhost:8000
     opamp:
         capabilities:
             reports_available_components: false
@@ -29,7 +27,6 @@ receivers:
             - ssh
 service:
     extensions:
-        - health_check
         - opamp
     pipelines:
         logs:

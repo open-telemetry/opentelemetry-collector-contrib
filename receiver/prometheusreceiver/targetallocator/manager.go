@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Manager struct {
@@ -148,6 +148,10 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 		if m.cfg.HTTPScrapeConfig != nil {
 			scrapeConfig.HTTPClientConfig = commonconfig.HTTPClientConfig(*m.cfg.HTTPScrapeConfig)
+		}
+
+		if scrapeConfig.ScrapeFallbackProtocol == "" {
+			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
 		}
 
 		m.promCfg.ScrapeConfigs = append(m.promCfg.ScrapeConfigs, scrapeConfig)

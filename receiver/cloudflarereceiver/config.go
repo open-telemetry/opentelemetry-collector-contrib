@@ -15,6 +15,9 @@ import (
 // Config holds all the parameters to start an HTTP server that can be sent logs from CloudFlare
 type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type LogsConfig struct {
@@ -23,6 +26,10 @@ type LogsConfig struct {
 	TLS            *configtls.ServerConfig `mapstructure:"tls"`
 	Attributes     map[string]string       `mapstructure:"attributes"`
 	TimestampField string                  `mapstructure:"timestamp_field"`
+	Separator      string                  `mapstructure:"separator"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
@@ -31,6 +38,7 @@ var (
 	errNoKey      = errors.New("tls was configured, but no key file was specified")
 
 	defaultTimestampField = "EdgeStartTimestamp"
+	defaultSeparator      = "."
 )
 
 func (c *Config) Validate() error {

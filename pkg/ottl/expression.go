@@ -20,12 +20,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
+// ExprFunc is a function in OTTL
 type ExprFunc[K any] func(ctx context.Context, tCtx K) (any, error)
 
+// Expr is a struct that represents a function
 type Expr[K any] struct {
 	exprFunc ExprFunc[K]
 }
 
+// Eval invokes the OTTL function
 func (e Expr[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.exprFunc(ctx, tCtx)
 }
@@ -49,6 +52,7 @@ type GetSetter[K any] interface {
 	Setter[K]
 }
 
+// StandardGetSetter is a standard way to construct a GetSetter
 type StandardGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 	Setter func(ctx context.Context, tCtx K, val any) error
@@ -406,11 +410,13 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, nil
 }
 
+// PMapGetSetter is a GetSetter that must interact with a pcommon.Map
 type PMapGetSetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 	Set(ctx context.Context, tCtx K, val pcommon.Map) error
 }
 
+// StandardPMapGetSetter is a basic implementation of PMapGetSetter
 type StandardPMapGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (pcommon.Map, error)
 	Setter func(ctx context.Context, tCtx K, val any) error
@@ -475,6 +481,7 @@ type StringLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*string, error)
 }
 
+// StandardStringLikeGetter is a basic implementation of StringLikeGetter
 type StandardStringLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -526,6 +533,7 @@ type FloatLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*float64, error)
 }
 
+// StandardFloatLikeGetter is a basic implementation of FloatLikeGetter
 type StandardFloatLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -590,6 +598,7 @@ type IntLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*int64, error)
 }
 
+// StandardIntLikeGetter is a basic implementation of IntLikeGetter
 type StandardIntLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -654,6 +663,7 @@ type ByteSliceLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) ([]byte, error)
 }
 
+// StandardByteSliceLikeGetter is a basic implementation of ByteSliceLikeGetter
 type StandardByteSliceLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
@@ -729,6 +739,7 @@ type BoolLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*bool, error)
 }
 
+// StandardBoolLikeGetter is a basic implementation of BoolLikeGetter
 type StandardBoolLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }

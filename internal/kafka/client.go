@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
@@ -19,6 +20,14 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"snappy": sarama.CompressionSnappy,
 	"lz4":    sarama.CompressionLZ4,
 	"zstd":   sarama.CompressionZSTD,
+}
+
+func convertToSaramaCompressionLevel(level configcompression.Level) int {
+	switch level {
+	case 0, configcompression.DefaultCompressionLevel:
+		return sarama.CompressionLevelDefault
+	}
+	return int(level)
 }
 
 var saramaInitialOffsets = map[string]int64{
@@ -89,14 +98,23 @@ func NewSaramaSyncProducer(
 	if err != nil {
 		return nil, err
 	}
-	saramaConfig.Producer.Return.Successes = true // required for SyncProducer
-	saramaConfig.Producer.Return.Errors = true    // required for SyncProducer
-	saramaConfig.Producer.MaxMessageBytes = producerConfig.MaxMessageBytes
-	saramaConfig.Producer.Flush.MaxMessages = producerConfig.FlushMaxMessages
-	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
-	saramaConfig.Producer.Timeout = producerTimeout
-	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	setSaramaProducerConfig(saramaConfig, producerConfig, producerTimeout)
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
+}
+
+func setSaramaProducerConfig(
+	out *sarama.Config,
+	producerConfig configkafka.ProducerConfig,
+	producerTimeout time.Duration,
+) {
+	out.Producer.Return.Successes = true // required for SyncProducer
+	out.Producer.Return.Errors = true    // required for SyncProducer
+	out.Producer.MaxMessageBytes = producerConfig.MaxMessageBytes
+	out.Producer.Flush.MaxMessages = producerConfig.FlushMaxMessages
+	out.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
+	out.Producer.Timeout = producerTimeout
+	out.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	out.Producer.CompressionLevel = convertToSaramaCompressionLevel(producerConfig.CompressionParams.Level)
 }
 
 // newSaramaClientConfig returns a Sarama client config, based on the given config.

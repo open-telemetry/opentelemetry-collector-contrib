@@ -42,7 +42,7 @@ func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMeta
 	return prompb.MetricMetadata_UNKNOWN
 }
 
-func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []*prompb.MetricMetadata {
+func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace string) []*prompb.MetricMetadata {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	metadataLength := 0
@@ -64,9 +64,8 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []*prompb
 				metric := scopeMetrics.Metrics().At(k)
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
-					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(metric, "", addMetricSuffixes),
-					// TODO: We can't migrate yet because otlptranslator doesn't have a BuildCompliantPrometheusUnit function.
-					//Unit:             prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+					MetricFamilyName: prometheustranslator.BuildCompliantName(metric, namespace, addMetricSuffixes),
+					Unit:             prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
 					Help:             metric.Description(),
 				}
 				metadata = append(metadata, &entry)

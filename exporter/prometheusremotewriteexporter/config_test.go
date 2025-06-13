@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "localhost:8888"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 		},
@@ -81,6 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
+				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 			},
 		},
 		{

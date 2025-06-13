@@ -25,6 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 )
 
+const gzipExtension = ".gz"
+
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
 	Offset          int64
@@ -33,6 +35,7 @@ type Metadata struct {
 	HeaderFinalized bool
 	FlushState      flush.State
 	TokenLenState   tokenlen.State
+	FileType        string
 }
 
 // Reader manages a single file
@@ -69,30 +72,30 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		// We need to create a gzip reader each time ReadToEnd is called because the underlying
-		// SectionReader can only read a fixed window (from previous offset to EOF).
-		info, err := r.file.Stat()
+		currentEOF, err := r.createGzipReader()
 		if err != nil {
-			r.set.Logger.Error("failed to stat", zap.Error(err))
 			return
 		}
-		currentEOF := info.Size()
-
-		// use a gzip Reader with an underlying SectionReader to pick up at the last
-		// offset of a gzip compressed file
-		gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
-			}
-			return
-		}
-		r.reader = gzipReader
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
 		// we need to set the offset to the end of the file.
 		defer func() {
 			r.Offset = currentEOF
 		}()
+	case "auto":
+		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
+		if r.FileType == gzipExtension {
+			currentEOF, err := r.createGzipReader()
+			if err != nil {
+				return
+			}
+			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+			// we need to set the offset to the end of the file.
+			defer func() {
+				r.Offset = currentEOF
+			}()
+		} else {
+			r.reader = r.file
+		}
 	default:
 		r.reader = r.file
 	}
@@ -115,6 +118,29 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 
 	r.readContents(ctx)
+}
+
+// createGzipReader creates gzip reader and returns the file offset
+func (r *Reader) createGzipReader() (int64, error) {
+	// We need to create a gzip reader each time ReadToEnd is called because the underlying
+	// SectionReader can only read a fixed window (from previous offset to EOF).
+	info, err := r.file.Stat()
+	if err != nil {
+		r.set.Logger.Error("failed to stat", zap.Error(err))
+		return 0, err
+	}
+	currentEOF := info.Size()
+	// use a gzip Reader with an underlying SectionReader to pick up at the last
+	// offset of a gzip compressed file
+	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+	if err != nil {
+		if !errors.Is(err, io.EOF) {
+			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
+		}
+		return 0, err
+	}
+	r.reader = gzipReader
+	return currentEOF, nil
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {

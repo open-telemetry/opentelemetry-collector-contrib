@@ -49,12 +49,25 @@ func TestMetricsReceiver_Start(t *testing.T) {
 		"WithDefaultEncoding": {
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
+		"WithOTLP_v1Encoding": {
+			recordType: "otlp_v1",
+			wantUnmarshalerType: func() pmetric.Unmarshaler {
+				c := metricsConsumer{}
+				u, err := c.newUnmarshalerFromEncoding(context.Background(), "otlp_v1", "opentelemetry1.0")
+				require.NoError(t, err)
+				return u
+			}(),
+		},
 		"WithBuiltinEncoding": {
 			encoding:            "cwmetrics",
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
 		"WithExtensionEncoding": {
 			encoding:            "otlp_metrics",
+			wantUnmarshalerType: pmetricUnmarshalerExtension{},
+		},
+		"WithExtensionEncodingNamed": {
+			encoding:            "otlp_metrics/name",
 			wantUnmarshalerType: pmetricUnmarshalerExtension{},
 		},
 		"WithDeprecatedRecordType": {
@@ -88,8 +101,9 @@ func TestMetricsReceiver_Start(t *testing.T) {
 
 			host := hostWithExtensions{
 				extensions: map[component.ID]component.Component{
-					component.MustNewID("otlp_logs"):    plogUnmarshalerExtension{},
-					component.MustNewID("otlp_metrics"): pmetricUnmarshalerExtension{},
+					component.MustNewID("otlp_logs"):                    plogUnmarshalerExtension{},
+					component.MustNewID("otlp_metrics"):                 pmetricUnmarshalerExtension{},
+					component.MustNewIDWithName("otlp_metrics", "name"): pmetricUnmarshalerExtension{},
 				},
 			}
 

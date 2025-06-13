@@ -7,6 +7,7 @@
 |               | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlquery%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsqlquery) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlquery%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsqlquery) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sqlquery)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sqlquery&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1) |
 | Emeritus      | [@pmcollins](https://www.github.com/pmcollins) |
 
@@ -29,11 +30,14 @@ The configuration supports the following top-level fields:
 - `datasource`(required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This is
   a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
   referred to as the "connection string" in driver documentation. Examples:
-  - [postgres](https://github.com/lib/pq) - `host=localhost port=5432 user=username password=user_password sslmode=disable`
+  - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
   - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
-  - [sqlserver](https://github.com/go-sql-driver/mysql) - `sqlserver://username:user_password@localhost:1433?database=db_name`
-  - [sapAse](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
+  - [postgres](https://github.com/lib/pq) - `host=localhost port=5432 user=username password=user_password sslmode=disable`
+  - [snowflake](https://github.com/snowflakedb/gosnowflake) - `username[:password]@<account_identifier>/dbname/schemaname[?param1=value&...&paramN=valueN]`
+  - [sqlserver](https://github.com/microsoft/go-mssqldb) - `sqlserver://username:user_password@localhost:1433?database=db_name`
+  - [tds](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
+
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
