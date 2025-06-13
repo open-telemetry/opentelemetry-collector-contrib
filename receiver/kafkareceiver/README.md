@@ -20,6 +20,11 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 
 ## Getting Started
 
+> [!NOTE]
+> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> `receiver.kafkareceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+
 There are no required settings.
 
 The following settings can be optionally configured:
