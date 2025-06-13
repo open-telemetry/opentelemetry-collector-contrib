@@ -94,6 +94,6 @@ func (m *mockJSONErrorPayload) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("mock marshal error")
 }
 
-func (m *mockJSONErrorPayload) SplitPayload(maxSize int) ([]marshaler.AbstractMarshaler, error) {
+func (m *mockJSONErrorPayload) SplitPayload(int) ([]marshaler.AbstractMarshaler, error) {
 	return nil, errors.New("mock split error")
 }

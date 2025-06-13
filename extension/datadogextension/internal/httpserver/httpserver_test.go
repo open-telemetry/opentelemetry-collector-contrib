@@ -675,7 +675,7 @@ func TestServer_SendPayload(t *testing.T) {
 	pl := payload.OtelCollector{}           // or fill as needed
 	serializer := &mockSerializer{state: 1} // 1 == defaultforwarder.Started
 	called := false
-	serializer.sendMetadataFunc = func(jm any) error {
+	serializer.sendMetadataFunc = func(any) error {
 		called = true
 		return nil
 	}
