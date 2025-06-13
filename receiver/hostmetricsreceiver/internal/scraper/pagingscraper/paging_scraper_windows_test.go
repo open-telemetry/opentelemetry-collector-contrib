@@ -76,7 +76,7 @@ func TestScrape_Errors(t *testing.T) {
 			name:                   "pageMajFaultsScrapeError",
 			pageMajFaultsScrapeErr: errors.New("err3"),
 			expectedErr:            "err3",
-			expectedErrCount:       1,
+			expectedErrCount:       2, // If major faults failed to be scraped, the code can't report minor faults either
 		},
 		{
 			name:                "pageFaultsScrapeError",
@@ -90,7 +90,7 @@ func TestScrape_Errors(t *testing.T) {
 			pageReadsScrapeErr:     errors.New("err2"),
 			pageMajFaultsScrapeErr: errors.New("err3"),
 			expectedErr:            "failed to read page file stats: err1; err2; err3",
-			expectedErrCount:       3,
+			expectedErrCount:       4, // If major faults failed to be scraped, the code can't report minor faults either
 		},
 		{
 			name:                "multipleErrors-minorFaultErr",

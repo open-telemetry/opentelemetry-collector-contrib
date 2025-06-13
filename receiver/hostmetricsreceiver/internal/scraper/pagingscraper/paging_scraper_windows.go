@@ -117,10 +117,7 @@ func (s *pagingScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	err = s.scrapePagingFaultsMetric()
-	if err != nil {
-		errors.Add(err)
-	}
+	s.scrapePagingFaultsMetric(&errors)
 
 	return s.mb.Emit(), errors.Combine()
 }
@@ -176,22 +173,20 @@ func (s *pagingScraper) scrapePagingOperationsMetric() error {
 	return nil
 }
 
-func (s *pagingScraper) scrapePagingFaultsMetric() error {
+func (s *pagingScraper) scrapePagingFaultsMetric(errors *scrapererror.ScrapeErrors) {
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	var errors scrapererror.ScrapeErrors
 
 	var pageMajFaultsPerSecValue int64
 	pageMajFaultsHasValue, err := s.pageMajFaultsPerfCounter.ScrapeRawValue(&pageMajFaultsPerSecValue)
 	if err != nil {
 		// Count is 2 since without major page faults none of the paging metrics will be recorded
 		errors.AddPartial(2, err)
-		return errors.Combine()
+		return
 	}
 	if !pageMajFaultsHasValue {
 		s.settings.Logger.Debug(
 			"Skipping paging faults metrics as no value was scraped for 'Pages/sec' performance counter")
-		return nil
+		return
 	}
 	s.mb.RecordSystemPagingFaultsDataPoint(now, pageMajFaultsPerSecValue, metadata.AttributeTypeMajor)
 
@@ -206,6 +201,4 @@ func (s *pagingScraper) scrapePagingFaultsMetric() error {
 		s.settings.Logger.Debug(
 			"Skipping minor paging faults metric as no value was scraped for 'Page Faults/sec' performance counter")
 	}
-
-	return errors.Combine()
 }
