@@ -224,12 +224,18 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 		}
 
 		countTotal := uint64(0)
+		targetBucketCounts := targetDataPoint.BucketCounts()
 		for _, bucketCount := range sourceValue.GetDistributionValue().GetBucketCounts() {
 			if bucketCount >= 0 {
-				targetDataPoint.BucketCounts().Append(uint64(bucketCount))
+				targetBucketCounts.Append(uint64(bucketCount))
 				countTotal += uint64(bucketCount)
+			} else {
+				// The source data type is int64, the target type is uint64, so we need to handle negative counts in some way.
+				// We normalize negative values to zero, so all other counts are at the correct position in the target data point.
+				// (Obviously, bucket counts should never be negative in the source data anyway, so this branch should never be
+				// executed.)
+				targetBucketCounts.Append(0)
 			}
-			// silently ignore negative counts, a bucket count should never be negative
 		}
 		targetDataPoint.SetCount(countTotal)
 	}

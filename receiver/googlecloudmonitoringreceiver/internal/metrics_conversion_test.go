@@ -334,9 +334,9 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDa
 	mb := NewMetricsBuilder(logger)
 
 	sourceBucketCountsAllDataPoints := [][]int64{
-		{5, 10, 15, 11},
-		{6, 11, 16, 12},
-		{7, 12, 17, 13},
+		{5, 0, 15, 11},
+		{6, -1, 16, 12},
+		{7, 0, 17, 13},
 	}
 	boundsAllDataPoints := [][]float64{
 		{11.1, 22.2, 33.3},
@@ -400,12 +400,16 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDa
 
 		assert.Equal(t, 13+60*int64(i), targetDataPoint.StartTimestamp().AsTime().Unix())
 		assert.Equal(t, 13+60*int64(i+1), targetDataPoint.Timestamp().AsTime().Unix())
-		assert.Equal(t, uint64(41+4*i), targetDataPoint.Count())
+		assert.Equal(t, 31+3*i, int(targetDataPoint.Count()))
 
 		bucketCounts := targetDataPoint.BucketCounts()
 		require.Equal(t, len(sourceBucketCountsAllDataPoints[i]), bucketCounts.Len())
-		for i, countValue := range sourceBucketCountsAllDataPoints[i] {
-			assert.Equal(t, uint64(countValue), bucketCounts.At(i))
+		for i, sourceCountValue := range sourceBucketCountsAllDataPoints[i] {
+			if sourceCountValue < 0 {
+				assert.Equal(t, uint64(0), bucketCounts.At(i))
+			} else {
+				assert.Equal(t, uint64(sourceCountValue), bucketCounts.At(i))
+			}
 		}
 
 		bounds := targetDataPoint.ExplicitBounds()
