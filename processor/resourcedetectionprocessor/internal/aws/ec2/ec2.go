@@ -105,6 +105,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
+	instanceLifeCycle, err := d.metadataProvider.InstanceLifeCycle(ctx)
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting instance life cycle: %w", err)
+	}
+
+	d.rb.SetAwsEc2InstanceLifeCycle(instanceLifeCycle)
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
 	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSEC2.Value.AsString())
 	d.rb.SetCloudRegion(meta.Region)
