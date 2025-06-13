@@ -307,6 +307,10 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 	m.SetDescription(metricDesc.GetDescription())
 	m.SetUnit(metricDesc.Unit)
 
+	if metricDesc.GetValueType() == metric.MetricDescriptor_DISTRIBUTION {
+		mr.metricsBuilder.ConvertDistributionToMetrics(timeSeries.GetMetricKind(), timeSeries, m)
+		return
+	}
 	// Convert the TimeSeries to the appropriate metric type
 	switch timeSeries.GetMetricKind() {
 	case metric.MetricDescriptor_GAUGE:
@@ -315,7 +319,6 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
 	case metric.MetricDescriptor_DELTA:
 		mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
-	// TODO: Add support for HISTOGRAM
 	// TODO: Add support for EXPONENTIAL_HISTOGRAM
 	default:
 		metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
