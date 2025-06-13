@@ -43,6 +43,10 @@ resource_attributes:
     description: MAC addresses for the host
     type: slice
     enabled: false
+  host.interface:
+    description: Network interfaces for the host
+    type: slice
+    enabled: false
   host.cpu.vendor.id:
     description: The host.cpu.vendor.id
     type: string

@@ -17,6 +17,8 @@ all_set:
       enabled: true
     host.id:
       enabled: true
+    host.interface:
+      enabled: true
     host.ip:
       enabled: true
     host.mac:
@@ -50,6 +52,8 @@ none_set:
     host.cpu.vendor.id:
       enabled: false
     host.id:
+      enabled: false
+    host.interface:
       enabled: false
     host.ip:
       enabled: false

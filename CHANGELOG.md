@@ -7,6 +7,115 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg`: Remove the fields from category FrontDoorWebApplicationFirewallLog from the body log record and place them as log record attributes. (#39993)
+- `opampsupervisor`: Update passthrough logging to use Error for stderr pipe. (#40491)
+- `countconnector`: Upgrade profiles proto to 1.7.0 (#40285)
+- `elasticsearchexporter`: Upgrade profiles proto to 1.7.0 (#40285)
+- `golden`: Upgrade profiles proto to 1.7.0 (#40285)
+- `otelarrowexporter`: Configure the combined queue-batch facility, modifies the defaults `sending_queue` settings. (#40211)
+  Removes experimental batcher config, which was never recommended, and documents how to replace the formerly recommended concurrentbatchprocessor configuration.
+- `ottl`: Upgrade profiles proto to 1.7.0 (#40285)
+- `redisstorageextension`: Add TLS support (#40185)
+  TLS is now enabled by default. To disable TLS, use:
+  tls:
+    insecure: true
+  
+- `pkg/ottl`: Remove access to the profile lookup tables (#40227)
+  the mapping_table, location_table, function_table, attribute_table, attribute_units, link_table, string_stable have been moved to a root dictionary attribute and are not part of profile anymore.
+- `signaltometricsconnector`: Upgrade profiles proto to 1.7.0 (#40285)
+- `sqlserverreceiver`: Rename flags for enabling top query collection and query sample collection. (#40416)
+  Renamed `top_query_collection.enabled` to `events."db.server.top_query".enabled` in top query collection.
+  Renamed `query_sample_collection.enabled` to `events."db.server.query_sample".enabled` in query sample collection.
+  
+
+### 🚩 Deprecations 🚩
+
+- `receiver/hostmetrics`: Mark `hostmetrics.process.onWindowsUseNewGetProcesses` feature gate as stable (#32947)
+
+### 💡 Enhancements 💡
+
+- `resourcedetectionprocessor`: Add the option to retrieve resource attributes from the K8s API server and EC2 api when the IMDS service is not available. (#39503)
+- `windowseventlogreceiver`: Add a boolean option to include the `log.record.original` attribute of each event record. (#40365)
+- `prometheusremotewritereceiver`: Improve observability about data ingestion (#37277)
+- `prometheusremotewritereceiver`: Add LRU cache for resource metrics in prometheusremotewritereceiver. (#37277)
+  To avoid memory leaks, the receiver will now use a LRU cache to store resource metrics. The less recently used resource metrics are evicted from the cache given a maximum size. For now the maximum size is 1000.
+- `prometheusremotewritereceiver`: Add a count of all successfully written samples when elements were processed. (#37277)
+- `resourcedetectionprocessor`: Add additional OS properties to resource detection: `os.build.id` and `os.name` (#39941)
+- `receivercreator`: Add an option to set default annotations to override the discovery logic (#37436)
+- `kafkaexporter`: Add an Alpha feature gate `exporter.kafkaexporter.UseFranzGoClient` to use franz-go in the Kafka exporter for better performance. (#40364)
+  This change adds an experimental opt-in support to use the franz-go client in the Kafka exporter.
+  The franz-go client is a high-performance Kafka client that can improve the performance of the Kafka exporter.
+  The default client remains sarama, which is used by the Kafka receiver and other components.
+  Enable the franz-go client by setting the `exporter.kafkaexporter.UseFranzGo` feature gate.
+  
+- `receiver/cloudflare`: Enable the receiver to consume fields from Cloudflare containing a map (#40318)
+- `filelogreceiver`: The fingerprint of gzip compressed files is created by decompressing and reading the first `fingerprint_size` bytes. (#37772)
+  This feature can be enabled via the following feature gate `--feature-gates=filelog.decompressFingerprint`. This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+- `sqlserverreceiver`: add one attribute for performance_counter.object_name to deduplicate data (#40359)
+- `processor/k8sattributes`: Support extracting labels and annotations from k8s Deployments (#37957)
+- `receiver/k8s_cluster`: Add onDelete handler to emit the experimental entity delete events (#40278)
+- `datadogexporter`: Add support for host aliasing via resource attribute `datadog.host.aliases` (#40409)
+- `prometheusremotewriteexproter`: Adds wal metrics to the Prometheus Remote Write Exporter. The new metrics are:
+- `otelcol_exporter_prometheusremotewrite_wal_reads`: The total number of WAL reads.
+- `otelcol_exporter_prometheusremotewrite_wal_reads_failures`: The total number of WAL reads failures.
+ (#39556)
+- `processor/resourcedetection`: add `host.interface` resource attribute to `system` detector (#39419)
+- `pkg/ottl`: Add `event_name` path to the OTTL Log context (#40230)
+- `pkg/ottl`: Add metric.metadata as a valid OTTL path (#40214)
+- `pkg/ottl`: Add ability to compare slices/pcommon.Slice in OTTL Boolean Expressions (#40370)
+- `postgresqlreceiver`: add the ability to obtain query plan for top n queries (#39995)
+- `splunkenterprisereceiver`: Add search artifact size metrics to the existing search dispatch collection, which uses the /services/server/status/dispatch-artifacts API. (#40383)
+- `pkg/ottl`: Improve time parsing error messages by including the ctime directive instead of the go time layout (#35176)
+- `tlscheckreceiver`: Do not crash on target validation & implement better scrape errors (#40341)
+
+### 🧰 Bug fixes 🧰
+
+- `elasticsearchexporter`: Fix a bug where unset span status code was being serialized as 'Unset' instead of being ignored (#39498)
+- `coralogixexporter`: Fix Authorization header not being set in metadata. (#40330)
+- `datadogexporter`: Fix automatic intial point dropping when converting cumulative monotonic sum metrics (#40426)
+  The exporter turns OpenTelemetry's cumulative monotonic sum metrics into Datadog's (delta) count
+  metrics by computing the difference between successive points. The logic to determine whether the
+  first received value should be ignored or passed through as a delta was faulty, leading to large
+  spikes in metrics when the Collector restarts but the source application does not, which should
+  now be fixed.
+  
+- `azureauthextension`: Fix the scope retrieval issue for the client authentication of AzureAuthExtension. (#40032)
+- `kafkareceiver`: enforce a backoff mechanism on non-permanent errors, such as when the queue is full (#39580)
+- `exporter/datadog`: Adds `hostname_detection_timeout` configuration option for Datadog Exporter and sets default to 25 seconds. (#40373, #40377)
+  - This fixes a bug on Kubernetes daemonset deployments where collector hangs/reboots on startup.
+  - This configuration option already existed but was not available for customer configuration.
+  
+- `pkg/translator/prometheusremotewrite`: Fix bug where metric metadata was sent with incorrect metric name if configuration includes 'namespace' (#39826)
+- `kafkaexporter`: Fix Snappy compression codec support for the Kafka exporter (#40288)
+- `kafkareceiver`: Don't restart the Kafka consumer on failed errors when message marking is enabled for them. (#39909)
+  The Kafka consumer will now only be restarted due to failed messages if
+  both `message_marking::after` is true, and `message_marking::on_error` is false.
+  In this case the message will not be marked as consumed, and the consumer will
+  restart with an error.
+  
+- `libhoneyreceiver`: Fix response encoding for msgpack (#40413)
+  The libhoneyreceiver now correctly encodes the response for msgpack.
+  This fixes the issue where the response was not being encoded correctly.
+- `datadogexporter`: Send host metadata on new hosts. (#40409)
+- `datadogexporter`: config `tls::insecure_skip_verify` is now taken into account in metrics path. (#40507, #40085)
+- `prometheusrecevier`: Add feature gate to allow enabling and disabling the Prometheus created timestamp zero ingestion feature flag. (#40245)
+- `signalfxexporter`: Fix invalid and missing host metadata when the collector is deployed in a containerized environment and | the host root filesystem is mounted to non-standard location. (#40218)
+  Use the newly introduced `root_path` configuration option to specify the root path of the host filesystem.| This is required when the host root filesystem is mounted to a non-standard location.
+- `sqlserverreceiver`: Fix incorrect attribute name for database system name in the top query event collection. (#40361)
+  Rename `db.server.name` to `db.system.name` in SQL Server receiver to align with semantic conventions.
+- `sqlserverreceiver`: Fix scraping failure on SQL obfuscation on top query collection and query sample collection. (#40347)
+  Collector will now report original SQL statement if the obfuscation is failed.
+- `sumologicextension`: Be more tolerant of process discovery failures. (#40252)
+  Discovered after a gopsutil update
+- `opampsupervisor`: Supervisor now persists the remote config status to disk. This allows more accurate reporting of the remote config status. Also reports healthy status when not running the agent due to empty config (previous performance optimization). (#40467)
+- `receiver/faro`: Ensure that the Faro receiver waits for http server shutdown to complete before exiting. (#40331)
+
+<!-- previous-version -->
+
 ## v0.127.0
 
 ### 🛑 Breaking changes 🛑

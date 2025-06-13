@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
@@ -24,25 +25,26 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark            Bookmark
-	buffer              *Buffer
-	channel             string
-	query               *string
-	maxReads            int
-	currentMaxReads     int
-	startAt             string
-	raw                 bool
-	excludeProviders    map[string]struct{}
-	pollInterval        time.Duration
-	persister           operator.Persister
-	publisherCache      publisherCache
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	subscription        Subscription
-	remote              RemoteConfig
-	remoteSessionHandle windows.Handle
-	startRemoteSession  func() error
-	processEvent        func(context.Context, Event) error
+	bookmark                 Bookmark
+	buffer                   *Buffer
+	channel                  string
+	query                    *string
+	maxReads                 int
+	currentMaxReads          int
+	startAt                  string
+	raw                      bool
+	includeLogRecordOriginal bool
+	excludeProviders         map[string]struct{}
+	pollInterval             time.Duration
+	persister                operator.Persister
+	publisherCache           publisherCache
+	cancel                   context.CancelFunc
+	wg                       sync.WaitGroup
+	subscription             Subscription
+	remote                   RemoteConfig
+	remoteSessionHandle      windows.Handle
+	startRemoteSession       func() error
+	processEvent             func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -327,7 +329,11 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
 
 	if i.remote.Server != "" {
-		e.Attributes["server.address"] = i.remote.Server
+		e.AddAttribute("server.address", i.remote.Server)
+	}
+
+	if i.includeLogRecordOriginal {
+		e.AddAttribute(string(semconv.LogRecordOriginalKey), eventXML.Original)
 	}
 
 	return i.Write(ctx, e)

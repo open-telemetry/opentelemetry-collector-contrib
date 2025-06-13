@@ -3,6 +3,10 @@ service:
     logs:
       # Enables JSON log output for the Agent.
       encoding: json
+      # Ensure logs and errors are using the correct output
+      # channel
+      error_output_paths: ["stderr"]
+      output_paths: ["stdout"]
     resource:
       # Set resource attributes suggested by the OpAMP spec.
       # See https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescription-message

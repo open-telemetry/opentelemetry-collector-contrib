@@ -101,6 +101,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "non_snappy_compression_type"),
 			errorMessage: "compression type must be snappy",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "unknown_protobuf_message"),
+			errorMessage: "unknown remote write protobuf message io.prometheus.write.v4.Request, supported: prometheus.WriteRequest, io.prometheus.write.v2.Request",
+		},
 	}
 
 	for _, tt := range tests {
@@ -113,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))

@@ -52,7 +52,7 @@ type Factory struct {
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.NewFromFile(file, f.FingerprintSize)
+	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "")
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -98,7 +98,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 
 	if r.Fingerprint.Len() > r.fingerprintSize {
 		// User has reconfigured fingerprint_size
-		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
+		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "")
 		if rereadErr != nil {
 			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}

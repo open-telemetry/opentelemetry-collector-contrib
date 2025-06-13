@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -180,8 +181,15 @@ func newLogsAgentExporter(
 	sourceProvider source.Provider,
 	_ *attributes.GatewayUsage,
 ) (logsagentpipeline.LogsAgent, *logsagentexporter.Exporter, error) {
-	logComponent := newLogComponent(params.TelemetrySettings)
-	cfgComponent := newConfigComponent(params.TelemetrySettings, cfg)
+	logComponent := agentcomponents.NewLogComponent(params.TelemetrySettings)
+	cfgComponent := agentcomponents.NewConfigComponent(
+		agentcomponents.WithAPIConfig(cfg),
+		agentcomponents.WithLogsEnabled(),
+		agentcomponents.WithLogLevel(params.TelemetrySettings),
+		agentcomponents.WithLogsConfig(cfg),
+		agentcomponents.WithLogsDefaults(),
+		agentcomponents.WithProxyFromEnv(),
+	)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,

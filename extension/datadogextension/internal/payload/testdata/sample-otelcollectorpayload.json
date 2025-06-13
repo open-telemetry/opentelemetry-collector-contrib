@@ -1,0 +1,59 @@
+{
+  "hostname": "example-host",
+  "timestamp": 1682764800,
+  "metadata": {
+    "host_key": "",
+    "hostname": "example-host",
+    "hostname_source": "config",
+    "collector_id": "example-host-123e4567-e89b-12d3-a456-426614174000",
+    "collector_version": "0.125.0",
+    "config_site": "datadoghq.com",
+    "api_key_uuid": "",
+    "full_components": [
+      {
+        "type": "receiver",
+        "kind": "otlp",
+        "gomod": "github.com/open-telemetry/opentelemetry-collector",
+        "version": "v0.125.0",
+        "configured": true
+      },
+      {
+        "type": "exporter",
+        "kind": "debug",
+        "gomod": "github.com/open-telemetry/opentelemetry-collector",
+        "version": "v0.125.0",
+        "configured": true
+      }
+    ],
+    "active_components": [
+      {
+        "id": "receiver/otlp",
+        "name": "otlp",
+        "type": "receiver",
+        "kind": "otlp",
+        "pipeline": "metrics",
+        "gomod": "github.com/open-telemetry/opentelemetry-collector",
+        "version": "v0.125.0",
+        "component_status": "active"
+      },
+      {
+        "id": "exporter/debug",
+        "name": "debug",
+        "type": "exporter",
+        "kind": "debug",
+        "pipeline": "metrics",
+        "gomod": "github.com/open-telemetry/opentelemetry-collector",
+        "version": "v0.125.0",
+        "component_status": "active"
+      }
+    ],
+    "build_info": {
+      "command": "otelcol",
+      "description": "OpenTelemetry Collector",
+      "version": "0.125.0"
+    },
+    "full_configuration": "{\"receivers\":{\"otlp\":{}},\"exporters\":{\"debug\":{}},\"service\":{\"pipelines\":{\"metrics\":{\"receivers\":[\"otlp\"],\"exporters\":[\"debug\"]}}}}",
+    "health_status": "{\"status\":\"healthy\"}"
+  },
+  "uuid": "123e4567-e89b-12d3-a456-426614174000"
+}

@@ -10,13 +10,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
-	"github.com/twmb/franz-go/pkg/sasl/aws"
 	"github.com/twmb/franz-go/pkg/sasl/kerberos"
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
@@ -32,7 +30,6 @@ const (
 	SCRAMSHA512          = "SCRAM-SHA-512"
 	SCRAMSHA256          = "SCRAM-SHA-256"
 	PLAIN                = "PLAIN"
-	AWSMSKIAM            = "AWS_MSK_IAM"
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
 )
 
@@ -130,22 +127,6 @@ func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
 		m = scram.Auth{User: cfg.Username, Pass: cfg.Password}.AsSha256Mechanism()
 	case SCRAMSHA512:
 		m = scram.Auth{User: cfg.Username, Pass: cfg.Password}.AsSha512Mechanism()
-	case AWSMSKIAM:
-		m = aws.ManagedStreamingIAM(func(ctx context.Context) (auth aws.Auth, _ error) {
-			awscfg, err := awsconfig.LoadDefaultConfig(ctx)
-			if err != nil {
-				return auth, fmt.Errorf("kafka: error loading AWS config: %w", err)
-			}
-			creds, err := awscfg.Credentials.Retrieve(ctx)
-			if err != nil {
-				return auth, err
-			}
-			return aws.Auth{
-				AccessKey:    creds.AccessKeyID,
-				SecretKey:    creds.SecretAccessKey,
-				SessionToken: creds.SessionToken,
-			}, nil
-		})
 	case AWSMSKIAMOAUTHBEARER:
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)

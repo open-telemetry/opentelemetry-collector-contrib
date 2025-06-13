@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    system.nfs.net.count:
+      enabled: true
+none_set:
+  metrics:
+    system.nfs.net.count:
+      enabled: false
