@@ -54,34 +54,35 @@ func NewServer(
 	uuid string,
 	p payload.OtelCollector,
 ) *Server {
+	// Create payload but don't add timestamp, that will happen in SendPayload
 	oc := &payload.OtelCollectorPayload{
-		Hostname:  hostname,
-		Timestamp: nowFunc().UnixNano(),
-		Metadata:  p,
-		UUID:      uuid,
+		Hostname: hostname,
+		Metadata: p,
+		UUID:     uuid,
 	}
+
 	srv := &Server{
 		logger:     logger,
 		serializer: s,
 		config:     config,
 		payload:    oc, // store as interface
+		server: &http.Server{
+			Addr:         config.Endpoint,
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			BaseContext:  func(net.Listener) context.Context { return context.Background() },
+		},
 	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(config.Path, srv.HandleMetadata)
+	srv.server.Handler = mux
+
 	return srv
 }
 
 // Start starts the HTTP server and begins sending payloads periodically.
 func (s *Server) Start() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(s.config.Path, s.HandleMetadata)
-
-	s.server = &http.Server{
-		Addr:         s.config.Endpoint,
-		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		BaseContext:  func(net.Listener) context.Context { return context.Background() },
-	}
-
 	// Start HTTP server
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
