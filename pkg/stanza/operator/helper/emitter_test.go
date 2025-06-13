@@ -17,10 +17,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-func TestLogEmitter(t *testing.T) {
+func TestBatchingLogEmitter(t *testing.T) {
 	rwMtx := &sync.RWMutex{}
 	var receivedEntries []*entry.Entry
-	emitter := NewLogEmitter(
+	emitter := NewBatchingLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
 		func(_ context.Context, entries []*entry.Entry) {
 			rwMtx.Lock()
@@ -47,14 +47,14 @@ func TestLogEmitter(t *testing.T) {
 	require.Equal(t, in, receivedEntries[0])
 }
 
-func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
+func TestBatchingLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	const (
 		maxBatchSize = 100
 		timeout      = time.Second
 	)
 	rwMtx := &sync.RWMutex{}
 	var receivedEntries []*entry.Entry
-	emitter := NewLogEmitter(
+	emitter := NewBatchingLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
 		func(_ context.Context, entries []*entry.Entry) {
 			rwMtx.Lock()
@@ -83,14 +83,14 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	require.Len(t, receivedEntries, maxBatchSize)
 }
 
-func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
+func TestBatchingLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	const (
 		flushInterval = 100 * time.Millisecond
 		timeout       = time.Second
 	)
 	rwMtx := &sync.RWMutex{}
 	var receivedEntries []*entry.Entry
-	emitter := NewLogEmitter(
+	emitter := NewBatchingLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
 		func(_ context.Context, entries []*entry.Entry) {
 			rwMtx.Lock()
@@ -117,6 +117,36 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	}, timeout, 10*time.Millisecond)
 
 	require.Len(t, receivedEntries, 1)
+}
+
+func TestSynchronousLogEmitter(t *testing.T) {
+	rwMtx := &sync.RWMutex{}
+	var receivedEntries []*entry.Entry
+	emitter := NewSynchronousLogEmitter(
+		componenttest.NewNopTelemetrySettings(),
+		func(_ context.Context, entries []*entry.Entry) {
+			rwMtx.Lock()
+			defer rwMtx.Unlock()
+			receivedEntries = entries
+		},
+	)
+
+	require.NoError(t, emitter.Start(nil))
+
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
+
+	in := entry.New()
+
+	assert.NoError(t, emitter.Process(context.Background(), in))
+
+	require.Eventually(t, func() bool {
+		rwMtx.RLock()
+		defer rwMtx.RUnlock()
+		return receivedEntries != nil
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, in, receivedEntries[0])
 }
 
 func complexEntries(count int) []*entry.Entry {

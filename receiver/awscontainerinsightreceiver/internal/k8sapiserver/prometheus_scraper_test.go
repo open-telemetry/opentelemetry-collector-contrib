@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -246,6 +247,7 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	// replace the prom receiver
 	params := receiver.Settings{
 		TelemetrySettings: scraper.settings,
+		ID:                component.NewIDWithName(component.MustNewType("prometheus"), ""),
 	}
 	scraper.prometheusReceiver, err = promFactory.CreateMetrics(scraper.ctx, params, &promConfig, mConsumer)
 	assert.NoError(t, err)

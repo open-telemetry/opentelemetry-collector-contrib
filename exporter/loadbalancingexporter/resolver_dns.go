@@ -93,6 +93,7 @@ func (r *dnsResolver) start(ctx context.Context) error {
 		r.logger.Warn("failed to resolve", zap.Error(err))
 	}
 
+	r.shutdownWg.Add(1)
 	go r.periodicallyResolve()
 
 	r.logger.Debug("DNS resolver started",
@@ -113,6 +114,7 @@ func (r *dnsResolver) shutdown(_ context.Context) error {
 
 func (r *dnsResolver) periodicallyResolve() {
 	ticker := time.NewTicker(r.resInterval)
+	defer r.shutdownWg.Done()
 
 	for {
 		select {
@@ -131,9 +133,6 @@ func (r *dnsResolver) periodicallyResolve() {
 }
 
 func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
-	r.shutdownWg.Add(1)
-	defer r.shutdownWg.Done()
-
 	addrs, err := r.resolver.LookupIPAddr(ctx, r.hostname)
 	if err != nil {
 		r.telemetry.LoadbalancerNumResolutions.Add(ctx, 1, metric.WithAttributeSet(dnsResolverFailureAttrSet))

@@ -4,6 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -18,7 +19,7 @@ type ServiceConfig struct {
 	// NamePattern is mandatory.
 	NamePattern string `mapstructure:"name_pattern" yaml:"name_pattern"`
 	// ContainerNamePattern is optional, empty string means all containers in that service would be exported.
-	// Otherwise both service and container name petterns need to metch.
+	// Otherwise both service and container name patterns need to match.
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
 }
 
@@ -29,7 +30,7 @@ func (s *ServiceConfig) validate() error {
 
 func (s *ServiceConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if s.NamePattern == "" {
-		return nil, fmt.Errorf("name_pattern is empty")
+		return nil, errors.New("name_pattern is empty")
 	}
 
 	nameRegex, err := regexp.Compile(s.NamePattern)

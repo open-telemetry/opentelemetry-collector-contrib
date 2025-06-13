@@ -16,11 +16,12 @@ type azureTracesEventUnmarshaler struct {
 	unmarshaler *azure.TracesUnmarshaler
 }
 
-func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventTracesUnmarshaler {
+func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string) eventTracesUnmarshaler {
 	return azureTracesEventUnmarshaler{
 		unmarshaler: &azure.TracesUnmarshaler{
-			Version: buildInfo.Version,
-			Logger:  logger,
+			Version:     buildInfo.Version,
+			Logger:      logger,
+			TimeFormats: timeFormat,
 		},
 	}
 }

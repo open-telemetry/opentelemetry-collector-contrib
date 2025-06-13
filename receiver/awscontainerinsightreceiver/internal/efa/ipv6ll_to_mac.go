@@ -4,7 +4,7 @@
 package efa // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/efa"
 
 import (
-	"fmt"
+	"errors"
 	"net"
 )
 
@@ -14,23 +14,23 @@ func IPv6LinkLocalToMAC(ipv6Addr string) (string, error) {
 	// Parse the IPv6 address
 	ip := net.ParseIP(ipv6Addr)
 	if ip == nil || ip.To16() == nil {
-		return "", fmt.Errorf("invalid IPv6 address")
+		return "", errors.New("invalid IPv6 address")
 	}
 
 	// Verify it's a link-local address (fe80::/10)
 	if !ip.IsLinkLocalUnicast() {
-		return "", fmt.Errorf("not a link-local address")
+		return "", errors.New("not a link-local address")
 	}
 
 	// Extract interface identifier (last 64 bits)
 	interfaceID := ip.To16()[8:]
 	if len(interfaceID) != 8 {
-		return "", fmt.Errorf("invalid interface identifier")
+		return "", errors.New("invalid interface identifier")
 	}
 
 	// Verify EUI-64 format (check for ff:fe in bytes 3-4)
 	if interfaceID[3] != 0xff || interfaceID[4] != 0xfe {
-		return "", fmt.Errorf("address does not use EUI-64 format")
+		return "", errors.New("address does not use EUI-64 format")
 	}
 
 	// Reconstruct MAC address

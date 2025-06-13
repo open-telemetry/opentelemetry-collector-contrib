@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetCloudAccountID sets provided value as "cloud.account.id" attribute.
+func (rb *ResourceBuilder) SetCloudAccountID(val string) {
+	if rb.config.CloudAccountID.Enabled {
+		rb.res.Attributes().PutStr("cloud.account.id", val)
+	}
+}
+
 // SetCloudPlatform sets provided value as "cloud.platform" attribute.
 func (rb *ResourceBuilder) SetCloudPlatform(val string) {
 	if rb.config.CloudPlatform.Enabled {

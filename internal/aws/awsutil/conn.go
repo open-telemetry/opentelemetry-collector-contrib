@@ -38,6 +38,17 @@ type ConnAttr interface {
 // Conn implements connAttr interface.
 type Conn struct{}
 
+func (c *Conn) getEC2Region(s *session.Session, imdsRetries int) (string, error) {
+	region, err := ec2metadata.New(s, &aws.Config{
+		Retryer:                   override.NewIMDSRetryer(imdsRetries),
+		EC2MetadataEnableFallback: aws.Bool(false),
+	}).Region()
+	if err == nil {
+		return region, err
+	}
+	return ec2metadata.New(s, &aws.Config{}).Region()
+}
+
 type stsCredentialProvider struct {
 	regional, partitional, fallbackProvider *stscreds.AssumeRoleProvider
 }
@@ -64,17 +75,6 @@ func (s *stsCredentialProvider) Retrieve() (credentials.Value, error) {
 	}
 
 	return v, err
-}
-
-func (c *Conn) getEC2Region(s *session.Session, imdsRetries int) (string, error) {
-	region, err := ec2metadata.New(s, &aws.Config{
-		Retryer:                   override.NewIMDSRetryer(imdsRetries),
-		EC2MetadataEnableFallback: aws.Bool(false),
-	}).Region()
-	if err == nil {
-		return region, err
-	}
-	return ec2metadata.New(s, &aws.Config{}).Region()
 }
 
 // AWS STS endpoint constants
@@ -299,7 +299,7 @@ func getSTSCreds(logger *zap.Logger, region string, cfg *AWSSessionSettings) (*c
 		return nil, err
 	}
 
-	stsCred := getSTSCredsFromRegionEndpoint(logger, t, region, cfg.RoleARN)
+	stsCred := getSTSCredsFromRegionEndpoint(logger, t, region, cfg.RoleARN, cfg.ExternalID)
 	// Make explicit call to fetch credentials.
 	_, err = stsCred.Get()
 	if err != nil {
@@ -309,7 +309,7 @@ func getSTSCreds(logger *zap.Logger, region string, cfg *AWSSessionSettings) (*c
 
 			if awsErr.Code() == sts.ErrCodeRegionDisabledException {
 				logger.Error("Region ", zap.String("region", region), zap.Error(awsErr))
-				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, cfg.RoleARN, region)
+				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, cfg.RoleARN, region, cfg.ExternalID)
 			}
 		}
 	}
@@ -320,7 +320,7 @@ func getSTSCreds(logger *zap.Logger, region string, cfg *AWSSessionSettings) (*c
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
 // Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
 func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, region string,
-	roleArn string,
+	roleArn, externalID string,
 ) *credentials.Credentials {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
@@ -329,23 +329,29 @@ func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, re
 	c := &aws.Config{Region: aws.String(region), Endpoint: &regionalEndpoint}
 	st := sts.New(sess, c)
 	logger.Info("STS Endpoint ", zap.String("endpoint", st.Endpoint))
-	return stscreds.NewCredentialsWithClient(st, roleArn)
+	options := []func(*stscreds.AssumeRoleProvider){}
+	if externalID != "" {
+		options = append(options, func(arp *stscreds.AssumeRoleProvider) {
+			arp.ExternalID = aws.String(externalID)
+		})
+	}
+	return stscreds.NewCredentialsWithClient(st, roleArn, options...)
 }
 
 // getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in
 // the respective partition.
 func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session, roleArn string,
-	region string,
+	region string, externalID string,
 ) *credentials.Credentials {
 	logger.Info("Credentials for provided RoleARN being fetched from STS primary region endpoint.")
 	partitionID := getPartition(region)
 	switch partitionID {
 	case endpoints.AwsPartitionID:
-		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsEast1RegionID, roleArn)
+		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsEast1RegionID, roleArn, externalID)
 	case endpoints.AwsCnPartitionID:
-		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.CnNorth1RegionID, roleArn)
+		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.CnNorth1RegionID, roleArn, externalID)
 	case endpoints.AwsUsGovPartitionID:
-		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsGovWest1RegionID, roleArn)
+		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsGovWest1RegionID, roleArn, externalID)
 	}
 
 	return nil
@@ -354,13 +360,14 @@ func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session
 func getSTSRegionalEndpoint(r string) string {
 	p := getPartition(r)
 
-	var e string
-	if p == endpoints.AwsPartitionID || p == endpoints.AwsUsGovPartitionID {
-		e = STSEndpointPrefix + r + STSEndpointSuffix
-	} else if p == endpoints.AwsCnPartitionID {
-		e = STSEndpointPrefix + r + STSAwsCnPartitionIDSuffix
+	switch p {
+	case endpoints.AwsPartitionID, endpoints.AwsUsGovPartitionID:
+		return STSEndpointPrefix + r + STSEndpointSuffix
+	case endpoints.AwsCnPartitionID:
+		return STSEndpointPrefix + r + STSAwsCnPartitionIDSuffix
+	default:
+		return ""
 	}
-	return e
 }
 
 func GetDefaultSession(logger *zap.Logger, cfg *AWSSessionSettings) (*session.Session, error) {

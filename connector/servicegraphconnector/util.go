@@ -13,3 +13,14 @@ import (
 func findServiceName(attributes pcommon.Map) (string, bool) {
 	return pdatautil.GetAttributeValue(semconv.AttributeServiceName, attributes)
 }
+
+func getFirstMatchingValue(keys []string, attributes ...pcommon.Map) (string, bool) {
+	for _, key := range keys {
+		for _, attr := range attributes {
+			if v, ok := pdatautil.GetAttributeValue(key, attr); ok {
+				return v, true
+			}
+		}
+	}
+	return "", false
+}

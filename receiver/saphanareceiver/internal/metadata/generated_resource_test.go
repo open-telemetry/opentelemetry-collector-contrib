@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("db.system")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "db.system-val", val.Str())
+				assert.Equal(t, "db.system-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("saphana.host")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "saphana.host-val", val.Str())
+				assert.Equal(t, "saphana.host-val", val.Str())
 			}
 		})
 	}

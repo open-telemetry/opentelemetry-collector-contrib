@@ -75,14 +75,14 @@ func TestEC2TagsForEKS(t *testing.T) {
 		e.maxJitterTime = 0
 	}
 	isSucessOption := func(e *ec2Tags) {
-		e.isSucess = make(chan bool)
+		e.isSuccess = make(chan bool)
 	}
 	et := newEC2Tags(ctx, sess, "instanceId", "us-west-2", ci.EKS, time.Millisecond, zap.NewNop(), nil, clientOption,
 		maxJitterOption, isSucessOption)
 
 	// wait for ec2 tags are fetched
 	e := et.(*ec2Tags)
-	<-e.isSucess
+	<-e.isSuccess
 	assert.Equal(t, "cluster-name", et.getClusterName())
 	assert.Equal(t, "asg", et.getAutoScalingGroupName())
 }
@@ -104,13 +104,13 @@ func TestEC2TagsForECS(t *testing.T) {
 		e.maxJitterTime = 0
 	}
 	isSucessOption := func(e *ec2Tags) {
-		e.isSucess = make(chan bool)
+		e.isSuccess = make(chan bool)
 	}
 	et := newEC2Tags(ctx, sess, "instanceId", "us-west-2", ci.ECS, time.Millisecond, zap.NewNop(), nil, clientOption,
 		maxJitterOption, isSucessOption)
 
 	// wait for ec2 tags are fetched
 	e := et.(*ec2Tags)
-	<-e.isSucess
+	<-e.isSuccess
 	assert.Equal(t, "asg", et.getAutoScalingGroupName())
 }

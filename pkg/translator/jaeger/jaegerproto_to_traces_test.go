@@ -10,16 +10,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
@@ -174,7 +174,7 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
 
-	require.EqualValues(t, expected, got)
+	require.Equal(t, expected, got)
 }
 
 func TestProtoToTraces(t *testing.T) {
@@ -317,7 +317,7 @@ func TestProtoToTraces(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			td, err := ProtoToTraces(test.jb)
 			assert.NoError(t, err)
-			assert.EqualValues(t, test.td, td)
+			assert.Equal(t, test.td, td)
 		})
 	}
 }
@@ -376,11 +376,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 	ils0 := actual.ResourceSpans().At(0).ScopeSpans().At(0)
 	ils1 := actual.ResourceSpans().At(0).ScopeSpans().At(1)
 	if ils0.Scope().Name() == "library1" {
-		assert.EqualValues(t, library1Span, ils0)
-		assert.EqualValues(t, library2Span, ils1)
+		assert.Equal(t, library1Span, ils0)
+		assert.Equal(t, library2Span, ils1)
 	} else {
-		assert.EqualValues(t, library1Span, ils1)
-		assert.EqualValues(t, library2Span, ils0)
+		assert.Equal(t, library1Span, ils1)
+		assert.Equal(t, library2Span, ils0)
 	}
 }
 
@@ -496,7 +496,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			attrs := pcommon.NewMap()
 			assert.NoError(t, attrs.FromRaw(test.attrs))
 			setInternalSpanStatus(attrs, span)
-			assert.EqualValues(t, test.status, status)
+			assert.Equal(t, test.status, status)
 			assert.Equal(t, test.attrsModifiedLen, attrs.Len())
 		})
 	}

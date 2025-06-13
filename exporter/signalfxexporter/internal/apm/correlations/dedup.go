@@ -101,8 +101,8 @@ func (d *deduplicator) dedupCorrelate(r *request) bool {
 	d.pendingCreateKeys[*r.Correlation] = elem
 
 	// cancel any pending delete operations
-	deleteElem, pendindgDelete := d.pendingDeleteKeys[*r.Correlation]
-	if pendindgDelete {
+	deleteElem, pendingDelete := d.pendingDeleteKeys[*r.Correlation]
+	if pendingDelete {
 		deleteElem.Value.(*request).cancel()
 		d.pendingDeletes.Remove(deleteElem)
 		delete(d.pendingDeleteKeys, *deleteElem.Value.(*request).Correlation)
@@ -129,8 +129,8 @@ func (d *deduplicator) dedupDelete(r *request) bool {
 	d.pendingDeleteKeys[*r.Correlation] = elem
 
 	// cancel any pending create operations
-	createElem, pendindgCreate := d.pendingCreateKeys[*r.Correlation]
-	if pendindgCreate {
+	createElem, pendingCreate := d.pendingCreateKeys[*r.Correlation]
+	if pendingCreate {
 		createElem.Value.(*request).cancel()
 		d.pendingCreates.Remove(createElem)
 		delete(d.pendingCreateKeys, *createElem.Value.(*request).Correlation)

@@ -31,12 +31,13 @@ type hostInfoProvider interface {
 
 func GetScraperConfig(hostInfoProvider hostInfoProvider) *config.ScrapeConfig {
 	return &config.ScrapeConfig{
-		ScrapeInterval:  model.Duration(collectionInterval),
-		ScrapeTimeout:   model.Duration(collectionInterval),
-		ScrapeProtocols: config.DefaultScrapeProtocols,
-		JobName:         jobName,
-		Scheme:          "http",
-		MetricsPath:     scraperMetricsPath,
+		ScrapeInterval:         model.Duration(collectionInterval),
+		ScrapeTimeout:          model.Duration(collectionInterval),
+		ScrapeProtocols:        config.DefaultScrapeProtocols,
+		JobName:                jobName,
+		Scheme:                 "http",
+		MetricsPath:            scraperMetricsPath,
+		ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&kubernetes.SDConfig{
 				Role: kubernetes.RoleService,

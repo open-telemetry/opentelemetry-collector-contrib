@@ -6,5 +6,6 @@ status:
     beta: [extension]
   distributions: [contrib, k8s]
   codeowners:
-    active: [djaglowski]
+    active: [swiatekm, VihasMakwana]
+    emeritus: [djaglowski]
     seeking_new: true

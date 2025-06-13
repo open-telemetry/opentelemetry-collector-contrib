@@ -47,7 +47,7 @@ func TestSubsetCluster_New(t *testing.T) {
 	testCluster, err := newSubsetCluster(cPolicy, hosts, authEnabled, factoryFuncPos)
 	require.NoError(t, err)
 	nodeFactoryPos.AssertExpectations(t)
-	require.Equal(t, len(testCluster.GetNodes()), len(nodes))
+	require.Len(t, nodes, len(testCluster.GetNodes()))
 
 	_, err = newSubsetCluster(cPolicy, hosts, authEnabled, factoryFuncNeg)
 	nodeFactoryNeg.AssertExpectations(t)
@@ -67,7 +67,7 @@ func TestSubsetCluster_GetNodes(t *testing.T) {
 	}
 
 	actualNodes := testCluster.GetNodes()
-	require.Equal(t, len(actualNodes), len(nodes))
+	require.Len(t, nodes, len(actualNodes))
 }
 
 func TestSubsetCluster_Close(t *testing.T) {

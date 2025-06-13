@@ -7,7 +7,7 @@ status:
   distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [rnishtala-sumo]
+    active: [rnishtala-sumo, echlebek, amdprophet]
 tests:
   config:
 

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/publisher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -32,7 +33,7 @@ func TestStartAndShutdown(t *testing.T) {
 	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -54,7 +55,7 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 
 	unknownExtensionID := component.NewID(component.MustNewType("invalid_encoding"))
 	cfg.EncodingExtensionID = &unknownExtensionID
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "unknown encoding \"invalid_encoding\"")
@@ -69,7 +70,7 @@ func TestStart_PublisherCreationErr(t *testing.T) {
 	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return nil, errors.New("simulating error creating publisher")
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "simulating error creating publisher")
@@ -88,7 +89,7 @@ func TestStart_TLSError(t *testing.T) {
 	tlsFactory := func(context.Context) (*tls.Config, error) {
 		return nil, errors.New("simulating tls config error")
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, tlsFactory, routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, tlsFactory, routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "simulating tls config error")
@@ -140,7 +141,7 @@ func exporterForPublishing(t *testing.T) (*mockPublisher, *rabbitmqExporter) {
 	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings(metadata.Type).TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

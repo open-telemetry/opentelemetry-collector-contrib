@@ -5,6 +5,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]  |
+| Unsupported Platforms | darwin, windows |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fcgroupruntime%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fcgroupruntime) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fcgroupruntime%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fcgroupruntime) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@rogercoll](https://www.github.com/rogercoll) |
@@ -15,7 +16,7 @@
 
 ## Overview
 
-The OpenTelemetry Cgroup Auto-Config Extension is designed to optimize Go runtime performance in containerized environments by automatically configuring GOMAXPROCS and GOMEMLIMIT based on the Linux cgroup filesystem. This extension leverages [automaxprocs](https://github.com/uber-go/automaxprocs) and [automemlimit](https://github.com/KimMachineGun/automemlimit) packages to dynamically adjust Go runtime variables, ensuring efficient resource usage aligned with container limits.
+The OpenTelemetry Cgroup Auto-Config Extension is designed to optimize Go runtime performance in containerized environments by automatically configuring GOMAXPROCS and GOMEMLIMIT based on the Linux cgroup filesystem. This extension leverages [automaxprocs](https://github.com/uber-go/automaxprocs) or [gomaxecs](https://github.com/rdforte/gomaxecs) for AWS ECS Tasks and [automemlimit](https://github.com/KimMachineGun/automemlimit) packages to dynamically adjust Go runtime variables, ensuring efficient resource usage aligned with container limits.
 
 ## Configuration
 
@@ -40,3 +41,7 @@ extension:
         enabled: true
         ratio: 0.8
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for information on how to contribute to this extension.

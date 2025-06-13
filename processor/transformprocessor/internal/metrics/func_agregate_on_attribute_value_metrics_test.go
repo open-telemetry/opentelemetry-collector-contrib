@@ -514,17 +514,17 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 
 func Test_createAggregateOnAttributeValueFunction(t *testing.T) {
 	// invalid input arguments
-	_, e := createAggregateOnAttributeValueFunction(ottl.FunctionContext{}, nil)
-	require.Contains(t, e.Error(), "AggregateOnAttributeValueFactory args must be of type *AggregateOnAttributeValueArguments")
+	_, err := createAggregateOnAttributeValueFunction(ottl.FunctionContext{}, nil)
+	require.ErrorContains(t, err, "AggregateOnAttributeValueFactory args must be of type *AggregateOnAttributeValueArguments")
 
 	// invalid aggregation function
-	_, e = createAggregateOnAttributeValueFunction(ottl.FunctionContext{}, &aggregateOnAttributeValueArguments{
+	_, err = createAggregateOnAttributeValueFunction(ottl.FunctionContext{}, &aggregateOnAttributeValueArguments{
 		AggregationFunction: "invalid",
 		Attribute:           "attr",
 		Values:              []string{"val"},
 		NewValue:            "newVal",
 	})
-	require.Contains(t, e.Error(), "invalid aggregation function")
+	require.ErrorContains(t, err, "invalid aggregation function")
 }
 
 func getTestSumMetricMultipleAggregateOnAttributeValue() pmetric.Metric {

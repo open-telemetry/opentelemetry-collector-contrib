@@ -17,6 +17,7 @@ The `csv_parser` operator parses the string-type field selected by `parse_from` 
 | `parse_from`       | `body`                                   | The [field](../types/field.md) from which the value will be parsed.                                                                               |
 | `parse_to`         | `attributes`                             | The [field](../types/field.md) to which the value will be parsed.                                                                                 |
 | `on_error`         | `send`                                   | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md).                                                     |
+| `if`               |                                          | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `timestamp`        | `nil`                                    | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator.          |
 | `severity`         | `nil`                                    | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator.             |
 

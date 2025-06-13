@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -77,7 +76,7 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 	metricsMap := internal.NewMetricsModel(e.tablesConfig)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
-		resAttr := attributesToMap(metrics.Resource().Attributes())
+		resAttr := metrics.Resource().Attributes()
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 			rs := metrics.ScopeMetrics().At(j).Metrics()
 			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
@@ -98,9 +97,9 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 				case pmetric.MetricTypeSummary:
 					errs = errors.Join(errs, metricsMap[pmetric.MetricTypeSummary].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Summary(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeEmpty:
-					return fmt.Errorf("metrics type is unset")
+					return errors.New("metrics type is unset")
 				default:
-					return fmt.Errorf("unsupported metrics type")
+					return errors.New("unsupported metrics type")
 				}
 				if errs != nil {
 					return errs

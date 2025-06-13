@@ -6,7 +6,7 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, pdelewski]
+    active: [atoulme, pdelewski, Erog38]
 
 tests:
   expect_consumer_error: true

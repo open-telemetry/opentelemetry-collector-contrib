@@ -9,7 +9,7 @@ Supported pipeline types: logs
 docker build -t otelcontribcol .
 ```
 
-2. Then from this directory (exporter/loadbalacingexporter/example), run:
+2. Then from this directory (exporter/loadbalancingexporter/example), run:
 ```shell
 docker-compose up
 ```

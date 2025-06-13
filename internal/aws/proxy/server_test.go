@@ -42,7 +42,7 @@ func TestHappyCase(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	cfg.ProxyAddress = "https://example.com"
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
@@ -74,7 +74,7 @@ func TestHandlerHappyCase(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -99,7 +99,7 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -128,7 +128,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -152,9 +152,9 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
-	cfg.TCPAddrConfig.Endpoint = "0.0.0.0:2000"
+	cfg.Endpoint = "0.0.0.0:2000"
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
@@ -177,7 +177,7 @@ func TestTCPEndpointInvalid(t *testing.T) {
 	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
-	cfg.TCPAddrConfig.Endpoint = "invalid\n"
+	cfg.Endpoint = "invalid\n"
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
 }
@@ -189,7 +189,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
@@ -203,7 +203,7 @@ func TestAWSEndpointInvalid(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	cfg.AWSEndpoint = "invalid endpoint \n"
 
 	_, err := NewServer(cfg, logger)
@@ -218,7 +218,7 @@ func TestCanCreateTransport(t *testing.T) {
 
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddrConfig.Endpoint = tcpAddr
+	cfg.Endpoint = tcpAddr
 	cfg.ProxyAddress = "invalid address \n"
 
 	_, err := NewServer(cfg, logger)

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -282,13 +282,13 @@ func (s *haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 
 func (s *haproxyScraper) start(ctx context.Context, host component.Host) error {
 	var err error
-	s.httpClient, err = s.cfg.ClientConfig.ToClient(ctx, host, s.telemetrySettings)
+	s.httpClient, err = s.cfg.ToClient(ctx, host, s.telemetrySettings)
 	return err
 }
 
 func newScraper(cfg *Config, settings receiver.Settings) *haproxyScraper {
 	return &haproxyScraper{
-		logger:            settings.TelemetrySettings.Logger,
+		logger:            settings.Logger,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		cfg:               cfg,
 		telemetrySettings: settings.TelemetrySettings,

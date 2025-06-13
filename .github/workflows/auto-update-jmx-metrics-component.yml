@@ -8,13 +8,13 @@ on:
 
 jobs:
   check-versions:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       latest-version: ${{ steps.check-versions.outputs.latest-version }}
       already-added: ${{ steps.check-versions.outputs.already-added }}
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - id: check-versions
         name: Check versions
@@ -48,14 +48,14 @@ jobs:
           echo "already-opened=$already_opened" >> $GITHUB_OUTPUT
 
   update-jmx-metrics-component:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: |
       needs.check-versions.outputs.already-added != 'true' &&
       needs.check-versions.outputs.already-opened != 'true'
     needs:
       - check-versions
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Update version
         env:

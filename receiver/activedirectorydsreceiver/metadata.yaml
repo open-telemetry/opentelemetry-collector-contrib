@@ -29,7 +29,7 @@ attributes:
     description: The type of value sent.
     type: string
     enum:
-      - distingushed_names
+      - distinguished_names
       - other
   operation_type:
     name_override: type

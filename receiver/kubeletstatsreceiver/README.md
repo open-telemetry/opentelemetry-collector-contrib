@@ -103,6 +103,27 @@ collector is running to be used as the endpoint. If the hostNetwork flag is
 set, and the collector is running in a pod, this hostname will resolve to the
 node's network namespace.
 
+#### Custom CA
+
+The service account client, by default, uses the CA certificate located at 
+`/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` to validate the kubelet certificate. 
+If the kubelet server uses a certificate issued by a different CA, 
+specify the custom CA certificate path using the `ca_file` option.
+
+##### AKS Custom CA example
+
+This use case applies to AKS cluster, where the kubelet certificate is issued by 
+`/etc/kubernetes/certs/kubeletserver.crt`
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 20s
+    auth_type: "serviceAccount"
+    endpoint: "https://${env:K8S_NODE_NAME}:10250"
+    ca_file: "/etc/kubernetes/certs/kubeletserver.crt"
+```
+
 ### Read Only Endpoint Example
 
 The following config can be used to collect Kubelet metrics from read-only endpoint:
@@ -157,7 +178,7 @@ include the following:
 
 - `container.id` - to augment metrics with Container ID label obtained from container statuses exposed via `/pods`.
 - `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
-If there's more information available from the endpoint than just volume type, those are sycned as well depending on
+If there's more information available from the endpoint than just volume type, those are synced as well depending on
 the available fields and the type of volume. For example, `aws.volume.id` would be synced from `awsElasticBlockStore`
 and `gcp.pd.name` is synced for `gcePersistentDisk`.
 
@@ -263,8 +284,8 @@ The following parameters can also be specified:
 - `collection_interval` (default = `10s`): The interval at which to collect data.
 - `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ### Role-based access control
 

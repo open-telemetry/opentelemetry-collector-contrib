@@ -1,0 +1,56 @@
+resourceLogs:
+  - resource:
+      attributes: []
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: postgresql
+              - key: db.namespace
+                value:
+                  stringValue: postgres
+              - key: db.query.text
+                value:
+                  stringValue: "select * from pg_stat_activity where id = ?"
+              - key: postgresql.calls 
+                value: 
+                  intValue: 3
+              - key: postgresql.rows 
+                value:
+                  intValue: 10
+              - key: postgresql.shared_blks_dirtied
+                value:
+                  intValue: 1 
+              - key: postgresql.shared_blks_hit
+                value:
+                  intValue: 2
+              - key: postgresql.shared_blks_read
+                value:
+                  intValue: 3
+              - key: postgresql.shared_blks_written
+                value:
+                  intValue: 4
+              - key: postgresql.temp_blks_read
+                value:
+                  intValue: 5
+              - key: postgresql.temp_blks_written
+                value:
+                  intValue: 6
+              - key: postgresql.queryid 
+                value: 
+                  stringValue: "114514"
+              - key: postgresql.rolname 
+                value: 
+                  stringValue: master
+              - key: postgresql.total_exec_time 
+                value: 
+                  doubleValue: 1
+              - key: postgresql.total_plan_time 
+                value: 
+                  doubleValue: 1
+            body:
+              stringValue: top query
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: 0.0.1

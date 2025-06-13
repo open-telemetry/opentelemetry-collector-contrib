@@ -25,9 +25,9 @@ func generateTEvent1Raw() *add_events.Event {
 		Ts:         "1581452772000000321",
 		ServerHost: "foo",
 		Attrs: map[string]any{
-			"sca:schemVer": 1,
-			"sca:schema":   "tracing",
-			"sca:type":     "span",
+			"sca:schemaVer": 1,
+			"sca:schema":    "tracing",
+			"sca:type":      "span",
 
 			"name": "operationA",
 			"kind": "unspecified",
@@ -54,9 +54,9 @@ func generateTEvent2Raw() *add_events.Event {
 		Ts:         "1581452772000000321",
 		ServerHost: "foo",
 		Attrs: map[string]any{
-			"sca:schemVer": 1,
-			"sca:schema":   "tracing",
-			"sca:type":     "span",
+			"sca:schemaVer": 1,
+			"sca:schema":    "tracing",
+			"sca:type":      "span",
 
 			"name": "operationB",
 			"kind": "unspecified",
@@ -84,9 +84,9 @@ func generateTEvent3Raw() *add_events.Event {
 		Ts:         "1581452772000000321",
 		ServerHost: "valServerHost",
 		Attrs: map[string]any{
-			"sca:schemVer": 1,
-			"sca:schema":   "tracing",
-			"sca:type":     "span",
+			"sca:schemaVer": 1,
+			"sca:schema":    "tracing",
+			"sca:type":      "span",
 
 			"name": "operationC",
 			"kind": "unspecified",
@@ -152,9 +152,9 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 			Sev:    9,
 			Ts:     "0",
 			Attrs: map[string]any{
-				"sca:schemVer": 1,
-				"sca:schema":   "tracing",
-				"sca:type":     "span",
+				"sca:schemaVer": 1,
+				"sca:schema":    "tracing",
+				"sca:type":      "span",
 
 				"name": "",
 				"kind": "unspecified",
@@ -208,9 +208,9 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 			Sev:    9,
 			Ts:     "0",
 			Attrs: map[string]any{
-				"sca:schemVer": 1,
-				"sca:schema":   "tracing",
-				"sca:type":     "span",
+				"sca:schemaVer": 1,
+				"sca:schema":    "tracing",
+				"sca:type":      "span",
 
 				"name": "",
 				"kind": "unspecified",
@@ -268,9 +268,9 @@ func TestBuildEventFromSpan(t *testing.T) {
 			name:     "Default",
 			settings: newDefaultTracesSettings(),
 			expected: add_events.EventAttrs{
-				"sca:schemVer": 1,
-				"sca:schema":   "tracing",
-				"sca:type":     "span",
+				"sca:schemaVer": 1,
+				"sca:schema":    "tracing",
+				"sca:type":      "span",
 
 				"name": "",
 				"kind": "unspecified",
@@ -304,9 +304,9 @@ func TestBuildEventFromSpan(t *testing.T) {
 				},
 			},
 			expected: add_events.EventAttrs{
-				"sca:schemVer": 1,
-				"sca:schema":   "tracing",
-				"sca:type":     "span",
+				"sca:schemaVer": 1,
+				"sca:schema":    "tracing",
+				"sca:type":      "span",
 
 				"name": "",
 				"kind": "unspecified",
@@ -340,9 +340,9 @@ func TestBuildEventFromSpan(t *testing.T) {
 				},
 			},
 			expected: add_events.EventAttrs{
-				"sca:schemVer": 1,
-				"sca:schema":   "tracing",
-				"sca:type":     "span",
+				"sca:schemaVer": 1,
+				"sca:schema":    "tracing",
+				"sca:type":      "span",
 
 				"name": "filled_nameA",
 				"kind": "unspecified",
@@ -608,9 +608,9 @@ func generateSimpleEvent(
 	serverHost string,
 ) *add_events.Event {
 	attrs := map[string]any{
-		"sca:schemVer": 1,
-		"sca:schema":   "tracing",
-		"sca:type":     "span",
+		"sca:schemaVer": 1,
+		"sca:schema":    "tracing",
+		"sca:type":      "span",
 
 		"name": "",
 		"kind": "unspecified",

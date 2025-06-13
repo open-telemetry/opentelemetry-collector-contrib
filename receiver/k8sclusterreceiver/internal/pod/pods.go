@@ -28,8 +28,10 @@ import (
 )
 
 const (
-	// Keys for pod metadata.
+	// Keys for pod metadata and entity attributes. These are NOT used by resource attributes.
 	podCreationTime = "pod.creation_timestamp"
+	podPhase        = "k8s.pod.phase"
+	podStatusReason = "k8s.pod.status_reason"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -43,6 +45,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 		Status: corev1.PodStatus{
 			Phase:    pod.Status.Phase,
 			QOSClass: pod.Status.QOSClass,
+			Reason:   pod.Status.Reason,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -126,6 +129,15 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	meta := maps.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	meta[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
+	phase := pod.Status.Phase
+	if phase == "" {
+		phase = corev1.PodUnknown
+	}
+	meta[podPhase] = string(phase)
+	reason := pod.Status.Reason
+	if reason != "" {
+		meta[podStatusReason] = reason
+	}
 
 	for _, or := range pod.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
@@ -152,6 +164,9 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, store, logger))
 	}
 
+	meta[constants.K8sKeyNamespaceName] = pod.Namespace
+	meta[constants.K8sKeyPodName] = pod.Name
+
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		podID: {
@@ -160,7 +175,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 			ResourceID:    podID,
 			Metadata:      meta,
 		},
-	}, getPodContainerProperties(pod))
+	}, getPodContainerProperties(pod, logger))
 }
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
@@ -237,10 +252,10 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
-		md := container.GetMetadata(cs)
+		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}
 	return km

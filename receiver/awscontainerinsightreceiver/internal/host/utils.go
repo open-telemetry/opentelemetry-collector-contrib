@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func hostJitter(max time.Duration) time.Duration {
+func hostJitter(maxDuration time.Duration) time.Duration {
 	hostName, err := os.Hostname()
 	if err != nil {
 		hostName = "Unknown"
@@ -18,11 +18,11 @@ func hostJitter(max time.Duration) time.Duration {
 	hash := fnv.New64()
 	hash.Write([]byte(hostName))
 	// Right shift the uint64 hash by one to make sure the jitter duration is always positive
-	hostSleepJitter := time.Duration(int64(hash.Sum64()>>1)) % max
+	hostSleepJitter := time.Duration(int64(hash.Sum64()>>1)) % maxDuration
 	return hostSleepJitter
 }
 
-// execute the refresh() function periodically with the given refresh interval
+// RefreshUntil executes the refresh() function periodically with the given refresh interval
 // until shouldRefresh() return false or the context is canceled
 func RefreshUntil(ctx context.Context, refresh func(context.Context), refreshInterval time.Duration,
 	shouldRefresh func() bool, maxJitterTime time.Duration,

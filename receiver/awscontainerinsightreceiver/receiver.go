@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
@@ -52,6 +53,7 @@ type awsContainerInsightReceiver struct {
 	nextConsumer             consumer.Metrics
 	config                   *Config
 	cancel                   context.CancelFunc
+	cancelWg                 sync.WaitGroup
 	decorators               []stores.Decorator
 	containerMetricsProvider metricsProvider
 	k8sapiserver             metricsProvider
@@ -122,6 +124,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 					acir.settings.Logger.Error("Unable to initialize receiver", zap.Error(err))
 					return
 				}
+				acir.cancelWg.Add(1)
 				acir.start(ctx)
 			}()
 		} else {
@@ -131,12 +134,14 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 			if err = acir.initEKS(ctx, host, hostInfo, hostName, client); err != nil {
 				return err
 			}
+			acir.cancelWg.Add(1)
 			go acir.start(ctx)
 		}
 	case ci.ECS:
 		if err := acir.initECS(host, hostInfo, hostName); err != nil {
 			return err
 		}
+		acir.cancelWg.Add(1)
 		go acir.start(ctx)
 	default:
 		return fmt.Errorf("unsupported container_orchestrator: %s", acir.config.ContainerOrchestrator)
@@ -244,6 +249,7 @@ func (acir *awsContainerInsightReceiver) initECS(host component.Host, hostInfo *
 }
 
 func (acir *awsContainerInsightReceiver) start(ctx context.Context) {
+	defer acir.cancelWg.Done()
 	// cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
 	// at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
 	// we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
@@ -410,13 +416,14 @@ func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localNodeDecorator 
 // Shutdown stops the awsContainerInsightReceiver receiver.
 func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	if acir.prometheusScraper != nil {
-		acir.prometheusScraper.Shutdown() //nolint:errcheck
+		acir.prometheusScraper.Shutdown()
 	}
 
 	if acir.cancel == nil {
 		return nil
 	}
 	acir.cancel()
+	acir.cancelWg.Wait()
 
 	var errs error
 
@@ -471,19 +478,19 @@ func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error 
 
 	if acir.prometheusScraper != nil {
 		// this does not return any metrics, it just indirectly ensures scraping is running on a leader
-		acir.prometheusScraper.GetMetrics() //nolint:errcheck
+		acir.prometheusScraper.GetMetrics()
 	}
 
 	if acir.dcgmScraper != nil {
-		acir.dcgmScraper.GetMetrics() //nolint:errcheck
+		acir.dcgmScraper.GetMetrics()
 	}
 
 	if acir.neuronMonitorScraper != nil {
-		acir.neuronMonitorScraper.GetMetrics() //nolint:errcheck
+		acir.neuronMonitorScraper.GetMetrics()
 	}
 
 	if acir.nvmeScraper != nil {
-		acir.nvmeScraper.GetMetrics() //nolint:errcheck
+		acir.nvmeScraper.GetMetrics()
 	}
 
 	if acir.efaSysfsScraper != nil {

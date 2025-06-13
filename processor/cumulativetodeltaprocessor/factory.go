@@ -5,7 +5,7 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -37,10 +37,13 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	processorConfig, ok := cfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("configuration parsing error")
+		return nil, errors.New("configuration parsing error")
 	}
 
-	metricsProcessor := newCumulativeToDeltaProcessor(processorConfig, set.Logger)
+	metricsProcessor, err := newCumulativeToDeltaProcessor(processorConfig, set.Logger)
+	if err != nil {
+		return nil, err
+	}
 
 	return processorhelper.NewMetrics(
 		ctx,

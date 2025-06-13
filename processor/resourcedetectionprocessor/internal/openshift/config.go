@@ -4,6 +4,7 @@
 package openshift // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -28,11 +29,11 @@ func readK8STokenFromFile() (string, error) {
 func readSVCAddressFromENV() (string, error) {
 	host := os.Getenv("KUBERNETES_SERVICE_HOST")
 	if host == "" {
-		return "", fmt.Errorf("could not extract openshift api host")
+		return "", errors.New("could not extract openshift api host")
 	}
 	port := os.Getenv("KUBERNETES_SERVICE_PORT")
 	if port == "" {
-		return "", fmt.Errorf("could not extract openshift api port")
+		return "", errors.New("could not extract openshift api port")
 	}
 	return fmt.Sprintf("https://%s:%s", host, port), nil
 }
@@ -47,7 +48,7 @@ type Config struct {
 	Token string `mapstructure:"token"`
 
 	// TLSSettings contains TLS configurations that are specific to client
-	// connection used to communicate with the Openshift API.
+	// connection used to communicate with the OpenShift API.
 	TLSSettings configtls.ClientConfig `mapstructure:"tls"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`

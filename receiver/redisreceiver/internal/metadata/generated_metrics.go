@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributePercentile specifies the a value percentile attribute.
+// AttributePercentile specifies the value percentile attribute.
 type AttributePercentile int
 
 const (
@@ -42,7 +42,7 @@ var MapAttributePercentile = map[string]AttributePercentile{
 	"p99.9": AttributePercentileP999,
 }
 
-// AttributeRole specifies the a value role attribute.
+// AttributeRole specifies the value role attribute.
 type AttributeRole int
 
 const (
@@ -68,7 +68,7 @@ var MapAttributeRole = map[string]AttributeRole{
 	"primary": AttributeRolePrimary,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -108,6 +108,156 @@ var MapAttributeState = map[string]AttributeState{
 	"user":             AttributeStateUser,
 	"user_children":    AttributeStateUserChildren,
 	"user_main_thread": AttributeStateUserMainThread,
+}
+
+var MetricsInfo = metricsInfo{
+	RedisClientsBlocked: metricInfo{
+		Name: "redis.clients.blocked",
+	},
+	RedisClientsConnected: metricInfo{
+		Name: "redis.clients.connected",
+	},
+	RedisClientsMaxInputBuffer: metricInfo{
+		Name: "redis.clients.max_input_buffer",
+	},
+	RedisClientsMaxOutputBuffer: metricInfo{
+		Name: "redis.clients.max_output_buffer",
+	},
+	RedisCmdCalls: metricInfo{
+		Name: "redis.cmd.calls",
+	},
+	RedisCmdLatency: metricInfo{
+		Name: "redis.cmd.latency",
+	},
+	RedisCmdUsec: metricInfo{
+		Name: "redis.cmd.usec",
+	},
+	RedisCommands: metricInfo{
+		Name: "redis.commands",
+	},
+	RedisCommandsProcessed: metricInfo{
+		Name: "redis.commands.processed",
+	},
+	RedisConnectionsReceived: metricInfo{
+		Name: "redis.connections.received",
+	},
+	RedisConnectionsRejected: metricInfo{
+		Name: "redis.connections.rejected",
+	},
+	RedisCPUTime: metricInfo{
+		Name: "redis.cpu.time",
+	},
+	RedisDbAvgTTL: metricInfo{
+		Name: "redis.db.avg_ttl",
+	},
+	RedisDbExpires: metricInfo{
+		Name: "redis.db.expires",
+	},
+	RedisDbKeys: metricInfo{
+		Name: "redis.db.keys",
+	},
+	RedisKeysEvicted: metricInfo{
+		Name: "redis.keys.evicted",
+	},
+	RedisKeysExpired: metricInfo{
+		Name: "redis.keys.expired",
+	},
+	RedisKeyspaceHits: metricInfo{
+		Name: "redis.keyspace.hits",
+	},
+	RedisKeyspaceMisses: metricInfo{
+		Name: "redis.keyspace.misses",
+	},
+	RedisLatestFork: metricInfo{
+		Name: "redis.latest_fork",
+	},
+	RedisMaxmemory: metricInfo{
+		Name: "redis.maxmemory",
+	},
+	RedisMemoryFragmentationRatio: metricInfo{
+		Name: "redis.memory.fragmentation_ratio",
+	},
+	RedisMemoryLua: metricInfo{
+		Name: "redis.memory.lua",
+	},
+	RedisMemoryPeak: metricInfo{
+		Name: "redis.memory.peak",
+	},
+	RedisMemoryRss: metricInfo{
+		Name: "redis.memory.rss",
+	},
+	RedisMemoryUsed: metricInfo{
+		Name: "redis.memory.used",
+	},
+	RedisNetInput: metricInfo{
+		Name: "redis.net.input",
+	},
+	RedisNetOutput: metricInfo{
+		Name: "redis.net.output",
+	},
+	RedisRdbChangesSinceLastSave: metricInfo{
+		Name: "redis.rdb.changes_since_last_save",
+	},
+	RedisReplicationBacklogFirstByteOffset: metricInfo{
+		Name: "redis.replication.backlog_first_byte_offset",
+	},
+	RedisReplicationOffset: metricInfo{
+		Name: "redis.replication.offset",
+	},
+	RedisReplicationReplicaOffset: metricInfo{
+		Name: "redis.replication.replica_offset",
+	},
+	RedisRole: metricInfo{
+		Name: "redis.role",
+	},
+	RedisSlavesConnected: metricInfo{
+		Name: "redis.slaves.connected",
+	},
+	RedisUptime: metricInfo{
+		Name: "redis.uptime",
+	},
+}
+
+type metricsInfo struct {
+	RedisClientsBlocked                    metricInfo
+	RedisClientsConnected                  metricInfo
+	RedisClientsMaxInputBuffer             metricInfo
+	RedisClientsMaxOutputBuffer            metricInfo
+	RedisCmdCalls                          metricInfo
+	RedisCmdLatency                        metricInfo
+	RedisCmdUsec                           metricInfo
+	RedisCommands                          metricInfo
+	RedisCommandsProcessed                 metricInfo
+	RedisConnectionsReceived               metricInfo
+	RedisConnectionsRejected               metricInfo
+	RedisCPUTime                           metricInfo
+	RedisDbAvgTTL                          metricInfo
+	RedisDbExpires                         metricInfo
+	RedisDbKeys                            metricInfo
+	RedisKeysEvicted                       metricInfo
+	RedisKeysExpired                       metricInfo
+	RedisKeyspaceHits                      metricInfo
+	RedisKeyspaceMisses                    metricInfo
+	RedisLatestFork                        metricInfo
+	RedisMaxmemory                         metricInfo
+	RedisMemoryFragmentationRatio          metricInfo
+	RedisMemoryLua                         metricInfo
+	RedisMemoryPeak                        metricInfo
+	RedisMemoryRss                         metricInfo
+	RedisMemoryUsed                        metricInfo
+	RedisNetInput                          metricInfo
+	RedisNetOutput                         metricInfo
+	RedisRdbChangesSinceLastSave           metricInfo
+	RedisReplicationBacklogFirstByteOffset metricInfo
+	RedisReplicationOffset                 metricInfo
+	RedisReplicationReplicaOffset          metricInfo
+	RedisRole                              metricInfo
+	RedisSlavesConnected                   metricInfo
+	RedisUptime                            metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricRedisClientsBlocked struct {
@@ -1942,7 +2092,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                       mbc,
@@ -2071,7 +2220,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricRedisClientsBlocked.emit(ils.Metrics())

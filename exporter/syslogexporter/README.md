@@ -94,7 +94,7 @@ And here's the output message based on the above log record:
 <34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - - - 'su root' failed for lonvick on /dev/pts/8
 ```
 
-Here'a another example, this includes the structured data and other attributes:
+Here's another example, this includes the structured data and other attributes:
 
 ```json
 {

@@ -310,7 +310,7 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					step: func() {
-						// permament error will be ignored
+						// permanent error will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
 							componentstatus.NewPermanentErrorEvent(assert.AnError),
@@ -467,7 +467,7 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					step: func() {
-						// permament error included
+						// permanent error included
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
 							componentstatus.NewPermanentErrorEvent(assert.AnError),
@@ -1579,8 +1579,6 @@ func TestWatch(t *testing.T) {
 			wg.Add(len(watchers))
 
 			for svc, watcher := range watchers {
-				svc := svc
-				watcher := watcher
 				go func() {
 					resp, err := watcher.Recv()
 					// Ensure there are not any unread messages

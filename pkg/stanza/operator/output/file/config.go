@@ -4,7 +4,7 @@
 package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/file"
 
 import (
-	"fmt"
+	"errors"
 	"text/template"
 
 	"go.opentelemetry.io/collector/component"
@@ -50,7 +50,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.Path == "" {
-		return nil, fmt.Errorf("must provide a path to output to")
+		return nil, errors.New("must provide a path to output to")
 	}
 
 	return &Output{

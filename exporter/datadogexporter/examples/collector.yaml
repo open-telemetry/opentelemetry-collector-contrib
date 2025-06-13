@@ -283,7 +283,7 @@ exporters:
         #
         # mode: distributions
 
-        ## Deprecated [v0.75.0]: use `send_aggreggations` instead.
+        ## Deprecated [v0.75.0]: use `send_aggregations` instead.
         ## @param send_count_sum_metrics - boolean - optional - default: false
         ## Whether to report sum, count, min and max as separate histogram metrics.
         #

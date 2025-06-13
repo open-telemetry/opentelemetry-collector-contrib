@@ -30,8 +30,9 @@ This processor is used to deduplicate logs by detecting identical logs over a ra
 | interval            | duration | `10s`       | The interval at which logs are aggregated. The counter will reset after each interval.                                                                                                                                                                                                                                                                                                                                                                  |
 | conditions          | []string | `[]`        | A slice of [OTTL] expressions used to evaluate which log records are deduped.  All paths in the [log context] are available to reference. All [converters] are available to use.                                                                                                                                                                                                                                                                        |
 | log_count_attribute | string   | `log_count` | The name of the count attribute of deduplicated logs that will be added to the emitted aggregated log.                                                                                                                                                                                                                                                                                                                                                  |
+| include_fields                | []string | `[]`        | Fields to include in duplication matching. Fields can be from the log `body` or `attributes`.  Nested fields must be `.` delimited. If a field contains a `.` it can be escaped by using a `\`.  This option is **mutually exclusive** with `exclude_fields`. See [example config](#example-config-with-deduplication-key).
 | timezone            | string   | `UTC`       | The timezone of the `first_observed_timestamp` and `last_observed_timestamp` timestamps on the emitted aggregated log. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`.                                                                                                                               |
-| exclude_fields      | []string | `[]`        | Fields to exclude from duplication matching. Fields can be excluded from the log `body` or `attributes`. These fields will not be present in the emitted aggregated log. Nested fields must be `.` delimited. If a field contains a `.` it can be escaped by using a `\` see [example config](#example-config-with-excluded-fields).<br><br>**Note**: The entire `body` cannot be excluded. If the body is a map then fields within it can be excluded. |
+| exclude_fields      | []string | `[]`        | Fields to exclude from duplication matching. Fields can be excluded from the log `body` or `attributes`. These fields will not be present in the emitted aggregated log. Nested fields must be `.` delimited. This option is `mutually exclusive` with `include_fields`. If a field contains a `.` it can be escaped by using a `\` see [example config](#example-config-with-excluded-fields).<br><br>**Note**: The entire `body` cannot be excluded. If the body is a map then fields within it can be excluded. |
 
 [OTTL]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.109.0/pkg/ottl#readme
 [converters]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.109.0/pkg/ottl/ottlfuncs/README.md#converters
@@ -87,6 +88,31 @@ service:
             exporters: [googlecloud]
 ```
 
+### Example Config with Include Fields
+This example demonstrates a configuration where deduplication is applied to telemetry based on specified fields. Only logs with the same values for the fields defined in the `include_fields` parameter are deduplicated:
+
+```yaml
+receivers:
+    filelog:
+        include: [./example/*.log]
+processors:
+    logdedup:
+        include_fields:
+          - attributes.id
+          - attributes.name
+        interval: 60s
+        log_count_attribute: dedup_count
+        timezone: 'America/Los_Angeles'
+exporters:
+    googlecloud:
+
+service:
+    pipelines:
+        logs:
+            receivers: [filelog]
+            processors: [logdedup]
+            exporters: [googlecloud]
+```
 
 ### Example Config with Conditions
 The following config is an example configuration that only performs the deduping process on telemetry where Attribute `ID` equals `1` OR where Resource Attribute `service.name` equals `my-service`:

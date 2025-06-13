@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -63,7 +63,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -85,11 +85,6 @@ func TestScrape(t *testing.T) {
 				expectedMetrics = 3
 			}
 
-			// linux + ARM runner has no swap
-			if runtime.GOOS == "linux" && runtime.GOARCH == "arm64" {
-				expectedMetrics = 2
-			}
-
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
 			startIndex := 0
@@ -104,12 +99,10 @@ func TestScrape(t *testing.T) {
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)
 			startIndex++
 
-			if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
-				assertPagingUsageMetricValid(t, metrics.At(startIndex))
-				internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
-				startIndex++
-				assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
-			}
+			assertPagingUsageMetricValid(t, metrics.At(startIndex))
+			internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
+			startIndex++
+			assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
 		})
 	}
 }

@@ -8,7 +8,7 @@ exporters:
     s3uploader:
       s3_bucket: "foo"
       region: 'us-east-1'
-      s3_partition: 'minute'
+      s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
 
 processors:
   nop:

@@ -49,11 +49,11 @@ type Config struct {
 }
 
 func (c *Config) validate() error {
-	if c.ClientConfig.Endpoint == "" {
+	if c.Endpoint == "" {
 		return errors.New("`correlation.endpoint` not specified")
 	}
 
-	_, err := url.Parse(c.ClientConfig.Endpoint)
+	_, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,7 @@ import (
 func TestGetConfigurer(t *testing.T) {
 	id := component.MustNewID("test")
 	nopFactory := extensiontest.NewNopFactory()
-	nopExtension, err := nopFactory.Create(context.Background(), extensiontest.NewNopSettings(), nopFactory.CreateDefaultConfig())
+	nopExtension, err := nopFactory.Create(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), nopFactory.CreateDefaultConfig())
 	require.NoError(t, err)
 	middlewareExtension := new(MockMiddlewareExtension)
 	middlewareExtension.On("Handlers").Return(nil, nil)

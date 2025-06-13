@@ -4,6 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -17,7 +18,7 @@ import (
 // NOTE: it's possible to make DockerLabelConfig part of CommonExporterConfig
 // and use it both ServiceConfig and TaskDefinitionConfig.
 // However, based on existing users, few people mix different types of filters.
-// If that usecase arises in the future, we can rewrite the top level docker lable filter
+// If that usecase arises in the future, we can rewrite the top level docker label filter
 // using a task definition filter with arn_pattern:*.
 type DockerLabelConfig struct {
 	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`
@@ -40,7 +41,7 @@ func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, e
 		return nil, fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
 	}
 	if d.PortLabel == "" {
-		return nil, fmt.Errorf("port_label is empty")
+		return nil, errors.New("port_label is empty")
 	}
 	expSetting, err := d.newExportSetting()
 	if err != nil {

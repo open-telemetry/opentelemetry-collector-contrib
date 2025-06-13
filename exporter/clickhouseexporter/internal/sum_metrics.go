@@ -6,12 +6,12 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -113,27 +113,26 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range s.sumModel {
-			var serviceName string
-			if v, ok := model.metadata.ResAttr[conventions.AttributeServiceName]; ok {
-				serviceName = v
-			}
+			resAttr := AttributesToMap(model.metadata.ResAttr)
+			scopeAttr := AttributesToMap(model.metadata.ScopeInstr.Attributes())
+			serviceName := GetServiceName(model.metadata.ResAttr)
 
 			for i := 0; i < model.sum.DataPoints().Len(); i++ {
 				dp := model.sum.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,
-					model.metadata.ResAttr,
+					resAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
 					model.metadata.ScopeInstr.Version(),
-					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					scopeAttr,
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
 					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
-					attributesToMap(dp.Attributes()),
+					AttributesToMap(dp.Attributes()),
 					dp.StartTimestamp().AsTime(),
 					dp.Timestamp().AsTime(),
 					getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),
@@ -165,10 +164,10 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (s *sumMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
+func (s *sumMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	sum, ok := metrics.(pmetric.Sum)
 	if !ok {
-		return fmt.Errorf("metrics param is not type of Sum")
+		return errors.New("metrics param is not type of Sum")
 	}
 	s.count += sum.DataPoints().Len()
 	s.sumModel = append(s.sumModel, &sumModel{

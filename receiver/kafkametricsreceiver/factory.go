@@ -9,16 +9,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 const (
-	defaultBroker     = "localhost:9092"
 	defaultGroupMatch = ".*"
 	defaultTopicMatch = "^[^_].*$"
-	defaultClientID   = "otel-metrics-receiver"
 )
 
 // NewFactory creates kafkametrics receiver factory.
@@ -32,14 +31,13 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	config := &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-		Brokers:              []string{defaultBroker},
+		ClientConfig:         configkafka.NewDefaultClientConfig(),
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
-		ClientID:             defaultClientID,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 	if config.ClusterAlias != "" {
-		config.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+		config.ResourceAttributes.KafkaClusterAlias.Enabled = true
 	}
 	return config
 }

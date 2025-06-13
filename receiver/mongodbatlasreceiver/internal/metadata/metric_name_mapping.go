@@ -152,6 +152,16 @@ func getRecordFunc(metricName string) metricRecordFunc {
 			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, float64(*dp.Value), AttributeCacheStatusUsed)
 		}
 
+	case "CACHE_FILL_RATIO":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, float64(*dp.Value), AttributeCacheRatioTypeCacheFill)
+		}
+
+	case "DIRTY_FILL_RATIO":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, float64(*dp.Value), AttributeCacheRatioTypeDirtyFill)
+		}
+
 	case "TICKETS_AVAILABLE_READS":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
 			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, float64(*dp.Value), AttributeTicketTypeAvailableReads)
@@ -336,6 +346,10 @@ func getRecordFunc(metricName string) metricRecordFunc {
 	case "OPCOUNTER_INSERT":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
 			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationInsert, AttributeClusterRolePrimary)
+		}
+	case "OPCOUNTER_TTL_DELETED":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, float64(*dp.Value), AttributeOperationTTLDeleted, AttributeClusterRolePrimary)
 		}
 
 	// Rate of database operations on MongoDB secondaries found in the opcountersRepl document that the serverStatus command collects.
@@ -735,6 +749,29 @@ func getRecordFunc(metricName string) metricRecordFunc {
 			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionTotal)
 		}
 
+	// Measures throughput of data read and written to the disk partition (not cache) used by MongoDB.
+	case "DISK_PARTITION_THROUGHPUT_READ":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionRead)
+		}
+
+	case "DISK_PARTITION_THROUGHPUT_WRITE":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
+		}
+
+	// This is a calculated metric that is the sum of the read and write throughput.
+	case "DISK_PARTITION_THROUGHPUT_TOTAL":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionTotal)
+		}
+
+	// Measures the queue depth of the disk partition used by MongoDB.
+	case "DISK_QUEUE_DEPTH":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionQueueDepthDataPoint(ts, float64(*dp.Value))
+		}
+
 	// Measures latency per operation type of the disk partition used by MongoDB.
 	case "DISK_PARTITION_LATENCY_READ":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
@@ -849,7 +886,7 @@ func getRecordFunc(metricName string) metricRecordFunc {
 	}
 }
 
-func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements, _ bool) error {
+func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements) error {
 	recordFunc := getRecordFunc(meas.Name)
 	if recordFunc == nil {
 		return nil

@@ -3,7 +3,7 @@ type: saphana
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: []
   codeowners:
     active: [dehaansa]

@@ -18,6 +18,7 @@ import (
 // This file implements factory for the GitHub Scraper as part of the GitHub Receiver
 
 const (
+	TypeStr            = "scraper"
 	defaultHTTPTimeout = 15 * time.Second
 )
 

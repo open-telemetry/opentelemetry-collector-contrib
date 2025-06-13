@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 // Contains code common to both trace and metrics exporters
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strconv"
@@ -30,6 +31,7 @@ const (
 	faasSpanType      spanType = 5
 
 	exceptionSpanEventName string = "exception"
+	msLinks                string = "_MS.links"
 )
 
 var (
@@ -39,6 +41,11 @@ var (
 
 // Used to identify the type of a received Span
 type spanType int8
+
+type msLink struct {
+	OperationID string `json:"operation_Id"`
+	ID          string `json:"id"`
+}
 
 // Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
@@ -78,7 +85,8 @@ func spanToEnvelopes(
 		envelope.Tags[contracts.UserId] = userID.Str()
 	}
 
-	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
+	switch spanKind {
+	case ptrace.SpanKindServer, ptrace.SpanKindConsumer:
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
@@ -86,7 +94,7 @@ func spanToEnvelopes(
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
-	} else if spanKind == ptrace.SpanKindClient || spanKind == ptrace.SpanKindProducer || spanKind == ptrace.SpanKindInternal {
+	case ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindInternal:
 		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
@@ -115,6 +123,7 @@ func spanToEnvelopes(
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
+	applyLinksToDataProperties(dataProperties, span.Links(), logger)
 
 	// Sanitize the base data, the envelope and envelope tags
 	sanitize(dataSanitizeFunc, logger)
@@ -171,6 +180,30 @@ func spanToEnvelopes(
 	}
 
 	return envelopes, nil
+}
+
+func applyLinksToDataProperties(dataProperties map[string]string, spanLinkSlice ptrace.SpanLinkSlice, logger *zap.Logger) {
+	if spanLinkSlice.Len() == 0 {
+		return
+	}
+
+	links := make([]msLink, 0, spanLinkSlice.Len())
+
+	for i := 0; i < spanLinkSlice.Len(); i++ {
+		link := spanLinkSlice.At(i)
+		links = append(links, msLink{
+			OperationID: traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			ID:          traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
+		})
+	}
+
+	if len(links) > 0 {
+		if jsonBytes, err := json.Marshal(links); err == nil {
+			dataProperties[msLinks] = string(jsonBytes)
+		} else {
+			logger.Warn("Failed to marshal span links to JSON", zap.Error(err))
+		}
+	}
 }
 
 // Creates a new envelope with some basic tags populated
@@ -553,13 +586,12 @@ func copyAndMapAttributes(
 	properties map[string]string,
 	mappingFunc func(k string, v pcommon.Value),
 ) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
 		}
-		return true
-	})
+	}
 }
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes

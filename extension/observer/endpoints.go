@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"reflect"
 )
 
 type (
@@ -36,6 +35,8 @@ const (
 	HostPortType EndpointType = "hostport"
 	// ContainerType is a container endpoint.
 	ContainerType EndpointType = "container"
+	// KafkaTopicType is a kafka topic endpoint
+	KafkaTopicType EndpointType = "kafka.topics"
 )
 
 var (
@@ -45,6 +46,7 @@ var (
 	_ EndpointDetails = (*K8sNode)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
 	_ EndpointDetails = (*Container)(nil)
+	_ EndpointDetails = (*KafkaTopic)(nil)
 )
 
 // EndpointDetails provides additional context about an endpoint such as a Pod or Port.
@@ -100,25 +102,6 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("Endpoint{ID: %v, Target: %v, Details: %T%+v}", e.ID, e.Target, e.Details, e.Details)
-}
-
-func (e Endpoint) equals(other Endpoint) bool {
-	switch {
-	case e.ID != other.ID:
-		return false
-	case e.Target != other.Target:
-		return false
-	case e.Details == nil && other.Details != nil:
-		return false
-	case other.Details == nil && e.Details != nil:
-		return false
-	case e.Details == nil && other.Details == nil:
-		return true
-	case e.Details.Type() != other.Details.Type():
-		return false
-	default:
-		return reflect.DeepEqual(e.Details.Env(), other.Details.Env())
-	}
 }
 
 // K8sService is a discovered k8s service.
@@ -386,4 +369,14 @@ func (n *K8sNode) Env() EndpointEnv {
 
 func (n *K8sNode) Type() EndpointType {
 	return K8sNodeType
+}
+
+type KafkaTopic struct{}
+
+func (k *KafkaTopic) Env() EndpointEnv {
+	return map[string]any{}
+}
+
+func (k *KafkaTopic) Type() EndpointType {
+	return KafkaTopicType
 }

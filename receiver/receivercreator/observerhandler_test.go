@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
 func TestOnAddForMetrics(t *testing.T) {
@@ -78,7 +79,7 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
-					signals:            receiverSignals{true, true, true},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -275,6 +276,75 @@ func TestOnAddForLogs(t *testing.T) {
 				require.NotNil(t, v)
 				actualConfig = v.cfg
 			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			default:
+				t.Fatalf("unexpected startedComponent: %T", v)
+			}
+			require.Equal(t, test.expectedReceiverConfig, actualConfig)
+		})
+	}
+}
+
+func TestOnAddForLogsWithHints(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		expectedReceiverType   component.Component
+		expectedReceiverConfig component.Config
+		target                 observer.Endpoint
+		hintsConfig            DiscoveryConfig
+		expectedError          string
+	}{
+		{
+			name:                 "dynamically generated standard filelog receiver with explicit enablement",
+			target:               podContainerEndpointWithHints,
+			hintsConfig:          DiscoveryConfig{Enabled: true},
+			expectedReceiverType: &nopWithFilelogReceiver{},
+			expectedReceiverConfig: &nopWithFilelogConfig{
+				Include:         []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
+				IncludeFileName: false,
+				IncludeFilePath: true,
+				Operators:       []any{map[string]any{"id": "container-parser", "type": "container"}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Discovery = test.hintsConfig
+
+			handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
+			handler.OnAdd([]observer.Endpoint{
+				test.target,
+				unsupportedEndpoint,
+			})
+
+			if test.expectedError != "" {
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+				require.Error(t, mr.lastError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
+				require.Nil(t, mr.startedComponent)
+				return
+			}
+
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			require.NoError(t, mr.lastError)
+			require.NotNil(t, mr.startedComponent)
+
+			wr, ok := mr.startedComponent.(*wrappedReceiver)
+			require.True(t, ok)
+
+			require.Nil(t, wr.metrics)
+			require.Nil(t, wr.traces)
+
+			var actualConfig component.Config
+			switch v := wr.logs.(type) {
+			case *nopWithEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithFilelogReceiver:
 				require.NotNil(t, v)
 				actualConfig = v.cfg
 			default:
@@ -516,6 +586,7 @@ func newMockHost(t *testing.T, host component.Host) *mockHost {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers[component.MustNewType("with_endpoint")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("filelog")] = &nopWithFilelogFactory{Factory: receivertest.NewNopFactory()}
 	factories.Receivers[component.MustNewType("without_endpoint")] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
 	return &mockHost{t: t, factories: factories, Host: host}
 }
@@ -531,7 +602,7 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func newMockRunner(t *testing.T) *mockRunner {
-	cs := receivertest.NewNopSettings()
+	cs := receivertest.NewNopSettings(metadata.Type)
 	return &mockRunner{
 		receiverRunner: receiverRunner{
 			params:      cs,
@@ -551,7 +622,7 @@ func newObserverHandler(
 	nextMetrics consumer.Metrics,
 	nextTraces consumer.Traces,
 ) (*observerHandler, *mockRunner) {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("some_type", "some.name")
 	mr := newMockRunner(t)
 	return &observerHandler{

@@ -205,7 +205,7 @@ service:
 
 ## Known Limitation
 
-- The network interface is not available inside the container. Hence, the metrics for the object `Network Interface` aren't generated in that scenario. In the case of sub-process, it captures `Network Interface` metrics. There is a similar open issue in [Github](https://github.com/influxdata/telegraf/issues/5357) and [Docker](https://forums.docker.com/t/unable-to-collect-network-metrics-inside-windows-container-on-windows-server-2016-data-center/69480) forum.
+- The network interface is not available inside the container. Hence, the metrics for the object `Network Interface` aren't generated in that scenario. In the case of sub-process, it captures `Network Interface` metrics. There is a similar open issue in [GitHub](https://github.com/influxdata/telegraf/issues/5357) and [Docker](https://forums.docker.com/t/unable-to-collect-network-metrics-inside-windows-container-on-windows-server-2016-data-center/69480) forum.
 
 - The counter category `Process` is [unreliable with multiple instances of the same process][1]. On Windows 11 and later, it is recommended to use `Process V2` instead as it includes the process ID in the instance name. For versions prior to Windows 11 it is possible to [configure the `Process` counter category to include the PID in the instance name][2].
 

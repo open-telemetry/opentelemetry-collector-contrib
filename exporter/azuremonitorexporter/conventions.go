@@ -16,13 +16,15 @@ import (
 
 const (
 	// TODO replace with convention.* values once/if available
-	attributeOtelStatusCode        string = "otel.status_code"
-	attributeOtelStatusDescription string = "otel.status_description"
+	attributeOtelStatusCode                          string = "otel.status_code"
+	attributeOtelStatusDescription                   string = "otel.status_description"
+	attributeMicrosoftCustomEventName                string = "microsoft.custom_event.name"
+	attributeApplicationInsightsEventMarkerAttribute string = "APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE"
 )
 
 // NetworkAttributes is the set of known network attributes
 type NetworkAttributes struct {
-	// see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
+	// see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/attributes-registry/network.md#network-attributes
 	NetTransport string
 	NetPeerIP    string
 	NetPeerPort  int64

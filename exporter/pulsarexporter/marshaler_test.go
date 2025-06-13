@@ -24,7 +24,7 @@ func TestDefaultTracesMarshalers(t *testing.T) {
 		"jaeger_json",
 	}
 	marshalers := tracesMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -40,7 +40,7 @@ func TestDefaultMetricsMarshalers(t *testing.T) {
 		"otlp_json",
 	}
 	marshalers := metricsMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -56,7 +56,7 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 		"otlp_json",
 	}
 	marshalers := logsMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]

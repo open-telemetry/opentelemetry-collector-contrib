@@ -37,7 +37,7 @@ func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ cons
 		},
 	}
 	var err error
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(sapmreceiver.NewFactory().Type())
 	sr.receiver, err = sapmreceiver.NewFactory().CreateTraces(context.Background(), params, &sapmCfg, tc)
 	if err != nil {
 		return err
@@ -56,10 +56,8 @@ func (sr *SapmDataReceiver) Stop() error {
 
 // GenConfigYAMLStr returns exporter config for the agent.
 func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
-	disableCompression := false
-	if sr.compression == "" {
-		disableCompression = true
-	}
+	disableCompression := sr.compression == ""
+
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   sapm:

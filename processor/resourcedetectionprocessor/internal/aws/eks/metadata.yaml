@@ -11,6 +11,10 @@ resource_attributes:
     description: The cloud.platform
     type: string
     enabled: true
+  cloud.account.id:
+    description: The cloud account id
+    type: string
+    enabled: false
   k8s.cluster.name:
     description: The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action.
     type: string

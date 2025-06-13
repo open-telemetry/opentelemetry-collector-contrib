@@ -106,13 +106,14 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 				CredentialsFile: serviceAccountTokenDefaultPath,
 			},
 		},
-		ScrapeInterval:  model.Duration(collectionInterval),
-		ScrapeTimeout:   model.Duration(collectionInterval),
-		ScrapeProtocols: config.DefaultScrapeProtocols,
-		JobName:         fmt.Sprintf("%s/%s", jobName, opts.Endpoint),
-		HonorTimestamps: true,
-		Scheme:          "https",
-		MetricsPath:     "/metrics",
+		ScrapeInterval:         model.Duration(collectionInterval),
+		ScrapeTimeout:          model.Duration(collectionInterval),
+		ScrapeProtocols:        config.DefaultScrapeProtocols,
+		ScrapeFallbackProtocol: config.PrometheusText0_0_4,
+		JobName:                fmt.Sprintf("%s/%s", jobName, opts.Endpoint),
+		HonorTimestamps:        true,
+		Scheme:                 "https",
+		MetricsPath:            "/metrics",
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&discovery.StaticConfig{
 				{
@@ -156,7 +157,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 	}
 
 	params := receiver.Settings{
-		ID:                component.MustNewID(jobName),
+		ID:                component.MustNewID("prometheus"),
 		TelemetrySettings: opts.TelemetrySettings,
 	}
 

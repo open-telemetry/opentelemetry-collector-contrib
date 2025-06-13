@@ -23,7 +23,7 @@ jobs:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
-      md: ${{ steps.changes.outputs.md }}
+      files: ${{ steps.changes.outputs.files }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,24 +31,11 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-          echo "md=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)" >> $GITHUB_OUTPUT
-  check-links:
-    runs-on: ubuntu-latest
-    needs: changedfiles
-    # Disable check-links test since we don't maintain the markdown files
-    if: ${{ false }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
 
-      - name: Install markdown-link-check
-        run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
+          if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
+            files="**/*.md"
+          fi
 
-      - name: Run markdown-link-check
-        run: |
-          markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            ${{needs.changedfiles.outputs.md}} \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+          echo "files=$files" >> $GITHUB_OUTPUT
+

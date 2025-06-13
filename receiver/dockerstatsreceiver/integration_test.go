@@ -23,6 +23,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 func factory() (rcvr.Factory, *Config) {
@@ -35,7 +37,7 @@ func factory() (rcvr.Factory, *Config) {
 func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	return settings, ctx, cancel
 }

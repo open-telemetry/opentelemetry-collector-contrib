@@ -100,4 +100,3 @@ elif [[ "$1" == "check_component_existence" ]]; then
 elif [[ "$1" == "check_entries_in_allowlist" ]]; then
   check_entries_in_allowlist
 fi
-

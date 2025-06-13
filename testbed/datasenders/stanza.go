@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -20,7 +21,9 @@ import (
 )
 
 type FileLogWriter struct {
-	file *os.File
+	file    *os.File
+	retry   string
+	storage string
 }
 
 // Ensure FileLogWriter implements LogDataSender.
@@ -28,8 +31,8 @@ var _ testbed.LogDataSender = (*FileLogWriter)(nil)
 
 // NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
-func NewFileLogWriter() *FileLogWriter {
-	file, err := os.CreateTemp("", "perf-logs.log")
+func NewFileLogWriter(t *testing.T) *FileLogWriter {
+	file, err := os.CreateTemp(t.TempDir(), "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
@@ -38,6 +41,16 @@ func NewFileLogWriter() *FileLogWriter {
 		file: file,
 	}
 
+	return f
+}
+
+func (f *FileLogWriter) WithRetry(retry string) *FileLogWriter {
+	f.retry = retry
+	return f
+}
+
+func (f *FileLogWriter) WithStorage(storage string) *FileLogWriter {
+	f.storage = storage
 	return f
 }
 
@@ -79,7 +92,7 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		sb.WriteString(lr.Body().Str())
 	}
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
@@ -95,8 +108,7 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 
 	return []byte(sb.String())
 }
@@ -120,7 +132,9 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
           layout: '%%Y-%%m-%%d'
         severity:
           parse_from: attributes.sev
-`, f.file.Name())
+    %s
+    %s
+`, f.file.Name(), f.retry, f.storage)
 }
 
 func (f *FileLogWriter) ProtocolName() string {
@@ -131,11 +145,8 @@ func (f *FileLogWriter) GetEndpoint() net.Addr {
 	return nil
 }
 
-func NewLocalFileStorageExtension() map[string]string {
-	tempDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		panic("failed to create temp storage dir")
-	}
+func NewLocalFileStorageExtension(t *testing.T) map[string]string {
+	tempDir := t.TempDir()
 
 	return map[string]string{
 		"file_storage": fmt.Sprintf(`

@@ -76,12 +76,12 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			spans, err := FromTranslator{}.FromTraces(test.td)
-			assert.EqualValues(t, test.err, err)
+			assert.Equal(t, test.err, err)
 			if test.name == "empty" {
 				assert.Nil(t, spans)
 			} else {
-				assert.Equal(t, len(test.zs), len(spans))
-				assert.EqualValues(t, test.zs, spans)
+				assert.Len(t, spans, len(test.zs))
+				assert.Equal(t, test.zs, spans)
 			}
 		})
 	}
@@ -97,7 +97,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, zipkinSpans, td.SpanCount())
 		tdFromZS, zErr := ToTranslator{}.ToTraces(zipkinSpans)
-		assert.NoError(t, zErr, zipkinSpans)
+		assert.NoError(t, zErr, "%+v", zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
 

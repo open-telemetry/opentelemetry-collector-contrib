@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCheckpoint specifies the a value checkpoint attribute.
+// AttributeCheckpoint specifies the value checkpoint attribute.
 type AttributeCheckpoint int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeCheckpoint = map[string]AttributeCheckpoint{
 	"failed":    AttributeCheckpointFailed,
 }
 
-// AttributeGarbageCollectorName specifies the a value garbage_collector_name attribute.
+// AttributeGarbageCollectorName specifies the value garbage_collector_name attribute.
 type AttributeGarbageCollectorName int
 
 const (
@@ -74,7 +74,7 @@ var MapAttributeGarbageCollectorName = map[string]AttributeGarbageCollectorName{
 	"G1_Old_Generation":   AttributeGarbageCollectorNameG1OldGeneration,
 }
 
-// AttributeRecord specifies the a value record attribute.
+// AttributeRecord specifies the value record attribute.
 type AttributeRecord int
 
 const (
@@ -102,6 +102,132 @@ var MapAttributeRecord = map[string]AttributeRecord{
 	"in":      AttributeRecordIn,
 	"out":     AttributeRecordOut,
 	"dropped": AttributeRecordDropped,
+}
+
+var MetricsInfo = metricsInfo{
+	FlinkJobCheckpointCount: metricInfo{
+		Name: "flink.job.checkpoint.count",
+	},
+	FlinkJobCheckpointInProgress: metricInfo{
+		Name: "flink.job.checkpoint.in_progress",
+	},
+	FlinkJobLastCheckpointSize: metricInfo{
+		Name: "flink.job.last_checkpoint.size",
+	},
+	FlinkJobLastCheckpointTime: metricInfo{
+		Name: "flink.job.last_checkpoint.time",
+	},
+	FlinkJobRestartCount: metricInfo{
+		Name: "flink.job.restart.count",
+	},
+	FlinkJvmClassLoaderClassesLoaded: metricInfo{
+		Name: "flink.jvm.class_loader.classes_loaded",
+	},
+	FlinkJvmCPULoad: metricInfo{
+		Name: "flink.jvm.cpu.load",
+	},
+	FlinkJvmCPUTime: metricInfo{
+		Name: "flink.jvm.cpu.time",
+	},
+	FlinkJvmGcCollectionsCount: metricInfo{
+		Name: "flink.jvm.gc.collections.count",
+	},
+	FlinkJvmGcCollectionsTime: metricInfo{
+		Name: "flink.jvm.gc.collections.time",
+	},
+	FlinkJvmMemoryDirectTotalCapacity: metricInfo{
+		Name: "flink.jvm.memory.direct.total_capacity",
+	},
+	FlinkJvmMemoryDirectUsed: metricInfo{
+		Name: "flink.jvm.memory.direct.used",
+	},
+	FlinkJvmMemoryHeapCommitted: metricInfo{
+		Name: "flink.jvm.memory.heap.committed",
+	},
+	FlinkJvmMemoryHeapMax: metricInfo{
+		Name: "flink.jvm.memory.heap.max",
+	},
+	FlinkJvmMemoryHeapUsed: metricInfo{
+		Name: "flink.jvm.memory.heap.used",
+	},
+	FlinkJvmMemoryMappedTotalCapacity: metricInfo{
+		Name: "flink.jvm.memory.mapped.total_capacity",
+	},
+	FlinkJvmMemoryMappedUsed: metricInfo{
+		Name: "flink.jvm.memory.mapped.used",
+	},
+	FlinkJvmMemoryMetaspaceCommitted: metricInfo{
+		Name: "flink.jvm.memory.metaspace.committed",
+	},
+	FlinkJvmMemoryMetaspaceMax: metricInfo{
+		Name: "flink.jvm.memory.metaspace.max",
+	},
+	FlinkJvmMemoryMetaspaceUsed: metricInfo{
+		Name: "flink.jvm.memory.metaspace.used",
+	},
+	FlinkJvmMemoryNonheapCommitted: metricInfo{
+		Name: "flink.jvm.memory.nonheap.committed",
+	},
+	FlinkJvmMemoryNonheapMax: metricInfo{
+		Name: "flink.jvm.memory.nonheap.max",
+	},
+	FlinkJvmMemoryNonheapUsed: metricInfo{
+		Name: "flink.jvm.memory.nonheap.used",
+	},
+	FlinkJvmThreadsCount: metricInfo{
+		Name: "flink.jvm.threads.count",
+	},
+	FlinkMemoryManagedTotal: metricInfo{
+		Name: "flink.memory.managed.total",
+	},
+	FlinkMemoryManagedUsed: metricInfo{
+		Name: "flink.memory.managed.used",
+	},
+	FlinkOperatorRecordCount: metricInfo{
+		Name: "flink.operator.record.count",
+	},
+	FlinkOperatorWatermarkOutput: metricInfo{
+		Name: "flink.operator.watermark.output",
+	},
+	FlinkTaskRecordCount: metricInfo{
+		Name: "flink.task.record.count",
+	},
+}
+
+type metricsInfo struct {
+	FlinkJobCheckpointCount           metricInfo
+	FlinkJobCheckpointInProgress      metricInfo
+	FlinkJobLastCheckpointSize        metricInfo
+	FlinkJobLastCheckpointTime        metricInfo
+	FlinkJobRestartCount              metricInfo
+	FlinkJvmClassLoaderClassesLoaded  metricInfo
+	FlinkJvmCPULoad                   metricInfo
+	FlinkJvmCPUTime                   metricInfo
+	FlinkJvmGcCollectionsCount        metricInfo
+	FlinkJvmGcCollectionsTime         metricInfo
+	FlinkJvmMemoryDirectTotalCapacity metricInfo
+	FlinkJvmMemoryDirectUsed          metricInfo
+	FlinkJvmMemoryHeapCommitted       metricInfo
+	FlinkJvmMemoryHeapMax             metricInfo
+	FlinkJvmMemoryHeapUsed            metricInfo
+	FlinkJvmMemoryMappedTotalCapacity metricInfo
+	FlinkJvmMemoryMappedUsed          metricInfo
+	FlinkJvmMemoryMetaspaceCommitted  metricInfo
+	FlinkJvmMemoryMetaspaceMax        metricInfo
+	FlinkJvmMemoryMetaspaceUsed       metricInfo
+	FlinkJvmMemoryNonheapCommitted    metricInfo
+	FlinkJvmMemoryNonheapMax          metricInfo
+	FlinkJvmMemoryNonheapUsed         metricInfo
+	FlinkJvmThreadsCount              metricInfo
+	FlinkMemoryManagedTotal           metricInfo
+	FlinkMemoryManagedUsed            metricInfo
+	FlinkOperatorRecordCount          metricInfo
+	FlinkOperatorWatermarkOutput      metricInfo
+	FlinkTaskRecordCount              metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricFlinkJobCheckpointCount struct {
@@ -1650,7 +1776,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                  mbc,
@@ -1791,7 +1916,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFlinkJobCheckpointCount.emit(ils.Metrics())

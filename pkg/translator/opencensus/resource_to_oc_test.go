@@ -64,8 +64,8 @@ func TestResourceToOC(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ocNode, ocResource := internalResourceToOC(test.resource)
-			assert.EqualValues(t, test.ocNode, ocNode)
-			assert.EqualValues(t, test.ocResource, ocResource)
+			assert.Equal(t, test.ocNode, ocNode)
+			assert.Equal(t, test.ocResource, ocResource)
 		})
 	}
 }
@@ -172,7 +172,7 @@ func TestInferResourceType(t *testing.T) {
 				assert.Equal(t, tc.wantResourceType, resourceType)
 			} else {
 				assert.False(t, ok)
-				assert.Equal(t, "", resourceType)
+				assert.Empty(t, resourceType)
 			}
 		})
 	}
@@ -199,7 +199,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 			// Remove opencensus resource type from actual. This will be added during translation.
 			actual.Attributes().Remove(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
-			expected.Attributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range expected.Attributes().All() {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
@@ -214,8 +214,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 				default:
 					assert.Equal(t, v, a)
 				}
-				return true
-			})
+			}
 		})
 	}
 }

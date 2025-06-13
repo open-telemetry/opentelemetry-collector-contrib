@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	sapdriver "github.com/SAP/go-hdb/driver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
 // Interface for a SAP HANA client. Implementation can be faked for testing.
@@ -102,12 +102,12 @@ func newSapHanaClient(cfg *Config, factory sapHanaConnectionFactory) client {
 }
 
 func (c *sapHanaClient) Connect(ctx context.Context) error {
-	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, string(c.receiverConfig.Password), c.receiverConfig.TCPAddrConfig.Endpoint))
+	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, string(c.receiverConfig.Password), c.receiverConfig.Endpoint))
 	if err != nil {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}
 
-	tls, err := c.receiverConfig.ClientConfig.LoadTLSConfig(ctx)
+	tls, err := c.receiverConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
 	}

@@ -14,12 +14,10 @@ import (
 )
 
 func TestTextRoundtrip(t *testing.T) {
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = "utf8"
-	enc, err := encCfg.Build()
+	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{enc: &enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\r\nbar\n"))
 	require.NoError(t, err)
@@ -30,12 +28,10 @@ func TestTextRoundtrip(t *testing.T) {
 }
 
 func TestTextRoundtripMissingNewline(t *testing.T) {
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = "utf8"
-	enc, err := encCfg.Build()
+	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{enc: &enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\r\nbar"))
 	require.NoError(t, err)
@@ -46,11 +42,9 @@ func TestTextRoundtripMissingNewline(t *testing.T) {
 }
 
 func TestNoSeparator(t *testing.T) {
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = "utf8"
-	enc, err := encCfg.Build()
+	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
-	codec := &textLogCodec{enc: &enc}
+	codec := &textLogCodec{decoder: enc.NewDecoder()}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\r\nbar\n"))
 	require.NoError(t, err)

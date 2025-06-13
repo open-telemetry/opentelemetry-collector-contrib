@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -168,6 +169,7 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 	// create test receiver
 	params := receiver.Settings{
 		TelemetrySettings: settings,
+		ID:                component.NewIDWithName(component.MustNewType("prometheus"), ""),
 	}
 	promReceiver, err := promFactory.CreateMetrics(context.TODO(), params, &promConfig, mConsumer)
 	assert.NoError(t, err)

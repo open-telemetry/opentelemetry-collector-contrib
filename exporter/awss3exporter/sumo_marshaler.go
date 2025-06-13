@@ -32,7 +32,7 @@ func newSumoICMarshaler() sumoMarshaler {
 }
 
 func logEntry(buf *bytes.Buffer, format string, a ...any) {
-	buf.WriteString(fmt.Sprintf(format, a...))
+	fmt.Fprintf(buf, format, a...)
 	buf.WriteString("\n")
 }
 

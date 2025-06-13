@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeLeapStatus specifies the a value leap.status attribute.
+// AttributeLeapStatus specifies the value leap.status attribute.
 type AttributeLeapStatus int
 
 const (
@@ -43,6 +43,44 @@ var MapAttributeLeapStatus = map[string]AttributeLeapStatus{
 	"insert_second":  AttributeLeapStatusInsertSecond,
 	"delete_second":  AttributeLeapStatusDeleteSecond,
 	"unsynchronised": AttributeLeapStatusUnsynchronised,
+}
+
+var MetricsInfo = metricsInfo{
+	NtpFrequencyOffset: metricInfo{
+		Name: "ntp.frequency.offset",
+	},
+	NtpSkew: metricInfo{
+		Name: "ntp.skew",
+	},
+	NtpStratum: metricInfo{
+		Name: "ntp.stratum",
+	},
+	NtpTimeCorrection: metricInfo{
+		Name: "ntp.time.correction",
+	},
+	NtpTimeLastOffset: metricInfo{
+		Name: "ntp.time.last_offset",
+	},
+	NtpTimeRmsOffset: metricInfo{
+		Name: "ntp.time.rms_offset",
+	},
+	NtpTimeRootDelay: metricInfo{
+		Name: "ntp.time.root_delay",
+	},
+}
+
+type metricsInfo struct {
+	NtpFrequencyOffset metricInfo
+	NtpSkew            metricInfo
+	NtpStratum         metricInfo
+	NtpTimeCorrection  metricInfo
+	NtpTimeLastOffset  metricInfo
+	NtpTimeRmsOffset   metricInfo
+	NtpTimeRootDelay   metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricNtpFrequencyOffset struct {
@@ -432,7 +470,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                   mbc,
@@ -508,7 +545,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricNtpFrequencyOffset.emit(ils.Metrics())

@@ -6,7 +6,7 @@ package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )

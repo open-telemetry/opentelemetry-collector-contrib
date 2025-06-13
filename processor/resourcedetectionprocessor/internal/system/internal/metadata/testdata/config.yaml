@@ -27,6 +27,8 @@ all_set:
       enabled: true
     os.type:
       enabled: true
+    os.version:
+      enabled: true
 none_set:
   resource_attributes:
     host.arch:
@@ -54,4 +56,6 @@ none_set:
     os.description:
       enabled: false
     os.type:
+      enabled: false
+    os.version:
       enabled: false

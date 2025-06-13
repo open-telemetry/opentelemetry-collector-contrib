@@ -38,15 +38,14 @@ import (
 var receiverID = component.MustNewID("opencensus")
 
 func TestReceiver_endToEnd(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
@@ -71,15 +70,14 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportMetrics request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
@@ -190,15 +188,14 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -267,15 +264,14 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// This test used to be flaky on Windows. Skip if errors pop up again
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, metricSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
@@ -384,7 +380,7 @@ func makeMetric(val int) *metricspb.Metric {
 	}
 
 	descriptor := &metricspb.MetricDescriptor{
-		Name:        fmt.Sprintf("%s%d", "metric_descriptort_", val),
+		Name:        fmt.Sprintf("%s%d", "metric_descriptor_", val),
 		Description: "metric descriptor",
 		Unit:        "1",
 		Type:        metricspb.MetricDescriptor_GAUGE_INT64,

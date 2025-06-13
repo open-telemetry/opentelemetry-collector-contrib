@@ -31,21 +31,39 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverDatabaseBackupOrRestoreRate        MetricConfig `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
+	SqlserverDatabaseExecutionErrors            MetricConfig `mapstructure:"sqlserver.database.execution.errors"`
+	SqlserverDatabaseFullScanRate               MetricConfig `mapstructure:"sqlserver.database.full_scan.rate"`
 	SqlserverDatabaseIo                         MetricConfig `mapstructure:"sqlserver.database.io"`
 	SqlserverDatabaseLatency                    MetricConfig `mapstructure:"sqlserver.database.latency"`
 	SqlserverDatabaseOperations                 MetricConfig `mapstructure:"sqlserver.database.operations"`
+	SqlserverDatabaseTempdbSpace                MetricConfig `mapstructure:"sqlserver.database.tempdb.space"`
+	SqlserverDatabaseTempdbVersionStoreSize     MetricConfig `mapstructure:"sqlserver.database.tempdb.version_store.size"`
+	SqlserverDeadlockRate                       MetricConfig `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverIndexSearchRate                    MetricConfig `mapstructure:"sqlserver.index.search.rate"`
+	SqlserverLockTimeoutRate                    MetricConfig `mapstructure:"sqlserver.lock.timeout.rate"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverLoginRate                          MetricConfig `mapstructure:"sqlserver.login.rate"`
+	SqlserverLogoutRate                         MetricConfig `mapstructure:"sqlserver.logout.rate"`
+	SqlserverMemoryGrantsPendingCount           MetricConfig `mapstructure:"sqlserver.memory.grants.pending.count"`
+	SqlserverMemoryUsage                        MetricConfig `mapstructure:"sqlserver.memory.usage"`
+	SqlserverPageBufferCacheFreeListStallsRate  MetricConfig `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
 	SqlserverPageBufferCacheHitRatio            MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
 	SqlserverPageCheckpointFlushRate            MetricConfig `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
 	SqlserverPageLazyWriteRate                  MetricConfig `mapstructure:"sqlserver.page.lazy_write.rate"`
 	SqlserverPageLifeExpectancy                 MetricConfig `mapstructure:"sqlserver.page.life_expectancy"`
+	SqlserverPageLookupRate                     MetricConfig `mapstructure:"sqlserver.page.lookup.rate"`
 	SqlserverPageOperationRate                  MetricConfig `mapstructure:"sqlserver.page.operation.rate"`
 	SqlserverPageSplitRate                      MetricConfig `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverProcessesBlocked                   MetricConfig `mapstructure:"sqlserver.processes.blocked"`
+	SqlserverReplicaDataRate                    MetricConfig `mapstructure:"sqlserver.replica.data.rate"`
 	SqlserverResourcePoolDiskThrottledReadRate  MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverTableCount                         MetricConfig `mapstructure:"sqlserver.table.count"`
+	SqlserverTransactionDelay                   MetricConfig `mapstructure:"sqlserver.transaction.delay"`
+	SqlserverTransactionMirrorWriteRate         MetricConfig `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                    MetricConfig `mapstructure:"sqlserver.transaction.rate"`
 	SqlserverTransactionWriteRate               MetricConfig `mapstructure:"sqlserver.transaction.write.rate"`
 	SqlserverTransactionLogFlushDataRate        MetricConfig `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
@@ -68,7 +86,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
 		},
+		SqlserverDatabaseBackupOrRestoreRate: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverDatabaseCount: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseExecutionErrors: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseFullScanRate: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverDatabaseIo: MetricConfig{
@@ -80,11 +107,41 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDatabaseOperations: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverDatabaseTempdbSpace: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseTempdbVersionStoreSize: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverDeadlockRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverIndexSearchRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverLockTimeoutRate: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverLockWaitRate: MetricConfig{
 			Enabled: true,
 		},
 		SqlserverLockWaitTimeAvg: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverLoginRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverLogoutRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverMemoryGrantsPendingCount: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverMemoryUsage: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverPageBufferCacheFreeListStallsRate: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverPageBufferCacheHitRatio: MetricConfig{
 			Enabled: true,
@@ -98,6 +155,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverPageLifeExpectancy: MetricConfig{
 			Enabled: true,
 		},
+		SqlserverPageLookupRate: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverPageOperationRate: MetricConfig{
 			Enabled: true,
 		},
@@ -107,10 +167,22 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverProcessesBlocked: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverReplicaDataRate: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverResourcePoolDiskThrottledReadRate: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverResourcePoolDiskThrottledWriteRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverTableCount: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverTransactionDelay: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverTransactionMirrorWriteRate: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverTransactionRate: MetricConfig{
@@ -171,6 +243,8 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
+	ServerAddress         ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
 	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
 	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
@@ -178,6 +252,12 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		SqlserverComputerName: ResourceAttributeConfig{
 			Enabled: false,
 		},

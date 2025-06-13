@@ -167,15 +167,14 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.S
 			continue
 		}
 		var exceptionMessage, exceptionType string
-		event.Attributes().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range event.Attributes().All() {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.Str()
 			case conventions.AttributeExceptionType:
 				exceptionType = v.Str()
 			}
-			return true
-		})
+		}
 		if exceptionMessage == "" && exceptionType == "" {
 			// `At least one of the following sets of attributes is required:
 			// - exception.type
@@ -373,7 +372,7 @@ func generateTagsFromResource(resource pcommon.Resource) map[string]string {
 func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.Range(func(key string, attr pcommon.Value) bool {
+	for key, attr := range attrs.All() {
 		switch attr.Type() {
 		case pcommon.ValueTypeStr:
 			tags[key] = attr.Str()
@@ -388,8 +387,7 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 		case pcommon.ValueTypeSlice:
 		case pcommon.ValueTypeBytes:
 		}
-		return true
-	})
+	}
 
 	return tags
 }

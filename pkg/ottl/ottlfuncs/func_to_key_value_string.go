@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	gosort "sort"
 	"strings"
@@ -29,7 +30,7 @@ func createToKeyValueStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Ar
 	args, ok := oArgs.(*ToKeyValueStringArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
+		return nil, errors.New("ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
 	}
 
 	return toKeyValueString[K](args.Target, args.Delimiter, args.PairDelimiter, args.SortOutput)
@@ -39,7 +40,7 @@ func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string],
 	delimiter := "="
 	if !d.IsEmpty() {
 		if d.Get() == "" {
-			return nil, fmt.Errorf("delimiter cannot be set to an empty string")
+			return nil, errors.New("delimiter cannot be set to an empty string")
 		}
 		delimiter = d.Get()
 	}
@@ -47,7 +48,7 @@ func toKeyValueString[K any](target ottl.PMapGetter[K], d ottl.Optional[string],
 	pairDelimiter := " "
 	if !p.IsEmpty() {
 		if p.Get() == "" {
-			return nil, fmt.Errorf("pair delimiter cannot be set to an empty string")
+			return nil, errors.New("pair delimiter cannot be set to an empty string")
 		}
 		pairDelimiter = p.Get()
 	}
@@ -81,13 +82,12 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 		}
 
 		// Sort by keys
-		target.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range target.All() {
 			keyValues = append(keyValues, struct {
 				key string
 				val pcommon.Value
 			}{key: k, val: v})
-			return true
-		})
+		}
 		gosort.Slice(keyValues, func(i, j int) bool {
 			return keyValues[i].key < keyValues[j].key
 		})
@@ -97,10 +97,9 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 			kvStrings = append(kvStrings, buildKVString(kv.key, kv.val, delimiter, pairDelimiter))
 		}
 	} else {
-		target.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range target.All() {
 			kvStrings = append(kvStrings, buildKVString(k, v, delimiter, pairDelimiter))
-			return true
-		})
+		}
 	}
 
 	return strings.Join(kvStrings, pairDelimiter)

@@ -64,7 +64,7 @@ func TestConvertNodeToRaw(t *testing.T) {
 
 	assert.Equal(t, "ip-192-168-44-84.us-west-2.compute.internal", nodeRawMetric.Id)
 	assert.Equal(t, "ip-192-168-44-84.us-west-2.compute.internal", nodeRawMetric.Name)
-	assert.Equal(t, "", nodeRawMetric.Namespace)
+	assert.Empty(t, nodeRawMetric.Namespace)
 	parsedtime, _ := time.Parse(time.RFC3339, "2023-12-21T15:19:58Z")
 	assert.Equal(t, parsedtime.Local(), nodeRawMetric.Time)
 	assert.Equal(t, uint64(38907680000000), nodeRawMetric.CPUStats.UsageCoreNanoSeconds)

@@ -90,6 +90,7 @@ filesystem:
   <include_mount_points|exclude_mount_points>:
     mount_points: [ <mount point>, ... ]
     match_type: <strict|regexp>
+  include_virtual_filesystems: <false|true>
 ```
 
 ### Load

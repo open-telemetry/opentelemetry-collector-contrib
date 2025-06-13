@@ -25,8 +25,8 @@ func TestConvertToOTMetrics(t *testing.T) {
 
 	resource := pcommon.NewResource()
 	md := convertToOTLPMetrics("container.", m, resource, timestamp)
-	require.EqualValues(t, 26, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	assert.EqualValues(t, conventions.SchemaURL, md.ResourceMetrics().At(0).SchemaUrl())
+	require.Equal(t, 26, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	assert.Equal(t, conventions.SchemaURL, md.ResourceMetrics().At(0).SchemaUrl())
 }
 
 func TestIntGauge(t *testing.T) {
@@ -61,5 +61,5 @@ func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
 	resource := pcommon.NewResource()
 	duration := 1200000000.32132
 	md := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)
-	require.EqualValues(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 }

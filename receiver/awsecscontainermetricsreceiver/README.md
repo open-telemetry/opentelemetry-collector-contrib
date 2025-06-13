@@ -79,7 +79,7 @@ service:
 
 ## Collect specific metrics and update metric names
 
-The previous configurations collect all the metrics and sends them to Amazon CloudWatch using default names. Customers can use `filter` and `metrictransform` processors to send specific metrics and rename them respectively.
+The previous configurations collect all the metrics and sends them to Amazon CloudWatch using default names. Customers can use `filter` and `metricstransform` processors to send specific metrics and rename them respectively.
 
 The following configuration example collects only the `ecs.task.memory.utilized` metric and renames it to `MemoryUtilized` before sending to CloudWatch.
 
@@ -177,7 +177,7 @@ This receiver emits 52 unique metrics. Customer may not want to send all of them
 ### 1. Full configuration for task level metrics
 The following example shows a full configuration to get most useful task level metrics. It uses `awsecscontainermetrics` receiver to collect all the resource usage metrics from ECS task metadata endpoint. It applies `filter` processor to select only 8 task-level metrics and update metric names using `metricstransform` processor. It also renames the resource attributes using `resource` processor which will be used as metric dimensions in the Amazon CloudWatch `awsemf` exporter. Finally, it sends the metrics to CloudWatch using `awsemf` exporter under the `/aws/ecs/containerinsights/{ClusterName}/performance` namespace where the `{ClusterName}` placeholder will be replaced with actual cluster name. Check the [AWS EMF Exporter](https://aws-otel.github.io/docs/getting-started/cloudwatch-metrics) documentation to see and explore the metrics in Amazon CloudWatch.
 
-**Note:** AWS OpenTelemetry Collector has a [default configuration](https://github.com/aws-observability/aws-otel-collector/blob/main/config/ecs/container-insights/otel-task-metrics-config.yaml) backed into it for Container Insights experience which is smiliar to this one. Follow our [setup](https://aws-otel.github.io/docs/setup/ecs) doc to check how to use that default config.
+**Note:** AWS OpenTelemetry Collector has a [default configuration](https://github.com/aws-observability/aws-otel-collector/blob/main/config/ecs/container-insights/otel-task-metrics-config.yaml) backed into it for Container Insights experience which is similar to this one. Follow our [setup](https://aws-otel.github.io/docs/setup/ecs) doc to check how to use that default config.
 
 ```yaml
 receivers:

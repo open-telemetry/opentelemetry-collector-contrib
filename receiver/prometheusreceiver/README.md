@@ -67,7 +67,17 @@ prometheus --config.file=prom.yaml
 ```shell
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
+- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
+  the collector start time as the metric start time if the
+  process_start_time_seconds metric yields no result (for example if targets
+  expose no process_start_time_seconds metric). This is useful when the collector
+  start time is a good approximation of the process start time - for example in
+  serverless workloads when the collector is deployed as a sidecar. To enable it,
+  use the following feature gate option:
 
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
+```
 - `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 
 ```shell
@@ -78,6 +88,12 @@ prometheus --config.file=prom.yaml
 
 ```shell
 "--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
+```
+
+- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
 ```
 
 - `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
@@ -186,4 +202,26 @@ It drops `otel_scope_name` and `otel_scope_version` labels, if present, from met
 the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_scope_info` metric,
 and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
 Attributes.
+
+## Prometheus API Server
+The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+
+```
+receivers:
+  prometheus:
+    api_server:
+      enabled: true
+      server_config:
+        endpoint: "localhost:9090"
+```
+
+The API server hosts the same paths as the Prometheus agent-mode API. These include:
+- [/api/v1/targets](https://prometheus.io/docs/prometheus/latest/querying/api/#targets)
+- [/api/v1/targets/metadata](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-target-metadata)
+- [/api/v1/status/config](https://prometheus.io/docs/prometheus/latest/querying/api/#config)
+- /api/v1/scrape_pools
+- /metrics
+
+More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
+
 

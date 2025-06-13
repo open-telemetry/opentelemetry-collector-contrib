@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
@@ -72,10 +72,10 @@ func TestScrape(t *testing.T) {
 	resultsMapLock := sync.Mutex{}
 
 	testFn := func(t *testing.T, test testCase) {
-		// wait for messurement to start
+		// wait for measurement to start
 		<-startChan
 
-		scraper := newLoadScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
 		if test.loadFunc != nil {
 			scraper.load = test.loadFunc
 		}
@@ -179,7 +179,7 @@ func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard p
 		// For hardware with only 1 cpu, results must be very close
 		assert.InDelta(t, valAverage, valStandard, 0.1)
 	} else {
-		// For hardward with multiple CPU, average per cpu is fatally less than standard
+		// For hardware with multiple CPU, average per cpu is fatally less than standard
 		assert.Less(t, valAverage, valStandard)
 	}
 }

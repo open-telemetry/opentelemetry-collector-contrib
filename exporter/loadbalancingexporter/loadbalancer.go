@@ -102,6 +102,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			oCfg.Resolver.K8sSvc.Service,
 			oCfg.Resolver.K8sSvc.Ports,
 			oCfg.Resolver.K8sSvc.Timeout,
+			oCfg.Resolver.K8sSvc.ReturnHostnames,
 			telemetry,
 		)
 		if err != nil {

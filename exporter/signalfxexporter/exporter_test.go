@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -37,6 +39,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
+	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/utils"
@@ -86,7 +89,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
+			got, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -120,7 +123,7 @@ func TestConsumeMetrics(t *testing.T) {
 		wantErr              bool
 		wantPermanentErr     bool
 		wantThrottleErr      bool
-		expectedErrorMsg     string
+		wantStatusCode       int
 	}{
 		{
 			name:             "happy_path",
@@ -133,7 +136,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusForbidden,
 			numDroppedTimeSeries: 1,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_bad_request",
@@ -141,7 +144,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusBadRequest,
 			numDroppedTimeSeries: 1,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_throttle",
@@ -149,6 +152,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusTooManyRequests,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       429,
 		},
 		{
 			name:                 "response_throttle_with_header",
@@ -157,6 +161,7 @@ func TestConsumeMetrics(t *testing.T) {
 			httpResponseCode:     http.StatusServiceUnavailable,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       503,
 		},
 		{
 			name:             "large_batch",
@@ -187,7 +192,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -205,27 +210,31 @@ func TestConsumeMetrics(t *testing.T) {
 				converter: c,
 			}
 
+			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
+				tt.wantStatusCode,
+				http.StatusText(tt.wantStatusCode),
+			)
+
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.expectedErrorMsg)
+				assert.EqualError(t, err, errMsg)
 				return
 			}
 
 			if tt.wantPermanentErr {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
-				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.ErrorContains(t, err, "response content")
+				assert.ErrorContains(t, err, errMsg)
 				return
 			}
 
 			if tt.wantThrottleErr {
-				expected := fmt.Errorf("HTTP %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
+				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 
@@ -537,15 +546,15 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -567,12 +576,242 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
+func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
+	fromHeaders := "AccessTokenFromClientHeaders"
+	fromLabels := []string{"AccessTokenFromLabel0", "AccessTokenFromLabel1"}
+	fromContext := "AccessTokenFromContext"
+
+	validMetricsWithToken := func(includeToken bool, token string, histogram bool) pmetric.Metrics {
+		out := pmetric.NewMetrics()
+		rm := out.ResourceMetrics().AppendEmpty()
+
+		if includeToken {
+			rm.Resource().Attributes().PutStr("com.splunk.signalfx.access_token", token)
+		}
+
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
+
+		if histogram {
+			buildHistogram(m, "test_histogram", pcommon.Timestamp(100000000), 1)
+		} else {
+			m.SetName("test_gauge")
+
+			dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+			dp.Attributes().PutStr("k0", "v0")
+			dp.Attributes().PutStr("k1", "v1")
+			dp.SetDoubleValue(123)
+		}
+
+		return out
+	}
+
+	tests := []struct {
+		name                   string
+		accessTokenPassthrough bool
+		metrics                pmetric.Metrics
+		additionalHeaders      map[string]string
+		pushedTokens           []string
+		sendOTLPHistograms     bool
+		inContext              bool
+	}{
+		{
+			name:                   "passthrough access token and included in md",
+			accessTokenPassthrough: true,
+			inContext:              true,
+			metrics:                validMetricsWithToken(true, fromLabels[0], false),
+			pushedTokens:           []string{fromContext},
+		},
+		{
+			name:                   "passthrough access token and not included in md",
+			accessTokenPassthrough: true,
+			inContext:              true,
+			metrics:                validMetricsWithToken(false, fromLabels[0], false),
+			pushedTokens:           []string{fromContext},
+			sendOTLPHistograms:     false,
+		},
+		{
+			name:                   "passthrough access token and included in md",
+			accessTokenPassthrough: true,
+			inContext:              false,
+			metrics:                validMetricsWithToken(true, fromLabels[0], false),
+			pushedTokens:           []string{fromLabels[0]},
+		},
+		{
+			name:                   "passthrough access token and not included in md",
+			accessTokenPassthrough: true,
+			inContext:              false,
+			metrics:                validMetricsWithToken(false, fromLabels[0], false),
+			pushedTokens:           []string{fromHeaders},
+			sendOTLPHistograms:     false,
+		},
+	}
+	for _, tt := range tests {
+		receivedTokens := struct {
+			sync.Mutex
+			tokens []string
+		}{}
+		receivedTokens.tokens = []string{}
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, tt.name, r.Header.Get("test_header_"))
+				receivedTokens.Lock()
+
+				token := r.Header.Get("x-sf-token")
+				receivedTokens.tokens = append(receivedTokens.tokens, token)
+
+				receivedTokens.Unlock()
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer server.Close()
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IngestURL = server.URL
+			cfg.APIURL = server.URL
+			cfg.Headers = make(map[string]configopaque.String)
+			for k, v := range tt.additionalHeaders {
+				cfg.Headers[k] = configopaque.String(v)
+			}
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.AccessToken = configopaque.String(fromHeaders)
+			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
+			cfg.QueueSettings.Enabled = false
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
+			require.NoError(t, err)
+			ctx := context.Background()
+			if tt.inContext {
+				ctx = client.NewContext(
+					ctx,
+					client.Info{Metadata: client.NewMetadata(
+						map[string][]string{splunk.SFxAccessTokenHeader: {fromContext}},
+					)},
+				)
+			}
+			require.NoError(t, sfxExp.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
+			}()
+
+			err = sfxExp.ConsumeMetrics(ctx, tt.metrics)
+
+			assert.NoError(t, err)
+			require.Eventually(t, func() bool {
+				receivedTokens.Lock()
+				defer receivedTokens.Unlock()
+				return len(tt.pushedTokens) == len(receivedTokens.tokens)
+			}, 1*time.Second, 10*time.Millisecond)
+			sort.Strings(tt.pushedTokens)
+			sort.Strings(receivedTokens.tokens)
+			assert.Equal(t, tt.pushedTokens, receivedTokens.tokens)
+		})
+	}
+}
+
+func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
+	fromHeaders := "AccessTokenFromClientHeaders"
+	fromLabels := "AccessTokenFromLabel"
+	fromContext := "AccessTokenFromContext"
+
+	newLogData := func(includeToken bool) plog.Logs {
+		out := makeSampleResourceLogs()
+		makeSampleResourceLogs().ResourceLogs().At(0).CopyTo(out.ResourceLogs().AppendEmpty())
+
+		if includeToken {
+			out.ResourceLogs().At(0).Resource().Attributes().PutStr("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(1).Resource().Attributes().PutStr("com.splunk.signalfx.access_token", fromLabels)
+		}
+		return out
+	}
+
+	tests := []struct {
+		name                   string
+		accessTokenPassthrough bool
+		includedInLogData      bool
+		inContext              bool
+		expectedToken          string
+	}{
+		{
+			name:                   "passthrough access token and not included in request context",
+			inContext:              true,
+			accessTokenPassthrough: true,
+			includedInLogData:      true,
+			expectedToken:          fromContext,
+		},
+		{
+			name:                   "passthrough access token and included in logs",
+			inContext:              false,
+			accessTokenPassthrough: true,
+			includedInLogData:      true,
+			expectedToken:          fromLabels,
+		},
+		{
+			name:                   "passthrough access token and not included in logs",
+			inContext:              false,
+			accessTokenPassthrough: false,
+			includedInLogData:      false,
+			expectedToken:          fromHeaders,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			receivedTokens := struct {
+				sync.Mutex
+				tokens []string
+			}{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, tt.name, r.Header.Get("test_header_"))
+				receivedTokens.Lock()
+				receivedTokens.tokens = append(receivedTokens.tokens, r.Header.Get("x-sf-token"))
+				receivedTokens.Unlock()
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer server.Close()
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IngestURL = server.URL
+			cfg.APIURL = server.URL
+			cfg.Headers = make(map[string]configopaque.String)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.AccessToken = configopaque.String(fromHeaders)
+			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.QueueSettings.Enabled = false
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
+			require.NoError(t, err)
+			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
+			}()
+
+			ctx := context.Background()
+			if tt.inContext {
+				ctx = client.NewContext(
+					ctx,
+					client.Info{Metadata: client.NewMetadata(
+						map[string][]string{splunk.SFxAccessTokenHeader: {"AccessTokenFromContext"}},
+					)},
+				)
+			}
+			assert.NoError(t, sfxExp.ConsumeLogs(ctx, newLogData(tt.includedInLogData)))
+
+			require.Eventually(t, func() bool {
+				receivedTokens.Lock()
+				defer receivedTokens.Unlock()
+				return len(receivedTokens.tokens) == 1
+			}, 1*time.Second, 10*time.Millisecond)
+			assert.Equal(t, tt.expectedToken, receivedTokens.tokens[0])
+		})
+	}
+}
+
 func TestNewEventExporter(t *testing.T) {
-	got, err := newEventExporter(nil, exportertest.NewNopSettings())
+	got, err := newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	got, err = newEventExporter(nil, exportertest.NewNopSettings())
+	got, err = newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.Error(t, err)
 	assert.Nil(t, got)
 
@@ -582,7 +821,7 @@ func TestNewEventExporter(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, exportertest.NewNopSettings())
+	got, err = newEventExporter(cfg, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
@@ -699,7 +938,7 @@ func TestConsumeEventData(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -793,7 +1032,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -1260,7 +1499,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), rCfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(componentmetadata.Type), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
@@ -1331,7 +1570,7 @@ func TestTLSExporterInit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			defer func() { require.NoError(t, sfx.shutdown(context.Background())) }()
@@ -1402,7 +1641,7 @@ func TestTLSIngestConnection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings(componentmetadata.Type))
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
@@ -1660,8 +1899,8 @@ func TestConsumeMixedMetrics(t *testing.T) {
 		wantErr               bool
 		wantPermanentErr      bool
 		wantThrottleErr       bool
-		expectedErrorMsg      string
 		wantPartialMetricsErr bool
+		wantStatusCode        int
 	}{
 		{
 			name:                 "happy_path",
@@ -1680,7 +1919,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusForbidden,
 			numDroppedTimeSeries: 1,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_forbidden_otlp",
@@ -1688,7 +1927,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusForbidden,
 			numDroppedTimeSeries: 2,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_forbidden_mixed",
@@ -1697,7 +1936,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusForbidden,
 			numDroppedTimeSeries: 2,
 			wantErr:              true,
-			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+			wantStatusCode:       403,
 		},
 		{
 			name:                 "response_bad_request_sfx",
@@ -1705,7 +1944,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusBadRequest,
 			numDroppedTimeSeries: 1,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_bad_request_otlp",
@@ -1713,7 +1952,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusBadRequest,
 			numDroppedTimeSeries: 2,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_bad_request_mixed",
@@ -1722,7 +1961,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			otlpHTTPResponseCode: http.StatusBadRequest,
 			numDroppedTimeSeries: 2,
 			wantPermanentErr:     true,
-			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+			wantStatusCode:       400,
 		},
 		{
 			name:                 "response_throttle_sfx",
@@ -1730,6 +1969,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusTooManyRequests,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       429,
 		},
 		{
 			name:                  "response_throttle_mixed",
@@ -1739,6 +1979,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        429,
 		},
 		{
 			name:                  "response_throttle_otlp",
@@ -1747,6 +1988,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        429,
 		},
 		{
 			name:                 "response_throttle_with_header_sfx",
@@ -1755,6 +1997,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			sfxHTTPResponseCode:  http.StatusServiceUnavailable,
 			numDroppedTimeSeries: 1,
 			wantThrottleErr:      true,
+			wantStatusCode:       503,
 		},
 		{
 			name:                  "response_throttle_with_header_otlp",
@@ -1764,6 +2007,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        503,
 		},
 		{
 			name:                  "response_throttle_with_header_mixed",
@@ -1774,6 +2018,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries:  2,
 			wantThrottleErr:       true,
 			wantPartialMetricsErr: true,
+			wantStatusCode:        503,
 		},
 		{
 			name:                 "large_batch",
@@ -1811,7 +2056,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopSettings(componentmetadata.Type).TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
@@ -1833,33 +2078,38 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries, err := sfxClient.pushMetricsData(context.Background(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
+			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
+				tt.wantStatusCode,
+				http.StatusText(tt.wantStatusCode),
+			)
+
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.expectedErrorMsg)
+				assert.EqualError(t, err, errMsg)
 				return
 			}
 
 			if tt.wantPermanentErr {
+				errMsg = "Permanent error: " + errMsg
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
-				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.ErrorContains(t, err, "response content")
+				assert.EqualError(t, err, errMsg)
 				return
 			}
 
 			if tt.wantThrottleErr {
 				if tt.wantPartialMetricsErr {
 					partialMetrics, _ := utils.GetHistograms(smallBatch)
-					throttleErr := fmt.Errorf("HTTP %d %q", tt.otlpHTTPResponseCode, http.StatusText(tt.otlpHTTPResponseCode))
+					throttleErr := errors.New(errMsg)
 					throttleErr = exporterhelper.NewThrottleRetry(throttleErr, time.Duration(tt.retryAfter)*time.Second)
 					testErr := consumererror.NewMetrics(throttleErr, partialMetrics)
-					assert.EqualValues(t, testErr, err)
+					assert.Equal(t, testErr, err)
 					return
 				}
 
-				expected := fmt.Errorf("HTTP %d %q", tt.sfxHTTPResponseCode, http.StatusText(tt.sfxHTTPResponseCode))
+				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 

@@ -4,6 +4,7 @@ status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
+    development: [profiles]
   distributions: [core, contrib, k8s]
   codeowners:
     active: [atingchen]

@@ -27,6 +27,8 @@ all_set:
       enabled: true
     process.threads:
       enabled: true
+    process.uptime:
+      enabled: true
   resource_attributes:
     process.cgroup:
       enabled: true
@@ -71,6 +73,8 @@ none_set:
     process.signals_pending:
       enabled: false
     process.threads:
+      enabled: false
+    process.uptime:
       enabled: false
   resource_attributes:
     process.cgroup:

@@ -1,0 +1,47 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: http.request.header.x-forwarded-host
+                    value:
+                      stringValue: FORWARDED_HOST
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: url.domain
+                    value:
+                      stringValue: HOST
+                  - key: category
+                    value:
+                      stringValue: AppServiceIPSecAuditLogs
+                  - key: operation.name
+                    value:
+                      stringValue: IPSecAuditLog
+                  - key: http.request.header.x-azure-fdid
+                    value:
+                      stringValue: FDID
+                  - key: http.request.header.x-fd-healthprobe
+                    value:
+                      stringValue: HEALTH_PROBE
+                  - key: http.request.header.x-forwarded-for
+                    value:
+                      stringValue: FORWARDED_FOR
+            spanId: ""
+            timeUnixNano: "1713960372000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

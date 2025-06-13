@@ -61,8 +61,14 @@ func NewSimplePrometheusScraper(opts SimplePrometheusScraperOpts) (*SimplePromet
 		},
 	}
 
+	for _, sc := range promConfig.PrometheusConfig.ScrapeConfigs {
+		if sc.ScrapeFallbackProtocol == "" {
+			sc.ScrapeFallbackProtocol = config.PrometheusText0_0_4
+		}
+	}
+
 	params := receiver.Settings{
-		ID:                component.MustNewID(opts.ScraperConfigs.JobName),
+		ID:                component.MustNewID("prometheus"),
 		TelemetrySettings: opts.TelemetrySettings,
 	}
 

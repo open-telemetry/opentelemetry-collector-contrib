@@ -113,7 +113,7 @@ service:
       level: "debug"
 ```
 #### Metrics:
-In order to use the Prometheus backend you must use the standard prometheusremotewrite exporter as well. The following [regions](https://docs.logz.io/user-guide/accounts/account-region.html#supported-regions-for-prometheus-metrics) are supported and configured as follows. The Logz.io Listener URL for for your region, configured to use port 8052 for http traffic, or port 8053 for https traffic.
+In order to use the Prometheus backend you must use the standard prometheusremotewrite exporter as well. The following [regions](https://docs.logz.io/user-guide/accounts/account-region.html#supported-regions-for-prometheus-metrics) are supported and configured as follows. The Logz.io Listener URL for your region, configured to use port 8052 for http traffic, or port 8053 for https traffic.
 Example:
 ```yaml
 exporters:

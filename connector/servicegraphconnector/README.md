@@ -65,14 +65,14 @@ TLDR: The connector will try to find spans belonging to requests as seen from th
 
 The following metrics are emitted by the connector:
 
-| Metric                                      | Type      | Labels                          | Description                                                  |
-|---------------------------------------------|-----------|---------------------------------|--------------------------------------------------------------|
-| traces_service_graph_request_total          | Counter   | client, server, connection_type | Total count of requests between two nodes                    |
-| traces_service_graph_request_failed_total   | Counter   | client, server, connection_type | Total count of failed requests between two nodes             |
-| traces_service_graph_request_server_seconds | Histogram | client, server, connection_type | Time for a request between two nodes as seen from the server |
-| traces_service_graph_request_client_seconds | Histogram | client, server, connection_type | Time for a request between two nodes as seen from the client |
-| traces_service_graph_unpaired_spans_total   | Counter   | client, server, connection_type | Total count of unpaired spans                                |
-| traces_service_graph_dropped_spans_total    | Counter   | client, server, connection_type | Total count of dropped spans                                 |
+| Metric                                      | Type      | Labels                          | Description                                                               |
+|---------------------------------------------|-----------|---------------------------------|---------------------------------------------------------------------------|
+| traces_service_graph_request_total          | Counter   | client, server, connection_type | Total count of requests between two nodes                                 |
+| traces_service_graph_request_failed_total   | Counter   | client, server, connection_type | Total count of failed requests between two nodes                          |
+| traces_service_graph_request_server         | Histogram | client, server, connection_type | Number of seconds for a request between two nodes as seen from the server |
+| traces_service_graph_request_client         | Histogram | client, server, connection_type | Number of seconds for a request between two nodes as seen from the client |
+| traces_service_graph_unpaired_spans_total   | Counter   | client, server, connection_type | Total count of unpaired spans                                             |
+| traces_service_graph_dropped_spans_total    | Counter   | client, server, connection_type | Total count of dropped spans                                              |
 
 Duration is measured both from the client and the server sides.
 
@@ -139,9 +139,11 @@ The following settings can be optionally configured:
 - `virtual_node_extra_label`: adds an extra label `virtual_node` with an optional value of `client` or `server`, indicating which node is the uninstrumented one.
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
-  - Default: Metrics are flushed on every received batch of traces.
-- `database_name_attribute`: the attribute name used to identify the database name from span attributes.
+  - Default: `60s`
+- `database_name_attribute`(DEPRECATED): the attribute name used to identify the database name from span attributes.
   - Default: `db.name`
+- `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
+  - Default: `[db.name]`
 
 ## Example configurations
 

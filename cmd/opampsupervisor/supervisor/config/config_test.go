@@ -19,6 +19,9 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	tlsConfig := configtls.NewDefaultClientConfig()
+	tlsConfig.InsecureSkipVerify = true
+
 	testCases := []struct {
 		name          string
 		config        Supervisor
@@ -32,9 +35,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -57,9 +58,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -83,9 +82,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -109,9 +106,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -165,9 +160,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "",
@@ -192,9 +185,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "./path/does/not/exist",
@@ -219,9 +210,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -245,9 +234,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -273,9 +260,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -300,9 +285,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -327,9 +310,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -403,9 +384,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -479,17 +458,23 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				AcceptsOpAMPConnectionSettings: true,
 				ReportsEffectiveConfig:         true,
 				ReportsOwnMetrics:              true,
+				ReportsOwnLogs:                 true,
+				ReportsOwnTraces:               true,
 				ReportsHealth:                  true,
 				ReportsRemoteConfig:            true,
+				ReportsAvailableComponents:     true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
-				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings,
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
 		},
 	}
 
@@ -501,8 +486,7 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	t.Cleanup(func() {
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
@@ -510,7 +494,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	err := os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -600,6 +584,8 @@ telemetry:
 					Capabilities: Capabilities{
 						ReportsEffectiveConfig:         false,
 						ReportsOwnMetrics:              false,
+						ReportsOwnLogs:                 false,
+						ReportsOwnTraces:               false,
 						ReportsHealth:                  false,
 						AcceptsRemoteConfig:            true,
 						ReportsRemoteConfig:            true,
@@ -663,12 +649,8 @@ agent:
 					Telemetry: DefaultSupervisor().Telemetry,
 				}
 
-				require.NoError(t, os.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp"))
-				require.NoError(t, os.Setenv("TEST_EXECUTABLE_PATH", executablePath))
-				defer func() {
-					require.NoError(t, os.Unsetenv("TEST_ENDPOINT"))
-					require.NoError(t, os.Unsetenv("TEST_EXECUTABLE_PATH"))
-				}()
+				t.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp")
+				t.Setenv("TEST_EXECUTABLE_PATH", executablePath)
 
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
 				runSupervisorConfigLoadTest(t, cfgPath, expected, nil)
@@ -721,10 +703,8 @@ agent:
 func setupSupervisorConfigFile(t *testing.T, tmpDir, configString string) string {
 	t.Helper()
 
-	testDir, err := os.MkdirTemp(tmpDir, "*")
-	require.NoError(t, err)
-	cfgPath := filepath.Join(testDir, "config.yaml")
-	err = os.WriteFile(cfgPath, []byte(configString), 0o600)
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(configString), 0o600)
 	require.NoError(t, err)
 	return cfgPath
 }

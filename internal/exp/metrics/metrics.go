@@ -4,10 +4,10 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 
 import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 )
 
 // Merge will merge the metrics data in mdB into mdA, then return mdA.
@@ -111,7 +111,7 @@ outer:
 	return smA
 }
 
-func mergeDataPoints[DPS streams.DataPointSlice[DP], DP streams.DataPoint[DP]](dataPointsA DPS, dataPointsB DPS) DPS {
+func mergeDataPoints[DPS dataPointSlice[DP], DP dataPoint[DP]](dataPointsA DPS, dataPointsB DPS) DPS {
 	// Append all the datapoints from B to A
 	for i := 0; i < dataPointsB.Len(); i++ {
 		dpB := dataPointsB.At(i)
@@ -121,4 +121,16 @@ func mergeDataPoints[DPS streams.DataPointSlice[DP], DP streams.DataPoint[DP]](d
 	}
 
 	return dataPointsA
+}
+
+type dataPointSlice[DP dataPoint[DP]] interface {
+	Len() int
+	At(i int) DP
+	AppendEmpty() DP
+}
+
+type dataPoint[Self any] interface {
+	Timestamp() pcommon.Timestamp
+	Attributes() pcommon.Map
+	CopyTo(dest Self)
 }

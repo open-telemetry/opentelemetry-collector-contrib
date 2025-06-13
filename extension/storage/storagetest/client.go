@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 var errClientClosed = errors.New("client closed")
@@ -48,7 +48,7 @@ func NewInMemoryClient(kind component.Kind, id component.ID, name string) *TestC
 func NewFileBackedClient(kind component.Kind, id component.ID, name string, storageDir string) *TestClient {
 	client := NewInMemoryClient(kind, id, name)
 
-	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%d_%s_%s_%s", kind, id.Type(), id.Name(), name))
+	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%s_%s_%s_%s", kind, id.Type(), id.Name(), name))
 
 	// Attempt to load previous storage content
 	contents, err := os.ReadFile(client.storageFile)
@@ -99,7 +99,7 @@ func (p *TestClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (p *TestClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (p *TestClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 	if p.closed {

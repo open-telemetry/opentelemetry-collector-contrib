@@ -5,7 +5,7 @@ package ecsutil
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -150,7 +150,7 @@ type fakeRoundTripper struct {
 
 func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if f.failOnRT {
-		return nil, fmt.Errorf("failOnRT == true")
+		return nil, errors.New("failOnRT == true")
 	}
 	f.header = req.Header
 	f.method = req.Method
@@ -172,7 +172,7 @@ func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 			onClose: func() error {
 				f.closed = true
 				if f.errOnClose {
-					return fmt.Errorf("error on close")
+					return errors.New("error on close")
 				}
 				return nil
 			},
@@ -185,7 +185,7 @@ var _ io.Reader = (*failingReader)(nil)
 type failingReader struct{}
 
 func (f *failingReader) Read([]byte) (n int, err error) {
-	return 0, fmt.Errorf("error on read")
+	return 0, errors.New("error on read")
 }
 
 var _ io.ReadCloser = (*fakeReadCloser)(nil)

@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -30,13 +30,13 @@ func TestScrape(t *testing.T) {
 	t.Run("Fully successful scrape", func(t *testing.T) {
 		t.Parallel()
 
-		mockWatchers, err := getWatchers(&mockCounterCreater{
+		mockWatchers, err := getWatchers(&mockCounterCreator{
 			availableCounterNames: getAvailableCounters(t),
 		})
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 		fullSyncObjectsRemainingErr := errors.New("failed to scrape sync objects remaining")
 		draInboundValuesDNErr := errors.New("failed to scrape sync inbound value DNs")
 
-		mockWatchers, err := getWatchers(&mockCounterCreater{
+		mockWatchers, err := getWatchers(&mockCounterCreator{
 			availableCounterNames: getAvailableCounters(t),
 		})
 		require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).scrapeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -94,7 +94,7 @@ func TestScrape(t *testing.T) {
 		fullSyncObjectsRemainingErr := errors.New("failed to close sync objects remaining")
 		draInboundValuesDNErr := errors.New("failed to close sync inbound value DNs")
 
-		mockWatchers, err := getWatchers(&mockCounterCreater{
+		mockWatchers, err := getWatchers(&mockCounterCreator{
 			availableCounterNames: getAvailableCounters(t),
 		})
 		require.NoError(t, err)
@@ -103,7 +103,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).closeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 
@@ -115,13 +115,13 @@ func TestScrape(t *testing.T) {
 	t.Run("Double shutdown does not error", func(t *testing.T) {
 		t.Parallel()
 
-		mockWatchers, err := getWatchers(&mockCounterCreater{
+		mockWatchers, err := getWatchers(&mockCounterCreator{
 			availableCounterNames: getAvailableCounters(t),
 		})
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 			w:  mockWatchers,
 		}
 

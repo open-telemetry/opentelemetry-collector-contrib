@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -80,9 +80,9 @@ func TestValidateOtherOS(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			if tc.expectedSuccess {
-				require.NoError(t, component.ValidateConfig(tc.cfg))
+				require.NoError(t, xconfmap.Validate(tc.cfg))
 			} else {
-				require.Error(t, component.ValidateConfig(tc.cfg))
+				require.Error(t, xconfmap.Validate(tc.cfg))
 			}
 		})
 	}

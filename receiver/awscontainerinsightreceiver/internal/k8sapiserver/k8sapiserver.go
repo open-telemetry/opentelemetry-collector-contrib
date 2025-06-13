@@ -35,7 +35,7 @@ var HyperPodConditions = []k8sutil.HyperPodConditionType{
 
 const HyperPodNodePrefix = "hyperpod-"
 
-// eventBroadcaster is adpated from record.EventBroadcaster
+// eventBroadcaster is adapted from record.EventBroadcaster
 type eventBroadcaster interface {
 	// StartRecordingToSink starts sending events received from this EventBroadcaster to the given
 	// sink. The return value can be ignored or used to stop recording, if desired.
@@ -394,7 +394,8 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 		if owner.Kind != "" && owner.Name != "" {
 			kind := owner.Kind
 			name := owner.Name
-			if owner.Kind == ci.ReplicaSet {
+			switch owner.Kind {
+			case ci.ReplicaSet:
 				rsToDeployment := k.leaderElection.replicaSetClient.ReplicaSetToDeployment()
 				if parent := rsToDeployment[owner.Name]; parent != "" {
 					kind = ci.Deployment
@@ -403,7 +404,7 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 					kind = ci.Deployment
 					name = parent
 				}
-			} else if owner.Kind == ci.Job {
+			case ci.Job:
 				if parent := parseCronJobFromJob(owner.Name); parent != "" {
 					kind = ci.CronJob
 					name = parent
@@ -411,13 +412,14 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 					name = getJobNamePrefix(name)
 				}
 			}
+
 			owners = append(owners, map[string]string{"owner_kind": kind, "owner_name": name})
 
 			if podName == "" {
-				if owner.Kind == ci.StatefulSet {
+				switch owner.Kind {
+				case ci.StatefulSet:
 					podName = pod.Name
-				} else if owner.Kind == ci.DaemonSet || owner.Kind == ci.Job ||
-					owner.Kind == ci.ReplicaSet || owner.Kind == ci.ReplicationController {
+				case ci.DaemonSet, ci.Job, ci.ReplicaSet, ci.ReplicationController:
 					podName = name
 				}
 			}

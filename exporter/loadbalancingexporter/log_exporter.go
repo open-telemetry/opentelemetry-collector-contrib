@@ -5,7 +5,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -27,6 +28,7 @@ var _ exporter.Logs = (*logExporterImp)(nil)
 type logExporterImp struct {
 	loadBalancer *loadBalancer
 
+	logger     *zap.Logger
 	started    bool
 	shutdownWg sync.WaitGroup
 	telemetry  *metadata.TelemetryBuilder
@@ -41,7 +43,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(params, endpoint)
+		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
 		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
 	}
@@ -54,6 +56,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	return &logExporterImp{
 		loadBalancer: lb,
 		telemetry:    telemetry,
+		logger:       params.Logger,
 	}, nil
 }
 
@@ -112,6 +115,7 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.successAttr))
 	} else {
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.failureAttr))
+		e.logger.Debug("failed to export log", zap.Error(err))
 	}
 
 	return err
@@ -137,9 +141,9 @@ func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
 }
 
 func random() pcommon.TraceID {
-	v1 := uint8(rand.Intn(256))
-	v2 := uint8(rand.Intn(256))
-	v3 := uint8(rand.Intn(256))
-	v4 := uint8(rand.Intn(256))
+	v1 := uint8(rand.IntN(256))
+	v2 := uint8(rand.IntN(256))
+	v3 := uint8(rand.IntN(256))
+	v4 := uint8(rand.IntN(256))
 	return [16]byte{v1, v2, v3, v4}
 }

@@ -4,7 +4,6 @@
 package solarwindsapmsettingsextension
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension/internal/metadata"
 )
@@ -269,27 +269,32 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
 
-func TestResolveServiceNameBestEffort(t *testing.T) {
+func TestResolveServiceNameBestEffortNoEnv(t *testing.T) {
 	// Without any environment variables
 	require.Empty(t, resolveServiceNameBestEffort())
-	// With OTEL_SERVICE_NAME only
-	require.NoError(t, os.Setenv("OTEL_SERVICE_NAME", "otel_ser1"))
+}
+
+// With OTEL_SERVICE_NAME only
+func TestResolveServiceNameBestEffortOnlyOtelService(t *testing.T) {
+	t.Setenv("OTEL_SERVICE_NAME", "otel_ser1")
 	require.Equal(t, "otel_ser1", resolveServiceNameBestEffort())
-	require.NoError(t, os.Unsetenv("OTEL_SERVICE_NAME"))
-	// With AWS_LAMBDA_FUNCTION_NAME only
-	require.NoError(t, os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda"))
+}
+
+// With AWS_LAMBDA_FUNCTION_NAME only
+func TestResolveServiceNameBestEffortOnlyAwsLambda(t *testing.T) {
+	t.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda")
 	require.Equal(t, "lambda", resolveServiceNameBestEffort())
-	require.NoError(t, os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME"))
-	// With both
-	require.NoError(t, os.Setenv("OTEL_SERVICE_NAME", "otel_ser1"))
-	require.NoError(t, os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda"))
+}
+
+// With both
+func TestResolveServiceNameBestEffortBoth(t *testing.T) {
+	t.Setenv("OTEL_SERVICE_NAME", "otel_ser1")
+	t.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda")
 	require.Equal(t, "otel_ser1", resolveServiceNameBestEffort())
-	require.NoError(t, os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME"))
-	require.NoError(t, os.Unsetenv("OTEL_SERVICE_NAME"))
 }

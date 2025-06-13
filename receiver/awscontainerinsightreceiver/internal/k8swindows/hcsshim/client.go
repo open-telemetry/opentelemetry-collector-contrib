@@ -7,7 +7,7 @@
 package hcsshim // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/hcsshim"
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/Microsoft/hcsshim"
 	"go.uber.org/zap"
@@ -56,5 +56,5 @@ func (hc *hCSClient) GetEndpointStat(endpointID string) (hcsshim.HNSEndpointStat
 	if endpointStat != nil {
 		return *endpointStat, nil
 	}
-	return hcsshim.HNSEndpointStats{}, fmt.Errorf("no stats for endpoint")
+	return hcsshim.HNSEndpointStats{}, errors.New("no stats for endpoint")
 }

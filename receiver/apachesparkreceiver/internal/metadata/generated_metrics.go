@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"out": AttributeDirectionOut,
 }
 
-// AttributeExecutorTaskResult specifies the a value executor_task_result attribute.
+// AttributeExecutorTaskResult specifies the value executor_task_result attribute.
 type AttributeExecutorTaskResult int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeExecutorTaskResult = map[string]AttributeExecutorTaskResult{
 	"failed":    AttributeExecutorTaskResultFailed,
 }
 
-// AttributeGcType specifies the a value gc_type attribute.
+// AttributeGcType specifies the value gc_type attribute.
 type AttributeGcType int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeGcType = map[string]AttributeGcType{
 	"minor": AttributeGcTypeMinor,
 }
 
-// AttributeJobResult specifies the a value job_result attribute.
+// AttributeJobResult specifies the value job_result attribute.
 type AttributeJobResult int
 
 const (
@@ -120,7 +120,7 @@ var MapAttributeJobResult = map[string]AttributeJobResult{
 	"skipped":   AttributeJobResultSkipped,
 }
 
-// AttributeLocation specifies the a value location attribute.
+// AttributeLocation specifies the value location attribute.
 type AttributeLocation int
 
 const (
@@ -146,7 +146,7 @@ var MapAttributeLocation = map[string]AttributeLocation{
 	"off_heap": AttributeLocationOffHeap,
 }
 
-// AttributePoolMemoryType specifies the a value pool_memory_type attribute.
+// AttributePoolMemoryType specifies the value pool_memory_type attribute.
 type AttributePoolMemoryType int
 
 const (
@@ -172,7 +172,7 @@ var MapAttributePoolMemoryType = map[string]AttributePoolMemoryType{
 	"mapped": AttributePoolMemoryTypeMapped,
 }
 
-// AttributeSchedulerStatus specifies the a value scheduler_status attribute.
+// AttributeSchedulerStatus specifies the value scheduler_status attribute.
 type AttributeSchedulerStatus int
 
 const (
@@ -198,7 +198,7 @@ var MapAttributeSchedulerStatus = map[string]AttributeSchedulerStatus{
 	"running": AttributeSchedulerStatusRunning,
 }
 
-// AttributeSource specifies the a value source attribute.
+// AttributeSource specifies the value source attribute.
 type AttributeSource int
 
 const (
@@ -224,7 +224,7 @@ var MapAttributeSource = map[string]AttributeSource{
 	"remote": AttributeSourceRemote,
 }
 
-// AttributeStageTaskResult specifies the a value stage_task_result attribute.
+// AttributeStageTaskResult specifies the value stage_task_result attribute.
 type AttributeStageTaskResult int
 
 const (
@@ -254,7 +254,7 @@ var MapAttributeStageTaskResult = map[string]AttributeStageTaskResult{
 	"killed":    AttributeStageTaskResultKilled,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -278,6 +278,268 @@ func (av AttributeState) String() string {
 var MapAttributeState = map[string]AttributeState{
 	"used": AttributeStateUsed,
 	"free": AttributeStateFree,
+}
+
+var MetricsInfo = metricsInfo{
+	SparkDriverBlockManagerDiskUsage: metricInfo{
+		Name: "spark.driver.block_manager.disk.usage",
+	},
+	SparkDriverBlockManagerMemoryUsage: metricInfo{
+		Name: "spark.driver.block_manager.memory.usage",
+	},
+	SparkDriverCodeGeneratorCompilationAverageTime: metricInfo{
+		Name: "spark.driver.code_generator.compilation.average_time",
+	},
+	SparkDriverCodeGeneratorCompilationCount: metricInfo{
+		Name: "spark.driver.code_generator.compilation.count",
+	},
+	SparkDriverCodeGeneratorGeneratedClassAverageSize: metricInfo{
+		Name: "spark.driver.code_generator.generated_class.average_size",
+	},
+	SparkDriverCodeGeneratorGeneratedClassCount: metricInfo{
+		Name: "spark.driver.code_generator.generated_class.count",
+	},
+	SparkDriverCodeGeneratorGeneratedMethodAverageSize: metricInfo{
+		Name: "spark.driver.code_generator.generated_method.average_size",
+	},
+	SparkDriverCodeGeneratorGeneratedMethodCount: metricInfo{
+		Name: "spark.driver.code_generator.generated_method.count",
+	},
+	SparkDriverCodeGeneratorSourceCodeAverageSize: metricInfo{
+		Name: "spark.driver.code_generator.source_code.average_size",
+	},
+	SparkDriverCodeGeneratorSourceCodeOperations: metricInfo{
+		Name: "spark.driver.code_generator.source_code.operations",
+	},
+	SparkDriverDagSchedulerJobActive: metricInfo{
+		Name: "spark.driver.dag_scheduler.job.active",
+	},
+	SparkDriverDagSchedulerJobCount: metricInfo{
+		Name: "spark.driver.dag_scheduler.job.count",
+	},
+	SparkDriverDagSchedulerStageCount: metricInfo{
+		Name: "spark.driver.dag_scheduler.stage.count",
+	},
+	SparkDriverDagSchedulerStageFailed: metricInfo{
+		Name: "spark.driver.dag_scheduler.stage.failed",
+	},
+	SparkDriverExecutorGcOperations: metricInfo{
+		Name: "spark.driver.executor.gc.operations",
+	},
+	SparkDriverExecutorGcTime: metricInfo{
+		Name: "spark.driver.executor.gc.time",
+	},
+	SparkDriverExecutorMemoryExecution: metricInfo{
+		Name: "spark.driver.executor.memory.execution",
+	},
+	SparkDriverExecutorMemoryJvm: metricInfo{
+		Name: "spark.driver.executor.memory.jvm",
+	},
+	SparkDriverExecutorMemoryPool: metricInfo{
+		Name: "spark.driver.executor.memory.pool",
+	},
+	SparkDriverExecutorMemoryStorage: metricInfo{
+		Name: "spark.driver.executor.memory.storage",
+	},
+	SparkDriverHiveExternalCatalogFileCacheHits: metricInfo{
+		Name: "spark.driver.hive_external_catalog.file_cache_hits",
+	},
+	SparkDriverHiveExternalCatalogFilesDiscovered: metricInfo{
+		Name: "spark.driver.hive_external_catalog.files_discovered",
+	},
+	SparkDriverHiveExternalCatalogHiveClientCalls: metricInfo{
+		Name: "spark.driver.hive_external_catalog.hive_client_calls",
+	},
+	SparkDriverHiveExternalCatalogParallelListingJobs: metricInfo{
+		Name: "spark.driver.hive_external_catalog.parallel_listing_jobs",
+	},
+	SparkDriverHiveExternalCatalogPartitionsFetched: metricInfo{
+		Name: "spark.driver.hive_external_catalog.partitions_fetched",
+	},
+	SparkDriverJvmCPUTime: metricInfo{
+		Name: "spark.driver.jvm_cpu_time",
+	},
+	SparkDriverLiveListenerBusDropped: metricInfo{
+		Name: "spark.driver.live_listener_bus.dropped",
+	},
+	SparkDriverLiveListenerBusPosted: metricInfo{
+		Name: "spark.driver.live_listener_bus.posted",
+	},
+	SparkDriverLiveListenerBusProcessingTimeAverage: metricInfo{
+		Name: "spark.driver.live_listener_bus.processing_time.average",
+	},
+	SparkDriverLiveListenerBusQueueSize: metricInfo{
+		Name: "spark.driver.live_listener_bus.queue_size",
+	},
+	SparkExecutorDiskUsage: metricInfo{
+		Name: "spark.executor.disk.usage",
+	},
+	SparkExecutorGcTime: metricInfo{
+		Name: "spark.executor.gc_time",
+	},
+	SparkExecutorInputSize: metricInfo{
+		Name: "spark.executor.input_size",
+	},
+	SparkExecutorMemoryUsage: metricInfo{
+		Name: "spark.executor.memory.usage",
+	},
+	SparkExecutorShuffleIoSize: metricInfo{
+		Name: "spark.executor.shuffle.io.size",
+	},
+	SparkExecutorStorageMemoryUsage: metricInfo{
+		Name: "spark.executor.storage_memory.usage",
+	},
+	SparkExecutorTaskActive: metricInfo{
+		Name: "spark.executor.task.active",
+	},
+	SparkExecutorTaskLimit: metricInfo{
+		Name: "spark.executor.task.limit",
+	},
+	SparkExecutorTaskResult: metricInfo{
+		Name: "spark.executor.task.result",
+	},
+	SparkExecutorTime: metricInfo{
+		Name: "spark.executor.time",
+	},
+	SparkJobStageActive: metricInfo{
+		Name: "spark.job.stage.active",
+	},
+	SparkJobStageResult: metricInfo{
+		Name: "spark.job.stage.result",
+	},
+	SparkJobTaskActive: metricInfo{
+		Name: "spark.job.task.active",
+	},
+	SparkJobTaskResult: metricInfo{
+		Name: "spark.job.task.result",
+	},
+	SparkStageDiskSpilled: metricInfo{
+		Name: "spark.stage.disk.spilled",
+	},
+	SparkStageExecutorCPUTime: metricInfo{
+		Name: "spark.stage.executor.cpu_time",
+	},
+	SparkStageExecutorRunTime: metricInfo{
+		Name: "spark.stage.executor.run_time",
+	},
+	SparkStageIoRecords: metricInfo{
+		Name: "spark.stage.io.records",
+	},
+	SparkStageIoSize: metricInfo{
+		Name: "spark.stage.io.size",
+	},
+	SparkStageJvmGcTime: metricInfo{
+		Name: "spark.stage.jvm_gc_time",
+	},
+	SparkStageMemoryPeak: metricInfo{
+		Name: "spark.stage.memory.peak",
+	},
+	SparkStageMemorySpilled: metricInfo{
+		Name: "spark.stage.memory.spilled",
+	},
+	SparkStageShuffleBlocksFetched: metricInfo{
+		Name: "spark.stage.shuffle.blocks_fetched",
+	},
+	SparkStageShuffleFetchWaitTime: metricInfo{
+		Name: "spark.stage.shuffle.fetch_wait_time",
+	},
+	SparkStageShuffleIoDisk: metricInfo{
+		Name: "spark.stage.shuffle.io.disk",
+	},
+	SparkStageShuffleIoReadSize: metricInfo{
+		Name: "spark.stage.shuffle.io.read.size",
+	},
+	SparkStageShuffleIoRecords: metricInfo{
+		Name: "spark.stage.shuffle.io.records",
+	},
+	SparkStageShuffleIoWriteSize: metricInfo{
+		Name: "spark.stage.shuffle.io.write.size",
+	},
+	SparkStageShuffleWriteTime: metricInfo{
+		Name: "spark.stage.shuffle.write_time",
+	},
+	SparkStageStatus: metricInfo{
+		Name: "spark.stage.status",
+	},
+	SparkStageTaskActive: metricInfo{
+		Name: "spark.stage.task.active",
+	},
+	SparkStageTaskResult: metricInfo{
+		Name: "spark.stage.task.result",
+	},
+	SparkStageTaskResultSize: metricInfo{
+		Name: "spark.stage.task.result_size",
+	},
+}
+
+type metricsInfo struct {
+	SparkDriverBlockManagerDiskUsage                   metricInfo
+	SparkDriverBlockManagerMemoryUsage                 metricInfo
+	SparkDriverCodeGeneratorCompilationAverageTime     metricInfo
+	SparkDriverCodeGeneratorCompilationCount           metricInfo
+	SparkDriverCodeGeneratorGeneratedClassAverageSize  metricInfo
+	SparkDriverCodeGeneratorGeneratedClassCount        metricInfo
+	SparkDriverCodeGeneratorGeneratedMethodAverageSize metricInfo
+	SparkDriverCodeGeneratorGeneratedMethodCount       metricInfo
+	SparkDriverCodeGeneratorSourceCodeAverageSize      metricInfo
+	SparkDriverCodeGeneratorSourceCodeOperations       metricInfo
+	SparkDriverDagSchedulerJobActive                   metricInfo
+	SparkDriverDagSchedulerJobCount                    metricInfo
+	SparkDriverDagSchedulerStageCount                  metricInfo
+	SparkDriverDagSchedulerStageFailed                 metricInfo
+	SparkDriverExecutorGcOperations                    metricInfo
+	SparkDriverExecutorGcTime                          metricInfo
+	SparkDriverExecutorMemoryExecution                 metricInfo
+	SparkDriverExecutorMemoryJvm                       metricInfo
+	SparkDriverExecutorMemoryPool                      metricInfo
+	SparkDriverExecutorMemoryStorage                   metricInfo
+	SparkDriverHiveExternalCatalogFileCacheHits        metricInfo
+	SparkDriverHiveExternalCatalogFilesDiscovered      metricInfo
+	SparkDriverHiveExternalCatalogHiveClientCalls      metricInfo
+	SparkDriverHiveExternalCatalogParallelListingJobs  metricInfo
+	SparkDriverHiveExternalCatalogPartitionsFetched    metricInfo
+	SparkDriverJvmCPUTime                              metricInfo
+	SparkDriverLiveListenerBusDropped                  metricInfo
+	SparkDriverLiveListenerBusPosted                   metricInfo
+	SparkDriverLiveListenerBusProcessingTimeAverage    metricInfo
+	SparkDriverLiveListenerBusQueueSize                metricInfo
+	SparkExecutorDiskUsage                             metricInfo
+	SparkExecutorGcTime                                metricInfo
+	SparkExecutorInputSize                             metricInfo
+	SparkExecutorMemoryUsage                           metricInfo
+	SparkExecutorShuffleIoSize                         metricInfo
+	SparkExecutorStorageMemoryUsage                    metricInfo
+	SparkExecutorTaskActive                            metricInfo
+	SparkExecutorTaskLimit                             metricInfo
+	SparkExecutorTaskResult                            metricInfo
+	SparkExecutorTime                                  metricInfo
+	SparkJobStageActive                                metricInfo
+	SparkJobStageResult                                metricInfo
+	SparkJobTaskActive                                 metricInfo
+	SparkJobTaskResult                                 metricInfo
+	SparkStageDiskSpilled                              metricInfo
+	SparkStageExecutorCPUTime                          metricInfo
+	SparkStageExecutorRunTime                          metricInfo
+	SparkStageIoRecords                                metricInfo
+	SparkStageIoSize                                   metricInfo
+	SparkStageJvmGcTime                                metricInfo
+	SparkStageMemoryPeak                               metricInfo
+	SparkStageMemorySpilled                            metricInfo
+	SparkStageShuffleBlocksFetched                     metricInfo
+	SparkStageShuffleFetchWaitTime                     metricInfo
+	SparkStageShuffleIoDisk                            metricInfo
+	SparkStageShuffleIoReadSize                        metricInfo
+	SparkStageShuffleIoRecords                         metricInfo
+	SparkStageShuffleIoWriteSize                       metricInfo
+	SparkStageShuffleWriteTime                         metricInfo
+	SparkStageStatus                                   metricInfo
+	SparkStageTaskActive                               metricInfo
+	SparkStageTaskResult                               metricInfo
+	SparkStageTaskResultSize                           metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSparkDriverBlockManagerDiskUsage struct {
@@ -3620,7 +3882,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                   mbc,
@@ -3795,7 +4056,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSparkDriverBlockManagerDiskUsage.emit(ils.Metrics())

@@ -110,6 +110,12 @@ func TestInferServiceAndRegion(t *testing.T) {
 	req5, err := http.NewRequest(http.MethodGet, "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", nil)
 	assert.NoError(t, err)
 
+	req6, err := http.NewRequest(http.MethodGet, "https://logs.us-east-1.amazonaws.com/v1/logs", nil)
+	assert.NoError(t, err)
+
+	req7, err := http.NewRequest(http.MethodGet, "https://xray.us-east-1.amazonaws.com/v1/traces", nil)
+	assert.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		request         *http.Request
@@ -152,6 +158,20 @@ func TestInferServiceAndRegion(t *testing.T) {
 			"service",
 			"region",
 		},
+		{
+			"logs_service_and_region_match_with_no_config",
+			req6,
+			createDefaultConfig().(*Config),
+			"logs",
+			"us-east-1",
+		},
+		{
+			"xray_service_and_region_match_with_no_config",
+			req7,
+			createDefaultConfig().(*Config),
+			"xray",
+			"us-east-1",
+		},
 	}
 
 	// run tests
@@ -165,8 +185,8 @@ func TestInferServiceAndRegion(t *testing.T) {
 			si := rt.(*signingRoundTripper)
 
 			service, region := si.inferServiceAndRegion(testcase.request)
-			assert.EqualValues(t, testcase.expectedService, service)
-			assert.EqualValues(t, testcase.expectedRegion, region)
+			assert.Equal(t, testcase.expectedService, service)
+			assert.Equal(t, testcase.expectedRegion, region)
 		})
 	}
 }

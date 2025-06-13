@@ -6,6 +6,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 )
@@ -18,7 +19,7 @@ type Publisher struct {
 // Open will open the publisher handle using the supplied provider.
 func (p *Publisher) Open(provider string) error {
 	if p.handle != 0 {
-		return fmt.Errorf("publisher handle is already open")
+		return errors.New("publisher handle is already open")
 	}
 
 	utf16, err := syscall.UTF16PtrFromString(provider)

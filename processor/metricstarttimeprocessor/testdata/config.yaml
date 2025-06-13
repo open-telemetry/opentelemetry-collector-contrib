@@ -1,0 +1,13 @@
+metricstarttime:
+
+metricstarttime/subtract_initial_point:
+  strategy: subtract_initial_point
+
+metricstarttime/gc_interval:
+  gc_interval: 1h
+
+metricstarttime/negative_interval:
+  gc_interval: -1h
+
+metricstarttime/invalid_strategy:
+  strategy: bad

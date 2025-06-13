@@ -48,7 +48,9 @@ var (
 		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
 	}
 
-	defaultDatabaseNameAttribute = semconv.AttributeDBName
+	defaultDatabaseNameAttributes = []string{semconv.AttributeDBName}
+
+	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
 
 type metricSeries struct {
@@ -113,8 +115,16 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
-	if pConfig.DatabaseNameAttribute == "" {
-		pConfig.DatabaseNameAttribute = defaultDatabaseNameAttribute
+	if pConfig.DatabaseNameAttribute != "" {
+		pConfig.DatabaseNameAttributes = append(pConfig.DatabaseNameAttributes, pConfig.DatabaseNameAttribute)
+	} else if len(pConfig.DatabaseNameAttributes) == 0 {
+		pConfig.DatabaseNameAttributes = defaultDatabaseNameAttributes
+	}
+
+	if pConfig.MetricsFlushInterval == nil {
+		pConfig.MetricsFlushInterval = &defaultMetricsFlushInterval
+	} else if pConfig.MetricsFlushInterval.Nanoseconds() <= 0 {
+		set.Logger.Warn("MetricsFlushInterval is set to 0, metrics will be flushed on every received batch of traces")
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
@@ -146,7 +156,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	go p.metricFlushLoop(p.config.MetricsFlushInterval)
+	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -207,7 +217,7 @@ func (p *serviceGraphConnector) ConsumeTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	// If metricsFlushInterval is not set, flush metrics immediately.
-	if p.config.MetricsFlushInterval <= 0 {
+	if *p.config.MetricsFlushInterval <= 0 {
 		if err := p.flushMetrics(ctx); err != nil {
 			// Not return error here to avoid impacting traces.
 			p.logger.Error("failed to flush metrics", zap.Error(err))
@@ -265,7 +275,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
-						if dbName, ok := pdatautil.GetAttributeValue(p.config.DatabaseNameAttribute, rAttributes, span.Attributes()); ok {
+						if dbName, ok := getFirstMatchingValue(p.config.DatabaseNameAttributes, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
 							e.ServerLatencySec = spanDuration(span)
@@ -536,7 +546,7 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	if len(p.reqServerDurationSecondsCount) > 0 {
+	if len(p.reqClientDurationSecondsCount) > 0 {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_client")
 		mDuration.SetUnit(secondsUnit)
@@ -547,7 +557,7 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-		for key := range p.reqServerDurationSecondsCount {
+		for key := range p.reqClientDurationSecondsCount {
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
@@ -606,11 +616,13 @@ func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectio
 	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
-		dim, ok := edgeDimensions[dimName]
-		if !ok {
-			continue
+		for _, kind := range []string{clientKind, serverKind} {
+			dim, ok := edgeDimensions[kind+"_"+dimName]
+			if !ok {
+				continue
+			}
+			metricKey.WriteString(metricKeySeparator + kind + "_" + dimName + "_" + dim)
 		}
-		metricKey.WriteString(metricKeySeparator + dim)
 	}
 
 	return metricKey.String()

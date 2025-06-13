@@ -36,7 +36,7 @@ as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/perfo
 #### Official ClickHouse Plugin for Grafana
 
 The official [ClickHouse Datasource for Grafana](https://grafana.com/grafana/plugins/grafana-clickhouse-datasource/) contains features that integrate directly with this exporter.
-You can view associated [logs](https://clickhouse.com/docs/en/integrations/grafana/query-builder#logs) and [traces](https://clickhouse.com/docs/en/integrations/grafana/query-builder#traces), as well as visualize other queries such as tables and time series graphs. Learn how to configure the OpenTelemetry integration [here](https://clickhouse.com/docs/en/integrations/grafana/config#opentelemetry).
+You can view associated [logs](https://clickhouse.com/docs/en/integrations/grafana/query-builder#logs) and [traces](https://clickhouse.com/docs/en/integrations/grafana/query-builder#traces), as well as visualize other queries such as tables and time series graphs. Learn [how to configure the OpenTelemetry integration](https://clickhouse.com/docs/en/integrations/grafana/config#opentelemetry).
 
 #### Altinity's ClickHouse Plugin for Grafana
 
@@ -289,6 +289,11 @@ Connection options:
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
+
+Additional DSN features:
+
+The underlying `clickhouse-go` module offers additional configuration. These can be set in the exporter's `endpoint` or `connection_params` config values.
+- `client_info_product` Must be in `productName/version` format with comma separated entries. By default the exporter will append its binary build information. You can use this information to track the origin of `INSERT` statements in the `system.query_log` table.
 
 ClickHouse tables:
 

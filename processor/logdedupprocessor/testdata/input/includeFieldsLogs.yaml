@@ -1,0 +1,55 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: one
+          value:
+            intValue: "1"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: unique_id
+                value:
+                  intValue: 1
+              - key: dedup_key
+                value:
+                  stringValue: abc
+              - key: dedup_key1
+                value:
+                  stringValue: def
+            body:
+              kvlistValue:
+                values:
+                  - key: dedup_key
+                    value:
+                      stringValue: abc
+                  - key: dedup_key1
+                    value:
+                      stringValue: def
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069266547395000"
+            traceId: ""
+          - attributes:
+              - key: unique_id
+                value:
+                  intValue: 2
+              - key: dedup_key
+                value:
+                  stringValue: abc
+              - key: dedup_key1
+                value:
+                  stringValue: def
+            body:
+              kvlistValue:
+                values:
+                  - key: dedup_key
+                    value:
+                      stringValue: abc
+                  - key: dedup_key1
+                    value:
+                      stringValue: def
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069206547395000"
+            traceId: ""
+        scope: {}

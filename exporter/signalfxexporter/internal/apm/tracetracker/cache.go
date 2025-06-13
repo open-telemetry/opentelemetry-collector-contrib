@@ -52,10 +52,10 @@ func (t *TimeoutCache) IsFull() bool {
 	return false
 }
 
-func (t *TimeoutCache) SetMaxSize(max int64, now time.Time) {
+func (t *TimeoutCache) SetMaxSize(maxSize int64, now time.Time) {
 	t.Lock()
 	defer t.Unlock()
-	t.maxSize = max
+	t.maxSize = maxSize
 	t.maxSizeExpiryTS = now.Add(time.Hour * 1)
 }
 
@@ -110,11 +110,7 @@ func (t *TimeoutCache) GetPurgeable(now time.Time) []*CacheKey {
 
 	var candidates []*CacheKey
 	elm := t.keysByTime.Back()
-	for {
-		if elm == nil {
-			break
-		}
-
+	for elm != nil {
 		e := elm.Value.(*cacheElem)
 		// If this one isn't timed out, nothing else in the list is either.
 		if now.Sub(e.LastSeen) < t.timeout {

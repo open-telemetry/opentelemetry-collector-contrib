@@ -24,11 +24,11 @@ grant select on movie to otel;
 create table simple_logs
 (
     id integer primary key,
-    insert_time timestamp,
+    insert_time timestamp default now(),
     body text,
     attribute text
 );
-grant select, insert on simple_logs to otel;
+grant select, insert, delete on simple_logs to otel;
 
 insert into simple_logs (id, insert_time, body, attribute) values
 (1, '2022-06-03 21:59:26+00', '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6197 4 "-" "-" 445af8e6c428303f -', 'TLSv1.2'),

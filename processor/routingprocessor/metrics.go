@@ -5,7 +5,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -65,7 +65,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
 	ge, ok := host.(getExporters)
 	if !ok {
-		return fmt.Errorf("unable to get exporters")
+		return errors.New("unable to get exporters")
 	}
 	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalMetrics])
 	if err != nil {

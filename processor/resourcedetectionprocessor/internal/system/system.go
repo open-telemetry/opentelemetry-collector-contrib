@@ -88,6 +88,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
+	osVersion, err := d.provider.OSVersion()
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS version: %w", err)
+	}
+
 	hostArch, err := d.provider.HostArch()
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
@@ -136,6 +141,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		if err == nil {
 			d.rb.SetHostName(hostname)
 			d.rb.SetOsType(osType)
+			d.rb.SetOsVersion(osVersion)
 			if d.cfg.ResourceAttributes.HostID.Enabled {
 				if hostID, hostIDErr := d.provider.HostID(ctx); hostIDErr == nil {
 					d.rb.SetHostID(hostID)

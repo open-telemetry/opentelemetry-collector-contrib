@@ -3,19 +3,23 @@
 package solacereceiver
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadatatest"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 )
 
@@ -303,26 +307,14 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 			if tt.want != nil {
 				assert.Equal(t, 1, actual.Len())
 				compareSpans(t, *tt.want, actual.At(0))
-				tel.assertMetrics(t, []metricdata.Metrics{})
 			} else {
 				assert.Equal(t, 0, actual.Len())
-				tel.assertMetrics(t, []metricdata.Metrics{
+				metadatatest.AssertEqualSolacereceiverDroppedEgressSpans(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_solacereceiver_dropped_egress_spans",
-						Description: "Number of dropped egress spans",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value:      1,
-									Attributes: u.metricAttrs,
-								},
-							},
-						},
+						Value:      1,
+						Attributes: u.metricAttrs,
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
 		})
 	}
@@ -432,25 +424,14 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			actual := ptrace.NewSpan()
 			u.mapSendSpan(tt.spanData, actual)
 			compareSpans(t, tt.want, actual)
-			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
-				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-					Description: "Number of recoverable message unmarshalling errors",
-					Unit:        "1",
-					Data: metricdata.Sum[int64]{
-						Temporality: metricdata.CumulativeTemporality,
-						IsMonotonic: true,
-						DataPoints: []metricdata.DataPoint[int64]{
-							{
-								Value:      tt.expectedUnmarshallingErrors,
-								Attributes: u.metricAttrs,
-							},
-						},
+				metadatatest.AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t, tel, []metricdata.DataPoint[int64]{
+					{
+						Value:      tt.expectedUnmarshallingErrors,
+						Attributes: u.metricAttrs,
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
-			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 	// test the various outcomes
@@ -746,25 +727,14 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			actual := ptrace.NewSpan()
 			u.mapDeleteSpan(tt.spanData, actual)
 			compareSpans(t, tt.want, actual)
-			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
-				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-					Description: "Number of recoverable message unmarshalling errors",
-					Unit:        "1",
-					Data: metricdata.Sum[int64]{
-						Temporality: metricdata.CumulativeTemporality,
-						IsMonotonic: true,
-						DataPoints: []metricdata.DataPoint[int64]{
-							{
-								Value:      tt.expectedUnmarshallingErrors,
-								Attributes: u.metricAttrs,
-							},
-						},
+				metadatatest.AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t, tel, []metricdata.DataPoint[int64]{
+					{
+						Value:      tt.expectedUnmarshallingErrors,
+						Attributes: u.metricAttrs,
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
-			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 }
@@ -928,33 +898,23 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 			u.mapTransactionEvent(tt.spanData, actual.Events().AppendEmpty())
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, expected, actual)
-			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
-				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-					Description: "Number of recoverable message unmarshalling errors",
-					Unit:        "1",
-					Data: metricdata.Sum[int64]{
-						Temporality: metricdata.CumulativeTemporality,
-						IsMonotonic: true,
-						DataPoints: []metricdata.DataPoint[int64]{
-							{
-								Value:      tt.expectedUnmarshallingErrors,
-								Attributes: u.metricAttrs,
-							},
-						},
+				metadatatest.AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t, tel, []metricdata.DataPoint[int64]{
+					{
+						Value:      tt.expectedUnmarshallingErrors,
+						Attributes: u.metricAttrs,
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
-			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 }
 
-func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, componentTestTelemetry) {
-	tt := setupTestTelemetry()
-	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
+func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, *componenttest.Telemetry) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
-	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", ""))
 	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt
 }

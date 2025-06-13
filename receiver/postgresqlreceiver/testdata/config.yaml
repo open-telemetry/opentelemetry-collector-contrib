@@ -2,6 +2,8 @@ postgresql/minimal:
   endpoint: localhost:5432
   username: otel
   password: ${env:POSTGRESQL_PASSWORD}
+  query_sample_collection:
+    enabled: true
 postgresql/pool:
   endpoint: localhost:5432
   transport: tcp

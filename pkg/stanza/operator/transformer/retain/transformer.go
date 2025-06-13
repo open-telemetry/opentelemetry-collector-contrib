@@ -19,6 +19,10 @@ type Transformer struct {
 	AllResourceFields  bool
 }
 
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return t.ProcessBatchWith(ctx, entries, t.Process)
+}
+
 // Process will process an entry with a retain transformation.
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return t.ProcessWith(ctx, entry, t.Transform)

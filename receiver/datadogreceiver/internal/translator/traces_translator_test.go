@@ -38,6 +38,8 @@ var data = [2]any{
 		11: "service.name",
 		12: "1.0.1",
 		13: "version",
+		14: "_dd.span_links",
+		15: `[{"attributes":{"attr1":"val1","attr2":"val2"},"span_id":"70666bf9dee4a3fe","trace_id":"0eacdb57bebc935038bf5b4802ccabd5","tracestate":"dd=k:v"}]`,
 	},
 	1: [][][12]any{
 		{
@@ -57,6 +59,7 @@ var data = [2]any{
 					2:  3,
 					11: 6,
 					13: 12,
+					14: 15,
 				},
 				map[any]float64{
 					5: 1.2,
@@ -107,6 +110,13 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	numericAttributeValue, _ := span.Attributes().Get("numeric_attribute")
 	numericAttributeFloat, _ := strconv.ParseFloat(numericAttributeValue.AsString(), 64)
 	assert.Equal(t, 1.2, numericAttributeFloat)
+
+	spanLink := span.Links().At(0)
+	assert.Equal(t, "70666bf9dee4a3fe", spanLink.SpanID().String())
+	assert.Equal(t, "0eacdb57bebc935038bf5b4802ccabd5", spanLink.TraceID().String())
+	assert.Equal(t, "dd=k:v", spanLink.TraceState().AsRaw())
+	spanLinkAttrVal, _ := spanLink.Attributes().Get("attr1")
+	assert.Equal(t, "val1", spanLinkAttrVal.Str())
 }
 
 func TestTracePayloadV07Unmarshalling(t *testing.T) {
@@ -126,7 +136,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	translated := translatedPayloads[0]
 	span := translated.GetChunks()[0].GetSpans()[0]
 	assert.NotNil(t, span)
-	assert.Len(t, span.GetMeta(), 5, "missing attributes")
+	assert.Len(t, span.GetMeta(), 6, "missing attributes")
 	value, exists := span.GetMeta()["service.name"]
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value, "service.name attribute value incorrect")
@@ -166,7 +176,7 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 		span := translated.Chunks[0].Spans[0]
 
 		assert.NotNil(t, span)
-		assert.Len(t, span.Meta, 5, "missing attributes")
+		assert.Len(t, span.Meta, 6, "missing attributes")
 		assert.Equal(t, "my-service", span.Meta["service.name"])
 		assert.Equal(t, "my-name", span.Name)
 		assert.Equal(t, "my-resource", span.Resource)

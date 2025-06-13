@@ -19,9 +19,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			Traces: TracesConfig{
+			Traces: datadogconfig.TracesConnectorConfig{
 				TracesConfig: datadogconfig.TracesConfig{
-					IgnoreResources: []string{},
+					IgnoreResources:        []string{},
+					PeerServiceAggregation: true,
+					PeerTagsAggregation:    true,
+					ComputeStatsBySpanKind: true,
 				},
 				TraceBuffer:    1000,
 				BucketInterval: 10 * time.Second,

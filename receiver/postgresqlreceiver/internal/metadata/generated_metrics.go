@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeBgBufferSource specifies the a value bg_buffer_source attribute.
+// AttributeBgBufferSource specifies the value bg_buffer_source attribute.
 type AttributeBgBufferSource int
 
 const (
@@ -46,7 +46,7 @@ var MapAttributeBgBufferSource = map[string]AttributeBgBufferSource{
 	"bgwriter":      AttributeBgBufferSourceBgwriter,
 }
 
-// AttributeBgCheckpointType specifies the a value bg_checkpoint_type attribute.
+// AttributeBgCheckpointType specifies the value bg_checkpoint_type attribute.
 type AttributeBgCheckpointType int
 
 const (
@@ -72,7 +72,7 @@ var MapAttributeBgCheckpointType = map[string]AttributeBgCheckpointType{
 	"scheduled": AttributeBgCheckpointTypeScheduled,
 }
 
-// AttributeBgDurationType specifies the a value bg_duration_type attribute.
+// AttributeBgDurationType specifies the value bg_duration_type attribute.
 type AttributeBgDurationType int
 
 const (
@@ -98,7 +98,7 @@ var MapAttributeBgDurationType = map[string]AttributeBgDurationType{
 	"write": AttributeBgDurationTypeWrite,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -132,7 +132,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"hot_upd": AttributeOperationHotUpd,
 }
 
-// AttributeSource specifies the a value source attribute.
+// AttributeSource specifies the value source attribute.
 type AttributeSource int
 
 const (
@@ -182,7 +182,7 @@ var MapAttributeSource = map[string]AttributeSource{
 	"tidx_hit":   AttributeSourceTidxHit,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -208,7 +208,7 @@ var MapAttributeState = map[string]AttributeState{
 	"live": AttributeStateLive,
 }
 
-// AttributeWalOperationLag specifies the a value wal_operation_lag attribute.
+// AttributeWalOperationLag specifies the value wal_operation_lag attribute.
 type AttributeWalOperationLag int
 
 const (
@@ -236,6 +236,152 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 	"flush":  AttributeWalOperationLagFlush,
 	"replay": AttributeWalOperationLagReplay,
 	"write":  AttributeWalOperationLagWrite,
+}
+
+var MetricsInfo = metricsInfo{
+	PostgresqlBackends: metricInfo{
+		Name: "postgresql.backends",
+	},
+	PostgresqlBgwriterBuffersAllocated: metricInfo{
+		Name: "postgresql.bgwriter.buffers.allocated",
+	},
+	PostgresqlBgwriterBuffersWrites: metricInfo{
+		Name: "postgresql.bgwriter.buffers.writes",
+	},
+	PostgresqlBgwriterCheckpointCount: metricInfo{
+		Name: "postgresql.bgwriter.checkpoint.count",
+	},
+	PostgresqlBgwriterDuration: metricInfo{
+		Name: "postgresql.bgwriter.duration",
+	},
+	PostgresqlBgwriterMaxwritten: metricInfo{
+		Name: "postgresql.bgwriter.maxwritten",
+	},
+	PostgresqlBlksHit: metricInfo{
+		Name: "postgresql.blks_hit",
+	},
+	PostgresqlBlksRead: metricInfo{
+		Name: "postgresql.blks_read",
+	},
+	PostgresqlBlocksRead: metricInfo{
+		Name: "postgresql.blocks_read",
+	},
+	PostgresqlCommits: metricInfo{
+		Name: "postgresql.commits",
+	},
+	PostgresqlConnectionMax: metricInfo{
+		Name: "postgresql.connection.max",
+	},
+	PostgresqlDatabaseCount: metricInfo{
+		Name: "postgresql.database.count",
+	},
+	PostgresqlDatabaseLocks: metricInfo{
+		Name: "postgresql.database.locks",
+	},
+	PostgresqlDbSize: metricInfo{
+		Name: "postgresql.db_size",
+	},
+	PostgresqlDeadlocks: metricInfo{
+		Name: "postgresql.deadlocks",
+	},
+	PostgresqlIndexScans: metricInfo{
+		Name: "postgresql.index.scans",
+	},
+	PostgresqlIndexSize: metricInfo{
+		Name: "postgresql.index.size",
+	},
+	PostgresqlOperations: metricInfo{
+		Name: "postgresql.operations",
+	},
+	PostgresqlReplicationDataDelay: metricInfo{
+		Name: "postgresql.replication.data_delay",
+	},
+	PostgresqlRollbacks: metricInfo{
+		Name: "postgresql.rollbacks",
+	},
+	PostgresqlRows: metricInfo{
+		Name: "postgresql.rows",
+	},
+	PostgresqlSequentialScans: metricInfo{
+		Name: "postgresql.sequential_scans",
+	},
+	PostgresqlTableCount: metricInfo{
+		Name: "postgresql.table.count",
+	},
+	PostgresqlTableSize: metricInfo{
+		Name: "postgresql.table.size",
+	},
+	PostgresqlTableVacuumCount: metricInfo{
+		Name: "postgresql.table.vacuum.count",
+	},
+	PostgresqlTempFiles: metricInfo{
+		Name: "postgresql.temp_files",
+	},
+	PostgresqlTupDeleted: metricInfo{
+		Name: "postgresql.tup_deleted",
+	},
+	PostgresqlTupFetched: metricInfo{
+		Name: "postgresql.tup_fetched",
+	},
+	PostgresqlTupInserted: metricInfo{
+		Name: "postgresql.tup_inserted",
+	},
+	PostgresqlTupReturned: metricInfo{
+		Name: "postgresql.tup_returned",
+	},
+	PostgresqlTupUpdated: metricInfo{
+		Name: "postgresql.tup_updated",
+	},
+	PostgresqlWalAge: metricInfo{
+		Name: "postgresql.wal.age",
+	},
+	PostgresqlWalDelay: metricInfo{
+		Name: "postgresql.wal.delay",
+	},
+	PostgresqlWalLag: metricInfo{
+		Name: "postgresql.wal.lag",
+	},
+}
+
+type metricsInfo struct {
+	PostgresqlBackends                 metricInfo
+	PostgresqlBgwriterBuffersAllocated metricInfo
+	PostgresqlBgwriterBuffersWrites    metricInfo
+	PostgresqlBgwriterCheckpointCount  metricInfo
+	PostgresqlBgwriterDuration         metricInfo
+	PostgresqlBgwriterMaxwritten       metricInfo
+	PostgresqlBlksHit                  metricInfo
+	PostgresqlBlksRead                 metricInfo
+	PostgresqlBlocksRead               metricInfo
+	PostgresqlCommits                  metricInfo
+	PostgresqlConnectionMax            metricInfo
+	PostgresqlDatabaseCount            metricInfo
+	PostgresqlDatabaseLocks            metricInfo
+	PostgresqlDbSize                   metricInfo
+	PostgresqlDeadlocks                metricInfo
+	PostgresqlIndexScans               metricInfo
+	PostgresqlIndexSize                metricInfo
+	PostgresqlOperations               metricInfo
+	PostgresqlReplicationDataDelay     metricInfo
+	PostgresqlRollbacks                metricInfo
+	PostgresqlRows                     metricInfo
+	PostgresqlSequentialScans          metricInfo
+	PostgresqlTableCount               metricInfo
+	PostgresqlTableSize                metricInfo
+	PostgresqlTableVacuumCount         metricInfo
+	PostgresqlTempFiles                metricInfo
+	PostgresqlTupDeleted               metricInfo
+	PostgresqlTupFetched               metricInfo
+	PostgresqlTupInserted              metricInfo
+	PostgresqlTupReturned              metricInfo
+	PostgresqlTupUpdated               metricInfo
+	PostgresqlWalAge                   metricInfo
+	PostgresqlWalDelay                 metricInfo
+	PostgresqlWalLag                   metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricPostgresqlBackends struct {
@@ -2045,7 +2191,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                   mbc,
@@ -2179,7 +2324,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricPostgresqlBackends.emit(ils.Metrics())

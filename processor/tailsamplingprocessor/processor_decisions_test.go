@@ -6,26 +6,23 @@ package tailsamplingprocessor
 import (
 	"context"
 	"testing"
-	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -34,7 +31,15 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -51,26 +56,20 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount)
 
 	// The final decision SHOULD be Sampled.
-	require.EqualValues(t, 1, nextConsumer.SpanCount())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 1, nextConsumer.SpanCount())
 }
 
 func TestSamplingPolicyInvertSampled(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -79,7 +78,15 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -96,26 +103,20 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount)
 
 	// The final decision SHOULD be Sampled.
-	require.EqualValues(t, 1, nextConsumer.SpanCount())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 1, nextConsumer.SpanCount())
 }
 
 func TestSamplingMultiplePolicies(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -126,7 +127,15 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -145,28 +154,75 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
-	require.EqualValues(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe2.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
-	require.EqualValues(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe2.EvaluationCount)
 
 	// The final decision SHOULD be Sampled.
-	require.EqualValues(t, 1, nextConsumer.SpanCount())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 1, nextConsumer.SpanCount())
 }
 
-func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
+func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	s := setupTestTelemetry()
+	ct := s.newSettings()
+	idb := newSyncIDBatcher()
+
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
+	}
+
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
 	}
+
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// First policy takes precedence
+	mpe1.NextDecision = sampling.Sampled
+	mpe2.NextDecision = sampling.Sampled
+
+	// Generate and deliver first span
+	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	// The first tick won't do anything
+	tsp.policyTicker.OnTick()
+	// This will cause policy evaluations on the first span
+	tsp.policyTicker.OnTick()
+
+	// The final decision SHOULD be Sampled.
+	require.Equal(t, 1, nextConsumer.SpanCount())
+
+	// First span should have an attribute that records the policy that sampled it
+	policy, ok := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.policy")
+	if !ok {
+		assert.FailNow(t, "Did not find expected attribute")
+	}
+	require.Equal(t, "mock-policy-1", policy.AsString())
+}
+
+func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -175,7 +231,15 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -193,26 +257,63 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount)
 
 	// The final decision SHOULD be NotSampled.
-	require.EqualValues(t, 0, nextConsumer.SpanCount())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 0, nextConsumer.SpanCount())
 }
 
-func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
+func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	s := setupTestTelemetry()
+	ct := s.newSettings()
+	idb := newSyncIDBatcher()
+
+	mpe1 := &mockPolicyEvaluator{}
+
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
 	}
+
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// InvertNotSampled takes precedence
+	mpe1.NextDecision = sampling.NotSampled
+
+	// Generate and deliver first span
+	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	// The first tick won't do anything
+	tsp.policyTicker.OnTick()
+	// This will cause policy evaluations on the first span
+	tsp.policyTicker.OnTick()
+
+	// The final decision SHOULD be NotSampled.
+	require.Equal(t, 0, nextConsumer.SpanCount())
+}
+
+func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -223,7 +324,15 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -242,28 +351,24 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
-	require.EqualValues(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe2.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
-	require.EqualValues(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe2.EvaluationCount)
 
 	// The final decision SHOULD be NotSampled.
-	require.EqualValues(t, 0, nextConsumer.SpanCount())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 0, nextConsumer.SpanCount())
 }
 
-func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
+func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
+	s := setupTestTelemetry()
+	ct := s.newSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -274,7 +379,59 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+	}
+
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// InvertNotSampled takes precedence
+	mpe1.NextDecision = sampling.InvertNotSampled
+	mpe2.NextDecision = sampling.Sampled
+
+	// Generate and deliver first span
+	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	// The first tick won't do anything
+	tsp.policyTicker.OnTick()
+	// This will cause policy evaluations on the first span
+	tsp.policyTicker.OnTick()
+
+	// The final decision SHOULD be NotSampled.
+	require.Equal(t, 0, nextConsumer.SpanCount())
+}
+
+func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	idb := newSyncIDBatcher()
+
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
+	}
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -305,35 +462,29 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
-	require.EqualValues(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe2.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
-	require.EqualValues(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe2.EvaluationCount)
 
 	// The final decision SHOULD be NotSampled.
-	require.EqualValues(t, 0, nextConsumer.SpanCount())
+	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
 	require.NoError(t, p.ConsumeTraces(context.Background(), spanIndexToTraces(2)))
-	require.EqualValues(t, 1, mpe1.EvaluationCount)
-	require.EqualValues(t, 1, mpe2.EvaluationCount)
-	require.EqualValues(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 }
 
 func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait * 10,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
-	tel := setupTestTelemetry()
 	idb := newSyncIDBatcher()
 
 	mpe := &mockPolicyEvaluator{}
@@ -344,7 +495,17 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	// Use this instead of the default no-op cache
 	c, err := cache.NewLRUDecisionCache[bool](200)
 	require.NoError(t, err)
-	p, err := newTracesProcessor(context.Background(), tel.NewSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withSampledDecisionCache(c))
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait * 10,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+			WithSampledDecisionCache(c),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -374,19 +535,18 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, mpe.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Policy should have been evaluated once
-	require.EqualValues(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount)
 
 	// The final decision SHOULD be Sampled.
-	require.EqualValues(t, 1, nextConsumer.SpanCount())
+	require.Equal(t, 1, nextConsumer.SpanCount())
 
-	// Drop the trace to force cache to make decision
-	tsp.dropTrace(traceID, time.Now())
+	// The trace should have been dropped after its id was added to the decision cache
 	_, ok := tsp.idToTrace.Load(traceID)
 	require.False(t, ok)
 
@@ -396,19 +556,12 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
 	require.NoError(t, p.ConsumeTraces(context.Background(), spanIndexToTraces(2)))
-	require.EqualValues(t, 1, mpe.EvaluationCount)
-	require.EqualValues(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
 }
 
 func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait * 10,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
-	s := setupTestTelemetry()
-	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe := &mockPolicyEvaluator{}
@@ -419,7 +572,17 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	// Use this instead of the default no-op cache
 	c, err := cache.NewLRUDecisionCache[bool](200)
 	require.NoError(t, err)
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withNonSampledDecisionCache(c))
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait * 10,
+		NumTraces:    defaultNumTraces,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+			WithNonSampledDecisionCache(c),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -449,19 +612,18 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, mpe.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Policy should have been evaluated once
-	require.EqualValues(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount)
 
 	// The final decision SHOULD be NOT Sampled.
-	require.EqualValues(t, 0, nextConsumer.SpanCount())
+	require.Equal(t, 0, nextConsumer.SpanCount())
 
-	// Drop the trace to force cache to make decision
-	tsp.dropTrace(traceID, time.Now())
+	// The trace should have been dropped after its id was added to the decision cache
 	_, ok := tsp.idToTrace.Load(traceID)
 	require.False(t, ok)
 
@@ -471,6 +633,6 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
 	require.NoError(t, p.ConsumeTraces(context.Background(), spanIndexToTraces(2)))
-	require.EqualValues(t, 1, mpe.EvaluationCount)
-	require.EqualValues(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
+	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 }

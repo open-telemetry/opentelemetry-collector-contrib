@@ -64,7 +64,7 @@ func (r mockSysfsReader) GetMACAddressFromDeviceName(deviceName efaDeviceName) (
 	case "efa1":
 		return "00:00:00:00:00:02", nil
 	}
-	return "", fmt.Errorf("unknown device")
+	return "", errors.New("unknown device")
 }
 
 var mockCounterValues = map[string]uint64{
@@ -146,7 +146,6 @@ var efa0Metrics = []expectation{
 			ci.MetricType: ci.TypeNodeEFA,
 			ci.EfaDevice:  "efa0",
 			ci.EniID:      "eni-001",
-			ci.Timestamp:  "to-be-replaced",
 			"decorated":   "true",
 		},
 	},
@@ -166,7 +165,6 @@ var efa0Metrics = []expectation{
 			ci.K8sNamespace:     "namespace0",
 			ci.K8sPodNameKey:    "pod0",
 			ci.ContainerNamekey: "container0",
-			ci.Timestamp:        "to-be-replaced",
 			"decorated":         "true",
 		},
 	},
@@ -186,7 +184,6 @@ var efa0Metrics = []expectation{
 			ci.K8sNamespace:     "namespace0",
 			ci.K8sPodNameKey:    "pod0",
 			ci.ContainerNamekey: "container0",
-			ci.Timestamp:        "to-be-replaced",
 			"decorated":         "true",
 		},
 	},
@@ -205,7 +202,6 @@ var efa1NodeMetric = expectation{
 		ci.MetricType: ci.TypeNodeEFA,
 		ci.EfaDevice:  "efa1",
 		ci.EniID:      "eni-002",
-		ci.Timestamp:  "to-be-replaced",
 		"decorated":   "true",
 	},
 }
@@ -227,7 +223,6 @@ var efa1PodContainerMetrics = []expectation{
 			ci.K8sNamespace:     "namespace1",
 			ci.K8sPodNameKey:    "pod1",
 			ci.ContainerNamekey: "container1",
-			ci.Timestamp:        "to-be-replaced",
 			"decorated":         "true",
 		},
 	},
@@ -247,7 +242,6 @@ var efa1PodContainerMetrics = []expectation{
 			ci.K8sNamespace:     "namespace1",
 			ci.K8sPodNameKey:    "pod1",
 			ci.ContainerNamekey: "container1",
-			ci.Timestamp:        "to-be-replaced",
 			"decorated":         "true",
 		},
 	},
@@ -318,7 +312,7 @@ func TestGetMetricsMissingDeviceFromPodResources(t *testing.T) {
 }
 
 func checkExpectations(t *testing.T, expected []expectation, actual []pmetric.Metrics) {
-	assert.Equal(t, len(expected), len(actual))
+	assert.Len(t, actual, len(expected))
 	if len(expected) == 0 {
 		return
 	}

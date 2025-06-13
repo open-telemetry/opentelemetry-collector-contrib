@@ -65,7 +65,7 @@ type Client interface {
 }
 
 func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
-	switch cfg.APIConfig.AuthType {
+	switch cfg.AuthType {
 	case k8sconfig.AuthTypeTLS:
 		return &tlsClientProvider{
 			endpoint: endpoint,
@@ -80,6 +80,7 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 		return &saClientProvider{
 			endpoint:           endpoint,
 			caCertPath:         caCertPath,
+			cfg:                cfg,
 			tokenPath:          svcAcctTokenPath,
 			insecureSkipVerify: cfg.InsecureSkipVerify,
 			logger:             logger,
@@ -96,7 +97,7 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			logger:   logger,
 		}, nil
 	default:
-		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
+		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.AuthType)
 	}
 }
 
@@ -117,9 +118,9 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 	}
 	if p.cfg.InsecureSkipVerify {
 		// Override InsecureSkipVerify from kubeconfig
-		authConf.TLSClientConfig.CAFile = ""
-		authConf.TLSClientConfig.CAData = nil
-		authConf.TLSClientConfig.Insecure = true
+		authConf.CAFile = ""
+		authConf.CAData = nil
+		authConf.Insecure = true
 	}
 	if p.cfg.CAFile != "" {
 		p.logger.Debug("Kubeconfig Client Provider will use custom CA cert", zap.String("CAfile Path", p.cfg.CAFile))
@@ -130,7 +131,6 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 	}
 
 	joinPath, err := url.JoinPath(authConf.Host, "/api/v1/nodes/", p.endpoint, "/proxy/")
-
 	if err != nil {
 		return nil, err
 	}
@@ -195,13 +195,18 @@ func (p *tlsClientProvider) BuildClient() (Client, error) {
 type saClientProvider struct {
 	endpoint           string
 	caCertPath         string
+	cfg                *ClientConfig
 	tokenPath          string
 	insecureSkipVerify bool
 	logger             *zap.Logger
 }
 
 func (p *saClientProvider) BuildClient() (Client, error) {
-	rootCAs, err := systemCertPoolPlusPath(p.caCertPath)
+	caCertPath := p.caCertPath
+	if p.cfg.CAFile != "" {
+		caCertPath = p.cfg.CAFile
+	}
+	rootCAs, err := systemCertPoolPlusPath(caCertPath)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +217,7 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
-		InsecureSkipVerify: p.insecureSkipVerify,
+		InsecureSkipVerify: p.cfg.InsecureSkipVerify,
 	}
 	endpoint, err := buildEndpoint(p.endpoint, true, p.logger)
 	if err != nil {

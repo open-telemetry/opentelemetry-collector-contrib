@@ -38,14 +38,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    &filterconfig.MatchProperties{},
-			errorString: filterconfig.ErrMissingRequiredField.Error(),
+			errorString: filterconfig.ErrMissingRequiredSpanField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
 			property: &filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: filterconfig.ErrMissingRequiredField.Error(),
+			errorString: filterconfig.ErrMissingRequiredSpanField.Error(),
 		},
 		{
 			name: "log_properties",

@@ -4,6 +4,7 @@
 package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -20,7 +21,7 @@ import (
 type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 
-	QueueSettings               exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig   `mapstructure:"retry_on_failure"`
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
@@ -61,12 +62,12 @@ type LogsConfig struct {
 
 func (c *Config) Validate() error {
 	if c.Endpoint == "" {
-		return fmt.Errorf("endpoint should not be empty")
+		return errors.New("endpoint should not be empty")
 	}
 
 	u, err := url.Parse(c.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("endpoint must be valid")
+		return errors.New("endpoint must be valid")
 	}
 	return nil
 }

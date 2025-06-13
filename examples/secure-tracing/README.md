@@ -106,7 +106,7 @@ secure-tracing-otel-collector-1  |     Name           : okey-dokey
 secure-tracing-otel-collector-1  |     Kind           : Server
 ...
 secure-tracing-otel-collector-1  | Attributes:
-secure-tracing-otel-collector-1  |      -> net.peer.ip: Str(1.2.3.4)
+secure-tracing-otel-collector-1  |      -> net.sock.peer.addr: Str(1.2.3.4)
 secure-tracing-otel-collector-1  |      -> peer.service: Str(telemetrygen-client)
 ...
 

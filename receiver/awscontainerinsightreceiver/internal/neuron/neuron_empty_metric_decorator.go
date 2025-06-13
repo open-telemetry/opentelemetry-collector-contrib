@@ -112,7 +112,7 @@ func populateNonCoreMetrics(metrics pmetric.MetricSlice, metricName string, attr
 func populateCoreMetrics(metrics pmetric.MetricSlice, metricName string, hardwareInfo pmetric.Metric) {
 	neuronCoresPerDevice, foundCoresPerDevice := getNeuronCoresPerDevice(hardwareInfo)
 	neuronDeviceCount, foundDeviceCount := getNeuronDeviceCount(hardwareInfo)
-	if !(foundCoresPerDevice && foundDeviceCount) {
+	if !foundCoresPerDevice || !foundDeviceCount {
 		return
 	}
 

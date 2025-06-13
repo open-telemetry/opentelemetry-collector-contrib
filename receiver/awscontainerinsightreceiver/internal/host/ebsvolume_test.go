@@ -170,7 +170,7 @@ func TestEBSVolume(t *testing.T) {
 	<-mockVolumeClient.success
 	assert.Equal(t, "aws://us-west-2/vol-0303a1cc896c42d28", e.getEBSVolumeID("/dev/xvdc"))
 	assert.Equal(t, "aws://us-west-2/vol-0c241693efb58734a", e.getEBSVolumeID("/dev/nvme0n2"))
-	assert.Equal(t, "", e.getEBSVolumeID("/dev/invalid"))
+	assert.Empty(t, e.getEBSVolumeID("/dev/invalid"))
 
 	ebsIDs := e.extractEbsIDsUsedByKubernetes()
 	assert.Len(t, ebsIDs, 1)

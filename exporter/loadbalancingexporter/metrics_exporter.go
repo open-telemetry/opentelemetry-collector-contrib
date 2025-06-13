@@ -18,6 +18,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
@@ -30,6 +31,7 @@ type metricExporterImp struct {
 	loadBalancer *loadBalancer
 	routingKey   routingKey
 
+	logger     *zap.Logger
 	stopped    bool
 	shutdownWg sync.WaitGroup
 	telemetry  *metadata.TelemetryBuilder
@@ -43,7 +45,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(params, endpoint)
+		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
 		return exporterFactory.CreateMetrics(ctx, oParams, &oCfg)
 	}
@@ -57,6 +59,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		loadBalancer: lb,
 		routingKey:   svcRouting,
 		telemetry:    telemetry,
+		logger:       params.Logger,
 	}
 
 	switch cfg.(*Config).RoutingKey {
@@ -142,6 +145,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
 		} else {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+			e.logger.Debug("failed to export metrics", zap.Error(err))
 		}
 	}
 

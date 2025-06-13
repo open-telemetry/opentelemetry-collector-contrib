@@ -19,7 +19,7 @@ AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specif
 and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 
-CloudWatch Container Insights has been supported by [ECS Agent](https://github.com/aws/amazon-ecs-agent) and [CloudWatch Agent](https://github.com/aws/amazon-cloudwatch-agent) to collect infrastructure metrics for many resources such as CPU, memory, disk, and network. To migrate existing customers to use OpenTelemetry, AWS Container Insights Receiver (together with CloudWatch EMF Exporter) aims to support the same CloudWatch Container Insights experience for the following platforms:  
+CloudWatch Container Insights has been supported by [ECS Agent](https://github.com/aws/amazon-ecs-agent) and [CloudWatch Agent](https://github.com/aws/amazon-cloudwatch-agent) to collect infrastructure metrics for many resources such as such as CPU, memory, disk, and network. To migrate existing customers to use OpenTelemetry, AWS Container Insights Receiver (together with CloudWatch EMF Exporter) aims to support the same CloudWatch Container Insights experience for the following platforms:  
   * Amazon ECS 
   * Amazon EKS
   * Kubernetes platforms on Amazon EC2
@@ -57,7 +57,7 @@ Whether to add the associated service name as attribute. The default is true
 
 **prefer_full_pod_name (optional)**
 
-The "PodName" attribute is set based on the name of the relevant controllers like Daemonset, Job, ReplicaSet, ReplicationController, ... If it can not be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name. The default value is false.
+The "PodName" attribute is set based on the name of the relevant controllers like Daemonset, Job, ReplicaSet, ReplicationController, ... If it cannot be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name. The default value is false.
 
 **add_full_pod_name_metric_label (optional)**
 
@@ -359,7 +359,6 @@ kubectl apply -f config.yaml
 | ClusterName        |
 | NodeName           |
 | Type               |
-| Timestamp          |
 | Version            |
 | Sources            |
 
@@ -405,7 +404,6 @@ kubectl apply -f config.yaml
 | NodeName           |
 | Namespace          |
 | Type               |
-| Timestamp          |
 | Version            |
 | Sources            |
 | kubernete          |
@@ -427,7 +425,6 @@ kubectl apply -f config.yaml
 | Namespace          |
 | Service            |
 | Type               |
-| Timestamp          |
 | Version            |
 | Sources            |
 | kubernete          |
@@ -583,7 +580,6 @@ kubectl apply -f config.yaml
 | ClusterName          |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -614,7 +610,6 @@ kubectl apply -f config.yaml
 | InstanceId           |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | EBSVolumeId          |
 | device               |
 | Type                 |
@@ -642,7 +637,6 @@ kubectl apply -f config.yaml
 | InstanceId           |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | EBSVolumeId          |
 | device               |
 | fstype               |
@@ -674,7 +668,6 @@ kubectl apply -f config.yaml
 | InstanceId           |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | Type                 |
 | Version              |
 | interface            |
@@ -750,7 +743,6 @@ kubectl apply -f config.yaml
 | Namespace            |
 | NodeName             |
 | PodId                |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -783,7 +775,6 @@ kubectl apply -f config.yaml
 | Namespace            |
 | NodeName             |
 | PodId                |
-| Timestamp            |
 | Type                 |
 | Version              |
 | interface            |
@@ -837,7 +828,6 @@ kubectl apply -f config.yaml
 | Namespace                         |
 | NodeName                          |
 | PodId                             |
-| Timestamp                         |
 | Type                              |
 | Version                           |
 | Sources                           |
@@ -947,7 +937,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -978,7 +967,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -1005,7 +993,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -1034,7 +1021,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |

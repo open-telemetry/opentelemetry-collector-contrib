@@ -13,12 +13,88 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc/stats"
 )
+
+func dropView(instrument metric.Instrument) metric.View {
+	return metric.NewView(
+		instrument,
+		metric.Stream{
+			Aggregation: metric.AggregationDrop{},
+		},
+	)
+}
+
+// TODO: This will be exposed by each component. Remove this function and use
+// the publicly exposed view once this is possible to do.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/11754
+func viewsFromLevel(level configtelemetry.Level) []metric.View {
+	var views []metric.View
+
+	if level == configtelemetry.LevelNone {
+		return []metric.View{dropView(metric.Instrument{Name: "*"})}
+	}
+
+	// otel-arrow library metrics
+	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
+	if level < configtelemetry.LevelNormal {
+		scope := instrumentation.Scope{Name: "otel-arrow/pkg/otel/arrow_record"}
+		views = append(views,
+			dropView(metric.Instrument{
+				Name:  "arrow_batch_records",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "arrow_schema_resets",
+				Scope: scope,
+			}),
+			dropView(metric.Instrument{
+				Name:  "arrow_memory_inuse",
+				Scope: scope,
+			}),
+		)
+	}
+
+	if level < configtelemetry.LevelDetailed {
+		scope := instrumentation.Scope{Name: scopeName}
+		// Compressed size metrics.
+		views = append(views, dropView(metric.Instrument{
+			Name:  "otelcol_*_compressed_size",
+			Scope: scope,
+		}))
+
+		views = append(views, dropView(metric.Instrument{
+			Name:  "otelcol_*_compressed_size",
+			Scope: scope,
+		}))
+
+		// makeRecvMetrics for exporters.
+		views = append(views, dropView(metric.Instrument{
+			Name:  "otelcol_exporter_recv",
+			Scope: scope,
+		}))
+		views = append(views, dropView(metric.Instrument{
+			Name:  "otelcol_exporter_recv_wire",
+			Scope: scope,
+		}))
+
+		// makeSentMetrics for receivers.
+		views = append(views, dropView(metric.Instrument{
+			Name:  "otelcol_receiver_sent",
+			Scope: scope,
+		}))
+		views = append(views, dropView(metric.Instrument{
+			Name:  "otelcol_receiver_sent_wire",
+			Scope: scope,
+		}))
+	}
+	return views
+}
 
 func metricValues(t *testing.T, rm metricdata.ResourceMetrics, expectMethod string) map[string]any {
 	res := map[string]any{}
@@ -73,6 +149,7 @@ func TestNetStatsExporterDetailed(t *testing.T) {
 }
 
 func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[string]any) {
+	t.Helper()
 	for _, apiDirect := range []bool{true, false} {
 		t.Run(func() string {
 			if apiDirect {
@@ -84,12 +161,12 @@ func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[
 			mp := metric.NewMeterProvider(
 				metric.WithResource(resource.Empty()),
 				metric.WithReader(rdr),
+				metric.WithView(viewsFromLevel(level)...),
 			)
 			enr, err := NewExporterNetworkReporter(exporter.Settings{
 				ID: component.NewID(component.MustNewType("test")),
 				TelemetrySettings: component.TelemetrySettings{
 					MeterProvider: mp,
-					MetricsLevel:  level,
 				},
 			})
 			require.NoError(t, err)
@@ -224,12 +301,12 @@ func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[
 			mp := metric.NewMeterProvider(
 				metric.WithResource(resource.Empty()),
 				metric.WithReader(rdr),
+				metric.WithView(viewsFromLevel(level)...),
 			)
 			rer, err := NewReceiverNetworkReporter(receiver.Settings{
 				ID: component.NewID(component.MustNewType("test")),
 				TelemetrySettings: component.TelemetrySettings{
 					MeterProvider: mp,
-					MetricsLevel:  level,
 				},
 			})
 			require.NoError(t, err)
@@ -284,7 +361,6 @@ func TestUncompressedSizeBypass(t *testing.T) {
 		ID: component.NewID(component.MustNewType("test")),
 		TelemetrySettings: component.TelemetrySettings{
 			MeterProvider: mp,
-			MetricsLevel:  configtelemetry.LevelDetailed,
 		},
 	})
 	require.NoError(t, err)

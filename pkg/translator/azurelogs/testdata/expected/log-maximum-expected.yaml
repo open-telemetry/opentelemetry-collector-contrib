@@ -1,0 +1,247 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID-1
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: operation.name
+                    value:
+                      stringValue: SecretGet
+                  - key: operation.version
+                    value:
+                      stringValue: "7.0"
+                  - key: result.signature
+                    value:
+                      stringValue: Signature
+                  - key: result.type
+                    value:
+                      stringValue: Success
+                  - key: tenant.id
+                    value:
+                      stringValue: /TENANT_ID
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: string
+                            value:
+                              stringValue: string
+                          - key: int
+                            value:
+                              doubleValue: 429
+                          - key: float
+                            value:
+                              doubleValue: 3.14
+                          - key: bool
+                            value:
+                              boolValue: false
+                  - key: result.description
+                    value:
+                      stringValue: Description
+                  - key: cloud.region
+                    value:
+                      stringValue: ukso
+                  - key: network.peer.address
+                    value:
+                      stringValue: 127.0.0.1
+                  - key: correlation.id
+                    value:
+                      stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
+                  - key: duration
+                    value:
+                      intValue: "1234"
+                  - key: identity
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: claim
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: oid
+                                    value:
+                                      stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
+            severityNumber: 13
+            severityText: Warning
+            spanId: ""
+            timeUnixNano: "1668142107676714500"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID-2
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: result.type
+                    value:
+                      stringValue: Success
+                  - key: tenant.id
+                    value:
+                      stringValue: /TENANT_ID
+                  - key: cloud.region
+                    value:
+                      stringValue: ukso
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: correlation.id
+                    value:
+                      stringValue: 96317703-2132-4a8d-a5d7-e18d2f486783
+                  - key: duration
+                    value:
+                      intValue: "4321"
+                  - key: operation.name
+                    value:
+                      stringValue: SecretSet
+                  - key: operation.version
+                    value:
+                      stringValue: "7.0"
+                  - key: result.description
+                    value:
+                      stringValue: Description
+                  - key: result.signature
+                    value:
+                      stringValue: Signature
+                  - key: network.peer.address
+                    value:
+                      stringValue: 127.0.0.1
+                  - key: identity
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: claim
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: oid
+                                    value:
+                                      stringValue: 96317703-2132-4a8d-a5d7-e18d2f486783
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: string
+                            value:
+                              stringValue: string
+                          - key: int
+                            value:
+                              doubleValue: 924
+                          - key: float
+                            value:
+                              doubleValue: 41.3
+                          - key: bool
+                            value:
+                              boolValue: true
+            severityNumber: 13
+            severityText: Warning
+            spanId: ""
+            timeUnixNano: "1668142109676714500"
+            traceId: ""
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID-2
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: identity
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: claim
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: oid
+                                    value:
+                                      stringValue: 4ae807da-39d9-4327-b5b4-0ab685a57f9a
+                  - key: operation.name
+                    value:
+                      stringValue: SecretGet
+                  - key: result.signature
+                    value:
+                      stringValue: Signature
+                  - key: cloud.region
+                    value:
+                      stringValue: ukso
+                  - key: duration
+                    value:
+                      intValue: "321"
+                  - key: operation.version
+                    value:
+                      stringValue: "7.0"
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: float
+                            value:
+                              doubleValue: 41.4
+                          - key: bool
+                            value:
+                              boolValue: false
+                          - key: string
+                            value:
+                              stringValue: string
+                          - key: int
+                            value:
+                              doubleValue: 925
+                  - key: result.description
+                    value:
+                      stringValue: Description
+                  - key: result.type
+                    value:
+                      stringValue: Success
+                  - key: tenant.id
+                    value:
+                      stringValue: /TENANT_ID
+                  - key: network.peer.address
+                    value:
+                      stringValue: 127.0.0.1
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+                  - key: correlation.id
+                    value:
+                      stringValue: 4ae807da-39d9-4327-b5b4-0ab685a57f9a
+            severityNumber: 13
+            severityText: Warning
+            spanId: ""
+            timeUnixNano: "1668142111676714500"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

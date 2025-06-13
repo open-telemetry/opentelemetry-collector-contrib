@@ -12,6 +12,80 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	KafkaBrokerLogRetentionPeriod: metricInfo{
+		Name: "kafka.broker.log_retention_period",
+	},
+	KafkaBrokers: metricInfo{
+		Name: "kafka.brokers",
+	},
+	KafkaConsumerGroupLag: metricInfo{
+		Name: "kafka.consumer_group.lag",
+	},
+	KafkaConsumerGroupLagSum: metricInfo{
+		Name: "kafka.consumer_group.lag_sum",
+	},
+	KafkaConsumerGroupMembers: metricInfo{
+		Name: "kafka.consumer_group.members",
+	},
+	KafkaConsumerGroupOffset: metricInfo{
+		Name: "kafka.consumer_group.offset",
+	},
+	KafkaConsumerGroupOffsetSum: metricInfo{
+		Name: "kafka.consumer_group.offset_sum",
+	},
+	KafkaPartitionCurrentOffset: metricInfo{
+		Name: "kafka.partition.current_offset",
+	},
+	KafkaPartitionOldestOffset: metricInfo{
+		Name: "kafka.partition.oldest_offset",
+	},
+	KafkaPartitionReplicas: metricInfo{
+		Name: "kafka.partition.replicas",
+	},
+	KafkaPartitionReplicasInSync: metricInfo{
+		Name: "kafka.partition.replicas_in_sync",
+	},
+	KafkaTopicLogRetentionPeriod: metricInfo{
+		Name: "kafka.topic.log_retention_period",
+	},
+	KafkaTopicLogRetentionSize: metricInfo{
+		Name: "kafka.topic.log_retention_size",
+	},
+	KafkaTopicMinInsyncReplicas: metricInfo{
+		Name: "kafka.topic.min_insync_replicas",
+	},
+	KafkaTopicPartitions: metricInfo{
+		Name: "kafka.topic.partitions",
+	},
+	KafkaTopicReplicationFactor: metricInfo{
+		Name: "kafka.topic.replication_factor",
+	},
+}
+
+type metricsInfo struct {
+	KafkaBrokerLogRetentionPeriod metricInfo
+	KafkaBrokers                  metricInfo
+	KafkaConsumerGroupLag         metricInfo
+	KafkaConsumerGroupLagSum      metricInfo
+	KafkaConsumerGroupMembers     metricInfo
+	KafkaConsumerGroupOffset      metricInfo
+	KafkaConsumerGroupOffsetSum   metricInfo
+	KafkaPartitionCurrentOffset   metricInfo
+	KafkaPartitionOldestOffset    metricInfo
+	KafkaPartitionReplicas        metricInfo
+	KafkaPartitionReplicasInSync  metricInfo
+	KafkaTopicLogRetentionPeriod  metricInfo
+	KafkaTopicLogRetentionSize    metricInfo
+	KafkaTopicMinInsyncReplicas   metricInfo
+	KafkaTopicPartitions          metricInfo
+	KafkaTopicReplicationFactor   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricKafkaBrokerLogRetentionPeriod struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -700,7 +774,7 @@ type metricKafkaTopicMinInsyncReplicas struct {
 // init fills kafka.topic.min_insync_replicas metric with initial data.
 func (m *metricKafkaTopicMinInsyncReplicas) init() {
 	m.data.SetName("kafka.topic.min_insync_replicas")
-	m.data.SetDescription("minimum insync replicas of a topic.")
+	m.data.SetDescription("minimum in-sync replicas of a topic.")
 	m.data.SetUnit("{replicas}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -891,7 +965,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                              mbc,
@@ -989,7 +1062,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricKafkaBrokerLogRetentionPeriod.emit(ils.Metrics())

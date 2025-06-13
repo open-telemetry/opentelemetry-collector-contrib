@@ -1,0 +1,6 @@
+extensions:
+  skywalking_encoding:
+
+receivers:
+  kafka:
+    encoding: skywalking_encoding

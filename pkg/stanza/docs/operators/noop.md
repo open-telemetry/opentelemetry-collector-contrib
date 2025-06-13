@@ -30,4 +30,4 @@ operators:
 
 #### Why is this necessary?
 
-The last operator is always responsible for emitting logs from the receiver. In non-linear pipelines, it is sometimes necessary to explictly direct logs to the final operator. In many such cases, the final operator performs some work. However, if no more work is required, the `noop` operator can serve as a final operator.
+The last operator is always responsible for emitting logs from the receiver. In non-linear pipelines, it is sometimes necessary to explicitly direct logs to the final operator. In many such cases, the final operator performs some work. However, if no more work is required, the `noop` operator can serve as a final operator.

@@ -21,18 +21,19 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/unmarshaler"
 )
 
 func TestHeaderExtractionTraces(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
 	require.NoError(t, err)
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      &ptrace.ProtoUnmarshaler{},
 		logger:           zaptest.NewLogger(t),
 		ready:            make(chan bool),
 		nextConsumer:     nextConsumer,
@@ -89,14 +90,14 @@ func TestHeaderExtractionTraces(t *testing.T) {
 
 func TestHeaderExtractionLogs(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
 	require.NoError(t, err)
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.LogsSink{}
-	unmarshaler := newTextLogsUnmarshaler()
-	unmarshaler, err = unmarshaler.WithEnc("utf-8")
+	unmarshaler, err := unmarshaler.NewTextLogsUnmarshaler("utf-8")
+	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:      unmarshaler,
 		logger:           zaptest.NewLogger(t),
@@ -150,14 +151,14 @@ func TestHeaderExtractionLogs(t *testing.T) {
 
 func TestHeaderExtractionMetrics(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
 	require.NoError(t, err)
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      &pmetric.ProtoUnmarshaler{},
 		logger:           zaptest.NewLogger(t),
 		ready:            make(chan bool),
 		nextConsumer:     nextConsumer,

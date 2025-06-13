@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"os"
 	"path/filepath"
@@ -287,9 +287,6 @@ func TestSplitMetrics(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -334,9 +331,6 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -443,9 +437,6 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -844,13 +835,13 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
-	timeStamp := pcommon.Timestamp(rand.Intn(256))
-	value := int64(rand.Intn(256))
+	timeStamp := pcommon.Timestamp(rand.IntN(256))
+	value := rand.Int64N(256)
 
 	for i := 0; i < rmCount; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
-			conventions.AttributeServiceName: fmt.Sprintf("service-%d", rand.Intn(512)),
+			conventions.AttributeServiceName: fmt.Sprintf("service-%d", rand.IntN(512)),
 		})
 		require.NoError(t, err)
 
@@ -860,13 +851,13 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 			scope.SetName("MyTestInstrument")
 			scope.SetVersion("1.2.3")
 			err = scope.Attributes().FromRaw(map[string]any{
-				"scope.key": fmt.Sprintf("scope-%d", rand.Intn(512)),
+				"scope.key": fmt.Sprintf("scope-%d", rand.IntN(512)),
 			})
 			require.NoError(t, err)
 
 			for k := 0; k < mCount; k++ {
 				m := sm.Metrics().AppendEmpty()
-				m.SetName(fmt.Sprintf("metric.%d.test", rand.Intn(512)))
+				m.SetName(fmt.Sprintf("metric.%d.test", rand.IntN(512)))
 
 				sum := m.SetEmptySum()
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -882,7 +873,7 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 					value += 15
 
 					err = dp.Attributes().FromRaw(map[string]any{
-						"datapoint.key": fmt.Sprintf("dp-%d", rand.Intn(512)),
+						"datapoint.key": fmt.Sprintf("dp-%d", rand.IntN(512)),
 					})
 					require.NoError(t, err)
 				}

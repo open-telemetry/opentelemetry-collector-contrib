@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -84,17 +83,16 @@ type processHandle interface {
 	CmdlineWithContext(context.Context) (string, error)
 	CmdlineSliceWithContext(context.Context) ([]string, error)
 	TimesWithContext(context.Context) (*cpu.TimesStat, error)
-	PercentWithContext(context.Context, time.Duration) (float64, error)
 	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
 	MemoryPercentWithContext(context.Context) (float32, error)
 	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
 	NumThreadsWithContext(context.Context) (int32, error)
 	CreateTimeWithContext(context.Context) (int64, error)
-	ParentWithContext(context.Context) (*process.Process, error)
 	PpidWithContext(context.Context) (int32, error)
 	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
 	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
 	NumFDsWithContext(context.Context) (int32, error)
+	GetProcessHandleCountWithContext(context.Context) (int64, error)
 	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
 	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 	CgroupWithContext(ctx context.Context) (string, error)
@@ -105,23 +103,31 @@ type gopsProcessHandles struct {
 }
 
 func (p *gopsProcessHandles) Pid(index int) int32 {
-	return p.handles[index].Process.Pid
+	return p.handles[index].Pid
 }
 
 func (p *gopsProcessHandles) At(index int) processHandle {
-	return p.handles[index]
+	return &(p.handles[index])
 }
 
 func (p *gopsProcessHandles) Len() int {
 	return len(p.handles)
 }
 
+const (
+	flagParentPidSet             = 1 << 0
+	flagUseInitialNumThreadsOnce = 1 << 1
+)
+
 type wrappedProcessHandle struct {
 	*process.Process
+	parentPid         int32
+	initialNumThreads int32
+	flags             uint8 // bitfield to track if fields are set
 }
 
-func (p wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, error) {
-	pid := p.Process.Pid
+func (p *wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, error) {
+	pid := p.Pid
 	statPath := getEnvWithContext(ctx, string(common.HostProcEnvKey), "/proc", strconv.Itoa(int(pid)), "cgroup")
 	contents, err := os.ReadFile(statPath)
 	if err != nil {
@@ -129,6 +135,36 @@ func (p wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, er
 	}
 
 	return strings.TrimSuffix(string(contents), "\n"), nil
+}
+
+func (p *wrappedProcessHandle) PpidWithContext(ctx context.Context) (int32, error) {
+	if p.flags&flagParentPidSet != 0 {
+		return p.parentPid, nil
+	}
+
+	parentPid, err := p.Process.PpidWithContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	p.parentPid = parentPid
+	p.flags |= flagParentPidSet
+	return parentPid, nil
+}
+
+func (p *wrappedProcessHandle) NumThreadsWithContext(ctx context.Context) (int32, error) {
+	if p.flags&flagUseInitialNumThreadsOnce != 0 {
+		// The number of threads can fluctuate so use the initially cached value only the first time.
+		p.flags &^= flagUseInitialNumThreadsOnce
+		return p.initialNumThreads, nil
+	}
+
+	numThreads, err := p.Process.NumThreadsWithContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return numThreads, nil
 }
 
 // copied from gopsutil:
@@ -148,19 +184,6 @@ func getEnvWithContext(ctx context.Context, key string, dfault string, combineWi
 	segments := append([]string{value}, combineWith...)
 
 	return filepath.Join(segments...)
-}
-
-func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
-	processes, err := process.ProcessesWithContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	wrapped := make([]wrappedProcessHandle, len(processes))
-	for i, p := range processes {
-		wrapped[i] = wrappedProcessHandle{Process: p}
-	}
-
-	return &gopsProcessHandles{handles: wrapped}, nil
 }
 
 func parentPid(ctx context.Context, handle processHandle, pid int32) (int32, error) {

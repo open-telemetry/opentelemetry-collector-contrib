@@ -141,10 +141,10 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	regions := []string{"us-east-1", "us-gov-west-1", "cn-north-1"}
 
 	for _, region := range regions {
-		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", region)
+		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", region, "")
 		assert.NotNil(t, creds)
 	}
-	creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "fake_region")
+	creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "fake_region", "")
 	assert.Nil(t, creds)
 }
 

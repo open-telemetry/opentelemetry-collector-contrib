@@ -8,11 +8,11 @@ import "go.opentelemetry.io/collector/pdata/ptrace"
 // MoveResourcesIf calls f sequentially for each ResourceSpans present in the first ptrace.Traces.
 // If f returns true, the element is removed from the first ptrace.Traces and added to the second ptrace.Traces.
 func MoveResourcesIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans) bool) {
-	from.ResourceSpans().RemoveIf(func(resoruceSpans ptrace.ResourceSpans) bool {
-		if !f(resoruceSpans) {
+	from.ResourceSpans().RemoveIf(func(resourceSpans ptrace.ResourceSpans) bool {
+		if !f(resourceSpans) {
 			return false
 		}
-		resoruceSpans.CopyTo(to.ResourceSpans().AppendEmpty())
+		resourceSpans.MoveTo(to.ResourceSpans().AppendEmpty())
 		return true
 	})
 }
@@ -23,39 +23,33 @@ func MoveResourcesIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans) bool) 
 // Resources or Scopes are removed from the original if they become empty. All ordering is preserved.
 func MoveSpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool) {
 	resourceSpansSlice := from.ResourceSpans()
-	for i := 0; i < resourceSpansSlice.Len(); i++ {
-		resourceSpans := resourceSpansSlice.At(i)
-		scopeSpanSlice := resourceSpans.ScopeSpans()
+	resourceSpansSlice.RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		scopeSpanSlice := rs.ScopeSpans()
 		var resourceSpansCopy *ptrace.ResourceSpans
-		for j := 0; j < scopeSpanSlice.Len(); j++ {
-			scopeSpans := scopeSpanSlice.At(j)
-			spanSlice := scopeSpans.Spans()
+		scopeSpanSlice.RemoveIf(func(ss ptrace.ScopeSpans) bool {
+			spanSlice := ss.Spans()
 			var scopeSpansCopy *ptrace.ScopeSpans
 			spanSlice.RemoveIf(func(span ptrace.Span) bool {
-				if !f(resourceSpans, scopeSpans, span) {
+				if !f(rs, ss, span) {
 					return false
 				}
 				if resourceSpansCopy == nil {
 					rmc := to.ResourceSpans().AppendEmpty()
 					resourceSpansCopy = &rmc
-					resourceSpans.Resource().CopyTo(resourceSpansCopy.Resource())
-					resourceSpansCopy.SetSchemaUrl(resourceSpans.SchemaUrl())
+					rs.Resource().CopyTo(resourceSpansCopy.Resource())
+					resourceSpansCopy.SetSchemaUrl(rs.SchemaUrl())
 				}
 				if scopeSpansCopy == nil {
 					smc := resourceSpansCopy.ScopeSpans().AppendEmpty()
 					scopeSpansCopy = &smc
-					scopeSpans.Scope().CopyTo(scopeSpansCopy.Scope())
-					scopeSpansCopy.SetSchemaUrl(scopeSpans.SchemaUrl())
+					ss.Scope().CopyTo(scopeSpansCopy.Scope())
+					scopeSpansCopy.SetSchemaUrl(ss.SchemaUrl())
 				}
-				span.CopyTo(scopeSpansCopy.Spans().AppendEmpty())
+				span.MoveTo(scopeSpansCopy.Spans().AppendEmpty())
 				return true
 			})
-		}
-		scopeSpanSlice.RemoveIf(func(sm ptrace.ScopeSpans) bool {
-			return sm.Spans().Len() == 0
+			return ss.Spans().Len() == 0
 		})
-	}
-	resourceSpansSlice.RemoveIf(func(resourceSpans ptrace.ResourceSpans) bool {
-		return resourceSpans.ScopeSpans().Len() == 0
+		return rs.ScopeSpans().Len() == 0
 	})
 }

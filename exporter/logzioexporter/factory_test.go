@@ -35,7 +35,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
@@ -50,9 +50,9 @@ func TestGenerateUrl(t *testing.T) {
 	generateURLTests := []generateURLTest{
 		{"", "us", "https://listener.logz.io:8071/?token=token"},
 		{"", "", "https://listener.logz.io:8071/?token=token"},
-		{"https://doesnotexist.com", "", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "us", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "not-valid", "https://doesnotexist.com"},
+		{"https://nonexistent.com", "", "https://nonexistent.com"},
+		{"https://nonexistent.com", "us", "https://nonexistent.com"},
+		{"https://nonexistent.com", "not-valid", "https://nonexistent.com"},
 		{"", "not-valid", "https://listener.logz.io:8071/?token=token"},
 		{"", "US", "https://listener.logz.io:8071/?token=token"},
 		{"", "Us", "https://listener.logz.io:8071/?token=token"},

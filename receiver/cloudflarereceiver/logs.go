@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
@@ -30,25 +31,34 @@ import (
 )
 
 type logsReceiver struct {
-	logger            *zap.Logger
-	cfg               *LogsConfig
-	server            *http.Server
-	consumer          consumer.Logs
-	wg                *sync.WaitGroup
-	id                component.ID // ID of the receiver component
-	telemetrySettings component.TelemetrySettings
+	logger   *zap.Logger
+	cfg      *LogsConfig
+	server   *http.Server
+	consumer consumer.Logs
+	wg       *sync.WaitGroup
+	id       component.ID // ID of the receiver component
+	obsrecv  *receiverhelper.ObsReport
 }
 
 const secretHeaderName = "X-CF-Secret"
 
 func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             params.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: params,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	recv := &logsReceiver{
-		cfg:               &cfg.Logs,
-		consumer:          consumer,
-		logger:            params.Logger,
-		wg:                &sync.WaitGroup{},
-		telemetrySettings: params.TelemetrySettings,
-		id:                params.ID,
+		cfg:      &cfg.Logs,
+		consumer: consumer,
+		logger:   params.Logger,
+		wg:       &sync.WaitGroup{},
+		obsrecv:  obsrecv,
+		id:       params.ID,
 	}
 
 	recv.server = &http.Server{
@@ -183,12 +193,16 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if err := l.consumer.ConsumeLogs(req.Context(), l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)); err != nil {
+	pLogs := l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)
+	obsCtx := l.obsrecv.StartLogsOp(req.Context())
+	if err := l.consumer.ConsumeLogs(obsCtx, pLogs); err != nil {
+		l.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), pLogs.LogRecordCount(), err)
 		errorutil.HTTPError(rw, err)
 		l.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
 	}
 
+	l.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), pLogs.LogRecordCount(), nil)
 	rw.WriteHeader(http.StatusOK)
 }
 
@@ -272,22 +286,35 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 			}
 
 			attrs := logRecord.Attributes()
-			for field, attribute := range l.cfg.Attributes {
-				if v, ok := log[field]; ok {
-					switch v := v.(type) {
-					case string:
-						attrs.PutStr(attribute, v)
-					case int:
-						attrs.PutInt(attribute, int64(v))
-					case int64:
-						attrs.PutInt(attribute, v)
-					case float64:
-						attrs.PutDouble(attribute, v)
-					case bool:
-						attrs.PutBool(attribute, v)
-					default:
-						l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
+			for field, v := range log {
+				attrName := field
+				if len(l.cfg.Attributes) != 0 {
+					// Only process fields that are in the config mapping
+					mappedAttr, ok := l.cfg.Attributes[field]
+					if !ok {
+						// Skip fields not in mapping when we have a config
+						continue
 					}
+					attrName = mappedAttr
+				}
+				// else if l.cfg.Attributes is empty, default to processing all fields with no renaming
+
+				switch v := v.(type) {
+				case string:
+					attrs.PutStr(attrName, v)
+				case int:
+					attrs.PutInt(attrName, int64(v))
+				case int64:
+					attrs.PutInt(attrName, v)
+				case float64:
+					attrs.PutDouble(attrName, v)
+				case bool:
+					attrs.PutBool(attrName, v)
+				default:
+					l.logger.Warn("unable to translate field to attribute, unsupported type",
+						zap.String("field", field),
+						zap.Any("value", v),
+						zap.String("type", fmt.Sprintf("%T", v)))
 				}
 			}
 

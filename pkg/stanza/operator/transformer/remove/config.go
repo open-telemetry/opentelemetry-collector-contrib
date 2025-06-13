@@ -4,7 +4,7 @@
 package remove // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/remove"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -46,7 +46,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.Field.Field == entry.NewNilField() {
-		return nil, fmt.Errorf("remove: field is empty")
+		return nil, errors.New("remove: field is empty")
 	}
 
 	return &Transformer{

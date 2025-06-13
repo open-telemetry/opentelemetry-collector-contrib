@@ -4,7 +4,6 @@
 package azuremonitorexporter
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -146,8 +145,7 @@ func TestParseConnectionString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.envValue != "" {
-				os.Setenv(ApplicationInsightsConnectionString, tt.envValue)
-				defer os.Unsetenv(ApplicationInsightsConnectionString)
+				t.Setenv(ApplicationInsightsConnectionString, tt.envValue)
 			}
 
 			got, err := parseConnectionString(tt.config)

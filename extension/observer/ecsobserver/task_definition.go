@@ -4,6 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -15,10 +16,10 @@ import (
 type TaskDefinitionConfig struct {
 	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`
 
-	// ArnPattern is mandetory, empty string means arn based match is skipped.
+	// ArnPattern is mandatory, empty string means arn based match is skipped.
 	ArnPattern string `mapstructure:"arn_pattern" yaml:"arn_pattern"`
 	// ContainerNamePattern is optional, empty string means all containers in that task definition would be exported.
-	// Otherwise both service and container name petterns need to metch.
+	// Otherwise both service and container name patterns need to match.
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
 }
 
@@ -29,7 +30,7 @@ func (t *TaskDefinitionConfig) validate() error {
 
 func (t *TaskDefinitionConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if t.ArnPattern == "" {
-		return nil, fmt.Errorf("arn_pattern is empty")
+		return nil, errors.New("arn_pattern is empty")
 	}
 
 	arnRegex, err := regexp.Compile(t.ArnPattern)

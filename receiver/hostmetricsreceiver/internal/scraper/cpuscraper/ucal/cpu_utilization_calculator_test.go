@@ -150,7 +150,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			recorder := inMemoryRecorder{}
@@ -191,7 +190,7 @@ func Test_cpuUtilization(t *testing.T) {
 	}
 
 	actualUtilization := cpuUtilization(timeStart, timeEnd)
-	assert.Equal(t, expectedUtilization.CPU, actualUtilization.CPU, 0.00001)
+	assert.Equal(t, expectedUtilization.CPU, actualUtilization.CPU, "%+v", 0.00001)
 	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
 	assert.InDelta(t, expectedUtilization.Idle, actualUtilization.Idle, 0.00001)

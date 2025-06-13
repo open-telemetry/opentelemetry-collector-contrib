@@ -44,14 +44,14 @@ func validateRootPath(rootPath string) error {
 	return nil
 }
 
-func setGoPsutilEnvVars(rootPath string, env environment) common.EnvMap {
+func setGoPsutilEnvVars(rootPath string) common.EnvMap {
 	m := common.EnvMap{}
 	if rootPath == "" || rootPath == "/" {
 		return m
 	}
 
 	for envVarKey, defaultValue := range gopsutilEnvVars {
-		_, ok := env.Lookup(string(envVarKey))
+		_, ok := os.LookupEnv(string(envVarKey))
 		if ok {
 			continue // don't override if existing env var is set
 		}

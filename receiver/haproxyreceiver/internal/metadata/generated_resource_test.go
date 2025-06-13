@@ -35,17 +35,17 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("haproxy.addr")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "haproxy.addr-val", val.Str())
+				assert.Equal(t, "haproxy.addr-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("haproxy.proxy_name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "haproxy.proxy_name-val", val.Str())
+				assert.Equal(t, "haproxy.proxy_name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("haproxy.service_name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "haproxy.service_name-val", val.Str())
+				assert.Equal(t, "haproxy.service_name-val", val.Str())
 			}
 		})
 	}

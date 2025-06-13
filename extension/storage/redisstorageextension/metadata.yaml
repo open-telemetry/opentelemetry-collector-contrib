@@ -3,8 +3,8 @@ type: redis_storage
 status:
   class: extension
   stability:
-    development: [extension]
-  distributions: []
+    alpha: [extension]
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
     seeking_new: true

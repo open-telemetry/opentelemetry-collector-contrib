@@ -21,6 +21,7 @@ const (
 	TCP  Transport = "tcp"
 	TCP4 Transport = "tcp4"
 	TCP6 Transport = "tcp6"
+	UDS  Transport = "unixgram"
 )
 
 // NewTransport creates a Transport based on the transport string or returns an empty Transport.
@@ -31,6 +32,8 @@ func NewTransport(ts string) Transport {
 		return trans
 	case TCP, TCP4, TCP6:
 		return trans
+	case UDS:
+		return trans
 	}
 	return Transport("")
 }
@@ -38,7 +41,7 @@ func NewTransport(ts string) Transport {
 // String casts the transport to a String if the Transport is supported. Return an empty Transport overwise.
 func (trans Transport) String() string {
 	switch trans {
-	case UDP, UDP4, UDP6, TCP, TCP4, TCP6:
+	case UDP, UDP4, UDP6, TCP, TCP4, TCP6, UDS:
 		return string(trans)
 	}
 	return ""
@@ -47,7 +50,7 @@ func (trans Transport) String() string {
 // IsPacketTransport returns true if the transport is packet based.
 func (trans Transport) IsPacketTransport() bool {
 	switch trans {
-	case UDP, UDP4, UDP6:
+	case UDP, UDP4, UDP6, UDS:
 		return true
 	}
 	return false

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,7 +49,7 @@ type honeycombLogsExporter struct {
 
 func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycombLogsExporter, error) {
 	if config == nil {
-		return nil, fmt.Errorf("unable to create honeycombLogsExporter without config")
+		return nil, errors.New("unable to create honeycombLogsExporter without config")
 	}
 
 	telemetrySettings := set.TelemetrySettings

@@ -4,6 +4,8 @@
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 
 import (
+	"time"
+
 	quotav1 "github.com/openshift/api/quota/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -257,7 +259,9 @@ func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodSta
 				Image:        "container-image-name",
 				ContainerID:  containerID,
 				State: corev1.ContainerState{
-					Running: &corev1.ContainerStateRunning{},
+					Running: &corev1.ContainerStateRunning{
+						StartedAt: v1.Time{Time: time.Date(1, time.January, 1, 1, 1, 1, 1, time.UTC)},
+					},
 				},
 			},
 		},

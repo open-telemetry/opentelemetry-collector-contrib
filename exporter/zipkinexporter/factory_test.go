@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -24,7 +26,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
 	zeCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
-	ze, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	ze, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ze)
 }

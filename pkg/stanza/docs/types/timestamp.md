@@ -44,7 +44,7 @@ The `gotime` layout type uses Golang's native time parsing capabilities. Golang 
 | `%S` | `05` | Second as a zero-padded decimal number (00, 01, ..., 59) |
 | `%L` | `999` | Millisecond as a decimal number, zero-padded on the left (000, 001, ..., 999) |
 | `%f` | `999999` | Microsecond as a decimal number, zero-padded on the left (000000, ..., 999999) |
-| `%s` | `99999999` | Nanosecond as a decimal number, zero-padded on the left (000000, ..., 999999) |
+| `%s` | `99999999` | Nanosecond as a decimal number, zero-padded on the left (000000000, ..., 999999999) |
 | `%Z` | `MST` | Timezone name or abbreviation or empty (UTC, EST, CST) |
 | `%z` | `Z0700` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty(+0000, -0400) |
 | `%i` | `-07` | UTC offset in the form ±HH or empty(+00, -04) |

@@ -56,7 +56,7 @@ data:
     exporters:
       datadog:
         api:
-          key: <YOUR_API_KEY_HERE>
+          key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # Change this to your Datadog API key
           site: datadoghq.com # Change this to your site if not using the default
     processors:
       resourcedetection:

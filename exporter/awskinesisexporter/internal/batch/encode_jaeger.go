@@ -5,7 +5,7 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"github.com/gogo/protobuf/proto"
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"

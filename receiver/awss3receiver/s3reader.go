@@ -61,7 +61,7 @@ func newS3Reader(ctx context.Context, notifier statusNotifier, logger *zap.Logge
 	}, nil
 }
 
-//nolint:golint,unparam
+//nolint:golint
 func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dataCallback s3ReaderDataCallback) error {
 	var timeStep time.Duration
 	if s3Reader.s3Partition == "hour" {

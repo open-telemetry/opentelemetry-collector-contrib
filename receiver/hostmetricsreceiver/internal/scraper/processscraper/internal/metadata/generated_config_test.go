@@ -38,6 +38,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessPagingFaults:        MetricConfig{Enabled: true},
 					ProcessSignalsPending:      MetricConfig{Enabled: true},
 					ProcessThreads:             MetricConfig{Enabled: true},
+					ProcessUptime:              MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
@@ -68,6 +69,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessPagingFaults:        MetricConfig{Enabled: false},
 					ProcessSignalsPending:      MetricConfig{Enabled: false},
 					ProcessThreads:             MetricConfig{Enabled: false},
+					ProcessUptime:              MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: false},

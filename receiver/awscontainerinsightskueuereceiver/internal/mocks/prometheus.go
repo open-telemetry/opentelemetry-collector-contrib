@@ -6,13 +6,13 @@ package mocks // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sync"
 	"sync/atomic"
 
-	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
 	"gopkg.in/yaml.v2"
 )
@@ -95,7 +95,7 @@ func SetupMockPrometheus(tds ...*TestData) (*MockPrometheus, *promcfg.Config, er
 		return mp, nil, err
 	}
 
-	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
+	pCfg, err := promcfg.Load(string(cfg), slog.Default())
 	return mp, pCfg, err
 }
 

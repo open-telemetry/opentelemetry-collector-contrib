@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -50,6 +51,14 @@ func (o *Output) Stop() error {
 		}
 	}
 	return nil
+}
+
+func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs error
+	for i := range entries {
+		errs = multierr.Append(errs, o.Process(ctx, entries[i]))
+	}
+	return errs
 }
 
 // Process will write an entry to the output file.

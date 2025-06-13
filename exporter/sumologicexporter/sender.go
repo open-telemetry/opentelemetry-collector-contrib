@@ -213,7 +213,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		s.updateStickySessionCookie(resp)
 	}
 
-	// API responds with a 200 or 204 with ConentLength set to 0 when all data
+	// API responds with a 200 or 204 with ContentLength set to 0 when all data
 	// has been successfully ingested.
 	if resp.ContentLength == 0 && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent) {
 		return nil
@@ -383,7 +383,7 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendNonOTLPLogs(ctx context.Context, rl plog.ResourceLogs, flds fields) ([]plog.LogRecord, error) {
 	if s.config.LogFormat == OTLPLogFormat {
-		return nil, fmt.Errorf("attempting to send OTLP logs as non-OTLP data")
+		return nil, errors.New("attempting to send OTLP logs as non-OTLP data")
 	}
 
 	var (
@@ -459,7 +459,7 @@ func (s *sender) sendOTLPLogs(ctx context.Context, ld plog.Logs) error {
 // sendNonOTLPMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, []error) {
 	if s.config.MetricFormat == OTLPMetricFormat {
-		return md, []error{fmt.Errorf("attempting to send OTLP metrics as non-OTLP data")}
+		return md, []error{errors.New("attempting to send OTLP metrics as non-OTLP data")}
 	}
 
 	var (
@@ -722,11 +722,11 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 }
 
 func (s *sender) addStickySessionCookie(req *http.Request) {
-	currectCookieValue := s.stickySessionCookieFunc()
-	if currectCookieValue != "" {
+	currentCookieValue := s.stickySessionCookieFunc()
+	if currentCookieValue != "" {
 		cookie := &http.Cookie{
 			Name:  stickySessionKey,
-			Value: currectCookieValue,
+			Value: currentCookieValue,
 		}
 		req.AddCookie(cookie)
 	}

@@ -1,0 +1,35 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: operation.name
+                    value:
+                      stringValue: ConsoleLog
+                  - key: container.id
+                    value:
+                      stringValue: CONTAINER_ID
+                  - key: host.id
+                    value:
+                      stringValue: HOST
+                  - key: category
+                    value:
+                      stringValue: AppServiceConsoleLogs
+            spanId: ""
+            timeUnixNano: "1713960372000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

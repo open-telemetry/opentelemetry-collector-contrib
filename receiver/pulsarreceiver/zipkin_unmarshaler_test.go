@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +49,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, protocolTransport.WriteListEnd(context.Background()))
 
-	tdThrift, err := newZipkinThriftUnmarshaler().Unmarshal(thriftTransport.Buffer.Bytes())
+	tdThrift, err := newZipkinThriftUnmarshaler().Unmarshal(thriftTransport.Bytes())
 	require.NoError(t, err)
 
 	protoBytes, err := new(zipkin_proto3.SpanSerializer).Serialize(spans)
@@ -76,7 +76,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 		{
 			unmarshaler: newZipkinThriftUnmarshaler(),
 			encoding:    "zipkin_thrift",
-			bytes:       thriftTransport.Buffer.Bytes(),
+			bytes:       thriftTransport.Bytes(),
 			expected:    tdThrift,
 		},
 	}

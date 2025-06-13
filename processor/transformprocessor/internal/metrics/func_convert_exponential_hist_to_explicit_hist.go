@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -37,7 +38,7 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 	args, ok := oArgs.(*convertExponentialHistToExplicitHistArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("convertExponentialHistToExplicitHistFactory args must be of type *convertExponentialHistToExplicitHistArguments")
+		return nil, errors.New("convertExponentialHistToExplicitHistFactory args must be of type *convertExponentialHistToExplicitHistArguments")
 	}
 
 	if len(args.DistributionFn) == 0 {
@@ -199,7 +200,7 @@ var midpointAlgorithm distAlgorithm = func(count uint64,
 	(*bucketCountsDst)[len(boundaries)-1] += count // Overflow bucket
 }
 
-// uniformAlgorithm distributes counts from a given set of bucket sounrces into a set of linear boundaries using uniform distribution
+// uniformAlgorithm distributes counts from a given set of bucket sources into a set of linear boundaries using uniform distribution
 var uniformAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
 	bucketCountsDst *[]uint64,

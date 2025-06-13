@@ -266,7 +266,6 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		test := test
 		t.Run(test.testName, func(t *testing.T) {
 			sentryEvent, err := sentryEventFromError(test.errorMessage, test.errorType, test.sampleSentrySpan)
 			if sentryEvent != nil {

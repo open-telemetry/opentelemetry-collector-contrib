@@ -6,7 +6,7 @@
 | Stability     | [development]: metrics, logs   |
 |               | [alpha]: traces   |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Acmd%2Ftelemetrygen%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Acmd%2Ftelemetrygen) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Acmd%2Ftelemetrygen%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Acmd%2Ftelemetrygen) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@codeboten](https://www.github.com/codeboten) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@codeboten](https://www.github.com/codeboten), [@Erog38](https://www.github.com/Erog38) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -32,7 +32,7 @@ You can build locally the Docker image with:
 make docker-telemetrygen
 ```
 
-Using github actions, we also push a docker image on commit to main or on release to this [Github docker registry](https://github.com/open-telemetry/opentelemetry-collector-contrib/pkgs/container/opentelemetry-collector-contrib%2Ftelemetrygen).
+Using github actions, we also push a docker image on commit to main or on release to this [Github docker registry](https://github.com/orgs/open-telemetry/packages/container/package/opentelemetry-collector-contrib%2Ftelemetrygen).
 
 ## Running
 

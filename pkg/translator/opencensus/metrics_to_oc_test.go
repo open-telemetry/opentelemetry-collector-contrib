@@ -93,9 +93,9 @@ func TestMetricsToOC(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			gotNode, gotResource, gotMetrics := ResourceMetricsToOC(test.internal.ResourceMetrics().At(0))
-			assert.EqualValues(t, test.oc.Node, gotNode)
-			assert.EqualValues(t, test.oc.Resource, gotResource)
-			assert.EqualValues(t, test.oc.Metrics, gotMetrics)
+			assert.Equal(t, test.oc.Node, gotNode)
+			assert.Equal(t, test.oc.Resource, gotResource)
+			assert.Equal(t, test.oc.Metrics, gotMetrics)
 		})
 	}
 }
@@ -119,9 +119,9 @@ func TestMetricsToOC_InvalidDataType(t *testing.T) {
 		},
 	}
 	gotNode, gotResource, gotMetrics := ResourceMetricsToOC(internal.ResourceMetrics().At(0))
-	assert.EqualValues(t, want.Node, gotNode)
-	assert.EqualValues(t, want.Resource, gotResource)
-	assert.EqualValues(t, want.Metrics, gotMetrics)
+	assert.Equal(t, want.Node, gotNode)
+	assert.Equal(t, want.Resource, gotResource)
+	assert.Equal(t, want.Metrics, gotMetrics)
 }
 
 func generateOCTestData() *agentmetricspb.ExportMetricsServiceRequest {

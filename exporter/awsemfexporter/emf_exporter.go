@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -72,7 +71,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 	emfExporter := &emfExporter{
 		config:                config,
 		metricTranslator:      newMetricTranslator(*config),
-		retryCnt:              config.AWSSessionSettings.MaxRetries,
+		retryCnt:              config.MaxRetries,
 		collectorID:           collectorIdentifier.String(),
 		pusherMap:             map[cwlogs.StreamKey]cwlogs.Pusher{},
 		processResourceLabels: func(map[string]string) {},
@@ -93,10 +92,9 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		rm := rms.At(i)
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
-			am.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range am.All() {
 				labels[k] = v.Str()
-				return true
-			})
+			}
 		}
 	}
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))

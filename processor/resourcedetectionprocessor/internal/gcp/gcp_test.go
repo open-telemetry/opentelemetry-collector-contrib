@@ -5,7 +5,7 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
@@ -74,7 +74,7 @@ func TestDetect(t *testing.T) {
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:      "my-project",
 				cloudPlatform:  gcp.GKE,
-				gceHostNameErr: fmt.Errorf("metadata endpoint is concealed"),
+				gceHostNameErr: errors.New("metadata endpoint is concealed"),
 				gkeHostID:      "1472385723456792345",
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
@@ -139,6 +139,37 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				"gcp.gce.instance.hostname":                "custom.dns.example.com",
 				"gcp.gce.instance.name":                    "my-gke-node-1234",
+			},
+		},
+		{
+			desc: "GCE with MIG",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+				gcpGceManagedInstanceGroup: gcp.ManagedInstanceGroup{
+					Name:     "my-gke-node",
+					Location: "us-central1",
+					Type:     gcp.Region,
+				},
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
+				conventions.AttributeHostID:                "1472385723456792345",
+				conventions.AttributeHostName:              "my-gke-node-1234",
+				conventions.AttributeHostType:              "n1-standard1",
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+				"gcp.gce.instance_group_manager.name":      "my-gke-node",
+				"gcp.gce.instance_group_manager.region":    "us-central1",
 			},
 		},
 		{
@@ -394,7 +425,7 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "error",
 			detector: newTestDetector(&fakeGCPDetector{
-				err: fmt.Errorf("failed to get metadata"),
+				err: errors.New("failed to get metadata"),
 			}),
 			expectErr: true,
 			expectedResource: map[string]any{
@@ -456,6 +487,7 @@ type fakeGCPDetector struct {
 	gcpCloudRunJobTaskIndex         string
 	gcpGceInstanceName              string
 	gcpGceInstanceHostname          string
+	gcpGceManagedInstanceGroup      gcp.ManagedInstanceGroup
 	gcpBareMetalSolutionInstanceID  string
 	gcpBareMetalSolutionCloudRegion string
 	gcpBareMetalSolutionProjectID   string
@@ -620,6 +652,13 @@ func (f *fakeGCPDetector) GCEInstanceHostname() (string, error) {
 		return "", f.err
 	}
 	return f.gcpGceInstanceHostname, nil
+}
+
+func (f *fakeGCPDetector) GCEManagedInstanceGroup() (gcp.ManagedInstanceGroup, error) {
+	if f.err != nil {
+		return gcp.ManagedInstanceGroup{}, f.err
+	}
+	return f.gcpGceManagedInstanceGroup, nil
 }
 
 func (f *fakeGCPDetector) BareMetalSolutionInstanceID() (string, error) {

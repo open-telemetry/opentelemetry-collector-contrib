@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -17,7 +16,7 @@ import (
 )
 
 type Processor struct {
-	contexts []consumer.Traces
+	contexts []common.TracesConsumer
 	logger   *zap.Logger
 }
 
@@ -27,7 +26,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, err
 	}
 
-	contexts := make([]consumer.Traces, len(contextStatements))
+	contexts := make([]common.TracesConsumer, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)

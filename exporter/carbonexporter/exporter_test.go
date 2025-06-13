@@ -26,13 +26,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopSettings())
+	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
@@ -44,7 +45,7 @@ func TestConsumeMetricsNoServer(t *testing.T) {
 			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: testutil.GetAvailableLocalAddress(t)},
 			TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 		},
-		exportertest.NewNopSettings())
+		exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.Error(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
@@ -65,7 +66,7 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 			TimeoutSettings:           exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 			ResourceToTelemetryConfig: resourcetotelemetry.Settings{Enabled: true},
 		},
-		exportertest.NewNopSettings())
+		exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
@@ -130,7 +131,7 @@ func TestConsumeMetrics(t *testing.T) {
 					MaxIdleConns:    tt.numProducers,
 					TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 5 * time.Second},
 				},
-				exportertest.NewNopSettings())
+				exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 

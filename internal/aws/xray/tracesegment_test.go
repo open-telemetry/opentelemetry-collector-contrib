@@ -627,7 +627,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 
 	for _, tc := range tests {
 		content, err := os.ReadFile(tc.samplePath)
-		assert.NoErrorf(t, err, "[%s] can not read raw segment", tc.testCase)
+		assert.NoErrorf(t, err, "[%s] cannot read raw segment", tc.testCase)
 
 		assert.NotEmptyf(t, content, "[%s] content length is 0", tc.testCase)
 
@@ -647,14 +647,14 @@ func TestValidate(t *testing.T) {
 		{
 			testCase:         "missing segment name",
 			input:            &Segment{},
-			expectedErrorStr: `segment "name" can not be nil`,
+			expectedErrorStr: `segment "name" cannot be nil`,
 		},
 		{
 			testCase: "missing segment id",
 			input: &Segment{
 				Name: String("a name"),
 			},
-			expectedErrorStr: `segment "id" can not be nil`,
+			expectedErrorStr: `segment "id" cannot be nil`,
 		},
 		{
 			testCase: "missing segment start_time",
@@ -662,7 +662,7 @@ func TestValidate(t *testing.T) {
 				Name: String("a name"),
 				ID:   String("an ID"),
 			},
-			expectedErrorStr: `segment "start_time" can not be nil`,
+			expectedErrorStr: `segment "start_time" cannot be nil`,
 		},
 		{
 			testCase: "missing segment trace_id",
@@ -671,7 +671,7 @@ func TestValidate(t *testing.T) {
 				ID:        String("an ID"),
 				StartTime: aws.Float64(10),
 			},
-			expectedErrorStr: `segment "trace_id" can not be nil`,
+			expectedErrorStr: `segment "trace_id" cannot be nil`,
 		},
 		{
 			testCase: "happy case",

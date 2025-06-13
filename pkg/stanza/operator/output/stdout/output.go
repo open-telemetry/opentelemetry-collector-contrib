@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -19,6 +20,14 @@ type Output struct {
 	helper.OutputOperator
 	encoder *json.Encoder
 	mux     sync.Mutex
+}
+
+func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs error
+	for i := range entries {
+		errs = multierr.Append(errs, o.Process(ctx, entries[i]))
+	}
+	return errs
 }
 
 // Process will log entries received.

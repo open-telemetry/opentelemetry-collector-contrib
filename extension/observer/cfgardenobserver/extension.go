@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 )
 
 const (
@@ -34,7 +35,7 @@ const (
 )
 
 type cfGardenObserver struct {
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	config   *Config
 	doneChan chan struct{}
 	logger   *zap.Logger
@@ -61,7 +62,7 @@ func newObserver(config *Config, logger *zap.Logger) (extension.Extension, error
 		apps:       make(map[string]*resource.App),
 		doneChan:   make(chan struct{}),
 	}
-	g.EndpointsWatcher = observer.NewEndpointsWatcher(g, config.RefreshInterval, logger)
+	g.EndpointsWatcher = endpointswatcher.New(g, config.RefreshInterval, logger)
 	return g, nil
 }
 

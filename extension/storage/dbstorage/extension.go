@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
@@ -35,6 +35,19 @@ func newDBStorage(logger *zap.Logger, config *Config) (extension.Extension, erro
 
 // Start opens a connection to the database
 func (ds *databaseStorage) Start(context.Context, component.Host) error {
+	if ds.driverName == driverSQLiteLegacy {
+		// Log warning about legacy driver usage
+		ds.logger.Warn("Legacy driver 'sqlite3' is used, please review documentation to update your configuration")
+		// Change legacy driver to a new one
+		ds.driverName = driverSQLite
+		// Try to convert legacy driver options and log errors if any
+		var err error
+		ds.datasourceName, err = replaceCompatDSNOptions(ds.logger, ds.datasourceName)
+		if err != nil {
+			return err
+		}
+	}
+
 	db, err := sql.Open(ds.driverName, ds.datasourceName)
 	if err != nil {
 		return err
@@ -64,7 +77,7 @@ func (ds *databaseStorage) GetClient(ctx context.Context, kind component.Kind, e
 		fullName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
 	fullName = strings.ReplaceAll(fullName, " ", "")
-	return newClient(ctx, ds.driverName, ds.db, fullName)
+	return newClient(ctx, ds.logger, ds.db, ds.driverName, fullName)
 }
 
 func kindString(k component.Kind) string {

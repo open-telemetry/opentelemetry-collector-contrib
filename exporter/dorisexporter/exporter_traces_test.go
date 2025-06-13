@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	"go.uber.org/zap"
 )
 
 func TestPushTraceData(t *testing.T) {
@@ -29,7 +31,7 @@ func TestPushTraceData(t *testing.T) {
 	err = config.Validate()
 	require.NoError(t, err)
 
-	exporter := newTracesExporter(nil, config, componenttest.NewNopTelemetrySettings())
+	exporter := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
 	ctx := context.Background()
 
@@ -57,7 +59,7 @@ func TestPushTraceData(t *testing.T) {
 		assert.Equal(t, http.ErrServerClosed, err)
 	}()
 
-	err0 := fmt.Errorf("Not Started")
+	err0 := errors.New("Not Started")
 	for i := 0; err0 != nil && i < 10; i++ { // until server started
 		err0 = exporter.pushTraceData(ctx, simpleTraces(10))
 		time.Sleep(100 * time.Millisecond)

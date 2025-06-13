@@ -17,10 +17,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
 
 func TestReceiver(t *testing.T) {
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
@@ -179,7 +180,7 @@ otel.metrics.exporter = otlp`,
 
 	for _, test := range tests {
 		t.Run(test.name, func(*testing.T) {
-			params := receivertest.NewNopSettings()
+			params := receivertest.NewNopSettings(metadata.Type)
 			receiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 			if test.expectedError == "" {
@@ -212,7 +213,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(*testing.T) {
-			params := receivertest.NewNopSettings()
+			params := receivertest.NewNopSettings(metadata.Type)
 			jmxReceiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.ErrorContains(t, err, test.expectedErr)

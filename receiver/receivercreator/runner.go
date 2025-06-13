@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
@@ -137,7 +138,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	if err := mergedConfig.Unmarshal(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
 	}
-	if err := component.ValidateConfig(receiverCfg); err != nil {
+	if err := xconfmap.Validate(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("invalid runtime receiver config: receivers::%s: %w", receiver.id, err)
 	}
 	return receiverCfg, targetEndpoint, nil

@@ -6,7 +6,8 @@ status:
     beta: [logs]
   distributions: [contrib]
   codeowners:
-    active: [boostchicken, bryan-aguilar, rapphil]
+    active: [boostchicken, rapphil]
+    emeritus: [bryan-aguilar]
 
 tests:
   config:
