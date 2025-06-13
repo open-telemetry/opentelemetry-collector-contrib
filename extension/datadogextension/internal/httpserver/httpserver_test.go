@@ -25,18 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
-// slowShutdownServer wraps http.Server and adds a delay to Shutdown for testing
-// Only used in tests to simulate a slow shutdown
-type slowShutdownServer struct {
-	*http.Server
-	delay time.Duration
-}
-
-func (s *slowShutdownServer) Shutdown(ctx context.Context) error {
-	time.Sleep(s.delay)
-	return s.Server.Shutdown(ctx)
-}
-
 func TestServerStart(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -444,10 +432,10 @@ func TestServerStop(t *testing.T) {
 				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				})
-				//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 				server := &http.Server{
-					Addr:    "127.0.0.1:0", // Use any available port
-					Handler: mux,
+					Addr:              "127.0.0.1:0", // Use any available port
+					Handler:           mux,
+					ReadHeaderTimeout: 10 * time.Millisecond,
 				}
 
 				return &Server{
@@ -479,8 +467,9 @@ func TestServerStop(t *testing.T) {
 				})
 
 				server := &http.Server{
-					Addr:    "127.0.0.1:0",
-					Handler: mux,
+					Addr:              "127.0.0.1:0",
+					Handler:           mux,
+					ReadHeaderTimeout: 10 * time.Millisecond,
 				}
 
 				srv := &Server{
@@ -567,10 +556,10 @@ func TestServerStopChannelBehavior(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 	server := &http.Server{
-		Addr:    "127.0.0.1:0",
-		Handler: mux,
+		Addr:              "127.0.0.1:0",
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Millisecond,
 	}
 
 	srv := &Server{
@@ -625,10 +614,10 @@ func TestServerStopConcurrency(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 	server := &http.Server{
-		Addr:    "127.0.0.1:0",
-		Handler: mux,
+		Addr:              "127.0.0.1:0",
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Millisecond,
 	}
 
 	srv := &Server{

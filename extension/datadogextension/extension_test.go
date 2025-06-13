@@ -174,7 +174,7 @@ func TestNotifyConfig(t *testing.T) {
 		assert.NoError(t, ext.Shutdown(context.Background()))
 	})
 
-	t.Run("success without http server", func(t *testing.T) {
+	t.Run("nil http server config", func(t *testing.T) {
 		set := extension.Settings{
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
@@ -186,7 +186,8 @@ func TestNotifyConfig(t *testing.T) {
 		require.NoError(t, err)
 
 		err = ext.NotifyConfig(context.Background(), confmap.New())
-		require.NoError(t, err)
+		require.Error(t, err)
+		assert.Equal(t, "local HTTP server config is required to send payloads to Datadog", err.Error())
 		assert.Nil(t, ext.httpServer, "http server should not be created")
 	})
 }

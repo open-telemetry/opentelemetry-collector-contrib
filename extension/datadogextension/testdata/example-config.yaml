@@ -45,19 +45,17 @@ connectors:
 service:
   telemetry:
     logs:
-      level: "detailed"
-    metrics:
-      level: "detailed"
+      level: "info"
   extensions: [health_check, pprof, datadog]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug, datadog/connector, datadog]
+      exporters: [datadog/connector, datadog]
     metrics:
       receivers: [otlp, hostmetrics, datadog/connector]
       processors: [memory_limiter, batch]
-      exporters: [debug, datadog]
+      exporters: [datadog]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]

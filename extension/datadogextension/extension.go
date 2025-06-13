@@ -5,8 +5,10 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -73,11 +75,16 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 
 	// Get the full collector configuration as a flattened JSON string
 	fullConfig := componentchecker.DataToFlattenedJSONString(conf.ToStringMap())
-
+	var hostnameSource string
+	if e.extensionConfig.Hostname != "" {
+		hostnameSource = "config"
+	} else {
+		hostnameSource = "inferred"
+	}
 	// Prepare the base payload
 	otelCollectorPayload := payload.PrepareOtelCollectorMetadata(
 		e.host.Identifier,
-		string(e.host.Kind),
+		hostnameSource,
 		e.uuid,
 		e.buildInfo.Version,
 		e.extensionConfig.API.Site,
@@ -108,19 +115,23 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	// Store the created payload in the extension struct
 	e.otelCollectorMetadata = &otelCollectorPayload
 	e.logger.Info("Datadog extension payload created", zap.Any("payload", e.otelCollectorMetadata))
-	// Create and start the HTTP server
-	if e.extensionConfig.HTTPConfig != nil {
-		e.httpServer = httpserver.NewServer(
-			e.logger,
-			e.serializer,
-			e.extensionConfig.HTTPConfig,
-			e.host.Identifier,
-			e.uuid,
-			otelCollectorPayload,
-		)
-		e.httpServer.Start()
+	if e.extensionConfig.HTTPConfig == nil {
+		return errors.New("local HTTP server config is required to send payloads to Datadog")
 	}
-
+	// Create and start the HTTP server
+	e.httpServer = httpserver.NewServer(
+		e.logger,
+		e.serializer,
+		e.extensionConfig.HTTPConfig,
+		e.host.Identifier,
+		e.uuid,
+		otelCollectorPayload,
+	)
+	e.httpServer.Start()
+	_, err = e.httpServer.SendPayload()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -205,6 +216,8 @@ func newExtension(
 		agentcomponents.WithPayloadsConfig(),
 		// Use ClientConfig proxy settings instead of environment variables
 		agentcomponents.WithProxy(ddConfig),
+		// logging_frequency required to be set to avoid "divide by zero" error
+		agentcomponents.WithCustomConfig("logging_frequency", 1, pkgconfigmodel.SourceDefault),
 	}
 
 	// Create agent components
