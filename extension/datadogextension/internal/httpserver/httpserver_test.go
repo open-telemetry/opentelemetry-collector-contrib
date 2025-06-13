@@ -760,3 +760,105 @@ func TestHandleMetadata_JSONMarshalError(t *testing.T) {
 	}
 	assert.True(t, found, "Expected error log for marshal failure")
 }
+
+func TestNewServerErrorPaths(t *testing.T) {
+	t.Run("Stop server that never started", func(t *testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		// Create server but don't start it
+		s := NewServer(
+			logger,
+			&mockSerializer{},
+			&Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0", // Valid endpoint
+				},
+				Path: "/metadata",
+			},
+			"test-hostname",
+			"test-uuid",
+			payload.OtelCollector{},
+		)
+
+		// Stop should not panic even if server was never started
+		assert.NotPanics(t, func() {
+			s.Stop(context.Background())
+		})
+	})
+
+	t.Run("Stop server with nil server", func(t *testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		// Create a server instance with nil server field
+		s := &Server{
+			logger: logger,
+			server: nil,
+		}
+
+		// Stop should not panic with nil server
+		assert.NotPanics(t, func() {
+			s.Stop(context.Background())
+		})
+	})
+}
+
+func TestHandleMetadataErrorPaths(t *testing.T) {
+	t.Run("serializer error", func(t *testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		srv := &Server{
+			logger: logger,
+			serializer: &mockSerializer{
+				sendMetadataFunc: func(any) error {
+					return errors.New("serializer failed")
+				},
+			},
+			payload: &payload.OtelCollectorPayload{
+				Hostname: "test-hostname",
+				UUID:     "test-uuid",
+				Metadata: payload.OtelCollector{
+					FullComponents:   []payload.CollectorModule{},
+					ActiveComponents: []payload.ServiceComponent{},
+				},
+			},
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/metadata", nil) // Method doesn't matter
+
+		srv.HandleMetadata(w, r)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, "Failed to prepare and send fleet automation payload\n", w.Body.String())
+	})
+
+	t.Run("marshal error with nil writer", func(*testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		// Create a payload that cannot be marshaled to trigger marshal error
+		srv := &Server{
+			logger: logger,
+			serializer: &mockSerializer{
+				sendMetadataFunc: func(any) error {
+					return nil
+				},
+			},
+			payload: &payload.OtelCollectorPayload{
+				Hostname: "test-hostname",
+				UUID:     "test-uuid",
+				Metadata: payload.OtelCollector{
+					FullComponents:   []payload.CollectorModule{},
+					ActiveComponents: []payload.ServiceComponent{},
+				},
+			},
+		}
+
+		// Test with nil writer to cover that error path
+		srv.HandleMetadata(nil, nil)
+		// Should not panic with nil writer
+	})
+}

@@ -100,3 +100,51 @@ func TestInternalFactory_SourceProvider(t *testing.T) {
 		assert.Equal(t, "provider creation failed", err.Error())
 	})
 }
+
+func TestFactory_CreateErrorPaths(t *testing.T) {
+	f := NewFactory()
+
+	t.Run("invalid config type", func(t *testing.T) {
+		set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
+		_, err := f.Create(context.Background(), set, &struct{}{})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid config type")
+	})
+
+	t.Run("source provider error", func(t *testing.T) {
+		// Create a factory with pre-set error
+		internalFactory := &factory{
+			providerErr: errors.New("source provider creation failed"),
+		}
+		internalFactory.onceProvider.Do(func() {}) // Trigger the sync.Once to store the error
+
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		}
+		set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
+
+		_, err := internalFactory.create(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "source provider creation failed")
+	})
+
+	t.Run("newExtension error from hostProvider", func(t *testing.T) {
+		// This test requires a factory that will fail in newExtension
+		internalFactory := &factory{}
+
+		// Mock the SourceProvider to return an error
+		internalFactory.sourceProvider = &mockSourceProvider{
+			err: errors.New("host provider error"),
+		}
+		internalFactory.onceProvider.Do(func() {}) // Ensure sync.Once is executed
+
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		}
+		set := extensiontest.NewNopSettings(component.MustNewType("datadog"))
+
+		_, err := internalFactory.create(context.Background(), set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "host provider error")
+	})
+}

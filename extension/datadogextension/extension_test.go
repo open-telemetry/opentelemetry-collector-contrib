@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -192,6 +193,138 @@ func TestNotifyConfig(t *testing.T) {
 	})
 }
 
+func TestComponentStatusChanged(t *testing.T) {
+	ext := &datadogExtension{}
+
+	assert.NotPanics(t, func() {
+		ext.ComponentStatusChanged(nil, nil)
+	})
+
+	instanceID := &componentstatus.InstanceID{}
+	event := &componentstatus.Event{}
+	assert.NotPanics(t, func() {
+		ext.ComponentStatusChanged(instanceID, event)
+	})
+}
+
+func TestNotifyConfigErrorPaths(t *testing.T) {
+	t.Run("http server SendPayload error", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+
+		// Create a mock serializer that will cause SendPayload to fail
+		mockSerializer := &mockFailingSerializer{}
+		ext.serializer = mockSerializer
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		conf := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{"otlp": nil},
+			"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
+		})
+
+		// This should trigger the error path when SendPayload fails
+		err = ext.NotifyConfig(context.Background(), conf)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "payload send failed")
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+
+	t.Run("PopulateFullComponentsJSON error", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+
+		// Set moduleInfos to empty to trigger error path in PopulateFullComponentsJSON
+		ext.moduleInfos = service.ModuleInfos{}
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		conf := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{"otlp": nil},
+		})
+
+		// This should trigger warning but not fail
+		err = ext.NotifyConfig(context.Background(), conf)
+		require.NoError(t, err) // Should not fail, just log warning
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+
+	t.Run("PopulateActiveComponents error", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		ext.serializer = &mockSerializer{}
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		// Create an invalid configuration that will cause PopulateActiveComponents to fail
+		conf := confmap.NewFromStringMap(map[string]any{
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": "invalid-not-a-list", // This should cause an error
+					},
+				},
+			},
+		})
+		ext.moduleInfos = service.ModuleInfos{
+			Receiver: map[component.Type]service.ModuleInfo{
+				component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
+			},
+		}
+
+		// This should trigger warning but not fail
+		err = ext.NotifyConfig(context.Background(), conf)
+		require.NoError(t, err) // Should not fail, just log warning
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+}
+
 func TestSimpleInterfaceMethods(t *testing.T) {
 	ext := &datadogExtension{}
 	assert.NoError(t, ext.Ready())
@@ -270,4 +403,13 @@ func (m *mockSerializer) SendOrchestratorMetadata([]types.ProcessMessageBody, st
 
 func (m *mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, string, string) error {
 	return nil
+}
+
+// Mock serializer that fails SendPayload for testing error paths
+type mockFailingSerializer struct {
+	mockSerializer
+}
+
+func (m *mockFailingSerializer) SendMetadata(marshaler.JSONMarshaler) error {
+	return errors.New("payload send failed")
 }
