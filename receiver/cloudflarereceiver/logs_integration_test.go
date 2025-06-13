@@ -63,7 +63,8 @@ func TestReceiverTLSIntegration(t *testing.T) {
 								KeyFile:  filepath.Join("testdata", "cert", "server.key"),
 							},
 						},
-						TimestampField: "EdgeStartTimestamp",
+						TimestampField:  "EdgeStartTimestamp",
+						TimestampFormat: "rfc3339",
 						Attributes: map[string]string{
 							"ClientIP": "http_request.client_ip",
 						},
