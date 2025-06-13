@@ -119,7 +119,7 @@ func (s *pagingScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	err = s.scrapePagingFaultsMetric()
 	if err != nil {
-		errors.AddPartial(1, err)
+		errors.Add(err)
 	}
 
 	return s.mb.Emit(), errors.Combine()
