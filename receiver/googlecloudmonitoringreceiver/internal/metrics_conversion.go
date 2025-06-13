@@ -224,8 +224,10 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 		}
 
 		countTotal := uint64(0)
+		sourceBucketCounts := sourceValue.GetDistributionValue().GetBucketCounts()
 		targetBucketCounts := targetDataPoint.BucketCounts()
-		for _, bucketCount := range sourceValue.GetDistributionValue().GetBucketCounts() {
+		targetBucketCounts.EnsureCapacity(len(sourceBucketCounts))
+		for _, bucketCount := range sourceBucketCounts {
 			if bucketCount >= 0 {
 				targetBucketCounts.Append(uint64(bucketCount))
 				countTotal += uint64(bucketCount)
@@ -305,6 +307,7 @@ func (mb *MetricsBuilder) convertDistributionDataPointLinearBuckets(
 
 	// bucket 0: [-infinity, offset) and
 	// buckets 1 - N-1: [offset + (width * (i - 1)), offset + (width * i))
+	targetDataPoint.ExplicitBounds().EnsureCapacity(int(numFiniteBuckets) + 1)
 	for i := 0; i <= int(numFiniteBuckets); i++ {
 		targetDataPoint.ExplicitBounds().Append(offset + width*float64(i))
 	}
@@ -356,6 +359,7 @@ func (mb *MetricsBuilder) convertDistributionDataPointExponentialBuckets(
 
 	// bucket 0: [-infinity, offset) and
 	// buckets 1 - N-1: [offset + (width * (i - 1)), offset + (width * i))
+	targetDataPoint.ExplicitBounds().EnsureCapacity(int(numFiniteBuckets) + 1)
 	for i := 0; i <= int(numFiniteBuckets); i++ {
 		targetDataPoint.ExplicitBounds().Append(scale * math.Pow(growthFactor, float64(i)))
 	}
