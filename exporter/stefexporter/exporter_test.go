@@ -145,7 +145,7 @@ func runTest(
 	}
 	cfg.Endpoint = mockSrv.endpoint
 	// Use insecure mode for tests so that we don't bother with certificates.
-	cfg.TLSSetting.Insecure = true
+	cfg.TLS.Insecure = true
 
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
@@ -314,7 +314,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: mockSrv.endpoint,
 		// Use insecure mode for tests so that we don't bother with certificates.
-		TLSSetting: configtls.ClientConfig{Insecure: true},
+		TLS: configtls.ClientConfig{Insecure: true},
 	}
 
 	set := exportertest.NewNopSettings(metadata.Type)
@@ -370,8 +370,8 @@ func TestCancelBlockedExport(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
-		Endpoint:   endpoint,
-		TLSSetting: configtls.ClientConfig{Insecure: true},
+		Endpoint: endpoint,
+		TLS:      configtls.ClientConfig{Insecure: true},
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
@@ -422,7 +422,7 @@ func TestCancelAfterExport(t *testing.T) {
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: mockSrv.endpoint,
 		// Use insecure mode for tests so that we don't bother with certificates.
-		TLSSetting: configtls.ClientConfig{Insecure: true},
+		TLS: configtls.ClientConfig{Insecure: true},
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)

@@ -105,7 +105,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
-			TLSSetting: &configtls.ServerConfig{
+			TLS: &configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
