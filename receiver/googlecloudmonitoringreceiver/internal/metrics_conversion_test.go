@@ -4,7 +4,6 @@
 package internal
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"testing"
@@ -259,16 +258,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	targetExemplar2 := targetExemplars.At(1)
 	assert.Equal(t, pmetric.ExemplarValueTypeDouble, targetExemplar2.ValueType())
 	assert.Equal(t, float64(23.3), targetExemplar2.DoubleValue())
-	targetExemplar2FilteredAttributes := targetExemplar2.FilteredAttributes()
-	targetArbitraryAttachmentAttr, ok := targetExemplar2FilteredAttributes.Get("type.googleapis.com/google.protobuf.Value_0")
-	assert.True(t, ok)
-	jsonBytes := targetArbitraryAttachmentAttr.Bytes()
-	assert.NotNil(t, jsonBytes)
-	var targetArbitraryAttachmentAsMap map[string]any
-	err = json.Unmarshal(jsonBytes.AsRaw(), &targetArbitraryAttachmentAsMap)
-	require.NoError(t, err)
-	assert.Equal(t, "value", targetArbitraryAttachmentAsMap["value"].(map[string]any)["string"])
-	assert.Equal(t, float64(13), targetArbitraryAttachmentAsMap["value"].(map[string]any)["number"])
+	assert.Equal(t, 0, targetExemplar2.FilteredAttributes().Len())
 }
 
 func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_OnlyUnderAndOverflow(t *testing.T) {
