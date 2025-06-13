@@ -28,7 +28,7 @@ attributes:
 metrics:
   file.mtime:
     description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
-    enabled: true # TODO - not supported
+    enabled: true
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -36,7 +36,7 @@ metrics:
     unit: "s"
   file.ctime:
     description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
-    enabled: true # TODO - not supported
+    enabled: false
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -46,7 +46,7 @@ metrics:
       - file.permissions
   file.atime:
     description: Elapsed time since last access of the file or folder, in seconds since Epoch.
-    enabled: true # TODO - not supported
+    enabled: false
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -54,13 +54,13 @@ metrics:
     unit: "s"
   file.size:
     description: The size of the file or folder, in bytes.
-    enabled: true # TODO - not supported
+    enabled: true
     gauge:
       value_type: int
     unit: "b"
   file.count:
     description: The number of files matched
-    enabled: true # TODO - not supported
+    enabled: false
     gauge:
       value_type: int
     unit: "{file}"
