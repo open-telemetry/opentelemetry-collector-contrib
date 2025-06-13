@@ -30,7 +30,6 @@ processor/routingprocessor/
 
 # Start unmaintained components list
 
-connector/countconnector
 exporter/awscloudwatchlogsexporter
 exporter/carbonexporter
 exporter/kineticaexporter

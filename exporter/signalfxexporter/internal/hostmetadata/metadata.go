@@ -4,8 +4,10 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
 import (
+	"context"
 	"sync"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -17,14 +19,16 @@ import (
 
 // Syncer is a config structure for host metadata syncer.
 type Syncer struct {
+	envMap    common.EnvMap
 	logger    *zap.Logger
 	dimClient dimensions.MetadataUpdateClient
 	once      sync.Once
 }
 
 // NewSyncer creates new instance of host metadata syncer.
-func NewSyncer(logger *zap.Logger, dimClient dimensions.MetadataUpdateClient) *Syncer {
+func NewSyncer(logger *zap.Logger, dimClient dimensions.MetadataUpdateClient, envMap common.EnvMap) *Syncer {
 	return &Syncer{
+		envMap:    envMap,
 		logger:    logger,
 		dimClient: dimClient,
 	}
@@ -85,8 +89,9 @@ func (s *Syncer) prepareMetadataUpdate(props map[string]string, hostID splunk.Ho
 
 func (s *Syncer) scrapeHostProperties() map[string]string {
 	props := make(map[string]string)
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
 
-	cpu, err := getCPU()
+	cpu, err := getCPU(ctx)
 	if err == nil {
 		for k, v := range cpu.toStringMap() {
 			props[k] = v
@@ -95,7 +100,7 @@ func (s *Syncer) scrapeHostProperties() map[string]string {
 		s.logger.Warn("Failed to scrape host hostCPU metadata", zap.Error(err))
 	}
 
-	mem, err := getMemory()
+	mem, err := getMemory(ctx)
 	if err == nil {
 		for k, v := range mem.toStringMap() {
 			props[k] = v
@@ -104,7 +109,7 @@ func (s *Syncer) scrapeHostProperties() map[string]string {
 		s.logger.Warn("Failed to scrape host memory metadata", zap.Error(err))
 	}
 
-	os, err := getOS()
+	os, err := getOS(ctx)
 	if err == nil {
 		for k, v := range os.toStringMap() {
 			props[k] = v
