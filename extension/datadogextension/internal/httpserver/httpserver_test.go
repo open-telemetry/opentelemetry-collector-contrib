@@ -25,6 +25,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
+// slowShutdownServer wraps http.Server and adds a delay to Shutdown for testing
+// Only used in tests to simulate a slow shutdown
+type slowShutdownServer struct {
+	*http.Server
+	delay time.Duration
+}
+
+func (s *slowShutdownServer) Shutdown(ctx context.Context) error {
+	time.Sleep(s.delay)
+	return s.Server.Shutdown(ctx)
+}
+
 func TestServerStart(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -396,6 +408,7 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 }
 
 func TestServerStop(t *testing.T) {
+	var blockCh chan struct{} // Used only for the slow shutdown test
 	tests := []struct {
 		name             string
 		setupServer      func() (*Server, *observer.ObservedLogs)
@@ -454,27 +467,31 @@ func TestServerStop(t *testing.T) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
 
-				// Create a test server
+				// Create a test server with a blocking handler
 				mux := http.NewServeMux()
+				blockCh = make(chan struct{})
+				mux.HandleFunc("/block", func(w http.ResponseWriter, _ *http.Request) {
+					<-blockCh // block until closed
+					w.WriteHeader(http.StatusOK)
+				})
 				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				})
 
-				//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 				server := &http.Server{
 					Addr:    "127.0.0.1:0",
 					Handler: mux,
 				}
 
-				return &Server{
+				srv := &Server{
 					logger: logger,
 					server: server,
-				}, logs
+				}
+
+				return srv, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				// Create a context that will be cancelled very quickly
 				ctx, cancel := context.WithCancel(context.Background())
-				// Cancel the context after a short delay to simulate timeout
 				go func() {
 					time.Sleep(10 * time.Millisecond)
 					cancel()
@@ -493,24 +510,32 @@ func TestServerStop(t *testing.T) {
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
 
-			// If we have a server, start it briefly to make shutdown more realistic
 			if srv.server != nil && srv.server.Addr != "" {
-				// Start the server in a goroutine
 				go func() {
 					if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 						t.Logf("Unexpected server error: %v", err)
 					}
 				}()
-				// Give the server a moment to start
 				time.Sleep(10 * time.Millisecond)
+
+				if tt.simulateSlowStop {
+					go func() {
+						resp, err := http.Get("http://" + srv.server.Addr + "/block")
+						if err == nil {
+							_ = resp.Body.Close()
+						}
+					}()
+				}
 			}
 
-			// Measure how long Stop takes
 			start := time.Now()
 			srv.Stop(ctx)
 			duration := time.Since(start)
 
-			// Verify expected logs
+			if tt.simulateSlowStop {
+				close(blockCh)
+			}
+
 			for _, expectedLog := range tt.expectedLogs {
 				found := false
 				for _, log := range logs.All() {
@@ -522,8 +547,6 @@ func TestServerStop(t *testing.T) {
 				assert.True(t, found, "Expected log message not found: %s", expectedLog)
 			}
 
-			// If we expect timeout, verify it happened reasonably quickly
-			// (context cancellation should not wait for full server shutdown)
 			if tt.expectTimeout {
 				assert.Less(t, duration, 500*time.Millisecond, "Stop should return quickly when context is cancelled")
 			}
