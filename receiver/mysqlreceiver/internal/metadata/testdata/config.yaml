@@ -35,6 +35,8 @@ all_set:
       enabled: true
     mysql.log_operations:
       enabled: true
+    mysql.max_used_connections:
+      enabled: true
     mysql.mysqlx_connections:
       enabled: true
     mysql.mysqlx_worker_threads:
@@ -131,6 +133,8 @@ none_set:
     mysql.locks:
       enabled: false
     mysql.log_operations:
+      enabled: false
+    mysql.max_used_connections:
       enabled: false
     mysql.mysqlx_connections:
       enabled: false

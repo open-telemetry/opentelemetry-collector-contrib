@@ -45,6 +45,7 @@ type MetricsConfig struct {
 	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
 	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
 	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
+	MysqlMaxUsedConnections      MetricConfig `mapstructure:"mysql.max_used_connections"`
 	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
 	MysqlMysqlxWorkerThreads     MetricConfig `mapstructure:"mysql.mysqlx_worker_threads"`
 	MysqlOpenedResources         MetricConfig `mapstructure:"mysql.opened_resources"`
@@ -127,6 +128,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MysqlLogOperations: MetricConfig{
+			Enabled: true,
+		},
+		MysqlMaxUsedConnections: MetricConfig{
 			Enabled: true,
 		},
 		MysqlMysqlxConnections: MetricConfig{
