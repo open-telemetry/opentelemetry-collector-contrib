@@ -89,6 +89,7 @@ body:
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
+      - exporter/tinybird
       - exporter/zipkin
       - extension/ack
       - extension/asapauth

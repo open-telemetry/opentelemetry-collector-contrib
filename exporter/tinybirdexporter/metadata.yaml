@@ -1,0 +1,17 @@
+type: tinybird
+
+status:
+  class: exporter
+  stability:
+    development: [logs, metrics, traces]
+  distributions: []
+  codeowners:
+    active: [mx-psi, jordivilaseca, MoreraAlejandro]
+
+tests:
+  config:
+    endpoint: "http://localhost:1234"
+    token: "test-token"
+    metrics_datasource: "metrics"
+    traces_datasource: "traces"
+    logs_datasource: "logs"
