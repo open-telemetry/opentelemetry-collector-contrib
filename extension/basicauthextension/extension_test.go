@@ -4,11 +4,13 @@
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,20 +47,21 @@ var credentials = [][]string{
 
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
-	f, err := os.CreateTemp(t.TempDir(), ".htpasswd")
-	require.NoError(t, err)
-	defer os.Remove(f.Name())
 
+	var buf bytes.Buffer
 	for _, c := range credentials {
-		_, err = fmt.Fprintf(f, "%s:%s\n", c[0], c[1])
+		_, err := fmt.Fprintf(&buf, "%s:%s\n", c[0], c[1])
 		require.NoError(t, err)
 	}
+	htpasswdFile := filepath.Join(t.TempDir(), ".htpasswd")
+	err := os.WriteFile(htpasswdFile, buf.Bytes(), 0o600)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{
-			File: f.Name(),
+			File: htpasswdFile,
 		},
 	})
 	require.NoError(t, err)
@@ -146,16 +149,14 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 
 func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	t.Parallel()
-	f, err := os.CreateTemp(t.TempDir(), ".htpasswd")
-	require.NoError(t, err)
-	defer os.Remove(f.Name())
 
-	_, err = f.WriteString("username:fromfile")
+	htpasswdFile := filepath.Join(t.TempDir(), ".htpasswd")
+	err := os.WriteFile(htpasswdFile, []byte("username:fromfile"), 0o600)
 	require.NoError(t, err)
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{
-			File:   f.Name(),
+			File:   htpasswdFile,
 			Inline: "username:frominline",
 		},
 	})
