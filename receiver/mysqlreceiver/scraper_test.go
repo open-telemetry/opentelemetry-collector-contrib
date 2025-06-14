@@ -202,8 +202,8 @@ func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
 }
 
-func (c *mockClient) getTableStats() ([]TableStats, error) {
-	var stats []TableStats
+func (c *mockClient) getTableStats() ([]tableStats, error) {
+	var stats []tableStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableStatsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s TableStats
+		var s tableStats
 		text := strings.Split(scanner.Text(), "\t")
 		s.schema = text[0]
 		s.name = text[1]
@@ -226,8 +226,8 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
-	var stats []TableIoWaitsStats
+func (c *mockClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
+	var stats []tableIoWaitsStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableIoWaitsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -236,7 +236,7 @@ func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s TableIoWaitsStats
+		var s tableIoWaitsStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -255,8 +255,8 @@ func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
-	var stats []IndexIoWaitsStats
+func (c *mockClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
+	var stats []indexIoWaitsStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.indexIoWaitsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -265,7 +265,7 @@ func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s IndexIoWaitsStats
+		var s indexIoWaitsStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -285,8 +285,8 @@ func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
-	var stats []StatementEventStats
+func (c *mockClient) getStatementEventsStats() ([]statementEventStats, error) {
+	var stats []statementEventStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.statementEventsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -295,7 +295,7 @@ func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s StatementEventStats
+		var s statementEventStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -359,8 +359,8 @@ func (c *mockClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, er
 	return stats, nil
 }
 
-func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
-	var stats []ReplicaStatusStats
+func (c *mockClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
+	var stats []replicaStatusStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.replicaStatusFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -369,7 +369,7 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s ReplicaStatusStats
+		var s replicaStatusStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.replicaIOState = text[0]
