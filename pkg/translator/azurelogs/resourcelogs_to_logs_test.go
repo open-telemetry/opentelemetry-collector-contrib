@@ -359,6 +359,47 @@ func TestUnmarshalLogs_FrontDoorWebApplicationFirewallLog(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogs_FrontDoorAccessLog(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/frontdooraccesslog"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+		expectsErr       string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+
+			if test.expectsErr != "" {
+				require.ErrorContains(t, err, test.expectsErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+		})
+	}
+}
+
 func TestUnmarshalLogs_Files(t *testing.T) {
 	// TODO @constanca-m Eventually this test function will be fully
 	// replaced with TestUnmarshalLogs_<category>, once all the currently supported
@@ -395,10 +436,6 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 		"platform_logs": {
 			logFilename:      "log-appserviceplatformlogs.json",
 			expectedFilename: "platform-logs-expected.yaml",
-		},
-		"front_door_access_logs": {
-			logFilename:      "log-frontdooraccesslog.json",
-			expectedFilename: "front-door-access-log-expected.yaml",
 		},
 		"front_door_health_probe_logs": {
 			logFilename:      "log-frontdoorhealthprobelog.json",
