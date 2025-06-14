@@ -483,7 +483,13 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
 // For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
 func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
-	buckets.EnsureCapacity(len(deltas))
+	// The total capacity is the sum of the deltas and the offsets of the spans.
+	totalCapacity := len(deltas)
+	for _, span := range spans {
+		totalCapacity += int(span.Offset)
+	}
+	buckets.EnsureCapacity(totalCapacity)
+
 	bucketIdx := 0
 	bucketCount := int64(0)
 	for spanIdx, span := range spans {
@@ -503,7 +509,13 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 // convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
 // For float buckets, the values are absolute counts, and must be 0 or positive.
 func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
-	buckets.EnsureCapacity(len(counts))
+	// The total capacity is the sum of the counts and the offsets of the spans.
+	totalCapacity := len(counts)
+	for _, span := range spans {
+		totalCapacity += int(span.Offset)
+	}
+	buckets.EnsureCapacity(totalCapacity)
+
 	bucketIdx := 0
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
