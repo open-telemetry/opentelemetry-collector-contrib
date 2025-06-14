@@ -88,6 +88,7 @@ type MetricsConfig struct {
 	K8sVolumeInodes                      MetricConfig `mapstructure:"k8s.volume.inodes"`
 	K8sVolumeInodesFree                  MetricConfig `mapstructure:"k8s.volume.inodes.free"`
 	K8sVolumeInodesUsed                  MetricConfig `mapstructure:"k8s.volume.inodes.used"`
+	K8sVolumeUsed                        MetricConfig `mapstructure:"k8s.volume.used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -271,6 +272,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sVolumeInodesUsed: MetricConfig{
 			Enabled: true,
+		},
+		K8sVolumeUsed: MetricConfig{
+			Enabled: false,
 		},
 	}
 }
