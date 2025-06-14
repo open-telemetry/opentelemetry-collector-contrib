@@ -261,6 +261,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attributes](#aggregate_on_attributes)
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
+- [drop_histogram_buckets](#drop_histogram_buckets)
 
 ### convert_sum_to_gauge
 
@@ -582,7 +583,25 @@ statements:
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
 
+### drop_histogram_buckets
 
+`drop_histogram_buckets(pattern)`
+
+The `drop_histogram_buckets` function removes histogram buckets whose bounds match the provided regex pattern.
+
+`pattern` is a string containing a valid regular expression to match against bucket bounds.
+
+Examples:
+
+- `drop_histogram_buckets("^10$") where metric.name == "http_request_duration"` - Remove the bucket with bound exactly equal to 10
+- `drop_histogram_buckets("^(5|20)$") where metric.name == "request_size"` - Remove buckets with bounds 5 and 20
+- `drop_histogram_buckets("^1.*") where metric.name == "latency"` - Remove all buckets with bounds starting with 1
+
+**NOTES:** 
+1. Due to floating-point formatting, there might be precision differences when matching bucket bounds. For example, `0.99999999999999999)` would be formatted as "1", which could affect pattern matching. Consider this when crafting regex patterns, especially for decimal values.
+
+2. When buckets are dropped, the histogram's sum is removed rather than updated. This is because histogram buckets only contain counts of values, not the actual values themselves. Without knowing the exact values in the dropped buckets, it's impossible to accurately adjust the sum. For example, in a bucket spanning [10-20] with count=1, the actual value could be any number between 10 and 20, making it impossible to know its exact contribution to the total sum.
+ 
 ## Examples
 
 ### Perform transformation if field does not exist
