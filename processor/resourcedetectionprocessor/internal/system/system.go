@@ -127,7 +127,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	var cpuInfo []cpu.InfoStat
-	if d.cfg.ResourceAttributes.HostCPUCacheL2Size.Enabled || d.cfg.ResourceAttributes.HostCPUFamily.Enabled ||
+	if d.cfg.ResourceAttributes.SystemCPUCoreID.Enabled || d.cfg.ResourceAttributes.SystemCPUSocketID.Enabled ||
+		d.cfg.ResourceAttributes.HostCPUCacheL2Size.Enabled || d.cfg.ResourceAttributes.HostCPUFamily.Enabled ||
 		d.cfg.ResourceAttributes.HostCPUModelID.Enabled || d.cfg.ResourceAttributes.HostCPUVendorID.Enabled ||
 		d.cfg.ResourceAttributes.HostCPUModelName.Enabled || d.cfg.ResourceAttributes.HostCPUStepping.Enabled {
 		cpuInfo, err = d.provider.CPUInfo(ctx)
@@ -229,4 +230,6 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) {
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
 	d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
+	d.rb.SetSystemCPUCoreID(cpuInfo.CoreID)
+	d.rb.SetSystemCPUSocketID(cpuInfo.PhysicalID)
 }

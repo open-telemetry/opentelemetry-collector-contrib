@@ -71,3 +71,11 @@ resource_attributes:
     description: The host.cpu.cache.l2.size
     type: int
     enabled: false
+  system.cpu.socket.id:
+    description: The system.cpu.socket.id
+    type: string
+    enabled: false
+  system.cpu.core.id:
+    description: The system.cpu.core.id
+    type: string
+    enabled: false
