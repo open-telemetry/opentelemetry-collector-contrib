@@ -18,10 +18,10 @@ kafka/full:
     retry:
       max: 10
       backoff: 5s
-kafka/sasl_aws_msk_iam:
+kafka/sasl_aws_msk_iam_oauthbearer:
   auth:
     sasl:
-      mechanism: AWS_MSK_IAM
+      mechanism: AWS_MSK_IAM_OAUTHBEARER
 kafka/sasl_plain:
   auth:
     sasl:

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
@@ -347,10 +348,11 @@ func TestWithLogsConfig_CombinedWithOtherOptions(t *testing.T) {
 	assert.True(t, config.GetBool("logs_enabled"))
 }
 
-func TestWithProxyFromEnv(t *testing.T) {
+func TestWithProxy(t *testing.T) {
 	tests := []struct {
 		name            string
 		envVars         map[string]string
+		proxyURL        string
 		expectedHTTP    string
 		expectedHTTPS   string
 		expectedNoProxy []any
@@ -365,6 +367,7 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "http://proxy.example.com:8080",
 			expectedHTTPS:   "https://secure-proxy.example.com:8443",
 			expectedNoProxy: []any{"localhost", "127.0.0.1", ".local"},
+			proxyURL:        "",
 		},
 		{
 			name: "only HTTP_PROXY set",
@@ -374,6 +377,7 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "http://proxy.example.com:3128",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{""},
+			proxyURL:        "",
 		},
 		{
 			name:            "no proxy environment variables",
@@ -381,6 +385,7 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{""},
+			proxyURL:        "",
 		},
 		{
 			name: "single NO_PROXY entry",
@@ -390,6 +395,26 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{"internal.company.com"},
+			proxyURL:        "",
+		},
+		{
+			name:            "only proxy_url set",
+			envVars:         map[string]string{},
+			expectedHTTP:    "http://proxyurl.example.com:3128",
+			expectedHTTPS:   "http://proxyurl.example.com:3128",
+			expectedNoProxy: []any{""},
+			proxyURL:        "http://proxyurl.example.com:3128",
+		},
+		{
+			name: "both proxy_url and proxy env vars set",
+			envVars: map[string]string{
+				"HTTP_PROXY":  "http://proxy.example.com:8080",
+				"HTTPS_PROXY": "https://secure-proxy.example.com:8443",
+			},
+			expectedHTTP:    "http://proxyurl.example.com:3128",
+			expectedHTTPS:   "http://proxyurl.example.com:3128",
+			expectedNoProxy: []any{""},
+			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 	}
 
@@ -400,8 +425,14 @@ func TestWithProxyFromEnv(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
+			cfg := &datadogconfig.Config{
+				ClientConfig: confighttp.ClientConfig{
+					ProxyURL: tt.proxyURL,
+				},
+			}
+
 			// Create config with proxy settings from environment
-			configComponent := NewConfigComponent(WithProxyFromEnv())
+			configComponent := NewConfigComponent(WithProxy(cfg))
 			require.NotNil(t, configComponent)
 
 			config := configComponent.(pkgconfigmodel.Config)
@@ -449,7 +480,7 @@ func TestAgentComponents_NewSerializer(t *testing.T) {
 	// Create a config component
 	configComponent := NewConfigComponent(configOptions...)
 
-	// Call NewSerializer - now creates forwarder and compressor internally
+	// Call NewSerializer - now returns SerializerWithForwarder
 	serializer := NewSerializerComponent(configComponent, zlog, "test-hostname")
 
 	// Assert that the returned serializer is not nil
@@ -457,6 +488,92 @@ func TestAgentComponents_NewSerializer(t *testing.T) {
 
 	// Assert that serializer implements MetricSerializer interface by calling a method
 	assert.True(t, serializer.AreSeriesEnabled() || !serializer.AreSeriesEnabled()) // Just testing interface compliance
+}
+
+func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
+	// Create a zap logger for testing
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
+	zlog := &ZapLogger{
+		Logger: logger,
+	}
+
+	configOptions := []ConfigOption{
+		WithAPIConfig(&datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key:  configopaque.String("test-api-key-123"),
+				Site: "datadoghq.com",
+			},
+		}),
+		WithForwarderConfig(),
+		WithPayloadsConfig(),
+	}
+	configComponent := NewConfigComponent(configOptions...)
+
+	// Create the serializer
+	serializer := NewSerializerComponent(configComponent, zlog, "test-hostname")
+	require.NotNil(t, serializer)
+
+	// Test initial state - should be stopped
+	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+
+	// Test Start method
+	err = serializer.Start()
+	assert.NoError(t, err, "Start should succeed")
+	assert.Equal(t, defaultforwarder.Started, serializer.State())
+
+	// Test that we can call Start again (should return error or be idempotent)
+	err = serializer.Start()
+	assert.Error(t, err, "Starting an already started forwarder should return an error")
+
+	// Test Stop method
+	serializer.Stop()
+	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+
+	// Test that we can stop again (should be safe)
+	serializer.Stop() // Should not panic
+}
+
+func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
+	// This test verifies that our compile-time check works correctly
+	// If DefaultForwarder doesn't implement ForwarderWithLifecycle,
+	// the compilation would fail at the var _ ForwarderWithLifecycle line
+
+	// Create a minimal setup to verify the interface works
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+	zlog := &ZapLogger{Logger: logger}
+
+	configOptions := []ConfigOption{
+		WithAPIConfig(&datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key:  configopaque.String("abcdef1234567890"),
+				Site: "datadoghq.com",
+			},
+		}),
+		WithForwarderConfig(),
+	}
+	configComponent := NewConfigComponent(configOptions...)
+
+	// This should return ForwarderWithLifecycle
+	forwarder := newForwarderComponent(configComponent, zlog)
+	require.NotNil(t, forwarder)
+
+	// Lifecycle methods
+	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+
+	err = forwarder.Start()
+	assert.NoError(t, err)
+	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+
+	// Test that it implements both Forwarder and lifecycle methods
+	// Forwarder interface methods
+	err = forwarder.SubmitV1Series(nil, nil)
+	assert.NoError(t, err) // Should not panic, may return error
+
+	forwarder.Stop()
+	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
 }
 
 func TestAgentComponents_NewLogComponent(t *testing.T) {
@@ -492,30 +609,25 @@ func TestNewForwarderComponent(t *testing.T) {
 		name     string
 		site     string
 		apiKey   string
-		validate func(t *testing.T, forwarder defaultforwarder.Forwarder, cfg coreconfig.Component)
+		validate func(t *testing.T, forwarder forwarderWithLifecycle, cfg coreconfig.Component)
 	}{
 		{
 			name:   "basic forwarder creation",
 			site:   "datadoghq.com",
 			apiKey: "test-api-key-123",
-			validate: func(t *testing.T, forwarder defaultforwarder.Forwarder, _ coreconfig.Component) {
+			validate: func(t *testing.T, forwarder forwarderWithLifecycle, _ coreconfig.Component) {
 				// Test that forwarder is not nil
 				assert.NotNil(t, forwarder)
 
-				// Test that we can cast to concrete type to access state
-				df, ok := forwarder.(*defaultforwarder.DefaultForwarder)
-				assert.True(t, ok, "Expected forwarder to be *DefaultForwarder")
-				assert.NotNil(t, df)
-
 				// Test that the forwarder is in stopped state initially
-				assert.Equal(t, defaultforwarder.Stopped, df.State())
+				assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
 			},
 		},
 		{
 			name:   "different site configuration",
 			site:   "datadoghq.eu",
 			apiKey: "eu-api-key-456",
-			validate: func(t *testing.T, forwarder defaultforwarder.Forwarder, cfg coreconfig.Component) {
+			validate: func(t *testing.T, forwarder forwarderWithLifecycle, cfg coreconfig.Component) {
 				assert.NotNil(t, forwarder)
 
 				// Verify the site was configured correctly
@@ -527,7 +639,7 @@ func TestNewForwarderComponent(t *testing.T) {
 			name:   "empty api key",
 			site:   "datadoghq.com",
 			apiKey: "",
-			validate: func(t *testing.T, forwarder defaultforwarder.Forwarder, cfg coreconfig.Component) {
+			validate: func(t *testing.T, forwarder forwarderWithLifecycle, cfg coreconfig.Component) {
 				assert.NotNil(t, forwarder)
 				assert.Empty(t, cfg.GetString("api_key"))
 			},
@@ -591,20 +703,16 @@ func TestNewForwarderComponent_Internal(t *testing.T) {
 	// Validate the forwarder was created
 	require.NotNil(t, forwarder)
 
-	// Cast to concrete type to test internals
-	df, ok := forwarder.(*defaultforwarder.DefaultForwarder)
-	require.True(t, ok, "Expected forwarder to be *DefaultForwarder")
-
 	// Test internal state
-	assert.Equal(t, defaultforwarder.Stopped, df.State())
+	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
 
 	// Test that we can start and stop the forwarder (this tests internal configuration)
-	err = df.Start()
+	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, df.State())
+	assert.Equal(t, defaultforwarder.Started, forwarder.State())
 
-	df.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, df.State())
+	forwarder.Stop()
+	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
 }
 
 func TestNewForwarderComponent_KeysPerDomainConfiguration(t *testing.T) {
@@ -635,13 +743,11 @@ func TestNewForwarderComponent_KeysPerDomainConfiguration(t *testing.T) {
 	forwarder := newForwarderComponent(configComponent, logComponent)
 	require.NotNil(t, forwarder)
 
-	// Test that the forwarder can be started (which validates internal configuration)
-	df := forwarder.(*defaultforwarder.DefaultForwarder)
-	err = df.Start()
+	err = forwarder.Start()
 	assert.NoError(t, err)
 
 	// Clean up
-	df.Stop()
+	forwarder.Stop()
 }
 
 func TestNewForwarderComponent_DisableAPIKeyChecking(t *testing.T) {
@@ -668,12 +774,11 @@ func TestNewForwarderComponent_DisableAPIKeyChecking(t *testing.T) {
 	// The function should set DisableAPIKeyChecking to true
 	// We can verify this by checking that the forwarder starts successfully
 	// even with potentially invalid keys, since API key validation is disabled
-	df := forwarder.(*defaultforwarder.DefaultForwarder)
-	err = df.Start()
+	err = forwarder.Start()
 	assert.NoError(t, err, "Forwarder should start successfully with DisableAPIKeyChecking=true")
 
 	// Clean up
-	df.Stop()
+	forwarder.Stop()
 }
 
 func TestNewForwarderComponent_ForwarderInterface(t *testing.T) {
@@ -698,8 +803,7 @@ func TestNewForwarderComponent_ForwarderInterface(t *testing.T) {
 
 	// Test a few method calls that shouldn't panic (though they may return errors)
 	// Since these require the forwarder to be started, we'll start it first
-	df := forwarder.(*defaultforwarder.DefaultForwarder)
-	err = df.Start()
+	err = forwarder.Start()
 	require.NoError(t, err)
 
 	// These method calls validate that the interface is properly implemented
@@ -711,5 +815,5 @@ func TestNewForwarderComponent_ForwarderInterface(t *testing.T) {
 	require.NoError(t, err)
 
 	// Clean up
-	df.Stop()
+	forwarder.Stop()
 }
