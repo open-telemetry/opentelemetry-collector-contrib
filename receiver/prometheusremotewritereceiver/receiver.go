@@ -437,12 +437,33 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		// The difference between float and integer histograms is that float histograms are stored as absolute counts
 		// while integer histograms are stored as deltas.
 		if histogram.IsFloatHistogram() {
+			// If the histogram is not a RESET_HINT_GAUGE, it is a counter histogram. Which means that it should
+			// not have negative counts.
+			isCounterHistogram := histogram.ResetHint != writev2.Histogram_RESET_HINT_GAUGE
+
 			// Float histograms
 			if len(histogram.PositiveSpans) > 0 {
+				// If the histogram is a counter histogram, we need to drop negative counts.
+				if isCounterHistogram {
+					for i, count := range histogram.PositiveCounts {
+						if count < 0 {
+							histogram.PositiveCounts[i] = 0
+						}
+					}
+				}
 				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
 			}
 			if len(histogram.NegativeSpans) > 0 {
+				// If the histogram is a counter histogram, we need to drop negative counts.
+				if isCounterHistogram {
+					for i, count := range histogram.NegativeCounts {
+						if count < 0 {
+							histogram.NegativeCounts[i] = 0
+						}
+					}
+				}
+
 				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
 			}
