@@ -8,6 +8,7 @@
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| aws.ec2.instance_life_cycle | The EC2 instance life cycle | Any Str | true |
 | cloud.account.id | The cloud account id | Any Str | true |
 | cloud.availability_zone | The cloud availability zone | Any Str | true |
 | cloud.platform | The cloud platform | Any Str | true |

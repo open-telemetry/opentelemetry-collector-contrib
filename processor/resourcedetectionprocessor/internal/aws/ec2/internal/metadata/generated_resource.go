@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetAwsEc2InstanceLifeCycle sets provided value as "aws.ec2.instance_life_cycle" attribute.
+func (rb *ResourceBuilder) SetAwsEc2InstanceLifeCycle(val string) {
+	if rb.config.AwsEc2InstanceLifeCycle.Enabled {
+		rb.res.Attributes().PutStr("aws.ec2.instance_life_cycle", val)
+	}
+}
+
 // SetCloudAccountID sets provided value as "cloud.account.id" attribute.
 func (rb *ResourceBuilder) SetCloudAccountID(val string) {
 	if rb.config.CloudAccountID.Enabled {
