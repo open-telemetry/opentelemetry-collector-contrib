@@ -411,9 +411,11 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			resp.Body.Close()
 		}()
 
-		// Per the Prometheus remote write 2.0 specification, the response should contain X-Prometheus-Remote-Write-Samples-Written header.
-		// If the header is missing, it suggests that the endpoint does not support RW2 or the implementation is not compliant with the specification.
-		// Reference: https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
+		// Per the Prometheus remote write 2.0 specification, the response should contain
+		// X-Prometheus-Remote-Write-Samples-Written header.
+		// If the header is missing, it suggests that the endpoint does not support RW2 or the
+		// implementation is not compliant with the specification. Reference:
+		// https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
 		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
 			samplesWritten := resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written")
 			if samplesWritten == "" {
