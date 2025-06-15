@@ -15,6 +15,8 @@ import (
 
 const operatorType = "remove"
 
+var errMissingField = errors.New("remove: field is empty")
+
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
@@ -46,7 +48,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.Field.Field == entry.NewNilField() {
-		return nil, errors.New("remove: field is empty")
+		return nil, errMissingField
 	}
 
 	return &Transformer{
