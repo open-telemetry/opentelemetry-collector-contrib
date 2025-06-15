@@ -13,6 +13,16 @@ resource_attributes:
     description: "The name of the Node"
     enabled: true
     type: string
+  k8s.node.label:
+    description: "The labels of the Node"
+    enabled: false
+    type: string
+    template_key: true
+  k8s.node.annotation:
+    description: "The annotations of the Node"
+    enabled: false
+    type: string
+    template_key: true
   k8s.pod.uid:
     description: "The UID of the Pod"
     enabled: true
