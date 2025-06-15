@@ -28,7 +28,7 @@ type metricsReceiver struct {
 	config        *Config
 	set           receiver.Settings
 	clientFactory clientFactory
-	scraper       *ContainerScraper
+	scraper       *containerScraper
 	mb            *metadata.MetricsBuilder
 	cancel        context.CancelFunc
 }
