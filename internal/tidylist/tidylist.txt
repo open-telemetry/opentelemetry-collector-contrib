@@ -150,6 +150,7 @@ exporter/sentryexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
+exporter/tinybirdexporter
 extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy

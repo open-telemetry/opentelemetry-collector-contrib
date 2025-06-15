@@ -67,6 +67,7 @@ exporter/stefexporter exporter/stef
 exporter/sumologicexporter exporter/sumologic
 exporter/syslogexporter exporter/syslog
 exporter/tencentcloudlogserviceexporter exporter/tencentcloudlogservice
+exporter/tinybirdexporter exporter/tinybird
 exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
