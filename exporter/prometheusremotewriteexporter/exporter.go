@@ -423,6 +423,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 					"X-Prometheus-Remote-Write-Samples-Written header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
 					zap.String("url", resp.Request.URL.String()),
 				)
+			}
 		}
 
 		// 2xx status code is considered a success
