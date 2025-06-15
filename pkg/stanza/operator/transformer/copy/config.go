@@ -15,6 +15,11 @@ import (
 
 const operatorType = "copy"
 
+var (
+	errMissingFrom = errors.New("copy: missing from field")
+	errMissingTo   = errors.New("copy: missing to field")
+)
+
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
@@ -46,11 +51,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.From == entry.NewNilField() {
-		return nil, errors.New("copy: missing from field")
+		return nil, errMissingFrom
 	}
 
 	if c.To == entry.NewNilField() {
-		return nil, errors.New("copy: missing to field")
+		return nil, errMissingTo
 	}
 
 	return &Transformer{

@@ -88,6 +88,10 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:           "invalid_empty_field",
+				ExpectBuildErr: errMissingField,
+			},
 		},
 	}.Run(t)
 }
