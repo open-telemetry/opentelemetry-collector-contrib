@@ -20,3 +20,6 @@ agent:
   config_files:
     - {{ .local_config }}
   {{- end }}
+  {{- if .hupRestart }}
+  use_hup_restart: {{ .hupRestart }}
+  {{- end }}
