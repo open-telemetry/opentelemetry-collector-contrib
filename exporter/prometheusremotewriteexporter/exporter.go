@@ -423,16 +423,6 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 					"X-Prometheus-Remote-Write-Samples-Written header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
 					zap.String("url", resp.Request.URL.String()),
 				)
-			} else {
-				prwe.settings.Logger.Debug("X-Prometheus-Remote-Write-Samples-Written", zap.String("samples_written", samplesWritten))
-				// If the X-Prometheus-Remote-Write-Samples-Written header is present, we can also check and log if the other headers are present.
-				if histogramsWritten := resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"); histogramsWritten != "" {
-					prwe.settings.Logger.Debug("X-Prometheus-Remote-Write-Histograms-Written", zap.String("histograms_written", histogramsWritten))
-				}
-				if exemplarsWritten := resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"); exemplarsWritten != "" {
-					prwe.settings.Logger.Debug("X-Prometheus-Remote-Write-Exemplars-Written", zap.String("exemplars_written", exemplarsWritten))
-				}
-			}
 		}
 
 		// 2xx status code is considered a success
