@@ -209,7 +209,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_resource",
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field.allResource = true
+				cfg.Field.UnmarshalText([]byte("resource"))
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -230,7 +230,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_attributes",
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field.allAttributes = true
+				cfg.Field.UnmarshalText([]byte("attributes"))
 				return cfg
 			}(),
 			func() *entry.Entry {

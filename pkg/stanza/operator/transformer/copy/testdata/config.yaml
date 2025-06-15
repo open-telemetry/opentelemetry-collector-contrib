@@ -24,7 +24,7 @@ resource_to_nested_resource:
   to: resource.one.two.three
 invalid_missing_from:
   type: copy
-  to: nothing
+  to: body.nothing
 invalid_missing_to:
   type: copy
-  from: nothing
+  from: body.nothing

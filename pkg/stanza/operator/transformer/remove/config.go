@@ -47,7 +47,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	if c.Field.Field == entry.NewNilField() {
+	if c.Field.Field == entry.NewNilField() && !c.Field.allAttributes && !c.Field.allResource {
 		return nil, errMissingField
 	}
 
