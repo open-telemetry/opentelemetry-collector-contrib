@@ -2160,6 +2160,92 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardPSliceGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardPSliceGetter[any]
+		want             any
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "pcommon.slice type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewSlice(), nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]any type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []any{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "ValueTypeSlice type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewValueSlice(), nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Slice but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Slice but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardPSliceGetter_WrappedError(t *testing.T) {
+	getter := StandardPSliceGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardPMapGetter(t *testing.T) {
 	tests := []struct {
 		name             string
