@@ -28,7 +28,12 @@ Index pattern will follow the next naming template `ss4o_{type}-{dataset}-{names
 
 LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
 - `logs_index` a user-provided label to specify name of the destination index or data stream.
-
+- `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
+    - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format::enabled` is `true`, the index name is composed using the above dynamic routing rules as prefix and the date as suffix,
+      e.g: If the computed index name is `logs-generic-default`, the resulting index will be `logs-generic-default-YYYY.MM.DD`.
+      The last string appended belongs to the date when the data is being generated.
+    - `prefix_separator`(default=`-`): Set a separator between logstash_prefix and date.
+    - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
 ### HTTP Connection Options
 OpenSearch export supports standard [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
 - `http.endpoint` (required) `<url>:<port>` of OpenSearch node to send data to.
