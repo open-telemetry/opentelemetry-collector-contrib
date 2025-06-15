@@ -25,20 +25,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
-type Server struct {
+type mockTCPserver struct {
 	host     string
 	port     string
 	listener net.Listener
 }
 
-func newTCPServer(host string, port string) *Server {
-	return &Server{
+func newTCPServer(host string, port string) *mockTCPserver {
+	return &mockTCPserver{
 		host: host,
 		port: port,
 	}
 }
 
-func (server *Server) runTCPServer(t *testing.T) string {
+func (server *mockTCPserver) runTCPServer(t *testing.T) string {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", server.host, server.port))
 	require.NoError(t, err)
 	server.listener = listener
@@ -50,7 +50,7 @@ func (server *Server) runTCPServer(t *testing.T) string {
 	return listener.Addr().String()
 }
 
-func (server *Server) runTCPServerError() (string, error) {
+func (server *mockTCPserver) runTCPServerError() (string, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", server.host, server.port))
 	if err != nil {
 		return "", err
@@ -66,7 +66,7 @@ func (server *Server) runTCPServerError() (string, error) {
 	return listener.Addr().String(), nil
 }
 
-func (server *Server) shutdown() {
+func (server *mockTCPserver) shutdown() {
 	server.listener.Close()
 }
 
