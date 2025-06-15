@@ -5,6 +5,7 @@ package s3accesslog
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"testing"
 
@@ -17,7 +18,7 @@ import (
 // and append this line as many times as it takes to reach the desire
 // number of logs defined in nLogs. Each log record is defined in one
 // line. A new line means a new log record.
-func newLogFileContent(b *testing.B, nLogs int) []byte {
+func newLogFileContent(b *testing.B, nLogs int) io.Reader {
 	// get a log line from the testdata
 	data, err := os.ReadFile("testdata/valid_s3_access_log.log")
 	require.NoError(b, err)
@@ -31,7 +32,7 @@ func newLogFileContent(b *testing.B, nLogs int) []byte {
 		}
 	}
 
-	return buf.Bytes()
+	return bytes.NewReader(buf.Bytes())
 }
 
 func BenchmarkUnmarshalLogs(b *testing.B) {
@@ -52,7 +53,8 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, _ = u.UnmarshalLogs(logs)
+				_, err := u.UnmarshalAWSLogs(logs)
+				require.NoError(b, err)
 			}
 		})
 	}

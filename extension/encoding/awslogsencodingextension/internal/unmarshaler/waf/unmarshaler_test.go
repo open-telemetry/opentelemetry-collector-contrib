@@ -5,6 +5,7 @@ package waf
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,27 +21,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-// compressData in gzip format
-func compressData(tb testing.TB, buf []byte) []byte {
+// compressToGZIPReader compresses buf into a gzip-formatted io.Reader.
+func compressToGZIPReader(t *testing.T, buf []byte) io.Reader {
 	var compressedData bytes.Buffer
 	gzipWriter := gzip.NewWriter(&compressedData)
 	_, err := gzipWriter.Write(buf)
-	require.NoError(tb, err)
+	require.NoError(t, err)
 	err = gzipWriter.Close()
-	require.NoError(tb, err)
-	return compressedData.Bytes()
+	require.NoError(t, err)
+	gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData.Bytes()))
+	require.NoError(t, err)
+	return gzipReader
 }
 
-// getLogFromFile reads the data inside the file and returns
-// it in the format the data: each line is a json log, and
-// the final data is gzip compressed.
-func getLogFromFile(t *testing.T, dir string, file string) []byte {
+// readAndCompressLogFile reads the data inside it, compacts the JSON
+// struct, compresses it and returns a GZIP reader for it.
+func readAndCompressLogFile(t *testing.T, dir string, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
 	compacted := bytes.NewBuffer([]byte{})
 	err = gojson.Compact(compacted, data)
 	require.NoError(t, err)
-	return compressData(t, compacted.Bytes())
+	return compressToGZIPReader(t, compacted.Bytes())
 }
 
 func TestUnmarshalLogs(t *testing.T) {
@@ -48,24 +50,20 @@ func TestUnmarshalLogs(t *testing.T) {
 
 	dir := "testdata"
 	tests := map[string]struct {
-		record           []byte
+		reader           io.Reader
 		expectedFilename string
 		expectedErr      string
 	}{
 		"valid_log": {
-			record:           getLogFromFile(t, dir, "valid_log.json"),
+			reader:           readAndCompressLogFile(t, dir, "valid_log.json"),
 			expectedFilename: "valid_log_expected.yaml",
 		},
 		"missing_web_acl_id": {
-			record:      getLogFromFile(t, dir, "missing_webaclid_log.json"),
+			reader:      readAndCompressLogFile(t, dir, "missing_webaclid_log.json"),
 			expectedErr: "invalid WAF log: empty webaclId field",
 		},
-		"invalid_gzip": {
-			record:      []byte("invalid"),
-			expectedErr: "failed to decompress content",
-		},
 		"invalid_json": {
-			record:      compressData(t, []byte("invalid")),
+			reader:      compressToGZIPReader(t, []byte("invalid")),
 			expectedErr: "failed to unmarshal WAF log",
 		},
 	}
@@ -73,7 +71,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	u := wafLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			logs, err := u.UnmarshalLogs(test.record)
+			logs, err := u.UnmarshalAWSLogs(test.reader)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				return

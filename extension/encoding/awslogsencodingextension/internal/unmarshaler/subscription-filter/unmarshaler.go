@@ -4,21 +4,20 @@
 package subscriptionfilter // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"sync"
+	"io"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
-	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 var (
@@ -48,47 +47,23 @@ func validateLog(log events.CloudwatchLogsData) error {
 
 type subscriptionFilterUnmarshaler struct {
 	buildInfo component.BuildInfo
-
-	// Pool the gzip readers, which are expensive to create.
-	gzipPool sync.Pool
 }
 
-func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
+func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
 	return &subscriptionFilterUnmarshaler{
 		buildInfo: buildInfo,
-		gzipPool:  sync.Pool{},
 	}
 }
 
-var _ plog.Unmarshaler = (*subscriptionFilterUnmarshaler)(nil)
-
-// UnmarshalLogs deserializes the given record as CloudWatch Logs events
+// UnmarshalAWSLogs deserializes the given reader as CloudWatch Logs events
 // into a plog.Logs, grouping logs by owner (account ID), log group, and
 // log stream. Logs are assumed to be gzip-compressed as specified at
 // https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
-func (f *subscriptionFilterUnmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) {
-	var errDecompress error
-	gzipReader, ok := f.gzipPool.Get().(*gzip.Reader)
-	if !ok {
-		gzipReader, errDecompress = gzip.NewReader(bytes.NewReader(compressedRecord))
-	} else {
-		errDecompress = gzipReader.Reset(bytes.NewReader(compressedRecord))
-	}
-	if errDecompress != nil {
-		if gzipReader != nil {
-			f.gzipPool.Put(gzipReader)
-		}
-		return plog.Logs{}, fmt.Errorf("failed to decompress record: %w", errDecompress)
-	}
-	defer func() {
-		_ = gzipReader.Close()
-		f.gzipPool.Put(gzipReader)
-	}()
-
+func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	var cwLog events.CloudwatchLogsData
-	decoder := gojson.NewDecoder(gzipReader)
+	decoder := gojson.NewDecoder(reader)
 	if err := decoder.Decode(&cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to decode decompressed record: %w", err)
+		return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
 	}
 
 	if cwLog.MessageType == "CONTROL_MESSAGE" {
