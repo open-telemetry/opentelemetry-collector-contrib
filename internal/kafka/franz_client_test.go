@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
-func TestNewFranzGoSyncProducer_SASL(t *testing.T) {
+func TestNewFranzSyncProducer_SASL(t *testing.T) {
 	_, clientConfig := kafkatest.NewCluster(t, kfake.EnableSASL(),
 		kfake.Superuser(PLAIN, "plain_user", "plain_password"),
 		kfake.Superuser(SCRAMSHA256, "scramsha256_user", "scramsha256_password"),
@@ -107,7 +108,7 @@ func TestNewFranzGoSyncProducer_SASL(t *testing.T) {
 	}
 }
 
-func TestNewFranzGoSyncProducer_TLS(t *testing.T) {
+func TestNewFranzSyncProducer_TLS(t *testing.T) {
 	// We create an httptest.Server just so we can get its TLS configuration.
 	httpServer := httptest.NewTLSServer(http.NewServeMux())
 	defer httpServer.Close()
@@ -160,7 +161,7 @@ func TestNewFranzGoSyncProducer_TLS(t *testing.T) {
 	})
 }
 
-func TestNewFranzGoSyncProducerCompression(t *testing.T) {
+func TestNewFranzSyncProducerCompression(t *testing.T) {
 	compressionAlgos := []string{"none", "gzip", "snappy", "lz4", "zstd"}
 	for i, compressionAlgo := range compressionAlgos {
 		t.Run(compressionAlgo, func(t *testing.T) {
@@ -225,7 +226,7 @@ func TestNewFranzGoSyncProducerCompression(t *testing.T) {
 	}
 }
 
-func TestNewFranzGoSyncProducerRequiredAcks(t *testing.T) {
+func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 	topic := "topic"
 	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
 	acks := []configkafka.RequiredAcks{
@@ -331,4 +332,143 @@ func Test_saramaCompatHasher(t *testing.T) {
 			assert.Equal(t, saramaResult, franzResult, "partitioning results do not match")
 		})
 	}
+}
+
+func TestNewFranzKafkaConsumerRegex(t *testing.T) {
+	topicCount := 10
+	topics := make([]string, topicCount)
+	for i := 0; i < topicCount; i++ {
+		topics[i] = fmt.Sprintf("topic-%d", i)
+	}
+	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topics...))
+	regexTopic := []string{"^topic-.*"}
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	// Set to earliest commit so we don't have to worry about synchronizing the
+	// producer and consumer.
+	consumeConfig.InitialOffset = configkafka.EarliestOffset
+
+	client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, regexTopic)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	recordChan, _ := fetchRecords(ctx, client, topicCount)
+	recordValue := []byte("test message")
+	rs := make([]*kgo.Record, 0, topicCount)
+	for _, topic := range topics {
+		rs = append(rs, &kgo.Record{Topic: topic, Value: recordValue})
+	}
+	client.ProduceSync(ctx, rs...)
+
+	fetch := <-recordChan
+	require.NoError(t, fetch.Err())
+	assert.Equal(t, topicCount, fetch.NumRecords())
+	fetch.EachRecord(func(r *kgo.Record) {
+		assert.Equal(t, recordValue, r.Value)
+	})
+}
+
+func TestNewFranzKafkaConsumer(t *testing.T) {
+	for _, initial := range []string{configkafka.EarliestOffset, configkafka.LatestOffset} {
+		t.Run(initial, func(t *testing.T) {
+			topic := "topic"
+			_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+			consumeConfig := configkafka.NewDefaultConsumerConfig()
+			consumeConfig.InitialOffset = initial
+			assigned := make(chan struct{})
+			var once sync.Once
+			client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{topic},
+				kgo.OnPartitionsAssigned(func(context.Context, *kgo.Client, map[string][]int32) {
+					once.Do(func() { close(assigned) })
+				}),
+			)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			produce := func() {
+				require.NoError(t, client.ProduceSync(ctx, &kgo.Record{
+					Topic: topic, Value: []byte("test message"),
+				}).FirstErr())
+			}
+			produce() // Produce before consuming
+
+			// Depending on the Initial offset configuration, the consumer will
+			// fetch 1 or 2 records.
+			var expected int
+			switch initial {
+			case configkafka.EarliestOffset:
+				expected = 2
+			case configkafka.LatestOffset:
+				expected = 1
+			}
+			recordChan, consumerReady := fetchRecords(ctx, client, expected)
+
+			// Wait until the consumer is ready and the partition is assigned.
+			select {
+			case <-consumerReady:
+				select {
+				case <-assigned:
+					// Sleep another 50ms just to make sure.
+					time.Sleep(50 * time.Millisecond)
+				case <-ctx.Done():
+					t.Fatalf("timeout waiting for the partition to be assigned")
+				}
+			case <-ctx.Done():
+				t.Fatalf("timeout waiting for consumer to be ready")
+			}
+			produce() // Produce again.
+
+			fetch := <-recordChan
+			require.NoError(t, fetch.Err())
+			assert.Equal(t, expected, fetch.NumRecords())
+			fetch.EachRecord(func(r *kgo.Record) {
+				assert.Equal(t, []byte("test message"), r.Value)
+			})
+		})
+	}
+}
+
+func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) (<-chan kgo.Fetches, <-chan struct{}) {
+	fetchChan := make(chan kgo.Fetches)
+	ready := make(chan struct{})
+	go func() {
+		var records int
+		var fetches kgo.Fetches
+		defer func() {
+			fetchChan <- fetches
+			close(fetchChan)
+		}()
+		close(ready)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				fetch := client.PollRecords(ctx, wantRecords)
+				records += fetch.NumRecords()
+				fetches = append(fetches, fetch...)
+				if records == wantRecords {
+					return
+				}
+			}
+		}
+	}()
+	return fetchChan, ready
+}
+
+func mustNewFranzConsumerGroup(t *testing.T,
+	clientConfig configkafka.ClientConfig,
+	consumerConfig configkafka.ConsumerConfig,
+	topics []string, opts ...kgo.Opt,
+) *kgo.Client {
+	t.Helper()
+	minAge := 10 * time.Millisecond
+	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
+	client, err := NewFranzConsumerGroup(clientConfig, consumerConfig,
+		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
+	)
+	require.NoError(t, err)
+	t.Cleanup(client.Close)
+	return client
 }
