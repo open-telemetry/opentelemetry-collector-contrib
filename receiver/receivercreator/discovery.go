@@ -180,13 +180,13 @@ func getScraperConfFromAnnotations(
 	defaultEndpoint, scopeSuffix string,
 	logger *zap.Logger,
 ) (userConfigMap, error) {
-	conf := userConfigMap{}
-	conf[endpointConfigKey] = defaultEndpoint
-
 	configStr, found := getHintAnnotation(annotations, otelMetricsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {
-		return conf, nil
+		return userConfigMap{
+			endpointConfigKey: defaultEndpoint,
+		}, nil
 	}
+	conf := userConfigMap{}
 	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
 		return userConfigMap{}, fmt.Errorf("could not unmarshal configuration from hint: %v", zap.Error(err))
 	}
