@@ -4,6 +4,7 @@
 package componentchecker // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -565,4 +566,132 @@ func TestIsComponentConfigured(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func TestPopulateFullComponentsJSONErrorPaths(t *testing.T) {
+	t.Run("empty moduleInfos", func(t *testing.T) {
+		// Test with empty moduleInfos - should handle gracefully, not error
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{
+				"examplereceiver": map[string]any{},
+			},
+		})
+
+		// This should handle empty moduleInfos gracefully
+		modInfo, err := PopulateFullComponentsJSON(service.ModuleInfos{}, confMap)
+		require.NoError(t, err)
+		assert.NotNil(t, modInfo)
+		assert.Empty(t, modInfo.GetFullComponentsList()) // No components
+	})
+
+	t.Run("invalid config format", func(t *testing.T) {
+		// Test with invalid config format to trigger unmarshal error
+		moduleInfo := service.ModuleInfos{
+			Receiver: map[component.Type]service.ModuleInfo{
+				component.MustNewType("examplereceiver"): {BuilderRef: "example.com/module v1.0.0"},
+			},
+		}
+
+		// Create invalid configuration that will fail unmarshal
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"receivers": "invalid-format", // Should be a map, not string
+		})
+
+		_, err := PopulateFullComponentsJSON(moduleInfo, confMap)
+		require.Error(t, err) // Should error on unmarshal
+	})
+
+	t.Run("module with only gomod, no version", func(t *testing.T) {
+		// Test with module that has no version (single part after split)
+		moduleInfo := service.ModuleInfos{
+			Receiver: map[component.Type]service.ModuleInfo{
+				component.MustNewType("examplereceiver"): {BuilderRef: "invalid-format"}, // No space, no version
+			},
+		}
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{
+				"examplereceiver": map[string]any{},
+			},
+		})
+
+		// This should panic due to index out of range when trying to access parts[1]
+		assert.Panics(t, func() {
+			_, err := PopulateFullComponentsJSON(moduleInfo, confMap)
+			require.Error(t, err)
+		})
+	})
+}
+
+func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
+	t.Run("nil moduleInfoJSON", func(t *testing.T) {
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"service": map[string]any{
+				"extensions": []any{"test"},
+			},
+		})
+
+		// This should panic when trying to call GetComponent on nil moduleInfoJSON
+		assert.Panics(t, func() {
+			_, err := PopulateActiveComponents(confMap, nil)
+			require.Error(t, err)
+		})
+	})
+
+	t.Run("invalid config format", func(t *testing.T) {
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"service": "invalid-format", // Should be a map, not string
+		})
+
+		moduleInfoJSON := payload.NewModuleInfoJSON()
+		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
+		require.Error(t, err) // Should error on unmarshal
+	})
+
+	t.Run("extension not found in module info", func(t *testing.T) {
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"extensions": map[string]any{
+				"missing_extension": map[string]any{},
+			},
+			"service": map[string]any{
+				"extensions": []any{"missing_extension"},
+			},
+		})
+
+		moduleInfoJSON := payload.NewModuleInfoJSON()
+		// Don't add the extension to moduleInfoJSON
+
+		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "extension not found in Module Info")
+	})
+}
+
+func TestDataToFlattenedJSONStringAdditionalCases(t *testing.T) {
+	t.Run("complex nested structure", func(t *testing.T) {
+		data := map[string]any{
+			"level1": map[string]any{
+				"level2": map[string]any{
+					"key":   "value",
+					"array": []string{"item1", "item2"},
+				},
+				"simple": "test",
+			},
+			"number": 123,
+		}
+
+		result := DataToFlattenedJSONString(data)
+		assert.NotEmpty(t, result)
+		assert.NotContains(t, result, "\n")
+		assert.NotContains(t, result, "\r")
+
+		// Verify it's valid JSON
+		var parsed map[string]any
+		err := json.Unmarshal([]byte(result), &parsed)
+		assert.NoError(t, err)
+	})
+
+	t.Run("nil input", func(t *testing.T) {
+		result := DataToFlattenedJSONString(nil)
+		assert.Equal(t, "null", result)
+	})
 }

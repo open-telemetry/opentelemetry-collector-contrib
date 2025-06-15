@@ -124,6 +124,7 @@ func WithForwarderConfig() ConfigOption {
 		pkgconfig.Set("forwarder_backoff_max", 64, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("forwarder_recovery_interval", 2, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("forwarder_http_protocol", "auto", pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_max_concurrent_requests", 1, pkgconfigmodel.SourceDefault)
 	}
 }
 
