@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -340,9 +341,16 @@ func Test_flatten(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
 			assert.NoError(t, err)
-			target := ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+			target := ottl.StandardPMapGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return m, nil
+				},
+				Setter: func(_ context.Context, _ any, val any) error {
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(m)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
 				},
 			}
 
@@ -490,9 +498,16 @@ func Test_flatten_undeterministic(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
 			assert.NoError(t, err)
-			target := ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+			target := ottl.StandardPMapGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return m, nil
+				},
+				Setter: func(_ context.Context, _ any, val any) error {
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(m)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
 				},
 			}
 
@@ -507,18 +522,6 @@ func Test_flatten_undeterministic(t *testing.T) {
 			assert.True(t, compareSlices(val, tt.expectedValues))
 		})
 	}
-}
-
-func Test_flatten_bad_target(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return 1, nil
-		},
-	}
-	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{}, ottl.NewTestingOptional[bool](false))
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, nil)
-	assert.Error(t, err)
 }
 
 func Test_flatten_bad_depth(t *testing.T) {
@@ -538,8 +541,8 @@ func Test_flatten_bad_depth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := &ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+			target := &ottl.StandardPMapGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return pcommon.NewMap(), nil
 				},
 			}
