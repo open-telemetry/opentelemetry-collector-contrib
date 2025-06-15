@@ -115,8 +115,8 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				defer func() {
 					// Drain the body to allow connection reuse
 					_, _ = io.Copy(io.Discard, resp.Body)
-					if err := resp.Body.Close(); err != nil {
-						h.settings.Logger.Error("failed to close response body", zap.Error(err))
+					if closeErr := resp.Body.Close(); closeErr != nil {
+						h.settings.Logger.Error("failed to close response body", zap.Error(closeErr))
 					}
 				}()
 			}
