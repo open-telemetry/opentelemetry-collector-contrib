@@ -521,7 +521,6 @@ collecting metrics and logs signals from the target Pods/containers.
 
 `io.opentelemetry.discovery.metrics/scraper` (example: `"nginx"`)
 
-
 #### Define configuration
 
 `io.opentelemetry.discovery.metrics/config`
@@ -530,7 +529,6 @@ For `"endpoint"` setting specifically, it sticks to urls that include
 ```"`endpoint`"``` as it comes from the Port endpoint which is
 in form of `pod_ip:container_port`. This is to ensure that each Pod can only
 generate configuration that targets itself and not others.
-If no endpoint is provided the Pod's endpoint will be used (in form of `pod_ip:container_port`).
 
 **Example:**
 
@@ -543,6 +541,15 @@ io.opentelemetry.discovery.metrics/config: |
   xyz: "abc"
 ```
 
+If no configuration is provided, the following is used as the default:
+
+```yaml
+config:
+  endpoint: `endpoint`
+```
+
+Note that the above default configuration will not be extended but completely
+overridden by user provided configurations.
 
 #### Support multiple target containers
 

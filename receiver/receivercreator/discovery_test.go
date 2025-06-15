@@ -25,11 +25,13 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 	config := `
 collection_interval: "20s"
 timeout: "30s"
+endpoint: "1.2.3.4:6379"
 username: "username"
 password: "changeme"`
 	configRedis := `
 collection_interval: "20s"
 timeout: "130s"
+endpoint: "1.2.3.4:6379"
 username: "username"
 password: "changeme"`
 
@@ -593,12 +595,6 @@ initial_delay: "20s"
 read_buffer_size: "10"
 nested_example:
   foo: bar`
-	configNoEndpoint := `
-collection_interval: "20s"
-initial_delay: "20s"
-read_buffer_size: "10"
-nested_example:
-  foo: bar`
 	tests := map[string]struct {
 		hintsAnn        map[string]string
 		expectedConf    userConfigMap
@@ -621,13 +617,8 @@ nested_example:
 		}, "simple_annotation_case_default_endpoint": {
 			hintsAnn: map[string]string{
 				"io.opentelemetry.discovery.metrics/enabled": "true",
-				"io.opentelemetry.discovery.metrics/config":  configNoEndpoint,
 			}, expectedConf: userConfigMap{
-				"collection_interval": "20s",
-				"endpoint":            "1.1.1.1:8080",
-				"initial_delay":       "20s",
-				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"endpoint": "1.1.1.1:8080",
 			}, defaultEndpoint: "1.1.1.1:8080",
 			scopeSuffix: "",
 		}, "simple_annotation_case_scoped": {
