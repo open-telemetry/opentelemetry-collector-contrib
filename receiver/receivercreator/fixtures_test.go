@@ -57,6 +57,7 @@ var portEndpoint = observer.Endpoint{
 }
 
 var config = `
+endpoint: 1.2.3.4:6379
 int_field: 20`
 
 var portEndpointWithHints = observer.Endpoint{
