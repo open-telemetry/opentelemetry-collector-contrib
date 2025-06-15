@@ -41,5 +41,5 @@ func TestNoopFieldString(t *testing.T) {
 
 func TestNewNilField(t *testing.T) {
 	nilField := NewNilField()
-	require.Equal(t, nilField, Field{})
+	require.Equal(t, Field{}, nilField)
 }

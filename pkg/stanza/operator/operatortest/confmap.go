@@ -49,7 +49,7 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 			}
 
 			if tc.ExpectBuildErr != nil {
-				_, err = cfg.Operator.Builder.Build(componenttest.NewNopTelemetrySettings())
+				_, err = cfg.Operator.Build(componenttest.NewNopTelemetrySettings())
 				require.ErrorIs(t, err, tc.ExpectBuildErr)
 				return
 			}
