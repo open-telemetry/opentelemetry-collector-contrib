@@ -74,3 +74,18 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_bytes_written:
+      enabled: true
+      description: Total number of bytes written to the WAL
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_prometheusremotewrite_wal_bytes_read:
+      enabled: true
+      description: Total number of bytes read from the WAL
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
