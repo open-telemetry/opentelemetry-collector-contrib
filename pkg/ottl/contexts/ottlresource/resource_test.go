@@ -5,6 +5,9 @@ package ottlresource
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 
@@ -36,11 +39,13 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(resource pcommon.Resource, cache pcommon.Map)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(resource pcommon.Resource, cache pcommon.Map)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "cache",
@@ -52,6 +57,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ pcommon.Resource, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
+			setStatement: `set(cache, {"temp": "value"})`,
+			getStatement: `cache`,
 		},
 		{
 			name: "cache access",
@@ -68,6 +75,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ pcommon.Resource, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
+			setStatement: `set(cache["temp"], "new value")`,
+			getStatement: `cache["temp"]`,
 		},
 		{
 			name: "attributes",
@@ -79,6 +88,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				newAttrs.CopyTo(resource.Attributes())
 			},
+			setStatement: `set(attributes, {"hello": "world"})`,
+			getStatement: `attributes`,
 		},
 		{
 			name: "attributes string",
@@ -95,6 +106,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutStr("str", "newVal")
 			},
+			setStatement: `set(attributes["str"], "newVal")`,
+			getStatement: `attributes["str"]`,
 		},
 		{
 			name: "attributes bool",
@@ -111,6 +124,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutBool("bool", false)
 			},
+			setStatement: `set(attributes["bool"], false)`,
+			getStatement: `attributes["bool"]`,
 		},
 		{
 			name: "attributes int",
@@ -127,6 +142,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutInt("int", 20)
 			},
+			setStatement: `set(attributes["int"], 20)`,
+			getStatement: `attributes["int"]`,
 		},
 		{
 			name: "attributes float",
@@ -143,6 +160,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutDouble("double", 2.4)
 			},
+			setStatement: `set(attributes["double"], 2.4)`,
+			getStatement: `attributes["double"]`,
 		},
 		{
 			name: "attributes bytes",
@@ -159,6 +178,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
+			setStatement: `set(attributes["bytes"], 0x020304)`,
+			getStatement: `attributes["bytes"]`,
 		},
 		{
 			name: "attributes array string",
@@ -178,6 +199,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["arr_str"], ["new"])`,
+			getStatement: `attributes["arr_str"]`,
 		},
 		{
 			name: "attributes array bool",
@@ -197,6 +220,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
+			setStatement: `set(attributes["arr_bool"], [false])`,
+			getStatement: `attributes["arr_bool"]`,
 		},
 		{
 			name: "attributes array int",
@@ -216,6 +241,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
+			setStatement: `set(attributes["arr_int"], [20])`,
+			getStatement: `attributes["arr_int"]`,
 		},
 		{
 			name: "attributes array float",
@@ -235,6 +262,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
+			setStatement: `set(attributes["arr_float"], [2.0])`,
+			getStatement: `attributes["arr_float"]`,
 		},
 		{
 			name: "attributes array bytes",
@@ -254,6 +283,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
+			setStatement: `set(attributes["arr_bytes"], [0x090604])`,
+			getStatement: `attributes["arr_bytes"]`,
 		},
 		{
 			name: "attributes pcommon.Map",
@@ -275,6 +306,8 @@ func Test_newPathGetSetter(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["pMap"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["pMap"]`,
 		},
 		{
 			name: "attributes mpa[string]interface",
@@ -296,6 +329,8 @@ func Test_newPathGetSetter(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["map"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["map"]`,
 		},
 		{
 			name: "attributes nested",
@@ -322,6 +357,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
+			setStatement: `set(attributes["slice"], [{"map": "new"}])`,
+			getStatement: `attributes["slice"][0]["map"]`,
 		},
 		{
 			name: "attributes nested new values",
@@ -349,6 +386,8 @@ func Test_newPathGetSetter(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["new"], [nil, nil, ["new"]])`,
+			getStatement: `attributes["new"][2][0]`,
 		},
 		{
 			name: "dropped_attributes_count",
@@ -360,6 +399,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(resource pcommon.Resource, _ pcommon.Map) {
 				resource.SetDroppedAttributesCount(20)
 			},
+			setStatement: `set(dropped_attributes_count, 20)`,
+			getStatement: `dropped_attributes_count`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -397,6 +438,44 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exRes, resource)
 		})
 	}
+
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				resource := createTelemetry()
+
+				ctx := NewTransformContext(resource, pmetric.NewResourceMetrics())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				resource = createTelemetry()
+
+				ctx = NewTransformContext(resource, pmetric.NewResourceMetrics())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
+}
+
+func createParser(t *testing.T) ottl.Parser[TransformContext] {
+	settings := componenttest.NewNopTelemetrySettings()
+	stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	require.NoError(t, err)
+	return stmtParser
 }
 
 func createTelemetry() pcommon.Resource {
