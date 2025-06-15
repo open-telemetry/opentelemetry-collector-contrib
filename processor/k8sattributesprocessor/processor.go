@@ -266,6 +266,13 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, string(conventions.ContainerImageTagKey), containerSpec.ImageTag)
 	}
+	if len(containerSpec.Ports) > 0 {
+		for _, containerPort := range containerSpec.Ports {
+			attrs.PutEmptySlice(containerPorts).AppendEmpty().SetInt(int64(containerPort))
+		}
+	}
+	if containerSpec.CPURequest != "" {
+		setResourceAttribute(attrs, containerCPURequest, containerSpec.CPURequest)
 	if containerSpec.ServiceInstanceID != "" {
 		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
 	}
