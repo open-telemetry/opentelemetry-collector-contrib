@@ -83,12 +83,12 @@ type MetricsConfig struct {
 	K8sPodNetworkErrors                  MetricConfig `mapstructure:"k8s.pod.network.errors"`
 	K8sPodNetworkIo                      MetricConfig `mapstructure:"k8s.pod.network.io"`
 	K8sPodUptime                         MetricConfig `mapstructure:"k8s.pod.uptime"`
+	K8sPodVolumeUsage                    MetricConfig `mapstructure:"k8s.pod.volume.usage"`
 	K8sVolumeAvailable                   MetricConfig `mapstructure:"k8s.volume.available"`
 	K8sVolumeCapacity                    MetricConfig `mapstructure:"k8s.volume.capacity"`
 	K8sVolumeInodes                      MetricConfig `mapstructure:"k8s.volume.inodes"`
 	K8sVolumeInodesFree                  MetricConfig `mapstructure:"k8s.volume.inodes.free"`
 	K8sVolumeInodesUsed                  MetricConfig `mapstructure:"k8s.volume.inodes.used"`
-	K8sVolumeUsed                        MetricConfig `mapstructure:"k8s.volume.used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -258,6 +258,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodUptime: MetricConfig{
 			Enabled: false,
 		},
+		K8sPodVolumeUsage: MetricConfig{
+			Enabled: false,
+		},
 		K8sVolumeAvailable: MetricConfig{
 			Enabled: true,
 		},
@@ -272,9 +275,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sVolumeInodesUsed: MetricConfig{
 			Enabled: true,
-		},
-		K8sVolumeUsed: MetricConfig{
-			Enabled: false,
 		},
 	}
 }

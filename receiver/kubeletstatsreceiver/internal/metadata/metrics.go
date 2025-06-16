@@ -147,7 +147,7 @@ type VolumeMetrics struct {
 var K8sVolumeMetrics = VolumeMetrics{
 	Available:  (*MetricsBuilder).RecordK8sVolumeAvailableDataPoint,
 	Capacity:   (*MetricsBuilder).RecordK8sVolumeCapacityDataPoint,
-	Used:       (*MetricsBuilder).RecordK8sVolumeUsedDataPoint,
+	Used:       (*MetricsBuilder).RecordK8sPodVolumeUsageDataPoint,
 	Inodes:     (*MetricsBuilder).RecordK8sVolumeInodesDataPoint,
 	InodesFree: (*MetricsBuilder).RecordK8sVolumeInodesFreeDataPoint,
 	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,

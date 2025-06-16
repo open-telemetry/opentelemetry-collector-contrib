@@ -492,7 +492,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			K8sVolumeCapacity: metadata.MetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeUsed: metadata.MetricConfig{
+			K8sPodVolumeUsage: metadata.MetricConfig{
 				Enabled: false,
 			},
 			K8sVolumeInodes: metadata.MetricConfig{

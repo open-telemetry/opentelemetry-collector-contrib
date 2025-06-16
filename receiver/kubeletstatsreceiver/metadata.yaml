@@ -500,9 +500,9 @@ metrics:
     gauge:
       value_type: int
     attributes: []
-  k8s.volume.used:
+  k8s.pod.volume.usage:
     enabled: false
-    description: "The number of used bytes in the volume."
+    description: "The number of used bytes in the pod volume."
     unit: By
     gauge:
       value_type: int

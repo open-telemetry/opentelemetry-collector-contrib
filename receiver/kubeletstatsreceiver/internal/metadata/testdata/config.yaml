@@ -111,6 +111,8 @@ all_set:
       enabled: true
     k8s.pod.uptime:
       enabled: true
+    k8s.pod.volume.usage:
+      enabled: true
     k8s.volume.available:
       enabled: true
     k8s.volume.capacity:
@@ -120,8 +122,6 @@ all_set:
     k8s.volume.inodes.free:
       enabled: true
     k8s.volume.inodes.used:
-      enabled: true
-    k8s.volume.used:
       enabled: true
   resource_attributes:
     aws.volume.id:
@@ -266,6 +266,8 @@ none_set:
       enabled: false
     k8s.pod.uptime:
       enabled: false
+    k8s.pod.volume.usage:
+      enabled: false
     k8s.volume.available:
       enabled: false
     k8s.volume.capacity:
@@ -275,8 +277,6 @@ none_set:
     k8s.volume.inodes.free:
       enabled: false
     k8s.volume.inodes.used:
-      enabled: false
-    k8s.volume.used:
       enabled: false
   resource_attributes:
     aws.volume.id:
