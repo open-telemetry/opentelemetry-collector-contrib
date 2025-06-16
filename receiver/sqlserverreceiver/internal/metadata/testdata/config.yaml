@@ -45,6 +45,8 @@ all_set:
       enabled: true
     sqlserver.memory.usage:
       enabled: true
+    sqlserver.os.wait.duration:
+      enabled: true
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: true
     sqlserver.page.buffer_cache.hit_ratio:
@@ -96,6 +98,8 @@ all_set:
     sqlserver.user.connection.count:
       enabled: true
   events:
+    db.server.query_sample:
+      enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
@@ -157,6 +161,8 @@ none_set:
       enabled: false
     sqlserver.memory.usage:
       enabled: false
+    sqlserver.os.wait.duration:
+      enabled: false
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: false
     sqlserver.page.buffer_cache.hit_ratio:
@@ -208,6 +214,8 @@ none_set:
     sqlserver.user.connection.count:
       enabled: false
   events:
+    db.server.query_sample:
+      enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:

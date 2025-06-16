@@ -5,6 +5,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -13,8 +14,10 @@ import (
 )
 
 type QuerySample struct {
-	Enabled         bool   `mapstructure:"enabled"`
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TopQueryCollection struct {
@@ -23,10 +26,10 @@ type TopQueryCollection struct {
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	Enabled             bool `mapstructure:"enabled"`
-	LookbackTime        uint `mapstructure:"lookback_time"`
-	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
-	TopQueryCount       uint `mapstructure:"top_query_count"`
+	LookbackTime        uint          `mapstructure:"lookback_time"`
+	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint          `mapstructure:"top_query_count"`
+	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
 }
 
 // Config defines configuration for a sqlserver receiver.
@@ -70,6 +73,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.TopQueryCount > cfg.MaxQuerySampleCount {
 		return errors.New("`top_query_count` must be less than or equal to `max_query_sample_count`")
+	}
+
+	if cfg.TopQueryCollection.CollectionInterval < 0 {
+		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
 	}
 
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)

@@ -176,7 +176,7 @@ func getRegionFromECSMetadata() (string, error) {
 // proxyServerTransport configures HTTP transport for TCP Proxy Server.
 func proxyServerTransport(config *Config) (*http.Transport, error) {
 	tls := &tls.Config{
-		InsecureSkipVerify: config.TLSSetting.Insecure,
+		InsecureSkipVerify: config.TLS.Insecure,
 	}
 
 	proxyAddr := getProxyAddress(config.ProxyAddress)

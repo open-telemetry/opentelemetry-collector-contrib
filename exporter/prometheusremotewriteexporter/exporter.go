@@ -135,7 +135,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	if err := config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
+	if err = config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
 		return nil, err
 	}
 
@@ -177,7 +177,10 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 
-	prwe.wal = newWAL(cfg.WAL, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL, set, prwe.export)
+	if err != nil {
+		return nil, err
+	}
 	return prwe, nil
 }
 
@@ -217,7 +220,7 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
-		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
 	}
 	if err != nil {
 		prwe.telemetry.recordTranslationFailure(ctx)
@@ -250,7 +253,6 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 			return prwe.pushMetricsV1(ctx, md)
 		case config.RemoteWriteProtoMsgV2:
 			return prwe.pushMetricsV2(ctx, md)
-
 		default:
 			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
 		}
@@ -288,8 +290,10 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
-	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
-	if err = prwe.wal.persistToWAL(requests); err != nil {
+	prwe.wal.telemetry.recordWALWrites(ctx)
+	err = prwe.wal.persistToWAL(requests)
+	if err != nil {
+		prwe.wal.telemetry.recordWALWritesFailures(ctx)
 		return consumererror.NewPermanent(err)
 	}
 	return nil

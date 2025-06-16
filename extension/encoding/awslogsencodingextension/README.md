@@ -128,3 +128,43 @@ extensions:
 | TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
 | Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
 | aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |
+
+
+#### AWS WAF log record fields
+
+[AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
+
+
+
+| Original log field            | OpenTelemetry field                                                                              |
+|-------------------------------|--------------------------------------------------------------------------------------------------|
+| `webaclId`                    | `cloud.resource_id`<br>Also splits the value to get:<br>1.`cloud.region`<br>2.`cloud.account.id` |
+| `terminatingRuleId`           | `aws.waf.terminating_rule.id`                                                                    |
+| `terminatingRuleType`         | `aws.waf.terminating_rule.type`                                                                  |
+| `httpSourceName`              | `aws.waf.source.name`                                                                            |
+| `httpSourceId`                | `aws.waf.source.id`                                                                              |
+| `httpRequest.clientIp`        | `client.address`                                                                                 |
+| `httpRequest.headers`         | Each header is saved under `http.request.header.<header_name>`                                   |
+| `httpRequest.uri`             | `url.path`                                                                                       |
+| `httpRequest.args`            | `url.query`                                                                                      |
+| `httpRequest.httpMethod`      | `http.request.method`                                                                            |
+| `httpRequest.httpVersion`     | Splits in:<br>1.`network.protocol.name`<br>2.`network.protocol.version`                          |
+| `httpRequest.requestId`       | `aws.request_id`                                                                                 |
+| `httpRequest.fragment`        | `url.fragment`                                                                                   |
+| `httpRequest.scheme`          | `url.scheme`                                                                                     |
+| `httpRequest.country`         | `geo.country.iso_code`                                                                           |
+| `httpRequest.host`            | `server.address`                                                                                 |
+| `responseCodeSent`            | `http.response.status_code`                                                                      |
+| `ja3Fingerprint`              | `tls.client.ja3`                                                                                 |
+| `ja4Fingerprint`              | `tls.client.ja4`                                                                                 |
+| `formatVersion`               | _Currently not supported_                                                                        |
+| `terminatingRuleMatchDetails` | _Currently not supported_                                                                        |
+| `ruleGroupList`               | _Currently not supported_                                                                        |
+| `rateBasedRuleList`           | _Currently not supported_                                                                        |
+| `nonTerminatingMatchingRules` | _Currently not supported_                                                                        |
+| `requestHeadersInserted`      | _Currently not supported_                                                                        |
+| `labels`                      | _Currently not supported_                                                                        |
+| `captchaResponse`             | _Currently not supported_                                                                        |
+| `cfDistributionTenantId`      | _Currently not supported_                                                                        |
+| `challengeResponse`           | _Currently not supported_                                                                        |
+| `oversizeFields`              | _Currently not supported_                                                                        |
