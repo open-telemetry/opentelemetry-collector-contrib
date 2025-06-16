@@ -41,7 +41,6 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
 			format:      formatCloudWatchLogsSubscriptionFilter,
-			gzipPool:    sync.Pool{},
 		}, nil
 	case formatVPCFlowLog:
 		unmarshaler := vpcflowlog.NewVPCFlowLogUnmarshaler(
