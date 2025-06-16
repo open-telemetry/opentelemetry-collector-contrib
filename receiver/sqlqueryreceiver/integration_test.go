@@ -883,7 +883,7 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 	).Run(t)
 }
 
-func TestPostgresqlDataSourceConfigIntegrationMetrics(t *testing.T) {
+func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
 	Postgres.CheckCompatibility(t)
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -893,16 +893,14 @@ func TestPostgresqlDataSourceConfigIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = Postgres.Driver
-				rCfg.DataSourceConfig = sqlquery.DataSourceConfig{
-					Host:     ci.Host(t),
-					Port:     nat.Port(ci.MappedPort(t, Postgres.Port)).Int(),
-					Database: "otel",
-					Username: "otel",
-					Password: "otel",
-					AdditionalParams: map[string]any{
-						"sslmode": "disable",
-					},
-				}
+				Host:     ci.Host(t),
+				Port:     nat.Port(ci.MappedPort(t, Postgres.Port)).Int(),
+				Database: "otel",
+				Username: "otel",
+				Password: "otel",
+				AdditionalParams: map[string]any{
+					"sslmode": "disable",
+				},
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",

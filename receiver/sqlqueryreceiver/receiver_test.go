@@ -148,7 +148,7 @@ func TestCreateMetricsDatasourceFields(t *testing.T) {
 	require.NoError(t, receiver.Shutdown(ctx))
 }
 
-func TestCreateMetricsBothDatasourceConfigs(t *testing.T) {
+func TestCreateMetricsBothDatasourceFields(t *testing.T) {
 	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
 	receiver, err := createReceiver(
