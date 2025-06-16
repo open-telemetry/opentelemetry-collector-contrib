@@ -72,6 +72,7 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 			mb.ConvertGaugeToMetrics(tt.ts, m)
 
 			expectedFile := filepath.Join("testdata", tt.fileNameExpected)
+			// Uncomment to regenerate the yaml file with the expected metrics:
 			// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
@@ -205,6 +206,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_WithExemplars.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -246,6 +248,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_ZeroBoundsZeroCounts.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -295,6 +298,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -356,6 +360,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDa
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDataPoint.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -412,6 +417,7 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -464,6 +470,7 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -520,6 +527,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -572,6 +580,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	mb.ConvertDistributionToMetrics(ts, m)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
+	// Uncomment to regenerate the yaml file with the expected metrics:
 	// require.NoError(t, golden.WriteMetrics(t, expectedFile, wrapMetric(m)))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
