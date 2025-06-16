@@ -28,6 +28,7 @@ var (
 	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
 	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
 	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
+	errInvalidMaxResPerBatch  = errors.New(`"MaximumResourcesPerBatch" is invalid`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -254,6 +255,7 @@ type Config struct {
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
 	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
+	MaximumResourcesPerBatch          int                           `mapstructure:"maximum_resources_per_batch"`
 
 	// Authentication accepts the component azureauthextension,
 	// and uses it to get an access token to make requests.
@@ -283,6 +285,8 @@ const (
 	workloadIdentity   = "workload_identity"
 	managedIdentity    = "managed_identity"
 )
+
+const defaultMaximumResourcesPerBatch = 50
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
@@ -327,6 +331,10 @@ func (c Config) Validate() (err error) {
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {
 		err = multierr.Append(err, errInvalidCloud)
+	}
+
+	if c.UseBatchAPI && c.MaximumResourcesPerBatch != 0 && (c.MaximumResourcesPerBatch > defaultMaximumResourcesPerBatch || c.MaximumResourcesPerBatch < 0) {
+		err = multierr.Append(err, errInvalidMaxResPerBatch)
 	}
 
 	return
