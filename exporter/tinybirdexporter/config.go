@@ -6,13 +6,23 @@ package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
+var datasourceRegex = regexp.MustCompile(`^[\w_]+$`)
+
 type SignalConfig struct {
 	Datasource string `mapstructure:"datasource"`
+}
+
+func (cfg SignalConfig) Validate() error {
+	if !datasourceRegex.MatchString(cfg.Datasource) {
+		return fmt.Errorf("invalid datasource %q: only letters, numbers, and underscores are allowed", cfg.Datasource)
+	}
+	return nil
 }
 
 // Config defines configuration for the Tinybird exporter.
@@ -30,15 +40,6 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.Token == "" {
 		return errMissingToken
-	}
-	if cfg.Metrics.Datasource == "" {
-		return fmt.Errorf("metrics datasource must be configured")
-	}
-	if cfg.Traces.Datasource == "" {
-		return fmt.Errorf("traces datasource must be configured")
-	}
-	if cfg.Logs.Datasource == "" {
-		return fmt.Errorf("logs datasource must be configured")
 	}
 	if cfg.Endpoint == "" {
 		return errMissingEndpoint

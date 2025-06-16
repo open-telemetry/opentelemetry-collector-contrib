@@ -49,6 +49,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:      component.NewIDWithName(component.MustNewType(typeStr), "invalid_datasource"),
+			subName: "tinybird/invalid_datasource",
+			errorMessage: "metrics: invalid datasource \"metrics-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
+				"traces: invalid datasource \"traces-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
+				"logs: invalid datasource \"logs-with-dashes\": only letters, numbers, and underscores are allowed",
+		},
+		{
 			id:           component.NewIDWithName(component.MustNewType(typeStr), "missing_token"),
 			subName:      "tinybird/missing_token",
 			errorMessage: "missing Tinybird API token",
