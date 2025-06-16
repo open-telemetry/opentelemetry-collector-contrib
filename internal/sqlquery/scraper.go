@@ -110,19 +110,19 @@ func (s *Scraper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func BuildDataSourceString(driver string, dataSource DataSourceConfig) (string, error) {
+func BuildDataSourceString(driver string, config Config) (string, error) {
 	var auth string
-	if dataSource.Username != "" {
+	if config.Username != "" {
 		// MySQL doesn't need URL escaping
 		if driver == DriverMySQL {
-			auth = fmt.Sprintf("%s:%s@", dataSource.Username, string(dataSource.Password))
+			auth = fmt.Sprintf("%s:%s@", config.Username, string(config.Password))
 		} else {
-			auth = fmt.Sprintf("%s:%s@", url.QueryEscape(dataSource.Username), url.QueryEscape(string(dataSource.Password)))
+			auth = fmt.Sprintf("%s:%s@", url.QueryEscape(config.Username), url.QueryEscape(string(config.Password)))
 		}
 	}
 
 	query := url.Values{}
-	for k, v := range dataSource.AdditionalParams {
+	for k, v := range config.AdditionalParams {
 		query.Set(k, fmt.Sprintf("%v", v))
 	}
 
@@ -130,24 +130,24 @@ func BuildDataSourceString(driver string, dataSource DataSourceConfig) (string, 
 	switch driver {
 	case DriverHDB:
 		// HDB connection string format: hdb://user:pass@host:port?param1=value1
-		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, dataSource.Host, dataSource.Port)
+		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, config.Host, config.Port)
 	case DriverMySQL:
 		// MySQL connection string format: user:pass@tcp(host:port)/db?param1=value1&param2=value2
-		connStr = fmt.Sprintf("%stcp(%s:%d)/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+		connStr = fmt.Sprintf("%stcp(%s:%d)/%s", auth, config.Host, config.Port, config.Database)
 	case DriverOracle:
 		// Oracle connection string format: oracle://user:pass@host:port/service_name?param1=value1&param2=value2
-		connStr = fmt.Sprintf("oracle://%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+		connStr = fmt.Sprintf("oracle://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	case DriverPostgres:
 		// PostgreSQL connection string format: postgresql://user:pass@host:port/db?param1=value1&param2=value2
-		connStr = fmt.Sprintf("postgresql://%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+		connStr = fmt.Sprintf("postgresql://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	case DriverSnowflake:
 		// Snowflake connection string format: user:pass@host:port/database?param1=value1&param2=value2
-		connStr = fmt.Sprintf("%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+		connStr = fmt.Sprintf("%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	case DriverSQLServer:
 		// SQL Server connection string format: sqlserver://username:password@host:port/instance
 
 		// replace all backslashes with forward slashes
-		host := strings.ReplaceAll(dataSource.Host, "\\", "/")
+		host := strings.ReplaceAll(config.Host, "\\", "/")
 		// if host contains a "/", split it into hostname and instance
 		parts := strings.SplitN(host, "/", 2)
 		hostname := parts[0]
@@ -155,15 +155,15 @@ func BuildDataSourceString(driver string, dataSource DataSourceConfig) (string, 
 		if len(parts) > 1 {
 			instance = parts[1]
 		}
-		query.Set("database", dataSource.Database)
+		query.Set("database", config.Database)
 		if instance != "" {
-			connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, dataSource.Port, instance)
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, config.Port, instance)
 		} else {
-			connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, dataSource.Port)
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, config.Port)
 		}
 	case DriverTDS:
 		// TDS connection string format: tds://user:pass@host:port/database
-		connStr = fmt.Sprintf("tds://%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+		connStr = fmt.Sprintf("tds://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	default:
 		return "", fmt.Errorf("unsupported driver: %s", driver)
 	}

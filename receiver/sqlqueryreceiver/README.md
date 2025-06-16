@@ -28,9 +28,22 @@ The configuration supports the following top-level fields:
 
 - `driver`(required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
   HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
-- `datasource`(required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This is
-  a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
-  referred to as the "connection string" in driver documentation. Examples:
+- `host` (optional): The hostname or IP address of the database server.
+  - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
+- `port` (optional): The port number of the database server. Required for `sqlserver` if `datasource` is not specified.
+
+- `database` (optional): The name of the database to connect to.
+- `username` (optional): The username for database authentication.
+  - The `username` will be properly escaped and securely handled when building the connection string. Special characters in passwords (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+- `password` (optional): The password for database authentication. Supports environment variable substitution.
+  - The `password` field supports sensitive value handling through environment variables or other secure value sources. The value will be properly escaped and securely handled when building the connection string.
+- `additional_params` (optional): Additional driver-specific connection parameters.
+
+  - The `additional_params` map can contain additional driver-specific connection parameters. These will be properly escaped and appended to the connection string.
+
+- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value overrides the individual fields listed above. This is
+a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
+referred to as the "connection string" in driver documentation. Examples:
   - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
   - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
@@ -38,21 +51,7 @@ The configuration supports the following top-level fields:
   - [snowflake](https://github.com/snowflakedb/gosnowflake) - `username[:password]@<account_identifier>/dbname/schemaname[?param1=value&...&paramN=valueN]`
   - [sqlserver](https://github.com/microsoft/go-mssqldb) - `sqlserver://username:user_password@localhost:1433?database=db_name`
   - [tds](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
-- `datasource_config` (optional): Used as an alternative connection option to the `datasource` string.
-  ```yaml
-  host: localhost
-  port: 5432
-  database: mydb
-  username: myuser
-  password: ${DB_PASSWORD}
-  additional_options:
-    sslmode: disable
-    application_name: myapp
-  ```
-  - The `username` will be properly escaped and securely handled when building the connection string. Special characters in passwords (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
-  - The `password` field supports sensitive value handling through environment variables or other secure value sources. The value will be properly escaped and securely handled when building the connection string.
-  - The `additional_options` map can contain additional driver-specific connection parameters. These will be properly escaped and appended to the connection string.
-  - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
+
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
@@ -88,13 +87,6 @@ receivers:
   sqlquery:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
-    datasource_config:
-      host: localhost
-      port: 5432
-      username: postgres
-      password: s3cr3t
-      additional_params:
-        sslmode: disable
     queries:
       - sql: "select * from my_logs where log_id > $$1"
         tracking_start_value: "10000"
