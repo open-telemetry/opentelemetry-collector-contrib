@@ -5,8 +5,6 @@ go 1.23.0
 require (
 	github.com/IBM/sarama v1.45.2
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/aws/aws-sdk-go-v2 v1.36.4
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.69
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.128.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
@@ -17,11 +15,12 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/config/configtls v1.34.1-0.20250610090210-188191247685
 	go.uber.org/goleak v1.3.0
-	go.uber.org/multierr v1.11.0
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/config v1.29.16
+	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.16 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.69 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.31 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.35 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.35 // indirect
@@ -61,12 +60,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/twmb/franz-go v1.18.1
-	github.com/twmb/franz-go/pkg/kmsg v1.9.0
+	github.com/twmb/franz-go/pkg/kmsg v1.11.2
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector/confmap v1.34.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250610090210-188191247685 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
