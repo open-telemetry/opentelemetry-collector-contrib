@@ -46,7 +46,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("endpoint must have http or https scheme: %q", cfg.Endpoint)
 	}
 	if u.Host == "" {
-		return fmt.Errorf("endpoint must have a host: %s", cfg.Endpoint)
+		return fmt.Errorf("endpoint must have a host: %q", cfg.Endpoint)
 	}
 	return nil
 }
