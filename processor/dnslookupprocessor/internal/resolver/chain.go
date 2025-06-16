@@ -67,20 +67,20 @@ func (c *ChainResolver) resolveInSequence(logKey string, target string, resolver
 		result, err := resolverFn(r)
 
 		// Successful resolution
-		if err == nil || errors.Is(err, ErrNoResolution) {
+		if err == nil {
 			c.logger.Debug(fmt.Sprintf("DNS lookup from %s", r.Name()),
 				zap.String(logKey, target),
 				zap.String(Flip(logKey), result))
+
 			return result, nil
 		}
 
-		lastErr = err
-	}
+		// NS returns No Resolution
+		if errors.Is(err, ErrNoResolution) {
+			return "", err
+		}
 
-	// When the host file resolver is the only one in the chain, and it returns ErrNotInHostFiles,
-	if errors.Is(lastErr, ErrNotInHostFiles) {
-		c.logger.Debug("No matching entry in hostfiles", zap.String(logKey, target))
-		return "", nil
+		lastErr = err
 	}
 
 	return "", lastErr

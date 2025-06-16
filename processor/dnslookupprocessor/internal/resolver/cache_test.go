@@ -127,17 +127,19 @@ func TestCacheResolver_Resolve(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name             string
-		hostname         string
-		hitCacheSize     int
-		missCacheSize    int
-		cacheTTL         time.Duration
-		setupMock        func(*testutil.MockResolver)
-		expectedIP       string
-		expectError      bool
-		expectedError    error
-		prePopulateCache map[string]string
-		prePopulateMiss  map[string]struct{}
+		name                  string
+		hostname              string
+		hitCacheSize          int
+		missCacheSize         int
+		cacheTTL              time.Duration
+		setupMock             func(*testutil.MockResolver)
+		expectedIP            string
+		expectError           bool
+		expectedError         error
+		prePopulateCache      map[string]string
+		prePopulateMiss       map[string]struct{}
+		expectedHitCacheSize  int
+		expectedMissCacheSize int
 	}{
 		{
 			name:          "First lookup, cache miss",
@@ -148,8 +150,10 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			setupMock: func(m *testutil.MockResolver) {
 				m.On("Resolve", ctx, "example.com").Return("192.168.1.1", nil).Once()
 			},
-			expectedIP:  "192.168.1.1",
-			expectError: false,
+			expectedIP:            "192.168.1.1",
+			expectError:           false,
+			expectedHitCacheSize:  1,
+			expectedMissCacheSize: 0,
 		},
 		{
 			name:          "Lookup with hit cache",
@@ -159,11 +163,13 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			cacheTTL:      0,
 			setupMock: func(_ *testutil.MockResolver) {
 			},
-			expectedIP:  "10.0.0.1",
-			expectError: false,
 			prePopulateCache: map[string]string{
 				"cached.com": "10.0.0.1",
 			},
+			expectedIP:            "10.0.0.1",
+			expectError:           false,
+			expectedHitCacheSize:  1,
+			expectedMissCacheSize: 0,
 		},
 		{
 			name:          "Lookup with miss cache",
@@ -173,11 +179,13 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			cacheTTL:      0,
 			setupMock: func(_ *testutil.MockResolver) {
 			},
-			expectedIP:  "",
-			expectError: false,
 			prePopulateMiss: map[string]struct{}{
 				"notfound.com": {},
 			},
+			expectedIP:            "",
+			expectError:           false,
+			expectedHitCacheSize:  0,
+			expectedMissCacheSize: 1,
 		},
 		{
 			name:          "Cache disabled, always goes to resolver",
@@ -188,8 +196,10 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			setupMock: func(m *testutil.MockResolver) {
 				m.On("Resolve", ctx, "nocache.com").Return("172.16.0.1", nil).Once()
 			},
-			expectedIP:  "172.16.0.1",
-			expectError: false,
+			expectedIP:            "172.16.0.1",
+			expectError:           false,
+			expectedHitCacheSize:  0,
+			expectedMissCacheSize: 0,
 		},
 		{
 			name:          "Error from resolver",
@@ -200,9 +210,11 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			setupMock: func(m *testutil.MockResolver) {
 				m.On("Resolve", ctx, "error.com").Return("", errors.New("dns error")).Once()
 			},
-			expectedIP:    "",
-			expectError:   true,
-			expectedError: errors.New("dns error"),
+			expectedIP:            "",
+			expectError:           true,
+			expectedError:         errors.New("dns error"),
+			expectedHitCacheSize:  0,
+			expectedMissCacheSize: 0,
 		},
 	}
 
@@ -246,6 +258,14 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expectedIP, ip)
+
+			if tt.hitCacheSize > 0 {
+				assert.Equal(t, tt.expectedHitCacheSize, resolver.hitCache.Len())
+			}
+
+			if tt.missCacheSize > 0 {
+				assert.Equal(t, tt.expectedMissCacheSize, resolver.missCache.Len())
+			}
 		})
 	}
 }
@@ -255,17 +275,19 @@ func TestCacheResolver_Reverse(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name             string
-		ip               string
-		hitCacheSize     int
-		missCacheSize    int
-		cacheTTL         time.Duration
-		setupMock        func(*testutil.MockResolver)
-		expectedHostname string
-		expectError      bool
-		expectedError    error
-		prePopulateCache map[string]string
-		prePopulateMiss  map[string]struct{}
+		name                  string
+		ip                    string
+		hitCacheSize          int
+		missCacheSize         int
+		cacheTTL              time.Duration
+		setupMock             func(*testutil.MockResolver)
+		expectedHostname      string
+		expectError           bool
+		expectedError         error
+		prePopulateCache      map[string]string
+		prePopulateMiss       map[string]struct{}
+		expectedHitCacheSize  int
+		expectedMissCacheSize int
 	}{
 		{
 			name:          "First lookup, cache miss",
@@ -276,8 +298,10 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			setupMock: func(m *testutil.MockResolver) {
 				m.On("Reverse", ctx, "192.168.1.1").Return("example.com", nil).Once()
 			},
-			expectedHostname: "example.com",
-			expectError:      false,
+			expectedHostname:      "example.com",
+			expectError:           false,
+			expectedHitCacheSize:  1,
+			expectedMissCacheSize: 0,
 		},
 		{
 			name:          "Lookup with hit cache",
@@ -287,11 +311,13 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			cacheTTL:      0,
 			setupMock: func(_ *testutil.MockResolver) {
 			},
-			expectedHostname: "cached.com",
-			expectError:      false,
 			prePopulateCache: map[string]string{
 				"10.0.0.1": "cached.com",
 			},
+			expectedHostname:      "cached.com",
+			expectError:           false,
+			expectedHitCacheSize:  1,
+			expectedMissCacheSize: 0,
 		},
 		{
 			name:          "Lookup with miss cache",
@@ -301,11 +327,13 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			cacheTTL:      0,
 			setupMock: func(_ *testutil.MockResolver) {
 			},
-			expectedHostname: "",
-			expectError:      false,
 			prePopulateMiss: map[string]struct{}{
 				"1.1.1.1": {},
 			},
+			expectedHostname:      "",
+			expectError:           false,
+			expectedHitCacheSize:  0,
+			expectedMissCacheSize: 1,
 		},
 		{
 			name:          "Cache disabled, always goes to resolver",
@@ -316,8 +344,10 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			setupMock: func(m *testutil.MockResolver) {
 				m.On("Reverse", ctx, "172.16.0.1").Return("nocache.com", nil).Once()
 			},
-			expectedHostname: "nocache.com",
-			expectError:      false,
+			expectedHostname:      "nocache.com",
+			expectError:           false,
+			expectedHitCacheSize:  0,
+			expectedMissCacheSize: 0,
 		},
 		{
 			name:          "Error from resolver",
@@ -328,9 +358,11 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			setupMock: func(m *testutil.MockResolver) {
 				m.On("Reverse", ctx, "169.254.0.1").Return("", errors.New("dns error")).Once()
 			},
-			expectedHostname: "",
-			expectError:      true,
-			expectedError:    errors.New("dns error"),
+			expectedHostname:      "",
+			expectError:           true,
+			expectedError:         errors.New("dns error"),
+			expectedHitCacheSize:  0,
+			expectedMissCacheSize: 0,
 		},
 	}
 
@@ -374,6 +406,14 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expectedHostname, hostname)
+
+			if tt.hitCacheSize > 0 {
+				assert.Equal(t, tt.expectedHitCacheSize, resolver.hitCache.Len())
+			}
+
+			if tt.missCacheSize > 0 {
+				assert.Equal(t, tt.expectedMissCacheSize, resolver.missCache.Len())
+			}
 		})
 	}
 }

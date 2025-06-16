@@ -22,40 +22,22 @@ type Lookup interface {
 	LookupAddr(ctx context.Context, addr string) ([]string, error)
 }
 
-// NetResolver is a wrapper around net.Resolver to provide custom DNS resolution
-// It is used to mock the net.Resolver
-type NetResolver struct {
-	net.Resolver
-}
-
-func (nr *NetResolver) LookupIP(ctx context.Context, network, host string) ([]net.IP, error) {
-	return nr.Resolver.LookupIP(ctx, network, host)
-}
-
-func (nr *NetResolver) LookupAddr(ctx context.Context, addr string) ([]string, error) {
-	return nr.Resolver.LookupAddr(ctx, addr)
-}
-
-func newNetResolver(nameserver string, timeout time.Duration) *NetResolver {
-	return &NetResolver{
-		Resolver: net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
-				d := net.Dialer{Timeout: timeout}
-				return d.DialContext(ctx, network, nameserver)
-			},
+func newNetResolver(nameserver string, timeout time.Duration) *net.Resolver {
+	return &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+			d := net.Dialer{Timeout: timeout}
+			return d.DialContext(ctx, network, nameserver)
 		},
 	}
 }
 
-func newSystemNetResolver(timeout time.Duration) *NetResolver {
-	return &NetResolver{
-		Resolver: net.Resolver{
-			PreferGo: false,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{Timeout: timeout}
-				return d.DialContext(ctx, network, address)
-			},
+func newSystemNetResolver(timeout time.Duration) *net.Resolver {
+	return &net.Resolver{
+		PreferGo: false,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{Timeout: timeout}
+			return d.DialContext(ctx, network, address)
 		},
 	}
 }
@@ -83,8 +65,7 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 
 	resolvers := make([]Lookup, len(normalizeNameservers))
 	for i, ns := range normalizeNameservers {
-		nameserver := ns // copy to local
-		resolvers[i] = newNetResolver(nameserver, timeout)
+		resolvers[i] = newNetResolver(ns, timeout)
 	}
 
 	r := &NameserverResolver{
@@ -163,7 +144,7 @@ func (r *NameserverResolver) Close() error {
 	return nil
 }
 
-func NewExponentialBackOff() *backoff.ExponentialBackOff {
+func newExponentialBackOff() *backoff.ExponentialBackOff {
 	expBackOff := backoff.ExponentialBackOff{
 		InitialInterval:     50 * time.Millisecond,
 		RandomizationFactor: 0.5,
@@ -188,7 +169,7 @@ func (r *NameserverResolver) lookupWithNameservers(
 	var lastErr error
 
 	for i, resolver := range r.resolvers {
-		expBackOff := NewExponentialBackOff()
+		expBackOff := newExponentialBackOff()
 
 		for attempt := 0; attempt <= r.maxRetries; attempt++ {
 			result, err := func() (string, error) {
@@ -209,26 +190,28 @@ func (r *NameserverResolver) lookupWithNameservers(
 
 			lastErr = err
 
-			var e *net.DNSError
-			if errors.As(err, &e) {
-				// The hostname was not found (NXDOMAIN), we can skip retrying
-				if e.IsNotFound {
-					return "", ErrNoResolution
-				}
+			// The hostname was not found (NXDOMAIN), we can skip retrying
+			if dnsErr := new(net.DNSError); errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+				return "", ErrNoResolution
+			}
 
-				// If the error is not a retryable error, try the next nameserver
-				if !e.IsNotFound && !e.IsTimeout && !e.IsTemporary {
-					r.logger.Debug("Non retryable DNS error",
-						zap.String("lookup", target),
-						zap.String("nameserver", r.nameservers[i]),
-						zap.Error(err))
+			// If the error is non retryable error, skip retrying and move to the next nameserver
+			if opErr := new(net.OpError); errors.As(err, &opErr) {
+				if !opErr.Temporary() && !opErr.Timeout() {
+					lastErr = ErrNSPermanentFailure
+					break
+				}
+			} else if netErr := (net.Error)(nil); errors.As(err, &netErr) {
+				if !netErr.Timeout() {
+					lastErr = ErrNSPermanentFailure
 					break
 				}
 			}
 
 			// Sleep for retry
-			sleepDuration := expBackOff.NextBackOff()
 			if attempt < r.maxRetries {
+				sleepDuration := expBackOff.NextBackOff()
+
 				select {
 				case <-time.After(sleepDuration):
 					r.logger.Debug("DNS lookup failed with nameserver. Will retry after backoff.",
@@ -258,12 +241,16 @@ func validateAndFormatNameservers(nameservers []string) ([]string, error) {
 		nns := ns
 
 		// Check if the address has a port; if not, append the default DNS port
-		if _, _, err := net.SplitHostPort(ns); err != nil {
+		host, port, err := net.SplitHostPort(ns)
+		if err != nil {
 			nns = net.JoinHostPort(ns, "53")
+			host, port, err = net.SplitHostPort(nns)
+			if err != nil {
+				return nil, fmt.Errorf("invalid nameserver address: %s", ns)
+			}
 		}
 
 		// validate the address
-		host, port, _ := net.SplitHostPort(nns)
 		_, ipErr := ParseIP(host)
 		_, hostErr := ParseHostname(host)
 		isPort := govalidator.IsPort(port)

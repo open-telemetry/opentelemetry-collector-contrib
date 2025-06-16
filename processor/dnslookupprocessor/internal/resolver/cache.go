@@ -91,9 +91,7 @@ func (r *CacheResolver) Close() error {
 	}
 
 	if r.nextResolver != nil {
-		if err := r.nextResolver.Close(); err != nil {
-			return err
-		}
+		return r.nextResolver.Close()
 	}
 
 	return nil
@@ -126,26 +124,31 @@ func (r *CacheResolver) resolveWithCache(
 
 	// Call the underlying chain resolver
 	result, err := resolveFunc(ctx, target)
-	// Add failure to miss cache
-	if err != nil {
+
+	switch {
+	case errors.Is(err, ErrNoResolution) ||
+		errors.Is(err, ErrNotInHostFiles) ||
+		errors.Is(err, ErrNSPermanentFailure): // No resolution or NS permanent failure
 		if r.missCache != nil {
 			r.missCache.Add(target, struct{}{})
+
 			r.logger.Debug("Add miss cache",
 				zap.String(logKey, target),
 				zap.Error(err))
 		}
+		return "", nil
+	case err == nil: // Successful resolution
+		if r.hitCache != nil {
+			r.hitCache.Add(target, result)
+
+			r.logger.Debug("Add hit cache",
+				zap.String(logKey, target),
+				zap.String(Flip(logKey), result))
+		}
+		return result, nil
+	default: // retryable errors eg. timeout
 		return "", err
 	}
-
-	// Add success including no resolution to hit cache
-	if r.hitCache != nil {
-		r.hitCache.Add(target, result)
-		r.logger.Debug("Add hit cache",
-			zap.String(logKey, target),
-			zap.String(Flip(logKey), result))
-	}
-
-	return result, nil
 }
 
 // stringHashFn calculates a hash value from the keys for the LRU cache.

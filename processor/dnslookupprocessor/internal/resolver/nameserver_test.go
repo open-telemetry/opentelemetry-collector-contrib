@@ -6,6 +6,7 @@ package resolver
 import (
 	"context"
 	"net"
+	"syscall"
 	"testing"
 	"time"
 
@@ -80,10 +81,8 @@ func TestNewNameserverResolver(t *testing.T) {
 func TestNewSystemResolver(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
-	t.Run("system resolver", func(t *testing.T) {
-		resolver := NewSystemResolver(testTimeout, 3, logger)
-		assert.NotNil(t, resolver)
-	})
+	resolver := NewSystemResolver(testTimeout, 3, logger)
+	assert.NotNil(t, resolver)
 }
 
 func TestNameserverResolver_Resolve(t *testing.T) {
@@ -114,10 +113,10 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "192.168.1.1",
 			expectError:    false,
 			expectedError:  nil,
-			maxRetries:     0,
 		},
 		{
 			name:     "only IPv6 available",
@@ -133,10 +132,10 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "2001:db8::1",
 			expectError:    false,
 			expectedError:  nil,
-			maxRetries:     0,
 		},
 		{
 			name:     "no IPs returned",
@@ -150,10 +149,10 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "",
 			expectError:    true,
 			expectedError:  ErrNoResolution,
-			maxRetries:     0,
 		},
 		{
 			name:     "No resolution found",
@@ -173,10 +172,10 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "",
 			expectError:    true,
 			expectedError:  ErrNoResolution,
-			maxRetries:     0,
 		},
 		{
 			name:     "temporary error with retry success",
@@ -185,9 +184,9 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				func() *MockNetResolver {
 					m := new(MockNetResolver)
 					tempErr := &net.DNSError{
-						Err:         "temporary failure",
-						Name:        "retry.com",
-						IsTemporary: true,
+						Err:       "temporary failure",
+						Name:      "retry.com",
+						IsTimeout: true,
 					}
 
 					// First call fails with temporary error
@@ -202,10 +201,10 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     3,
 			expectedResult: "10.0.0.1",
 			expectError:    false,
 			expectedError:  nil,
-			maxRetries:     3,
 		},
 		{
 			name:     "timeout error with retry failure",
@@ -226,9 +225,51 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     2,
 			expectedResult: "",
 			expectError:    true,
+		},
+		{
+			name:     "permanent connection error",
+			hostname: "refused.com",
+			mockResolvers: []*MockNetResolver{
+				func() *MockNetResolver {
+					m := new(MockNetResolver)
+					opErr := &net.OpError{
+						Err: syscall.ECONNREFUSED,
+					}
+
+					// Always fail with timeout
+					m.On("LookupIP", mock.Anything, "ip", "refused.com").
+						Return([]net.IP(nil), opErr)
+					return m
+				}(),
+			},
+			nameservers:    []string{"test-server"},
 			maxRetries:     2,
+			expectedResult: "",
+			expectError:    true,
+			expectedError:  ErrNSPermanentFailure,
+		},
+		{
+			name:     "permanent error from nameserver",
+			hostname: "config-error.com",
+			mockResolvers: []*MockNetResolver{
+				func() *MockNetResolver {
+					m := new(MockNetResolver)
+					configErr := &net.DNSConfigError{}
+
+					// Always fail with timeout
+					m.On("LookupIP", mock.Anything, "ip", "config-error.com").
+						Return([]net.IP(nil), configErr)
+					return m
+				}(),
+			},
+			nameservers:    []string{"test-server"},
+			maxRetries:     2,
+			expectedResult: "",
+			expectError:    true,
+			expectedError:  ErrNSPermanentFailure,
 		},
 		{
 			name:     "fallback to second nameserver",
@@ -257,10 +298,10 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server1", "test-server2"},
+			maxRetries:     1,
 			expectedResult: "10.1.1.1",
 			expectError:    false,
 			expectedError:  nil,
-			maxRetries:     1,
 		},
 	}
 
@@ -307,10 +348,10 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 		ip             string
 		mockResolvers  []*MockNetResolver
 		nameservers    []string
+		maxRetries     int
 		expectedResult string
 		expectError    bool
 		expectedError  error
-		maxRetries     int
 	}{
 		{
 			name: "successful reverse resolution",
@@ -324,10 +365,10 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "example.com",
 			expectError:    false,
 			expectedError:  nil,
-			maxRetries:     0,
 		},
 		{
 			name: "multiple reverse resolutions",
@@ -341,10 +382,10 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "example.com",
 			expectError:    false,
 			expectedError:  nil,
-			maxRetries:     0,
 		},
 		{
 			name: "no hostnames returned",
@@ -358,10 +399,10 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "",
 			expectError:    true,
 			expectedError:  ErrNoResolution,
-			maxRetries:     0,
 		},
 		{
 			name: "DNS error",
@@ -381,10 +422,10 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "",
 			expectError:    true,
 			expectedError:  ErrNoResolution,
-			maxRetries:     0,
 		},
 		{
 			name: "malformed DNS records",
@@ -402,9 +443,9 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 				}(),
 			},
 			nameservers:    []string{"test-server"},
+			maxRetries:     0,
 			expectedResult: "example.com",
 			expectError:    false,
-			maxRetries:     0,
 		},
 	}
 

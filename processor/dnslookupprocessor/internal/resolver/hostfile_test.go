@@ -32,6 +32,9 @@ const hostFileWithCommentsAndEmptyLines = `
 # This is a comment
 127.0.0.1 localhost
 
+# No hostname
+192.168.1.66
+
 # Another comment
 192.168.1.20 commented.example.com # Inline comment
 

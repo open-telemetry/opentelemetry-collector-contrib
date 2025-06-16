@@ -25,6 +25,9 @@ var (
 
 	// ErrInvalidIP indicates the provided IP address is invalid
 	ErrInvalidIP = errors.New("invalid IP address format")
+
+	// ErrNSPermanentFailure indicates non retryable error from nameserver eg. SERVFAIL, REFUSED
+	ErrNSPermanentFailure = errors.New("permanent failure in nameserver resolution")
 )
 
 // Resolver defines methods for DNS resolution operations

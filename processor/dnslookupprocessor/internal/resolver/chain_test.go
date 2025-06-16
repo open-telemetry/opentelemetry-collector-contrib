@@ -22,7 +22,7 @@ func TestNewChainResolver(t *testing.T) {
 		resolvers []Resolver
 	}{
 		{
-			name:      "Empty netResolvers",
+			name:      "Empty resolvers",
 			resolvers: []Resolver{},
 		},
 		{
@@ -32,7 +32,7 @@ func TestNewChainResolver(t *testing.T) {
 			},
 		},
 		{
-			name: "Multiple netResolvers",
+			name: "Multiple resolvers",
 			resolvers: []Resolver{
 				&testutil.MockResolver{},
 				&testutil.MockResolver{},
@@ -100,17 +100,17 @@ func TestChainResolver_Resolve(t *testing.T) {
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Name").Return("mock1")
 				r1.On("Resolve", ctx, "example.com").Return("", ErrNoResolution)
 
-				// ErrNoResolution is treated as success
+				// ErrNoResolution is a valid result that no need to try next resolver
 				// Second resolver should not be called
 				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
-			expectedIP:  "",
-			expectError: false,
+			expectedIP:    "",
+			expectError:   true,
+			expectedError: errors.New("no resolution found"),
 		},
 		{
 			name:     "All resolvers fail",
@@ -222,17 +222,17 @@ func TestChainResolver_Reverse(t *testing.T) {
 			ip:   "192.168.1.10",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Name").Return("mock1")
 				r1.On("Reverse", ctx, "192.168.1.10").Return("", ErrNoResolution)
 
-				// ErrNoResolution is treated as success
+				// ErrNoResolution is a valid result that no need to try next resolver
 				// Second resolver should not be called
 				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
 			expectedHostname: "",
-			expectError:      false,
+			expectError:      true,
+			expectedError:    errors.New("no resolution found"),
 		},
 		{
 			name: "All resolvers fail",

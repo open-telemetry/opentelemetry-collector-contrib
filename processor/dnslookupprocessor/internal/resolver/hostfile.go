@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 )
 
 // ErrInvalidHostFilePath Error for invalid host file path
-var ErrInvalidHostFilePath = errors.New("invalid host file path")
+var ErrInvalidHostFilePath = errors.New("host file does not exist")
 
 // HostFileResolver uses host files for DNS resolution
 type HostFileResolver struct {
@@ -58,11 +59,7 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 		if os.IsNotExist(err) {
 			return ErrInvalidHostFilePath
 		}
-
-		r.logger.Error("Failed to open host file",
-			zap.String("path", path),
-			zap.Error(err))
-		return err
+		return fmt.Errorf(`failed to open host file "%s": %w`, path, err)
 	}
 	defer file.Close()
 
