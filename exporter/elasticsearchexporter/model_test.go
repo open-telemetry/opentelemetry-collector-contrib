@@ -1066,26 +1066,26 @@ func TestMapLogAttributesToECS(t *testing.T) {
 }
 
 // JSON serializable structs for OTel test convenience
-type OTelRecord struct {
-	TraceID                OTelTraceID          `json:"trace_id"`
-	SpanID                 OTelSpanID           `json:"span_id"`
+type oTelRecord struct {
+	TraceID                oTelTraceID          `json:"trace_id"`
+	SpanID                 oTelSpanID           `json:"span_id"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	EventName              string               `json:"event_name"`
 	Attributes             map[string]any       `json:"attributes"`
 	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
-	Scope                  OTelScope            `json:"scope"`
-	Resource               OTelResource         `json:"resource"`
-	Datastream             OTelRecordDatastream `json:"data_stream"`
+	Scope                  oTelScope            `json:"scope"`
+	Resource               oTelResource         `json:"resource"`
+	Datastream             oTelRecordDatastream `json:"data_stream"`
 }
 
-type OTelRecordDatastream struct {
+type oTelRecordDatastream struct {
 	Dataset   string `json:"dataset"`
 	Namespace string `json:"namespace"`
 	Type      string `json:"type"`
 }
 
-type OTelScope struct {
+type oTelScope struct {
 	Name                   string         `json:"name"`
 	Version                string         `json:"version"`
 	Attributes             map[string]any `json:"attributes"`
@@ -1093,19 +1093,19 @@ type OTelScope struct {
 	SchemaURL              string         `json:"schema_url"`
 }
 
-type OTelResource struct {
+type oTelResource struct {
 	Attributes             map[string]any `json:"attributes"`
 	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
 	SchemaURL              string         `json:"schema_url"`
 }
 
-type OTelSpanID pcommon.SpanID
+type oTelSpanID pcommon.SpanID
 
-func (o OTelSpanID) MarshalJSON() ([]byte, error) {
+func (o oTelSpanID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (o *OTelSpanID) UnmarshalJSON(data []byte) error {
+func (o *oTelSpanID) UnmarshalJSON(data []byte) error {
 	b, err := decodeOTelID(data)
 	if err != nil {
 		return err
@@ -1114,13 +1114,13 @@ func (o *OTelSpanID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type OTelTraceID pcommon.TraceID
+type oTelTraceID pcommon.TraceID
 
-func (o OTelTraceID) MarshalJSON() ([]byte, error) {
+func (o oTelTraceID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (o *OTelTraceID) UnmarshalJSON(data []byte) error {
+func (o *oTelTraceID) UnmarshalJSON(data []byte) error {
 	b, err := decodeOTelID(data)
 	if err != nil {
 		return err
@@ -1145,23 +1145,23 @@ func TestEncodeLogOtelMode(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		rec    OTelRecord
-		wantFn func(OTelRecord) OTelRecord // Allows each test to customized the expectations from the original test record data
+		rec    oTelRecord
+		wantFn func(oTelRecord) oTelRecord // Allows each test to customized the expectations from the original test record data
 	}{
 		{
 			name: "default", // Expecting default data_stream values
 			rec:  buildOTelRecordTestData(t, nil),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				return assignDatastreamData(or)
 			},
 		},
 		{
 			name: "custom dataset",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "custom"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				// Datastream attributes are expected to be deleted from under the attributes
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "custom.otel")
@@ -1169,71 +1169,71 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 		{
 			name: "custom dataset with otel suffix",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "custom.otel"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "custom.otel.otel")
 			},
 		},
 		{
 			name: "custom dataset/namespace",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "customds"
 				or.Attributes["data_stream.namespace"] = "customns"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "customds.otel", "customns")
 			},
 		},
 		{
 			name: "dataset attributes priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "first"
 				or.Scope.Attributes["data_stream.dataset"] = "second"
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "first.otel")
 			},
 		},
 		{
 			name: "dataset scope attribute priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Scope.Attributes["data_stream.dataset"] = "second"
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "second.otel")
 			},
 		},
 		{
 			name: "dataset resource attribute priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "third.otel")
 			},
 		},
 		{
 			name: "sanitize dataset/namespace",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = disallowedDatasetRunes + randomString
 				or.Attributes["data_stream.namespace"] = disallowedNamespaceRunes + randomString
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				ds := strings.Repeat("_", len(disallowedDatasetRunes)) + randomString[:maxLenDataset] + ".otel"
 				ns := strings.Repeat("_", len(disallowedNamespaceRunes)) + randomString[:maxLenNamespace]
@@ -1242,24 +1242,24 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 		{
 			name: "event_name from attributes.event.name",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["event.name"] = "foo"
 				or.EventName = ""
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				or.EventName = "foo"
 				return assignDatastreamData(or)
 			},
 		},
 		{
 			name: "event_name takes precedent over attributes.event.name",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["event.name"] = "foo"
 				or.EventName = "bar"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				or.EventName = "bar"
 				return assignDatastreamData(or)
 			},
@@ -1292,7 +1292,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 			want = tc.wantFn(want)
 		}
 
-		var got OTelRecord
+		var got oTelRecord
 		err = json.Unmarshal(buf.Bytes(), &got)
 
 		require.NoError(t, err)
@@ -1302,7 +1302,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 }
 
 // helper function that creates the OTel LogRecord from the test structure
-func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
+func createTestOTelLogRecord(t *testing.T, rec oTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
@@ -1330,7 +1330,7 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 	return record, scope, resource
 }
 
-func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelRecord {
+func buildOTelRecordTestData(t *testing.T, fn func(oTelRecord) oTelRecord) oTelRecord {
 	s := `{
     "@timestamp": "2024-03-12T20:00:41.123456780Z",
     "attributes": {
@@ -1364,7 +1364,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
     "trace_id": "01020304050607080900010203040506"
 }`
 
-	var record OTelRecord
+	var record oTelRecord
 	err := json.Unmarshal([]byte(s), &record)
 	assert.NoError(t, err)
 	if fn != nil {
@@ -1373,7 +1373,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
 	return record
 }
 
-func deleteDatasetAttributes(or OTelRecord) {
+func deleteDatasetAttributes(or oTelRecord) {
 	deleteDatasetAttributesFromMap(or.Attributes)
 	deleteDatasetAttributesFromMap(or.Scope.Attributes)
 	deleteDatasetAttributesFromMap(or.Resource.Attributes)
@@ -1385,8 +1385,8 @@ func deleteDatasetAttributesFromMap(m map[string]any) {
 	delete(m, "data_stream.type")
 }
 
-func assignDatastreamData(or OTelRecord, a ...string) OTelRecord {
-	r := OTelRecordDatastream{
+func assignDatastreamData(or oTelRecord, a ...string) oTelRecord {
+	r := oTelRecordDatastream{
 		Dataset:   "generic.otel",
 		Namespace: "default",
 		Type:      "logs",
