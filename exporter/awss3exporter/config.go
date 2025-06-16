@@ -58,6 +58,11 @@ type S3UploaderConfig struct {
 	// RetryMaxBackoff specifies the maximum backoff delay for S3 client.
 	// Default is 20 seconds (SDK default).
 	RetryMaxBackoff time.Duration `mapstructure:"retry_max_backoff"`
+
+	// UniqueKeyFuncName specifies a function to use for generating a unique string as part of the S3 key.
+	// If unspecified, a default function will be used that generates a random string.
+	// Valid values are: "uuidv7"
+	UniqueKeyFuncName string `mapstructure:"unique_key_func_name"`
 }
 
 type MarshalerType string
@@ -111,6 +116,10 @@ func (c *Config) Validate() error {
 		"bucket-owner-full-control": true,
 	}
 
+	validUniqueKeyFuncs := map[string]bool{
+		"uuidv7": true,
+	}
+
 	if c.S3Uploader.Region == "" {
 		errs = multierr.Append(errs, errors.New("region is required"))
 	}
@@ -139,6 +148,10 @@ func (c *Config) Validate() error {
 
 	if c.S3Uploader.RetryMode != "nop" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {
 		errs = multierr.Append(errs, errors.New("invalid retry mode, must be either 'standard', 'adaptive' or 'nop'"))
+	}
+
+	if c.S3Uploader.UniqueKeyFuncName != "" && !validUniqueKeyFuncs[c.S3Uploader.UniqueKeyFuncName] {
+		errs = multierr.Append(errs, errors.New("invalid UniqueKeyFuncName"))
 	}
 	return errs
 }
