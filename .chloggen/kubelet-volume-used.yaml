@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/kubeletstats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Introduce k8s.volume.used metric."
+note: "Introduce k8s.pod.volume.usage metric."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40476]
