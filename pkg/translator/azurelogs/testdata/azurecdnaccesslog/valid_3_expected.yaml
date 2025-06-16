@@ -18,7 +18,7 @@ resourceLogs:
                   intValue: "379"
               - key: http.response.size
                 value:
-                  intValue: "379"
+                  intValue: "321"
               - key: client.port
                 value:
                   intValue: "43994"
