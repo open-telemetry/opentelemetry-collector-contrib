@@ -270,6 +270,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodUptimeDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sPodVolumeUsageDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
@@ -289,9 +292,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordK8sVolumeUsedDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetAwsVolumeID("aws.volume.id-val")
@@ -1035,6 +1035,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.volume.usage":
+					assert.False(t, validatedMetrics["k8s.pod.volume.usage"], "Found a duplicate in the metrics slice: k8s.pod.volume.usage")
+					validatedMetrics["k8s.pod.volume.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of used bytes in the pod volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.volume.available":
 					assert.False(t, validatedMetrics["k8s.volume.available"], "Found a duplicate in the metrics slice: k8s.volume.available")
 					validatedMetrics["k8s.volume.available"] = true
@@ -1090,18 +1102,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.volume.used":
-					assert.False(t, validatedMetrics["k8s.volume.used"], "Found a duplicate in the metrics slice: k8s.volume.used")
-					validatedMetrics["k8s.volume.used"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of used bytes in the volume.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
