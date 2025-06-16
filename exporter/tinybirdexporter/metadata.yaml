@@ -12,6 +12,6 @@ tests:
   config:
     endpoint: "http://localhost:1234"
     token: "test-token"
-    metrics_datasource: "metrics"
-    traces_datasource: "traces"
-    logs_datasource: "logs"
+    metrics::datasource: "metrics"
+    traces::datasource: "traces"
+    logs::datasource: "logs"

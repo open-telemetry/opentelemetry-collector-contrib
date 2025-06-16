@@ -32,11 +32,11 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:          "",
-		Token:             "",
-		MetricsDataSource: "metrics",
-		TracesDataSource:  "traces",
-		LogsDatasource:    "logs",
+		Endpoint: "",
+		Token:    "",
+		Metrics:  SignalConfig{Datasource: "metrics"},
+		Traces:   SignalConfig{Datasource: "traces"},
+		Logs:     SignalConfig{Datasource: "logs"},
 	}
 }
 
