@@ -112,6 +112,11 @@ func collectAttributes(ld plog.Logs) map[string]string {
 			if scope := scopeLogs.Scope(); scope.Version() != "" {
 				attrs["scope.version"] = scope.Version()
 			}
+			scopeAttrs := scopeLogs.Scope().Attributes()
+			scopeAttrs.Range(func(k string, v pcommon.Value) bool {
+				attrs[k] = v.AsString()
+				return true
+			})
 			logs := scopeLogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logAttrs := logs.At(k).Attributes()
