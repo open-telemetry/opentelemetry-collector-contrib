@@ -26,6 +26,52 @@ import (
 // This allows for flexible configuration by different modules.
 type ConfigOption func(pkgconfigmodel.Config)
 
+// SerializerWithForwarder is an interface that extends the MetricSerializer interface
+// with ability to interact directly with the underlying forwarder's lifecycle methods.
+type SerializerWithForwarder interface {
+	serializer.MetricSerializer
+	Start() error
+	State() uint32
+	Stop()
+}
+
+// forwarderWithLifecycle extends the defaultforwarder.Forwarder interface
+// with lifecycle management methods
+type forwarderWithLifecycle interface {
+	defaultforwarder.Forwarder
+	Start() error
+	State() uint32
+	Stop()
+}
+
+// Compile-time check to ensure DefaultForwarder implements ForwarderWithLifecycle
+var _ forwarderWithLifecycle = (*defaultforwarder.DefaultForwarder)(nil)
+
+// Compile-time check to ensure datadogSerializer implements SerializerWithForwarder
+var _ SerializerWithForwarder = (*datadogSerializer)(nil)
+
+// datadogSerializer is a concrete implementation of SerializerWithForwarder that wraps
+// a MetricSerializer and provides access to the underlying forwarder's lifecycle methods
+type datadogSerializer struct {
+	serializer.MetricSerializer
+	forwarder forwarderWithLifecycle
+}
+
+// Start delegates to the underlying forwarder's Start method
+func (ds *datadogSerializer) Start() error {
+	return ds.forwarder.Start()
+}
+
+// State delegates to the underlying forwarder's State method
+func (ds *datadogSerializer) State() uint32 {
+	return ds.forwarder.State()
+}
+
+// Stop delegates to the underlying forwarder's Stop method
+func (ds *datadogSerializer) Stop() {
+	ds.forwarder.Stop()
+}
+
 // NewLogComponent creates a new log component for collector that uses the provided telemetry settings.
 func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 	zlog := &ZapLogger{
@@ -35,10 +81,15 @@ func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 }
 
 // NewSerializerComponent creates a new serializer that serializes and compresses payloads prior to being forwarded
-func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, hostname string) serializer.MetricSerializer {
+func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, hostname string) SerializerWithForwarder {
 	forwarder := newForwarderComponent(cfg, logger)
 	compressor := zlib.New()
-	return serializer.NewSerializer(forwarder, nil, compressor, cfg, logger, hostname)
+	metricSerializer := serializer.NewSerializer(forwarder, nil, compressor, cfg, logger, hostname)
+
+	return &datadogSerializer{
+		MetricSerializer: metricSerializer,
+		forwarder:        forwarder,
+	}
 }
 
 // NewConfigComponent creates a new Datadog agent config component with the given options.
@@ -72,6 +123,7 @@ func WithForwarderConfig() ConfigOption {
 		pkgconfig.Set("forwarder_backoff_base", 2, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("forwarder_backoff_max", 64, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("forwarder_recovery_interval", 2, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_http_protocol", "auto", pkgconfigmodel.SourceDefault)
 	}
 }
 
@@ -131,10 +183,10 @@ func WithPayloadsConfig() ConfigOption {
 	}
 }
 
-// WithProxyFromEnv configures proxy settings from environment variables
-func WithProxyFromEnv() ConfigOption {
+// WithProxy configures proxy settings from config or environment variables
+func WithProxy(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		setProxyFromEnv(pkgconfig)
+		setProxy(cfg, pkgconfig)
 	}
 }
 
@@ -145,10 +197,20 @@ func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) Confi
 	}
 }
 
-func setProxyFromEnv(config pkgconfigmodel.Config) {
+func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	proxyConfig := httpproxy.FromEnvironment()
-	config.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceEnvVar)
-	config.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceEnvVar)
+	if proxyConfig.HTTPProxy != "" {
+		pkgconfig.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceDefault)
+	}
+	if proxyConfig.HTTPSProxy != "" {
+		pkgconfig.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceDefault)
+	}
+
+	// proxy_url takes precedence over proxy environment variables if set
+	if cfg.ProxyURL != "" {
+		pkgconfig.Set("proxy.http", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("proxy.https", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+	}
 
 	// If this is set to an empty []string, viper will have a type conflict when merging
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
@@ -157,11 +219,11 @@ func setProxyFromEnv(config pkgconfigmodel.Config) {
 	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
-	config.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend
-func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) defaultforwarder.Forwarder {
+func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) forwarderWithLifecycle {
 	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
 		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
 	}
