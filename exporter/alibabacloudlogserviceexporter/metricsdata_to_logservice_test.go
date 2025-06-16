@@ -132,13 +132,13 @@ func TestMetricCornerCases(t *testing.T) {
 	assert.Equal(t, 1, min(1, 2))
 	assert.Equal(t, 1, min(2, 1))
 	assert.Equal(t, 1, min(1, 1))
-	var label KeyValues
+	var label keyValues
 	label.Append("a", "b")
 	assert.Equal(t, "a#$#b", label.String())
 }
 
 func TestMetricLabelSanitize(t *testing.T) {
-	var label KeyValues
+	var label keyValues
 	label.Append("_test", "key_test")
 	label.Append("0test", "key_0test")
 	label.Append("test_normal", "test_normal")
