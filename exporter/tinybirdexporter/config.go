@@ -11,13 +11,17 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
+type SignalConfig struct {
+	Datasource string `mapstructure:"datasource"`
+}
+
 // Config defines configuration for the Tinybird exporter.
 type Config struct {
-	Endpoint          string              `mapstructure:"endpoint"`
-	Token             configopaque.String `mapstructure:"token"`
-	MetricsDataSource string              `mapstructure:"metrics_datasource"`
-	TracesDataSource  string              `mapstructure:"traces_datasource"`
-	LogsDatasource    string              `mapstructure:"logs_datasource"`
+	Endpoint string              `mapstructure:"endpoint"`
+	Token    configopaque.String `mapstructure:"token"`
+	Metrics  SignalConfig        `mapstructure:"metrics"`
+	Traces   SignalConfig        `mapstructure:"traces"`
+	Logs     SignalConfig        `mapstructure:"logs"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -27,14 +31,14 @@ func (cfg *Config) Validate() error {
 	if cfg.Token == "" {
 		return errMissingToken
 	}
-	if cfg.MetricsDataSource == "" {
-		return fmt.Errorf("metrics_datasource must be configured")
+	if cfg.Metrics.Datasource == "" {
+		return fmt.Errorf("metrics datasource must be configured")
 	}
-	if cfg.TracesDataSource == "" {
-		return fmt.Errorf("traces_datasource must be configured")
+	if cfg.Traces.Datasource == "" {
+		return fmt.Errorf("traces datasource must be configured")
 	}
-	if cfg.LogsDatasource == "" {
-		return fmt.Errorf("logs_datasource must be configured")
+	if cfg.Logs.Datasource == "" {
+		return fmt.Errorf("logs datasource must be configured")
 	}
 	if cfg.Endpoint == "" {
 		return errMissingEndpoint
