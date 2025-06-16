@@ -35,7 +35,7 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 }
 
 func extractCountMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	metricNameSuffix := ".count"
+	metricNameSuffix := "_count"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}

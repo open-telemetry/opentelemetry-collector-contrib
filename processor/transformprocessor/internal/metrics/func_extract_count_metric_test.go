@@ -30,7 +30,7 @@ func Test_extractCountMetric(t *testing.T) {
 				countMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(false)
 
-				countMetric.SetName(histogramMetric.Name() + ".count")
+				countMetric.SetName(histogramMetric.Name() + "_count")
 				dp := countMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(int64(histogramMetric.Histogram().DataPoints().At(0).Count()))
 
@@ -51,7 +51,7 @@ func Test_extractCountMetric(t *testing.T) {
 				countMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(true)
 
-				countMetric.SetName(histogramMetric.Name() + ".count")
+				countMetric.SetName(histogramMetric.Name() + "_count")
 				dp := countMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(int64(histogramMetric.Histogram().DataPoints().At(0).Count()))
 
@@ -72,7 +72,7 @@ func Test_extractCountMetric(t *testing.T) {
 				countMetric.Sum().SetAggregationTemporality(expHistogramMetric.ExponentialHistogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(false)
 
-				countMetric.SetName(expHistogramMetric.Name() + ".count")
+				countMetric.SetName(expHistogramMetric.Name() + "_count")
 				dp := countMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(int64(expHistogramMetric.ExponentialHistogram().DataPoints().At(0).Count()))
 
@@ -93,7 +93,7 @@ func Test_extractCountMetric(t *testing.T) {
 				countMetric.Sum().SetAggregationTemporality(expHistogramMetric.ExponentialHistogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(true)
 
-				countMetric.SetName(expHistogramMetric.Name() + ".count")
+				countMetric.SetName(expHistogramMetric.Name() + "_count")
 				dp := countMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(int64(expHistogramMetric.ExponentialHistogram().DataPoints().At(0).Count()))
 
@@ -114,7 +114,7 @@ func Test_extractCountMetric(t *testing.T) {
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				countMetric.Sum().SetIsMonotonic(false)
 
-				countMetric.SetName("summary_metric.count")
+				countMetric.SetName("summary_metric_count")
 				dp := countMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(int64(summaryMetric.Summary().DataPoints().At(0).Count()))
 
@@ -135,7 +135,7 @@ func Test_extractCountMetric(t *testing.T) {
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				countMetric.Sum().SetIsMonotonic(true)
 
-				countMetric.SetName("summary_metric.count")
+				countMetric.SetName("summary_metric_count")
 				dp := countMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntValue(int64(summaryMetric.Summary().DataPoints().At(0).Count()))
 
