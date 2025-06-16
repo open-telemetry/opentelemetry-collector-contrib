@@ -15,14 +15,14 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testTracesJSONExporter(t *testing.T) {
+func testTracesJSONExporter(t *testing.T, endpoint string) {
 	overrideJSONStringSetting := func(config *Config) {
 		config.ConnectionParams["output_format_native_write_json_as_string"] = "1"
 	}
 	overrideTracesTableName := func(config *Config) {
 		config.TracesTableName = "otel_traces_json"
 	}
-	exporter := newTestTracesJSONExporter(t, integrationTestEndpoint, overrideJSONStringSetting, overrideTracesTableName)
+	exporter := newTestTracesJSONExporter(t, endpoint, overrideJSONStringSetting, overrideTracesTableName)
 	verifyExportTracesJSON(t, exporter)
 }
 
@@ -36,7 +36,10 @@ func newTestTracesJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *
 }
 
 func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
-	mustPushTracesJSONData(t, exporter, simpleTraces(100))
+	// 3 pushes
+	mustPushTracesJSONData(t, exporter, simpleTraces(3000))
+	mustPushTracesJSONData(t, exporter, simpleTraces(4000))
+	mustPushTracesJSONData(t, exporter, simpleTraces(5000))
 
 	type trace struct {
 		Timestamp          time.Time   `ch:"Timestamp"`

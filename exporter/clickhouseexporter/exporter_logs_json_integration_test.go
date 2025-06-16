@@ -15,14 +15,14 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testLogsJSONExporter(t *testing.T) {
+func testLogsJSONExporter(t *testing.T, endpoint string) {
 	overrideJSONStringSetting := func(config *Config) {
 		config.ConnectionParams["output_format_native_write_json_as_string"] = "1"
 	}
 	overrideLogsTableName := func(config *Config) {
 		config.LogsTableName = "otel_logs_json"
 	}
-	exporter := newTestLogsJSONExporter(t, integrationTestEndpoint, overrideJSONStringSetting, overrideLogsTableName)
+	exporter := newTestLogsJSONExporter(t, endpoint, overrideJSONStringSetting, overrideLogsTableName)
 	verifyExportLogsJSON(t, exporter)
 }
 
@@ -36,7 +36,10 @@ func newTestLogsJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *lo
 }
 
 func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter) {
-	mustPushLogsJSONData(t, exporter, simpleLogs(100))
+	// 3 pushes
+	mustPushLogsJSONData(t, exporter, simpleLogs(3000))
+	mustPushLogsJSONData(t, exporter, simpleLogs(4000))
+	mustPushLogsJSONData(t, exporter, simpleLogs(5000))
 
 	type log struct {
 		Timestamp          time.Time `ch:"Timestamp"`

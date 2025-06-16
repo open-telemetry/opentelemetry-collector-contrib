@@ -101,13 +101,6 @@ func TestIntegration(t *testing.T) {
 		}
 	}(c)
 
-	integrationTestEndpoint = endpoint
-
-	t.Run("TestLogsExporter", testLogsExporter)
-	t.Run("TestTracesExporter", testTracesExporter)
-	t.Run("TestMetricsExporter", testMetricsExporter)
-	t.Run("TestLogsJSONExporter", testLogsJSONExporter)
-	t.Run("TestTracesJSONExporter", testTracesJSONExporter)
 	t.Run("TestLogsExporter", func(t *testing.T) {
 		t.Run("Native", func(t *testing.T) {
 			testLogsExporter(t, nativeEndpoint)
@@ -130,6 +123,22 @@ func TestIntegration(t *testing.T) {
 		})
 		t.Run("HTTP", func(t *testing.T) {
 			testMetricsExporter(t, httpEndpoint)
+		})
+	})
+	t.Run("TestLogsJSONExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsJSONExporter(t, nativeEndpoint)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsJSONExporter(t, httpEndpoint)
+		})
+	})
+	t.Run("TestTracesJSONExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testTracesJSONExporter(t, nativeEndpoint)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testTracesJSONExporter(t, httpEndpoint)
 		})
 	})
 

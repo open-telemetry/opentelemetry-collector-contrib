@@ -33,8 +33,8 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 
 func verifyExportLogs(t *testing.T, exporter *logsExporter) {
 	// 3 pushes
-	mustPushLogsData(t, exporter, simpleLogs(5000))
-	mustPushLogsData(t, exporter, simpleLogs(5000))
+	mustPushLogsData(t, exporter, simpleLogs(3000))
+	mustPushLogsData(t, exporter, simpleLogs(4000))
 	mustPushLogsData(t, exporter, simpleLogs(5000))
 
 	type log struct {

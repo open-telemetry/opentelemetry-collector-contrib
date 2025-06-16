@@ -33,8 +33,8 @@ func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *trac
 
 func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 	// 3 pushes
-	mustPushTracesData(t, exporter, simpleTraces(5000))
-	mustPushTracesData(t, exporter, simpleTraces(5000))
+	mustPushTracesData(t, exporter, simpleTraces(3000))
+	mustPushTracesData(t, exporter, simpleTraces(4000))
 	mustPushTracesData(t, exporter, simpleTraces(5000))
 
 	type trace struct {
