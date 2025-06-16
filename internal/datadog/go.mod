@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.1
@@ -39,7 +39,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.6.0 // indirect
+	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.66.1 // indirect
