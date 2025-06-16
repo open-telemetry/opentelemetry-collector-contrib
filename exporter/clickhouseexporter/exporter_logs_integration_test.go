@@ -17,8 +17,8 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testLogsExporter(t *testing.T) {
-	exporter := newTestLogsExporter(t, integrationTestEndpoint)
+func testLogsExporter(t *testing.T, endpoint string) {
+	exporter := newTestLogsExporter(t, endpoint)
 	verifyExportLogs(t, exporter)
 }
 
@@ -32,7 +32,10 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 }
 
 func verifyExportLogs(t *testing.T, exporter *logsExporter) {
-	mustPushLogsData(t, exporter, simpleLogs(100))
+	// 3 pushes
+	mustPushLogsData(t, exporter, simpleLogs(5000))
+	mustPushLogsData(t, exporter, simpleLogs(5000))
+	mustPushLogsData(t, exporter, simpleLogs(5000))
 
 	type log struct {
 		Timestamp          time.Time         `ch:"Timestamp"`

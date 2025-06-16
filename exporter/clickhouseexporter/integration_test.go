@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"strconv"
 	"testing"
 	"time"
 
@@ -18,8 +17,8 @@ import (
 	"go.uber.org/goleak"
 )
 
-func randPort() string {
-	return strconv.Itoa(rand.IntN(999) + 9000)
+func randPort() int {
+	return rand.IntN(999) + 9000
 }
 
 func getContainer(req testcontainers.ContainerRequest) (testcontainers.Container, error) {
@@ -45,11 +44,15 @@ func getContainer(req testcontainers.ContainerRequest) (testcontainers.Container
 	return container, nil
 }
 
-func createClickhouseContainer(image string) (testcontainers.Container, string, error) {
+func createClickhouseContainer(image string) (testcontainers.Container, string, string, error) {
 	port := randPort()
+	httpPort := port + 1
 	req := testcontainers.ContainerRequest{
-		Image:        image,
-		ExposedPorts: []string{fmt.Sprintf("%s:9000", port)},
+		Image: image,
+		ExposedPorts: []string{
+			fmt.Sprintf("%d:9000", port),
+			fmt.Sprintf("%d:8123", httpPort),
+		},
 		WaitingFor: wait.ForListeningPort("9000").
 			WithStartupTimeout(2 * time.Minute),
 		Env: map[string]string{
@@ -59,17 +62,18 @@ func createClickhouseContainer(image string) (testcontainers.Container, string, 
 
 	c, err := getContainer(req)
 	if err != nil {
-		return nil, "", fmt.Errorf("getContainer: %w", err)
+		return nil, "", "", fmt.Errorf("getContainer: %w", err)
 	}
 
 	host, err := c.Host(context.Background())
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read container host address: %w", err)
+		return nil, "", "", fmt.Errorf("failed to read container host address: %w", err)
 	}
 
-	endpoint := fmt.Sprintf("tcp://%s:%s?username=default&password=otel&database=otel_int_test", host, port)
+	nativeEndpoint := fmt.Sprintf("tcp://%s:%d?username=default&password=otel&database=otel_int_test", host, port)
+	httpEndpoint := fmt.Sprintf("http://%s:%d?username=default&password=otel&database=otel_int_test", host, httpPort)
 
-	return c, endpoint, nil
+	return c, nativeEndpoint, httpEndpoint, nil
 }
 
 func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
@@ -83,12 +87,10 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-var integrationTestEndpoint string
-
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
 func TestIntegration(t *testing.T) {
-	c, endpoint, err := createClickhouseContainer("clickhouse/clickhouse-server:25.5-alpine")
+	c, nativeEndpoint, httpEndpoint, err := createClickhouseContainer("clickhouse/clickhouse-server:25.5-alpine")
 	if err != nil {
 		panic(fmt.Errorf("failed to create ClickHouse container: %w", err))
 	}
@@ -99,11 +101,30 @@ func TestIntegration(t *testing.T) {
 		}
 	}(c)
 
-	integrationTestEndpoint = endpoint
-
-	t.Run("TestLogsExporter", testLogsExporter)
-	t.Run("TestTracesExporter", testTracesExporter)
-	t.Run("TestMetricsExporter", testMetricsExporter)
+	t.Run("TestLogsExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsExporter(t, nativeEndpoint)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsExporter(t, httpEndpoint)
+		})
+	})
+	t.Run("TestTracesExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testTracesExporter(t, nativeEndpoint)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testTracesExporter(t, httpEndpoint)
+		})
+	})
+	t.Run("TestMetricsExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testMetricsExporter(t, nativeEndpoint)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testMetricsExporter(t, httpEndpoint)
+		})
+	})
 
 	// Verify all integration tests, ignoring test container reaper
 	goleak.VerifyNone(t, goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"))
