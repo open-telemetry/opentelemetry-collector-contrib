@@ -49,7 +49,7 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 }
 
 // TestInputStart_NoErrorIfIgnoreChannelErrorsEnabled ensures no error is thrown when ignore_channel_errors flag is enabled
-// Other existing tests ensures the default behaviour of error out when any error occurs while subscribing to the channel
+// Other existing tests ensures the default behavior of error out when any error occurs while subscribing to the channel
 func TestInputStart_NoErrorIfIgnoreChannelErrorEnabled(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 

@@ -25,27 +25,27 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark             Bookmark
-	buffer               *Buffer
-	channel              string
-	ignoreChannelErrors  bool
-	query                *string
-	maxReads             int
-	currentMaxReads      int
-	startAt              string
-	raw                  bool
+	bookmark                 Bookmark
+	buffer                   *Buffer
+	channel                  string
+	ignoreChannelErrors      bool
+	query                    *string
+	maxReads                 int
+	currentMaxReads          int
+	startAt                  string
+	raw                      bool
 	includeLogRecordOriginal bool
-	excludeProviders     map[string]struct{}
-	pollInterval         time.Duration
-	persister            operator.Persister
-	publisherCache       publisherCache
-	cancel               context.CancelFunc
-	wg                   sync.WaitGroup
-	subscription         Subscription
-	remote               RemoteConfig
-	remoteSessionHandle  windows.Handle
-	startRemoteSession   func() error
-	processEvent         func(context.Context, Event) error
+	excludeProviders         map[string]struct{}
+	pollInterval             time.Duration
+	persister                operator.Persister
+	publisherCache           publisherCache
+	cancel                   context.CancelFunc
+	wg                       sync.WaitGroup
+	subscription             Subscription
+	remote                   RemoteConfig
+	remoteSessionHandle      windows.Handle
+	startRemoteSession       func() error
+	processEvent             func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -144,7 +144,7 @@ func (i *Input) Start(persister operator.Persister) error {
 			if i.isRemote() {
 				errorString = fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
 			} else {
-				errorString = fmt.Sprintf("failed to open local subscription")
+				errorString = "failed to open local subscription"
 			}
 			if !i.ignoreChannelErrors {
 				return fmt.Errorf("%s, error: %w", errorString, err)
