@@ -17,8 +17,8 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testTracesExporter(t *testing.T) {
-	exporter := newTestTracesExporter(t, integrationTestEndpoint)
+func testTracesExporter(t *testing.T, endpoint string) {
+	exporter := newTestTracesExporter(t, endpoint)
 	verifyExportTraces(t, exporter)
 }
 
@@ -32,7 +32,10 @@ func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *trac
 }
 
 func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
-	mustPushTracesData(t, exporter, simpleTraces(100))
+	// 3 pushes
+	mustPushTracesData(t, exporter, simpleTraces(5000))
+	mustPushTracesData(t, exporter, simpleTraces(5000))
+	mustPushTracesData(t, exporter, simpleTraces(5000))
 
 	type trace struct {
 		Timestamp          time.Time           `ch:"Timestamp"`

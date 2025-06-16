@@ -16,8 +16,8 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testMetricsExporter(t *testing.T) {
-	exporter := newTestMetricsExporter(t, integrationTestEndpoint)
+func testMetricsExporter(t *testing.T, endpoint string) {
+	exporter := newTestMetricsExporter(t, endpoint)
 	verifyExporterMetrics(t, exporter)
 }
 
@@ -33,8 +33,11 @@ func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *met
 func verifyExporterMetrics(t *testing.T, exporter *metricsExporter) {
 	metric := pmetric.NewMetrics()
 	rm := metric.ResourceMetrics().AppendEmpty()
-	simpleMetrics(100).ResourceMetrics().At(0).CopyTo(rm)
+	simpleMetrics(5000).ResourceMetrics().At(0).CopyTo(rm)
 
+	// 3 pushes
+	mustPushMetricsData(t, exporter, metric)
+	mustPushMetricsData(t, exporter, metric)
 	mustPushMetricsData(t, exporter, metric)
 
 	verifyGaugeMetric(t, exporter)
