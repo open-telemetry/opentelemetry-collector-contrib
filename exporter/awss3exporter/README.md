@@ -43,7 +43,7 @@ The following exporter configuration parameters are supported.
 | `retry_mode`              | The retryer implementation, the supported values are "standard", "adaptive" and "nop". "nop" will set the retryer as `aws.NopRetryer`, which effectively disable the retry.                                                | standard                                    |
 | `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set. Setting max attempts to 0 will allow the SDK to retry all retryable errors until the request succeeds, or a non-retryable error is returned. | 3                                           |
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
-| `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`.
+| `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`. |  |
 
 ### Marshaler
 
