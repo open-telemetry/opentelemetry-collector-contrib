@@ -30,20 +30,17 @@ The configuration supports the following top-level fields:
   HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
 - `host` (optional): The hostname or IP address of the database server.
   - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
-- `port` (optional): The port number of the database server. Required for `sqlserver` if `datasource` is not specified.
-
+- `port` (optional for `sqlserver`, otherwise required): The port number of the database server.
 - `database` (optional): The name of the database to connect to.
 - `username` (optional): The username for database authentication.
-  - The `username` will be properly escaped and securely handled when building the connection string. Special characters in passwords (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+  - The `username` will be properly escaped and securely handled when building the connection string. Special characters (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+  - For `mysql`: No URL encoding is applied
 - `password` (optional): The password for database authentication. Supports environment variable substitution.
-  - The `password` field supports sensitive value handling through environment variables or other secure value sources. The value will be properly escaped and securely handled when building the connection string.
+  - The `password` field supports sensitive value handling through environment variables or other secure value sources. Special characters (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+  - For `mysql`: No URL encoding is applied
 - `additional_params` (optional): Additional driver-specific connection parameters.
+- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value overrides the optional fields listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
 
-  - The `additional_params` map can contain additional driver-specific connection parameters. These will be properly escaped and appended to the connection string.
-
-- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value overrides the individual fields listed above. This is
-a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
-referred to as the "connection string" in driver documentation. Examples:
   - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
   - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
@@ -80,13 +77,60 @@ Additionally, each `query` section supports the following properties:
 - `attribute_columns`(optional): a list of column names in the returned dataset used to set attributes on the signal.
   These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 
-Example:
+### Example using datasource:
 
 ```yaml
 receivers:
   sqlquery:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
+    queries:
+      - sql: "select * from my_logs where log_id > $$1"
+        tracking_start_value: "10000"
+        tracking_column: log_id
+        logs:
+          - body_column: log_body
+      - sql: "select count(*) as count, genre from movie group by genre"
+        metrics:
+          - metric_name: movie.genres
+            value_column: "count"
+```
+
+### Example without using datasource:
+
+```yaml
+receivers:
+  sqlquery:
+    driver: postgres
+    host: localhost
+    port: 5432
+    user: postgres
+    password: s3cr3t
+    additional_params:
+      sslmode: disable
+    queries:
+      - sql: "select * from my_logs where log_id > $$1"
+        tracking_start_value: "10000"
+        tracking_column: log_id
+        logs:
+          - body_column: log_body
+      - sql: "select count(*) as count, genre from movie group by genre"
+        metrics:
+          - metric_name: movie.genres
+            value_column: "count"
+```
+
+### SQL Server example without using datasource:
+
+```yaml
+receivers:
+  sqlquery:
+    driver: sqlserver
+    host: localhost/instance
+    user: sql_server
+    password: s3cr3t
+    additional_params:
+      sslmode: disable
     queries:
       - sql: "select * from my_logs where log_id > $$1"
         tracking_start_value: "10000"
