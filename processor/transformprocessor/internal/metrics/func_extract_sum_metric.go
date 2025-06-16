@@ -47,7 +47,7 @@ type SumCountDataPoint interface {
 }
 
 func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	metricNameSuffix := ".sum"
+	metricNameSuffix := "_sum"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}

@@ -35,7 +35,7 @@ func createConvertSummaryCountValToSumFunction(_ ottl.FunctionContext, oArgs ott
 }
 
 func convertSummaryCountValToSum(stringAggTemp string, monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
-	metricNameSuffix := ".count"
+	metricNameSuffix := "_count"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}
