@@ -8,15 +8,16 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // Config defines configuration for the Tinybird exporter.
 type Config struct {
-	Endpoint          string `mapstructure:"endpoint"`
-	Token             string `mapstructure:"token"`
-	MetricsDataSource string `mapstructure:"metrics_datasource"`
-	TracesDataSource  string `mapstructure:"traces_datasource"`
-	LogsDatasource    string `mapstructure:"logs_datasource"`
+	Endpoint          string              `mapstructure:"endpoint"`
+	Token             configopaque.String `mapstructure:"token"`
+	MetricsDataSource string              `mapstructure:"metrics_datasource"`
+	TracesDataSource  string              `mapstructure:"traces_datasource"`
+	LogsDatasource    string              `mapstructure:"logs_datasource"`
 }
 
 var _ component.Config = (*Config)(nil)
