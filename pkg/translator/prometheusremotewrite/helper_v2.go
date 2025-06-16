@@ -4,9 +4,14 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"math"
+	"strconv"
+
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -65,4 +70,52 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		Type: writev2.Metadata_METRIC_TYPE_GAUGE,
 		Help: "Target metadata",
 	})
+}
+
+func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
+	settings Settings, baseName string, metadata metadata,
+) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		timestamp := convertTimeStamp(pt.Timestamp())
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+
+		// treat sum as a sample in an individual TimeSeries
+		sum := &writev2.Sample{
+			Value:     pt.Sum(),
+			Timestamp: timestamp,
+		}
+		if pt.Flags().NoRecordedValue() {
+			sum.Value = math.Float64frombits(value.StaleNaN)
+		}
+		// sum and count of the summary should append suffix to baseName
+		sumlabels := createLabels(baseName+sumStr, baseLabels)
+		c.addSample(sum, sumlabels, metadata)
+
+		// treat count as a sample in an individual TimeSeries
+		count := &writev2.Sample{
+			Value:     float64(pt.Count()),
+			Timestamp: timestamp,
+		}
+		if pt.Flags().NoRecordedValue() {
+			count.Value = math.Float64frombits(value.StaleNaN)
+		}
+		countlabels := createLabels(baseName+countStr, baseLabels)
+		c.addSample(count, countlabels, metadata)
+
+		// process each percentile/quantile
+		for i := 0; i < pt.QuantileValues().Len(); i++ {
+			qt := pt.QuantileValues().At(i)
+			quantile := &writev2.Sample{
+				Value:     qt.Value(),
+				Timestamp: timestamp,
+			}
+			if pt.Flags().NoRecordedValue() {
+				quantile.Value = math.Float64frombits(value.StaleNaN)
+			}
+			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
+			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
+			c.addSample(quantile, qtlabels, metadata)
+		}
+	}
 }
