@@ -6,6 +6,7 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
@@ -27,6 +28,8 @@ import (
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
+const payloadSendingInterval = 30 * time.Minute
+
 // uuidProvider defines an interface for generating UUIDs, allowing for mocking in tests.
 type uuidProvider interface {
 	NewString() string
@@ -43,6 +46,7 @@ func (p *realUUIDProvider) NewString() string {
 type configs struct {
 	collector *confmap.Conf
 	extension *Config
+	mutex     sync.RWMutex
 }
 
 type info struct {
@@ -58,6 +62,7 @@ type payloadSender struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	channel chan struct{}
+	once    sync.Once
 }
 
 type datadogExtension struct {
@@ -71,7 +76,8 @@ type datadogExtension struct {
 	serializer agentcomponents.SerializerWithForwarder
 
 	// struct to store extension info
-	info                  *info
+	info *info
+
 	otelCollectorMetadata *payload.OtelCollector
 	httpServer            *httpserver.Server
 
@@ -89,7 +95,11 @@ var (
 // this extension to be notified of the Collector's effective configuration.
 // This method is called during startup by the Collector's service after calling Start.
 func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
+	e.configs.mutex.Lock()
+	defer e.configs.mutex.Unlock()
+
 	e.configs.collector = conf
+
 	// Create the build info struct for the payload
 	buildInfo := payload.CustomBuildInfo{
 		Command:     e.info.build.Command,
@@ -98,7 +108,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	}
 
 	// Get the full collector configuration as a flattened JSON string
-	fullConfig := componentchecker.DataToFlattenedJSONString(conf.ToStringMap())
+	fullConfig := componentchecker.DataToFlattenedJSONString(e.configs.collector.ToStringMap())
 
 	// Prepare the base payload
 	otelCollectorPayload := payload.PrepareOtelCollectorMetadata(
@@ -112,7 +122,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	)
 
 	// Populate the full list of components available in the collector build
-	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(e.info.modules, conf)
+	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(e.info.modules, e.configs.collector)
 	if err != nil {
 		e.logger.Warn("Failed to populate full components list", zap.Error(err))
 	} else {
@@ -120,7 +130,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	}
 
 	// Populate the list of components that are active in a pipeline
-	activeComponents, err := componentchecker.PopulateActiveComponents(conf, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(e.configs.collector, moduleInfoJSON)
 	if err != nil {
 		e.logger.Warn("Failed to populate active components list", zap.Error(err))
 	} else if activeComponents != nil {
@@ -211,33 +221,35 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// startPeriodicPayloadSending starts a goroutine that sends payloads every 30 minutes
+// startPeriodicPayloadSending starts a goroutine that sends payloads on payloadSendingInterval
 func (e *datadogExtension) startPeriodicPayloadSending() {
-	go func() {
-		defer e.payloadSender.ticker.Stop()
-		for {
-			select {
-			case <-e.payloadSender.ticker.C:
-				e.logger.Debug("Sending periodic payload to Datadog")
-				if _, err := e.httpServer.SendPayload(); err != nil {
-					e.logger.Error("Failed to send periodic payload", zap.Error(err))
-				} else {
-					e.logger.Debug("Successfully sent periodic payload to Datadog")
-				}
-			case <-e.payloadSender.ctx.Done():
-				e.logger.Debug("Stopping periodic payload sending")
-				return
-			case <-e.payloadSender.channel:
-				// Allow manual triggering of payload sending if needed
-				e.logger.Debug("Manually triggered payload send")
-				if _, err := e.httpServer.SendPayload(); err != nil {
-					e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
+	e.payloadSender.once.Do(func() {
+		go func() {
+			defer e.payloadSender.ticker.Stop()
+			for {
+				select {
+				case <-e.payloadSender.ticker.C:
+					e.logger.Debug("Sending periodic payload to Datadog")
+					if _, err := e.httpServer.SendPayload(); err != nil {
+						e.logger.Error("Failed to send periodic payload", zap.Error(err))
+					} else {
+						e.logger.Debug("Successfully sent periodic payload to Datadog")
+					}
+				case <-e.payloadSender.ctx.Done():
+					e.logger.Debug("Stopping periodic payload sending")
+					return
+				case <-e.payloadSender.channel:
+					// Allow manual triggering of payload sending if needed
+					e.logger.Debug("Manually triggered payload send")
+					if _, err := e.httpServer.SendPayload(); err != nil {
+						e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
+					}
 				}
 			}
-		}
-	}()
+		}()
 
-	e.logger.Info("Started periodic payload sending every 30 minutes")
+		e.logger.Info("Started periodic payload sending", zap.Duration("interval", payloadSendingInterval))
+	})
 }
 
 // stopPeriodicPayloadSending stops the periodic payload sending goroutine
@@ -305,7 +317,7 @@ func newExtension(
 
 	// configure payloadSender struct
 	ctxWithCancel, cancel := context.WithCancel(ctx)
-	ticker := time.NewTicker(30 * time.Minute)
+	ticker := time.NewTicker(payloadSendingInterval)
 	channel := make(chan struct{}, 1)
 
 	e := &datadogExtension{

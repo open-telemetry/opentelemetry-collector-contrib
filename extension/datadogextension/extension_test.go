@@ -511,6 +511,81 @@ func TestPeriodicPayloadSending(t *testing.T) {
 	})
 }
 
+func TestNotifyConfigConcurrentAccess(t *testing.T) {
+	t.Run("concurrent NotifyConfig calls are synchronized", func(t *testing.T) {
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+		}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
+				Path:         "/test-path",
+			},
+		}
+		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+
+		mockSerializer := &mockSerializer{}
+		ext.serializer = mockSerializer
+
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		ext.info.modules = service.ModuleInfos{Receiver: map[component.Type]service.ModuleInfo{
+			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
+		}}
+
+		// Create multiple configurations to test concurrent access
+		confs := []*confmap.Conf{
+			confmap.NewFromStringMap(map[string]any{
+				"receivers": map[string]any{"otlp": nil},
+				"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"otlp"}}}},
+			}),
+			confmap.NewFromStringMap(map[string]any{
+				"receivers": map[string]any{"jaeger": nil},
+				"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"jaeger"}}}},
+			}),
+			confmap.NewFromStringMap(map[string]any{
+				"receivers": map[string]any{"zipkin": nil},
+				"service":   map[string]any{"pipelines": map[string]any{"traces": map[string]any{"receivers": []any{"zipkin"}}}},
+			}),
+		}
+
+		// Run concurrent NotifyConfig calls
+		const numGoroutines = 10
+		var wg sync.WaitGroup
+		errors := make(chan error, numGoroutines)
+
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func(confIndex int) {
+				defer wg.Done()
+				conf := confs[confIndex%len(confs)]
+				if err := ext.NotifyConfig(context.Background(), conf); err != nil {
+					// First call might succeed, subsequent calls will fail due to HTTP server already running
+					// But they should not race condition or panic
+					errors <- err
+				}
+			}(i)
+		}
+
+		wg.Wait()
+		close(errors)
+
+		// Verify no race conditions occurred - the test should complete without panic
+		// and the collector config should be set to one of the configurations
+		ext.configs.mutex.RLock()
+		assert.NotNil(t, ext.configs.collector, "collector config should be set")
+		ext.configs.mutex.RUnlock()
+
+		// Cleanup
+		assert.NoError(t, ext.Shutdown(context.Background()))
+	})
+}
+
 // Mock providers for testing
 var _ source.Provider = (*mockSourceProvider)(nil)
 
