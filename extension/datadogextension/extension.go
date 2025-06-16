@@ -5,7 +5,6 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
@@ -138,15 +137,14 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	}
 
 	// TODO: Populate HealthStatus from the pkg/status.
+	// https://datadoghq.atlassian.net/browse/OTEL-2663
 	// For now, we leave it as an empty string.
 	otelCollectorPayload.HealthStatus = "{}"
 
 	// Store the created payload in the extension struct
 	e.otelCollectorMetadata = &otelCollectorPayload
 	e.logger.Info("Datadog extension payload created", zap.Any("payload", e.otelCollectorMetadata))
-	if e.configs.extension.HTTPConfig == nil {
-		return errors.New("local HTTP server config is required to send payloads to Datadog")
-	}
+
 	// Create and start the HTTP server
 	e.httpServer = httpserver.NewServer(
 		e.logger,

@@ -176,23 +176,6 @@ func TestNotifyConfig(t *testing.T) {
 		// Ensure shutdown works cleanly
 		assert.NoError(t, ext.Shutdown(context.Background()))
 	})
-
-	t.Run("nil http server config", func(t *testing.T) {
-		set := extension.Settings{
-			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
-		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
-		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
-		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}, HTTPConfig: nil}
-		ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
-		require.NoError(t, err)
-
-		err = ext.NotifyConfig(context.Background(), confmap.New())
-		require.Error(t, err)
-		assert.Equal(t, "local HTTP server config is required to send payloads to Datadog", err.Error())
-		assert.Nil(t, ext.httpServer, "http server should not be created")
-	})
 }
 
 func TestComponentStatusChanged(t *testing.T) {

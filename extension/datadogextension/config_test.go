@@ -5,6 +5,7 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -34,6 +36,12 @@ func TestConfig_Validate(t *testing.T) {
 					Site: datadogconfig.DefaultSite,
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "http://localhost:8080",
+					},
+					Path: "/metadata",
+				},
 			},
 			wantErr: nil,
 		},
@@ -43,6 +51,12 @@ func TestConfig_Validate(t *testing.T) {
 				API: datadogconfig.APIConfig{
 					Site: "",
 					Key:  "1234567890abcdef1234567890abcdef",
+				},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "http://localhost:8080",
+					},
+					Path: "/metadata",
 				},
 			},
 			wantErr: datadogconfig.ErrEmptyEndpoint,
@@ -54,6 +68,12 @@ func TestConfig_Validate(t *testing.T) {
 					Site: datadogconfig.DefaultSite,
 					Key:  "",
 				},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "http://localhost:8080",
+					},
+					Path: "/metadata",
+				},
 			},
 			wantErr: datadogconfig.ErrUnsetAPIKey,
 		},
@@ -64,8 +84,24 @@ func TestConfig_Validate(t *testing.T) {
 					Site: datadogconfig.DefaultSite,
 					Key:  "1234567890abcdef1234567890abcdeg",
 				},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "http://localhost:8080",
+					},
+					Path: "/metadata",
+				},
 			},
 			wantErr: fmt.Errorf("%w: invalid characters: %s", datadogconfig.ErrAPIKeyFormat, "g"),
+		},
+		{
+			name: "Missing HTTP config",
+			config: Config{
+				API: datadogconfig.APIConfig{
+					Site: datadogconfig.DefaultSite,
+					Key:  "1234567890abcdef1234567890abcdef",
+				},
+			},
+			wantErr: errors.New("http config is required"),
 		},
 	}
 

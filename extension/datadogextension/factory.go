@@ -73,15 +73,5 @@ func (f *factory) create(ctx context.Context, set extension.Settings, cfg compon
 	// Create the real UUID provider for the extension
 	uuidProvider := &realUUIDProvider{}
 
-	faext, err := newExtension(
-		ctx,
-		extensionConfig,
-		set,
-		hostProvider,
-		uuidProvider,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return faext, nil
+	return newExtension(ctx, extensionConfig, set, hostProvider, uuidProvider)
 }
