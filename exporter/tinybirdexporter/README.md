@@ -16,9 +16,12 @@ This is the initial version of the Tinybird Exporter that sends data to Tinybird
 ## Configuration
 - `endpoint`: Tinybird API endpoint
 - `token`: Tinybird API token
-- `metrics_datasource` (default `metrics`): Name of the metrics datasource
-- `traces_datasource` (default `traces`): Name of the traces datasource
-- `logs_datasource` (default `logs`): Name of the logs datasource
+- `metrics`
+  - `datasource` (default `metrics`): Name of the metrics datasource
+- `traces`
+  - `datasource` (default `traces`): Name of the traces datasource
+- `logs`
+  - `datasource` (default `logs`): Name of the logs datasource
 
 Example:
 ```
@@ -26,8 +29,11 @@ exporters:
   tinybird:
     endpoint: https://api.us-east.aws.tinybird.co
     token: ${TINYBIRD_TOKEN}
-    metrics_datasource: metrics
-    logs_datasource: logs
-    traces_datasource: traces
+    metrics:
+      datasource: metrics
+    logs:
+      datasource: logs
+    traces:
+      datasource: traces
 
 ```
