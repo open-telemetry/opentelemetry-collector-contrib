@@ -1,11 +1,10 @@
 sqlquery:
   collection_interval: 10s
   driver: sqlserver
-  datasource_config:
-    host: localhost
-    database: mydb
-    username: me
-    password: s3cr3t
+  host: localhost
+  database: mydb
+  username: me
+  password: s3cr3t
   queries:
     - sql: "select count(*) as count, type from mytable group by type"
       metrics:

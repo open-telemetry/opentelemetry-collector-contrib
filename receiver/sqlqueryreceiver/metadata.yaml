@@ -22,12 +22,11 @@ tests:
         - "github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"
   config:
     driver: postgres
-    datasource_config:
-      host: localhost
-      port: 5432
-      database: test
-      username: test
-      password: test
+    host: localhost
+    port: 5432
+    database: test
+    username: test
+    password: test
     queries:
       - sql: "SELECT 1"
         metrics:
