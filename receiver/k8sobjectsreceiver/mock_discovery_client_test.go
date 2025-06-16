@@ -9,11 +9,11 @@ import (
 	fakeDiscovery "k8s.io/client-go/discovery/fake"
 )
 
-type MockDiscovery struct {
+type mockDiscovery struct {
 	fakeDiscovery.FakeDiscovery
 }
 
-func (c *MockDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
+func (c *mockDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
 	return []*metav1.APIResourceList{
 		{
 			GroupVersion: "v1",
@@ -59,5 +59,5 @@ func (c *MockDiscovery) ServerPreferredResources() ([]*metav1.APIResourceList, e
 }
 
 func getMockDiscoveryClient() (discovery.ServerResourcesInterface, error) {
-	return &MockDiscovery{}, nil
+	return &mockDiscovery{}, nil
 }

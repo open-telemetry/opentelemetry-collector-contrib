@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -39,7 +40,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+			err: errors.New("cannot get map value: unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
@@ -171,7 +172,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+			err: errors.New("cannot set map value: unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
@@ -310,4 +311,137 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 func Test_SetMapValue_NilKey(t *testing.T) {
 	err := ctxutil.SetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil, "bar")
 	assert.Error(t, err)
+}
+
+func Test_SetMap(t *testing.T) {
+	createMap := func() pcommon.Map {
+		m := pcommon.NewMap()
+		require.NoError(t, m.FromRaw(map[string]any{"foo": "bar"}))
+		return m
+	}
+	tests := []struct {
+		name     string
+		val      any
+		err      error
+		expected any
+	}{
+		{
+			name:     "invalid type",
+			val:      "invalid",
+			err:      nil, // This is an issue in SetMap(), not returning an error here.
+			expected: pcommon.NewMap(),
+		},
+		{
+			name:     "raw map",
+			val:      map[string]any{"foo": "bar"},
+			expected: createMap(),
+		},
+		{
+			name:     "pcommon.Map",
+			val:      createMap(),
+			expected: createMap(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := pcommon.NewMap()
+			err := ctxutil.SetMap(m, tt.val)
+			if tt.err != nil {
+				require.Equal(t, tt.err, err)
+				return
+			}
+			assert.Equal(t, tt.expected, m)
+		})
+	}
+}
+
+func Test_GetMap(t *testing.T) {
+	createMap := func() pcommon.Map {
+		m := pcommon.NewMap()
+		require.NoError(t, m.FromRaw(map[string]any{"foo": "bar"}))
+		return m
+	}
+	tests := []struct {
+		name string
+		val  any
+		err  error
+	}{
+		{
+			name: "invalid type",
+			val:  "invalid",
+			err:  errors.New("failed to convert type string into pcommon.Map"),
+		},
+		{
+			name: "raw map",
+			val:  map[string]any{"foo": "bar"},
+		},
+		{
+			name: "pcommon.Map",
+			val:  createMap(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := ctxutil.GetMap(tt.val)
+			if tt.err != nil {
+				require.Equal(t, tt.err, err)
+				return
+			}
+			assert.Equal(t, m, createMap())
+		})
+	}
+}
+
+func Test_GetMapKeyName(t *testing.T) {
+	getSetter := &ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, nil
+		},
+	}
+	tests := []struct {
+		name string
+		keys []ottl.Key[any]
+		err  error
+		key  string
+	}{
+		{
+			name: "first key not a string",
+			keys: []ottl.Key[any]{
+				&pathtest.Key[any]{
+					I: ottltest.Intp(0),
+					G: getSetter,
+				},
+			},
+			err: errors.New("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+		},
+		{
+			name: "first key not initialized",
+			keys: []ottl.Key[any]{
+				&pathtest.Key[any]{},
+			},
+			err: errors.New("unable to resolve a string index in map: invalid key type"),
+		},
+		{
+			name: "valid",
+			keys: []ottl.Key[any]{
+				&pathtest.Key[any]{
+					S: ottltest.Strp("string"),
+				},
+			},
+			key: "string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolvedKey, err := ctxutil.GetMapKeyName[any](context.Background(), nil, tt.keys[0])
+			if tt.err != nil {
+				assert.Equal(t, tt.err.Error(), err.Error())
+				return
+			}
+			assert.Equal(t, tt.key, *resolvedKey)
+		})
+	}
 }

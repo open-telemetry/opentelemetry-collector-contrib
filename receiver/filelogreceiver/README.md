@@ -64,7 +64,7 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
-| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.                                                          |
+| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on ".gz" filename extension. `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -232,3 +232,16 @@ Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-te
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
+
+## Feature Gates
+
+### `filelog.decompressFingerprint`
+
+When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
+
+This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+
+Schedule for this feature gate is:
+
+- Introduce as `Alpha` (disabled by default) in `v0.128.0`
+- Move to `Beta` (enabled by default) in `v0.129.0`

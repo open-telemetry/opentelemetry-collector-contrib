@@ -19,7 +19,9 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -189,15 +191,11 @@ func TestReceiver_ConsumeError(t *testing.T) {
 		shouldRetry bool
 	}{
 		"retryable error": {
-			// FIXME the receiver checks a specific error message
-			// from a different component, which is a bit brittle.
-			// Let's revisit this in the future; we might want to check
-			// for permanent vs. transient errors instead.
-			err:         errMemoryLimiterDataRefused,
+			err:         exporterhelper.ErrQueueIsFull,
 			shouldRetry: true,
 		},
 		"permanent error": {
-			err: errors.New("failed to consume"),
+			err: consumererror.NewPermanent(errors.New("failed to consume")),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -599,10 +597,10 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	kafkaClient := mustNewClient(tb, cluster)
 	tb.Cleanup(func() { deleteConsumerGroups(tb, kafkaClient) })
 
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = clientConfig
 	cfg.InitialOffset = "earliest"
-	cfg.MaxFetchWait = time.Millisecond
+	cfg.MaxFetchWait = 10 * time.Millisecond
 	return kafkaClient, cfg
 }
 
