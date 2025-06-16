@@ -2,6 +2,7 @@ package datadogrumreceiver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -59,6 +60,7 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 
 	var err error
 
+	// TODO: ask dinesh about this
 	// TODO: look over this
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://localhost:*", "http://localhost:*"}, // Specify allowed origins
@@ -112,8 +114,45 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 		ddr.params.Logger.Error("Unable to read request body", zap.Error(err))
 		return
 	}
+	reqBytes := buf.Bytes()
 
 	fmt.Printf("&&&&&&&&&& RECEIVED RUM REQUEST BODY: %v\n", buf.String())
+
+	var jsonEvents []map[string]any
+	decoder := json.NewDecoder(buf)
+	for {
+		var event map[string]any
+		if err := decoder.Decode(&event); err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
+			ddr.params.Logger.Error("Unable to unmarshal reqs", zap.Error(err))
+			return
+		}
+		jsonEvents = append(jsonEvents, event)
+	}
+
+	for _, event := range jsonEvents {
+		_, ok := event["_dd"].(map[string]any)["trace_id"].(string)
+		if !ok {
+			fmt.Println("failed to retrieve traceID from RUM event payload; treating as log instead")
+			otelLogs := translator.ToLogs(event, req, reqBytes)
+			if ddr.nextLogsConsumer != nil {
+				err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, otelLogs)
+			}
+		} else {
+			otelTraces := translator.ToTraces(event, req, reqBytes)
+			if ddr.nextTracesConsumer != nil {
+				err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
+			}
+		}
+		if err != nil {
+			http.Error(w, "Log consumer errored out", http.StatusInternalServerError)
+			ddr.params.Logger.Error("Log consumer errored out", zap.Error(err))
+			return
+		}
+	}
 
 	_, _ = w.Write([]byte("OK"))
 }
