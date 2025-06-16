@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     Attributes Map(LowCardinality(String), String)
     ) CODEC(ZSTD(1)),
     Links Nested (
-        TraceId String,
-        SpanId String,
-        TraceState String,
-        Attributes Map(LowCardinality(String), String)
+                     TraceId String,
+                     SpanId String,
+                     TraceState String,
+                     Attributes Map(LowCardinality(String), String)
     ) CODEC(ZSTD(1)),
     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
     INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
