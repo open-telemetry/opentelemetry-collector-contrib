@@ -44,6 +44,7 @@ The OpenSearch exporter supports dynamic log index names using placeholders in t
   - Example: `otel-logs-%{service.name}` or `otel-logs-%{custom.label}`
   - The value is looked up from a context map (resource attributes, log attributes, etc.).
   - If the key is missing, the value from `logs_index_fallback` is used (or `unknown` if not set).
+  - Only one placeholder is supported in the index name.
 
 - **Optional logs_index**: If `logs_index` is not set, the exporter will use the default naming pattern: `ss4o_{type}-{dataset}-{namespace}` (e.g., `ss4o_logs-default-namespace`). This ensures backward compatibility and a predictable index naming scheme.
 
