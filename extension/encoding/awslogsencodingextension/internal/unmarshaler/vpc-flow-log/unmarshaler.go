@@ -5,16 +5,13 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -22,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 const (
@@ -38,14 +36,15 @@ type vpcFlowLogUnmarshaler struct {
 	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
 	fileFormat string
 
-	// Pool the gzip readers, which are expensive to create.
-	gzipPool sync.Pool
-
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
 }
 
-func NewVPCFlowLogUnmarshaler(format string, buildInfo component.BuildInfo, logger *zap.Logger) (plog.Unmarshaler, error) {
+func NewVPCFlowLogUnmarshaler(
+	format string,
+	buildInfo component.BuildInfo,
+	logger *zap.Logger,
+) (unmarshaler.AWSUnmarshaler, error) {
 	switch format {
 	case fileFormatParquet:
 		// TODO
@@ -60,34 +59,15 @@ func NewVPCFlowLogUnmarshaler(format string, buildInfo component.BuildInfo, logg
 	}
 	return &vpcFlowLogUnmarshaler{
 		fileFormat: format,
-		gzipPool:   sync.Pool{},
 		buildInfo:  buildInfo,
 		logger:     logger,
 	}, nil
 }
 
-func (v *vpcFlowLogUnmarshaler) UnmarshalLogs(content []byte) (plog.Logs, error) {
-	var errGzipReader error
-	gzipReader, ok := v.gzipPool.Get().(*gzip.Reader)
-	if !ok {
-		gzipReader, errGzipReader = gzip.NewReader(bytes.NewReader(content))
-	} else {
-		errGzipReader = gzipReader.Reset(bytes.NewReader(content))
-	}
-	if errGzipReader != nil {
-		if gzipReader != nil {
-			v.gzipPool.Put(gzipReader)
-		}
-		return plog.Logs{}, fmt.Errorf("failed to decompress content: %w", errGzipReader)
-	}
-	defer func() {
-		_ = gzipReader.Close()
-		v.gzipPool.Put(gzipReader)
-	}()
-
+func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	switch v.fileFormat {
 	case fileFormatPlainText:
-		return v.unmarshalPlainTextLogs(gzipReader)
+		return v.unmarshalPlainTextLogs(reader)
 	case fileFormatParquet:
 		// TODO
 		return plog.Logs{}, errors.New("still needs to be implemented")
