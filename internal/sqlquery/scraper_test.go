@@ -530,7 +530,7 @@ func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestBpConnectionStringBuilder(t *testing.T) {
+func TestBuildDataSourceString(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name        string
@@ -769,7 +769,7 @@ func TestBpConnectionStringBuilder(t *testing.T) {
 	}
 }
 
-func TestBuildSQLServerString(t *testing.T) {
+func TestBuildDataSourceString_SQLServer(t *testing.T) {
 	tests := []struct {
 		name     string
 		config   DataSourceConfig
@@ -819,7 +819,7 @@ func TestBuildSQLServerString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildSQLServerString(tt.config)
+			got, err := BuildDataSourceString(DriverSQLServer, tt.config)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
