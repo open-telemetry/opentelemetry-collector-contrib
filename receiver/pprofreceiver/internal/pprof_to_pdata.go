@@ -66,7 +66,7 @@ func pprofToPprofile(parsed *profile.Profile, originalPayload []byte) pprofile.P
 		// set the start index at which we will start to read locations.
 		resultS.SetLocationsStartIndex(int32(result.ProfilesDictionary().LocationTable().Len()))
 
-		// read each location and map it oer to pprofile
+		// read each location and map it over to pprofile
 		for _, l := range parsed.Location {
 			// add to the location table
 			resultL := result.ProfilesDictionary().LocationTable().AppendEmpty()
