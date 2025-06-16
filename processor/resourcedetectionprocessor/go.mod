@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.7.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.28.0
 	github.com/aws/aws-sdk-go-v2 v1.36.4
 	github.com/aws/aws-sdk-go-v2/config v1.29.16
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.31
