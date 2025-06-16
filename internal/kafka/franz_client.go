@@ -35,7 +35,7 @@ const (
 )
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
-func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
+func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfig,
 	cfg configkafka.ProducerConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
@@ -46,14 +46,14 @@ func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(clientCfg, []kgo.Opt{
+	opts, err := commonOpts(ctx, clientCfg, logger,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
 		// Use the UniformBytesPartitioner that is the default in franz-go with
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
-	})
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -86,17 +86,16 @@ func NewFranzSyncProducer(clientCfg configkafka.ClientConfig,
 }
 
 // NewFranzConsumerGroup creates a new Kafka consumer client using the franz-go library.
-func NewFranzConsumerGroup(clientCfg configkafka.ClientConfig,
+func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(clientCfg, append([]kgo.Opt{
-		kgo.WithLogger(kzap.New(logger.Named("franz"))),
+	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
-	}, opts...))
+	}, opts...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,18 +132,15 @@ func NewFranzConsumerGroup(clientCfg configkafka.ClientConfig,
 		opts = append(opts, kgo.FetchMaxWait(consumerCfg.MaxFetchWait))
 	}
 
-	// Configure auto-commit
-	if consumerCfg.AutoCommit.Enable {
-		// Set message marking to be used by the autocommitting logic.
-		opts = append(opts, kgo.AutoCommitMarks())
-		opts = append(opts, kgo.AutoCommitInterval(consumerCfg.AutoCommit.Interval))
-	} else { // Otherwise, we'll handle committing manually.
-		opts = append(opts,
-			// Disable auto-commit and block rebalance on poll
-			// This is the safest way to handle commits manually.
-			kgo.DisableAutoCommit(), kgo.BlockRebalanceOnPoll(),
-		)
+	interval := consumerCfg.AutoCommit.Interval
+	if !consumerCfg.AutoCommit.Enable {
+		// Set auto-commit interval to a very high value to "disable" it, but
+		// still allow using marks.
+		interval = time.Hour
 	}
+	// Configure auto-commit to use marks, this simplifies the committing
+	// logic and makes it more consistent with the Sarama client.
+	opts = append(opts, kgo.AutoCommitMarks(), kgo.AutoCommitInterval(interval))
 
 	// Configure the offset to reset to if an exception is found (or no current
 	// partition offset is found.
@@ -175,11 +171,17 @@ func NewFranzConsumerGroup(clientCfg configkafka.ClientConfig,
 	return kgo.NewClient(opts...)
 }
 
-func commonOpts(clientCfg configkafka.ClientConfig, opts []kgo.Opt) ([]kgo.Opt, error) {
-	opts = append(opts, kgo.SeedBrokers(clientCfg.Brokers...))
+func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
+	logger *zap.Logger,
+	opts ...kgo.Opt,
+) ([]kgo.Opt, error) {
+	opts = append(opts,
+		kgo.WithLogger(kzap.New(logger.Named("franz"))),
+		kgo.SeedBrokers(clientCfg.Brokers...),
+	)
 	// Configure TLS if needed
 	if clientCfg.TLS != nil {
-		tlsCfg, err := clientCfg.TLS.LoadTLSConfig(nil)
+		tlsCfg, err := clientCfg.TLS.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
 		}

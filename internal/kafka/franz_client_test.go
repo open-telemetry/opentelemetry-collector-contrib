@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ func TestNewFranzSyncProducer_SASL(t *testing.T) {
 			Version:   1, // kfake only supports version 1
 		}
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(clientConfig,
+		client, err := NewFranzSyncProducer(context.Background(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, tl,
 		)
 		if err != nil {
@@ -120,7 +121,7 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 		clientConfig := clientConfig // copy
 		clientConfig.TLS = &cfg
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(clientConfig,
+		client, err := NewFranzSyncProducer(context.Background(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, tl,
 		)
 		if err != nil {
@@ -174,7 +175,7 @@ func TestNewFranzSyncProducerCompression(t *testing.T) {
 			prodCfg.Compression = compressionAlgo
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
-			client, err := NewFranzSyncProducer(clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(context.Background(), clientConfig, prodCfg, time.Second, tl)
 			require.NoError(t, err)
 			defer client.Close()
 
@@ -241,7 +242,7 @@ func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 			prodCfg.RequiredAcks = ack
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-			client, err := NewFranzSyncProducer(clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(context.Background(), clientConfig, prodCfg, time.Second, tl)
 			require.NoError(t, err)
 			defer client.Close()
 
@@ -337,11 +338,12 @@ func Test_saramaCompatHasher(t *testing.T) {
 func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	topicCount := 10
 	topics := make([]string, topicCount)
+	topicPrefix := "topic-"
 	for i := 0; i < topicCount; i++ {
-		topics[i] = fmt.Sprintf("topic-%d", i)
+		topics[i] = fmt.Sprintf("%s%d", topicPrefix, i)
 	}
 	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topics...))
-	regexTopic := []string{"^topic-.*"}
+	regexTopic := []string{"^" + topicPrefix + ".*"}
 	consumeConfig := configkafka.NewDefaultConsumerConfig()
 	// Set to earliest commit so we don't have to worry about synchronizing the
 	// producer and consumer.
@@ -363,12 +365,18 @@ func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	fetch := <-recordChan
 	require.NoError(t, fetch.Err())
 	assert.Equal(t, topicCount, fetch.NumRecords())
+	seenTopics := make([]string, 0, topicCount)
 	fetch.EachRecord(func(r *kgo.Record) {
+		assert.Contains(t, r.Topic, topicPrefix)
+		assert.Len(t, r.Topic, len(topicPrefix)+1)
 		assert.Equal(t, recordValue, r.Value)
+		seenTopics = append(seenTopics, r.Topic)
 	})
+	sort.Strings(seenTopics)
+	assert.Equal(t, seenTopics, topics)
 }
 
-func TestNewFranzKafkaConsumer(t *testing.T) {
+func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 	for _, initial := range []string{configkafka.EarliestOffset, configkafka.LatestOffset} {
 		t.Run(initial, func(t *testing.T) {
 			topic := "topic"
@@ -463,9 +471,11 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	topics []string, opts ...kgo.Opt,
 ) *kgo.Client {
 	t.Helper()
+	// We want to keep the metadata cache very short lived in tests to speed
+	// up and avoid waiting for too long.
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
-	client, err := NewFranzConsumerGroup(clientConfig, consumerConfig,
+	client, err := NewFranzConsumerGroup(context.Background(), clientConfig, consumerConfig,
 		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)

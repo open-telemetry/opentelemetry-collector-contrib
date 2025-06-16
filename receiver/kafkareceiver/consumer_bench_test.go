@@ -73,14 +73,10 @@ func newBenchConfigClient(b *testing.B, topic string, partitions int32,
 	autoCommit configkafka.AutoCommitConfig,
 	messageMarking MessageMarking,
 ) (*Config, *kgo.Client) {
-	const encoding = "otlp_proto"
 	client, cfg := mustNewFakeCluster(b, kfake.SeedTopics(partitions, topic))
 	cfg.Logs.Topic = topic
-	cfg.Logs.Encoding = encoding
 	cfg.Traces.Topic = topic
-	cfg.Traces.Encoding = encoding
 	cfg.Metrics.Topic = topic
-	cfg.Metrics.Encoding = encoding
 	cfg.GroupID = b.Name()
 	cfg.InitialOffset = "earliest"
 	cfg.AutoCommit = autoCommit
