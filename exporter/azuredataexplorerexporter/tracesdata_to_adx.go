@@ -41,11 +41,6 @@ type link struct {
 	SpanLinkAttributes map[string]any
 }
 
-type status struct {
-	Code    string
-	Message string
-}
-
 func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope, spanData ptrace.Span) *adxTrace {
 	traceAttrib := spanData.Attributes().AsRaw()
 	clonedTraceAttrib := cloneMap(traceAttrib)
