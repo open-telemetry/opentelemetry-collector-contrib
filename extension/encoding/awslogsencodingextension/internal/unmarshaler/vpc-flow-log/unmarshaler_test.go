@@ -5,6 +5,7 @@ package vpcflowlog
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,24 +21,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-// compressData in gzip format
-func compressData(tb testing.TB, buf []byte) []byte {
+// compressToGZIPReader compresses buf into a gzip-formatted io.Reader.
+func compressToGZIPReader(t *testing.T, buf []byte) io.Reader {
 	var compressedData bytes.Buffer
 	gzipWriter := gzip.NewWriter(&compressedData)
 	_, err := gzipWriter.Write(buf)
-	require.NoError(tb, err)
+	require.NoError(t, err)
 	err = gzipWriter.Close()
-	require.NoError(tb, err)
-	return compressedData.Bytes()
+	require.NoError(t, err)
+	gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData.Bytes()))
+	require.NoError(t, err)
+	return gzipReader
 }
 
-// getLogFromFileInPlainText reads the file content
-// returns it in the format the data is expected to
-// be: in plain text and gzip compressed.
-func getLogFromFileInPlainText(t *testing.T, dir string, file string) []byte {
+// readAndCompressLogFile reads the data inside it, compresses it
+// and returns a GZIP reader for it.
+func readAndCompressLogFile(t *testing.T, dir string, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
-	return compressData(t, data)
+	return compressToGZIPReader(t, data)
 }
 
 func TestUnmarshalLogs_PlainText(t *testing.T) {
@@ -45,34 +47,30 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 
 	dir := "testdata"
 	tests := map[string]struct {
-		content              []byte
+		reader               io.Reader
 		logsExpectedFilename string
 		expectedErr          string
 	}{
 		"valid_vpc_flow_log": {
-			content:              getLogFromFileInPlainText(t, dir, "valid_vpc_flow_log.log"),
+			reader:               readAndCompressLogFile(t, dir, "valid_vpc_flow_log.log"),
 			logsExpectedFilename: "valid_vpc_flow_log_expected.yaml",
 		},
 		"vpc_flow_log_with_more_fields_than_allowed": {
-			content:     getLogFromFileInPlainText(t, dir, "vpc_flow_log_too_few_fields.log"),
+			reader:      readAndCompressLogFile(t, dir, "vpc_flow_log_too_few_fields.log"),
 			expectedErr: "log line has less fields than the ones expected",
 		},
 		"vpc_flow_log_with_less_fields_than_required": {
-			content:     getLogFromFileInPlainText(t, dir, "vpc_flow_log_too_many_fields.log"),
+			reader:      readAndCompressLogFile(t, dir, "vpc_flow_log_too_many_fields.log"),
 			expectedErr: "log line has more fields than the ones expected",
-		},
-		"invalid_gzip_record": {
-			content:     []byte("invalid"),
-			expectedErr: "failed to decompress content",
 		},
 	}
 
-	u, errCreate := NewVPCFlowLogUnmarshaler(fileFormatPlainText, component.BuildInfo{}, zap.NewNop())
-	require.NoError(t, errCreate)
+	u, err := NewVPCFlowLogUnmarshaler(fileFormatPlainText, component.BuildInfo{}, zap.NewNop())
+	require.NoError(t, err)
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			logs, err := u.UnmarshalLogs(test.content)
+			logs, err := u.UnmarshalAWSLogs(test.reader)
 
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
@@ -159,14 +157,4 @@ func TestHandleAddresses(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestUnmarshalLogs_Parquet(t *testing.T) {
-	_, errCreate := NewVPCFlowLogUnmarshaler(fileFormatParquet, component.BuildInfo{}, zap.NewNop())
-	require.ErrorContains(t, errCreate, "still needs to be implemented")
-}
-
-func TestUnmarshalLogs_Unsupported(t *testing.T) {
-	_, errCreate := NewVPCFlowLogUnmarshaler("unsupported", component.BuildInfo{}, zap.NewNop())
-	require.ErrorContains(t, errCreate, `unsupported file fileFormat "unsupported" for VPC flow log`)
 }
