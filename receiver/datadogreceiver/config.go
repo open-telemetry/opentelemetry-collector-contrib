@@ -58,6 +58,9 @@ type IntakeConfig struct {
 type ProxyConfig struct {
 	// API defines the settings for calling Datadog with the proxied requests
 	API datadogconfig.APIConfig `mapstructure:"api"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
