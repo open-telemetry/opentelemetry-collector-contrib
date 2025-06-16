@@ -893,14 +893,14 @@ func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = Postgres.Driver
-				Host:     ci.Host(t),
-				Port:     nat.Port(ci.MappedPort(t, Postgres.Port)).Int(),
-				Database: "otel",
-				Username: "otel",
-				Password: "otel",
-				AdditionalParams: map[string]any{
+				rCfg.Host = ci.Host(t)
+				rCfg.Port = nat.Port(ci.MappedPort(t, Postgres.Port)).Int()
+				rCfg.Database = "otel"
+				rCfg.Username = "otel"
+				rCfg.Password = "otel"
+				rCfg.AdditionalParams = map[string]any{
 					"sslmode": "disable",
-				},
+				}
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
