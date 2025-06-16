@@ -81,7 +81,7 @@ func TestLogsQueryReceiver_MissingColumnInResultSet(t *testing.T) {
 	assert.ErrorContains(t, err, "rowToLog: body_column 'expected_body_column' not found in result set")
 }
 
-func TestLogsQueryReceiver_BothDatasourceConfigs(t *testing.T) {
+func TestLogsQueryReceiver_BothDatasourceFields(t *testing.T) {
 	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
 	receiver, err := createReceiver(
