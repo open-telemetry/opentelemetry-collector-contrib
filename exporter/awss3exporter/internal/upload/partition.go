@@ -40,8 +40,6 @@ type PartitionKeyBuilder struct {
 	// UniqueKeyFunc allows for overwriting the default behavior of
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
-	//
-	// TODO: Expose the ability to config additional UniqueKeyField via config
 	UniqueKeyFunc func() string
 }
 
