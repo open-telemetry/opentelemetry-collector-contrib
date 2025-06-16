@@ -143,7 +143,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 
 	// Store the created payload in the extension struct
 	e.otelCollectorMetadata = &otelCollectorPayload
-	e.logger.Info("Datadog extension payload created", zap.Any("payload", e.otelCollectorMetadata))
+	e.logger.Debug("Datadog extension payload created", zap.Any("payload", e.otelCollectorMetadata))
 
 	// Create and start the HTTP server
 	e.httpServer = httpserver.NewServer(

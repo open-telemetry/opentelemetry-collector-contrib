@@ -24,12 +24,11 @@ You can configure this extension in service, using the following configuration v
 The Datadog Extension includes a local HTTP server that exposes the OpenTelemetry Collector's configuration and metadata. This server is intended to make it easier to inspect and debug the collector's state locally, and to view the collector configuration and metadata that is intended to be displayed in the Datadog app.
 
 **Purpose:**
-- The extension's primary purpose is to display collector configuration and metadata in the Datadog Infrastructure Monitoring app. More announcements and UI changes will be made soon regarding this matter.
+- Display collector configuration and metadata in the Datadog Infrastructure Monitoring app. More announcements and UI changes will be made soon regarding this matter.
 
 **How it works:**
-- The extension starts a local HTTP server (by default on `localhost:9875` at the `/metadata` path) that serves a JSON payload containing the collector's configuration, active components, build info, and other metadata.
-- This payload is also sent to the Datadog backend for infrastructure monitoring and fleet automation features.
-- The endpoint and path can be customized via configuration.
+- The extension starts a server (by default on `localhost:9875` at the `/metadata` path) that provides information regarding the collector's configuration, active components, build info, and other metadata.
+- This information is also sent to the Datadog backend for infrastructure monitoring and fleet automation features.
 
 **Example configuration:**
 ```yaml
@@ -43,9 +42,9 @@ extensions:
       path: "/metadata"
 ```
 
-## Enabling Proxy Support via ConfigHTTP
+## Enabling Proxy Support
 
-The extension supports proxy configuration for outbound requests to Datadog. This is enabled via the `ConfigHTTP` (inherited from the OpenTelemetry Collector's `confighttp.ClientConfig`).
+You can set up proxy configuration for outbound requests to Datadog by following the example below:
 
 **Example configuration with proxy:**
 ```yaml
