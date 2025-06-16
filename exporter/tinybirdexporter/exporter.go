@@ -5,6 +5,7 @@ package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -24,13 +25,13 @@ func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error
 }
 
 func (e *tinybirdExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	return nil
+	return errors.New("this component is under development and traces are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
 }
 
 func (e *tinybirdExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return nil
+	return errors.New("this component is under development and metrics are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
 }
 
 func (e *tinybirdExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	return nil
+	return errors.New("this component is under development and logs are not yet supported, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40475 to track development progress")
 }
