@@ -1,4 +1,4 @@
-package sqlquery
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 const (
 	DriverHDB       = "hdb"
