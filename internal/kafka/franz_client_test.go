@@ -354,7 +354,7 @@ func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	recordChan, _ := fetchRecords(ctx, client, topicCount)
+	recordChan := fetchRecords(ctx, client, topicCount)
 	recordValue := []byte("test message")
 	rs := make([]*kgo.Record, 0, topicCount)
 	for _, topic := range topics {
@@ -376,6 +376,12 @@ func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	assert.Equal(t, seenTopics, topics)
 }
 
+type onBrokerWrite func(meta kgo.BrokerMetadata, key int16, bytesWritten int, writeWait, timeToWrite time.Duration, err error)
+
+func (f onBrokerWrite) OnBrokerWrite(meta kgo.BrokerMetadata, key int16, bytesWritten int, writeWait, timeToWrite time.Duration, err error) {
+	f(meta, key, bytesWritten, writeWait, timeToWrite, err)
+}
+
 func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 	for _, initial := range []string{configkafka.EarliestOffset, configkafka.LatestOffset} {
 		t.Run(initial, func(t *testing.T) {
@@ -383,12 +389,14 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 			_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
 			consumeConfig := configkafka.NewDefaultConsumerConfig()
 			consumeConfig.InitialOffset = initial
-			assigned := make(chan struct{})
-			var once sync.Once
+			fetchIssued := make(chan struct{})
+			var once2 sync.Once
 			client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{topic},
-				kgo.OnPartitionsAssigned(func(context.Context, *kgo.Client, map[string][]int32) {
-					once.Do(func() { close(assigned) })
-				}),
+				kgo.WithHooks(onBrokerWrite(func(_ kgo.BrokerMetadata, key int16, _ int, _, _ time.Duration, _ error) {
+					if key == kmsg.Fetch.Int16() {
+						once2.Do(func() { close(fetchIssued) })
+					}
+				})),
 			)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -410,20 +418,13 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 			case configkafka.LatestOffset:
 				expected = 1
 			}
-			recordChan, consumerReady := fetchRecords(ctx, client, expected)
+			recordChan := fetchRecords(ctx, client, expected)
 
-			// Wait until the consumer is ready and the partition is assigned.
+			// Wait until the consumer issues the fetch request to produce.
 			select {
-			case <-consumerReady:
-				select {
-				case <-assigned:
-					// Sleep another 50ms just to make sure.
-					time.Sleep(50 * time.Millisecond)
-				case <-ctx.Done():
-					t.Fatalf("timeout waiting for the partition to be assigned")
-				}
+			case <-fetchIssued:
 			case <-ctx.Done():
-				t.Fatalf("timeout waiting for consumer to be ready")
+				t.Fatalf("timeout waiting for the partition to be assigned")
 			}
 			produce() // Produce again.
 
@@ -437,9 +438,8 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 	}
 }
 
-func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) (<-chan kgo.Fetches, <-chan struct{}) {
+func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) <-chan kgo.Fetches {
 	fetchChan := make(chan kgo.Fetches)
-	ready := make(chan struct{})
 	go func() {
 		var records int
 		var fetches kgo.Fetches
@@ -447,7 +447,6 @@ func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) (<-c
 			fetchChan <- fetches
 			close(fetchChan)
 		}()
-		close(ready)
 		for {
 			select {
 			case <-ctx.Done():
@@ -462,7 +461,7 @@ func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) (<-c
 			}
 		}
 	}()
-	return fetchChan, ready
+	return fetchChan
 }
 
 func mustNewFranzConsumerGroup(t *testing.T,

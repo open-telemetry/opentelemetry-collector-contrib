@@ -140,7 +140,9 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	}
 	// Configure auto-commit to use marks, this simplifies the committing
 	// logic and makes it more consistent with the Sarama client.
-	opts = append(opts, kgo.AutoCommitMarks(), kgo.AutoCommitInterval(interval))
+	opts = append(opts, kgo.AutoCommitMarks(),
+		kgo.AutoCommitInterval(interval),
+	)
 
 	// Configure the offset to reset to if an exception is found (or no current
 	// partition offset is found.

@@ -92,8 +92,6 @@ func runBenchmark(b *testing.B, topic string, data []byte,
 	)
 	defer func() { require.NoError(b, rcv.Shutdown(context.Background())) }()
 
-	<-time.After(50 * time.Millisecond)
-
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

@@ -177,7 +177,6 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 // be called in a loop until consume returns false.
 func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	fetch := c.client.PollRecords(ctx, size)
-	defer c.client.AllowRebalance()
 
 	if err := fetch.Err0(); fetch.IsClientClosed() {
 		c.settings.Logger.Info("consumer stopped", zap.Error(err))
@@ -198,17 +197,6 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	})
 	if hasError || fetch.Empty() {
 		return true // Return right away after errors or empty fetch.
-	}
-
-	select { // Check if Shutdown's been called.
-	case <-ctx.Done():
-		return false
-	case <-c.closing:
-		// The client is now closed (Shutdown has been called), so we need to
-		// return and stop consuming. At this point it's safe to return, since
-		// no offsets have been marked for commits (autocommit) or committed.
-		return false
-	default:
 	}
 
 	// Acquire the read lock on each consume to ensure the client is not closed
@@ -240,6 +228,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			return
 		}
 		wg.Add(1)
+		assign.wg.Add(1)
 		assign.logger.Debug("processing fetched records",
 			zap.Int("count", count),
 			zap.Int64("start_offset", p.Records[0].Offset),
@@ -247,14 +236,14 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		)
 		go func(pc *pc, msgs []*kgo.Record) {
 			defer wg.Done()
+			defer pc.wg.Done()
 			fatalOffset := int64(-1)
 			var lastProcessed *kgo.Record
 			for _, msg := range msgs {
 				if !c.config.MessageMarking.After {
 					c.client.MarkCommitRecords(msg)
 				}
-				m := wrapFranzMsg(msg)
-				if err := c.handleMessage(pc.ctx, m, pc); err != nil {
+				if err := c.handleMessage(pc, wrapFranzMsg(msg)); err != nil {
 					pc.logger.Error("unable to process message",
 						zap.Error(err),
 						zap.Int64("offset", msg.Offset),
@@ -306,9 +295,12 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			}
 		}(assign, p.Records)
 	})
-	wg.Wait() // Wait for all records to be processed, and commit marks.
-	if err := c.client.CommitMarkedOffsets(ctx); err != nil {
-		c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
+	// Wait for all records to be processed and commit if autocommit=false.
+	wg.Wait()
+	if !c.config.AutoCommit.Enable {
+		if err := c.client.CommitMarkedOffsets(ctx); err != nil {
+			c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
+		}
 	}
 	return true
 }
@@ -390,6 +382,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	var wg sync.WaitGroup
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
 			tp := topicPartition{topic: topic, partition: partition}
@@ -398,6 +391,11 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			pc.cancel(errors.New(
 				"stopping processing: partition reassigned or lost",
 			))
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				pc.wg.Wait()
+			}()
 			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(),
 				1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
 			)
@@ -406,6 +404,8 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	if fatal {
 		return
 	}
+	// Wait for all partition consumers to exit before committing marked offsets.
+	wg.Wait()
 	// NOTE(marclop) commit the marked offsets when the partition is rebalanced
 	// away from this consumer.
 	if err := c.client.CommitMarkedOffsets(ctx); err != nil {
@@ -414,13 +414,13 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 }
 
 // handleMessage is called on a per-partition basis.
-func (c *franzConsumer) handleMessage(ctx context.Context, msg kafkaMessage, pc *pc) error {
+func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
 	if pc.backOff != nil {
 		defer pc.backOff.Reset()
 	}
 
 	for {
-		err := c.consumeMessage(ctx, msg, pc.attrs)
+		err := c.consumeMessage(pc.ctx, msg, pc.attrs)
 		if err == nil {
 			return nil // Successfully processed.
 		}
@@ -441,7 +441,7 @@ func (c *franzConsumer) handleMessage(ctx context.Context, msg kafkaMessage, pc 
 					zap.Duration("delay", backOffDelay),
 				)
 				select {
-				case <-ctx.Done():
+				case <-pc.ctx.Done():
 					return nil
 				case <-time.After(backOffDelay):
 					continue
@@ -472,4 +472,6 @@ type pc struct {
 	cancel context.CancelCauseFunc
 	// Not safe for concurrent use, this field is never accessed concurrently.
 	backOff *backoff.ExponentialBackOff
+
+	wg sync.WaitGroup
 }
