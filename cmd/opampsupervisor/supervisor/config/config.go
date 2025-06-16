@@ -150,9 +150,9 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 }
 
 type OpAMPServer struct {
-	Endpoint   string                 `mapstructure:"endpoint"`
-	Headers    http.Header            `mapstructure:"headers"`
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	Endpoint string                 `mapstructure:"endpoint"`
+	Headers  http.Header            `mapstructure:"headers"`
+	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 func (o OpAMPServer) Validate() error {
@@ -171,7 +171,7 @@ func (o OpAMPServer) Validate() error {
 		return fmt.Errorf(`invalid scheme %q for server::endpoint, must be one of "http", "https", "ws", or "wss"`, url.Scheme)
 	}
 
-	err = o.TLSSetting.Validate()
+	err = o.TLS.Validate()
 	if err != nil {
 		return fmt.Errorf("invalid server::tls settings: %w", err)
 	}
@@ -237,8 +237,9 @@ type Telemetry struct {
 }
 
 type Logs struct {
-	Level       zapcore.Level `mapstructure:"level"`
-	OutputPaths []string      `mapstructure:"output_paths"`
+	Level            zapcore.Level `mapstructure:"level"`
+	ErrorOutputPaths []string      `mapstructure:"error_output_paths"`
+	OutputPaths      []string      `mapstructure:"output_paths"`
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
@@ -288,8 +289,9 @@ func DefaultSupervisor() Supervisor {
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
-				Level:       zapcore.InfoLevel,
-				OutputPaths: []string{"stderr"},
+				Level:            zapcore.InfoLevel,
+				OutputPaths:      []string{"stdout"},
+				ErrorOutputPaths: []string{"stderr"},
 			},
 		},
 	}
