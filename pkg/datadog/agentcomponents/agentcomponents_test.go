@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
@@ -347,10 +348,11 @@ func TestWithLogsConfig_CombinedWithOtherOptions(t *testing.T) {
 	assert.True(t, config.GetBool("logs_enabled"))
 }
 
-func TestWithProxyFromEnv(t *testing.T) {
+func TestWithProxy(t *testing.T) {
 	tests := []struct {
 		name            string
 		envVars         map[string]string
+		proxyURL        string
 		expectedHTTP    string
 		expectedHTTPS   string
 		expectedNoProxy []any
@@ -365,6 +367,7 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "http://proxy.example.com:8080",
 			expectedHTTPS:   "https://secure-proxy.example.com:8443",
 			expectedNoProxy: []any{"localhost", "127.0.0.1", ".local"},
+			proxyURL:        "",
 		},
 		{
 			name: "only HTTP_PROXY set",
@@ -374,6 +377,7 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "http://proxy.example.com:3128",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{""},
+			proxyURL:        "",
 		},
 		{
 			name:            "no proxy environment variables",
@@ -381,6 +385,7 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{""},
+			proxyURL:        "",
 		},
 		{
 			name: "single NO_PROXY entry",
@@ -390,6 +395,26 @@ func TestWithProxyFromEnv(t *testing.T) {
 			expectedHTTP:    "",
 			expectedHTTPS:   "",
 			expectedNoProxy: []any{"internal.company.com"},
+			proxyURL:        "",
+		},
+		{
+			name:            "only proxy_url set",
+			envVars:         map[string]string{},
+			expectedHTTP:    "http://proxyurl.example.com:3128",
+			expectedHTTPS:   "http://proxyurl.example.com:3128",
+			expectedNoProxy: []any{""},
+			proxyURL:        "http://proxyurl.example.com:3128",
+		},
+		{
+			name: "both proxy_url and proxy env vars set",
+			envVars: map[string]string{
+				"HTTP_PROXY":  "http://proxy.example.com:8080",
+				"HTTPS_PROXY": "https://secure-proxy.example.com:8443",
+			},
+			expectedHTTP:    "http://proxyurl.example.com:3128",
+			expectedHTTPS:   "http://proxyurl.example.com:3128",
+			expectedNoProxy: []any{""},
+			proxyURL:        "http://proxyurl.example.com:3128",
 		},
 	}
 
@@ -400,8 +425,14 @@ func TestWithProxyFromEnv(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
+			cfg := &datadogconfig.Config{
+				ClientConfig: confighttp.ClientConfig{
+					ProxyURL: tt.proxyURL,
+				},
+			}
+
 			// Create config with proxy settings from environment
-			configComponent := NewConfigComponent(WithProxyFromEnv())
+			configComponent := NewConfigComponent(WithProxy(cfg))
 			require.NotNil(t, configComponent)
 
 			config := configComponent.(pkgconfigmodel.Config)
