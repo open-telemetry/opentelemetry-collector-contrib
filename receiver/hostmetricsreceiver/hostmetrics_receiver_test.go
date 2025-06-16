@@ -52,6 +52,7 @@ var allMetrics = []string{
 	"system.network.errors",
 	"system.network.io",
 	"system.network.packets",
+	"system.paging.faults",
 	"system.paging.operations",
 	"system.paging.usage",
 }
@@ -64,11 +65,11 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"solaris": {"system.filesystem.inodes.usage", "system.paging.faults"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.processes.count"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.processes.count"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"solaris": {"system.filesystem.inodes.usage"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
