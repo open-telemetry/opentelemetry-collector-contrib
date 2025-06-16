@@ -103,6 +103,10 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Send the request and measure response time
 			start := time.Now()
 			resp, err := targetClient.Do(req)
+			if err == nil {
+				defer resp.Body.Close()
+			}
+
 			mux.Lock()
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,

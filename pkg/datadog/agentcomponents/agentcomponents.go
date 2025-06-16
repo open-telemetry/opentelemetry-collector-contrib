@@ -183,10 +183,10 @@ func WithPayloadsConfig() ConfigOption {
 	}
 }
 
-// WithProxyFromEnv configures proxy settings from environment variables
-func WithProxyFromEnv() ConfigOption {
+// WithProxy configures proxy settings from config or environment variables
+func WithProxy(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		setProxyFromEnv(pkgconfig)
+		setProxy(cfg, pkgconfig)
 	}
 }
 
@@ -197,10 +197,20 @@ func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) Confi
 	}
 }
 
-func setProxyFromEnv(config pkgconfigmodel.Config) {
+func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	proxyConfig := httpproxy.FromEnvironment()
-	config.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceEnvVar)
-	config.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceEnvVar)
+	if proxyConfig.HTTPProxy != "" {
+		pkgconfig.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceDefault)
+	}
+	if proxyConfig.HTTPSProxy != "" {
+		pkgconfig.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceDefault)
+	}
+
+	// proxy_url takes precedence over proxy environment variables if set
+	if cfg.ProxyURL != "" {
+		pkgconfig.Set("proxy.http", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("proxy.https", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+	}
 
 	// If this is set to an empty []string, viper will have a type conflict when merging
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
@@ -209,7 +219,7 @@ func setProxyFromEnv(config pkgconfigmodel.Config) {
 	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
-	config.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend
