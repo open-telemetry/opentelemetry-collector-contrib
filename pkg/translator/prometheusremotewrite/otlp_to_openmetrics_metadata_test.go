@@ -152,9 +152,10 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 func TestOtelMetricsToMetadata(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	tests := []struct {
-		name    string
-		metrics pmetric.Metrics
-		want    []*prompb.MetricMetadata
+		name      string
+		metrics   pmetric.Metrics
+		want      []*prompb.MetricMetadata
+		namespace string
 	}{
 		{
 			name:    "all types§",
@@ -222,10 +223,27 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "gauge_namespace",
+			metrics: GenerateMetricsGauge(),
+			want: []*prompb.MetricMetadata{
+				{
+					Type: prompb.MetricMetadata_GAUGE,
+					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+						testdata.TestGaugeDoubleMetricName,
+						pcommon.NewMap(),
+						1, ts,
+					), "ns", false),
+					Unit: "bytes_per_second",
+					Help: "gauge description",
+				},
+			},
+			namespace: "ns",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false)
+			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
 
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
@@ -235,6 +253,14 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func GenerateMetricsGauge() pmetric.Metrics {
+	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+	ms := ilm0.Metrics()
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "By/s", "gauge description")
+	return md
 }
 
 func GenerateMetricsAllTypesNoDataPointsHelp() pmetric.Metrics {
