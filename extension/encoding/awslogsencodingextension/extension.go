@@ -43,7 +43,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      formatCloudWatchLogsSubscriptionFilter,
 		}, nil
 	case formatVPCFlowLog:
-		unmarshaler := vpcflowlog.NewVPCFlowLogUnmarshaler(
+		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig.FileFormat,
 			settings.BuildInfo,
 			settings.Logger,
@@ -52,19 +52,16 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			unmarshaler: unmarshaler,
 			vpcFormat:   cfg.VPCFlowLogConfig.FileFormat,
 			format:      formatVPCFlowLog,
-			gzipPool:    sync.Pool{},
-		}, nil
+		}, err
 	case formatS3AccessLog:
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      formatS3AccessLog,
-			gzipPool:    sync.Pool{},
 		}, nil
 	case formatWAFLog:
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      formatWAFLog,
-			gzipPool:    sync.Pool{},
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,

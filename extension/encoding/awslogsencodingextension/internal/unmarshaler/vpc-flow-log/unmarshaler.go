@@ -27,6 +27,8 @@ const (
 	fileFormatParquet   = "parquet"
 )
 
+var supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
+
 type vpcFlowLogUnmarshaler struct {
 	// VPC flow logs can be sent in plain text
 	// or parquet files to S3.
@@ -38,12 +40,28 @@ type vpcFlowLogUnmarshaler struct {
 	logger    *zap.Logger
 }
 
-func NewVPCFlowLogUnmarshaler(format string, buildInfo component.BuildInfo, logger *zap.Logger) unmarshaler.AWSUnmarshaler {
+func NewVPCFlowLogUnmarshaler(
+	format string,
+	buildInfo component.BuildInfo,
+	logger *zap.Logger,
+) (unmarshaler.AWSUnmarshaler, error) {
+	switch format {
+	case fileFormatParquet:
+		// TODO
+		return nil, errors.New("still needs to be implemented")
+	case fileFormatPlainText: // valid
+	default:
+		return nil, fmt.Errorf(
+			"unsupported file fileFormat %q for VPC flow log, expected one of %q",
+			format,
+			supportedVPCFlowLogFileFormat,
+		)
+	}
 	return &vpcFlowLogUnmarshaler{
 		fileFormat: format,
 		buildInfo:  buildInfo,
 		logger:     logger,
-	}
+	}, nil
 }
 
 func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
