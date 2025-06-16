@@ -68,14 +68,12 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver: "mydriver",
-					DataSourceConfig: sqlquery.DataSourceConfig{
-						Host:     "localhost",
-						Port:     5432,
-						Database: "mydb",
-						Username: "me",
-						Password: "s3cr3t",
-					},
+					Driver:   "mydriver",
+					Host:     "localhost",
+					Port:     5432,
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
 					Queries: []sqlquery.Query{
 						{
 							SQL: "select count(*) as count, type from mytable group by type",
@@ -155,13 +153,11 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver: "sqlserver",
-					DataSourceConfig: sqlquery.DataSourceConfig{
-						Host:     "localhost",
-						Database: "mydb",
-						Username: "me",
-						Password: "s3cr3t",
-					},
+					Driver:   "sqlserver",
+					Host:     "localhost",
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
 					Queries: []sqlquery.Query{
 						{
 							SQL: "select count(*) as count, type from mytable group by type",
@@ -185,12 +181,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			fname:        "config-invalid-missing-datasource-config-port.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource_config.port' or 'datasource' must be specified",
+			errorMessage: "'port' or 'datasource' must be specified",
 		},
 		{
 			fname:        "config-invalid-missing-datasource-config-database.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource_config.database' or 'datasource' must be specified",
+			errorMessage: "'database' or 'datasource' must be specified",
 		},
 		{
 			fname: "config-logs.yaml",
@@ -228,14 +224,12 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver: "mydriver",
-					DataSourceConfig: sqlquery.DataSourceConfig{
-						Host:     "localhost",
-						Port:     5432,
-						Database: "mydb",
-						Username: "me",
-						Password: "s3cr3t",
-					},
+					Driver:   "mydriver",
+					Host:     "localhost",
+					Port:     5432,
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
 					Queries: []sqlquery.Query{
 						{
 							SQL:                "select * from test_logs where log_id > ?",
@@ -273,13 +267,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Driver:     "mysql",
 					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
-					DataSourceConfig: sqlquery.DataSourceConfig{
-						Host:     "localhost",
-						Port:     5432,
-						Database: "mydb",
-						Username: "me",
-						Password: "s3cr3t",
-					},
+					Host:       "localhost",
+					Port:       5432,
+					Database:   "mydb",
+					Username:   "me",
+					Password:   "s3cr3t",
 					Queries: []sqlquery.Query{
 						{
 							SQL: "select count(*) as count, type from mytable group by type",

@@ -35,17 +35,16 @@ func TestNewFactory(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestNewFactoryDataSourceConfig(t *testing.T) {
+func TestNewFactoryDataSourceFields(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Driver = "postgres"
-	cfg.DataSourceConfig = sqlquery.DataSourceConfig{
-		Host:     "localhost",
-		Port:     5432,
-		Database: "test",
-		Username: "test",
-		Password: "test",
-	}
+	cfg.Host = "localhost"
+	cfg.Port = 5432
+	cfg.Database = "test"
+	cfg.Username = "test"
+	cfg.Password = "test"
+
 	cfg.Queries = []sqlquery.Query{
 		{
 			SQL: "SELECT 1",

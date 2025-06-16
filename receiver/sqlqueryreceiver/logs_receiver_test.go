@@ -95,13 +95,12 @@ func TestLogsQueryReceiver_BothDatasourceConfigs(t *testing.T) {
 				},
 				Driver:     "mysql",
 				DataSource: "my-datasource", // This should be used
-				DataSourceConfig: sqlquery.DataSourceConfig{ // This should be ignored
-					Host:     "localhost",
-					Port:     3306,
-					Database: "ignored-database",
-					Username: "ignored-user",
-					Password: "ignored-pass",
-				},
+				Host:       "localhost",
+				Port:       3306,
+				Database:   "ignored-database",
+				Username:   "ignored-user",
+				Password:   "ignored-pass",
+
 				Queries: []sqlquery.Query{{
 					SQL: "select * from foo",
 					Logs: []sqlquery.LogsCfg{

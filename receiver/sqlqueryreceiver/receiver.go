@@ -44,7 +44,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		if sqlCfg.DataSource != "" {
 			dataSource = sqlCfg.DataSource
 		} else {
-			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Driver, sqlCfg.DataSourceConfig)
+			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Driver, sqlCfg.Config)
 			if err != nil {
 				return nil, err
 			}
