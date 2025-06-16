@@ -111,137 +111,64 @@ func (s *Scraper) Shutdown(_ context.Context) error {
 }
 
 func BuildDataSourceString(driver string, dataSource DataSourceConfig) (string, error) {
-	switch driver {
-	case "postgres":
-		return buildPostgreSQLString(dataSource)
-	case "mysql":
-		return buildMySQLString(dataSource)
-	case "snowflake":
-		return buildSnowflakeString(dataSource)
-	case "sqlserver":
-		return buildSQLServerString(dataSource)
-	case "oracle":
-		return buildOracleString(dataSource)
-	default:
-		return "", fmt.Errorf("unsupported driver: %s", driver)
-	}
-}
-
-func buildPostgreSQLString(conn DataSourceConfig) (string, error) {
-	// PostgreSQL connection string format: postgresql://user:pass@host:port/db?param1=value1&param2=value2
 	var auth string
-	if conn.Username != "" {
-		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	if dataSource.Username != "" {
+		// MySQL doesn't need URL escaping
+		if driver == DriverMySQL {
+			auth = fmt.Sprintf("%s:%s@", dataSource.Username, string(dataSource.Password))
+		} else {
+			auth = fmt.Sprintf("%s:%s@", url.QueryEscape(dataSource.Username), url.QueryEscape(string(dataSource.Password)))
+		}
 	}
 
 	query := url.Values{}
-	for k, v := range conn.AdditionalParams {
-		query.Set(k, fmt.Sprintf("%v", v))
-	}
-
-	connStr := fmt.Sprintf("postgresql://%s%s:%d/%s", auth, conn.Host, conn.Port, conn.Database)
-	if len(query) > 0 {
-		connStr += "?" + query.Encode()
-	}
-
-	return connStr, nil
-}
-
-func buildMySQLString(conn DataSourceConfig) (string, error) {
-	// MySQL connection string format: user:pass@tcp(host:port)/db?param1=value1&param2=value2
-	var auth string
-
-	// MySQL requires no escaping of username and password
-	if conn.Username != "" {
-		username := conn.Username
-		password := string(conn.Password)
-		auth = fmt.Sprintf("%s:%s@", username, password)
-	}
-
-	query := url.Values{}
-	for k, v := range conn.AdditionalParams {
-		query.Set(k, fmt.Sprintf("%v", v))
-	}
-
-	connStr := fmt.Sprintf("%stcp(%s:%d)/%s", auth, conn.Host, conn.Port, conn.Database)
-	if len(query) > 0 {
-		connStr += "?" + query.Encode()
-	}
-
-	return connStr, nil
-}
-
-func buildSnowflakeString(conn DataSourceConfig) (string, error) {
-	// Snowflake connection string format: user:pass@host:port/database?param1=value1&param2=value2
-	var auth string
-	if conn.Username != "" {
-		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
-	}
-
-	query := url.Values{}
-	for k, v := range conn.AdditionalParams {
-		query.Set(k, fmt.Sprintf("%v", v))
-	}
-
-	connStr := fmt.Sprintf("%s%s:%d/%s", auth, conn.Host, conn.Port, conn.Database)
-	if len(query) > 0 {
-		connStr += "?" + query.Encode()
-	}
-
-	return connStr, nil
-}
-
-func buildSQLServerString(conn DataSourceConfig) (string, error) {
-	// SQL Server connection string format: sqlserver://username:password@host:port/instance
-	var auth string
-
-	if conn.Username != "" {
-		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
-	}
-
-	// replace all backslashes with forward slashes
-	host := strings.ReplaceAll(conn.Host, "\\", "/")
-
-	// if host contains a "/", split it into hostname and instance
-	parts := strings.SplitN(host, "/", 2)
-	hostname := parts[0]
-	var instance string
-	if len(parts) > 1 {
-		instance = parts[1]
-	}
-
-	query := url.Values{}
-	query.Set("database", conn.Database)
-	for k, v := range conn.AdditionalParams {
+	for k, v := range dataSource.AdditionalParams {
 		query.Set(k, fmt.Sprintf("%v", v))
 	}
 
 	var connStr string
-	if instance != "" {
-		connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, conn.Port, instance)
-	} else {
-		connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, conn.Port)
-	}
-	if len(query) > 0 {
-		connStr += "?" + query.Encode()
+	switch driver {
+	case DriverHDB:
+		// HDB connection string format: hdb://user:pass@host:port?param1=value1
+		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, dataSource.Host, dataSource.Port)
+	case DriverMySQL:
+		// MySQL connection string format: user:pass@tcp(host:port)/db?param1=value1&param2=value2
+		connStr = fmt.Sprintf("%stcp(%s:%d)/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+	case DriverOracle:
+		// Oracle connection string format: oracle://user:pass@host:port/service_name?param1=value1&param2=value2
+		connStr = fmt.Sprintf("oracle://%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+	case DriverPostgres:
+		// PostgreSQL connection string format: postgresql://user:pass@host:port/db?param1=value1&param2=value2
+		connStr = fmt.Sprintf("postgresql://%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+	case DriverSnowflake:
+		// Snowflake connection string format: user:pass@host:port/database?param1=value1&param2=value2
+		connStr = fmt.Sprintf("%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+	case DriverSQLServer:
+		// SQL Server connection string format: sqlserver://username:password@host:port/instance
+
+		// replace all backslashes with forward slashes
+		host := strings.ReplaceAll(dataSource.Host, "\\", "/")
+		// if host contains a "/", split it into hostname and instance
+		parts := strings.SplitN(host, "/", 2)
+		hostname := parts[0]
+		var instance string
+		if len(parts) > 1 {
+			instance = parts[1]
+		}
+		query.Set("database", dataSource.Database)
+		if instance != "" {
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, dataSource.Port, instance)
+		} else {
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, dataSource.Port)
+		}
+	case DriverTDS:
+		// TDS connection string format: tds://user:pass@host:port/database
+		connStr = fmt.Sprintf("tds://%s%s:%d/%s", auth, dataSource.Host, dataSource.Port, dataSource.Database)
+	default:
+		return "", fmt.Errorf("unsupported driver: %s", driver)
 	}
 
-	return connStr, nil
-}
-
-func buildOracleString(conn DataSourceConfig) (string, error) {
-	// Oracle connection string format: oracle://user:pass@host:port/service_name?param1=value1&param2=value2
-	var auth string
-	if conn.Username != "" {
-		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
-	}
-
-	query := url.Values{}
-	for k, v := range conn.AdditionalParams {
-		query.Set(k, fmt.Sprintf("%v", v))
-	}
-
-	connStr := fmt.Sprintf("oracle://%s%s:%d/%s", auth, conn.Host, conn.Port, conn.Database)
+	// Append query parameters if any exist
 	if len(query) > 0 {
 		connStr += "?" + query.Encode()
 	}
