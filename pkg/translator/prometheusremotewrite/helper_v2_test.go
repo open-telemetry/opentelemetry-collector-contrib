@@ -157,6 +157,127 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 	}
 }
 
+func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[uint64]*writev2.TimeSeries
+	}{
+		{
+			name: "summary with start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetStartTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
+				}
+				sumLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 3},
+						Samples: []writev2.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_SUMMARY,
+							HelpRef: 0,
+						},
+					},
+					timeSeriesSignature(sumLabels): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_SUMMARY,
+							HelpRef: 0,
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "summary without start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
+				}
+				sumLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 3},
+						Samples: []writev2.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_SUMMARY,
+							HelpRef: 0,
+						},
+					},
+					timeSeriesSignature(sumLabels): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_SUMMARY,
+							HelpRef: 0,
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+			converter := newPrometheusConverterV2()
+
+			m := metadata{
+				Type: otelMetricTypeToPromMetricTypeV2(metric),
+				Help: metric.Description(),
+				Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+			}
+
+			converter.addSummaryDataPoints(
+				metric.Summary().DataPoints(),
+				pcommon.NewResource(),
+				Settings{},
+				metric.Name(),
+				m,
+			)
+
+			assert.Equal(t, tt.want(), converter.unique)
+			// TODO check when conflicts handling is implemented
+			// assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
 func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
