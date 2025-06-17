@@ -3,10 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzio
 go 1.23.0
 
 require (
-	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/jaegertracing/jaeger-idl v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.128.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250610090210-188191247685
@@ -28,7 +25,6 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.21.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.15.0 // indirect
@@ -39,6 +35,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -54,8 +51,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.128.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.128.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -96,20 +91,8 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils
-
 retract (
 	v0.76.2
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
