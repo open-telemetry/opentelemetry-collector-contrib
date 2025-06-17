@@ -65,4 +65,3 @@ extensions:
 ## Notes
 - The extension is in active development. Functionality and configuration options may change as Datadog infrastructure monitoring features evolve.
 - For the latest updates and UI changes, watch the [Datadog Monitor blog](https://www.datadoghq.com/blog/) and the [OpenTelemetry Collector Contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib).
-- This extension is NOT included in the default distribution for opentelemetry-collector-contrib, and will not be added until UI changes are released/announced, but you may include it by adding it to a custom collector manifest.yaml and building with the [OpenTelemetry Collector Builder (ocb)](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder)
