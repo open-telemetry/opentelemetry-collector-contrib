@@ -17,8 +17,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/elastic/elastic-transport-go/v8 v8.7.0 h1:OgTneVuXP2uip4BA658Xi6Hfw+PeIOod2rY3GVMGoVE=
 github.com/elastic/elastic-transport-go/v8 v8.7.0/go.mod h1:YLHer5cj0csTzNFXoNQ8qhtGY1GTvSqPnKWKaqQE3Hk=
-github.com/elastic/go-docappender/v2 v2.9.0 h1:EWNSfA4R8gyK+x9Hh3/AsRbc12nT3UVjsLg+Yz4fxA4=
-github.com/elastic/go-docappender/v2 v2.9.0/go.mod h1:xoTA2/HUjnIgF7acxxjfYaT7KE3nFhBQ5ZkmN0edE5o=
+github.com/elastic/go-docappender/v2 v2.10.0 h1:gK7embg8JCedjkrfojhhWNufoG5ui7edBklakGXHtbQ=
+github.com/elastic/go-docappender/v2 v2.10.0/go.mod h1:uJH43KCtXmqFUhYj7Am1NiHv0MXf3vM6VxtNlA/Utks=
 github.com/elastic/go-elasticsearch/v8 v8.18.0 h1:ANNq1h7DEiPUaALb8+5w3baQzaS08WfHV0DNzp0VG4M=
 github.com/elastic/go-elasticsearch/v8 v8.18.0/go.mod h1:WLqwXsJmQoYkoA9JBFeEwPkQhCfAZuUvfpdU/NvSSf0=
 github.com/elastic/go-freelru v0.16.0 h1:gG2HJ1WXN2tNl5/p40JS/l59HjvjRhjyAa+oFTRArYs=
@@ -137,8 +137,6 @@ go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.3 h1:5CuemBg1oZnXI6jz+jkLqM95N
 go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.3/go.mod h1:MVK2TIrvMGQaL7bnO4dbnJ+jpDNqmkj+BukDRBYTI60=
 go.elastic.co/apm/module/apmhttp/v2 v2.6.3 h1:jwFovJZkccySKCyy2oE9ZKvUry/a4gdQHF/MtZUQVtE=
 go.elastic.co/apm/module/apmhttp/v2 v2.6.3/go.mod h1:w94Gkk6uzI/K+eJYKDLB66tvWC5uK0fSHyWcyX2jPlQ=
-go.elastic.co/apm/module/apmzap/v2 v2.7.0 h1:jpfn3kLXcNpZkCPCipGdbkmi2Y7fOUeYUeoPDKSp+8Q=
-go.elastic.co/apm/module/apmzap/v2 v2.7.0/go.mod h1:31dKGp4KyNnbwIJn1Wc8zTtdxMmzutAcj6DE1dAb0kk=
 go.elastic.co/apm/v2 v2.7.0 h1:fbsy3BmTTedIbj7+1Ay9Zpdfuztd8RUk7Dm0JvxRW/M=
 go.elastic.co/apm/v2 v2.7.0/go.mod h1:f1Sr3rVJju5winTjsJtKzofdU32L7+Mw/c23cVcn3Io=
 go.elastic.co/fastjson v1.5.0 h1:XAQ7wrNObNnDiXC8qQKblkmLwh0vJjX3Z/jEj6/08SI=
