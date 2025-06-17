@@ -6,7 +6,11 @@ package ottlspan
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 	"time"
@@ -58,11 +62,13 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "cache",
@@ -74,6 +80,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
+			setStatement: `set(cache, {"temp": "value"})`,
+			getStatement: `cache`,
 		},
 		{
 			name: "cache access",
@@ -90,6 +98,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
+			setStatement: `set(cache["temp"], "new value")`,
+			getStatement: `cache["temp"]`,
 		},
 		{
 			name: "trace_id",
@@ -101,6 +111,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetTraceID(traceID2)
 			},
+			setStatement: `set(trace_id, TraceID(0x100f0e0d0c0b0a090807060504030201))`,
+			getStatement: `trace_id`,
 		},
 		{
 			name: "span_id",
@@ -112,6 +124,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetSpanID(spanID2)
 			},
+			setStatement: `set(span_id, SpanID(0x0807060504030201))`,
+			getStatement: `span_id`,
 		},
 		{
 			name: "trace_id string",
@@ -126,6 +140,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetTraceID(traceID2)
 			},
+			setStatement: `set(trace_id.string, "100f0e0d0c0b0a090807060504030201")`,
+			getStatement: `trace_id.string`,
 		},
 		{
 			name: "span_id string",
@@ -140,6 +156,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetSpanID(spanID2)
 			},
+			setStatement: `set(span_id.string, "0807060504030201")`,
+			getStatement: `span_id.string`,
 		},
 		{
 			name: "trace_state",
@@ -151,6 +169,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.TraceState().FromRaw("key=newVal")
 			},
+			setStatement: `set(trace_state, "key=newVal")`,
+			getStatement: `trace_state`,
 		},
 		{
 			name: "trace_state key",
@@ -167,6 +187,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.TraceState().FromRaw("key1=newVal,key2=val2")
 			},
+			setStatement: `set(trace_state["key1"], "newVal")`,
+			getStatement: `trace_state["key1"]`,
 		},
 		{
 			name: "parent_span_id",
@@ -178,6 +200,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetParentSpanID(spanID)
 			},
+			setStatement: `set(parent_span_id, SpanID(0x0807060504030201))`,
+			getStatement: `parent_span_id`,
 		},
 		{
 			name: "name",
@@ -189,6 +213,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetName("cat")
 			},
+			setStatement: `set(name, "cat")`,
+			getStatement: `name`,
 		},
 		{
 			name: "kind",
@@ -200,6 +226,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetKind(ptrace.SpanKindClient)
 			},
+			setStatement: fmt.Sprintf("set(kind, %d)", int64(ptrace.SpanKindClient)),
+			getStatement: `kind`,
 		},
 		{
 			name: "string kind",
@@ -214,6 +242,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetKind(ptrace.SpanKindClient)
 			},
+			setStatement: `set(kind.string, "Client")`,
+			getStatement: `kind.string`,
 		},
 		{
 			name: "deprecated string kind",
@@ -228,6 +258,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetKind(ptrace.SpanKindClient)
 			},
+			setStatement: `set(kind.deprecated_string, "SPAN_KIND_CLIENT")`,
+			getStatement: `kind.deprecated_string`,
 		},
 		{
 			name: "start_time_unix_nano",
@@ -239,6 +271,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(start_time_unix_nano, 200000000)",
+			getStatement: "start_time_unix_nano",
 		},
 		{
 			name: "end_time_unix_nano",
@@ -250,6 +284,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(end_time_unix_nano, 200000000)",
+			getStatement: "end_time_unix_nano",
 		},
 		{
 			name: "start_time",
@@ -261,6 +297,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: `set(start_time, Time("1970-01-01T00:00:00.2Z", "%Y-%m-%dT%H:%M:%S.%f%z"))`,
+			getStatement: `start_time`,
 		},
 		{
 			name: "end_time",
@@ -272,6 +310,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: `set(end_time, Time("1970-01-01T00:00:00.5Z", "%Y-%m-%dT%H:%M:%S.%f%z"))`,
+			getStatement: `end_time`,
 		},
 		{
 			name: "attributes",
@@ -283,6 +323,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				newAttrs.CopyTo(span.Attributes())
 			},
+			setStatement: `set(attributes, {"hello": "world"})`,
+			getStatement: `attributes`,
 		},
 		{
 			name: "attributes string",
@@ -299,6 +341,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutStr("str", "newVal")
 			},
+			setStatement: `set(attributes["str"], "newVal")`,
+			getStatement: `attributes["str"]`,
 		},
 		{
 			name: "attributes bool",
@@ -315,6 +359,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutBool("bool", false)
 			},
+			setStatement: `set(attributes["bool"], false)`,
+			getStatement: `attributes["bool"]`,
 		},
 		{
 			name: "attributes int",
@@ -331,6 +377,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutInt("int", 20)
 			},
+			setStatement: `set(attributes["int"], 20)`,
+			getStatement: `attributes["int"]`,
 		},
 		{
 			name: "attributes float",
@@ -347,6 +395,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutDouble("double", 2.4)
 			},
+			setStatement: `set(attributes["double"], 2.4)`,
+			getStatement: `attributes["double"]`,
 		},
 		{
 			name: "attributes bytes",
@@ -363,6 +413,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
+			setStatement: `set(attributes["bytes"], 0x020304)`,
+			getStatement: `attributes["bytes"]`,
 		},
 		{
 			name: "attributes array string",
@@ -382,6 +434,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["arr_str"], ["new"])`,
+			getStatement: `attributes["arr_str"]`,
 		},
 		{
 			name: "attributes array bool",
@@ -401,6 +455,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
+			setStatement: `set(attributes["arr_bool"], [false])`,
+			getStatement: `attributes["arr_bool"]`,
 		},
 		{
 			name: "attributes array int",
@@ -420,6 +476,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
+			setStatement: `set(attributes["arr_int"], [20])`,
+			getStatement: `attributes["arr_int"]`,
 		},
 		{
 			name: "attributes array float",
@@ -439,6 +497,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
+			setStatement: `set(attributes["arr_float"], [2.0])`,
+			getStatement: `attributes["arr_float"]`,
 		},
 		{
 			name: "attributes array bytes",
@@ -458,6 +518,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
+			setStatement: `set(attributes["arr_bytes"], [0x090604])`,
+			getStatement: `attributes["arr_bytes"]`,
 		},
 		{
 			name: "attributes pcommon.Map",
@@ -479,6 +541,8 @@ func Test_newPathGetSetter(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["pMap"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["pMap"]`,
 		},
 		{
 			name: "attributes map[string]any",
@@ -500,6 +564,8 @@ func Test_newPathGetSetter(t *testing.T) {
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
+			setStatement: `set(attributes["map"], {"k2": {"k1": "string"}})`,
+			getStatement: `attributes["map"]`,
 		},
 		{
 			name: "attributes nested",
@@ -526,6 +592,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
+			setStatement: `set(attributes["slice"], [{"map": "new"}])`,
+			getStatement: `attributes["slice"][0]["map"]`,
 		},
 		{
 			name: "attributes nested new values",
@@ -553,6 +621,8 @@ func Test_newPathGetSetter(t *testing.T) {
 				s.AppendEmpty()
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
+			setStatement: `set(attributes["new"], [nil, nil, ["new"]])`,
+			getStatement: `attributes["new"][2][0]`,
 		},
 		{
 			name: "dropped_attributes_count",
@@ -564,6 +634,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetDroppedAttributesCount(20)
 			},
+			setStatement: `set(dropped_attributes_count, 20)`,
+			getStatement: `dropped_attributes_count`,
 		},
 		{
 			name: "events",
@@ -589,6 +661,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetDroppedEventsCount(30)
 			},
+			setStatement: `set(dropped_events_count, 30)`,
+			getStatement: `dropped_events_count`,
 		},
 		{
 			name: "links",
@@ -614,6 +688,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.SetDroppedLinksCount(40)
 			},
+			setStatement: `set(dropped_links_count, 40)`,
+			getStatement: `dropped_links_count`,
 		},
 		{
 			name: "status",
@@ -639,6 +715,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Status().SetCode(ptrace.StatusCodeError)
 			},
+			setStatement: fmt.Sprintf("set(status.code, %d)", int64(ptrace.StatusCodeError)),
+			getStatement: `status.code`,
 		},
 		{
 			name: "status message",
@@ -653,6 +731,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				span.Status().SetMessage("bad span")
 			},
+			setStatement: `set(status.message, "bad span")`,
+			getStatement: `status.message`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -696,6 +776,249 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exCache, testCache)
 		})
 	}
+
+	stmtParser := createParser(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				span, il, resource := createTelemetry()
+
+				ctx := NewTransformContext(span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				span, il, resource = createTelemetry()
+
+				ctx = NewTransformContext(span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
+}
+
+func createParser(t *testing.T) ottl.Parser[TransformContext] {
+	settings := componenttest.NewNopTelemetrySettings()
+	//stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	stmtParser, err := NewParser(MinimalTestFuncs[TransformContext](), settings)
+	//stmtParser, err := NewParser(common.Functions[ottlspan.TransformContext](), settings)
+	//stmtParser, err := NewParser(map[string]ottl.Factory[TransformContext]{}, settings)
+	require.NoError(t, err)
+	return stmtParser
+}
+
+func MinimalTestFuncs[K any]() map[string]ottl.Factory[K] {
+	f := []ottl.Factory[K]{
+		// Editors
+		NewSetFactory[K](),
+	}
+	f = append(f, converters[K]()...)
+
+	return ottl.CreateFactoryMap(f...)
+}
+
+// This is really ugly but avoid a cyclic import problem.
+// This test resides in ottlspan package, but the Parser requires ottlfuncs.StandardFuncs. One of the functions in
+// ottlfuncs (func_is_root_span.go) import itself the ottlspan package, so we can't refer any member present in ottlfuncs
+// without creating a loop, so the nasty copy of code.
+
+func converters[K any]() []ottl.Factory[K] {
+	return []ottl.Factory[K]{
+		// Converters
+		NewSpanIDFactory[K](),
+		NewTimeFactory[K](),
+		NewTraceIDFactory[K](),
+	}
+}
+
+// Set function
+type SetArguments[K any] struct {
+	Target ottl.Setter[K]
+	Value  ottl.Getter[K]
+}
+
+func NewSetFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("set", &SetArguments[K]{}, createSetFunction[K])
+}
+
+func createSetFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*SetArguments[K])
+
+	if !ok {
+		return nil, errors.New("SetFactory args must be of type *SetArguments[K]")
+	}
+
+	return set(args.Target, args.Value), nil
+}
+
+func set[K any](target ottl.Setter[K], value ottl.Getter[K]) ottl.ExprFunc[K] {
+	return func(ctx context.Context, tCtx K) (any, error) {
+		val, err := value.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+
+		// No fields currently support `null` as a valid type.
+		if val != nil {
+			err = target.Set(ctx, tCtx, val)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	}
+}
+
+// TraceID converter
+type TraceIDArguments[K any] struct {
+	Bytes []byte
+}
+
+func NewTraceIDFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TraceID", &TraceIDArguments[K]{}, createTraceIDFunction[K])
+}
+
+func createTraceIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*TraceIDArguments[K])
+
+	if !ok {
+		return nil, errors.New("TraceIDFactory args must be of type *TraceIDArguments[K]")
+	}
+
+	return traceIDFun[K](args.Bytes)
+}
+
+func traceIDFun[K any](bytes []byte) (ottl.ExprFunc[K], error) {
+	if len(bytes) != 16 {
+		return nil, errors.New("traces ids must be 16 bytes")
+	}
+	var idArr [16]byte
+	copy(idArr[:16], bytes)
+	id := pcommon.TraceID(idArr)
+	return func(context.Context, K) (any, error) {
+		return id, nil
+	}, nil
+}
+
+// SpanID converter
+type SpanIDArguments[K any] struct {
+	Bytes []byte
+}
+
+func NewSpanIDFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("SpanID", &SpanIDArguments[K]{}, createSpanIDFunction[K])
+}
+
+func createSpanIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*SpanIDArguments[K])
+
+	if !ok {
+		return nil, errors.New("SpanIDFactory args must be of type *SpanIDArguments[K]")
+	}
+
+	return spanIDFun[K](args.Bytes)
+}
+
+func spanIDFun[K any](bytes []byte) (ottl.ExprFunc[K], error) {
+	if len(bytes) != 8 {
+		return nil, errors.New("span ids must be 8 bytes")
+	}
+	var idArr [8]byte
+	copy(idArr[:8], bytes)
+	id := pcommon.SpanID(idArr)
+	return func(context.Context, K) (any, error) {
+		return id, nil
+	}, nil
+}
+
+// Time converter
+type TimeArguments[K any] struct {
+	Time     ottl.StringGetter[K]
+	Format   string
+	Location ottl.Optional[string]
+	Locale   ottl.Optional[string]
+}
+
+func NewTimeFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Time", &TimeArguments[K]{}, createTimeFunction[K])
+}
+
+func createTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*TimeArguments[K])
+
+	if !ok {
+		return nil, errors.New("TimeFactory args must be of type *TimeArguments[K]")
+	}
+
+	return Time(args.Time, args.Format, args.Location, args.Locale)
+}
+
+func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Optional[string], locale ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+	if format == "" {
+		return nil, errors.New("format cannot be nil")
+	}
+	gotimeFormat, err := timeutils.StrptimeToGotime(format)
+	if err != nil {
+		return nil, err
+	}
+
+	var defaultLocation *string
+	if !location.IsEmpty() {
+		l := location.Get()
+		defaultLocation = &l
+	}
+
+	loc, err := timeutils.GetLocation(defaultLocation, &format)
+	if err != nil {
+		return nil, err
+	}
+
+	var inputTimeLocale *string
+	if !locale.IsEmpty() {
+		l := locale.Get()
+		if err = timeutils.ValidateLocale(l); err != nil {
+			return nil, err
+		}
+		inputTimeLocale = &l
+	}
+
+	ctimeSubstitutes := timeutils.GetStrptimeNativeSubstitutes(format)
+
+	return func(ctx context.Context, tCtx K) (any, error) {
+		t, err := inputTime.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if t == "" {
+			return nil, errors.New("time cannot be nil")
+		}
+		var timestamp time.Time
+		if inputTimeLocale != nil {
+			timestamp, err = timeutils.ParseLocalizedGotime(gotimeFormat, t, loc, *inputTimeLocale)
+		} else {
+			timestamp, err = timeutils.ParseGotime(gotimeFormat, t, loc)
+		}
+		if err != nil {
+			var timeErr *time.ParseError
+			if errors.As(err, &timeErr) {
+				return nil, timeutils.ToStrptimeParseError(timeErr, format, ctimeSubstitutes)
+			}
+			return nil, err
+		}
+		return timestamp, nil
+	}, nil
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
@@ -708,9 +1031,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	ctx := NewTransformContext(ptrace.NewSpan(), instrumentationScope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		expected any
+		name         string
+		path         ottl.Path[TransformContext]
+		expected     any
+		getStatement string
 	}{
 		{
 			name: "resource",
@@ -722,7 +1046,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					},
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
 			name: "resource with context",
@@ -731,17 +1056,20 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					S: ottltest.Strp("foo"),
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
-			name:     "instrumentation_scope",
-			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope",
+			path:         &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 		{
-			name:     "instrumentation_scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope with context",
+			path:         &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 	}
 
@@ -753,6 +1081,19 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			getExpression, err := stmtParser.ParseValueExpression(tt.getStatement)
+			require.NoError(t, err)
+			require.NotNil(t, getExpression)
+			getResult, err := getExpression.Eval(context.Background(), ctx)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, getResult)
 		})
 	}
 }
