@@ -72,6 +72,12 @@ func (cfg *PromConfig) ContainsScrapeConfigs() bool {
 }
 
 func (cfg *PromConfig) Reload() error {
+	if cfg.ContainsScrapeConfigs() {
+		return nil
+	}
+
+	// only reload if there are no scrape configs, implying that there is a target_allocator.
+	// reloading existing scrape configs corrupts authentication configurations
 	return reloadPromConfig(cfg, cfg)
 }
 
