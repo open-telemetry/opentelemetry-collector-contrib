@@ -252,14 +252,14 @@ func (e ecsModeEncoder) encodeSpan(
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]string{
+	spanAttrsConversionMap := map[string]string{
 		"event.name":                           "event.action",
 		string(semconv.ExceptionMessageKey):    "error.message",
 		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
 		string(semconv.ExceptionTypeKey):       "error.type",
 		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
 	}
-	encodeAttributesECSMode(&document, span.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
 	addDataStreamAttributes(&document, "", idx)
 
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
