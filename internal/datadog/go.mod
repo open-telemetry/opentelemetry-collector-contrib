@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.1
@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.28.0
 	github.com/aws/aws-sdk-go-v2 v1.36.4
 	github.com/aws/aws-sdk-go-v2/config v1.29.16
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.31
@@ -39,7 +39,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.6.0 // indirect
+	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.66.1 // indirect
