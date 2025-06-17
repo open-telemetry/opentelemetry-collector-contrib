@@ -16,7 +16,7 @@ var datasourceRegex = regexp.MustCompile(`^[\w_]+$`)
 
 type SignalConfig struct {
 	Datasource string `mapstructure:"datasource"`
-	
+
 	_ struct{}
 }
 
