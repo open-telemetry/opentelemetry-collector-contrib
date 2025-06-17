@@ -20,6 +20,18 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 
 ## Getting Started
 
+> [!NOTE]
+> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> `receiver.kafkareceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+>
+> The `franz-go` client supports directly consuming from multiple topics by specifying a regex expression.
+> To enable this feature, prefix your topic with the `^` character. This is identical to how the `librdkafka`
+> client works.
+>
+> If you use the `^` prefix, in the deprecated `topic` setting, if **any** of the topics have the `^` prefix,
+> regex consuming will be enabled.
+
 There are no required settings.
 
 The following settings can be optionally configured:

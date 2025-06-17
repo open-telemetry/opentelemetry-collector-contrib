@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.67.0-devel.0.20250422212611-65be868f4270
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.66.1
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.1
-	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.66.1
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
@@ -124,7 +124,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.66.1 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.38.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.39.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 // indirect
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
