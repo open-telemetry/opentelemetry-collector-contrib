@@ -149,7 +149,6 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.3 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.6.3 // indirect
-	go.elastic.co/apm/module/apmzap/v2 v2.7.0 // indirect
 	go.elastic.co/apm/v2 v2.7.0 // indirect
 	go.elastic.co/fastjson v1.5.0 // indirect
 	go.etcd.io/bbolt v1.4.1 // indirect
