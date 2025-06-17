@@ -87,7 +87,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	}
 
 	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(e.cfg.ClientConfig,
+		producer, ferr := kafka.NewFranzSyncProducer(ctx, e.cfg.ClientConfig,
 			e.cfg.Producer, e.cfg.TimeoutSettings.Timeout, e.logger,
 		)
 		if ferr != nil {
