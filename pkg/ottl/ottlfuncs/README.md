@@ -502,6 +502,7 @@ Available Converters:
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
+- [ParseInt](#parseint)
 - [ProfileID](#profileid)
 - [RemoveXML](#removexml)
 - [Second](#second)
@@ -1754,6 +1755,25 @@ Examples:
 - `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
+
+### ParseInt
+
+`ParseInt(target, base)`
+
+The `ParseInt` Converter converts a string to its integer representation. 
+
+`target` is the string to be converted.
+`base` is an `int64` representing the base of the number in the string `target`.
+
+The return type is `int64`.
+
+Examples:
+
+- `ParseInt("12345", 10) -> 12345`
+- `ParseInt("0xAA", 0) -> 170`
+- `ParseInt("AA", 16) -> 170`
+- `ParseInt("notANumber", 10) -> returns an error`
+- `ParseInt("123456", -10) -> returns an error, base cannot be a negative integer`
 
 ### ProfileID
 
