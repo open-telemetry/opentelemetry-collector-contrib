@@ -108,8 +108,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.66.1 h1:0mfkvsJQsoSVsEUWcdd
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.66.1/go.mod h1:RQS1Ea6AsKz+YAsnpJwdCGiBWNy5XjQX83EO5ohAQq4=
 github.com/DataDog/datadog-agent/pkg/version v0.66.1 h1:8eJdgkO/o4/5RlF3u29j0QO8eotaqE+fwKOkIHNJ8RY=
 github.com/DataDog/datadog-agent/pkg/version v0.66.1/go.mod h1:LXOHXAHH+vqBwmQKcZa5FgBEi4ECKIC2WsV2Jd9VVJ0=
-github.com/DataDog/datadog-api-client-go/v2 v2.38.0 h1:0f2SuTVOFyDDtYvkOs+xawZLO08h10CBeiEfXsx5kVc=
-github.com/DataDog/datadog-api-client-go/v2 v2.38.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.39.0 h1:x1m0oPjp7h/RuuoC10gl/ROLP819CelNa3LeHTXFqgo=
+github.com/DataDog/datadog-api-client-go/v2 v2.39.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee h1:tXibLZk3G6HncIFJKaNItsdzcrk4YqILNDZlXPTNt4k=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee/go.mod h1:nTot/Iy0kW16bXgXr6blEc8gFeAS7vTqYlhAxh+dbc0=
 github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0 h1:klvlxKNjIYDKE27QZpFUVxkk/qIoqExOw8QQ6tJbkBA=
