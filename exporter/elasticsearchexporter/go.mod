@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cespare/xxhash v1.1.0
-	github.com/elastic/go-docappender/v2 v2.9.0
+	github.com/elastic/go-docappender/v2 v2.10.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
