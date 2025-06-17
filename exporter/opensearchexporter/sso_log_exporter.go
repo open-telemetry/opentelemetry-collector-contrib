@@ -71,10 +71,6 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		return startErr
 	}
 
-	// Collect attributes from resource/log record
-	attrs := collectAttributes(ld)
-	logTimestamp := time.Now() // Replace with actual log timestamp extraction
-
 	// Index name resolution
 	// If LogsIndex is not set, use the default index name, otherwise resolve it using the config and attributes.
 	// This allows for dynamic index naming based on log attributes.
@@ -82,6 +78,9 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	if l.config.LogsIndex == "" {
 		indexName = l.Index
 	} else {
+		// Collect attributes from resource/log record
+		attrs := collectAttributes(ld)
+		logTimestamp := time.Now() // Replace with actual log timestamp extraction
 		indexName = resolveLogIndexName(l.config, attrs, logTimestamp)
 	}
 	indexer.index = indexName

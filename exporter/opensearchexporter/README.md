@@ -39,16 +39,19 @@ LogsIndex configures the index, index alias, or data stream name logs should be 
 
 The OpenSearch exporter supports dynamic log index names using placeholders in the `logs_index` config. You can use any attribute or context key as a placeholder to construct index names dynamically per log record.
 
+> Caution: In practice, OpenSearch clusters can become unstable or even break down when index counts reach a very high level. Introducing attributes with high cardinality resulting in many separate indices can significantly impact the stability of your target cluster.
+
 - Placeholder: `%{key}`
 
   - Example: `otel-logs-%{service.name}` or `otel-logs-%{custom.label}`
   - The value is looked up from a context map (resource attributes, log attributes, etc.).
   - If the key is missing, the value from `logs_index_fallback` is used (or `unknown` if not set).
   - Only one placeholder is supported in the index name.
+  - The index names generated from these placeholders should adhere to [index naming restrictions](https://docs.opensearch.org/docs/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
 
 - **Optional logs_index**: If `logs_index` is not set, the exporter will use the default naming pattern: `ss4o_{type}-{dataset}-{namespace}` (e.g., `ss4o_logs-default-namespace`). This ensures backward compatibility and a predictable index naming scheme.
 
-#### Time Suffix: logs_index_time_format
+#### Time Suffix
 
 You can append a time-formatted suffix to the index name using the `logs_index_time_format` option.
 
