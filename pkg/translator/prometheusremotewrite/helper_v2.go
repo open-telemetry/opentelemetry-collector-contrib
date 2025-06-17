@@ -73,8 +73,10 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 	})
 }
 
-// createSampleWithStaleNaN creates a sample with the given value and timestamp, setting StaleNaN if needed
-func (c *prometheusConverterV2) createSampleWithStaleNaN(sampleValue float64, timestamp int64, noRecordedValue bool) *writev2.Sample {
+// addSampleWithLabels is a helper function to create and add a sample with labels
+func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timestamp int64, noRecordedValue bool,
+	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
+) {
 	sample := &writev2.Sample{
 		Value:     sampleValue,
 		Timestamp: timestamp,
@@ -82,14 +84,6 @@ func (c *prometheusConverterV2) createSampleWithStaleNaN(sampleValue float64, ti
 	if noRecordedValue {
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
-	return sample
-}
-
-// addSampleWithLabels is a helper function to create and add a sample with labels
-func (c *prometheusConverterV2) addSampleWithLabels(value float64, timestamp int64, noRecordedValue bool,
-	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
-) {
-	sample := c.createSampleWithStaleNaN(value, timestamp, noRecordedValue)
 	if labelName != "" && labelValue != "" {
 		c.addSample(sample, createLabels(baseName, baseLabels, labelName, labelValue), metadata)
 	} else {
