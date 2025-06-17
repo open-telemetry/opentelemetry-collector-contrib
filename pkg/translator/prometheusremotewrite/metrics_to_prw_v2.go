@@ -107,7 +107,6 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
-						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
 					c.addSummaryDataPoints(dataPoints, resource, settings, promName, m)
