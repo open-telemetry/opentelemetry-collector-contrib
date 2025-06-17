@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// CreateTempHostFile create a temporary hostfile
+// CreateTempHostFile create a temporary hostfile and returns its path.
 func CreateTempHostFile(t *testing.T, content string) string {
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "hosts")

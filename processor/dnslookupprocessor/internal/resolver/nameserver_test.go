@@ -93,13 +93,13 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 		hostname       string
 		mockResolvers  []*MockNetResolver
 		nameservers    []string
-		expectedResult string
+		expectedResult []string
 		expectError    bool
 		expectedError  error
 		maxRetries     int
 	}{
 		{
-			name:     "successful resolution with IPv4",
+			name:     "successful all resolutions",
 			hostname: "example.com",
 			mockResolvers: []*MockNetResolver{
 				func() *MockNetResolver {
@@ -114,26 +114,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "192.168.1.1",
-			expectError:    false,
-			expectedError:  nil,
-		},
-		{
-			name:     "only IPv6 available",
-			hostname: "ipv6only.com",
-			mockResolvers: []*MockNetResolver{
-				func() *MockNetResolver {
-					m := new(MockNetResolver)
-					ipv6 := net.ParseIP("2001:db8::1")
-
-					m.On("LookupIP", mock.Anything, "ip", "ipv6only.com").
-						Return([]net.IP{ipv6}, nil)
-					return m
-				}(),
-			},
-			nameservers:    []string{"test-server"},
-			maxRetries:     0,
-			expectedResult: "2001:db8::1",
+			expectedResult: []string{"192.168.1.1", "2001:db8::1"},
 			expectError:    false,
 			expectedError:  nil,
 		},
@@ -144,36 +125,34 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				func() *MockNetResolver {
 					m := new(MockNetResolver)
 					m.On("LookupIP", mock.Anything, "ip", "empty.com").
-						Return([]net.IP{}, nil)
+						Return(nil, nil)
 					return m
 				}(),
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
 			expectedError:  ErrNoResolution,
 		},
 		{
-			name:     "No resolution found",
+			name:     "NXDOMAIN from server",
 			hostname: "notfound.com",
 			mockResolvers: []*MockNetResolver{
 				func() *MockNetResolver {
 					m := new(MockNetResolver)
 					dnsErr := &net.DNSError{
-						Err:         "no such host",
-						Name:        "notfound.com",
 						IsNotFound:  true,
 						IsTemporary: false,
 					}
 					m.On("LookupIP", mock.Anything, "ip", "notfound.com").
-						Return([]net.IP(nil), dnsErr)
+						Return(nil, dnsErr)
 					return m
 				}(),
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
 			expectedError:  ErrNoResolution,
 		},
@@ -191,7 +170,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 
 					// First call fails with temporary error
 					firstCall := m.On("LookupIP", mock.Anything, "ip", "retry.com").
-						Return([]net.IP(nil), tempErr).Once()
+						Return(nil, tempErr).Once()
 
 					// Second call succeeds
 					ipv4 := net.ParseIP("10.0.0.1")
@@ -202,7 +181,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     3,
-			expectedResult: "10.0.0.1",
+			expectedResult: []string{"10.0.0.1"},
 			expectError:    false,
 			expectedError:  nil,
 		},
@@ -213,24 +192,25 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				func() *MockNetResolver {
 					m := new(MockNetResolver)
 					timeoutErr := &net.DNSError{
-						Err:       "i/o timeout",
-						Name:      "timeout.com",
 						IsTimeout: true,
 					}
 
 					// Always fail with timeout
 					m.On("LookupIP", mock.Anything, "ip", "timeout.com").
-						Return([]net.IP(nil), timeoutErr)
+						Return(nil, timeoutErr)
 					return m
 				}(),
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     2,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
+			expectedError: &net.DNSError{
+				IsTimeout: true,
+			},
 		},
 		{
-			name:     "permanent connection error",
+			name:     "permanent connection refused error",
 			hostname: "refused.com",
 			mockResolvers: []*MockNetResolver{
 				func() *MockNetResolver {
@@ -241,18 +221,18 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 
 					// Always fail with timeout
 					m.On("LookupIP", mock.Anything, "ip", "refused.com").
-						Return([]net.IP(nil), opErr)
+						Return(nil, opErr)
 					return m
 				}(),
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     2,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
 			expectedError:  ErrNSPermanentFailure,
 		},
 		{
-			name:     "permanent error from nameserver",
+			name:     "permanent DNS config error",
 			hostname: "config-error.com",
 			mockResolvers: []*MockNetResolver{
 				func() *MockNetResolver {
@@ -267,7 +247,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     2,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
 			expectedError:  ErrNSPermanentFailure,
 		},
@@ -278,28 +258,25 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				func() *MockNetResolver {
 					m := new(MockNetResolver)
 					timeoutErr := &net.DNSError{
-						Err:       "i/o timeout",
-						Name:      "fallback.com",
 						IsTimeout: true,
 					}
-
 					// First resolver always fails
 					m.On("LookupIP", mock.Anything, "ip", "fallback.com").
-						Return([]net.IP(nil), timeoutErr)
+						Return(nil, timeoutErr)
 					return m
 				}(),
 				func() *MockNetResolver {
 					m := new(MockNetResolver)
 					// Second resolver succeeds
-					ipv4 := net.ParseIP("10.1.1.1")
+					ip := net.ParseIP("10.1.1.1")
 					m.On("LookupIP", mock.Anything, "ip", "fallback.com").
-						Return([]net.IP{ipv4}, nil)
+						Return([]net.IP{ip}, nil)
 					return m
 				}(),
 			},
 			nameservers:    []string{"test-server1", "test-server2"},
 			maxRetries:     1,
-			expectedResult: "10.1.1.1",
+			expectedResult: []string{"10.1.1.1"},
 			expectError:    false,
 			expectedError:  nil,
 		},
@@ -330,7 +307,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedResult, result)
+				assert.ElementsMatch(t, tc.expectedResult, result)
 			}
 
 			for _, mockResolver := range tc.mockResolvers {
@@ -349,7 +326,7 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 		mockResolvers  []*MockNetResolver
 		nameservers    []string
 		maxRetries     int
-		expectedResult string
+		expectedResult []string
 		expectError    bool
 		expectedError  error
 	}{
@@ -366,7 +343,7 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "example.com",
+			expectedResult: []string{"example.com"},
 			expectError:    false,
 			expectedError:  nil,
 		},
@@ -383,7 +360,7 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "example.com",
+			expectedResult: []string{"example.com", "another-example.com"},
 			expectError:    false,
 			expectedError:  nil,
 		},
@@ -400,7 +377,7 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
 			expectedError:  ErrNoResolution,
 		},
@@ -417,13 +394,13 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 						IsTemporary: false,
 					}
 					m.On("LookupAddr", mock.Anything, "172.16.0.1").
-						Return([]string(nil), dnsErr)
+						Return(nil, dnsErr)
 					return m
 				}(),
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "",
+			expectedResult: nil,
 			expectError:    true,
 			expectedError:  ErrNoResolution,
 		},
@@ -444,7 +421,7 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 			},
 			nameservers:    []string{"test-server"},
 			maxRetries:     0,
-			expectedResult: "example.com",
+			expectedResult: []string{"example.com"},
 			expectError:    false,
 		},
 	}
@@ -474,7 +451,7 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedResult, result)
+				assert.ElementsMatch(t, tc.expectedResult, result)
 			}
 
 			for _, mockResolver := range tc.mockResolvers {

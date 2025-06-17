@@ -33,12 +33,12 @@ var (
 // Resolver defines methods for DNS resolution operations
 type Resolver interface {
 	// Resolve performs forward DNS resolution (hostname to IP)
-	// Returns IP address as string or error if resolution fails
-	Resolve(ctx context.Context, hostname string) (string, error)
+	// Returns IP addresses as strings or error if resolution fails
+	Resolve(ctx context.Context, hostname string) ([]string, error)
 
 	// Reverse performs reverse DNS resolution (IP to hostname)
-	// Returns hostname as string or error if resolution fails
-	Reverse(ctx context.Context, ip string) (string, error)
+	// Returns hostnames as strings or error if resolution fails
+	Reverse(ctx context.Context, ip string) ([]string, error)
 
 	Name() string
 

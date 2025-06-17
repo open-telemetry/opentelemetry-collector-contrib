@@ -18,11 +18,13 @@ import (
 const validHostFileContent = `
 127.0.0.1 localhost
 192.168.1.10 Example.com test.local
+192.168.1.11 example2.com
 ::1 ip6-localhost ip6-loopback
 `
 
 // valid hosts file
 const validHostFileContent2 = `
+192.168.1.10 example.com example2.com
 192.168.1.20 another.example.com
 192.168.1.30 test.example.com
 `
@@ -109,92 +111,113 @@ func TestNewHostFileResolver(t *testing.T) {
 	}
 }
 
-func TestHostFileResolver_ParseHostFile(t *testing.T) {
+func TestHostFileResolver_LoadAndParseHostFiles(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
 	tests := []struct {
 		name                string
-		hostFileContent     string
-		expectedHostnameIPs map[string]string
-		expectedIPHostnames map[string]string
+		hostFileContent     []string
+		expectedHostnameIPs map[string][]string
+		expectedIPHostnames map[string][]string
 	}{
 		{
 			name:            "Simple valid hostfile",
-			hostFileContent: validHostFileContent,
-			expectedHostnameIPs: map[string]string{
-				"localhost":     "127.0.0.1",
-				"example.com":   "192.168.1.10",
-				"test.local":    "192.168.1.10",
-				"ip6-localhost": "::1",
-				"ip6-loopback":  "::1",
+			hostFileContent: []string{validHostFileContent},
+			expectedHostnameIPs: map[string][]string{
+				"localhost":     {"127.0.0.1"},
+				"example.com":   {"192.168.1.10"},
+				"test.local":    {"192.168.1.10"},
+				"example2.com":  {"192.168.1.11"},
+				"ip6-localhost": {"::1"},
+				"ip6-loopback":  {"::1"},
 			},
-			expectedIPHostnames: map[string]string{
-				"127.0.0.1":    "localhost",
-				"192.168.1.10": "test.local", // Last hostname of this IP
-				"::1":          "ip6-loopback",
+			expectedIPHostnames: map[string][]string{
+				"127.0.0.1":    {"localhost"},
+				"192.168.1.10": {"example.com", "test.local"},
+				"192.168.1.11": {"example2.com"},
+				"::1":          {"ip6-localhost", "ip6-loopback"},
+			},
+		},
+		{
+			name:            "Multiple hostfiles removing duplicates",
+			hostFileContent: []string{validHostFileContent, validHostFileContent2},
+			expectedHostnameIPs: map[string][]string{
+				"localhost":           {"127.0.0.1"},
+				"example.com":         {"192.168.1.10"},
+				"test.local":          {"192.168.1.10"},
+				"example2.com":        {"192.168.1.11", "192.168.1.10"},
+				"ip6-localhost":       {"::1"},
+				"ip6-loopback":        {"::1"},
+				"another.example.com": {"192.168.1.20"},
+				"test.example.com":    {"192.168.1.30"},
+			},
+			expectedIPHostnames: map[string][]string{
+				"127.0.0.1":    {"localhost"},
+				"192.168.1.10": {"example.com", "test.local", "example2.com"},
+				"192.168.1.11": {"example2.com"},
+				"192.168.1.20": {"another.example.com"},
+				"192.168.1.30": {"test.example.com"},
+				"::1":          {"ip6-localhost", "ip6-loopback"},
 			},
 		},
 		{
 			name:            "Hostfile with comments and empty lines",
-			hostFileContent: hostFileWithCommentsAndEmptyLines,
-			expectedHostnameIPs: map[string]string{
-				"commented.example.com": "192.168.1.20",
-				"localhost":             "127.0.0.1",
+			hostFileContent: []string{hostFileWithCommentsAndEmptyLines},
+			expectedHostnameIPs: map[string][]string{
+				"localhost":             {"127.0.0.1"},
+				"commented.example.com": {"192.168.1.20"},
 			},
-			expectedIPHostnames: map[string]string{
-				"127.0.0.1":    "localhost",
-				"192.168.1.20": "commented.example.com",
+			expectedIPHostnames: map[string][]string{
+				"127.0.0.1":    {"localhost"},
+				"192.168.1.20": {"commented.example.com"},
 			},
 		},
 		{
 			name:            "Hostfile with invalid entries",
-			hostFileContent: hostFileWithInvalidEntries,
-			expectedHostnameIPs: map[string]string{
-				"valid.example.com": "192.168.1.30",
+			hostFileContent: []string{hostFileWithInvalidEntries},
+			expectedHostnameIPs: map[string][]string{
+				"valid.example.com": {"192.168.1.30"},
 			},
-			expectedIPHostnames: map[string]string{
-				"192.168.1.30": "valid.example.com",
+			expectedIPHostnames: map[string][]string{
+				"192.168.1.30": {"valid.example.com"},
 			},
 		},
 		{
 			name:                "Empty hostfile",
-			hostFileContent:     "",
-			expectedHostnameIPs: map[string]string{},
-			expectedIPHostnames: map[string]string{},
+			hostFileContent:     []string{""},
+			expectedHostnameIPs: map[string][]string{},
+			expectedIPHostnames: map[string][]string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tempHostFile := testutil.CreateTempHostFile(t, tt.hostFileContent)
-
-			resolver := &HostFileResolver{
-				name:         "hostfiles",
-				hostnameToIP: make(map[string]string),
-				ipToHostname: make(map[string]string),
-				logger:       logger,
+			// Create host files
+			filePaths := make([]string, len(tt.hostFileContent))
+			for i, content := range tt.hostFileContent {
+				filePaths[i] = testutil.CreateTempHostFile(t, content)
 			}
 
-			err := resolver.parseHostFile(tempHostFile)
+			resolver, err := NewHostFileResolver(filePaths, logger)
 			require.NoError(t, err)
 
 			// Verify hostname to IP mappings
-			for hostname, expectedIP := range tt.expectedHostnameIPs {
-				ip, found := resolver.hostnameToIP[hostname]
+			for hostname, expectedIPs := range tt.expectedHostnameIPs {
+				ips, found := resolver.hostnameToIP[hostname]
 				assert.True(t, found, "Expected hostname %s not found", hostname)
-				assert.Equal(t, expectedIP, ip)
+				assert.ElementsMatch(t, expectedIPs, ips, "Mismatch for hostname: %s", hostname)
 			}
 
 			// Verify IP to hostname mappings
-			for ip, expectedHostname := range tt.expectedIPHostnames {
-				hostname, found := resolver.ipToHostname[ip]
+			for ip, expectedHostnames := range tt.expectedIPHostnames {
+				hostnames, found := resolver.ipToHostname[ip]
 				assert.True(t, found, "Expected IP %s not found", ip)
-				assert.Equal(t, expectedHostname, hostname)
+				assert.ElementsMatch(t, expectedHostnames, hostnames, "Mismatch for IP: %s", ip)
 			}
 
 			// Check that there are no extra entries
-			assert.Len(t, tt.expectedHostnameIPs, len(resolver.hostnameToIP))
-			assert.Len(t, tt.expectedIPHostnames, len(resolver.ipToHostname))
+			assert.Len(t, resolver.hostnameToIP, len(tt.expectedHostnameIPs))
+			assert.Len(t, resolver.ipToHostname, len(tt.expectedIPHostnames))
 		})
 	}
 }
@@ -205,75 +228,71 @@ func TestHostFileResolver_Resolve(t *testing.T) {
 
 	resolver := &HostFileResolver{
 		name: "hostfiles",
-		hostnameToIP: map[string]string{
-			"localhost":    "127.0.0.1",
-			"example.com":  "192.168.1.10",
-			"test.local":   "192.168.1.20",
-			"ipv6.example": "2001:db8::1",
+		hostnameToIP: map[string][]string{
+			"localhost":    {"127.0.0.1"},
+			"example.com":  {"192.168.1.10", "192.168.1.11"},
+			"test.local":   {"192.168.1.20"},
+			"ipv6.example": {"2001:db8::1"},
 		},
-		ipToHostname: map[string]string{
-			"127.0.0.1":    "localhost",
-			"192.168.1.10": "example.com",
-			"192.168.1.20": "test.local",
-			"2001:db8::1":  "ipv6.example",
+		ipToHostname: map[string][]string{
+			"127.0.0.1":    {"localhost"},
+			"192.168.1.10": {"example.com"},
+			"192.168.1.11": {"example.com"},
+			"192.168.1.20": {"test.local"},
+			"2001:db8::1":  {"ipv6.example"},
 		},
 		logger: logger,
 	}
 
 	tests := []struct {
-		name          string
-		hostname      string
-		expectedIP    string
-		expectError   bool
-		expectedError error
+		name        string
+		hostname    string
+		expectedIPs []string
+		expectError bool
+		expectedErr error
 	}{
 		{
 			name:        "Valid hostname lookup",
 			hostname:    "example.com",
-			expectedIP:  "192.168.1.10",
-			expectError: false,
+			expectedIPs: []string{"192.168.1.10", "192.168.1.11"},
 		},
 		{
 			name:        "Valid localhost lookup",
 			hostname:    "localhost",
-			expectedIP:  "127.0.0.1",
-			expectError: false,
+			expectedIPs: []string{"127.0.0.1"},
 		},
 		{
 			name:        "Valid IPv6 hostname lookup",
 			hostname:    "ipv6.example",
-			expectedIP:  "2001:db8::1",
-			expectError: false,
+			expectedIPs: []string{"2001:db8::1"},
 		},
 		{
-			name:          "Non-existent hostname",
-			hostname:      "nonexistent.com",
-			expectedIP:    "",
-			expectError:   true,
-			expectedError: ErrNotInHostFiles,
+			name:        "Non-existent hostname",
+			hostname:    "nonexistent.com",
+			expectError: true,
+			expectedErr: ErrNotInHostFiles,
 		},
 		{
-			name:          "Empty hostname",
-			hostname:      "",
-			expectedIP:    "",
-			expectError:   true,
-			expectedError: ErrNotInHostFiles,
+			name:        "Empty hostname",
+			hostname:    "",
+			expectError: true,
+			expectedErr: ErrNotInHostFiles,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ip, err := resolver.Resolve(ctx, tt.hostname)
+			ips, err := resolver.Resolve(ctx, tt.hostname)
 
 			if tt.expectError {
 				assert.Error(t, err)
-				if tt.expectedError != nil {
-					assert.ErrorIs(t, err, tt.expectedError)
+				if tt.expectedErr != nil {
+					assert.ErrorIs(t, err, tt.expectedErr)
 				}
-				assert.Empty(t, ip)
+				assert.Empty(t, ips)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedIP, ip)
+				assert.ElementsMatch(t, tt.expectedIPs, ips)
 			}
 		})
 	}
@@ -283,78 +302,73 @@ func TestHostFileResolver_Reverse(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	ctx := context.Background()
 
-	// Create test resolver with predefined mappings
 	resolver := &HostFileResolver{
 		name: "hostfiles",
-		hostnameToIP: map[string]string{
-			"localhost":    "127.0.0.1",
-			"example.com":  "192.168.1.10",
-			"test.local":   "192.168.1.20",
-			"ipv6.example": "2001:db8::1",
+		hostnameToIP: map[string][]string{
+			"localhost":    {"127.0.0.1"},
+			"example.com":  {"192.168.1.10"},
+			"example2.com": {"192.168.1.10"},
+			"test.local":   {"192.168.1.20"},
+			"ipv6.example": {"2001:db8::1"},
 		},
-		ipToHostname: map[string]string{
-			"127.0.0.1":    "localhost",
-			"192.168.1.10": "example.com",
-			"192.168.1.20": "test.local",
-			"2001:db8::1":  "ipv6.example",
+		ipToHostname: map[string][]string{
+			"127.0.0.1":    {"localhost"},
+			"192.168.1.10": {"example.com", "example2.com"},
+			"192.168.1.20": {"test.local"},
+			"2001:db8::1":  {"ipv6.example"},
 		},
 		logger: logger,
 	}
 
 	tests := []struct {
-		name             string
-		ip               string
-		expectedHostname string
-		expectError      bool
-		expectedError    error
+		name              string
+		ip                string
+		expectedHostnames []string
+		expectError       bool
+		expectedErr       error
 	}{
 		{
-			name:             "Valid IPv4 lookup",
-			ip:               "192.168.1.10",
-			expectedHostname: "example.com",
-			expectError:      false,
+			name:              "Valid IPv4 lookup",
+			ip:                "192.168.1.10",
+			expectedHostnames: []string{"example.com", "example2.com"},
 		},
 		{
-			name:             "Valid localhost lookup",
-			ip:               "127.0.0.1",
-			expectedHostname: "localhost",
-			expectError:      false,
+			name:              "Valid localhost lookup",
+			ip:                "127.0.0.1",
+			expectedHostnames: []string{"localhost"},
 		},
 		{
-			name:             "Valid IPv6 lookup",
-			ip:               "2001:db8::1",
-			expectedHostname: "ipv6.example",
-			expectError:      false,
+			name:              "Valid IPv6 lookup",
+			ip:                "2001:db8::1",
+			expectedHostnames: []string{"ipv6.example"},
 		},
 		{
-			name:             "Non-existent IP",
-			ip:               "192.168.1.100",
-			expectedHostname: "",
-			expectError:      true,
-			expectedError:    ErrNotInHostFiles,
+			name:        "Non-existent IP",
+			ip:          "192.168.1.100",
+			expectError: true,
+			expectedErr: ErrNotInHostFiles,
 		},
 		{
-			name:             "Empty IP",
-			ip:               "",
-			expectedHostname: "",
-			expectError:      true,
-			expectedError:    ErrNotInHostFiles,
+			name:        "Empty IP",
+			ip:          "",
+			expectError: true,
+			expectedErr: ErrNotInHostFiles,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hostname, err := resolver.Reverse(ctx, tt.ip)
+			hostnames, err := resolver.Reverse(ctx, tt.ip)
 
 			if tt.expectError {
 				assert.Error(t, err)
-				if tt.expectedError != nil {
-					assert.ErrorIs(t, err, tt.expectedError)
+				if tt.expectedErr != nil {
+					assert.ErrorIs(t, err, tt.expectedErr)
 				}
-				assert.Empty(t, hostname)
+				assert.Empty(t, hostnames)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedHostname, hostname)
+				assert.ElementsMatch(t, tt.expectedHostnames, hostnames)
 			}
 		})
 	}

@@ -27,17 +27,17 @@ func NewChainResolver(resolvers []Resolver, logger *zap.Logger) *ChainResolver {
 }
 
 // Resolve runs resolvers in sequence.
-// Returns the first successful resolution or an error if all resolvers fail
-func (c *ChainResolver) Resolve(ctx context.Context, hostname string) (string, error) {
-	return c.resolveInSequence(LogKeyHostname, hostname, func(r Resolver) (string, error) {
+// Returns successful resolutions or an error if all resolvers fail
+func (c *ChainResolver) Resolve(ctx context.Context, hostname string) ([]string, error) {
+	return c.resolveInSequence(LogKeyHostname, hostname, func(r Resolver) ([]string, error) {
 		return r.Resolve(ctx, hostname)
 	})
 }
 
 // Reverse runs resolvers in sequence.
-// Returns the first successful resolution or an error if all resolvers fail
-func (c *ChainResolver) Reverse(ctx context.Context, ip string) (string, error) {
-	return c.resolveInSequence(LogKeyIP, ip, func(r Resolver) (string, error) {
+// Returns successful resolutions or an error if all resolvers fail
+func (c *ChainResolver) Reverse(ctx context.Context, ip string) ([]string, error) {
+	return c.resolveInSequence(LogKeyIP, ip, func(r Resolver) ([]string, error) {
 		return r.Reverse(ctx, ip)
 	})
 }
@@ -58,9 +58,9 @@ func (c *ChainResolver) Close() error {
 }
 
 // resolveInSequence attempts to resolve the given hostname/IP using the chain of resolvers.
-// It returns the first successful IP/hostname. No resolution is considered a success.
+// It returns successful IP/hostname. No resolution is considered a valid resolution that no need to continue the chain.
 // It returns the last error of the last resolver if all retries failed.
-func (c *ChainResolver) resolveInSequence(logKey string, target string, resolverFn func(resolver Resolver) (string, error)) (string, error) {
+func (c *ChainResolver) resolveInSequence(logKey string, target string, resolverFn func(resolver Resolver) ([]string, error)) ([]string, error) {
 	var lastErr error
 
 	for _, r := range c.resolvers {
@@ -70,18 +70,18 @@ func (c *ChainResolver) resolveInSequence(logKey string, target string, resolver
 		if err == nil {
 			c.logger.Debug(fmt.Sprintf("DNS lookup from %s", r.Name()),
 				zap.String(logKey, target),
-				zap.String(Flip(logKey), result))
+				zap.Strings(Flip(logKey), result))
 
 			return result, nil
 		}
 
 		// NS returns No Resolution
 		if errors.Is(err, ErrNoResolution) {
-			return "", err
+			return nil, err
 		}
 
 		lastErr = err
 	}
 
-	return "", lastErr
+	return nil, lastErr
 }

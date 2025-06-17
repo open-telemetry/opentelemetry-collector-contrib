@@ -18,7 +18,7 @@ type CacheResolver struct {
 	name string
 	// nextResolver is the chain resolver to use if the cache misses
 	nextResolver Resolver
-	hitCache     *lru.ShardedLRU[string, string]
+	hitCache     *lru.ShardedLRU[string, []string]
 	missCache    *lru.ShardedLRU[string, struct{}]
 	logger       *zap.Logger
 }
@@ -44,7 +44,7 @@ func NewCacheResolver(
 
 	// Initialize hit cache
 	if hitCacheSize > 0 {
-		r.hitCache, _ = lru.NewSharded[string, string](uint32(hitCacheSize), stringHashFn)
+		r.hitCache, _ = lru.NewSharded[string, []string](uint32(hitCacheSize), stringHashFn)
 		r.hitCache.SetLifetime(hitCacheTTL)
 		r.logger.Debug("Initialized hit cache",
 			zap.Int("size", hitCacheSize),
@@ -68,12 +68,12 @@ func NewCacheResolver(
 }
 
 // Resolve performs a forward DNS lookup (hostname to IP) using the cache and the underlying chain resolver
-func (r *CacheResolver) Resolve(ctx context.Context, hostname string) (string, error) {
+func (r *CacheResolver) Resolve(ctx context.Context, hostname string) ([]string, error) {
 	return r.resolveWithCache(ctx, hostname, LogKeyHostname, r.nextResolver.Resolve)
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the cache and the underlying chain resolver
-func (r *CacheResolver) Reverse(ctx context.Context, ip string) (string, error) {
+func (r *CacheResolver) Reverse(ctx context.Context, ip string) ([]string, error) {
 	return r.resolveWithCache(ctx, ip, LogKeyIP, r.nextResolver.Reverse)
 }
 
@@ -103,13 +103,13 @@ func (r *CacheResolver) resolveWithCache(
 	ctx context.Context,
 	target string,
 	logKey string,
-	resolveFunc func(ctx context.Context, target string) (string, error),
-) (string, error) {
+	resolveFunc func(ctx context.Context, target string) ([]string, error),
+) ([]string, error) {
 	if r.missCache != nil {
 		if _, found := r.missCache.Get(target); found {
 			r.logger.Debug("DNS lookup from miss cache",
 				zap.String(logKey, target))
-			return "", nil
+			return nil, nil
 		}
 	}
 
@@ -117,7 +117,7 @@ func (r *CacheResolver) resolveWithCache(
 		if result, found := r.hitCache.Get(target); found {
 			r.logger.Debug("DNS lookup from hit cache",
 				zap.String(logKey, target),
-				zap.String(Flip(logKey), result))
+				zap.Strings(Flip(logKey), result))
 			return result, nil
 		}
 	}
@@ -136,18 +136,18 @@ func (r *CacheResolver) resolveWithCache(
 				zap.String(logKey, target),
 				zap.Error(err))
 		}
-		return "", nil
+		return nil, nil
 	case err == nil: // Successful resolution
 		if r.hitCache != nil {
 			r.hitCache.Add(target, result)
 
 			r.logger.Debug("Add hit cache",
 				zap.String(logKey, target),
-				zap.String(Flip(logKey), result))
+				zap.Strings(Flip(logKey), result))
 		}
 		return result, nil
 	default: // retryable errors eg. timeout
-		return "", err
+		return nil, err
 	}
 }
 

@@ -95,43 +95,47 @@ func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger
 // Resolve performs a forward DNS lookup (hostname to IP) using the configured nameservers.
 // It returns the first IPv4 address found.
 // If no IPv4 address is found, it returns the first IP address found.
-func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (string, error) {
-	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver Lookup, fnCtx context.Context) (string, error) {
+func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) ([]string, error) {
+	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver Lookup, fnCtx context.Context) ([]string, error) {
 		ips, err := resolver.LookupIP(fnCtx, "ip", hostname)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if len(ips) == 0 {
-			return "", ErrNoResolution
+			return nil, ErrNoResolution
 		}
 
-		// Find first IPv4 address if available
-		for _, ip := range ips {
-			if ipv4 := ip.To4(); ipv4 != nil {
-				return ipv4.String(), nil
-			}
+		// convert result to string
+		ipStrings := make([]string, len(ips))
+		for i, ip := range ips {
+			ipStrings[i] = ip.String()
 		}
 
-		// If no IPv4, return the first IP
-		return ips[0].String(), nil
+		return ipStrings, nil
 	})
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the configured nameservers.
 // It returns the first hostname found.
-func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, error) {
-	return r.lookupWithNameservers(ctx, ip, LogKeyIP, func(resolver Lookup, fnCtx context.Context) (string, error) {
+func (r *NameserverResolver) Reverse(ctx context.Context, ip string) ([]string, error) {
+	return r.lookupWithNameservers(ctx, ip, LogKeyIP, func(resolver Lookup, fnCtx context.Context) ([]string, error) {
 		hostnames, err := resolver.LookupAddr(fnCtx, ip)
 		if err != nil && hostnames == nil {
-			return "", err
+			return nil, err
 		}
 
 		// hostname(s) was found but was filtered because of malformed DNS records
 		if len(hostnames) == 0 {
-			return "", ErrNoResolution
+			return nil, ErrNoResolution
 		}
 
-		return NormalizeHostname(hostnames[0]), nil
+		// normalize result
+		nHostnames := make([]string, len(hostnames))
+		for i, hostname := range hostnames {
+			nHostnames[i] = NormalizeHostname(hostname)
+		}
+
+		return nHostnames, nil
 	})
 }
 
@@ -156,7 +160,7 @@ func newExponentialBackOff() *backoff.ExponentialBackOff {
 }
 
 // lookupWithNameservers attempts a DNS lookup using all configured nameservers.
-// The lookupFn is a function that performs the actual DNS lookup using the NetResolver.
+// The lookupFn is a function that performs the actual DNS lookup.
 // It retries the lookup with exponential backoff on retryable failures, e.g., timeout and network temporary errors.
 // No resolution is a valid result that no need to retry.
 // If all nameservers fail, the last error is returned.
@@ -164,15 +168,15 @@ func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
 	target string,
 	_ string,
-	lookupFn func(resolver Lookup, fnCtx context.Context) (string, error),
-) (string, error) {
+	lookupFn func(resolver Lookup, fnCtx context.Context) ([]string, error),
+) ([]string, error) {
 	var lastErr error
 
 	for i, resolver := range r.resolvers {
 		expBackOff := newExponentialBackOff()
 
 		for attempt := 0; attempt <= r.maxRetries; attempt++ {
-			result, err := func() (string, error) {
+			result, err := func() ([]string, error) {
 				lookupCtx, cancel := context.WithTimeout(ctx, r.timeout)
 				defer cancel()
 				return lookupFn(resolver, lookupCtx)
@@ -185,17 +189,17 @@ func (r *NameserverResolver) lookupWithNameservers(
 
 			// No resolution is a valid result
 			if errors.Is(err, ErrNoResolution) {
-				return "", err
+				return nil, err
 			}
 
 			lastErr = err
 
 			// The hostname was not found (NXDOMAIN), we can skip retrying
 			if dnsErr := new(net.DNSError); errors.As(err, &dnsErr) && dnsErr.IsNotFound {
-				return "", ErrNoResolution
+				return nil, ErrNoResolution
 			}
 
-			// If the error is non retryable error, skip retrying and move to the next nameserver
+			// Encounter non retryable error, skip retrying and move to the next nameserver
 			if opErr := new(net.OpError); errors.As(err, &opErr) {
 				if !opErr.Temporary() && !opErr.Timeout() {
 					lastErr = ErrNSPermanentFailure
@@ -223,12 +227,12 @@ func (r *NameserverResolver) lookupWithNameservers(
 					r.logger.Warn("Context cancelled during lookup retry",
 						zap.String("lookup", target),
 						zap.Error(ctx.Err()))
-					return "", ctx.Err()
+					return nil, ctx.Err()
 				}
 			}
 		}
 	}
-	return "", lastErr
+	return nil, lastErr
 }
 
 // validateAndFormatNameservers ensures all nameserver addresses have ports and are valid.

@@ -51,7 +51,7 @@ func TestNewChainResolver(t *testing.T) {
 	}
 }
 
-func TestChainResolver_Resolve(t *testing.T) {
+func TestChainResolver_resolveInSequence(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	ctx := context.Background()
 
@@ -59,7 +59,7 @@ func TestChainResolver_Resolve(t *testing.T) {
 		name           string
 		hostname       string
 		setupResolvers func() []Resolver
-		expectedIP     string
+		expectedIPs    []string
 		expectError    bool
 		expectedError  error
 	}{
@@ -69,14 +69,14 @@ func TestChainResolver_Resolve(t *testing.T) {
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
 				r1.On("Name").Return("mock1")
-				r1.On("Resolve", ctx, "example.com").Return("192.168.1.10", nil)
+				r1.On("Resolve", ctx, "example.com").Return([]string{"192.168.1.10"}, nil)
 
 				// Second resolver should not be called
 				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
-			expectedIP:  "192.168.1.10",
+			expectedIPs: []string{"192.168.1.10"},
 			expectError: false,
 		},
 		{
@@ -84,15 +84,15 @@ func TestChainResolver_Resolve(t *testing.T) {
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Resolve", ctx, "example.com").Return("", errors.New("first resolver error"))
+				r1.On("Resolve", ctx, "example.com").Return(nil, errors.New("first resolver error"))
 
 				r2 := new(testutil.MockResolver)
 				r2.On("Name").Return("mock2")
-				r2.On("Resolve", ctx, "example.com").Return("192.168.1.20", nil)
+				r2.On("Resolve", ctx, "example.com").Return([]string{"192.168.1.20"}, nil)
 
 				return []Resolver{r1, r2}
 			},
-			expectedIP:  "192.168.1.20",
+			expectedIPs: []string{"192.168.1.20"},
 			expectError: false,
 		},
 		{
@@ -100,7 +100,7 @@ func TestChainResolver_Resolve(t *testing.T) {
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Resolve", ctx, "example.com").Return("", ErrNoResolution)
+				r1.On("Resolve", ctx, "example.com").Return(nil, ErrNoResolution)
 
 				// ErrNoResolution is a valid result that no need to try next resolver
 				// Second resolver should not be called
@@ -108,23 +108,23 @@ func TestChainResolver_Resolve(t *testing.T) {
 
 				return []Resolver{r1, r2}
 			},
-			expectedIP:    "",
+			expectedIPs:   nil,
 			expectError:   true,
-			expectedError: errors.New("no resolution found"),
+			expectedError: ErrNoResolution,
 		},
 		{
-			name:     "All resolvers fail",
+			name:     "All resolvers fail, populate last error",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Resolve", ctx, "example.com").Return("", errors.New("first resolver error"))
+				r1.On("Resolve", ctx, "example.com").Return(nil, errors.New("first resolver error"))
 
 				r2 := new(testutil.MockResolver)
-				r2.On("Resolve", ctx, "example.com").Return("", errors.New("second resolver error"))
+				r2.On("Resolve", ctx, "example.com").Return(nil, errors.New("second resolver error"))
 
 				return []Resolver{r1, r2}
 			},
-			expectedIP:    "",
+			expectedIPs:   nil,
 			expectError:   true,
 			expectedError: errors.New("second resolver error"),
 		},
@@ -133,16 +133,16 @@ func TestChainResolver_Resolve(t *testing.T) {
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Resolve", ctx, "example.com").Return("", ErrNotInHostFiles)
+				r1.On("Resolve", ctx, "example.com").Return(nil, ErrNotInHostFiles)
 
 				// Second resolver should be called
 				r2 := new(testutil.MockResolver)
 				r2.On("Name").Return("mock2")
-				r2.On("Resolve", ctx, "example.com").Return("192.168.1.20", nil)
+				r2.On("Resolve", ctx, "example.com").Return([]string{"192.168.1.20"}, nil)
 
 				return []Resolver{r1, r2}
 			},
-			expectedIP:  "192.168.1.20",
+			expectedIPs: []string{"192.168.1.20"},
 			expectError: false,
 		},
 	}
@@ -152,7 +152,7 @@ func TestChainResolver_Resolve(t *testing.T) {
 			resolvers := tt.setupResolvers()
 			chainResolver := NewChainResolver(resolvers, logger)
 
-			ip, err := chainResolver.Resolve(ctx, tt.hostname)
+			ips, err := chainResolver.Resolve(ctx, tt.hostname)
 
 			// Verify resolver mock expectations
 			for _, r := range resolvers {
@@ -164,132 +164,10 @@ func TestChainResolver_Resolve(t *testing.T) {
 
 			if tt.expectError {
 				assert.Equal(t, tt.expectedError, err)
-				assert.Empty(t, ip)
+				assert.Empty(t, ips)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedIP, ip)
-			}
-		})
-	}
-}
-
-func TestChainResolver_Reverse(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	ctx := context.Background()
-
-	tests := []struct {
-		name             string
-		ip               string
-		setupResolvers   func() []Resolver
-		expectedHostname string
-		expectError      bool
-		expectedError    error
-	}{
-		{
-			name: "First resolver succeeds",
-			ip:   "192.168.1.10",
-			setupResolvers: func() []Resolver {
-				r1 := new(testutil.MockResolver)
-				r1.On("Name").Return("mock1")
-				r1.On("Reverse", ctx, "192.168.1.10").Return("example.com", nil)
-
-				// Second resolver should not be called
-				r2 := new(testutil.MockResolver)
-
-				return []Resolver{r1, r2}
-			},
-			expectedHostname: "example.com",
-			expectError:      false,
-		},
-		{
-			name: "First resolver fails with an error, second succeeds",
-			ip:   "192.168.1.10",
-			setupResolvers: func() []Resolver {
-				r1 := new(testutil.MockResolver)
-				r1.On("Reverse", ctx, "192.168.1.10").Return("", errors.New("first resolver error"))
-
-				r2 := new(testutil.MockResolver)
-				r2.On("Name").Return("mock2")
-				r2.On("Reverse", ctx, "192.168.1.10").Return("example.com", nil)
-
-				return []Resolver{r1, r2}
-			},
-			expectedHostname: "example.com",
-			expectError:      false,
-		},
-		{
-			name: "First resolver returns ErrNoResolution, chain stops",
-			ip:   "192.168.1.10",
-			setupResolvers: func() []Resolver {
-				r1 := new(testutil.MockResolver)
-				r1.On("Reverse", ctx, "192.168.1.10").Return("", ErrNoResolution)
-
-				// ErrNoResolution is a valid result that no need to try next resolver
-				// Second resolver should not be called
-				r2 := new(testutil.MockResolver)
-
-				return []Resolver{r1, r2}
-			},
-			expectedHostname: "",
-			expectError:      true,
-			expectedError:    errors.New("no resolution found"),
-		},
-		{
-			name: "All resolvers fail",
-			ip:   "192.168.1.10",
-			setupResolvers: func() []Resolver {
-				r1 := new(testutil.MockResolver)
-				r1.On("Reverse", ctx, "192.168.1.10").Return("", errors.New("first resolver error"))
-
-				r2 := new(testutil.MockResolver)
-				r2.On("Reverse", ctx, "192.168.1.10").Return("", errors.New("second resolver error"))
-
-				return []Resolver{r1, r2}
-			},
-			expectedHostname: "",
-			expectError:      true,
-			expectedError:    errors.New("second resolver error"),
-		},
-		{
-			name: "ErrNotInHostFiles should try the next resolver",
-			ip:   "192.168.1.10",
-			setupResolvers: func() []Resolver {
-				r1 := new(testutil.MockResolver)
-				r1.On("Reverse", ctx, "192.168.1.10").Return("", ErrNotInHostFiles)
-
-				// Second resolver should be called since
-				r2 := new(testutil.MockResolver)
-				r2.On("Name").Return("mock2")
-				r2.On("Reverse", ctx, "192.168.1.10").Return("example.com", nil)
-
-				return []Resolver{r1, r2}
-			},
-			expectedHostname: "example.com",
-			expectError:      false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resolvers := tt.setupResolvers()
-			chainResolver := NewChainResolver(resolvers, logger)
-
-			hostname, err := chainResolver.Reverse(ctx, tt.ip)
-
-			// Verify resolver mock expectations
-			for _, r := range resolvers {
-				mockResolver, ok := r.(*testutil.MockResolver)
-				if ok {
-					mockResolver.AssertExpectations(t)
-				}
-			}
-
-			if tt.expectError {
-				assert.Equal(t, tt.expectedError, err)
-				assert.Empty(t, hostname)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedHostname, hostname)
+				assert.ElementsMatch(t, tt.expectedIPs, ips)
 			}
 		})
 	}

@@ -20,12 +20,13 @@ var ErrInvalidHostFilePath = errors.New("host file does not exist")
 // HostFileResolver uses host files for DNS resolution
 type HostFileResolver struct {
 	name         string
-	hostnameToIP map[string]string // For forward lookups
-	ipToHostname map[string]string // For reverse lookups
+	hostnameToIP map[string][]string // For forward lookups
+	ipToHostname map[string][]string // For reverse lookups
 	logger       *zap.Logger
 }
 
-// NewHostFileResolver creates a new HostFileResolver with the provided host file paths
+// NewHostFileResolver creates a new HostFileResolver with the provided host file paths.
+// The entries of later hostfiles are appended to the mapping.
 func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileResolver, error) {
 	if len(hostFilePaths) == 0 {
 		return nil, ErrInvalidHostFilePath
@@ -33,8 +34,8 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 
 	r := &HostFileResolver{
 		name:         "hostfiles",
-		ipToHostname: make(map[string]string),
-		hostnameToIP: make(map[string]string),
+		ipToHostname: make(map[string][]string),
+		hostnameToIP: make(map[string][]string),
 		logger:       logger,
 	}
 
@@ -44,6 +45,8 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 			return nil, err
 		}
 	}
+	deduplicateMapping(r.ipToHostname)
+	deduplicateMapping(r.hostnameToIP)
 
 	r.logger.Info("Number of records in hostfiles",
 		zap.Int("IPs", len(r.ipToHostname)),
@@ -113,8 +116,8 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 					zap.String("hostname", normalizedHostname))
 				continue
 			}
-			r.hostnameToIP[normalizedHostname] = ip
-			r.ipToHostname[ip] = normalizedHostname
+			r.hostnameToIP[normalizedHostname] = append(r.hostnameToIP[normalizedHostname], ip)
+			r.ipToHostname[ip] = append(r.ipToHostname[ip], normalizedHostname)
 		}
 	}
 
@@ -129,21 +132,21 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 }
 
 // Resolve performs a forward DNS lookup (hostname to IP) using the loaded host files
-func (r *HostFileResolver) Resolve(_ context.Context, hostname string) (string, error) {
-	if ip, found := r.hostnameToIP[hostname]; found {
-		return ip, nil
+func (r *HostFileResolver) Resolve(_ context.Context, hostname string) ([]string, error) {
+	if ips, found := r.hostnameToIP[hostname]; found {
+		return ips, nil
 	}
 
-	return "", ErrNotInHostFiles
+	return nil, ErrNotInHostFiles
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the loaded host files
-func (r *HostFileResolver) Reverse(_ context.Context, ip string) (string, error) {
-	if hostname, found := r.ipToHostname[ip]; found {
-		return hostname, nil
+func (r *HostFileResolver) Reverse(_ context.Context, ip string) ([]string, error) {
+	if hostnames, found := r.ipToHostname[ip]; found {
+		return hostnames, nil
 	}
 
-	return "", ErrNotInHostFiles
+	return nil, ErrNotInHostFiles
 }
 
 func (r *HostFileResolver) Name() string {
@@ -154,4 +157,24 @@ func (r *HostFileResolver) Close() error {
 	r.hostnameToIP = nil
 	r.ipToHostname = nil
 	return nil
+}
+
+func deduplicateMapping(mapping map[string][]string) {
+	for key, vals := range mapping {
+		mapping[key] = deduplicateStrings(vals)
+	}
+}
+
+// deduplicateStrings removes duplicate strings from a slice while preserving order.
+func deduplicateStrings(input []string) []string {
+	seen := make(map[string]struct{})
+	var result []string
+
+	for _, val := range input {
+		if _, exists := seen[val]; !exists {
+			seen[val] = struct{}{}
+			result = append(result, val)
+		}
+	}
+	return result
 }
