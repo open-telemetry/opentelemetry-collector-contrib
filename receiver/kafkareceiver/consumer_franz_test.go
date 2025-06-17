@@ -241,6 +241,5 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		require.EqualError(t, c.Shutdown(context.Background()),
 			"kafka consumer: consumer isn't running")
-
 	}
 }
