@@ -315,6 +315,12 @@ func (c *franzConsumer) Shutdown(ctx context.Context) error {
 func (c *franzConsumer) triggerShutdown() bool {
 	c.mu.Lock()
 	select {
+	case <-c.started:
+	default: // Return immediately if the receiver hasn't started.
+		c.mu.Unlock()
+		return false
+	}
+	select {
 	case <-c.closing:
 		c.mu.Unlock()
 		return true
@@ -325,11 +331,6 @@ func (c *franzConsumer) triggerShutdown() bool {
 		// Shutdown will deadlock when `franzConsumer` inevitably calls the
 		// lost/assigned callback.
 		c.client.Close()
-	}
-	select {
-	case <-c.started:
-	default: // Return immediately if the receiver hasn't started.
-		return false
 	}
 	return true
 }

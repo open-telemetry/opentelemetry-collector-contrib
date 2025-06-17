@@ -229,3 +229,18 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		})
 	}
 }
+
+func TestConsumerShutdownNotStarted(t *testing.T) {
+	setFranzGo(t, true)
+
+	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+	settings, _, _ := mustNewSettings(t)
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil)
+	require.NoError(t, err)
+
+	for i := 0; i < 2; i++ {
+		require.EqualError(t, c.Shutdown(context.Background()),
+			"kafka consumer: consumer isn't running")
+
+	}
+}
