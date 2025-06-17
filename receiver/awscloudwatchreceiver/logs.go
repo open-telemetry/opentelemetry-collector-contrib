@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -186,20 +187,56 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 			return
 		case <-t.C:
 			if l.autodiscover != nil {
-				group, err := l.discoverGroups(ctx, l.autodiscover)
+				groups, err := l.discoverGroups(ctx, l.autodiscover)
 				if err != nil {
 					l.settings.Logger.Error("unable to perform discovery of log groups", zap.Error(err))
 					continue
 				}
-				l.groupRequests = group
+				l.updateGroupRequests(groups)
 			}
-
 			err := l.poll(ctx)
 			if err != nil {
 				l.settings.Logger.Error("there was an error during the poll", zap.Error(err))
 			}
 		}
 	}
+}
+
+func (l *logsReceiver) updateGroupRequests(groups []groupRequest) {
+	// Log CloudWatch log groups changes
+	gCurr := 0
+	gNew := 0
+
+	for gCurr < len(l.groupRequests) && gNew < len(groups) {
+		switch {
+		case l.groupRequests[gCurr].groupName() == groups[gNew].groupName():
+			gCurr++
+			gNew++
+		case l.groupRequests[gCurr].groupName() < groups[gNew].groupName():
+			l.settings.Logger.Warn("log group no longer exists",
+				zap.String("groupName", l.groupRequests[gCurr].groupName()))
+			gCurr++
+		case l.groupRequests[gCurr].groupName() > groups[gNew].groupName():
+			l.settings.Logger.Info("new log group found",
+				zap.String("groupName", groups[gNew].groupName()))
+			gNew++
+		}
+	}
+
+	// Log remaining log groups
+	for gCurr < len(l.groupRequests) {
+		l.settings.Logger.Warn("log group no longer exists",
+			zap.String("groupName", l.groupRequests[gCurr].groupName()))
+		gCurr++
+	}
+
+	for gNew < len(groups) {
+		l.settings.Logger.Info("new log group found",
+			zap.String("groupName", groups[gNew].groupName()))
+		gNew++
+	}
+
+	l.groupRequests = groups
 }
 
 func (l *logsReceiver) poll(ctx context.Context) error {
@@ -280,6 +317,14 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 				l.settings.Logger.Error("unable to retrieve logs from cloudatch",
 					zap.String("logGroup", logGroup),
 					zap.Error(err))
+
+				var nf *types.ResourceNotFoundException
+				if errors.As(err, &nf) {
+					l.settings.Logger.Error("log group was deleted while messages were being requested",
+						zap.String("logGroup", logGroup),
+						zap.Error(err))
+					return err
+				}
 				break
 			}
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
