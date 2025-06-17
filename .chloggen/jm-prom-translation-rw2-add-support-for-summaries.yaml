@@ -24,4 +24,4 @@ subtext: The translation layer for Prometheus remote write 2 now supports summar
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user, api]
+change_logs: []
