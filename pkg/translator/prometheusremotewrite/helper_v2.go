@@ -9,6 +9,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/value"
+	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -84,6 +85,17 @@ func (c *prometheusConverterV2) createSampleWithStaleNaN(sampleValue float64, ti
 	return sample
 }
 
+// addSampleWithLabels is a helper function to create and add a sample with labels
+func (c *prometheusConverterV2) addSampleWithLabels(value float64, timestamp int64, noRecordedValue bool,
+	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata) {
+	sample := c.createSampleWithStaleNaN(value, timestamp, noRecordedValue)
+	if labelName != "" && labelValue != "" {
+		c.addSample(sample, createLabels(baseName, baseLabels, labelName, labelValue), metadata)
+	} else {
+		c.addSample(sample, createLabels(baseName, baseLabels), metadata)
+	}
+}
+
 func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
 	settings Settings, baseName string, metadata metadata,
 ) {
@@ -93,23 +105,15 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
 		noRecordedValue := pt.Flags().NoRecordedValue()
 
-		// treat sum as a sample in an individual TimeSeries
-		sum := c.createSampleWithStaleNaN(pt.Sum(), timestamp, noRecordedValue)
-		sumlabels := createLabels(baseName+sumStr, baseLabels)
-		c.addSample(sum, sumlabels, metadata)
+		// Add sum and count samples
+		c.addSampleWithLabels(pt.Sum(), timestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
 
-		// treat count as a sample in an individual TimeSeries
-		count := c.createSampleWithStaleNaN(float64(pt.Count()), timestamp, noRecordedValue)
-		countlabels := createLabels(baseName+countStr, baseLabels)
-		c.addSample(count, countlabels, metadata)
-
-		// process each percentile/quantile
+		// Process quantiles
 		for i := 0; i < pt.QuantileValues().Len(); i++ {
 			qt := pt.QuantileValues().At(i)
-			quantile := c.createSampleWithStaleNaN(qt.Value(), timestamp, noRecordedValue)
 			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
-			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
-			c.addSample(quantile, qtlabels, metadata)
+			c.addSampleWithLabels(qt.Value(), timestamp, noRecordedValue, baseName, baseLabels, quantileStr, percentileStr, metadata)
 		}
 	}
 }
