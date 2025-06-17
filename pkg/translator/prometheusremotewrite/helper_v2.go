@@ -72,6 +72,18 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 	})
 }
 
+// createSampleWithStaleNaN creates a sample with the given value and timestamp, setting StaleNaN if needed
+func (c *prometheusConverterV2) createSampleWithStaleNaN(sampleValue float64, timestamp int64, noRecordedValue bool) *writev2.Sample {
+	sample := &writev2.Sample{
+		Value:     sampleValue,
+		Timestamp: timestamp,
+	}
+	if noRecordedValue {
+		sample.Value = math.Float64frombits(value.StaleNaN)
+	}
+	return sample
+}
+
 func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
 	settings Settings, baseName string, metadata metadata,
 ) {
@@ -79,40 +91,22 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// treat sum as a sample in an individual TimeSeries
-		sum := &writev2.Sample{
-			Value:     pt.Sum(),
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			sum.Value = math.Float64frombits(value.StaleNaN)
-		}
-		// sum and count of the summary should append suffix to baseName
+		sum := c.createSampleWithStaleNaN(pt.Sum(), timestamp, noRecordedValue)
 		sumlabels := createLabels(baseName+sumStr, baseLabels)
 		c.addSample(sum, sumlabels, metadata)
 
 		// treat count as a sample in an individual TimeSeries
-		count := &writev2.Sample{
-			Value:     float64(pt.Count()),
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			count.Value = math.Float64frombits(value.StaleNaN)
-		}
+		count := c.createSampleWithStaleNaN(float64(pt.Count()), timestamp, noRecordedValue)
 		countlabels := createLabels(baseName+countStr, baseLabels)
 		c.addSample(count, countlabels, metadata)
 
 		// process each percentile/quantile
 		for i := 0; i < pt.QuantileValues().Len(); i++ {
 			qt := pt.QuantileValues().At(i)
-			quantile := &writev2.Sample{
-				Value:     qt.Value(),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				quantile.Value = math.Float64frombits(value.StaleNaN)
-			}
+			quantile := c.createSampleWithStaleNaN(qt.Value(), timestamp, noRecordedValue)
 			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
 			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
 			c.addSample(quantile, qtlabels, metadata)
