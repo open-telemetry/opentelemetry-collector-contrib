@@ -120,34 +120,16 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// If the sum is unset, it indicates the _sum metric point should be
 		// omitted
 		if pt.HasSum() {
-			// treat sum as a sample in an individual TimeSeries
-			sum := &writev2.Sample{
-				Value:     pt.Sum(),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				sum.Value = math.Float64frombits(value.StaleNaN)
-			}
-
-			sumlabels := createLabels(baseName+sumStr, baseLabels)
-			c.addSample(sum, sumlabels, metadata)
+			c.addSampleWithLabels(pt.Sum(), timestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
 		}
 
 		// treat count as a sample in an individual TimeSeries
-		count := &writev2.Sample{
-			Value:     float64(pt.Count()),
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			count.Value = math.Float64frombits(value.StaleNaN)
-		}
-
-		countlabels := createLabels(baseName+countStr, baseLabels)
-		c.addSample(count, countlabels, metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
 
 		// cumulative count for conversion to cumulative histogram
 		var cumulativeCount uint64
@@ -156,28 +138,11 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
 			bound := pt.ExplicitBounds().At(i)
 			cumulativeCount += pt.BucketCounts().At(i)
-			bucket := &writev2.Sample{
-				Value:     float64(cumulativeCount),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				bucket.Value = math.Float64frombits(value.StaleNaN)
-			}
 			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
-			c.addSample(bucket, labels, metadata)
+			c.addSampleWithLabels(float64(cumulativeCount), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
 		}
 		// add le=+Inf bucket
-		infBucket := &writev2.Sample{
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			infBucket.Value = math.Float64frombits(value.StaleNaN)
-		} else {
-			infBucket.Value = float64(pt.Count())
-		}
-		infLabels := createLabels(baseName+bucketStr, baseLabels, leStr, pInfStr)
-		c.addSample(infBucket, infLabels, metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
 
 		// TODO implement exemplars support
 	}
