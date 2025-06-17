@@ -71,6 +71,19 @@ type franzConsumer struct {
 	cancelProcessing context.CancelCauseFunc
 }
 
+// pc represents the partition consumer shared information.
+type pc struct {
+	logger *zap.Logger
+	attrs  attribute.Set
+
+	ctx    context.Context
+	cancel context.CancelCauseFunc
+	// Not safe for concurrent use, this field is never accessed concurrently.
+	backOff *backoff.ExponentialBackOff
+
+	wg sync.WaitGroup
+}
+
 // newFranzKafkaConsumer creates a new franz-go based Kafka consumer
 func newFranzKafkaConsumer(config *Config, set receiver.Settings, topics []string,
 	newConsumeFn newConsumeMessageFunc,
@@ -257,7 +270,6 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 						fatalOffset = msg.Offset
 						break // Stop processing messages.
 					}
-					continue
 				}
 				lastProcessed = msg // Store so we can commit later.
 			}
@@ -442,7 +454,7 @@ func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
 				)
 				select {
 				case <-pc.ctx.Done():
-					return nil
+					return context.Cause(pc.ctx)
 				case <-time.After(backOffDelay):
 					continue
 				}
@@ -461,17 +473,4 @@ func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
 		)
 		return nil
 	}
-}
-
-// pc represents the partition consumer shared information.
-type pc struct {
-	logger *zap.Logger
-	attrs  attribute.Set
-
-	ctx    context.Context
-	cancel context.CancelCauseFunc
-	// Not safe for concurrent use, this field is never accessed concurrently.
-	backOff *backoff.ExponentialBackOff
-
-	wg sync.WaitGroup
 }
