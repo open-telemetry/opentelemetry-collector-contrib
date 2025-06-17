@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.1
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.1
-	github.com/DataDog/datadog-api-client-go/v2 v2.38.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.39.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
