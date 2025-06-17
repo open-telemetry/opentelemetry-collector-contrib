@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -36,10 +35,9 @@ func newTestLogsJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *lo
 }
 
 func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter) {
-	// 3 pushes
-	mustPushLogsJSONData(t, exporter, simpleLogs(3000))
-	mustPushLogsJSONData(t, exporter, simpleLogs(4000))
-	mustPushLogsJSONData(t, exporter, simpleLogs(5000))
+	pushConcurrentlyNoError(t, func() error {
+		return exporter.pushLogsData(context.Background(), simpleLogs(5000))
+	})
 
 	type log struct {
 		Timestamp          time.Time `ch:"Timestamp"`
@@ -84,9 +82,4 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter) {
 	require.NoError(t, err)
 
 	require.Equal(t, expectedLog, actualLog)
-}
-
-func mustPushLogsJSONData(t *testing.T, exporter *logsJSONExporter, ld plog.Logs) {
-	err := exporter.pushLogsData(context.Background(), ld)
-	require.NoError(t, err)
 }

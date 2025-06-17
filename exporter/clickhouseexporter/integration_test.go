@@ -9,9 +9,11 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/goleak"
@@ -84,6 +86,30 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 		})
 		configMods = append(configMods, fns...)
 		return withDefaultConfig(configMods...)
+	}
+}
+
+func pushConcurrentlyNoError(t *testing.T, fn func() error) {
+	var (
+		count = 5
+		errs  = make(chan error, count)
+		wg    sync.WaitGroup
+	)
+
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go func() {
+			defer wg.Done()
+			err := fn()
+			errs <- err
+		}()
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
 	}
 }
 
