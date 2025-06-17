@@ -6,7 +6,6 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"maps"
 	"strconv"
 	"sync"
@@ -65,10 +64,6 @@ type franzConsumer struct {
 	client      *kgo.Client
 	obsrecv     *receiverhelper.ObsReport
 	assignments map[topicPartition]*pc
-
-	// processingCtx is passed to all operations.
-	processingCtx    context.Context
-	cancelProcessing context.CancelCauseFunc
 }
 
 // pc represents the partition consumer shared information.
@@ -92,9 +87,6 @@ func newFranzKafkaConsumer(config *Config, set receiver.Settings, topics []strin
 	if err != nil {
 		return nil, err
 	}
-	// `cancelProcessing` is only called if the context that's passed to the
-	// Shutdown() method is cancelled.
-	processingCtx, cancelProcessing := context.WithCancelCause(context.Background())
 	return &franzConsumer{
 		id:               set.ID,
 		config:           config,
@@ -106,8 +98,6 @@ func newFranzKafkaConsumer(config *Config, set receiver.Settings, topics []strin
 		consumerClosed:   make(chan struct{}),
 		closing:          make(chan struct{}),
 		assignments:      make(map[topicPartition]*pc),
-		processingCtx:    processingCtx,
-		cancelProcessing: cancelProcessing,
 	}, nil
 }
 
@@ -158,7 +148,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	}
 	c.consumeMessage = cm
 
-	go c.consumeLoop(c.processingCtx)
+	go c.consumeLoop(context.Background())
 	return nil
 }
 
@@ -166,15 +156,6 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 	defer close(c.consumerClosed)
 
 	for {
-		select {
-		case <-ctx.Done():
-			c.settings.Logger.Info("Consumer loop stopped due to shutdown")
-			return
-		case <-c.closing:
-			c.settings.Logger.Info("Consumer loop stopped due to shutdown")
-			return
-		default:
-		}
 		// Consume messages until the ctx is cancelled (the client is closed).
 		// NOTE(marclop) we should make the fetch size configurable. It returns
 		// all the internally buffered records. This isn't something that's
@@ -319,15 +300,12 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
 	if !c.triggerShutdown() {
-		return nil
+		return errors.New("kafka consumer: consumer isn't running")
 	}
 
 	select {
 	case <-ctx.Done():
-		c.cancelProcessing(fmt.Errorf(
-			"kafka consumer: shutdown context done: %w", ctx.Err(),
-		))
-		return ctx.Err()
+		return context.Cause(ctx)
 	case <-c.consumerClosed:
 	}
 	return nil
