@@ -87,7 +87,8 @@ func (c *prometheusConverterV2) createSampleWithStaleNaN(sampleValue float64, ti
 
 // addSampleWithLabels is a helper function to create and add a sample with labels
 func (c *prometheusConverterV2) addSampleWithLabels(value float64, timestamp int64, noRecordedValue bool,
-	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata) {
+	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
+) {
 	sample := c.createSampleWithStaleNaN(value, timestamp, noRecordedValue)
 	if labelName != "" && labelValue != "" {
 		c.addSample(sample, createLabels(baseName, baseLabels, labelName, labelValue), metadata)
