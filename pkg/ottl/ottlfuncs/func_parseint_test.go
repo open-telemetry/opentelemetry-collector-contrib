@@ -122,6 +122,21 @@ func Test_ParseInt(t *testing.T) {
 			},
 			expected: nil,
 		},
+		{
+			name: "negative base value",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "12345", nil
+				},
+			},
+			base: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(-10), nil
+				},
+			},
+			expected: nil,
+			err:      true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
