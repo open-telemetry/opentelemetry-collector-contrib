@@ -15,7 +15,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.66.1
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.66.1
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.67.0-devel.0.20250507144401-a64863d1e01a
-	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/trace v0.66.1
 	github.com/DataDog/datadog-agent/pkg/util/log v0.66.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.39.0
