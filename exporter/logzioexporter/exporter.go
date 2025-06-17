@@ -6,7 +6,6 @@ package logzioexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,34 +15,32 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/cache"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 const (
 	loggerName               = "logzio-exporter"
 	headerRetryAfter         = "Retry-After"
+	headerAuthorization      = "Authorization"
 	maxHTTPResponseReadBytes = 64 * 1024
 )
 
 // logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
 type logzioExporter struct {
-	config       *Config
-	client       *http.Client
-	logger       hclog.Logger
-	settings     component.TelemetrySettings
-	serviceCache cache.Cache
+	config   *Config
+	client   *http.Client
+	logger   hclog.Logger
+	settings component.TelemetrySettings
 }
 
 func newLogzioExporter(cfg *Config, params exporter.Settings) (*logzioExporter, error) {
@@ -58,12 +55,6 @@ func newLogzioExporter(cfg *Config, params exporter.Settings) (*logzioExporter, 
 		config:   cfg,
 		logger:   &logger,
 		settings: params.TelemetrySettings,
-		serviceCache: cache.NewLRUWithOptions(
-			100000,
-			&cache.Options{
-				TTL: 24 * time.Hour,
-			},
-		),
 	}, nil
 }
 
@@ -72,13 +63,13 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.Endpoint, err = generateEndpoint(config)
+	exporter.config.Endpoint, err = generateEndpoint(config, "traces")
 	if err != nil {
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewTraces(
-		context.TODO(),
+		context.Background(),
 		set,
 		config,
 		exporter.pushTraceData,
@@ -95,7 +86,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.Endpoint, err = generateEndpoint(config)
+	exporter.config.Endpoint, err = generateEndpoint(config, "logs")
 	if err != nil {
 		return nil, err
 	}
@@ -123,33 +114,14 @@ func (exporter *logzioExporter) start(ctx context.Context, host component.Host) 
 }
 
 func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	var dataBuffer bytes.Buffer
-	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
-		resource := resourceLogs.At(i).Resource()
-		scopeLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
-			logRecords := scopeLogs.At(j).LogRecords()
-			scope := scopeLogs.At(j).Scope()
-			for k := 0; k < logRecords.Len(); k++ {
-				log := logRecords.At(k)
-				details := mergeMapEntries(resource.Attributes(), scope.Attributes(), log.Attributes())
-				details.PutStr(`scopeName`, scope.Name())
-				jsonLog, err := json.Marshal(convertLogRecordToJSON(log, details))
-				if err != nil {
-					return err
-				}
-				_, err = dataBuffer.Write(append(jsonLog, '\n'))
-				if err != nil {
-					return err
-				}
-			}
-		}
+	tr := plogotlp.NewExportRequestFromLogs(ld)
+	var err error
+	var request []byte
+	request, err = tr.MarshalProto()
+	if err != nil {
+		return consumererror.NewPermanent(err)
 	}
-	err := exporter.export(ctx, exporter.config.Endpoint, dataBuffer.Bytes())
-	// reset the data buffer after each export to prevent duplicated data
-	dataBuffer.Reset()
-	return err
+	return exporter.export(ctx, exporter.config.Endpoint, request)
 }
 
 func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
@@ -181,47 +153,14 @@ func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
 }
 
 func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace.Traces) error {
-	// a buffer to store logzio span and services bytes
-	var dataBuffer bytes.Buffer
-	batches := jaeger.ProtoFromTraces(traces)
-	for _, batch := range batches {
-		for _, span := range batch.Spans {
-			span.Process = batch.Process
-			span.Tags = exporter.dropEmptyTags(span.Tags)
-			span.Process.Tags = exporter.dropEmptyTags(span.Process.Tags)
-			logzioSpan, transformErr := transformToLogzioSpanBytes(span)
-			if transformErr != nil {
-				return transformErr
-			}
-			_, err := dataBuffer.Write(append(logzioSpan, '\n'))
-			if err != nil {
-				return err
-			}
-			// Create logzio service
-			// if the service hash already exists in cache: skip
-			// else: store service in cache and send to logz.io
-			// this prevents sending duplicate logzio services
-			service := newLogzioService(span)
-			serviceHash, hashErr := service.HashCode()
-			if exporter.serviceCache.Get(serviceHash) == nil || hashErr != nil {
-				if hashErr == nil {
-					exporter.serviceCache.Put(serviceHash, serviceHash)
-				}
-				serviceBytes, marshalErr := json.Marshal(service)
-				if marshalErr != nil {
-					return marshalErr
-				}
-				_, err = dataBuffer.Write(append(serviceBytes, '\n'))
-				if err != nil {
-					return err
-				}
-			}
-		}
+	tr := ptraceotlp.NewExportRequestFromTraces(traces)
+	var err error
+	var request []byte
+	request, err = tr.MarshalProto()
+	if err != nil {
+		return consumererror.NewPermanent(err)
 	}
-	err := exporter.export(ctx, exporter.config.Endpoint, dataBuffer.Bytes())
-	// reset the data buffer after each export to prevent duplicated data
-	dataBuffer.Reset()
-	return err
+	return exporter.export(ctx, exporter.config.Endpoint, request)
 }
 
 // export is similar to otlphttp export method with changes in log messages + Permanent error for `StatusUnauthorized` and `StatusForbidden`
@@ -232,7 +171,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerAuthorization, fmt.Sprintf("Bearer %s", string(exporter.config.Token)))
 	resp, err := exporter.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to make an HTTP request: %w", err)
@@ -308,15 +247,4 @@ func readResponse(resp *http.Response) *status.Status {
 	}
 
 	return respStatus
-}
-
-func (exporter *logzioExporter) dropEmptyTags(tags []model.KeyValue) []model.KeyValue {
-	for i, tag := range tags {
-		if tag.Key == "" {
-			tags[i] = tags[len(tags)-1] // Copy last element to index i.
-			tags = tags[:len(tags)-1]   // Truncate slice.
-			exporter.logger.Warn(fmt.Sprintf("Found tag empty key: %s, dropping tag..", tag.String()))
-		}
-	}
-	return tags
 }
