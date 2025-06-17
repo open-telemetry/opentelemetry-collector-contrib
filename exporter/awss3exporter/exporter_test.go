@@ -78,7 +78,7 @@ func getLogExporterWithResourceAttrs(t *testing.T) *s3Exporter {
 	return exporter
 }
 
-func testLogWithResourceAttrs(t *testing.T) {
+func TestLogWithResourceAttrs(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporterWithResourceAttrs(t)
 	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
