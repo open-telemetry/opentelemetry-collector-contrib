@@ -228,20 +228,4 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			testShutdown(t, tc.testConfig, tc.want)
 		})
 	}
-
-	// for _, backoff := range []bool{true, false} {
-	// 	for _, returnError := range []bool{true, false} {
-	// 		t.Run(fmt.Sprintf("MessageMarking.OnError=%v returnError=%v", backoff, returnError), func(t *testing.T) {
-	// 			t.Run("BackOff", func(t *testing.T) {
-	// 				backoffCfg := configretry.NewDefaultBackOffConfig()
-	// 				testShutdown(t, tCfg{MessageMarking{OnError: backoff}, backoffCfg, returnError}, assertions{1, 1, 1})
-	// 			})
-	// 			t.Run("NoBackoff", func(t *testing.T) {
-	// 				backoffCfg := configretry.NewDefaultBackOffConfig()
-	// 				backoffCfg.Enabled = false
-	// 				testShutdown(t, tCfg{MessageMarking{OnError: backoff}, backoffCfg, returnError}, assertions{1, 1, 1})
-	// 			})
-	// 		})
-	// 	}
-	// }
 }
