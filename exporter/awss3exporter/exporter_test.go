@@ -34,7 +34,7 @@ func (testWriter *testWriter) Upload(_ context.Context, buf []byte, uploadOpts *
 func getTestLogs(tb testing.TB) plog.Logs {
 	logsMarshaler := plog.JSONUnmarshaler{}
 	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
-	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
+	assert.NoError(tb, err, "Can't unmarshal testing the logs data -> %s", err)
 	return logs
 }
 
