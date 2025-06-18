@@ -2230,13 +2230,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	}
 	checkECSResource := func(t *testing.T, doc []byte, signal string) {
 		t.Helper()
-		if signal == "traces" {
-			// ecs mode schema for spans is currently very different
-			// to logs and metrics
-			assert.Equal(t, "v", gjson.GetBytes(doc, "Resource.k").Str)
-		} else {
-			assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
-		}
+		assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
 	}
 
 	testcases := []struct {

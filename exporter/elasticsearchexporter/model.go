@@ -234,7 +234,6 @@ func (e ecsModeEncoder) encodeLog(
 	return document.Serialize(buf, true)
 }
 
-// TODO: ADDED
 func (e ecsModeEncoder) encodeSpan(
 	ec encodingContext,
 	span ptrace.Span,
@@ -259,12 +258,21 @@ func (e ecsModeEncoder) encodeSpan(
 		string(semconv.ExceptionTypeKey):       "error.type",
 		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
 	}
+
+	// Handle special cases.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
+	encodeLogHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
 	document.AddTraceID("trace.id", span.TraceID())
 	document.AddSpanID("span.id", span.SpanID())
+	document.AddString("span.name", span.Name())
+	document.AddString("span.kind", traceutil.SpanKindStr(span.Kind()))
+	document.AddInt("span.status.code", int64(span.Status().Code()))
+	document.AddString("span.status.message", span.Status().Message())
+	document.AddEvents("span.events", span.Events())
+	document.AddLinks("span.links", span.Links())
 
 	return document.Serialize(buf, true)
 }
