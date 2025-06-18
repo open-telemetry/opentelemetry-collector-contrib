@@ -154,6 +154,14 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
 		}
 
+		if scrapeConfig.MetricNameValidationScheme == "" {
+			scrapeConfig.MetricNameValidationScheme = promconfig.LegacyValidationConfig
+		}
+
+		if scrapeConfig.MetricNameEscapingScheme == "" {
+			scrapeConfig.MetricNameEscapingScheme = model.EscapeUnderscores
+		}
+
 		m.promCfg.ScrapeConfigs = append(m.promCfg.ScrapeConfigs, scrapeConfig)
 	}
 
