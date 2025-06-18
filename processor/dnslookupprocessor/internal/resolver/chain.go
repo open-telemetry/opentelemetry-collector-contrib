@@ -35,17 +35,6 @@ func (c *ChainResolver) Reverse(ctx context.Context, ip string) ([]string, error
 	})
 }
 
-// Close closes all resolvers in the chain
-func (c *ChainResolver) Close() error {
-	var errs []error
-	for _, r := range c.resolvers {
-		if err := r.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errors.Join(errs...)
-}
-
 // resolveInSequence attempts to resolve the given hostname/IP using the chain of resolvers.
 // It returns successful IP/hostname. No resolution is considered a valid resolution that no need to continue the chain.
 // It returns the last error of the last resolver if all retries failed.

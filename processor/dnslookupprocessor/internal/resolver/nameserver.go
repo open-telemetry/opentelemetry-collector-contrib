@@ -129,11 +129,6 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) ([]string, 
 	})
 }
 
-func (r *NameserverResolver) Close() error {
-	r.resolvers = nil
-	return nil
-}
-
 func newExponentialBackOff() *backoff.ExponentialBackOff {
 	expBackOff := backoff.ExponentialBackOff{
 		InitialInterval:     50 * time.Millisecond,

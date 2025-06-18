@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -509,15 +508,4 @@ func TestNormalizeNameserverAddresses(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestNameserverResolver_Close(t *testing.T) {
-	resolver, err := NewNameserverResolver([]string{"8.8.8.8"}, testTimeout, 1)
-	require.NoError(t, err)
-	assert.Len(t, resolver.resolvers, 1)
-	assert.NotNil(t, resolver.resolvers[0])
-
-	err = resolver.Close()
-	assert.NoError(t, err)
-	assert.Nil(t, resolver.resolvers)
 }

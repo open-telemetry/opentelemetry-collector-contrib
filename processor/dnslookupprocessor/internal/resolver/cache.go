@@ -61,22 +61,6 @@ func (r *CacheResolver) Reverse(ctx context.Context, ip string) ([]string, error
 	return r.resolveWithCache(ctx, ip, r.nextResolver.Reverse)
 }
 
-// Close releases resources used by the cache and the underlying chain resolver
-func (r *CacheResolver) Close() error {
-	if r.hitCache != nil {
-		r.hitCache.Purge()
-	}
-	if r.missCache != nil {
-		r.missCache.Purge()
-	}
-
-	if r.nextResolver != nil {
-		return r.nextResolver.Close()
-	}
-
-	return nil
-}
-
 // resolveWithCache searches target in miss cache and hit cache.
 // If not found, it falls back to the underlying chain resolver. Stores the result in cache.
 func (r *CacheResolver) resolveWithCache(

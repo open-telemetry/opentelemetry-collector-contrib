@@ -138,12 +138,6 @@ func (r *HostFileResolver) Reverse(_ context.Context, ip string) ([]string, erro
 	return nil, ErrNotInHostFiles
 }
 
-func (r *HostFileResolver) Close() error {
-	r.hostnameToIP = nil
-	r.ipToHostname = nil
-	return nil
-}
-
 func deduplicateMapping(mapping map[string][]string) {
 	for key, vals := range mapping {
 		mapping[key] = deduplicateStrings(vals)

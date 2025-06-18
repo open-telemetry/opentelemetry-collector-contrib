@@ -371,23 +371,3 @@ func TestHostFileResolver_Reverse(t *testing.T) {
 		})
 	}
 }
-
-func TestHostFileResolver_Close(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
-	hostFilePath := testutil.CreateTempHostFile(t, validHostFileContent)
-	resolver, err := NewHostFileResolver([]string{hostFilePath}, logger)
-	require.NoError(t, err)
-
-	// Verify maps were populated
-	assert.NotEmpty(t, resolver.hostnameToIP)
-	assert.NotEmpty(t, resolver.ipToHostname)
-
-	// Close the resolver
-	err = resolver.Close()
-	assert.NoError(t, err)
-
-	// Verify maps were cleared
-	assert.Nil(t, resolver.hostnameToIP)
-	assert.Nil(t, resolver.ipToHostname)
-}

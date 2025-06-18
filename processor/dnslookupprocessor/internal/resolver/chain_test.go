@@ -164,39 +164,3 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 		})
 	}
 }
-
-func TestChainResolver_Close(t *testing.T) {
-	t.Run("Successful close", func(t *testing.T) {
-		mock1 := new(testutil.MockResolver)
-		mock1.On("Close").Return(nil).Once()
-
-		mock2 := new(testutil.MockResolver)
-		mock2.On("Close").Return(nil).Once()
-
-		chainResolver := NewChainResolver([]Resolver{mock1, mock2})
-
-		err := chainResolver.Close()
-		assert.NoError(t, err)
-
-		mock1.AssertExpectations(t)
-		mock2.AssertExpectations(t)
-	})
-
-	t.Run("Close with errors", func(t *testing.T) {
-		errorMock1 := new(testutil.MockResolver)
-		errorMock1.On("Close").Return(errors.New("error 1")).Once()
-
-		errorMock2 := new(testutil.MockResolver)
-		errorMock2.On("Close").Return(errors.New("error 2")).Once()
-
-		chainResolver := NewChainResolver([]Resolver{errorMock1, errorMock2})
-
-		err := chainResolver.Close()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "error 1")
-		assert.Contains(t, err.Error(), "error 2")
-
-		errorMock1.AssertExpectations(t)
-		errorMock2.AssertExpectations(t)
-	})
-}
