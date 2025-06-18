@@ -15,14 +15,10 @@ import (
 	"testing"
 	"time"
 
+	promTestUtil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/promslog"
 	promConfig "github.com/prometheus/prometheus/config"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v3"
-
-	promTestUtil "github.com/prometheus/client_golang/prometheus/testutil"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	promTG "github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/require"
@@ -30,6 +26,9 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
@@ -58,7 +57,7 @@ func TestTargetAllocatorConfigLoad(t *testing.T) {
 	t.Cleanup(func() { tas.srv.Close() })
 
 	promSDConfig := &promHTTP.SDConfig{
-		RefreshInterval: model.Duration(30 * time.Second),
+		RefreshInterval: model.Duration(45 * time.Second),
 		URL:             tas.srv.URL,
 	}
 
@@ -137,8 +136,6 @@ func newMockTargetAllocator(address string) *mockTargetAllocator {
 	return s
 }
 
-type sdResponse []*promTG.Group
-
 func (mp *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if strings.HasSuffix(req.URL.Path, "/scrape_configs") {
 		job := make(map[string]any)
@@ -156,11 +153,11 @@ func (mp *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 			return
 		}
 
-		rw.Write(data)
+		_, _ = rw.Write(data)
 		return
 	}
 
-	sdResponse := sdResponse{
+	response := []*promTG.Group{
 		{
 			Targets: []model.LabelSet{
 				{
@@ -171,10 +168,10 @@ func (mp *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 		},
 	}
 
-	data, err := json.Marshal(&sdResponse)
+	data, err := json.Marshal(&response)
 	if err != nil {
 		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
-	rw.Write(data)
+	_, _ = rw.Write(data)
 }
