@@ -5,6 +5,9 @@ package ottlprofile
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 	"time"
@@ -42,11 +45,13 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(profile pprofile.Profile, cache pcommon.Map)
+		name         string
+		path         ottl.Path[TransformContext]
+		orig         any
+		newVal       any
+		modified     func(profile pprofile.Profile, cache pcommon.Map)
+		setStatement string
+		getStatement string
 	}{
 		{
 			name: "time",
@@ -58,6 +63,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(profile pprofile.Profile, _ pcommon.Map) {
 				profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: `set(time, Time("1970-01-01T00:00:00.2Z", "%Y-%m-%dT%H:%M:%S.%f%z"))`,
+			getStatement: `time`,
 		},
 		{
 			name: "time_unix_nano",
@@ -69,6 +76,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(profile pprofile.Profile, _ pcommon.Map) {
 				profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
+			setStatement: "set(time_unix_nano, 200000000)",
+			getStatement: "time_unix_nano",
 		},
 		{
 			name: "cache",
@@ -80,6 +89,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ pprofile.Profile, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
+			setStatement: `set(cache, {"temp": "value"})`,
+			getStatement: `cache`,
 		},
 		{
 			name: "cache access",
@@ -96,6 +107,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ pprofile.Profile, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
+			setStatement: `set(cache["temp"], "new value")`,
+			getStatement: `cache["temp"]`,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -137,6 +150,43 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exCache, testCache)
 		})
 	}
+
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			if tt.setStatement != "" {
+				statement, err := stmtParser.ParseStatement(tt.setStatement)
+				require.NoError(t, err)
+
+				profile := createProfileTelemetry()
+
+				ctx := NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+
+				_, executed, err := statement.Execute(context.Background(), ctx)
+				require.NoError(t, err)
+				assert.True(t, executed)
+
+				getStatement, err := stmtParser.ParseValueExpression(tt.getStatement)
+				require.NoError(t, err)
+
+				profile = createProfileTelemetry()
+
+				ctx = NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+
+				getResult, err := getStatement.Eval(context.Background(), ctx)
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.orig, getResult)
+			}
+		})
+	}
+}
+
+func createParser(t *testing.T) ottl.Parser[TransformContext] {
+	settings := componenttest.NewNopTelemetrySettings()
+	stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	require.NoError(t, err)
+	return stmtParser
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
@@ -149,9 +199,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	ctx := NewTransformContext(pprofile.NewProfile(), pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		expected any
+		name         string
+		path         ottl.Path[TransformContext]
+		expected     any
+		getStatement string
 	}{
 		{
 			name: "resource",
@@ -163,7 +214,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					},
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
 			name: "resource with context",
@@ -172,17 +224,20 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 					S: ottltest.Strp("foo"),
 				},
 			}},
-			expected: "bar",
+			expected:     "bar",
+			getStatement: `resource.attributes["foo"]`,
 		},
 		{
-			name:     "instrumentation_scope",
-			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope",
+			path:         &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 		{
-			name:     "instrumentation_scope with context",
-			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
-			expected: instrumentationScope.Name(),
+			name:         "instrumentation_scope with context",
+			path:         &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected:     instrumentationScope.Name(),
+			getStatement: `instrumentation_scope.name`,
 		},
 	}
 
@@ -198,6 +253,18 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+	stmtParser := createParser(t)
+	for _, tt := range tests {
+		t.Run(tt.name+"_conversion", func(t *testing.T) {
+			getExpression, err := stmtParser.ParseValueExpression(tt.getStatement)
+			require.NoError(t, err)
+			require.NotNil(t, getExpression)
+			getResult, err := getExpression.Eval(context.Background(), ctx)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, getResult)
 		})
 	}
 }
