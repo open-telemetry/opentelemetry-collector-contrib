@@ -147,8 +147,6 @@ func (mp *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 		job["scrape_interval"] = "1s"
 		job["scrape_timeout"] = "500ms"
 		job["scrape_protocols"] = []string{"OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4"}
-		job["metric_name_validation_scheme"] = "legacy"
-		job["metric_name_escaping_scheme"] = "underscores"
 
 		result := make(map[string]any)
 		result["test"] = job
