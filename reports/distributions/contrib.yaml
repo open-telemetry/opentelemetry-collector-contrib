@@ -34,6 +34,7 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -148,6 +149,7 @@ components:
         - elasticsearch
         - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
