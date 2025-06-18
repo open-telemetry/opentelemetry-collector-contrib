@@ -6,11 +6,13 @@ package ottlspanevent
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

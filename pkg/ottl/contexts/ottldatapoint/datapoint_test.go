@@ -6,11 +6,13 @@ package ottldatapoint
 import (
 	"context"
 	fmt "fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -783,9 +785,9 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				newExemplars.CopyTo(datapoint.Exemplars())
 			},
-			//TODO how to set pmetric.HistogramDataPoint with string?
-			//setStatement: "set(exemplars, 2)",
-			//getStatement: "exemplars",
+			// TODO how to set pmetric.HistogramDataPoint with string?
+			// setStatement: "set(exemplars, 2)",
+			// getStatement: "exemplars",
 		},
 		{
 			name: "attributes",
@@ -1314,9 +1316,9 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newPositive.CopyTo(datapoint.Positive())
 			},
-			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
-			//setStatement: "set(positive, 2)",
-			//getStatement: "positive",
+			// TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			// setStatement: "set(positive, 2)",
+			// getStatement: "positive",
 		},
 		{
 			name: "positive offset",
@@ -1360,9 +1362,9 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				newPositive.CopyTo(datapoint.Negative())
 			},
-			//TODO how to set pmetric.ExponentialHistogramDataPoint with string?
-			//setStatement: "set(negative, 2)",
-			//getStatement: "negative",
+			// TODO how to set pmetric.ExponentialHistogramDataPoint with string?
+			// setStatement: "set(negative, 2)",
+			// getStatement: "negative",
 		},
 		{
 			name: "negative offset",
@@ -1783,7 +1785,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoint {

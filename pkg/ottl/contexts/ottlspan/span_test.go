@@ -8,12 +8,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -811,10 +812,10 @@ func Test_newPathGetSetter(t *testing.T) {
 
 func createParser(t *testing.T) ottl.Parser[TransformContext] {
 	settings := componenttest.NewNopTelemetrySettings()
-	//stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+	// stmtParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
 	stmtParser, err := NewParser(MinimalTestFuncs[TransformContext](), settings)
-	//stmtParser, err := NewParser(common.Functions[ottlspan.TransformContext](), settings)
-	//stmtParser, err := NewParser(map[string]ottl.Factory[TransformContext]{}, settings)
+	// stmtParser, err := NewParser(common.Functions[ottlspan.TransformContext](), settings)
+	// stmtParser, err := NewParser(map[string]ottl.Factory[TransformContext]{}, settings)
 	require.NoError(t, err)
 	return stmtParser
 }
