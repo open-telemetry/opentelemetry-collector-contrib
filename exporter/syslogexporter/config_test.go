@@ -56,6 +56,15 @@ func TestValidate(t *testing.T) {
 			},
 			err: "unsupported protocol: Only rfc5424 and rfc3164 supported",
 		},
+		{
+			name: "invalid Unix Socket",
+			cfg: &Config{
+				Endpoint: "",
+				Network:  "unix",
+				Protocol: "rfc5424",
+			},
+			err: "invalid endpoint: endpoint is required but it is not configured",
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
