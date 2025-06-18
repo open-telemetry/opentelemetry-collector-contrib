@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 type PushRequest struct {

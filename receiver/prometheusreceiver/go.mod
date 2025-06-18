@@ -11,7 +11,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.128.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/common v0.64.0
 	github.com/prometheus/exporter-toolkit v0.14.0
@@ -168,8 +167,9 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.128.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.128.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.128.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.128.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.128.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.127.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/ovh/go-ovh v1.7.0 // indirect
@@ -298,8 +298,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 
