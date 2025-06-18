@@ -44,6 +44,32 @@ between the involved parties to allow work to begin or for the issue to be close
 - Guiding any interested parties to another person or resource that may be more knowledgeable about an issue.
 - Suggesting an issue for discussion at a SIG meeting if a synchronous discussion would be more productive.
 
+It is recommeneded that a triager should follow these steps:
+
+1. First and foremost step is to access the validity of the issue. Here's an rough outline to access the validity:
+   - Does the issue include a clear description of the problem?
+   - Does it provide the user’s configuration, the expected behavior, and any other relevant context?
+   - If it's reported as a bug, are the steps to reproduce clearly outlined?
+
+2. If the issue is deemed valid and requires attention, apply appropriate labels based on its nature:
+   - For bugs, add the `bug` label along with `waiting-for-codeowners`.
+   - For enhancements, use the `enhancement` label and also add `waiting-for-codeowners`.
+   - If the issue is about a new component the we should encourage user to join our SIG and propose the new component. They can also reach out on #otel-collector-dev on CNCF slack.
+   d. Check out [state diagram](#state-diagram) for detailed information about all labels.
+
+3. An issue may be considered invalid for the following reasons:
+   - The user is using an incorrect configuration.
+   - The bug/enhancement has already been addressed in the newer version.
+   - The issue was filed in the wrong repository:
+       - For example, we might receive an issue for `otlpexporter` in contrib. You should transfer the issue to the `opentelemetry-collector` repository.
+       - Same goes for other related repository such as `opentelemetry-operator`.
+
+4. Ocassionally, an issue might lack sufficient information to proceed. In such cases, ask the author clarifying questions, focusing on:
+   - Collector configuration (missing or incomplete configurations not uncommon)
+   - The expected vs. actual behavior
+   - Clear and complete steps to reproduce the issue
+   - Any other questions that might fit
+
 #### Issue assignment
 
 Issues are assigned for someone to work on by a triager when someone volunteers to work on an issue. Assignment is intended to prevent duplicate work by making it visible who is
