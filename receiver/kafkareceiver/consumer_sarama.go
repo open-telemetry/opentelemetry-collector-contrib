@@ -283,7 +283,7 @@ func (c *consumerGroupHandler) handleMessage(
 					return err
 				}
 			}
-			c.logger.Info(
+			c.logger.Warn(
 				"Stop error backoff because the configured max_elapsed_time is reached",
 				zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime),
 			)
