@@ -55,7 +55,7 @@ It is recommeneded that a triager should follow these steps:
    - For bugs, add the `bug` label along with `waiting-for-codeowners`.
    - For enhancements, use the `enhancement` label and also add `waiting-for-codeowners`.
    - If the issue is about a new component the we should encourage user to join our SIG and propose the new component. They can also reach out on #otel-collector-dev on CNCF slack.
-   d. Check out [state diagram](#state-diagram) for detailed information about all labels.
+   - Check out [state diagram](#state-diagram) for detailed information about all labels.
 
 3. An issue may be considered invalid for the following reasons:
    - The user is using an incorrect configuration.
@@ -69,6 +69,26 @@ It is recommeneded that a triager should follow these steps:
    - The expected vs. actual behavior
    - Clear and complete steps to reproduce the issue
    - Any other questions that might fit
+
+#### Triage process flowchart 
+
+```mermaid
+flowchart TD
+      Start{Check validity}
+      
+      Start -->|Unclear| WaitingAuthor[Tag:<br><code>waiting-for:author</code><br>Ask for config, repro steps,<br>expected vs actual result]
+      Start -->|Invalid| Transfer[Close or<br>transfer issue:<br>wrong repo, bad config,<br>already fixed etc.]
+      Start --> |Valid| Classify
+
+      Classify -->|<code>documentation</code>| WaitingCodeowners[Tag:<br><code>waiting-for:codeowners</code>]
+      Classify -->|<code>enhancement</code>| WaitingCodeowners
+      Classify -->|<code>bug</code>| EnrichBug[Tag:<br><code>bug</code>, <code>bug:perf/crash</code>,<br><code>workaround:yes/no</code>,<br><code>release:blocker</code>]
+
+      EnrichBug --> WaitingCodeowners
+
+      Classify -->|New component| NewComponent[Suggest joining SIG,<br>propose via SIG,<br>or reach out on<br><code>#otel-collector-dev</code> Slack]
+      NewComponent --> WaitingCodeowners
+```
 
 #### Issue assignment
 
