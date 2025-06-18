@@ -54,7 +54,7 @@ It is recommeneded that a triager should follow these steps:
 2. If the issue is deemed valid and requires attention, apply appropriate labels based on its nature:
    - For bugs, add the `bug` label along with `waiting-for-codeowners`.
    - For enhancements, use the `enhancement` label and also add `waiting-for-codeowners`.
-   - If the issue is about a new component the we should encourage user to join our SIG and propose the new component. They can also reach out on #otel-collector-dev on CNCF slack.
+   - If the issue is about a new component, add the `sponsor-needed` label. We should encourage user to join our SIG and propose the new component. They can also reach out on #otel-collector on CNCF slack.
    - Check out [state diagram](#state-diagram) for detailed information about all labels.
 
 3. An issue may be considered invalid for the following reasons:
