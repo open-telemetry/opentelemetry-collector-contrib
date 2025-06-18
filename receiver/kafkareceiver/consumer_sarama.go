@@ -125,8 +125,10 @@ func (c *saramaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler, host c
 		consumerGroup, err = kafka.NewSaramaConsumerGroup(ctx, c.config.ClientConfig, c.config.ConsumerConfig)
 		if err != nil {
 			if ctx.Err() == nil {
-				// Don't report an error if the context is already canceled,
-				// this means the receiver is shutting down.
+				// We only report an error if the context is not canceled.
+				// If the context is canceled it means the receiver is
+				// shutting down, which will lead to reporting StatusStopped
+				// when consumeLoop exits.
 				c.settings.Logger.Error("Error creating consumer group", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(err))
 			}
