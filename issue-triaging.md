@@ -44,7 +44,7 @@ between the involved parties to allow work to begin or for the issue to be close
 - Guiding any interested parties to another person or resource that may be more knowledgeable about an issue.
 - Suggesting an issue for discussion at a SIG meeting if a synchronous discussion would be more productive.
 
-It is recommeneded that a triager should follow these steps:
+It is recommended that a triager should follow these steps when a new issue is reported:
 
 1. First and foremost step is to access the validity of the issue. Here's an rough outline to access the validity:
    - Does the issue include a clear description of the problem?
