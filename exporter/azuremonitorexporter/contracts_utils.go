@@ -50,6 +50,7 @@ func applyApplicationTagsToEnvelope(envelope *contracts.Envelope, resourceAttrib
 	}
 }
 
+// Sets ai.device.* tags on the envelope
 func applyDeviceTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
 	if osName, osNameExists := resourceAttributes.Get(string(conventions.OSNameKey)); osNameExists {
 		deviceOs := osName.Str()
