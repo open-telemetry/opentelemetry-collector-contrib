@@ -238,7 +238,8 @@ func (e ecsModeEncoder) encodeSpan(
 	ec encodingContext,
 	span ptrace.Span,
 	idx elasticsearch.Index,
-	buf *bytes.Buffer) error {
+	buf *bytes.Buffer,
+) error {
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.

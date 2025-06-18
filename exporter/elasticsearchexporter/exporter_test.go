@@ -2228,7 +2228,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		t.Helper()
 		assert.JSONEq(t, `{"k":"v"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	}
-	checkECSResource := func(t *testing.T, doc []byte, signal string) {
+	checkECSResource := func(t *testing.T, doc []byte, _ string) {
 		t.Helper()
 		assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
 	}
