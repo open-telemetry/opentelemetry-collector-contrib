@@ -687,7 +687,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name+"_conversion", func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
-			logParser, err := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
+			logParser, _ := NewParser(ottlfuncs.StandardFuncs[TransformContext](), settings)
 
 			log, scope, resource := createTelemetry(tt.bodyType)
 			tCtx := NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
@@ -706,7 +706,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exLog, log)
 			assert.Equal(t, exScope, scope)
 			assert.Equal(t, exResource, resource)
-			assert.Equal(t, exCache, exCache)
 
 			// Verify getter
 			log, scope, resource = createTelemetry(tt.bodyType)
