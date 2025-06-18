@@ -6,30 +6,23 @@ package resolver // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"errors"
-	"fmt"
-
-	"go.uber.org/zap"
 )
 
 // ChainResolver represents a chain of resolvers that will be run in sequence
 type ChainResolver struct {
-	name      string
 	resolvers []Resolver
-	logger    *zap.Logger
 }
 
-func NewChainResolver(resolvers []Resolver, logger *zap.Logger) *ChainResolver {
+func NewChainResolver(resolvers []Resolver) *ChainResolver {
 	return &ChainResolver{
-		name:      "chain",
 		resolvers: resolvers,
-		logger:    logger,
 	}
 }
 
 // Resolve runs resolvers in sequence.
 // Returns successful resolutions or an error if all resolvers fail
 func (c *ChainResolver) Resolve(ctx context.Context, hostname string) ([]string, error) {
-	return c.resolveInSequence(LogKeyHostname, hostname, func(r Resolver) ([]string, error) {
+	return c.resolveInSequence(func(r Resolver) ([]string, error) {
 		return r.Resolve(ctx, hostname)
 	})
 }
@@ -37,13 +30,9 @@ func (c *ChainResolver) Resolve(ctx context.Context, hostname string) ([]string,
 // Reverse runs resolvers in sequence.
 // Returns successful resolutions or an error if all resolvers fail
 func (c *ChainResolver) Reverse(ctx context.Context, ip string) ([]string, error) {
-	return c.resolveInSequence(LogKeyIP, ip, func(r Resolver) ([]string, error) {
+	return c.resolveInSequence(func(r Resolver) ([]string, error) {
 		return r.Reverse(ctx, ip)
 	})
-}
-
-func (c *ChainResolver) Name() string {
-	return c.name
 }
 
 // Close closes all resolvers in the chain
@@ -60,7 +49,7 @@ func (c *ChainResolver) Close() error {
 // resolveInSequence attempts to resolve the given hostname/IP using the chain of resolvers.
 // It returns successful IP/hostname. No resolution is considered a valid resolution that no need to continue the chain.
 // It returns the last error of the last resolver if all retries failed.
-func (c *ChainResolver) resolveInSequence(logKey string, target string, resolverFn func(resolver Resolver) ([]string, error)) ([]string, error) {
+func (c *ChainResolver) resolveInSequence(resolverFn func(resolver Resolver) ([]string, error)) ([]string, error) {
 	var lastErr error
 
 	for _, r := range c.resolvers {
@@ -68,10 +57,6 @@ func (c *ChainResolver) resolveInSequence(logKey string, target string, resolver
 
 		// Successful resolution
 		if err == nil {
-			c.logger.Debug(fmt.Sprintf("DNS lookup from %s", r.Name()),
-				zap.String(logKey, target),
-				zap.Strings(Flip(logKey), result))
-
 			return result, nil
 		}
 

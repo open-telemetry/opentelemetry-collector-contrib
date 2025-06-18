@@ -11,15 +11,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/testutil"
 )
 
 func TestNewCacheResolver(t *testing.T) {
-	logger := zaptest.NewLogger(t)
 	mockResolver := new(testutil.MockResolver)
-	mockResolver.On("Name").Return("mock_resolver")
 
 	tests := []struct {
 		name            string
@@ -97,7 +94,6 @@ func TestNewCacheResolver(t *testing.T) {
 				tt.hitCacheTTL,
 				tt.missCacheSize,
 				tt.missCacheTTL,
-				logger,
 			)
 
 			if tt.expectError {
@@ -123,7 +119,6 @@ func TestNewCacheResolver(t *testing.T) {
 }
 
 func TestCacheResolver_resolveWithCache(t *testing.T) {
-	logger := zaptest.NewLogger(t)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -271,7 +266,6 @@ func TestCacheResolver_resolveWithCache(t *testing.T) {
 				tt.cacheTTL,
 				tt.missCacheSize,
 				tt.cacheTTL,
-				logger,
 			)
 			require.NoError(t, err)
 
@@ -313,8 +307,6 @@ func TestCacheResolver_resolveWithCache(t *testing.T) {
 }
 
 func TestCacheResolver_Close(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	mockResolver := new(testutil.MockResolver)
 	mockResolver.On("Close").Return(nil).Once()
 
@@ -324,7 +316,6 @@ func TestCacheResolver_Close(t *testing.T) {
 		0,
 		10,
 		0,
-		logger,
 	)
 	require.NoError(t, err)
 

@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 var (
@@ -43,8 +42,6 @@ func (m *MockNetResolver) LookupAddr(ctx context.Context, addr string) ([]string
 }
 
 func TestNewNameserverResolver(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	tests := []struct {
 		name        string
 		nameservers []string
@@ -64,7 +61,7 @@ func TestNewNameserverResolver(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resolver, err := NewNameserverResolver(tc.nameservers, testTimeout, 3, logger)
+			resolver, err := NewNameserverResolver(tc.nameservers, testTimeout, 3)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -79,15 +76,11 @@ func TestNewNameserverResolver(t *testing.T) {
 }
 
 func TestNewSystemResolver(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
-	resolver := NewSystemResolver(testTimeout, 3, logger)
+	resolver := NewSystemResolver(testTimeout, 3)
 	assert.NotNil(t, resolver)
 }
 
 func TestNameserverResolver_Resolve(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	testCases := []struct {
 		name           string
 		hostname       string
@@ -290,12 +283,9 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			}
 
 			nsResolver := &NameserverResolver{
-				name:        "test",
-				nameservers: tc.nameservers,
-				maxRetries:  tc.maxRetries,
-				resolvers:   mockResolvers,
-				timeout:     testTimeout,
-				logger:      logger,
+				maxRetries: tc.maxRetries,
+				resolvers:  mockResolvers,
+				timeout:    testTimeout,
 			}
 
 			result, err := nsResolver.Resolve(testCtx, tc.hostname)
@@ -318,8 +308,6 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 }
 
 func TestNameserverResolver_Reverse(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	testCases := []struct {
 		name           string
 		ip             string
@@ -434,12 +422,9 @@ func TestNameserverResolver_Reverse(t *testing.T) {
 			}
 
 			resolver := &NameserverResolver{
-				name:        "test",
-				nameservers: tc.nameservers,
-				maxRetries:  tc.maxRetries,
-				resolvers:   resolvers,
-				timeout:     testTimeout,
-				logger:      logger,
+				maxRetries: tc.maxRetries,
+				resolvers:  resolvers,
+				timeout:    testTimeout,
 			}
 
 			result, err := resolver.Reverse(testCtx, tc.ip)
@@ -527,9 +512,7 @@ func TestNormalizeNameserverAddresses(t *testing.T) {
 }
 
 func TestNameserverResolver_Close(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
-	resolver, err := NewNameserverResolver([]string{"8.8.8.8"}, testTimeout, 1, logger)
+	resolver, err := NewNameserverResolver([]string{"8.8.8.8"}, testTimeout, 1)
 	require.NoError(t, err)
 	assert.Len(t, resolver.resolvers, 1)
 	assert.NotNil(t, resolver.resolvers[0])

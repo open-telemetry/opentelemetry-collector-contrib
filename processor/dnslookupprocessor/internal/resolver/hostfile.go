@@ -19,7 +19,6 @@ var ErrInvalidHostFilePath = errors.New("host file does not exist")
 
 // HostFileResolver uses host files for DNS resolution
 type HostFileResolver struct {
-	name         string
 	hostnameToIP map[string][]string // For forward lookups
 	ipToHostname map[string][]string // For reverse lookups
 	logger       *zap.Logger
@@ -33,7 +32,6 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 	}
 
 	r := &HostFileResolver{
-		name:         "hostfiles",
 		ipToHostname: make(map[string][]string),
 		hostnameToIP: make(map[string][]string),
 		logger:       logger,
@@ -47,10 +45,6 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 	}
 	deduplicateMapping(r.ipToHostname)
 	deduplicateMapping(r.hostnameToIP)
-
-	r.logger.Info("Number of records in hostfiles",
-		zap.Int("IPs", len(r.ipToHostname)),
-		zap.Int("Hostnames", len(r.hostnameToIP)))
 
 	return r, nil
 }
@@ -86,11 +80,9 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 
 		// Split the line into fields
 		fields := strings.Fields(line)
+
+		// Skip lines with only IP and no hostnames
 		if len(fields) < 2 {
-			r.logger.Debug("Skipping invalid host file entry",
-				zap.String("path", path),
-				zap.Int("line", lineNum),
-				zap.String("content", line))
 			continue
 		}
 
@@ -122,9 +114,6 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		r.logger.Error("Error reading host file",
-			zap.String("path", path),
-			zap.Error(err))
 		return err
 	}
 
@@ -147,10 +136,6 @@ func (r *HostFileResolver) Reverse(_ context.Context, ip string) ([]string, erro
 	}
 
 	return nil, ErrNotInHostFiles
-}
-
-func (r *HostFileResolver) Name() string {
-	return r.name
 }
 
 func (r *HostFileResolver) Close() error {

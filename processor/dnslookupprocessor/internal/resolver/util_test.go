@@ -9,25 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFlip(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{"Flip hostname to IP", LogKeyHostname, LogKeyIP},
-		{"Flip IP to hostname", LogKeyIP, LogKeyHostname},
-		{"Flip unknown key defaults to hostname", "unknown", LogKeyHostname},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := Flip(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestParseIP(t *testing.T) {
 	tests := []struct {
 		name        string

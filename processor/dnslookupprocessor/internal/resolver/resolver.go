@@ -8,11 +8,6 @@ import (
 	"errors"
 )
 
-const (
-	LogKeyHostname = "hostname"
-	LogKeyIP       = "ip"
-)
-
 var (
 	// ErrNoResolution indicates no resolution was found for the provided hostname or IP
 	ErrNoResolution = errors.New("no resolution found")
@@ -39,8 +34,6 @@ type Resolver interface {
 	// Reverse performs reverse DNS resolution (IP to hostname)
 	// Returns hostnames as strings or error if resolution fails
 	Reverse(ctx context.Context, ip string) ([]string, error)
-
-	Name() string
 
 	// Close releases any resources used by the resolver
 	Close() error

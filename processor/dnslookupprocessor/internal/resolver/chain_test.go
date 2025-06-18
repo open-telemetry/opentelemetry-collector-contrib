@@ -9,14 +9,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/testutil"
 )
 
 func TestNewChainResolver(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	tests := []struct {
 		name      string
 		resolvers []Resolver
@@ -43,16 +40,14 @@ func TestNewChainResolver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			chainResolver := NewChainResolver(tt.resolvers, logger)
+			chainResolver := NewChainResolver(tt.resolvers)
 			assert.NotNil(t, chainResolver)
-			assert.Equal(t, "chain", chainResolver.Name())
 			assert.Len(t, tt.resolvers, len(chainResolver.resolvers))
 		})
 	}
 }
 
 func TestChainResolver_resolveInSequence(t *testing.T) {
-	logger := zaptest.NewLogger(t)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -68,7 +63,6 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Name").Return("mock1")
 				r1.On("Resolve", ctx, "example.com").Return([]string{"192.168.1.10"}, nil)
 
 				// Second resolver should not be called
@@ -87,7 +81,6 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 				r1.On("Resolve", ctx, "example.com").Return(nil, errors.New("first resolver error"))
 
 				r2 := new(testutil.MockResolver)
-				r2.On("Name").Return("mock2")
 				r2.On("Resolve", ctx, "example.com").Return([]string{"192.168.1.20"}, nil)
 
 				return []Resolver{r1, r2}
@@ -137,7 +130,6 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 
 				// Second resolver should be called
 				r2 := new(testutil.MockResolver)
-				r2.On("Name").Return("mock2")
 				r2.On("Resolve", ctx, "example.com").Return([]string{"192.168.1.20"}, nil)
 
 				return []Resolver{r1, r2}
@@ -150,7 +142,7 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resolvers := tt.setupResolvers()
-			chainResolver := NewChainResolver(resolvers, logger)
+			chainResolver := NewChainResolver(resolvers)
 
 			ips, err := chainResolver.Resolve(ctx, tt.hostname)
 
@@ -174,8 +166,6 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 }
 
 func TestChainResolver_Close(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-
 	t.Run("Successful close", func(t *testing.T) {
 		mock1 := new(testutil.MockResolver)
 		mock1.On("Close").Return(nil).Once()
@@ -183,7 +173,7 @@ func TestChainResolver_Close(t *testing.T) {
 		mock2 := new(testutil.MockResolver)
 		mock2.On("Close").Return(nil).Once()
 
-		chainResolver := NewChainResolver([]Resolver{mock1, mock2}, logger)
+		chainResolver := NewChainResolver([]Resolver{mock1, mock2})
 
 		err := chainResolver.Close()
 		assert.NoError(t, err)
@@ -199,7 +189,7 @@ func TestChainResolver_Close(t *testing.T) {
 		errorMock2 := new(testutil.MockResolver)
 		errorMock2.On("Close").Return(errors.New("error 2")).Once()
 
-		chainResolver := NewChainResolver([]Resolver{errorMock1, errorMock2}, logger)
+		chainResolver := NewChainResolver([]Resolver{errorMock1, errorMock2})
 
 		err := chainResolver.Close()
 		assert.Error(t, err)

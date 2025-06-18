@@ -227,7 +227,6 @@ func TestHostFileResolver_Resolve(t *testing.T) {
 	ctx := context.Background()
 
 	resolver := &HostFileResolver{
-		name: "hostfiles",
 		hostnameToIP: map[string][]string{
 			"localhost":    {"127.0.0.1"},
 			"example.com":  {"192.168.1.10", "192.168.1.11"},
@@ -303,7 +302,6 @@ func TestHostFileResolver_Reverse(t *testing.T) {
 	ctx := context.Background()
 
 	resolver := &HostFileResolver{
-		name: "hostfiles",
 		hostnameToIP: map[string][]string{
 			"localhost":    {"127.0.0.1"},
 			"example.com":  {"192.168.1.10"},

@@ -12,7 +12,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/cenkalti/backoff/v5"
-	"go.uber.org/zap"
 )
 
 // Lookup interface defines methods for DNS resolution operations
@@ -44,16 +43,13 @@ func newSystemNetResolver(timeout time.Duration) *net.Resolver {
 
 // NameserverResolver uses specified DNS servers for resolution
 type NameserverResolver struct {
-	nameservers []string
-	name        string
-	maxRetries  int
-	resolvers   []Lookup
-	timeout     time.Duration
-	logger      *zap.Logger
+	maxRetries int
+	resolvers  []Lookup
+	timeout    time.Duration
 }
 
 // NewNameserverResolver creates a new NameserverResolver that uses the provided nameservers for DNS resolution
-func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetries int, logger *zap.Logger) (*NameserverResolver, error) {
+func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetries int) (*NameserverResolver, error) {
 	if len(nameservers) == 0 {
 		return nil, errors.New("at least one nameserver must be provided")
 	}
@@ -69,26 +65,20 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 	}
 
 	r := &NameserverResolver{
-		name:        "nameservers",
-		nameservers: normalizeNameservers,
-		maxRetries:  maxRetries,
-		resolvers:   resolvers,
-		timeout:     timeout,
-		logger:      logger,
+		maxRetries: maxRetries,
+		resolvers:  resolvers,
+		timeout:    timeout,
 	}
 
 	return r, nil
 }
 
 // NewSystemResolver creates a NameserverResolver that uses the system's DNS resolver
-func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger) *NameserverResolver {
+func NewSystemResolver(timeout time.Duration, maxRetries int) *NameserverResolver {
 	return &NameserverResolver{
-		name:        "system",
-		nameservers: []string{"system resolver"},
-		maxRetries:  maxRetries,
-		resolvers:   []Lookup{newSystemNetResolver(timeout)},
-		timeout:     timeout,
-		logger:      logger,
+		maxRetries: maxRetries,
+		resolvers:  []Lookup{newSystemNetResolver(timeout)},
+		timeout:    timeout,
 	}
 }
 
@@ -96,7 +86,7 @@ func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger
 // It returns the first IPv4 address found.
 // If no IPv4 address is found, it returns the first IP address found.
 func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) ([]string, error) {
-	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver Lookup, fnCtx context.Context) ([]string, error) {
+	return r.lookupWithNameservers(ctx, func(fnCtx context.Context, resolver Lookup) ([]string, error) {
 		ips, err := resolver.LookupIP(fnCtx, "ip", hostname)
 		if err != nil {
 			return nil, err
@@ -118,7 +108,7 @@ func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) ([]st
 // Reverse performs a reverse DNS lookup (IP to hostname) using the configured nameservers.
 // It returns the first hostname found.
 func (r *NameserverResolver) Reverse(ctx context.Context, ip string) ([]string, error) {
-	return r.lookupWithNameservers(ctx, ip, LogKeyIP, func(resolver Lookup, fnCtx context.Context) ([]string, error) {
+	return r.lookupWithNameservers(ctx, func(fnCtx context.Context, resolver Lookup) ([]string, error) {
 		hostnames, err := resolver.LookupAddr(fnCtx, ip)
 		if err != nil && hostnames == nil {
 			return nil, err
@@ -137,10 +127,6 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) ([]string, 
 
 		return nHostnames, nil
 	})
-}
-
-func (r *NameserverResolver) Name() string {
-	return r.name
 }
 
 func (r *NameserverResolver) Close() error {
@@ -166,20 +152,18 @@ func newExponentialBackOff() *backoff.ExponentialBackOff {
 // If all nameservers fail, the last error is returned.
 func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
-	target string,
-	_ string,
-	lookupFn func(resolver Lookup, fnCtx context.Context) ([]string, error),
+	lookupFn func(fnCtx context.Context, resolver Lookup) ([]string, error),
 ) ([]string, error) {
 	var lastErr error
 
-	for i, resolver := range r.resolvers {
+	for _, resolver := range r.resolvers {
 		expBackOff := newExponentialBackOff()
 
 		for attempt := 0; attempt <= r.maxRetries; attempt++ {
 			result, err := func() ([]string, error) {
 				lookupCtx, cancel := context.WithTimeout(ctx, r.timeout)
 				defer cancel()
-				return lookupFn(resolver, lookupCtx)
+				return lookupFn(lookupCtx, resolver)
 			}()
 
 			// Successful resolution
@@ -217,16 +201,8 @@ func (r *NameserverResolver) lookupWithNameservers(
 				sleepDuration := expBackOff.NextBackOff()
 
 				select {
-				case <-time.After(sleepDuration):
-					r.logger.Debug("DNS lookup failed with nameserver. Will retry after backoff.",
-						zap.String("lookup", target),
-						zap.String("nameserver", r.nameservers[i]),
-						zap.String("sleep", sleepDuration.String()),
-						zap.Error(err))
-				case <-ctx.Done():
-					r.logger.Warn("Context cancelled during lookup retry",
-						zap.String("lookup", target),
-						zap.Error(ctx.Err()))
+				case <-time.After(sleepDuration): // Backoff
+				case <-ctx.Done(): // Context cancelled during lookup retry
 					return nil, ctx.Err()
 				}
 			}
@@ -254,7 +230,7 @@ func validateAndFormatNameservers(nameservers []string) ([]string, error) {
 			}
 		}
 
-		// validate the address
+		// Validate address
 		_, ipErr := ParseIP(host)
 		_, hostErr := ParseHostname(host)
 		isPort := govalidator.IsPort(port)

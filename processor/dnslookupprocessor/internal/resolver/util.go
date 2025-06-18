@@ -10,18 +10,6 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
-// Flip the direction for logging
-func Flip(logKey string) string {
-	switch logKey {
-	case LogKeyHostname:
-		return LogKeyIP
-	case LogKeyIP:
-		return LogKeyHostname
-	default:
-		return LogKeyHostname
-	}
-}
-
 func ParseIP(ip string) (string, error) {
 	netIP := net.ParseIP(ip)
 	if netIP == nil || netIP.IsUnspecified() {
