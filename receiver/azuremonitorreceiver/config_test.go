@@ -109,14 +109,6 @@ func TestLoadConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "max_resources_per_batch"),
-			expectedErr: errInvalidMaxResPerBatch.Error(),
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "max_resources_per_batch_negative_value"),
-			expectedErr: errInvalidMaxResPerBatch.Error(),
-		},
 	}
 
 	for _, tt := range tests {

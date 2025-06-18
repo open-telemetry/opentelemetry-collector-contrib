@@ -28,7 +28,6 @@ var (
 	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
 	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
 	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
-	errInvalidMaxResPerBatch  = errors.New(`"MaximumResourcesPerBatch" is invalid`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -331,10 +330,6 @@ func (c Config) Validate() (err error) {
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {
 		err = multierr.Append(err, errInvalidCloud)
-	}
-
-	if c.UseBatchAPI && c.MaximumResourcesPerBatch != 0 && (c.MaximumResourcesPerBatch > defaultMaximumResourcesPerBatch || c.MaximumResourcesPerBatch < 0) {
-		err = multierr.Append(err, errInvalidMaxResPerBatch)
 	}
 
 	return
