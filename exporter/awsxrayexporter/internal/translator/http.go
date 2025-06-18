@@ -59,8 +59,8 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventionsv112.AttributeHTTPTarget, conventions.AttributeURLQuery:
-			urlParts[conventionsv112.AttributeHTTPTarget] = value.Str()
+		case conventionsv112.AttributeHTTPTarget:
+			urlParts[key] = value.Str()
 			hasHTTP = true
 		case conventionsv112.AttributeHTTPServerName:
 			urlParts[key] = value.Str()
@@ -108,6 +108,9 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 				info.Request.ClientIP = awsxray.String(value.Str())
 			}
 		case conventions.AttributeURLPath:
+			urlParts[key] = value.Str()
+			hasHTTP = true
+		case conventions.AttributeURLQuery:
 			urlParts[key] = value.Str()
 			hasHTTP = true
 		case conventions.AttributeServerAddress:
@@ -205,7 +208,16 @@ func constructClientURL(urlParts map[string]string) string {
 	if ok {
 		url += target
 	} else {
-		url += "/"
+		path, ok := urlParts[conventions.AttributeURLPath]
+		if ok {
+			url += path
+		} else {
+			url += "/"
+		}
+		query, ok := urlParts[conventions.AttributeURLQuery]
+		if ok {
+			url += "?" + query
+		}
 	}
 	return url
 }
@@ -258,6 +270,10 @@ func constructServerURL(urlParts map[string]string) string {
 			url += path
 		} else {
 			url += "/"
+		}
+		query, ok := urlParts[conventions.AttributeURLQuery]
+		if ok {
+			url += "?" + query
 		}
 	}
 	return url
