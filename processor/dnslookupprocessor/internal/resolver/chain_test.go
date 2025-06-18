@@ -101,9 +101,8 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 
 				return []Resolver{r1, r2}
 			},
-			expectedIPs:   nil,
-			expectError:   true,
-			expectedError: ErrNoResolution,
+			expectedIPs: nil,
+			expectError: false,
 		},
 		{
 			name:     "All resolvers fail, populate last error",
@@ -122,11 +121,11 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 			expectedError: errors.New("second resolver error"),
 		},
 		{
-			name:     "ErrNotInHostFiles should try the next resolver",
+			name:     "No error and no result should try the next resolver",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Resolve", ctx, "example.com").Return(nil, ErrNotInHostFiles)
+				r1.On("Resolve", ctx, "example.com").Return(nil, nil)
 
 				// Second resolver should be called
 				r2 := new(testutil.MockResolver)

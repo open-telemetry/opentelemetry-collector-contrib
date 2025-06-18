@@ -126,7 +126,7 @@ func (r *HostFileResolver) Resolve(_ context.Context, hostname string) ([]string
 		return ips, nil
 	}
 
-	return nil, ErrNotInHostFiles
+	return nil, nil
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the loaded host files
@@ -135,7 +135,7 @@ func (r *HostFileResolver) Reverse(_ context.Context, ip string) ([]string, erro
 		return hostnames, nil
 	}
 
-	return nil, ErrNotInHostFiles
+	return nil, nil
 }
 
 func deduplicateMapping(mapping map[string][]string) {

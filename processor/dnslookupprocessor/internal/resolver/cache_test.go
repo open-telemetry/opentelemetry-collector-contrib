@@ -197,41 +197,13 @@ func TestCacheResolver_resolveWithCache(t *testing.T) {
 			expectedMissCacheSize: 0,
 		},
 		{
-			name:          "ErrNoResolution is not populated. Add to miss cache",
+			name:          "No error and no result. Add to miss cache",
 			hostname:      "somewhere.com",
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
 			setupMock: func(m *testutil.MockResolver) {
-				m.On("Resolve", ctx, "somewhere.com").Return(nil, ErrNoResolution).Once()
-			},
-			expectedIP:            nil,
-			expectError:           false,
-			expectedHitCacheSize:  0,
-			expectedMissCacheSize: 1,
-		},
-		{
-			name:          "ErrNotInHostFiles is not populated. Add to miss cache",
-			hostname:      "somewhere.com",
-			hitCacheSize:  10,
-			missCacheSize: 10,
-			cacheTTL:      0,
-			setupMock: func(m *testutil.MockResolver) {
-				m.On("Resolve", ctx, "somewhere.com").Return(nil, ErrNotInHostFiles).Once()
-			},
-			expectedIP:            nil,
-			expectError:           false,
-			expectedHitCacheSize:  0,
-			expectedMissCacheSize: 1,
-		},
-		{
-			name:          "ErrNSPermanentFailure is not populated. Add to miss cache",
-			hostname:      "somewhere.com",
-			hitCacheSize:  10,
-			missCacheSize: 10,
-			cacheTTL:      0,
-			setupMock: func(m *testutil.MockResolver) {
-				m.On("Resolve", ctx, "somewhere.com").Return(nil, ErrNSPermanentFailure).Once()
+				m.On("Resolve", ctx, "somewhere.com").Return(nil, nil).Once()
 			},
 			expectedIP:            nil,
 			expectError:           false,

@@ -82,24 +82,24 @@ func (r *CacheResolver) resolveWithCache(
 
 	// Call the underlying chain resolver
 	result, err := resolveFunc(ctx, target)
+	if err != nil {
+		// Retryable errors eg. timeout
+		return nil, err
+	}
 
-	// Add result to the appropriate cache
-	switch {
-	case errors.Is(err, ErrNoResolution) ||
-		errors.Is(err, ErrNotInHostFiles) ||
-		errors.Is(err, ErrNSPermanentFailure): // No resolution or NS permanent failure
-		if r.missCache != nil {
-			r.missCache.Add(target, struct{}{})
-		}
-		return nil, nil
-	case err == nil: // Successful resolution
+	// Successful resolution
+	if result != nil {
 		if r.hitCache != nil {
 			r.hitCache.Add(target, result)
 		}
 		return result, nil
-	default: // Retryable errors eg. timeout
-		return nil, err
 	}
+
+	// No resolution
+	if r.missCache != nil {
+		r.missCache.Add(target, struct{}{})
+	}
+	return nil, nil
 }
 
 // stringHashFn calculates a hash value from the keys for the LRU cache.

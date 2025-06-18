@@ -226,8 +226,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			nameservers:    []string{"test-server"},
 			maxRetries:     2,
 			expectedResult: nil,
-			expectError:    true,
-			expectedError:  ErrNSPermanentFailure,
+			expectError:    false,
 		},
 		{
 			name:     "permanent DNS config error",
@@ -246,8 +245,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			nameservers:    []string{"test-server"},
 			maxRetries:     2,
 			expectedResult: nil,
-			expectError:    true,
-			expectedError:  ErrNSPermanentFailure,
+			expectError:    false,
 		},
 		{
 			name:     "fallback to second nameserver",
@@ -276,7 +274,6 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 			maxRetries:     1,
 			expectedResult: []string{"10.1.1.1"},
 			expectError:    false,
-			expectedError:  nil,
 		},
 	}
 

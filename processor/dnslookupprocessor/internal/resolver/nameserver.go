@@ -148,6 +148,7 @@ func newExponentialBackOff() *backoff.ExponentialBackOff {
 // The lookupFn is a function that performs the actual DNS lookup.
 // It retries the lookup with exponential backoff on retryable failures, e.g., timeout and network temporary errors.
 // No resolution is a valid result that no need to retry.
+// Non-temporary error, e.g. DNSConfigError, is not retried. It is logged and dropped.
 // If all nameservers fail, the last error is returned.
 func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
@@ -170,9 +171,9 @@ func (r *NameserverResolver) lookupWithNameservers(
 				return result, nil
 			}
 
-			// No resolution is a valid result
+			// No resolution is a valid resolution to return
 			if errors.Is(err, ErrNoResolution) {
-				return nil, err
+				return nil, ErrNoResolution
 			}
 
 			lastErr = err
@@ -183,15 +184,16 @@ func (r *NameserverResolver) lookupWithNameservers(
 			}
 
 			// Encounter non-temporary error, skip retrying and move to the next nameserver
+			// Log the error and drop it (reset lastErr for miss cache)
 			if opErr := new(net.OpError); errors.As(err, &opErr) {
 				if !opErr.Temporary() && !opErr.Timeout() {
-					lastErr = ErrNSPermanentFailure
+					lastErr = nil
 					r.logger.Error("Got non-temporary error from nameserver", zap.Error(err))
 					break
 				}
 			} else if netErr := (net.Error)(nil); errors.As(err, &netErr) {
 				if !netErr.Timeout() {
-					lastErr = ErrNSPermanentFailure
+					lastErr = nil
 					r.logger.Error("Got non-temporary error from nameserver", zap.Error(err))
 					break
 				}
@@ -209,6 +211,7 @@ func (r *NameserverResolver) lookupWithNameservers(
 			}
 		}
 	}
+
 	return nil, lastErr
 }
 

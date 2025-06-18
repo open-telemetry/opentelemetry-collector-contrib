@@ -247,8 +247,6 @@ func TestHostFileResolver_Resolve(t *testing.T) {
 		name        string
 		hostname    string
 		expectedIPs []string
-		expectError bool
-		expectedErr error
 	}{
 		{
 			name:        "Valid hostname lookup",
@@ -268,14 +266,12 @@ func TestHostFileResolver_Resolve(t *testing.T) {
 		{
 			name:        "Non-existent hostname",
 			hostname:    "nonexistent.com",
-			expectError: true,
-			expectedErr: ErrNotInHostFiles,
+			expectedIPs: nil,
 		},
 		{
 			name:        "Empty hostname",
 			hostname:    "",
-			expectError: true,
-			expectedErr: ErrNotInHostFiles,
+			expectedIPs: nil,
 		},
 	}
 
@@ -283,16 +279,8 @@ func TestHostFileResolver_Resolve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ips, err := resolver.Resolve(ctx, tt.hostname)
 
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.expectedErr != nil {
-					assert.ErrorIs(t, err, tt.expectedErr)
-				}
-				assert.Empty(t, ips)
-			} else {
-				assert.NoError(t, err)
-				assert.ElementsMatch(t, tt.expectedIPs, ips)
-			}
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, tt.expectedIPs, ips)
 		})
 	}
 }
@@ -341,33 +329,23 @@ func TestHostFileResolver_Reverse(t *testing.T) {
 			expectedHostnames: []string{"ipv6.example"},
 		},
 		{
-			name:        "Non-existent IP",
-			ip:          "192.168.1.100",
-			expectError: true,
-			expectedErr: ErrNotInHostFiles,
+			name:              "Non-existent IP",
+			ip:                "192.168.1.100",
+			expectedHostnames: nil,
 		},
 		{
-			name:        "Empty IP",
-			ip:          "",
-			expectError: true,
-			expectedErr: ErrNotInHostFiles,
+			name:              "Empty IP",
+			ip:                "",
+			expectError:       true,
+			expectedHostnames: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hostnames, err := resolver.Reverse(ctx, tt.ip)
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.expectedErr != nil {
-					assert.ErrorIs(t, err, tt.expectedErr)
-				}
-				assert.Empty(t, hostnames)
-			} else {
-				assert.NoError(t, err)
-				assert.ElementsMatch(t, tt.expectedHostnames, hostnames)
-			}
+			assert.NoError(t, err)
+			assert.ElementsMatch(t, tt.expectedHostnames, hostnames)
 		})
 	}
 }

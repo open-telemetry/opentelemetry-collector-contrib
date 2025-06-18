@@ -45,13 +45,13 @@ func (c *ChainResolver) resolveInSequence(resolverFn func(resolver Resolver) ([]
 		result, err := resolverFn(r)
 
 		// Successful resolution
-		if err == nil {
+		if result != nil {
 			return result, nil
 		}
 
-		// NS returns No Resolution
+		// No Resolution is a valid resolution to return
 		if errors.Is(err, ErrNoResolution) {
-			return nil, err
+			return nil, nil
 		}
 
 		lastErr = err
