@@ -86,7 +86,7 @@ flowchart TD
 
       EnrichBug --> WaitingCodeowners
 
-      Classify -->|New component| NewComponent[Suggest joining SIG,<br>propose via SIG,<br>or reach out on<br><code>#otel-collector-dev</code> Slack]
+      Classify -->|New component| NewComponent[Tag:<br><code>sponsor-needed</code><br>Suggest joining SIG,<br>propose via SIG,<br>or reach out on<br><code>#otel-collector-dev</code> Slack]
       NewComponent --> WaitingCodeowners
 ```
 
