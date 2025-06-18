@@ -43,33 +43,6 @@ type libhoneyReceiver struct {
 	settings   *receiver.Settings
 }
 
-// TeamInfo is part of the AuthInfo struct that stores the team slug
-type TeamInfo struct {
-	Slug string `json:"slug"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// EnvironmentInfo is part of the AuthInfo struct that stores the environment slug and name
-type EnvironmentInfo struct {
-	Slug string `json:"slug"`
-	Name string `json:"name"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// AuthInfo is used by Libhoney to validate team and environment information against Honeycomb's Auth API
-type AuthInfo struct {
-	APIKeyAccess map[string]bool `json:"api_key_access"`
-	Team         TeamInfo        `json:"team"`
-	Environment  EnvironmentInfo `json:"environment"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 func newLibhoneyReceiver(cfg *Config, set *receiver.Settings) (*libhoneyReceiver, error) {
 	r := &libhoneyReceiver{
 		cfg:        cfg,
@@ -166,7 +139,7 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
 	authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
 	if err != nil {
-		errJSON, _ := json.Marshal(`{"error": "failed to create AuthInfo request"}`)
+		errJSON, _ := json.Marshal(`{"error": "failed to create authInfo request"}`)
 		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 		return
 	}
@@ -182,7 +155,7 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 
 	switch {
 	case authResp.StatusCode == http.StatusUnauthorized:
-		errJSON, _ := json.Marshal(`"error": "received 401 response for AuthInfo request from Honeycomb API - check your API key"}`)
+		errJSON, _ := json.Marshal(`"error": "received 401 response for authInfo request from Honeycomb API - check your API key"}`)
 		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 		return
 	case authResp.StatusCode > 299:
