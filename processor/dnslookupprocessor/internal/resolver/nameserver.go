@@ -12,6 +12,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/cenkalti/backoff/v5"
+	"go.uber.org/zap"
 )
 
 // Lookup interface defines methods for DNS resolution operations
@@ -46,10 +47,11 @@ type NameserverResolver struct {
 	maxRetries int
 	resolvers  []Lookup
 	timeout    time.Duration
+	logger     *zap.Logger
 }
 
 // NewNameserverResolver creates a new NameserverResolver that uses the provided nameservers for DNS resolution
-func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetries int) (*NameserverResolver, error) {
+func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetries int, logger *zap.Logger) (*NameserverResolver, error) {
 	if len(nameservers) == 0 {
 		return nil, errors.New("at least one nameserver must be provided")
 	}
@@ -68,17 +70,19 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 		maxRetries: maxRetries,
 		resolvers:  resolvers,
 		timeout:    timeout,
+		logger:     logger,
 	}
 
 	return r, nil
 }
 
 // NewSystemResolver creates a NameserverResolver that uses the system's DNS resolver
-func NewSystemResolver(timeout time.Duration, maxRetries int) *NameserverResolver {
+func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger) *NameserverResolver {
 	return &NameserverResolver{
 		maxRetries: maxRetries,
 		resolvers:  []Lookup{newSystemNetResolver(timeout)},
 		timeout:    timeout,
+		logger:     logger,
 	}
 }
 
@@ -178,15 +182,17 @@ func (r *NameserverResolver) lookupWithNameservers(
 				return nil, ErrNoResolution
 			}
 
-			// Encounter non retryable error, skip retrying and move to the next nameserver
+			// Encounter non-temporary error, skip retrying and move to the next nameserver
 			if opErr := new(net.OpError); errors.As(err, &opErr) {
 				if !opErr.Temporary() && !opErr.Timeout() {
 					lastErr = ErrNSPermanentFailure
+					r.logger.Error("Got non-temporary error from nameserver", zap.Error(err))
 					break
 				}
 			} else if netErr := (net.Error)(nil); errors.As(err, &netErr) {
 				if !netErr.Timeout() {
 					lastErr = ErrNSPermanentFailure
+					r.logger.Error("Got non-temporary error from nameserver", zap.Error(err))
 					break
 				}
 			}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap/zaptest"
 )
 
 var (
@@ -41,6 +42,8 @@ func (m *MockNetResolver) LookupAddr(ctx context.Context, addr string) ([]string
 }
 
 func TestNewNameserverResolver(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
 	tests := []struct {
 		name        string
 		nameservers []string
@@ -60,7 +63,7 @@ func TestNewNameserverResolver(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resolver, err := NewNameserverResolver(tc.nameservers, testTimeout, 3)
+			resolver, err := NewNameserverResolver(tc.nameservers, testTimeout, 3, logger)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -75,11 +78,14 @@ func TestNewNameserverResolver(t *testing.T) {
 }
 
 func TestNewSystemResolver(t *testing.T) {
-	resolver := NewSystemResolver(testTimeout, 3)
+	logger := zaptest.NewLogger(t)
+	resolver := NewSystemResolver(testTimeout, 3, logger)
 	assert.NotNil(t, resolver)
 }
 
 func TestNameserverResolver_Resolve(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
 	testCases := []struct {
 		name           string
 		hostname       string
@@ -285,6 +291,7 @@ func TestNameserverResolver_Resolve(t *testing.T) {
 				maxRetries: tc.maxRetries,
 				resolvers:  mockResolvers,
 				timeout:    testTimeout,
+				logger:     logger,
 			}
 
 			result, err := nsResolver.Resolve(testCtx, tc.hostname)
