@@ -71,6 +71,11 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
+	if lfs.cfg.Recreate {
+		if err := os.Remove(absoluteName); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("error removing the database. Please remove %s manually: %v", absoluteName, err)
+		}
+	}
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 	if err != nil {
 		return nil, err
