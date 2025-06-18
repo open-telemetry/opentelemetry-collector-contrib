@@ -110,7 +110,7 @@ type ComponentManagement struct {
 	IndividualComponents []Component `json:"individual_components"`
 }
 
-type CodecovConfig struct {
+type codecovConfig struct {
 	ComponentManagement ComponentManagement `json:"component_management"`
 }
 
