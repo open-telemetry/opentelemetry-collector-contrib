@@ -184,8 +184,8 @@ github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.66.1 h1:rWgOY6b1Ev9qB
 github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.66.1/go.mod h1:m0kc+OUblsMhgqAY3yxkxxkuwJGAZWz/WeLOQskYLEk=
 github.com/DataDog/datadog-agent/pkg/process/util/api v0.66.1 h1:OHV5qLGA+zUA0snBIeLtHkTV+0hVOHuLXdDokQOb/Ww=
 github.com/DataDog/datadog-agent/pkg/process/util/api v0.66.1/go.mod h1:Fn3/Rd4O1jbs0CXgyG0ZnKXZNc8PyG2cGi2d3InNvDA=
-github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.2 h1:UXJ1RldUzpaiwTbPr+EpuM5xSmDW+SRnawmVeO5gtSk=
-github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.2/go.mod h1:TVs0u8VKvl2zOCpL9MYhEJqI682sF6pb22ymSnbKuXo=
+github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.3 h1:5roKfuw12VCzEEVM2gjXy1K7GklptnjZVMvNioyPMsw=
+github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.3/go.mod h1:TVs0u8VKvl2zOCpL9MYhEJqI682sF6pb22ymSnbKuXo=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.66.1 h1:hA8dg5pgpUXEKFBhcrcb+U6r9h1q3hy+6jYqeC3rZX8=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.66.1/go.mod h1:/AzUUTZn8FZj3xUFJxMh/0/NPqpjsv2z+IMXG/IxRFc=
 github.com/DataDog/datadog-agent/pkg/serializer v0.66.1 h1:v1WFtEFrB43TyuMjwFxNeJMWwZXwpVM6RUWyUtDND9g=
