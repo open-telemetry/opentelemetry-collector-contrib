@@ -819,7 +819,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 
 		for i := 0; i < exemplars.Len(); i++ {
 			exemplar := exemplars.At(i)
-			histogramDatapointExemplar := histogramDatapointExemplar{
+			histogramDatapointExemplarVar := histogramDatapointExemplar{
 				HistogramID:    histogram.HistogramID,
 				DatapointID:    histogramDatapoint.ID,
 				ExemplarID:     uuid.New().String(),
@@ -828,7 +828,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 				TraceID:        exemplar.TraceID().String(),
 				SpanID:         exemplar.SpanID().String(),
 			}
-			kiHistogramRecord.exemplars = append(kiHistogramRecord.exemplars, histogramDatapointExemplar)
+			kiHistogramRecord.exemplars = append(kiHistogramRecord.exemplars, histogramDatapointExemplarVar)
 
 			// Handle Exemplar attribute
 			for k, v := range exemplar.FilteredAttributes().All() {
@@ -844,7 +844,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 
 			for key := range exemplarAttributes {
 				vtPair := exemplarAttributes[key]
-				ea, err := e.newHistogramDatapointExemplarAttributeValue(histogramDatapoint.HistogramID, histogramDatapoint.ID, histogramDatapointExemplar.ExemplarID, key, vtPair)
+				ea, err := e.newHistogramDatapointExemplarAttributeValue(histogramDatapoint.HistogramID, histogramDatapoint.ID, histogramDatapointExemplarVar.ExemplarID, key, vtPair)
 				if err != nil {
 					e.logger.Error(err.Error())
 				} else {
@@ -990,7 +990,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 	for i := 0; i < sumRecord.DataPoints().Len(); i++ {
 		datapoint := sumRecord.DataPoints().At(i)
 
-		sumDatapoint := sumDatapoint{
+		sumDatapointVar := sumDatapoint{
 			SumID:         sum.SumID,
 			ID:            uuid.New().String(),
 			StartTimeUnix: datapoint.StartTimestamp().AsTime().UnixMilli(),
@@ -998,7 +998,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 			SumValue:      datapoint.DoubleValue(),
 			Flags:         int(datapoint.Flags()),
 		}
-		kiSumRecord.datapoint = append(kiSumRecord.datapoint, sumDatapoint)
+		kiSumRecord.datapoint = append(kiSumRecord.datapoint, sumDatapointVar)
 
 		// Handle sum attribute
 		for k, v := range datapoint.Attributes().All() {
@@ -1014,7 +1014,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 
 		for key := range sumDatapointAttributes {
 			vtPair := sumDatapointAttributes[key]
-			sa, err := e.newSumDatapointAttributeValue(sum.SumID, sumDatapoint.ID, key, vtPair)
+			sa, err := e.newSumDatapointAttributeValue(sum.SumID, sumDatapointVar.ID, key, vtPair)
 			if err != nil {
 				e.logger.Error(err.Error())
 			} else {
@@ -1032,16 +1032,16 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 
 		for i := 0; i < exemplars.Len(); i++ {
 			exemplar := exemplars.At(i)
-			sumDatapointExemplar := sumDatapointExemplar{
+			sumDatapointExemplarVar := sumDatapointExemplar{
 				SumID:       sum.SumID,
-				DatapointID: sumDatapoint.ID,
+				DatapointID: sumDatapointVar.ID,
 				ExemplarID:  uuid.New().String(),
 				TimeUnix:    exemplar.Timestamp().AsTime().UnixMilli(),
 				SumValue:    exemplar.DoubleValue(),
 				TraceID:     exemplar.TraceID().String(),
 				SpanID:      exemplar.SpanID().String(),
 			}
-			kiSumRecord.exemplars = append(kiSumRecord.exemplars, sumDatapointExemplar)
+			kiSumRecord.exemplars = append(kiSumRecord.exemplars, sumDatapointExemplarVar)
 
 			// Handle Exemplar attribute
 			for k, v := range exemplar.FilteredAttributes().All() {
@@ -1057,7 +1057,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 
 			for key := range exemplarAttributes {
 				vtPair := exemplarAttributes[key]
-				ea, err := e.newSumDatapointExemplarAttributeValue(sum.SumID, sumDatapoint.ID, sumDatapointExemplar.ExemplarID, key, vtPair)
+				ea, err := e.newSumDatapointExemplarAttributeValue(sum.SumID, sumDatapointVar.ID, sumDatapointExemplarVar.ExemplarID, key, vtPair)
 				if err != nil {
 					e.logger.Error(err.Error())
 				} else {
@@ -1183,7 +1183,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 	for i := 0; i < gaugeRecord.DataPoints().Len(); i++ {
 		datapoint := gaugeRecord.DataPoints().At(i)
 
-		gaugeDatapoint := gaugeDatapoint{
+		gaugeDatapointVar := gaugeDatapoint{
 			GaugeID:       gauge.GaugeID,
 			ID:            uuid.New().String(),
 			StartTimeUnix: datapoint.StartTimestamp().AsTime().UnixMilli(),
@@ -1191,7 +1191,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 			GaugeValue:    datapoint.DoubleValue(),
 			Flags:         int(datapoint.Flags()),
 		}
-		kiGaugeRecord.datapoint = append(kiGaugeRecord.datapoint, gaugeDatapoint)
+		kiGaugeRecord.datapoint = append(kiGaugeRecord.datapoint, gaugeDatapointVar)
 
 		for k, v := range datapoint.Attributes().All() {
 			if k == "" {
@@ -1206,7 +1206,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 
 		for key := range gaugeDatapointAttributes {
 			vtPair := gaugeDatapointAttributes[key]
-			ga, err := e.newGaugeDatapointAttributeValue(gauge.GaugeID, gaugeDatapoint.ID, key, vtPair)
+			ga, err := e.newGaugeDatapointAttributeValue(gauge.GaugeID, gaugeDatapointVar.ID, key, vtPair)
 			if err != nil {
 				e.logger.Error(err.Error())
 			} else {
@@ -1224,16 +1224,16 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 		exemplars := datapoint.Exemplars()
 		for i := 0; i < exemplars.Len(); i++ {
 			exemplar := exemplars.At(i)
-			gaugeDatapointExemplar := gaugeDatapointExemplar{
+			gaugeDatapointExemplarVar := gaugeDatapointExemplar{
 				GaugeID:     gauge.GaugeID,
-				DatapointID: gaugeDatapoint.ID,
+				DatapointID: gaugeDatapointVar.ID,
 				ExemplarID:  uuid.New().String(),
 				TimeUnix:    exemplar.Timestamp().AsTime().UnixMilli(),
 				GaugeValue:  exemplar.DoubleValue(),
 				TraceID:     exemplar.TraceID().String(),
 				SpanID:      exemplar.SpanID().String(),
 			}
-			kiGaugeRecord.exemplars = append(kiGaugeRecord.exemplars, gaugeDatapointExemplar)
+			kiGaugeRecord.exemplars = append(kiGaugeRecord.exemplars, gaugeDatapointExemplarVar)
 
 			// Handle Exemplar attribute
 			for k, v := range exemplar.FilteredAttributes().All() {
@@ -1249,7 +1249,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 
 			for key := range exemplarAttributes {
 				vtPair := exemplarAttributes[key]
-				ea, err := e.newGaugeDatapointExemplarAttributeValue(gauge.GaugeID, gaugeDatapoint.ID, gaugeDatapointExemplar.ExemplarID, key, vtPair)
+				ea, err := e.newGaugeDatapointExemplarAttributeValue(gauge.GaugeID, gaugeDatapointVar.ID, gaugeDatapointExemplarVar.ExemplarID, key, vtPair)
 				if err != nil {
 					e.logger.Error(err.Error())
 				} else {
