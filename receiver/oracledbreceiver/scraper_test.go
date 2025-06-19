@@ -380,10 +380,10 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				_, ok := logs.ResourceLogs().At(0).Resource().Attributes().Get("host.name")
 				assert.True(t, ok)
 				assert.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), "Query metrics has not been added to LogRecords")
-				assert.Equal(t, 21, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), "Metric data missing in LogRecord")
-				elapsedTimeValue, _ := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("oracledb.query.elapsed_time")
+				assert.Equal(t, 22, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), "Metric data missing in LogRecord")
+				elapsedTimeValue, _ := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("oracledb.elapsed_time")
 				assert.Equal(t, 61, int(elapsedTimeValue.Double()), "Metric value calculation error")
-				executionsValue, _ := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("oracledb.query.executions")
+				executionsValue, _ := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("oracledb.executions")
 				assert.Equal(t, 100000, int(executionsValue.Int()), "Metric value calculation error")
 
 				queryText, _ := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("db.query.text")

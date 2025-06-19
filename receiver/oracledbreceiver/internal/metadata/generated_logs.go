@@ -18,7 +18,7 @@ type eventDbServerQuerySample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, dbQueryPlanHashValueAttributeValue string, dbMachineAttributeValue string, dbQueryIDAttributeValue string, oracledbQueryChildNumberAttributeValue string, dbQuerySessionIDAttributeValue string, dbQuerySerialNumberAttributeValue string, dbQueryProcessAttributeValue string, oracledbUsernameAttributeValue string, oracledbSchemaNameAttributeValue string, oracledbQueryProgramAttributeValue string, oracledbQueryModuleAttributeValue string, oracledbQueryStatusAttributeValue string, oracledbQueryStateAttributeValue string, oracledbQueryWaitClassAttributeValue string, oracledbQueryEventAttributeValue string, oracledbQueryObjectNameAttributeValue string, oracledbQueryObjectTypeAttributeValue string, oracledbQueryOsUserAttributeValue string, oracledbQueryDurationAttributeValue float64) {
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, userNameAttributeValue string, clientAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbProcessAttributeValue string, oracledbSchemanameAttributeValue string, oracledbProgramAttributeValue string, oracledbModuleAttributeValue string, oracledbStatusAttributeValue string, oracledbStateAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventAttributeValue string, oracledbObjectNameAttributeValue string, oracledbObjectTypeAttributeValue string, oracledbOsuserAttributeValue string, oracledbDurationSecAttributeValue float64) {
 	if !e.config.Enabled {
 		return
 	}
@@ -33,25 +33,25 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 
 	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
-	lr.Attributes().PutStr("db.query.plan_hash_value", dbQueryPlanHashValueAttributeValue)
-	lr.Attributes().PutStr("db.machine", dbMachineAttributeValue)
-	lr.Attributes().PutStr("db.query.id", dbQueryIDAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.child_number", oracledbQueryChildNumberAttributeValue)
-	lr.Attributes().PutStr("db.query.session_id", dbQuerySessionIDAttributeValue)
-	lr.Attributes().PutStr("db.query.serial_number", dbQuerySerialNumberAttributeValue)
-	lr.Attributes().PutStr("db.query.process", dbQueryProcessAttributeValue)
-	lr.Attributes().PutStr("oracledb.username", oracledbUsernameAttributeValue)
-	lr.Attributes().PutStr("oracledb.schema_name", oracledbSchemaNameAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.program", oracledbQueryProgramAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.module", oracledbQueryModuleAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.status", oracledbQueryStatusAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.state", oracledbQueryStateAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.wait_class", oracledbQueryWaitClassAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.event", oracledbQueryEventAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.object_name", oracledbQueryObjectNameAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.object_type", oracledbQueryObjectTypeAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.os_user", oracledbQueryOsUserAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.duration", oracledbQueryDurationAttributeValue)
+	lr.Attributes().PutStr("user.name", userNameAttributeValue)
+	lr.Attributes().PutStr("client.address", clientAddressAttributeValue)
+	lr.Attributes().PutStr("oracledb.plan_hash_value", oracledbPlanHashValueAttributeValue)
+	lr.Attributes().PutStr("oracledb.sql_id", oracledbSQLIDAttributeValue)
+	lr.Attributes().PutStr("oracledb.child_number", oracledbChildNumberAttributeValue)
+	lr.Attributes().PutStr("oracledb.sid", oracledbSidAttributeValue)
+	lr.Attributes().PutStr("oracledb.serial", oracledbSerialAttributeValue)
+	lr.Attributes().PutStr("oracledb.process", oracledbProcessAttributeValue)
+	lr.Attributes().PutStr("oracledb.schemaname", oracledbSchemanameAttributeValue)
+	lr.Attributes().PutStr("oracledb.program", oracledbProgramAttributeValue)
+	lr.Attributes().PutStr("oracledb.module", oracledbModuleAttributeValue)
+	lr.Attributes().PutStr("oracledb.status", oracledbStatusAttributeValue)
+	lr.Attributes().PutStr("oracledb.state", oracledbStateAttributeValue)
+	lr.Attributes().PutStr("oracledb.wait_class", oracledbWaitClassAttributeValue)
+	lr.Attributes().PutStr("oracledb.event", oracledbEventAttributeValue)
+	lr.Attributes().PutStr("oracledb.object_name", oracledbObjectNameAttributeValue)
+	lr.Attributes().PutStr("oracledb.object_type", oracledbObjectTypeAttributeValue)
+	lr.Attributes().PutStr("oracledb.osuser", oracledbOsuserAttributeValue)
+	lr.Attributes().PutDouble("oracledb.duration_sec", oracledbDurationSecAttributeValue)
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -74,7 +74,7 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbQuerySQLIDAttributeValue string, oracledbQueryChildNumberAttributeValue string, oracledbQueryApplicationWaitTimeAttributeValue float64, oracledbQueryBufferGetsAttributeValue int64, oracledbQueryClusterWaitTimeAttributeValue float64, oracledbQueryConcurrencyWaitTimeAttributeValue float64, oracledbQueryCPUTimeAttributeValue float64, oracledbQueryDirectReadsAttributeValue int64, oracledbQueryDirectWritesAttributeValue int64, oracledbQueryDiskReadsAttributeValue int64, oracledbQueryElapsedTimeAttributeValue float64, oracledbQueryExecutionsAttributeValue int64, oracledbQueryPhysicalReadBytesAttributeValue int64, oracledbQueryPhysicalReadRequestsAttributeValue int64, oracledbQueryPhysicalWriteBytesAttributeValue int64, oracledbQueryPhysicalWriteRequestsAttributeValue int64, oracledbQueryRowsProcessedAttributeValue int64, oracledbQueryUserIoWaitTimeAttributeValue float64, dbServerNameAttributeValue string) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbServerNameAttributeValue string, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbApplicationWaitTimeAttributeValue float64, oracledbBufferGetsAttributeValue int64, oracledbClusterWaitTimeAttributeValue float64, oracledbConcurrencyWaitTimeAttributeValue float64, oracledbCPUTimeAttributeValue float64, oracledbDirectReadsAttributeValue int64, oracledbDirectWritesAttributeValue int64, oracledbDiskReadsAttributeValue int64, oracledbElapsedTimeAttributeValue float64, oracledbExecutionsAttributeValue int64, oracledbPhysicalReadBytesAttributeValue int64, oracledbPhysicalReadRequestsAttributeValue int64, oracledbPhysicalWriteBytesAttributeValue int64, oracledbPhysicalWriteRequestsAttributeValue int64, oracledbRowsProcessedAttributeValue int64, oracledbUserIoWaitTimeAttributeValue float64) {
 	if !e.config.Enabled {
 		return
 	}
@@ -87,27 +87,28 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
 
+	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	lr.Attributes().PutStr("db.server.name", dbServerNameAttributeValue)
 	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	lr.Attributes().PutStr("oracledb.query_plan", oracledbQueryPlanAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.sql_id", oracledbQuerySQLIDAttributeValue)
-	lr.Attributes().PutStr("oracledb.query.child_number", oracledbQueryChildNumberAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.application_wait_time", oracledbQueryApplicationWaitTimeAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.buffer_gets", oracledbQueryBufferGetsAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.cluster_wait_time", oracledbQueryClusterWaitTimeAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.concurrency_wait_time", oracledbQueryConcurrencyWaitTimeAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.cpu_time", oracledbQueryCPUTimeAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.direct_reads", oracledbQueryDirectReadsAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.direct_writes", oracledbQueryDirectWritesAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.disk_reads", oracledbQueryDiskReadsAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.elapsed_time", oracledbQueryElapsedTimeAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.executions", oracledbQueryExecutionsAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.physical_read_bytes", oracledbQueryPhysicalReadBytesAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.physical_read_requests", oracledbQueryPhysicalReadRequestsAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.physical_write_bytes", oracledbQueryPhysicalWriteBytesAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.physical_write_requests", oracledbQueryPhysicalWriteRequestsAttributeValue)
-	lr.Attributes().PutInt("oracledb.query.rows_processed", oracledbQueryRowsProcessedAttributeValue)
-	lr.Attributes().PutDouble("oracledb.query.user_io_wait_time", oracledbQueryUserIoWaitTimeAttributeValue)
-	lr.Attributes().PutStr("db.server.name", dbServerNameAttributeValue)
+	lr.Attributes().PutStr("oracledb.sql_id", oracledbSQLIDAttributeValue)
+	lr.Attributes().PutStr("oracledb.child_number", oracledbChildNumberAttributeValue)
+	lr.Attributes().PutDouble("oracledb.application_wait_time", oracledbApplicationWaitTimeAttributeValue)
+	lr.Attributes().PutInt("oracledb.buffer_gets", oracledbBufferGetsAttributeValue)
+	lr.Attributes().PutDouble("oracledb.cluster_wait_time", oracledbClusterWaitTimeAttributeValue)
+	lr.Attributes().PutDouble("oracledb.concurrency_wait_time", oracledbConcurrencyWaitTimeAttributeValue)
+	lr.Attributes().PutDouble("oracledb.cpu_time", oracledbCPUTimeAttributeValue)
+	lr.Attributes().PutInt("oracledb.direct_reads", oracledbDirectReadsAttributeValue)
+	lr.Attributes().PutInt("oracledb.direct_writes", oracledbDirectWritesAttributeValue)
+	lr.Attributes().PutInt("oracledb.disk_reads", oracledbDiskReadsAttributeValue)
+	lr.Attributes().PutDouble("oracledb.elapsed_time", oracledbElapsedTimeAttributeValue)
+	lr.Attributes().PutInt("oracledb.executions", oracledbExecutionsAttributeValue)
+	lr.Attributes().PutInt("oracledb.physical_read_bytes", oracledbPhysicalReadBytesAttributeValue)
+	lr.Attributes().PutInt("oracledb.physical_read_requests", oracledbPhysicalReadRequestsAttributeValue)
+	lr.Attributes().PutInt("oracledb.physical_write_bytes", oracledbPhysicalWriteBytesAttributeValue)
+	lr.Attributes().PutInt("oracledb.physical_write_requests", oracledbPhysicalWriteRequestsAttributeValue)
+	lr.Attributes().PutInt("oracledb.rows_processed", oracledbRowsProcessedAttributeValue)
+	lr.Attributes().PutDouble("oracledb.user_io_wait_time", oracledbUserIoWaitTimeAttributeValue)
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -248,11 +249,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
-func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, dbQueryPlanHashValueAttributeValue string, dbMachineAttributeValue string, dbQueryIDAttributeValue string, oracledbQueryChildNumberAttributeValue string, dbQuerySessionIDAttributeValue string, dbQuerySerialNumberAttributeValue string, dbQueryProcessAttributeValue string, oracledbUsernameAttributeValue string, oracledbSchemaNameAttributeValue string, oracledbQueryProgramAttributeValue string, oracledbQueryModuleAttributeValue string, oracledbQueryStatusAttributeValue string, oracledbQueryStateAttributeValue string, oracledbQueryWaitClassAttributeValue string, oracledbQueryEventAttributeValue string, oracledbQueryObjectNameAttributeValue string, oracledbQueryObjectTypeAttributeValue string, oracledbQueryOsUserAttributeValue string, oracledbQueryDurationAttributeValue float64) {
-	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbQueryTextAttributeValue, dbSystemNameAttributeValue, dbQueryPlanHashValueAttributeValue, dbMachineAttributeValue, dbQueryIDAttributeValue, oracledbQueryChildNumberAttributeValue, dbQuerySessionIDAttributeValue, dbQuerySerialNumberAttributeValue, dbQueryProcessAttributeValue, oracledbUsernameAttributeValue, oracledbSchemaNameAttributeValue, oracledbQueryProgramAttributeValue, oracledbQueryModuleAttributeValue, oracledbQueryStatusAttributeValue, oracledbQueryStateAttributeValue, oracledbQueryWaitClassAttributeValue, oracledbQueryEventAttributeValue, oracledbQueryObjectNameAttributeValue, oracledbQueryObjectTypeAttributeValue, oracledbQueryOsUserAttributeValue, oracledbQueryDurationAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, userNameAttributeValue string, clientAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbProcessAttributeValue string, oracledbSchemanameAttributeValue string, oracledbProgramAttributeValue string, oracledbModuleAttributeValue string, oracledbStatusAttributeValue string, oracledbStateAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventAttributeValue string, oracledbObjectNameAttributeValue string, oracledbObjectTypeAttributeValue string, oracledbOsuserAttributeValue string, oracledbDurationSecAttributeValue float64) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbQueryTextAttributeValue, dbSystemNameAttributeValue, userNameAttributeValue, clientAddressAttributeValue, oracledbPlanHashValueAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbProcessAttributeValue, oracledbSchemanameAttributeValue, oracledbProgramAttributeValue, oracledbModuleAttributeValue, oracledbStatusAttributeValue, oracledbStateAttributeValue, oracledbWaitClassAttributeValue, oracledbEventAttributeValue, oracledbObjectNameAttributeValue, oracledbObjectTypeAttributeValue, oracledbOsuserAttributeValue, oracledbDurationSecAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbQuerySQLIDAttributeValue string, oracledbQueryChildNumberAttributeValue string, oracledbQueryApplicationWaitTimeAttributeValue float64, oracledbQueryBufferGetsAttributeValue int64, oracledbQueryClusterWaitTimeAttributeValue float64, oracledbQueryConcurrencyWaitTimeAttributeValue float64, oracledbQueryCPUTimeAttributeValue float64, oracledbQueryDirectReadsAttributeValue int64, oracledbQueryDirectWritesAttributeValue int64, oracledbQueryDiskReadsAttributeValue int64, oracledbQueryElapsedTimeAttributeValue float64, oracledbQueryExecutionsAttributeValue int64, oracledbQueryPhysicalReadBytesAttributeValue int64, oracledbQueryPhysicalReadRequestsAttributeValue int64, oracledbQueryPhysicalWriteBytesAttributeValue int64, oracledbQueryPhysicalWriteRequestsAttributeValue int64, oracledbQueryRowsProcessedAttributeValue int64, oracledbQueryUserIoWaitTimeAttributeValue float64, dbServerNameAttributeValue string) {
-	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbQueryTextAttributeValue, oracledbQueryPlanAttributeValue, oracledbQuerySQLIDAttributeValue, oracledbQueryChildNumberAttributeValue, oracledbQueryApplicationWaitTimeAttributeValue, oracledbQueryBufferGetsAttributeValue, oracledbQueryClusterWaitTimeAttributeValue, oracledbQueryConcurrencyWaitTimeAttributeValue, oracledbQueryCPUTimeAttributeValue, oracledbQueryDirectReadsAttributeValue, oracledbQueryDirectWritesAttributeValue, oracledbQueryDiskReadsAttributeValue, oracledbQueryElapsedTimeAttributeValue, oracledbQueryExecutionsAttributeValue, oracledbQueryPhysicalReadBytesAttributeValue, oracledbQueryPhysicalReadRequestsAttributeValue, oracledbQueryPhysicalWriteBytesAttributeValue, oracledbQueryPhysicalWriteRequestsAttributeValue, oracledbQueryRowsProcessedAttributeValue, oracledbQueryUserIoWaitTimeAttributeValue, dbServerNameAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbServerNameAttributeValue string, dbQueryTextAttributeValue string, oracledbQueryPlanAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbApplicationWaitTimeAttributeValue float64, oracledbBufferGetsAttributeValue int64, oracledbClusterWaitTimeAttributeValue float64, oracledbConcurrencyWaitTimeAttributeValue float64, oracledbCPUTimeAttributeValue float64, oracledbDirectReadsAttributeValue int64, oracledbDirectWritesAttributeValue int64, oracledbDiskReadsAttributeValue int64, oracledbElapsedTimeAttributeValue float64, oracledbExecutionsAttributeValue int64, oracledbPhysicalReadBytesAttributeValue int64, oracledbPhysicalReadRequestsAttributeValue int64, oracledbPhysicalWriteBytesAttributeValue int64, oracledbPhysicalWriteRequestsAttributeValue int64, oracledbRowsProcessedAttributeValue int64, oracledbUserIoWaitTimeAttributeValue float64) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbServerNameAttributeValue, dbQueryTextAttributeValue, oracledbQueryPlanAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbApplicationWaitTimeAttributeValue, oracledbBufferGetsAttributeValue, oracledbClusterWaitTimeAttributeValue, oracledbConcurrencyWaitTimeAttributeValue, oracledbCPUTimeAttributeValue, oracledbDirectReadsAttributeValue, oracledbDirectWritesAttributeValue, oracledbDiskReadsAttributeValue, oracledbElapsedTimeAttributeValue, oracledbExecutionsAttributeValue, oracledbPhysicalReadBytesAttributeValue, oracledbPhysicalReadRequestsAttributeValue, oracledbPhysicalWriteBytesAttributeValue, oracledbPhysicalWriteRequestsAttributeValue, oracledbRowsProcessedAttributeValue, oracledbUserIoWaitTimeAttributeValue)
 }
