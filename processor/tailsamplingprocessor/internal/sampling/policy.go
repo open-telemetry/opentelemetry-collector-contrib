@@ -11,6 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 // TraceData stores the sampling related trace data.
@@ -26,6 +28,14 @@ type TraceData struct {
 	ReceivedBatches ptrace.Traces
 	// FinalDecision.
 	FinalDecision Decision
+
+	// OTEP 235 fields for consistent probability sampling
+	// RandomnessValue extracted from TraceID or explicit rv in TraceState
+	RandomnessValue sampling.Randomness
+	// FinalThreshold tracks the most restrictive threshold after all policies
+	FinalThreshold *sampling.Threshold
+	// TraceStatePresent indicates if any spans have TraceState for optimization
+	TraceStatePresent bool
 }
 
 // Decision gives the status of sampling decision.

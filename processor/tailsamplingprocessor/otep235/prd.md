@@ -171,13 +171,11 @@ Write a plan with a series of steps which can be executed to update the
 code base with new requirements. Define the remaining phases of the project.
 
 **Deliverables:**
-- [ ] Detailed implementation plan with specific code changes
-- [ ] Policy interface evolution strategy maintaining backward compatibility
-- [ ] TraceState integration architecture design
-- [ ] Testing strategy for both legacy and OTEP 235 modes
-- [ ] Performance benchmarking plan and acceptance criteria
-- [ ] Configuration migration guide and examples
-- [ ] Definition of Phase 3+ implementation steps
+- [x] Detailed implementation plan with specific code changes
+- [x] TraceState integration architecture design
+- [x] Performance benchmarking plan and acceptance criteria
+- [x] Configuration migration guide and examples
+- [x] Definition of Phase 3+ implementation steps
 
 ### Phase 3+
 
