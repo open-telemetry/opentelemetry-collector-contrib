@@ -210,3 +210,25 @@ To be determined by the agent based on Phase 2 planning.
 - [ ] Migration guide for existing users
 - [ ] Configuration examples for common scenarios
 - [ ] Performance tuning recommendations
+
+## Implementation Decision: Simplified Algorithm Replacement
+
+**Date**: June 19, 2025
+
+**Decision**: Replace the existing hash-based probabilistic sampling algorithm with OTEP 235 threshold-based sampling across all configurations. We are not preserving sampling consistency across processor restarts, which allows us to change the selection algorithm arbitrarily while maintaining functional compatibility.
+
+**Rationale**:
+- Eliminates complexity of dual-mode operation and feature detection
+- Maintains all existing functionality and configuration options
+- Provides immediate OTEP 235 compliance benefits for all users
+- Preserves same effective sampling rates with improved consistency
+- processor/probabilisticsamplerprocessor has demonstrated use of
+  OTEP 235 explicit randomness value to preserve backwards compatibility
+  with legacy hash function
+- We can address this later
+
+**Impact**:
+- Same trace may receive different sampling decision after processor restart (acceptable)
+- All configurations continue to work with same expected behavior
+- TraceState handling becomes automatic and transparent
+- Single implementation path reduces maintenance burden
