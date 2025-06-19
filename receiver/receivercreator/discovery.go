@@ -193,7 +193,7 @@ func getScraperConfFromAnnotations(
 	var val any
 	var endpointSet bool
 	if val, endpointSet = conf[endpointConfigKey]; !endpointSet {
-		// skip endpoint's validation if no user provided endpoint is provided
+		// skip endpoint's validation if there is no user provided endpoint
 		// defaultEndpoint will be added properly later in observerHandler.startReceiver method
 		return conf, nil
 	}
