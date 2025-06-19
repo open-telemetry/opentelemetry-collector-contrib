@@ -8,12 +8,12 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     ServiceName LowCardinality(String) CODEC(ZSTD(1)),
     Body String CODEC(ZSTD(1)),
     ResourceSchemaUrl LowCardinality(String) CODEC(ZSTD(1)),
-    ResourceAttributes JSON,
+    ResourceAttributes JSON CODEC(ZSTD(1)),
     ScopeSchemaUrl LowCardinality(String) CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
     ScopeVersion LowCardinality(String) CODEC(ZSTD(1)),
-    ScopeAttributes JSON,
-    LogAttributes JSON,
+    ScopeAttributes JSON CODEC(ZSTD(1)),
+    LogAttributes JSON CODEC(ZSTD(1)),
 
     INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
 ) ENGINE = %s
