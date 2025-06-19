@@ -2352,8 +2352,8 @@ func Test_StandardPSliceGetter_WrappedError(t *testing.T) {
 	}
 	_, err := getter.Get(context.Background(), nil)
 	assert.Error(t, err)
-	_, ok := err.(TypeError)
-	assert.False(t, ok)
+	var typeError TypeError
+	assert.ErrorAs(t, err, &typeError)
 }
 
 func Test_StandardPMapGetter(t *testing.T) {
