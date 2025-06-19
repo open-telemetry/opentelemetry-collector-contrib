@@ -7,6 +7,46 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `prometheusremoteexporter`: Delete unused struct `CreatedMetric` (#40266)
+- `k8slogreceiver`: Unexport DockerConfig and CRIConfig (#40274)
+- `several`: Rename fields named `TLSSetting` to `TLS` for consistency with the core repository. (#40452)
+  This change affects the following components:
+    - exporter/datadogexporter
+    - exporter/signalfxexporter
+    - exporter/syslogexporter
+    - extension/awsproxy
+    - extension/oauth2clientauthextension
+    - extension/opampextension
+    - processor/resourcedetectionprocessor/internal/openshift
+    - receiver/awsfirehosereceiver
+    - receiver/cloudfoundryreceiver
+    - receiver/prometheusreceiver/targetallocator
+  
+- `azureblobexporter`: Delete type alias Container (#40268)
+- `headersetterextension`: Unexport Header (#40542)
+- `intervalprocessor`: Unexport Processor (#40273)
+- `splunkenterprisereceiver`: Unexport Info (#40267)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.ValueComparator` API to allow comparing values using the OTTL comparison rules (#40370)
+  This change introduces a new API (`ottl.NewValueComparator`) that allows users to 
+  compare raw values using the OTTL comparison rules. It is useful for implementing 
+  custom logic in OTTL functions where value comparison and consistency is desired.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/prometheusremotewrite`: Fix bug where metric metadata was sent with incorrect metric name if configuration includes 'namespace' (#39826)
+- `prometheusexporter`: Expose Scope Name, Version, Schema URL, and Attributes as labels. (#40004)
+  This work is done to comply with https://github.com/open-telemetry/opentelemetry-specification/issues/4223.
+
+<!-- previous-version -->
+
 ## v0.127.0
 
 ### 🛑 Breaking changes 🛑

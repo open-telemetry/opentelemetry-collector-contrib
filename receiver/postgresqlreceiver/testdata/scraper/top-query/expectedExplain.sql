@@ -1,0 +1,1 @@
+/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_114514 AS select * from pg_stat_activity where id = $1;EXPLAIN(FORMAT JSON) EXECUTE otel_114514(null);
