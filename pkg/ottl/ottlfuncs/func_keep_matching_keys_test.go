@@ -20,29 +20,14 @@ func Test_keepMatchingKeys(t *testing.T) {
 	in.PutStr("foo1", "bar")
 	in.PutInt("foo2", 3)
 
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
 		name      string
-		target    ottl.PMapGetSetter[pcommon.Map]
 		pattern   string
 		want      func() *pcommon.Map
 		wantError bool
 	}{
 		{
 			name:    "keep everything that ends with a number",
-			target:  target,
 			pattern: "\\d$",
 			want: func() *pcommon.Map {
 				m := pcommon.NewMap()
@@ -53,7 +38,6 @@ func Test_keepMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "keep nothing",
-			target:  target,
 			pattern: "bar.*",
 			want: func() *pcommon.Map {
 				m := pcommon.NewMap()
@@ -65,7 +49,6 @@ func Test_keepMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "keep everything",
-			target:  target,
 			pattern: "foo.*",
 			want: func() *pcommon.Map {
 				m := pcommon.NewMap()
@@ -77,7 +60,6 @@ func Test_keepMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "invalid pattern",
-			target:  target,
 			pattern: "*",
 			want: func() *pcommon.Map {
 				return nil
@@ -90,7 +72,22 @@ func Test_keepMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			in.CopyTo(scenarioMap)
 
-			exprFunc, err := keepMatchingKeys(tt.target, tt.pattern)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := keepMatchingKeys(target, tt.pattern)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -100,6 +97,7 @@ func Test_keepMatchingKeys(t *testing.T) {
 
 			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			assert.Equal(t, *tt.want(), scenarioMap)
 		})

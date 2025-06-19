@@ -18,19 +18,6 @@ func Test_MergeMaps(t *testing.T) {
 	input := pcommon.NewMap()
 	input.PutStr("attr1", "value1")
 
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
 		name     string
 		source   ottl.PMapGetter[pcommon.Map]
@@ -133,12 +120,28 @@ func Test_MergeMaps(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
 			exprFunc, err := mergeMaps[pcommon.Map](target, tt.source, tt.strategy)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), scenarioMap)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

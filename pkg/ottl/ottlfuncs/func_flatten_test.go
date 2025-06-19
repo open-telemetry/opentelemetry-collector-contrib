@@ -341,11 +341,14 @@ func Test_flatten(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
 			assert.NoError(t, err)
+
+			setterWasCalled := false
 			target := ottl.StandardPMapGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return m, nil
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
+					setterWasCalled = true
 					if v, ok := val.(pcommon.Map); ok {
 						v.CopyTo(m)
 						return nil
@@ -356,8 +359,10 @@ func Test_flatten(t *testing.T) {
 
 			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
 			assert.NoError(t, err)
+
 			_, err = exprFunc(nil, nil)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			assert.Equal(t, tt.expected, m.AsRaw())
 		})
@@ -498,11 +503,14 @@ func Test_flatten_undeterministic(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
 			assert.NoError(t, err)
+
+			setterWasCalled := false
 			target := ottl.StandardPMapGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return m, nil
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
+					setterWasCalled = true
 					if v, ok := val.(pcommon.Map); ok {
 						v.CopyTo(m)
 						return nil
@@ -513,8 +521,10 @@ func Test_flatten_undeterministic(t *testing.T) {
 
 			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
 			assert.NoError(t, err)
+
 			_, err = exprFunc(nil, nil)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			keys, val := extractKeysAndValues(m.AsRaw())
 

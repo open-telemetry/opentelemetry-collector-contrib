@@ -37,22 +37,8 @@ func Test_replaceAllMatches(t *testing.T) {
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Map]](ottlValue)
 
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
 		name              string
-		target            ottl.PMapGetSetter[pcommon.Map]
 		pattern           string
 		replacement       ottl.StringGetter[pcommon.Map]
 		function          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]
@@ -61,7 +47,6 @@ func Test_replaceAllMatches(t *testing.T) {
 	}{
 		{
 			name:    "replace only matches (with hash function)",
-			target:  target,
 			pattern: "hello*",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(context.Context, pcommon.Map) (any, error) {
@@ -80,7 +65,6 @@ func Test_replaceAllMatches(t *testing.T) {
 		},
 		{
 			name:    "replace only matches",
-			target:  target,
 			pattern: "hello*",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(context.Context, pcommon.Map) (any, error) {
@@ -99,7 +83,6 @@ func Test_replaceAllMatches(t *testing.T) {
 		},
 		{
 			name:    "no matches",
-			target:  target,
 			pattern: "nothing*",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(context.Context, pcommon.Map) (any, error) {
@@ -118,7 +101,6 @@ func Test_replaceAllMatches(t *testing.T) {
 		},
 		{
 			name:    "replace empty string",
-			target:  target,
 			pattern: "",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(context.Context, pcommon.Map) (any, error) {
@@ -141,11 +123,27 @@ func Test_replaceAllMatches(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := replaceAllMatches(tt.target, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := replaceAllMatches(target, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

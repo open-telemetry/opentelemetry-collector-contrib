@@ -20,46 +20,29 @@ func Test_limit(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
-		name   string
-		target ottl.PMapGetSetter[pcommon.Map]
-		limit  int64
-		keep   []string
-		want   func(pcommon.Map)
+		name  string
+		limit int64
+		keep  []string
+		want  func(pcommon.Map)
 	}{
 		{
-			name:   "limit to 1",
-			target: target,
-			limit:  int64(1),
+			name:  "limit to 1",
+			limit: int64(1),
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
-			name:   "limit to zero",
-			target: target,
-			limit:  int64(0),
+			name:  "limit to zero",
+			limit: int64(0),
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.EnsureCapacity(input.Len())
 			},
 		},
 		{
-			name:   "limit nothing",
-			target: target,
-			limit:  int64(100),
+			name:  "limit nothing",
+			limit: int64(100),
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -67,9 +50,8 @@ func Test_limit(t *testing.T) {
 			},
 		},
 		{
-			name:   "limit exact",
-			target: target,
-			limit:  int64(3),
+			name:  "limit exact",
+			limit: int64(3),
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -77,39 +59,35 @@ func Test_limit(t *testing.T) {
 			},
 		},
 		{
-			name:   "keep one key",
-			target: target,
-			limit:  int64(2),
-			keep:   []string{"test3"},
+			name:  "keep one key",
+			limit: int64(2),
+			keep:  []string{"test3"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
-			name:   "keep same # of keys as limit",
-			target: target,
-			limit:  int64(2),
-			keep:   []string{"test", "test3"},
+			name:  "keep same # of keys as limit",
+			limit: int64(2),
+			keep:  []string{"test", "test3"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
-			name:   "keep not existing key",
-			target: target,
-			limit:  int64(1),
-			keep:   []string{"te"},
+			name:  "keep not existing key",
+			limit: int64(1),
+			keep:  []string{"te"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
-			name:   "keep not-/existing keys",
-			target: target,
-			limit:  int64(2),
-			keep:   []string{"te", "test3"},
+			name:  "keep not-/existing keys",
+			limit: int64(2),
+			keep:  []string{"te", "test3"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
@@ -121,12 +99,31 @@ func Test_limit(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := limit(tt.target, tt.limit, tt.keep)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := limit(target, tt.limit, tt.keep)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
+			// There is a shortcut in limit() that does not call the setter.
+			if int(tt.limit) < scenarioMap.Len() {
+				assert.True(t, setterWasCalled)
+			}
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

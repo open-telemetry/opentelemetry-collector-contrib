@@ -21,28 +21,13 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
 		name    string
-		target  ottl.PMapGetSetter[pcommon.Map]
 		pattern string
 		want    func(pcommon.Map)
 	}{
 		{
 			name:    "delete everything",
-			target:  target,
 			pattern: "test.*",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.EnsureCapacity(3)
@@ -50,7 +35,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "delete attributes that end in a number",
-			target:  target,
 			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
@@ -58,7 +42,6 @@ func Test_deleteMatchingKeys(t *testing.T) {
 		},
 		{
 			name:    "delete nothing",
-			target:  target,
 			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
@@ -72,11 +55,27 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := deleteMatchingKeys(tt.target, tt.pattern)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := deleteMatchingKeys(target, tt.pattern)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

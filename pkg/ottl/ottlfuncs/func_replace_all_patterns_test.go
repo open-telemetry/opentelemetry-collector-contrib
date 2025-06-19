@@ -44,22 +44,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Map]](ottlValue)
 
-	target := ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
 		name              string
-		target            ottl.StandardPMapGetSetter[pcommon.Map]
 		mode              string
 		pattern           string
 		replacement       ottl.StringGetter[pcommon.Map]
@@ -69,7 +55,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 	}{
 		{
 			name:    "replace only matches (with hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: "hello",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -91,7 +76,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches (with capture group and hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: "(hello)",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -112,7 +96,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches (no capture group and with hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: "hello",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -133,7 +116,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches (no capture group or hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: "hello",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -154,7 +136,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches (with replacement format)",
-			target:  target,
 			mode:    modeValue,
 			pattern: "hello",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -176,7 +157,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches (with invalid replacement format)",
-			target:  target,
 			mode:    modeValue,
 			pattern: "hello",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -193,7 +173,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches",
-			target:  target,
 			mode:    modeValue,
 			pattern: "hello",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -215,7 +194,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "no matches",
-			target:  target,
 			mode:    modeValue,
 			pattern: "nothing",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -237,7 +215,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "multiple regex match",
-			target:  target,
 			mode:    modeValue,
 			pattern: `world[^\s]*(\s?)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -259,7 +236,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "regex match (with multiple capture groups)",
-			target:  target,
 			mode:    modeValue,
 			pattern: `(world1) and (world2)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -280,7 +256,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "regex match (with multiple matches from one capture group)",
-			target:  target,
 			mode:    modeValue,
 			pattern: `(world\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -301,7 +276,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "regex match (with multiple capture groups and hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: `(world1) and (world2)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -322,7 +296,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "regex match (with multiple capture groups and hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: `(world1) and (world2)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -343,7 +316,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "regex match (with multiple matches from one capture group and hash function)",
-			target:  target,
 			mode:    modeValue,
 			pattern: `(world\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -364,7 +336,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replace only matches",
-			target:  target,
 			mode:    modeKey,
 			pattern: "test2",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -387,7 +358,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "no matches",
-			target:  target,
 			mode:    modeKey,
 			pattern: "nothing",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -410,7 +380,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "multiple regex match",
-			target:  target,
 			mode:    modeKey,
 			pattern: `test`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -433,7 +402,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "expand capturing groups in values",
-			target:  target,
 			mode:    modeValue,
 			pattern: `world(\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -456,7 +424,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "expand capturing groups in keys",
-			target:  target,
 			mode:    modeKey,
 			pattern: `test(\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -478,7 +445,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replacement with literal $",
-			target:  target,
 			mode:    modeValue,
 			pattern: `world(\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -501,7 +467,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replacement for empty string",
-			target:  target,
 			mode:    modeValue,
 			pattern: `^$`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -524,7 +489,6 @@ func Test_replaceAllPatterns(t *testing.T) {
 		},
 		{
 			name:    "replacement matches with function",
-			target:  target,
 			mode:    modeKey,
 			pattern: `test(\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
@@ -550,11 +514,27 @@ func Test_replaceAllPatterns(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := replaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
+			setterWasCalled := false
+			target := ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := replaceAllPatterns[pcommon.Map](target, tt.mode, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

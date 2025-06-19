@@ -20,47 +20,30 @@ func Test_deleteKey(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, val any) error {
-			if v, ok := val.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
 	tests := []struct {
-		name   string
-		target ottl.PMapGetSetter[pcommon.Map]
-		key    string
-		want   func(pcommon.Map)
+		name string
+		key  string
+		want func(pcommon.Map)
 	}{
 		{
-			name:   "delete test",
-			target: target,
-			key:    "test",
+			name: "delete test",
+			key:  "test",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutBool("test3", true)
 				expectedMap.PutInt("test2", 3)
 			},
 		},
 		{
-			name:   "delete test2",
-			target: target,
-			key:    "test2",
+			name: "delete test2",
+			key:  "test2",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutBool("test3", true)
 			},
 		},
 		{
-			name:   "delete nothing",
-			target: target,
-			key:    "not a valid key",
+			name: "delete nothing",
+			key:  "not a valid key",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -73,10 +56,26 @@ func Test_deleteKey(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc := deleteKey(tt.target, tt.key)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, val any) error {
+					setterWasCalled = true
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc := deleteKey(target, tt.key)
 
 			_, err := exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
