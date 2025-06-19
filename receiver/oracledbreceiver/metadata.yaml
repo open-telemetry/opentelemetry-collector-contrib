@@ -4,7 +4,6 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [dmitryax, crobert-1, atoulme]
@@ -12,10 +11,6 @@ status:
 resource_attributes:
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
-    enabled: true
-    type: string
-  host.name:
-    description: The host name of Oracle Server
     enabled: true
     type: string
 
@@ -29,178 +24,7 @@ attributes:
   tablespace_name:
     description: Tablespace name
     type: string
-  # attributes for events
-  ## top query
-  db.query.text:
-    description: The text of the database query being executed.
-    type: string
-  oracledb.query_plan:
-    description: The query execution plan used by the SQL Server.
-    type: string
-  oracledb.sql_id:
-    description: The SQL ID of the query.
-    type: string
-  oracledb.child_number:
-    description: The child number of the query.
-    type: string
-  oracledb.application_wait_time:
-    description: The total time (in microseconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
-    type: double
-  oracledb.buffer_gets:
-    description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
-    type: int
-  oracledb.cluster_wait_time:
-    description: Total time (in microseconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
-    type: double
-  oracledb.concurrency_wait_time:
-    description: Total time (in microseconds) a query spent waiting on concurrency-related events (reporting delta).
-    type: double
-  oracledb.cpu_time:
-    description: Total time (in microseconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta).
-    type: double
-  oracledb.direct_reads:
-    description: The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta).
-    type: int
-  oracledb.direct_writes:
-    description: The number of direct path write operations, where data is written directly to disk from user memory (reporting delta).
-    type: int
-  oracledb.disk_reads:
-    description: The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta).
-    type: int
-  oracledb.elapsed_time:
-    description: The total time (in microseconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
-    type: double
-  oracledb.executions:
-    description: The number of times a specific SQL query has been executed (reporting delta).
-    type: int
-  oracledb.physical_read_bytes:
-    description: The total number of bytes read from disk by a query (reporting delta).
-    type: int
-  oracledb.physical_read_requests:
-    description: The number of physical I/O read operations performed by a query (reporting delta).
-    type: int
-  oracledb.physical_write_bytes:
-    description: The total number of bytes written to disk by a query (reporting delta).
-    type: int
-  oracledb.physical_write_requests:
-    description: The number of times a query requested to write data to disk (reporting delta).
-    type: int
-  oracledb.rows_processed:
-    description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
-    type: int
-  oracledb.user_io_wait_time:
-    description: The total time (in microseconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
-    type: double
-  db.server.name:
-    description: The name of the server hosting the database.
-    type: string
-  db.system.name:
-    description: The database management system (DBMS) product as identified by the client instrumentation.
-    type: string
-  oracledb.plan_hash_value:
-    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
-    type: string
-  client.address:
-    description: Identifies the name of the machine (host) from which the database client is connecting to the Oracle database.
-    type: string
-  oracledb.sid:
-    description: ID of the Oracle Server session.
-    type: string
-  oracledb.serial:
-    description: Serial number associated with a session.
-    type: string
-  oracledb.process:
-    description: The operating system process ID (PID) associated with a session.
-    type: string
-  user.name:
-    description: Database user name under which a session is connected to
-    type: string
-  oracledb.schemaname:
-   description: Oracle schema under which SQL statements are being executed
-   type: string
-  oracledb.program:
-   description: Name of the client program or tool that initiated the Oracle database session.
-   type: string
-  oracledb.module:
-   description: Logical module name of the client application that initiated a query or session.
-   type: string
-  oracledb.status:
-   description: Execution state or result of a database query or session.
-   type: string
-  oracledb.state:
-   description: Current state of the query or the session executing it.
-   type: string
-  oracledb.wait_class:
-   description: The category of wait events a query or session is currently experiencing in Oracle Database.
-   type: string
-  oracledb.event:
-   description: The specific wait event that a query or session is currently experiencing.
-   type: string
-  oracledb.object_name:
-   description: Name of the database object that a query is accessing.
-   type: string
-  oracledb.object_type:
-   description: Type of the database object that a query is accessing.
-   type: string
-  oracledb.osuser:
-   description: Name of the operating system user that initiated or is running the Oracle database session.
-   type: string
-  oracledb.duration_sec:
-    description: Total time taken by a database query to execute.
-    type: double
 
-events:
-  db.server.top_query:
-    enabled: false
-    description: top query
-    attributes:
-      - db.system.name
-      - db.server.name
-      - db.query.text
-      - oracledb.query_plan
-      - oracledb.sql_id
-      - oracledb.child_number
-      - oracledb.application_wait_time
-      - oracledb.buffer_gets
-      - oracledb.cluster_wait_time
-      - oracledb.concurrency_wait_time
-      - oracledb.cpu_time
-      - oracledb.direct_reads
-      - oracledb.direct_writes
-      - oracledb.disk_reads
-      - oracledb.elapsed_time
-      - oracledb.executions
-      - oracledb.physical_read_bytes
-      - oracledb.physical_read_requests
-      - oracledb.physical_write_bytes
-      - oracledb.physical_write_requests
-      - oracledb.rows_processed
-      - oracledb.user_io_wait_time
-  db.server.query_sample:
-    enabled: false
-    description: sample query
-    attributes:
-      - db.query.text
-      - db.system.name
-      - user.name
-      - client.address
-      - oracledb.plan_hash_value
-      - oracledb.sql_id
-      - oracledb.child_number
-      - oracledb.sid
-      - oracledb.serial
-      - oracledb.process
-      - oracledb.schemaname
-      - oracledb.program
-      - oracledb.module
-      - oracledb.status
-      - oracledb.state
-      - oracledb.wait_class
-      - oracledb.event
-      - oracledb.object_name
-      - oracledb.object_type
-      - oracledb.osuser
-      - oracledb.duration_sec
 metrics:
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds

@@ -217,7 +217,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
-			rb.SetHostName("host.name-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))

@@ -11,8 +11,3 @@ oracledb:
       enabled: false
     oracledb.tablespace_size.usage:
       enabled: false
-  events:
-    db.server.query_sample:
-      enabled: true
-    db.server.top_query:
-      enabled: true

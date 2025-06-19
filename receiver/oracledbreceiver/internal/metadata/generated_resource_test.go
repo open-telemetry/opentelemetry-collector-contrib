@@ -13,7 +13,6 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetHostName("host.name-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
 
 			res := rb.Emit()
@@ -21,9 +20,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 1, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 1, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -31,12 +30,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("host.name")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("oracledb.instance.name")
+			val, ok := res.Attributes().Get("oracledb.instance.name")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "oracledb.instance.name-val", val.Str())
