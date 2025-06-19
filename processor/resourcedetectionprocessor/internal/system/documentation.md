@@ -16,6 +16,7 @@
 | host.cpu.stepping | The host.cpu.stepping | Any Str | false |
 | host.cpu.vendor.id | The host.cpu.vendor.id | Any Str | false |
 | host.id | The host.id | Any Str | false |
+| host.interface | Network interfaces for the host | Any Slice | false |
 | host.ip | IP addresses for the host | Any Slice | false |
 | host.mac | MAC addresses for the host | Any Slice | false |
 | host.name | The host.name | Any Str | true |
