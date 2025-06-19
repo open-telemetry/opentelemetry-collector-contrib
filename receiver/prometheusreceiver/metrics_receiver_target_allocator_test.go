@@ -40,7 +40,7 @@ const exportedMetrics = `
 test_gauge0{label1="value1",label2="value2"} 10
 `
 
-func TestTargetAllocatorConfigLoad(t *testing.T) {
+func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	// Make a prometheus exporter that can serve some metrics.
 	mockProm := newMockPrometheus(map[string][]mockPrometheusResponse{
 		"/metrics": {
@@ -61,7 +61,7 @@ func TestTargetAllocatorConfigLoad(t *testing.T) {
 		URL:             tas.srv.URL,
 	}
 
-	pCfg, err := promConfig.Load(string(""), promslog.NewNopLogger())
+	pCfg, err := promConfig.Load("", promslog.NewNopLogger())
 	require.NoError(t, err)
 
 	config := &Config{
@@ -140,10 +140,7 @@ func (mp *mockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Reque
 	if strings.HasSuffix(req.URL.Path, "/scrape_configs") {
 		job := make(map[string]any)
 		job["job_name"] = "test"
-		job["metrics_path"] = "/metrics"
-		job["scrape_interval"] = "1s"
-		job["scrape_timeout"] = "500ms"
-		job["scrape_protocols"] = []string{"OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4"}
+		// Do not set any fields in the scrape config to verify that we have sane defaults.
 
 		result := make(map[string]any)
 		result["test"] = job
