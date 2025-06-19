@@ -34,7 +34,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
-	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
+
+	// We customize the queue/batch settings.
+	assert.NotEqual(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
+
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
 	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
 	assert.Equal(t, ArrowConfig{
@@ -80,7 +83,7 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -160,7 +163,7 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
@@ -173,7 +176,7 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},

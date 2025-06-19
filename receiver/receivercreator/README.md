@@ -84,6 +84,10 @@ manually setting it like the above example, the observer endpoint target value
 will automatically be sourced. If no `endpoint` field is available you are
 required to specify any necessary fields.
 
+To develop, test or debug [expvar
+syntax](https://github.com/expr-lang/expr/blob/master/docs/language-definition.md)
+based expressions use [Expr language playground](https://expr-lang.org/playground).
+
 **receivers.resource_attributes**
 
 ```yaml
@@ -486,6 +490,22 @@ receiver_creator/metrics:
      enabled: true
      # Define which receivers should be ignored when provided through annotations
      # ignore_receivers: []
+     # default_annotations: {}
+receiver_creator/logs:
+  watch_observers: [ k8s_observer ]
+  discovery:
+    enabled: true
+    # Define default annotations
+    #
+    # This can be used when a default behaviour is required for all discovered
+    # Pods/containers without having to explicitly annotate all Pods.
+    #
+    # Example: Enable log collection for all discovered Pods/containers unless they are explicitly
+    # annotated with `io.opentelemetry.discovery.logs/enabled: "false"`.
+    # (to avoid collecting Collector's own logs make sure that Collector Pods are properly annotated
+    # with `io.opentelemetry.discovery.logs/enabled: "false"`)
+    # default_annotations:
+    #   io.opentelemetry.discovery.logs/enabled: "true"
 ```
 
 See below for the supported annotations that user can define to automatically enable receivers to start

@@ -115,3 +115,41 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNativeSubstitutes(t *testing.T) {
+	type args struct {
+		format string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{
+			name: "get ctime directives",
+			args: args{
+				format: "%Y-%m-%d %H:%M:%S.%f",
+			},
+			want: map[string]string{"01": "%m", "02": "%d", "04": "%M", "05": "%S", "15": "%H", "2006": "%Y", "999999": "%f"},
+		},
+		{
+			name: "format contains unsupported directive",
+			args: args{
+				format: "%C-%m-%d-%H-%M-%S.%L",
+			},
+			want: map[string]string{"01": "%m", "02": "%d", "04": "%M", "05": "%S", "15": "%H", "999": "%L"},
+		},
+		{
+			name: "format contains Go layout elements",
+			args: args{
+				format: "2006-%m-%d",
+			},
+			want: map[string]string{"01": "%m", "02": "%d"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, GetNativeSubstitutes(tt.args.format), "GetNativeSubstitutes(%v)", tt.args.format)
+		})
+	}
+}

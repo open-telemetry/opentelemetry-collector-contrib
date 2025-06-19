@@ -69,6 +69,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
+- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
@@ -94,7 +95,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Curtis Robert](https://github.com/crobert-1), Splunk
-- [David Ashpole](https://github.com/dashpole), Google (on leave)
+- [David Ashpole](https://github.com/dashpole), Google
 - [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs

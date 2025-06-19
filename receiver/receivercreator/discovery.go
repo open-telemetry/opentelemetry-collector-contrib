@@ -35,8 +35,9 @@ const (
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
-	logger          *zap.Logger
-	ignoreReceivers map[string]bool
+	logger             *zap.Logger
+	ignoreReceivers    map[string]bool
+	defaultAnnotations map[string]string
 }
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
@@ -45,8 +46,9 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 		ignoreReceivers[r] = true
 	}
 	return k8sHintsBuilder{
-		logger:          logger,
-		ignoreReceivers: ignoreReceivers,
+		logger:             logger,
+		ignoreReceivers:    ignoreReceivers,
+		defaultAnnotations: config.DefaultAnnotations,
 	}
 }
 
@@ -77,11 +79,12 @@ func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.End
 		return nil, nil
 	}
 
+	annotations := mergeAnnotations(pod.Annotations, builder.defaultAnnotations)
 	switch endpointType {
 	case string(observer.PortType):
-		return builder.createScraper(pod.Annotations, env)
+		return builder.createScraper(annotations, env)
 	case string(observer.PodContainerType):
-		return builder.createLogsReceiver(pod.Annotations, env)
+		return builder.createLogsReceiver(annotations, env)
 	default:
 		return nil, nil
 	}
@@ -242,7 +245,7 @@ func createLogsConfig(
 
 func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
 	// try to scope the hint more on container level by suffixing
-	// with .<port> in case of Port event or # TODO: .<container_name> in case of Pod Container event
+	// with .<port> in case of Port event or .<container_name> in case of Pod Container event
 	containerLevelHint, ok := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
 	if ok {
 		return containerLevelHint, ok
@@ -292,4 +295,17 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 		return errors.New("configured endpoint should include target Pod's endpoint")
 	}
 	return nil
+}
+
+func mergeAnnotations(podAnnotations, defaultAnnotations map[string]string) map[string]string {
+	annotations := make(map[string]string)
+	// Start with defaultAnnotations (lower priority)
+	for k, v := range defaultAnnotations {
+		annotations[k] = v
+	}
+	// Overwrite with podAnnotations (higher priority)
+	for k, v := range podAnnotations {
+		annotations[k] = v
+	}
+	return annotations
 }
