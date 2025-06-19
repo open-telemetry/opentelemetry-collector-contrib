@@ -74,6 +74,10 @@ func TestProbabilisticSampling(t *testing.T) {
 			for _, traceID := range genRandomTraceIDs(traceCount) {
 				trace := newTraceStringAttrs(nil, "example", "value")
 
+				// Initialize OTEP 235 fields as would be done by the processor
+				tsm := NewTraceStateManager()
+				tsm.InitializeTraceData(context.Background(), traceID, trace)
+
 				decision, err := probabilisticSampler.Evaluate(context.Background(), traceID, trace)
 				assert.NoError(t, err)
 

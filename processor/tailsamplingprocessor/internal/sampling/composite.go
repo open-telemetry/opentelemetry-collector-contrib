@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type subpolicy struct {
@@ -115,6 +117,9 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
 				sub.sampledSPS = spansInSecondIfSampled
 
+				// Update trace threshold for OTEP 235 consistency when sampling
+				c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
+
 				// Let the sampling happen
 				if c.recordSubPolicy {
 					SetAttrOnScopeSpans(trace, "tailsampling.composite_policy", sub.name)
@@ -131,4 +136,18 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	}
 
 	return NotSampled, nil
+}
+
+// updateTraceThreshold updates the trace's final threshold to be the most restrictive
+// (highest) threshold applied by any policy.
+func (c *Composite) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
+	if trace.FinalThreshold == nil {
+		// First policy to set a threshold
+		trace.FinalThreshold = &policyThreshold
+	} else {
+		// Use the more restrictive (higher) threshold
+		if sampling.ThresholdGreater(policyThreshold, *trace.FinalThreshold) {
+			trace.FinalThreshold = &policyThreshold
+		}
+	}
 }

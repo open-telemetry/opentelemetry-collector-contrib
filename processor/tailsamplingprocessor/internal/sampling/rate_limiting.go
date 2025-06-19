@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type rateLimiting struct {
@@ -30,8 +32,11 @@ func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64)
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
+// This implementation maintains OTEP 235 consistency by updating trace thresholds
+// when applying rate limiting decisions.
 func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	r.logger.Debug("Evaluating spans in rate-limiting filter")
+	r.logger.Debug("Evaluating trace in rate-limiting filter using OTEP 235 threshold consistency")
+
 	currSecond := time.Now().Unix()
 	if r.currentSecond != currSecond {
 		r.currentSecond = currSecond
@@ -41,8 +46,30 @@ func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *Tra
 	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount.Load()
 	if spansInSecondIfSampled < r.spansPerSecond {
 		r.spansInCurrentSecond = spansInSecondIfSampled
+
+		// For OTEP 235 consistency, we need to ensure the trace threshold reflects
+		// that this trace was sampled. Since rate limiting accepts all traces within
+		// the limit, we use AlwaysSampleThreshold to indicate 100% sampling.
+		r.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
+
 		return Sampled, nil
 	}
 
+	// Rate limit exceeded - reject the trace
+	// Note: We don't update the threshold here since the trace is not sampled
 	return NotSampled, nil
+}
+
+// updateTraceThreshold updates the trace's final threshold to be the most restrictive
+// (highest) threshold applied by any policy.
+func (r *rateLimiting) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
+	if trace.FinalThreshold == nil {
+		// First policy to set a threshold
+		trace.FinalThreshold = &policyThreshold
+	} else {
+		// Use the more restrictive (higher) threshold
+		if sampling.ThresholdGreater(policyThreshold, *trace.FinalThreshold) {
+			trace.FinalThreshold = &policyThreshold
+		}
+	}
 }
