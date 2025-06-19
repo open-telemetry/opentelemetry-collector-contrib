@@ -2189,6 +2189,116 @@ func Test_StandardPSliceGetter(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "[]string type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []string{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int16 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int32 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int64 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int64{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint16 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint16{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint32 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint64 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint64{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]float32 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []float32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]float64 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []float64{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
 			name: "ValueTypeSlice type",
 			getter: StandardPSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
