@@ -428,21 +428,19 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 func TestEncodeSpanECSMode(t *testing.T) {
 	encoder, _ := newEncoder(MappingECS)
 
-	// Create resource attributes using FromRaw
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		"cloud.provider":               "aws",
-		"cloud.platform":               "aws_elastic_beanstalk",
-		"deployment.environment":       "BETA",
-		"service.node.name":            "23",
-		"service.version":              "env-version-1234",
-		string(semconv.ServiceNameKey): "some-service",
+		string(semconv.CloudProviderKey):         "aws",
+		string(semconv.CloudPlatformKey):         "aws_elastic_beanstalk",
+		string(semconv.DeploymentEnvironmentKey): "BETA",
+		string(semconv.ServiceInstanceIDKey):     "23",
+		string(semconv.ServiceNameKey):           "some-service",
+		string(semconv.ServiceVersionKey):        "env-version-1234",
 	})
 	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
 
-	// Create span
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(resourceSpans.Resource())
@@ -464,7 +462,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Add span links
 	link1 := span.Links().AppendEmpty()
 	link1.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01})
 	link1.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
@@ -473,7 +470,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	link2.SetTraceID([16]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21})
 	link2.SetSpanID([8]byte{0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38})
 
-	// Add span events
 	event := span.Events().AppendEmpty()
 	event.SetName("fooEvent")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
@@ -483,7 +479,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Encode the span
 	var buf bytes.Buffer
 	err = encoder.encodeSpan(
 		encodingContext{
@@ -496,7 +491,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	// Validate the output
 	assert.JSONEq(t, `{
 	  "@timestamp": "2023-04-19T03:04:05.000000006Z",
 	  "trace": {
@@ -541,8 +535,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	   "service": {
 		"name": "aws_elastic_beanstalk"
 	   }
-	  },
-	  "lib-foo": "lib-bar"
+	  }
 	 }`, buf.String())
 }
 
