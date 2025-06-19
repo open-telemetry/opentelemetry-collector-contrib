@@ -1,12 +1,17 @@
 resourceLogs:
-  - resource:
-      attributes: []
+  - resource: {}
     scopeLogs:
       - logRecords:
           - attributes:
               - key: db.system.name
                 value:
                   stringValue: postgresql
+              - key: db.namespace
+                value:
+                  stringValue: postgres
+              - key: db.query.text
+                value:
+                  stringValue: select * from pg_stat_activity where id = ?
               - key: user.name
                 value:
                   stringValue: otelu
@@ -15,25 +20,22 @@ resourceLogs:
                   stringValue: idle
               - key: postgresql.pid
                 value:
-                  intValue: 1450
+                  intValue: "1450"
               - key: postgresql.application_name
                 value:
                   stringValue: receiver
-              - key: db.namespace
-                value:
-                  stringValue: postgres
               - key: network.peer.address
                 value:
-                  stringValue: "11.4.5.14"
+                  stringValue: 11.4.5.14
               - key: network.peer.port
                 value:
-                  intValue: 114514
+                  intValue: "114514"
               - key: postgresql.client_hostname
                 value:
                   stringValue: otel
               - key: postgresql.query_start
                 value:
-                  stringValue: 2025-02-12T16:37:54.843+08:00
+                  stringValue: "2025-02-12T16:37:54.843+08:00"
               - key: postgresql.wait_event
                 value:
                   stringValue: ""
@@ -43,11 +45,11 @@ resourceLogs:
               - key: postgresql.query_id
                 value:
                   stringValue: "123131231231"
-              - key: db.query.text
-                value:
-                  stringValue: "select * from pg_stat_activity where id = ?"
-            body:
-              stringValue: sample
+            body: {}
+            eventName: db.server.query_sample
+            spanId: ""
+            timeUnixNano: "1749235653491769000"
+            traceId: ""
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: 0.0.1
+          version: latest

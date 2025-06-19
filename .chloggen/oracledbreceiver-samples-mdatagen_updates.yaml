@@ -4,6 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+<<<<<<<< HEAD:.chloggen/oracledbreceiver-samples-mdatagen_updates.yaml
 component: oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
@@ -11,6 +12,15 @@ note: Support mdatagen support for oracledbreceiver samples collection
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37478]
+========
+component: receiver/hostmetrics
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `system.paging.faults` metrics on Windows
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [40468]
+>>>>>>>> upstream/main:.chloggen/add-system.paging.faults-metrics-on-windows.yaml
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-type AdxTrace struct {
+type adxTrace struct {
 	TraceID            string         // TraceID associated to the Trace
 	SpanID             string         // SpanID associated to the Trace
 	ParentID           string         // ParentID associated to the Trace
@@ -24,34 +24,29 @@ type AdxTrace struct {
 	EndTime            string         // The end time of the occurrence. Formatted into string as RFC3339Nano
 	ResourceAttributes map[string]any // JSON Resource attributes that can then be parsed.
 	TraceAttributes    map[string]any // JSON attributes that can then be parsed.
-	Events             []*Event       // Array containing the events in a span
-	Links              []*Link        // Array containing the link in a span
+	Events             []*event       // Array containing the events in a span
+	Links              []*link        // Array containing the link in a span
 }
 
-type Event struct {
+type event struct {
 	EventName       string
 	Timestamp       string
 	EventAttributes map[string]any
 }
 
-type Link struct {
+type link struct {
 	TraceID            string
 	SpanID             string
 	TraceState         string
 	SpanLinkAttributes map[string]any
 }
 
-type Status struct {
-	Code    string
-	Message string
-}
-
-func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope, spanData ptrace.Span) *AdxTrace {
+func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope, spanData ptrace.Span) *adxTrace {
 	traceAttrib := spanData.Attributes().AsRaw()
 	clonedTraceAttrib := cloneMap(traceAttrib)
 	copyMap(clonedTraceAttrib, getScopeMap(scope))
 
-	return &AdxTrace{
+	return &adxTrace{
 		TraceID:            traceutil.TraceIDToHexOrEmptyString(spanData.TraceID()),
 		SpanID:             traceutil.SpanIDToHexOrEmptyString(spanData.SpanID()),
 		ParentID:           traceutil.SpanIDToHexOrEmptyString(spanData.ParentSpanID()),
@@ -68,11 +63,11 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 	}
 }
 
-func getEventsData(sd ptrace.Span) []*Event {
-	events := make([]*Event, sd.Events().Len())
+func getEventsData(sd ptrace.Span) []*event {
+	events := make([]*event, sd.Events().Len())
 
 	for i := 0; i < sd.Events().Len(); i++ {
-		event := &Event{
+		event := &event{
 			Timestamp:       sd.Events().At(i).Timestamp().AsTime().Format(time.RFC3339Nano),
 			EventName:       sd.Events().At(i).Name(),
 			EventAttributes: sd.Events().At(i).Attributes().AsRaw(),
@@ -82,10 +77,10 @@ func getEventsData(sd ptrace.Span) []*Event {
 	return events
 }
 
-func getLinksData(sd ptrace.Span) []*Link {
-	links := make([]*Link, sd.Links().Len())
+func getLinksData(sd ptrace.Span) []*link {
+	links := make([]*link, sd.Links().Len())
 	for i := 0; i < sd.Links().Len(); i++ {
-		link := &Link{
+		link := &link{
 			TraceID:            traceutil.TraceIDToHexOrEmptyString(sd.Links().At(i).TraceID()),
 			SpanID:             traceutil.SpanIDToHexOrEmptyString(sd.Links().At(i).SpanID()),
 			TraceState:         sd.Links().At(i).TraceState().AsRaw(),
