@@ -31,6 +31,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/consumer/consumertest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/exporter v0.128.1-0.20250610090210-188191247685
+	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/pdata v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/pdata/testdata v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/receiver v1.34.1-0.20250610090210-188191247685
@@ -42,7 +43,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/text v0.25.0
+	golang.org/x/text v0.26.0
 )
 
 require (
@@ -111,7 +112,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/extension v1.34.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.128.1-0.20250610090210-188191247685 // indirect
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/pipeline v0.128.1-0.20250610090210-188191247685 // indirect
