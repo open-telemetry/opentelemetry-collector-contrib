@@ -396,6 +396,7 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 }
 
 func TestServerStop(t *testing.T) {
+	var blockCh chan struct{} // Used only for the slow shutdown test
 	tests := []struct {
 		name             string
 		setupServer      func() (*Server, *observer.ObservedLogs)
@@ -431,10 +432,10 @@ func TestServerStop(t *testing.T) {
 				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				})
-				//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 				server := &http.Server{
-					Addr:    "127.0.0.1:0", // Use any available port
-					Handler: mux,
+					Addr:              "127.0.0.1:0", // Use any available port
+					Handler:           mux,
+					ReadHeaderTimeout: 10 * time.Millisecond,
 				}
 
 				return &Server{
@@ -454,27 +455,32 @@ func TestServerStop(t *testing.T) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
 
-				// Create a test server
+				// Create a test server with a blocking handler
 				mux := http.NewServeMux()
+				blockCh = make(chan struct{})
+				mux.HandleFunc("/block", func(w http.ResponseWriter, _ *http.Request) {
+					<-blockCh // block until closed
+					w.WriteHeader(http.StatusOK)
+				})
 				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				})
 
-				//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 				server := &http.Server{
-					Addr:    "127.0.0.1:0",
-					Handler: mux,
+					Addr:              "127.0.0.1:0",
+					Handler:           mux,
+					ReadHeaderTimeout: 10 * time.Millisecond,
 				}
 
-				return &Server{
+				srv := &Server{
 					logger: logger,
 					server: server,
-				}, logs
+				}
+
+				return srv, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
-				// Create a context that will be cancelled very quickly
 				ctx, cancel := context.WithCancel(context.Background())
-				// Cancel the context after a short delay to simulate timeout
 				go func() {
 					time.Sleep(10 * time.Millisecond)
 					cancel()
@@ -493,24 +499,32 @@ func TestServerStop(t *testing.T) {
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
 
-			// If we have a server, start it briefly to make shutdown more realistic
 			if srv.server != nil && srv.server.Addr != "" {
-				// Start the server in a goroutine
 				go func() {
 					if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 						t.Logf("Unexpected server error: %v", err)
 					}
 				}()
-				// Give the server a moment to start
 				time.Sleep(10 * time.Millisecond)
+
+				if tt.simulateSlowStop {
+					go func() {
+						resp, err := http.Get("http://" + srv.server.Addr + "/block")
+						if err == nil {
+							_ = resp.Body.Close()
+						}
+					}()
+				}
 			}
 
-			// Measure how long Stop takes
 			start := time.Now()
 			srv.Stop(ctx)
 			duration := time.Since(start)
 
-			// Verify expected logs
+			if tt.simulateSlowStop {
+				close(blockCh)
+			}
+
 			for _, expectedLog := range tt.expectedLogs {
 				found := false
 				for _, log := range logs.All() {
@@ -522,8 +536,6 @@ func TestServerStop(t *testing.T) {
 				assert.True(t, found, "Expected log message not found: %s", expectedLog)
 			}
 
-			// If we expect timeout, verify it happened reasonably quickly
-			// (context cancellation should not wait for full server shutdown)
 			if tt.expectTimeout {
 				assert.Less(t, duration, 500*time.Millisecond, "Stop should return quickly when context is cancelled")
 			}
@@ -544,10 +556,10 @@ func TestServerStopChannelBehavior(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 	server := &http.Server{
-		Addr:    "127.0.0.1:0",
-		Handler: mux,
+		Addr:              "127.0.0.1:0",
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Millisecond,
 	}
 
 	srv := &Server{
@@ -602,10 +614,10 @@ func TestServerStopConcurrency(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	//nolint: gosec // G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server
 	server := &http.Server{
-		Addr:    "127.0.0.1:0",
-		Handler: mux,
+		Addr:              "127.0.0.1:0",
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Millisecond,
 	}
 
 	srv := &Server{
@@ -747,4 +759,106 @@ func TestHandleMetadata_JSONMarshalError(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "Expected error log for marshal failure")
+}
+
+func TestNewServerErrorPaths(t *testing.T) {
+	t.Run("Stop server that never started", func(t *testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		// Create server but don't start it
+		s := NewServer(
+			logger,
+			&mockSerializer{},
+			&Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0", // Valid endpoint
+				},
+				Path: "/metadata",
+			},
+			"test-hostname",
+			"test-uuid",
+			payload.OtelCollector{},
+		)
+
+		// Stop should not panic even if server was never started
+		assert.NotPanics(t, func() {
+			s.Stop(context.Background())
+		})
+	})
+
+	t.Run("Stop server with nil server", func(t *testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		// Create a server instance with nil server field
+		s := &Server{
+			logger: logger,
+			server: nil,
+		}
+
+		// Stop should not panic with nil server
+		assert.NotPanics(t, func() {
+			s.Stop(context.Background())
+		})
+	})
+}
+
+func TestHandleMetadataErrorPaths(t *testing.T) {
+	t.Run("serializer error", func(t *testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		srv := &Server{
+			logger: logger,
+			serializer: &mockSerializer{
+				sendMetadataFunc: func(any) error {
+					return errors.New("serializer failed")
+				},
+			},
+			payload: &payload.OtelCollectorPayload{
+				Hostname: "test-hostname",
+				UUID:     "test-uuid",
+				Metadata: payload.OtelCollector{
+					FullComponents:   []payload.CollectorModule{},
+					ActiveComponents: []payload.ServiceComponent{},
+				},
+			},
+		}
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/metadata", nil) // Method doesn't matter
+
+		srv.HandleMetadata(w, r)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, "Failed to prepare and send fleet automation payload\n", w.Body.String())
+	})
+
+	t.Run("marshal error with nil writer", func(*testing.T) {
+		core, _ := observer.New(zapcore.InfoLevel)
+		logger := zap.New(core)
+
+		// Create a payload that cannot be marshaled to trigger marshal error
+		srv := &Server{
+			logger: logger,
+			serializer: &mockSerializer{
+				sendMetadataFunc: func(any) error {
+					return nil
+				},
+			},
+			payload: &payload.OtelCollectorPayload{
+				Hostname: "test-hostname",
+				UUID:     "test-uuid",
+				Metadata: payload.OtelCollector{
+					FullComponents:   []payload.CollectorModule{},
+					ActiveComponents: []payload.ServiceComponent{},
+				},
+			},
+		}
+
+		// Test with nil writer to cover that error path
+		srv.HandleMetadata(nil, nil)
+		// Should not panic with nil writer
+	})
 }

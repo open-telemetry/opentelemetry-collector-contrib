@@ -90,7 +90,128 @@ attributes:
     description: The operation which is responsible for the lag.
     type: string
     enum: [flush, replay, write]
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
+    type: string
+    enum: [ postgresql ]
+  db.namespace:
+    description: The namespace or schema of the database where the query is executed.
+    type: string
+  db.query.text:
+    description: The text of the database query being executed.
+    type: string
+  postgresql.calls:
+    description: Number of times the statement was executed, reported in delta value.
+    type: int
+  postgresql.rows:
+    description: Total number of rows retrieved or affected by the statement, reported in delta value.
+    type: int
+  postgresql.shared_blks_dirtied:
+    description: Total number of shared blocks dirtied by the statement, reported in delta value.
+    type: int
+  postgresql.shared_blks_hit:
+    description: Total number of shared block cache hits by the statement, reported in delta value.
+    type: int
+  postgresql.shared_blks_read:
+    description: Total number of shared blocks read by the statement, reported in delta value.
+    type: int
+  postgresql.shared_blks_written:
+    description: Total number of shared blocks written by the statement, reported in delta value.
+    type: int
+  postgresql.temp_blks_read:
+    description: Total number of temp blocks read by the statement, reported in delta value.
+    type: int
+  postgresql.temp_blks_written:
+    description: Total number of temp blocks written by the statement, reported in delta value.
+    type: int
+  postgresql.queryid:
+    description: Hash code to identify identical normalized queries.
+    type: string
+  postgresql.rolname:
+    description: The name of the PostgreSQL role that executed the query.
+    type: string
+  postgresql.total_exec_time:
+    description: Total time spent executing the statement, in delta milliseconds.
+    type: double
+  postgresql.total_plan_time:
+    description: Total time spent planning the statement, in delta milliseconds.
+    type: double
+  postgresql.query_plan:
+    description: The execution plan used by PostgreSQL for the query.
+    type: string
+  user.name:
+    description: Name of the user logged into this backend.
+    type: string
+  postgresql.state:
+    description: Current overall state of this backend
+    type: string
+  postgresql.pid:
+    description: Process ID of this backend.
+    type: int
+  postgresql.application_name:
+    description: Name of the application that is connected to this backend.
+    type: string
+  network.peer.address:
+    description: IP address of the client connected to this backend.
+    type: string
+  network.peer.port:
+    description: TCP port number that the client is using for communication with this backend.
+    type: int
+  postgresql.client_hostname:
+    description: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
+    type: string
+  postgresql.query_start:
+    description: Time when the currently active query was started, or if state is not active, when the last query was started.
+    type: string
+  postgresql.wait_event:
+    description: Wait event name if backend is currently waiting, otherwise NULL.
+    type: string
+  postgresql.wait_event_type:
+    description: The type of event for which the backend is waiting, if any; otherwise NULL.
+    type: string
+  postgresql.query_id:
+    description: Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed.
+    type: string
 
+events:
+  db.server.top_query:
+    enabled: true
+    description: top query
+    attributes:
+      - db.system.name
+      - db.namespace
+      - db.query.text
+      - postgresql.calls
+      - postgresql.rows
+      - postgresql.shared_blks_dirtied
+      - postgresql.shared_blks_hit
+      - postgresql.shared_blks_read
+      - postgresql.shared_blks_written
+      - postgresql.temp_blks_read
+      - postgresql.temp_blks_written
+      - postgresql.queryid
+      - postgresql.rolname
+      - postgresql.total_exec_time
+      - postgresql.total_plan_time
+      - postgresql.query_plan
+  db.server.query_sample:
+    enabled: true
+    description: query sample
+    attributes:
+      - db.system.name
+      - db.namespace
+      - db.query.text
+      - user.name
+      - postgresql.state
+      - postgresql.pid
+      - postgresql.application_name
+      - network.peer.address
+      - network.peer.port
+      - postgresql.client_hostname
+      - postgresql.query_start
+      - postgresql.wait_event
+      - postgresql.wait_event_type
+      - postgresql.query_id
 metrics:
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
@@ -373,7 +494,7 @@ tests:
   config:
   goleak:
     ignore:
-      any: 
+      any:
       - "github.com/godbus/dbus.(*Conn).inWorker"
       - github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].func1
       top:
