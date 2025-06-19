@@ -89,19 +89,19 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:     "First resolver returns ErrNoResolution, chain stops",
+			name:     "First resolver returns [], chain stops",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
-				r1.On("Resolve", ctx, "example.com").Return(nil, ErrNoResolution)
+				r1.On("Resolve", ctx, "example.com").Return([]string{}, nil)
 
-				// ErrNoResolution is a valid result that no need to try next resolver
+				// Empty slice is a valid result that no need to try the next resolver
 				// Second resolver should not be called
 				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
-			expectedIPs: nil,
+			expectedIPs: []string{},
 			expectError: false,
 		},
 		{
@@ -121,7 +121,7 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 			expectedError: errors.New("second resolver error"),
 		},
 		{
-			name:     "No error and no result should try the next resolver",
+			name:     "no resolution and no error should try the next resolver",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
 				r1 := new(testutil.MockResolver)
@@ -134,6 +134,22 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 				return []Resolver{r1, r2}
 			},
 			expectedIPs: []string{"192.168.1.20"},
+			expectError: false,
+		},
+		{
+			name:     "All resolvers give no resolution and no error",
+			hostname: "example.com",
+			setupResolvers: func() []Resolver {
+				r1 := new(testutil.MockResolver)
+				r1.On("Resolve", ctx, "example.com").Return(nil, nil)
+
+				// Second resolver should be called
+				r2 := new(testutil.MockResolver)
+				r2.On("Resolve", ctx, "example.com").Return(nil, nil)
+
+				return []Resolver{r1, r2}
+			},
+			expectedIPs: nil,
 			expectError: false,
 		},
 	}

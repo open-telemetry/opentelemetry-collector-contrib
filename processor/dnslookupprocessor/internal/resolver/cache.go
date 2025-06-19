@@ -88,7 +88,7 @@ func (r *CacheResolver) resolveWithCache(
 	}
 
 	// Successful resolution
-	if result != nil {
+	if len(result) > 0 {
 		if r.hitCache != nil {
 			r.hitCache.Add(target, result)
 		}

@@ -95,8 +95,10 @@ func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) ([]st
 		if err != nil {
 			return nil, err
 		}
+
+		// empty slice from server
 		if len(ips) == 0 {
-			return nil, ErrNoResolution
+			return []string{}, nil
 		}
 
 		// convert result to string
@@ -119,8 +121,9 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) ([]string, 
 		}
 
 		// hostname(s) was found but was filtered because of malformed DNS records
+		// empty slice from server
 		if len(hostnames) == 0 {
-			return nil, ErrNoResolution
+			return []string{}, nil
 		}
 
 		// normalize result
@@ -147,7 +150,7 @@ func newExponentialBackOff() *backoff.ExponentialBackOff {
 // lookupWithNameservers attempts a DNS lookup using all configured nameservers.
 // The lookupFn is a function that performs the actual DNS lookup.
 // It retries the lookup with exponential backoff on retryable failures, e.g., timeout and network temporary errors.
-// No resolution is a valid result that no need to retry.
+// Empty slice from server is a valid result that no need to retry.
 // Non-temporary error, e.g. DNSConfigError, is not retried. It is logged and dropped.
 // If all nameservers fail, the last error is returned.
 func (r *NameserverResolver) lookupWithNameservers(
@@ -171,20 +174,13 @@ func (r *NameserverResolver) lookupWithNameservers(
 				return result, nil
 			}
 
-			// No resolution is a valid resolution to return
-			if errors.Is(err, ErrNoResolution) {
-				return nil, ErrNoResolution
-			}
-
-			lastErr = err
-
 			// The hostname was not found (NXDOMAIN), we can skip retrying
 			if dnsErr := new(net.DNSError); errors.As(err, &dnsErr) && dnsErr.IsNotFound {
-				return nil, ErrNoResolution
+				return []string{}, nil
 			}
 
 			// Encounter non-temporary error, skip retrying and move to the next nameserver
-			// Log the error and drop it (reset lastErr for miss cache)
+			// Log the error and drop it (reset lastErr for no resolution)
 			if opErr := new(net.OpError); errors.As(err, &opErr) {
 				if !opErr.Temporary() && !opErr.Timeout() {
 					lastErr = nil
@@ -198,6 +194,8 @@ func (r *NameserverResolver) lookupWithNameservers(
 					break
 				}
 			}
+
+			lastErr = err
 
 			// Sleep for retry
 			if attempt < r.maxRetries {

@@ -9,9 +9,6 @@ import (
 )
 
 var (
-	// ErrNoResolution indicates no resolution was found for the provided hostname or IP
-	ErrNoResolution = errors.New("no resolution found")
-
 	// ErrInvalidHostname indicates the provided hostname is invalid
 	ErrInvalidHostname = errors.New("invalid hostname format")
 
@@ -25,17 +22,17 @@ type Resolver interface {
 	//
 	// It returns:
 	//   - ([]string, nil) on successful resolution
-	//   - (nil, error) if an error occurred
-	//   - (nil, ErrNoResolution) if server replied with no resolution
+	//   - ([]string{}, nil) if the server responded, but returned no resolution (empty slice)
 	//   - (nil, nil) if no resolution is found and expected the caller to try the next resolver
+	//   - (nil, error) if an error occurred
 	Resolve(ctx context.Context, hostname string) ([]string, error)
 
 	// Reverse performs reverse DNS resolution (IP to hostname)
 	//
 	// It returns:
 	//   - ([]string, nil) on successful resolution
-	//   - (nil, error) if an error occurred
-	//   - (nil, ErrNoResolution) if server replied with no resolution
+	//   - ([]string{}, nil) if the server responded, but returned no resolution (empty slice)
 	//   - (nil, nil) if no resolution is found and expected the caller to try the next resolver
+	//   - (nil, error) if an error occurred
 	Reverse(ctx context.Context, ip string) ([]string, error)
 }
