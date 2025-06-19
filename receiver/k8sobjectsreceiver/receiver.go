@@ -141,15 +141,30 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	for {
 		select {
 		case <-ticker.C:
-			objects, err := resource.List(ctx, listOption)
-			if err != nil {
-				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
-			} else if len(objects.Items) > 0 {
-				logs := pullObjectsToLogData(objects, time.Now(), config)
-				obsCtx := kr.obsrecv.StartLogsOp(ctx)
-				logRecordCount := logs.LogRecordCount()
-				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+			pageLimit := config.PageLimit
+			if pageLimit <= 0 {
+				pageLimit = 500
+			}
+			for {
+				continueToken := ""
+				listOption.Limit = int64(pageLimit)
+				listOption.Continue = continueToken
+				objects, err := resource.List(ctx, listOption)
+				if err != nil {
+					kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
+					break
+				} else if len(objects.Items) > 0 {
+					logs := pullObjectsToLogData(objects, time.Now(), config)
+					obsCtx := kr.obsrecv.StartLogsOp(ctx)
+					logRecordCount := logs.LogRecordCount()
+					err = kr.consumer.ConsumeLogs(obsCtx, logs)
+					kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+				}
+				continueToken = objects.GetContinue()
+				if continueToken == "" {
+					break
+				}
+				time.Sleep(1 * time.Second)
 			}
 		case <-stopperChan:
 			return
@@ -301,15 +316,30 @@ func (kr *k8sobjectsreceiver) startPeriodicList(ctx context.Context, config *K8s
 	for {
 		select {
 		case <-ticker.C:
-			objects, err := resource.List(ctx, listOption)
-			if err != nil {
-				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
-			} else if len(objects.Items) > 0 {
-				logs := pullObjectsToLogData(objects, time.Now(), config)
-				obsCtx := kr.obsrecv.StartLogsOp(ctx)
-				logRecordCount := logs.LogRecordCount()
-				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+			pageLimit := config.PageLimit
+			if pageLimit <= 0 {
+				pageLimit = 500
+			}
+			for {
+				continueToken := ""
+				listOption.Limit = int64(pageLimit)
+				listOption.Continue = continueToken
+				objects, err := resource.List(ctx, listOption)
+				if err != nil {
+					kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
+					break
+				} else if len(objects.Items) > 0 {
+					logs := pullObjectsToLogData(objects, time.Now(), config)
+					obsCtx := kr.obsrecv.StartLogsOp(ctx)
+					logRecordCount := logs.LogRecordCount()
+					err = kr.consumer.ConsumeLogs(obsCtx, logs)
+					kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+				}
+				continueToken = objects.GetContinue()
+				if continueToken == "" {
+					break
+				}
+				time.Sleep(1 * time.Second)
 			}
 		case <-stopperChan:
 			return

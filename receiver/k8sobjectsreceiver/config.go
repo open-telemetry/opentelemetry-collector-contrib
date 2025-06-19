@@ -44,8 +44,10 @@ type K8sObjectsConfig struct {
 	Interval         time.Duration        `mapstructure:"interval"`
 	ResourceVersion  string               `mapstructure:"resource_version"`
 	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
-	exclude          map[apiWatch.EventType]bool
-	gvr              *schema.GroupVersionResource
+	PageLimit        int                  `mapstructure:"page_limit"`
+
+	exclude map[apiWatch.EventType]bool
+	gvr     *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -94,6 +96,10 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
 			return fmt.Errorf("the Exclude config can only be used with watch mode")
+		}
+
+		if object.PageLimit <= 0 {
+			object.PageLimit = 500
 		}
 
 		object.gvr = gvr
