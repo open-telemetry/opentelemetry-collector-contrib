@@ -4,6 +4,7 @@
 package s3accesslog
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -210,7 +211,7 @@ func TestUnmarshalLogs(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
 			require.NoError(t, err)
 
-			logs, err := u.UnmarshalLogs(data)
+			logs, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				return

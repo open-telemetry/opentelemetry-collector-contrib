@@ -42,7 +42,6 @@ connector/spanmetricsconnector/                                  @open-telemetry
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
-exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @boostchicken @rapphil
 exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @pdelewski @Erog38
@@ -254,6 +253,7 @@ receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/ @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/loadscraper/       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/networkscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
+receiver/hostmetricsreceiver/internal/scraper/nfsscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/pagingscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
@@ -358,6 +358,7 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
+exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers
 exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers
 exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers

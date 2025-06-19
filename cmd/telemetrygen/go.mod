@@ -6,7 +6,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.34.0
+	go.opentelemetry.io/collector/pdata v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.12.2
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.12.2
@@ -24,8 +24,8 @@ require (
 	go.opentelemetry.io/proto/otlp v1.7.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/time v0.11.0
-	google.golang.org/grpc v1.72.2
+	golang.org/x/time v0.12.0
+	google.golang.org/grpc v1.73.0
 )
 
 require (

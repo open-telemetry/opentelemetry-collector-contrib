@@ -71,6 +71,7 @@ components:
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
@@ -228,6 +229,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

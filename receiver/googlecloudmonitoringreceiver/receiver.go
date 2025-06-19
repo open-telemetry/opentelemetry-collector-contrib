@@ -122,7 +122,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 
 		// Create an iterator for the time series data
 		tsIter := mr.client.ListTimeSeries(ctx, tsReq)
-		mr.logger.Debug("Retrieving time series data")
+		mr.logger.Debug("Retrieving time series data for metric", zap.String("name", metricDesc.Type))
 
 		// Iterate over the time series data
 		for {
@@ -307,19 +307,28 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 	m.SetDescription(metricDesc.GetDescription())
 	m.SetUnit(metricDesc.Unit)
 
-	// Convert the TimeSeries to the appropriate metric type
-	switch timeSeries.GetMetricKind() {
-	case metric.MetricDescriptor_GAUGE:
-		mr.metricsBuilder.ConvertGaugeToMetrics(timeSeries, m)
-	case metric.MetricDescriptor_CUMULATIVE:
-		mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
-	case metric.MetricDescriptor_DELTA:
-		mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
-	// TODO: Add support for HISTOGRAM
-	// TODO: Add support for EXPONENTIAL_HISTOGRAM
+	switch timeSeries.GetValueType() {
+	case metric.MetricDescriptor_DISTRIBUTION:
+		switch timeSeries.GetMetricKind() {
+		case metric.MetricDescriptor_DELTA:
+			mr.metricsBuilder.ConvertDistributionToMetrics(timeSeries, m)
+		default:
+			metricError := fmt.Sprintf("\n Unsupported distribution metric kind: %v\n", timeSeries.GetMetricKind())
+			mr.logger.Warn(metricError)
+		}
 	default:
-		metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
-		mr.logger.Warn(metricError)
+		// Convert the TimeSeries to the appropriate metric type
+		switch timeSeries.GetMetricKind() {
+		case metric.MetricDescriptor_GAUGE:
+			mr.metricsBuilder.ConvertGaugeToMetrics(timeSeries, m)
+		case metric.MetricDescriptor_CUMULATIVE:
+			mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
+		case metric.MetricDescriptor_DELTA:
+			mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
+		default:
+			metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
+			mr.logger.Warn(metricError)
+		}
 	}
 }
 

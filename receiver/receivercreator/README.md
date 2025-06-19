@@ -84,6 +84,10 @@ manually setting it like the above example, the observer endpoint target value
 will automatically be sourced. If no `endpoint` field is available you are
 required to specify any necessary fields.
 
+To develop, test or debug [expvar
+syntax](https://github.com/expr-lang/expr/blob/master/docs/language-definition.md)
+based expressions use [Expr language playground](https://expr-lang.org/playground).
+
 **receivers.resource_attributes**
 
 ```yaml
@@ -501,7 +505,7 @@ receiver_creator/logs:
     # (to avoid collecting Collector's own logs make sure that Collector Pods are properly annotated
     # with `io.opentelemetry.discovery.logs/enabled: "false"`)
     # default_annotations:
-    #   io.opentelemetry.discovery.logs/enabled: true
+    #   io.opentelemetry.discovery.logs/enabled: "true"
 ```
 
 See below for the supported annotations that user can define to automatically enable receivers to start
