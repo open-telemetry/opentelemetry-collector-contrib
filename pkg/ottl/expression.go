@@ -52,6 +52,15 @@ type GetSetter[K any] interface {
 	Setter[K]
 }
 
+// literalGetter is an interface that allows Getter implementations to indicate if they
+// support literal values.
+type literalGetter interface {
+	// isLiteral returns true if the Getter is a literal value.
+	isLiteral() bool
+	// getLiteral retrieves the literal value of the Getter.
+	getLiteral() (any, error)
+}
+
 // StandardGetSetter is a standard way to construct a GetSetter
 type StandardGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
@@ -72,6 +81,14 @@ type literal[K any] struct {
 
 func (l literal[K]) Get(context.Context, K) (any, error) {
 	return l.value, nil
+}
+
+func (l literal[K]) getLiteral() (any, error) {
+	return l.value, nil
+}
+
+func (l literal[K]) isLiteral() bool {
+	return true
 }
 
 type exprGetter[K any] struct {
@@ -181,6 +198,22 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return evaluated, nil
 }
 
+func (l *listGetter[K]) isLiteral() bool {
+	if len(l.slice) == 0 {
+		return false
+	}
+	for _, v := range l.slice {
+		if getter, ok := v.(literalGetter); !ok || !getter.isLiteral() {
+			return false
+		}
+	}
+	return true
+}
+
+func (l *listGetter[K]) getLiteral() (any, error) {
+	return l.Get(context.TODO(), *new(K))
+}
+
 type mapGetter[K any] struct {
 	mapValues map[string]Getter[K]
 }
@@ -220,6 +253,22 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return result, nil
 }
 
+func (m *mapGetter[K]) isLiteral() bool {
+	if len(m.mapValues) == 0 {
+		return false
+	}
+	for _, v := range m.mapValues {
+		if getter, ok := v.(literalGetter); !ok || !getter.isLiteral() {
+			return false
+		}
+	}
+	return true
+}
+
+func (m *mapGetter[K]) getLiteral() (any, error) {
+	return m.Get(context.TODO(), *new(K))
+}
+
 // TypeError represents that a value was not an expected type.
 type TypeError string
 
@@ -233,9 +282,20 @@ type StringGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (string, error)
 }
 
+// newStandardStringGetter creates a new StandardStringGetter from a Getter[K],
+// also checking if the Getter is a literalGetter.
+func newStandardStringGetter[K any](getter Getter[K]) StandardStringGetter[K] {
+	litGetter, isLiteralGetter := getter.(literalGetter)
+	return StandardStringGetter[K]{
+		Getter:  getter.Get,
+		literal: isLiteralGetter && litGetter.isLiteral(),
+	}
+}
+
 // StandardStringGetter is a basic implementation of StringGetter
 type StandardStringGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (any, error)
+	Getter  func(ctx context.Context, tCtx K) (any, error)
+	literal bool
 }
 
 // Get retrieves a string value.
@@ -260,6 +320,14 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 	default:
 		return "", TypeError(fmt.Sprintf("expected string but got %T", val))
 	}
+}
+
+func (g StandardStringGetter[K]) isLiteral() bool {
+	return g.literal
+}
+
+func (g StandardStringGetter[K]) getLiteral() (any, error) {
+	return g.Get(context.TODO(), *new(K))
 }
 
 // IntGetter is a Getter that must return an int64.
@@ -436,9 +504,20 @@ type PMapGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
 
+// newStandardPMapGetter creates a new StandardPMapGetter from a Getter[K],
+// also checking if the Getter is a literalGetter.
+func newStandardPMapGetter[K any](getter Getter[K]) StandardPMapGetter[K] {
+	litGetter, isLiteralGetter := getter.(literalGetter)
+	return StandardPMapGetter[K]{
+		Getter:  getter.Get,
+		literal: isLiteralGetter && litGetter.isLiteral(),
+	}
+}
+
 // StandardPMapGetter is a basic implementation of PMapGetter
 type StandardPMapGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (any, error)
+	Getter  func(ctx context.Context, tCtx K) (any, error)
+	literal bool
 }
 
 // Get retrieves a pcommon.Map value.
@@ -472,6 +551,17 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 	}
 }
 
+func (g StandardPMapGetter[K]) getLiteral() (any, error) {
+	if !g.literal {
+		return nil, errors.New("StandardPMapGetter value is not a literal")
+	}
+	return g.Get(context.TODO(), *new(K))
+}
+
+func (g StandardPMapGetter[K]) isLiteral() bool {
+	return g.literal
+}
+
 // StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
 type StringLikeGetter[K any] interface {
 	// Get retrieves a string value.
@@ -481,9 +571,20 @@ type StringLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*string, error)
 }
 
+// newStandardStringLikeGetter creates a new StandardStringLikeGetter from a Getter[K],
+// also checking if the Getter is a literalGetter.
+func newStandardStringLikeGetter[K any](getter Getter[K]) StandardStringLikeGetter[K] {
+	litGetter, isLiteralGetter := getter.(literalGetter)
+	return StandardStringLikeGetter[K]{
+		Getter:  getter.Get,
+		literal: isLiteralGetter && litGetter.isLiteral(),
+	}
+}
+
 // StandardStringLikeGetter is a basic implementation of StringLikeGetter
 type StandardStringLikeGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (any, error)
+	Getter  func(ctx context.Context, tCtx K) (any, error)
+	literal bool
 }
 
 func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
@@ -522,6 +623,17 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 		result = string(resultBytes)
 	}
 	return &result, nil
+}
+
+func (g StandardStringLikeGetter[K]) getLiteral() (any, error) {
+	if !g.literal {
+		return nil, errors.New("StandardStringLikeGetter value is not a literal")
+	}
+	return g.Get(context.TODO(), *new(K))
+}
+
+func (g StandardStringLikeGetter[K]) isLiteral() bool {
+	return g.literal
 }
 
 // FloatLikeGetter is a Getter that returns a float64 by converting the underlying value to a float64 if necessary.

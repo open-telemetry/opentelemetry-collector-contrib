@@ -106,7 +106,7 @@ func Test_isMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := isMatch(tt.target, tt.pattern)
+			exprFunc, err := isMatch(tt.target, mockIsMatchLiteralGetter[any](tt.pattern))
 			assert.NoError(t, err)
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
@@ -121,7 +121,7 @@ func Test_isMatch_validation(t *testing.T) {
 			return "anything", nil
 		},
 	}
-	_, err := isMatch[any](target, "\\K")
+	_, err := isMatch[any](target, mockIsMatchLiteralGetter[any]("\\K"))
 	require.Error(t, err)
 }
 
@@ -131,8 +131,16 @@ func Test_isMatch_error(t *testing.T) {
 			return make(chan int), nil
 		},
 	}
-	exprFunc, err := isMatch[any](target, "test")
+	exprFunc, err := isMatch[any](target, mockIsMatchLiteralGetter[any]("test"))
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	require.Error(t, err)
+}
+
+func mockIsMatchLiteralGetter[K any](value string) ottl.LiteralGetter[K, string, ottl.StringGetter[K]] {
+	return ottl.NewTestingLiteralGetter[K, string, ottl.StringGetter[K]](true, ottl.StandardStringGetter[K]{
+		Getter: func(_ context.Context, _ K) (any, error) {
+			return value, nil
+		},
+	})
 }
