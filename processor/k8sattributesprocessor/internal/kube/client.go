@@ -1020,13 +1020,15 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				case K8sIPLabelName:
 					attr = pod.Address
 				case string(conventions.ContainerIDKey):
+					// At this point just an empty attr is added and we remember the position.
+					// Later this position in PodIdentifier will be filled with the actual
+					// value for container.ID.
 					retID4containerID = i
 				default:
 					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v
 					}
 				}
-				_ = retID4containerID
 				if attr == "" && retID4containerID == -1 {
 					skip = true
 					break
@@ -1037,6 +1039,8 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 		if !skip {
 			if retID4containerID != -1 {
+				// As there can be multiple container.IDs per pod,
+				// one PodIdentifier is added per container.ID.
 				cIDs := maps.Keys(pod.Containers.ByID)
 				for cID := range cIDs {
 					retCpy := ret
