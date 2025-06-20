@@ -30,8 +30,8 @@ func TestCreateTraces(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createTracesReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
-	// no available broker
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
 func TestWithTracesUnmarshalers(t *testing.T) {
@@ -64,8 +64,8 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
-	// no available broker
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
 func TestWithMetricsUnmarshalers(t *testing.T) {
@@ -98,8 +98,8 @@ func TestCreateLogs(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
-	// no available broker
-	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
 func TestWithLogsUnmarshalers(t *testing.T) {
