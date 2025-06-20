@@ -134,7 +134,7 @@ type ParsedStatementsConverter[K any, R any] func(collection *ParserCollection[R
 type ParsedConditionsConverter[K any, R any] func(collection *ParserCollection[R], conditions ConditionsGetter, parsedConditions []*Condition[K]) (R, error)
 
 // ParsedValueExpressionsConverter is a function that converts the parsed ottl.ValueExpression[K] into
-// a common representation to all parser collection contexts passed through WithParserCollectionContext.
+// a representation common to all parser collection contexts passed through WithParserCollectionContext.
 // Given each parser has its own transform context type, they must agree on a common type [R]
 // so it can be returned by the ParserCollection.ParseValueExpressions and ParserCollection.ParseValueExpressionsWithContext
 // functions.
