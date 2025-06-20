@@ -98,8 +98,10 @@ func newSampler(logger *zap.Logger) (*sampler, error) {
 }
 
 func (sw *sampler) startSamplingTicker() {
+	// Store the sampling frequency in a local variable to avoid race conditions during tests.
+	frequency := samplingFrequency
 	go func() {
-		ticker := time.NewTicker(samplingFrequency)
+		ticker := time.NewTicker(frequency)
 		defer ticker.Stop()
 
 		sw.sampleLoad()
