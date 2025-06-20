@@ -15,9 +15,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// AttributeValue - struct to contain attribute values of different types
+// attributeValue - struct to contain attribute values of different types
 // Used by other metric structs
-type AttributeValue struct {
+type attributeValue struct {
 	IntValue    int     `avro:"int_value"`
 	StringValue string  `avro:"string_value"`
 	BoolValue   int8    `avro:"bool_value"`
@@ -25,10 +25,10 @@ type AttributeValue struct {
 	BytesValue  []byte  `avro:"bytes_value"`
 }
 
-// KiWriter - struct modeling the Kinetica connection, contains the
+// kiWriter - struct modeling the Kinetica connection, contains the
 // Kinetica connection [kinetica.Kinetica], the Kinetica Options [kinetica.KineticaOptions],
 // the config [Config] and the logger [zap.Logger]
-type KiWriter struct {
+type kiWriter struct {
 	Db      kinetica.Kinetica
 	Options kinetica.KineticaOptions
 	cfg     Config
@@ -39,7 +39,7 @@ type KiWriter struct {
 //
 //	@receiver kiwriter
 //	@return gpudb.Gpudb
-func (kiwriter *KiWriter) GetDb() kinetica.Kinetica {
+func (kiwriter *kiWriter) GetDb() kinetica.Kinetica {
 	return kiwriter.Db
 }
 
@@ -47,7 +47,7 @@ func (kiwriter *KiWriter) GetDb() kinetica.Kinetica {
 //
 //	@receiver kiwriter
 //	@return gpudb.GpudbOptions
-func (kiwriter *KiWriter) GetOptions() kinetica.KineticaOptions {
+func (kiwriter *kiWriter) GetOptions() kinetica.KineticaOptions {
 	return kiwriter.Options
 }
 
@@ -55,12 +55,12 @@ func (kiwriter *KiWriter) GetOptions() kinetica.KineticaOptions {
 //
 //	@receiver kiwriter
 //	@return Config
-func (kiwriter *KiWriter) GetCfg() Config {
+func (kiwriter *kiWriter) GetCfg() Config {
 	return kiwriter.cfg
 }
 
 // Writer - global pointer to kiwriter struct initialized in the init func
-var Writer *KiWriter
+var Writer *kiWriter
 
 // init
 func init() {
@@ -69,32 +69,32 @@ func init() {
 	config := cfg.(*Config)
 	options := kinetica.KineticaOptions{Username: config.Username, Password: string(config.Password), ByPassSslCertCheck: config.BypassSslCertCheck}
 	gpudbInst := kinetica.NewWithOptions(ctx, config.Host, &options)
-	Writer = &KiWriter{*gpudbInst, options, *config, nil}
+	Writer = &kiWriter{*gpudbInst, options, *config, nil}
 }
 
-// newKiWriter - Constructor for the [KiWriter] struct
+// newKiWriter - Constructor for the [kiWriter] struct
 //
 //	@param ctx
 //	@param cfg
-//	@return *KiWriter
-func newKiWriter(ctx context.Context, cfg Config, logger *zap.Logger) *KiWriter {
+//	@return *kiWriter
+func newKiWriter(ctx context.Context, cfg Config, logger *zap.Logger) *kiWriter {
 	options := kinetica.KineticaOptions{Username: cfg.Username, Password: string(cfg.Password), ByPassSslCertCheck: cfg.BypassSslCertCheck}
 	gpudbInst := kinetica.NewWithOptions(ctx, cfg.Host, &options)
-	return &KiWriter{*gpudbInst, options, cfg, logger}
+	return &kiWriter{*gpudbInst, options, cfg, logger}
 }
 
 // Metrics Handling
 
-// Gauge - struct modeling the Gauge data
-type Gauge struct {
+// gauge - struct modeling the gauge data
+type gauge struct {
 	GaugeID     string `avro:"gauge_id"`
 	MetricName  string `avro:"metric_name"`
 	Description string `avro:"metric_description"`
 	Unit        string `avro:"metric_unit"`
 }
 
-// GaugeDatapoint - struct modeling the Gauge Datapoint
-type GaugeDatapoint struct {
+// gaugeDatapoint - struct modeling the gauge Datapoint
+type gaugeDatapoint struct {
 	GaugeID       string  `avro:"gauge_id"`
 	ID            string  `avro:"id"`
 	StartTimeUnix int64   `mapstructure:"start_time_unix" avro:"start_time_unix"`
@@ -103,16 +103,16 @@ type GaugeDatapoint struct {
 	Flags         int     `mapstructure:"flags" avro:"flags"`
 }
 
-// GaugeDatapointAttribute - struct modeling the Gauge Datapoint attributes
-type GaugeDatapointAttribute struct {
+// gaugeDatapointAttribute - struct modeling the gauge Datapoint attributes
+type gaugeDatapointAttribute struct {
 	GaugeID        string `avro:"gauge_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// GaugeDatapointExemplar - struct modeling a Gauge Datapoint Exemplar
-type GaugeDatapointExemplar struct {
+// gaugeDatapointExemplar - struct modeling a gauge Datapoint Exemplar
+type gaugeDatapointExemplar struct {
 	GaugeID     string  `avro:"gauge_id"`
 	DatapointID string  `avro:"datapoint_id"`
 	ExemplarID  string  `avro:"exemplar_id"`
@@ -122,37 +122,37 @@ type GaugeDatapointExemplar struct {
 	SpanID      string  `mapstructure:"span_id" avro:"span_id"`
 }
 
-// GaugeDataPointExemplarAttribute - struct modeling a Gauge Datapoint Exemplar attribute
-type GaugeDataPointExemplarAttribute struct {
+// gaugeDataPointExemplarAttribute - struct modeling a gauge Datapoint Exemplar attribute
+type gaugeDataPointExemplarAttribute struct {
 	GaugeID        string `avro:"gauge_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	ExemplarID     string `avro:"exemplar_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// GaugeResourceAttribute - struct modeling a Gauge resource attribute
-type GaugeResourceAttribute struct {
+// gaugeResourceAttribute - struct modeling a gauge resource attribute
+type gaugeResourceAttribute struct {
 	GaugeID        string `avro:"gauge_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// GaugeScopeAttribute - struct modeling a Gauge Scope attribute
-type GaugeScopeAttribute struct {
+// gaugeScopeAttribute - struct modeling a gauge Scope attribute
+type gaugeScopeAttribute struct {
 	GaugeID        string `avro:"gauge_id"`
 	ScopeName      string `avro:"name"`
 	ScopeVersion   string `avro:"version"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// END Gauge
+// END gauge
 
-// Sum
+// sum
 
-// Sum - struct modeling a Sum metric
-type Sum struct {
+// sum - struct modeling a sum metric
+type sum struct {
 	SumID                          string `avro:"sum_id"`
 	MetricName                     string `avro:"metric_name"`
 	Description                    string `avro:"metric_description"`
@@ -161,8 +161,8 @@ type Sum struct {
 	IsMonotonic                    int8 `avro:"is_monotonic"`
 }
 
-// SumDatapoint - struct modeling a Sum Datapoint
-type SumDatapoint struct {
+// sumDatapoint - struct modeling a sum Datapoint
+type sumDatapoint struct {
 	SumID         string  `avro:"sum_id"`
 	ID            string  `avro:"id"`
 	StartTimeUnix int64   `mapstructure:"start_time_unix" avro:"start_time_unix"`
@@ -171,16 +171,16 @@ type SumDatapoint struct {
 	Flags         int     `mapstructure:"flags" avro:"flags"`
 }
 
-// SumDataPointAttribute - struct modeling a Sum Datapoint attribute
-type SumDataPointAttribute struct {
+// sumDataPointAttribute - struct modeling a sum Datapoint attribute
+type sumDataPointAttribute struct {
 	SumID          string `avro:"sum_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// SumDatapointExemplar - struct modeling a Sum Datapoint Exemplar
-type SumDatapointExemplar struct {
+// sumDatapointExemplar - struct modeling a sum Datapoint Exemplar
+type sumDatapointExemplar struct {
 	SumID       string  `avro:"sum_id"`
 	DatapointID string  `avro:"datapoint_id"`
 	ExemplarID  string  `avro:"exemplar_id"`
@@ -190,37 +190,37 @@ type SumDatapointExemplar struct {
 	SpanID      string  `mapstructure:"span_id" avro:"span_id"`
 }
 
-// SumDataPointExemplarAttribute  - struct modeling a Sum Datapoint Exemplar attribute
-type SumDataPointExemplarAttribute struct {
+// sumDataPointExemplarAttribute  - struct modeling a sum Datapoint Exemplar attribute
+type sumDataPointExemplarAttribute struct {
 	SumID          string `avro:"sum_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	ExemplarID     string `avro:"exemplar_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// SumResourceAttribute - struct modeling a Sum Resource attribute
-type SumResourceAttribute struct {
+// sumResourceAttribute - struct modeling a sum Resource attribute
+type sumResourceAttribute struct {
 	SumID          string `avro:"sum_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// SumScopeAttribute - struct modeling a Sum Scope attribute
-type SumScopeAttribute struct {
+// sumScopeAttribute - struct modeling a sum Scope attribute
+type sumScopeAttribute struct {
 	SumID          string `avro:"sum_id"`
 	ScopeName      string `avro:"name"`
 	ScopeVersion   string `avro:"version"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// END Sum
+// END sum
 
-// Histogram
+// histogram
 
-// Histogram - struct modeling a Histogram metric type
-type Histogram struct {
+// histogram - struct modeling a histogram metric type
+type histogram struct {
 	HistogramID                    string `avro:"histogram_id"`
 	MetricName                     string `avro:"metric_name"`
 	Description                    string `avro:"metric_description"`
@@ -228,8 +228,8 @@ type Histogram struct {
 	pmetric.AggregationTemporality `avro:"aggregation_temporality"`
 }
 
-// HistogramDatapoint - struct modeling a Histogram Datapoint
-type HistogramDatapoint struct {
+// histogramDatapoint - struct modeling a histogram Datapoint
+type histogramDatapoint struct {
 	HistogramID   string  `avro:"histogram_id"`
 	ID            string  `avro:"id"`
 	StartTimeUnix int64   `avro:"start_time_unix"`
@@ -241,32 +241,32 @@ type HistogramDatapoint struct {
 	Flags         int     `avro:"flags"`
 }
 
-// HistogramDataPointAttribute - struct modeling a Histogram Datapoint attribute
-type HistogramDataPointAttribute struct {
+// histogramDataPointAttribute - struct modeling a histogram Datapoint attribute
+type histogramDataPointAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// HistogramDatapointBucketCount - struct modeling a Histogram Datapoint Bucket Count
-type HistogramDatapointBucketCount struct {
+// histogramDatapointBucketCount - struct modeling a histogram Datapoint Bucket Count
+type histogramDatapointBucketCount struct {
 	HistogramID string `avro:"histogram_id"`
 	DatapointID string `avro:"datapoint_id"`
 	CountID     string `avro:"count_id"`
 	Count       int64  `avro:"count"`
 }
 
-// HistogramDatapointExplicitBound - struct modeling a Histogram Datapoint Explicit Bound
-type HistogramDatapointExplicitBound struct {
+// histogramDatapointExplicitBound - struct modeling a histogram Datapoint Explicit Bound
+type histogramDatapointExplicitBound struct {
 	HistogramID   string  `avro:"histogram_id"`
 	DatapointID   string  `avro:"datapoint_id"`
 	BoundID       string  `avro:"bound_id"`
 	ExplicitBound float64 `avro:"explicit_bound"`
 }
 
-// HistogramDatapointExemplar - struct modeling a Histogram Datapoint Exemplar
-type HistogramDatapointExemplar struct {
+// histogramDatapointExemplar - struct modeling a histogram Datapoint Exemplar
+type histogramDatapointExemplar struct {
 	HistogramID    string  `avro:"histogram_id"`
 	DatapointID    string  `avro:"datapoint_id"`
 	ExemplarID     string  `avro:"exemplar_id"`
@@ -276,37 +276,37 @@ type HistogramDatapointExemplar struct {
 	SpanID         string  `mapstructure:"span_id" avro:"span_id"`
 }
 
-// HistogramDataPointExemplarAttribute - struct modeling a Histogram Datapoint Exemplar attribute
-type HistogramDataPointExemplarAttribute struct {
+// histogramDataPointExemplarAttribute - struct modeling a histogram Datapoint Exemplar attribute
+type histogramDataPointExemplarAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	ExemplarID     string `avro:"exemplar_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// HistogramResourceAttribute - struct modeling a Histogram Resource Attribute
-type HistogramResourceAttribute struct {
+// histogramResourceAttribute - struct modeling a histogram Resource Attribute
+type histogramResourceAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// HistogramScopeAttribute - struct modeling a Histogram Scope Attribute
-type HistogramScopeAttribute struct {
+// histogramScopeAttribute - struct modeling a histogram Scope Attribute
+type histogramScopeAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	ScopeName      string `avro:"name"`
 	ScopeVersion   string `avro:"version"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// End Histogram
+// End histogram
 
-// Exponential Histogram
+// Exponential histogram
 
-// ExponentialHistogram - struct modeling an Exponential Histogram
-type ExponentialHistogram struct {
+// exponentialHistogram - struct modeling an Exponential histogram
+type exponentialHistogram struct {
 	HistogramID                    string `avro:"histogram_id"`
 	MetricName                     string `avro:"metric_name"`
 	Description                    string `avro:"metric_description"`
@@ -314,8 +314,8 @@ type ExponentialHistogram struct {
 	pmetric.AggregationTemporality `avro:"aggregation_temporality"`
 }
 
-// ExponentialHistogramDatapoint - struct modeling an Exponential Histogram Datapoint
-type ExponentialHistogramDatapoint struct {
+// exponentialHistogramDatapoint - struct modeling an Exponential histogram Datapoint
+type exponentialHistogramDatapoint struct {
 	HistogramID           string  `avro:"histogram_id"`
 	ID                    string  `avro:"id"`
 	StartTimeUnix         int64   `avro:"start_time_unix"`
@@ -331,32 +331,32 @@ type ExponentialHistogramDatapoint struct {
 	BucketsNegativeOffset int     `avro:"buckets_negative_offset"`
 }
 
-// ExponentialHistogramDataPointAttribute - struct modeling an Exponential Histogram Datapoint attribute
-type ExponentialHistogramDataPointAttribute struct {
+// exponentialHistogramDataPointAttribute - struct modeling an Exponential histogram Datapoint attribute
+type exponentialHistogramDataPointAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// ExponentialHistogramBucketNegativeCount - struct modeling an Exponential Histogram Bucket Negative Count
-type ExponentialHistogramBucketNegativeCount struct {
+// exponentialHistogramBucketNegativeCount - struct modeling an Exponential histogram Bucket Negative Count
+type exponentialHistogramBucketNegativeCount struct {
 	HistogramID string `avro:"histogram_id"`
 	DatapointID string `avro:"datapoint_id"`
 	CountID     string `avro:"count_id"`
 	Count       uint64 `avro:"count"`
 }
 
-// ExponentialHistogramBucketPositiveCount - struct modeling an Exponential Histogram Bucket Positive Count
-type ExponentialHistogramBucketPositiveCount struct {
+// exponentialHistogramBucketPositiveCount - struct modeling an Exponential histogram Bucket Positive Count
+type exponentialHistogramBucketPositiveCount struct {
 	HistogramID string `avro:"histogram_id"`
 	DatapointID string `avro:"datapoint_id"`
 	CountID     string `avro:"count_id"`
 	Count       int64  `avro:"count"`
 }
 
-// ExponentialHistogramDatapointExemplar - struct modeling an Exponential Histogram Datapoint Exemplar
-type ExponentialHistogramDatapointExemplar struct {
+// exponentialHistogramDatapointExemplar - struct modeling an Exponential histogram Datapoint Exemplar
+type exponentialHistogramDatapointExemplar struct {
 	HistogramID    string  `avro:"histogram_id"`
 	DatapointID    string  `avro:"datapoint_id"`
 	ExemplarID     string  `avro:"exemplar_id"`
@@ -366,45 +366,45 @@ type ExponentialHistogramDatapointExemplar struct {
 	SpanID         string  `mapstructure:"span_id" avro:"span_id"`
 }
 
-// ExponentialHistogramDataPointExemplarAttribute - struct modeling an Exponential Histogram Datapoint Exemplar attribute
-type ExponentialHistogramDataPointExemplarAttribute struct {
+// exponentialHistogramDataPointExemplarAttribute - struct modeling an Exponential histogram Datapoint Exemplar attribute
+type exponentialHistogramDataPointExemplarAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	ExemplarID     string `avro:"exemplar_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// ExponentialHistogramResourceAttribute - struct modeling an Exponential Histogram Resource attribute
-type ExponentialHistogramResourceAttribute struct {
+// exponentialHistogramResourceAttribute - struct modeling an Exponential histogram Resource attribute
+type exponentialHistogramResourceAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// ExponentialHistogramScopeAttribute - struct modeling an Exponential Histogram Scope attribute
-type ExponentialHistogramScopeAttribute struct {
+// exponentialHistogramScopeAttribute - struct modeling an Exponential histogram Scope attribute
+type exponentialHistogramScopeAttribute struct {
 	HistogramID    string `avro:"histogram_id"`
 	ScopeName      string `avro:"name"`
 	ScopeVersion   string `avro:"version"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// END Exponential Histogram
+// END Exponential histogram
 
-// Summary
+// summary
 
-// Summary - struct modeling a Summary type metric
-type Summary struct {
+// summary - struct modeling a summary type metric
+type summary struct {
 	SummaryID   string `avro:"summary_id"`
 	MetricName  string `avro:"metric_name"`
 	Description string `avro:"metric_description"`
 	Unit        string `avro:"metric_unit"`
 }
 
-// SummaryDatapoint - struct modeling a Summary Datapoint
-type SummaryDatapoint struct {
+// summaryDatapoint - struct modeling a summary Datapoint
+type summaryDatapoint struct {
 	SummaryID     string  `avro:"summary_id"`
 	ID            string  `avro:"id"`
 	StartTimeUnix int64   `avro:"start_time_unix"`
@@ -414,16 +414,16 @@ type SummaryDatapoint struct {
 	Flags         int     `avro:"flags"`
 }
 
-// SummaryDataPointAttribute - struct modeling a Summary Datapoint attribute
+// SummaryDataPointAttribute - struct modeling a summary Datapoint attribute
 type SummaryDataPointAttribute struct {
 	SummaryID      string `avro:"summary_id"`
 	DatapointID    string `avro:"datapoint_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// SummaryDatapointQuantileValues - struct modeling a Summary Datapoint Quantile value
-type SummaryDatapointQuantileValues struct {
+// summaryDatapointQuantileValues - struct modeling a summary Datapoint Quantile value
+type summaryDatapointQuantileValues struct {
 	SummaryID   string  `avro:"summary_id"`
 	DatapointID string  `avro:"datapoint_id"`
 	QuantileID  string  `avro:"quantile_id"`
@@ -431,34 +431,34 @@ type SummaryDatapointQuantileValues struct {
 	Value       float64 `avro:"value"`
 }
 
-// SummaryResourceAttribute - struct modeling a Summary Resource attribute
-type SummaryResourceAttribute struct {
+// summaryResourceAttribute - struct modeling a summary Resource attribute
+type summaryResourceAttribute struct {
 	SummaryID      string `avro:"summary_id"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// SummaryScopeAttribute - struct modeling a Summary Scope attribute
-type SummaryScopeAttribute struct {
+// summaryScopeAttribute - struct modeling a summary Scope attribute
+type summaryScopeAttribute struct {
 	SummaryID      string `avro:"summary_id"`
 	ScopeName      string `avro:"name"`
 	ScopeVersion   string `avro:"version"`
 	Key            string `avro:"key"`
-	AttributeValue `mapstructure:",squash"`
+	attributeValue `mapstructure:",squash"`
 }
 
-// END Summary
+// END summary
 
 // END Metrics Handling
 
 // writeMetric - a helper method used by different metric persistence methods to write the
 // metric data in order.
 //
-//	@receiver kiwriter - pointer to [KiWriter]
+//	@receiver kiwriter - pointer to [kiWriter]
 //	@param metricType - a [pmetric.MetricTypeGauge] or something else converted to string
 //	@param tableDataMap - a map from table name to the relevant data
 //	@return error
-func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedmap.OrderedMap[string, []any]) error {
+func (kiwriter *kiWriter) writeMetric(metricType string, tableDataMap *orderedmap.OrderedMap[string, []any]) error {
 	kiwriter.logger.Debug("Writing metric", zap.String("Type", metricType))
 
 	var errs []error
@@ -491,7 +491,7 @@ func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedma
 	return multierr.Combine(errs...)
 }
 
-func (kiwriter *KiWriter) persistGaugeRecord(gaugeRecords []kineticaGaugeRecord) error {
+func (kiwriter *kiWriter) persistGaugeRecord(gaugeRecords []kineticaGaugeRecord) error {
 	kiwriter.logger.Debug("In persistGaugeRecord ...")
 
 	var errs []error
@@ -546,7 +546,7 @@ func (kiwriter *KiWriter) persistGaugeRecord(gaugeRecords []kineticaGaugeRecord)
 	return multierr.Combine(errs...)
 }
 
-func (kiwriter *KiWriter) persistSumRecord(sumRecords []kineticaSumRecord) error {
+func (kiwriter *kiWriter) persistSumRecord(sumRecords []kineticaSumRecord) error {
 	kiwriter.logger.Debug("In persistSumRecord ...")
 
 	var errs []error
@@ -602,7 +602,7 @@ func (kiwriter *KiWriter) persistSumRecord(sumRecords []kineticaSumRecord) error
 	return multierr.Combine(errs...)
 }
 
-func (kiwriter *KiWriter) persistHistogramRecord(histogramRecords []kineticaHistogramRecord) error {
+func (kiwriter *kiWriter) persistHistogramRecord(histogramRecords []kineticaHistogramRecord) error {
 	kiwriter.logger.Debug("In persistHistogramRecord ...")
 
 	var errs []error
@@ -670,7 +670,7 @@ func (kiwriter *KiWriter) persistHistogramRecord(histogramRecords []kineticaHist
 	return multierr.Combine(errs...)
 }
 
-func (kiwriter *KiWriter) persistExponentialHistogramRecord(exponentialHistogramRecords []kineticaExponentialHistogramRecord) error {
+func (kiwriter *kiWriter) persistExponentialHistogramRecord(exponentialHistogramRecords []kineticaExponentialHistogramRecord) error {
 	kiwriter.logger.Debug("In persistExponentialHistogramRecord ...")
 
 	var errs []error
@@ -738,7 +738,7 @@ func (kiwriter *KiWriter) persistExponentialHistogramRecord(exponentialHistogram
 	return multierr.Combine(errs...)
 }
 
-func (kiwriter *KiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryRecord) error {
+func (kiwriter *kiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryRecord) error {
 	kiwriter.logger.Debug("In persistSummaryRecord ...")
 
 	var errs []error
@@ -788,7 +788,7 @@ func (kiwriter *KiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryR
 	return multierr.Combine(errs...)
 }
 
-func (kiwriter *KiWriter) doChunkedInsert(_ context.Context, tableName string, records []any) error {
+func (kiwriter *kiWriter) doChunkedInsert(_ context.Context, tableName string, records []any) error {
 	// Build the final table name with the schema prepended
 	var finalTable string
 	if len(kiwriter.cfg.Schema) != 0 {
