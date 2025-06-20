@@ -839,19 +839,19 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, log
 			currentAttributes[dbPrefix+col] = row[col]
 		}
 
-		clientPort := 0
+		clientPort := int64(0)
 		if row["client_port"] != "" {
-			clientPort, err = strconv.Atoi(row["client_port"])
+			clientPort, err = strconv.ParseInt(row["client_port"], 10, 64)
 			if err != nil {
 				logger.Warn("failed to convert client_port to int", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
-		pid := 0
+		pid := int64(0)
 		if row["pid"] != "" {
-			pid, err = strconv.Atoi(row["pid"])
+			pid, err = strconv.ParseInt(row["pid"], 10, 64)
 			if err != nil {
-				logger.Warn("failed to convert pid to int", zap.Error(err))
+				logger.Warn("failed to convert pid to int64", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
