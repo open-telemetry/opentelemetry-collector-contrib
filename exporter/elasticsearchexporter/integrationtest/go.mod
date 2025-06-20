@@ -309,8 +309,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperre
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../../receiver/datadogreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../../sapmexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../../carbonexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../splunkhecexporter
@@ -324,8 +322,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../../receiver/splunkhecreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../../pkg/translator/prometheus
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../../../receiver/sapmreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../../pkg/resourcetotelemetry
 
