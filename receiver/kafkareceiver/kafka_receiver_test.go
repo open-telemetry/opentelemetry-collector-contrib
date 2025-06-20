@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -632,14 +633,23 @@ func TestComponentStatus(t *testing.T) {
 	assertNoStatusEvent(t)
 
 	// Accept the connection, proxy to the fake Kafka cluster.
+	var wg sync.WaitGroup
 	conn, err := lis.Accept()
 	require.NoError(t, err)
-	defer conn.Close()
 	kfakeConn, err := net.Dial("tcp", brokers[0])
 	require.NoError(t, err)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(conn, kfakeConn)
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(kfakeConn, conn)
+	}()
+	defer wg.Wait()
+	defer conn.Close()
 	defer kfakeConn.Close()
-	go func() { _, _ = io.Copy(conn, kfakeConn) }()
-	go func() { _, _ = io.Copy(kfakeConn, conn) }()
 
 	assert.Equal(t, componentstatus.StatusOK, waitStatusEvent().Status())
 	assertNoStatusEvent(t)
