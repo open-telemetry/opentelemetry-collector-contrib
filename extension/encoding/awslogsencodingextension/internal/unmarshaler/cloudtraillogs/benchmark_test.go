@@ -5,7 +5,6 @@ package cloudtraillogs
 
 import (
 	"bytes"
-	"compress/gzip"
 	"os"
 	"testing"
 
@@ -58,19 +57,6 @@ func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 	return benchmarkData
 }
 
-func compressWithGzip(b *testing.B, data []byte) []byte {
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-
-	_, err := gzipWriter.Write(data)
-	require.NoError(b, err)
-
-	err = gzipWriter.Close()
-	require.NoError(b, err)
-
-	return buf.Bytes()
-}
-
 func BenchmarkUnmarshalLogs(b *testing.B) {
 	benchmarks := map[string]struct {
 		nLogs int
@@ -91,14 +77,20 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 
 	u := NewCloudTrailLogsUnmarshaler(component.BuildInfo{})
 	for name, benchmark := range benchmarks {
-		logs := createCloudTrailLogContent(b, benchmark.nLogs)
-		compressedLogs := compressWithGzip(b, logs)
+		// Generate the log content with the specified number of records
+		logContent := createCloudTrailLogContent(b, benchmark.nLogs)
 
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			b.SetBytes(int64(len(compressedLogs)))
+			b.SetBytes(int64(len(logContent)))
+			b.ResetTimer()
+
 			for i := 0; i < b.N; i++ {
-				_, err := u.UnmarshalLogs(compressedLogs)
+				// Create a new reader for each iteration to ensure consistent behavior
+				reader := bytes.NewReader(logContent)
+
+				// Unmarshal the logs
+				_, err := u.UnmarshalAWSLogs(reader)
 				if err != nil {
 					b.Fatalf("Error unmarshaling logs: %v", err)
 				}

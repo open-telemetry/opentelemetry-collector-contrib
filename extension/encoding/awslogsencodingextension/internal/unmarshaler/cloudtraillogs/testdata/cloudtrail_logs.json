@@ -128,6 +128,62 @@
                 "clientProvidedHostHeader": "iam.amazonaws.com"
             },
             "sessionCredentialFromConsole": "true"
-        }
+        },
+        {
+            "eventVersion": "1.08",
+            "userIdentity": {
+                 "type": "AssumedRole",
+                 "principalId": "EX_PRINCIPAL_ID",
+                 "arn": "arn:aws:iam::123456789012:user/Bob",
+                 "accountId": "123456789012",
+                 "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+                 "sessionContext": {
+                 "sessionIssuer": {
+                     "type": "Role",
+                     "principalId": "AKIAIOSFODNN7EXAMPLE",
+                     "arn": "arn:aws:iam::123456789012:role/Admin",
+                     "accountId": "123456789012",
+                     "userName": "ExampleUser"
+                     },
+                     "attributes": {
+                         "creationDate": "2023-08-21T16:44:05Z",
+                         "mfaAuthenticated": "false"
+                     }
+                 }
+             },
+             "eventTime": "2023-08-21T16:48:37Z",
+             "eventSource": "sns.amazonaws.com",
+             "eventName": "Publish",
+             "awsRegion": "us-east-1",
+             "sourceIPAddress": "192.0.2.0",
+             "userAgent": "aws-cli/1.29.16 md/Botocore#1.31.16 ua/2.0 os/linux#5.4.250-173.369.amzn2int.x86_64 md/arch#x86_64 lang/python#3.8.17 md/pyimpl#CPython cfg/retry-mode#legacy botocore/1.31.16",
+             "requestParameters": {
+                 "topicArn": "arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic",
+                 "message": "HIDDEN_DUE_TO_SECURITY_REASONS",
+                 "subject": "HIDDEN_DUE_TO_SECURITY_REASONS",
+                 "messageStructure": "json",
+                 "messageAttributes": "HIDDEN_DUE_TO_SECURITY_REASONS"
+             },
+             "responseElements": {
+                 "messageId": "0787cd1e-d92b-521c-a8b4-90434e8ef840"
+             },
+             "requestID": "0a8ab208-11bf-5e01-bd2d-ef55861b545d",
+             "eventID": "bb3496d4-5252-4660-9c28-3c6aebdb21c0",
+             "readOnly": false,
+             "resources": [{
+                 "accountId": "123456789012",
+                 "type": "AWS::SNS::Topic",
+                         "ARN": "arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic"
+             }],
+             "eventType": "AwsApiCall",
+             "managementEvent": false,
+             "recipientAccountId": "123456789012",
+             "eventCategory": "Data",
+             "tlsDetails": {
+                 "tlsVersion": "TLSv1.2",
+                 "cipherSuite": "ECDHE-RSA-AES128-GCM-SHA256",
+                 "clientProvidedHostHeader": "sns.us-east-1.amazonaws.com"
+             }
+         }
     ]
 }

@@ -4,14 +4,11 @@
 package cloudtraillogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillogs"
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"sync"
 	"time"
 
 	gojson "github.com/goccy/go-json"
-	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,7 +20,6 @@ import (
 
 type CloudTrailLogsUnmarshaler struct {
 	buildInfo component.BuildInfo
-	gzipPool  sync.Pool
 }
 
 var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
@@ -50,7 +46,6 @@ type CloudTrailRecord struct {
 	Resources                    []any          `json:"resources"`
 	ReadOnly                     bool           `json:"readOnly"`
 	ManagementEvent              bool           `json:"managementEvent"`
-	AdditionalEventData          map[string]any `json:"additionalEventData"`
 	TLSDetails                   map[string]any `json:"tlsDetails"`
 	SessionCredentialFromConsole string         `json:"sessionCredentialFromConsole"`
 }
@@ -62,51 +57,13 @@ type CloudTrailLogs struct {
 func NewCloudTrailLogsUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogsUnmarshaler {
 	return &CloudTrailLogsUnmarshaler{
 		buildInfo: buildInfo,
-		gzipPool:  sync.Pool{},
 	}
-}
-
-func (u *CloudTrailLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
-	return u.UnmarshalLogs(buf)
 }
 
 func (u *CloudTrailLogsUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	decompressedBuf, err := io.ReadAll(reader)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to read CloudTrail logs: %w", err)
-	}
-
-	var cloudTrailLogs CloudTrailLogs
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLogs); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail logs: %w", err)
-	}
-
-	return u.processRecords(cloudTrailLogs.Records)
-}
-
-func (u *CloudTrailLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	gzipReader, ok := u.gzipPool.Get().(*gzip.Reader)
-	if !ok {
-		var err error
-		gzipReader, err = gzip.NewReader(bytes.NewReader(buf))
-		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to create gzip reader: %w", err)
-		}
-	} else {
-		if err := gzipReader.Reset(bytes.NewReader(buf)); err != nil {
-			u.gzipPool.Put(gzipReader)
-			return plog.Logs{}, fmt.Errorf("failed to reset gzip reader: %w", err)
-		}
-	}
-
-	defer func() {
-		_ = gzipReader.Close()
-		u.gzipPool.Put(gzipReader)
-	}()
-
-	decompressedBuf, err := io.ReadAll(gzipReader)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to decompress CloudTrail logs: %w", err)
 	}
 
 	var cloudTrailLogs CloudTrailLogs
@@ -204,17 +161,13 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 	// Add RequestParameters as a map directly
 	if record.RequestParameters != nil {
 		requestParamsMap := attrs.PutEmptyMap("aws.request.parameters")
-		for k, v := range record.RequestParameters {
-			addAttributeValue(requestParamsMap, k, v)
-		}
+		_ = requestParamsMap.FromRaw(record.RequestParameters)
 	}
 
 	// Add ResponseElements as a map directly
 	if record.ResponseElements != nil {
 		responseElementsMap := attrs.PutEmptyMap("aws.response.elements")
-		for k, v := range record.ResponseElements {
-			addAttributeValue(responseElementsMap, k, v)
-		}
+		_ = responseElementsMap.FromRaw(record.ResponseElements)
 	}
 }
 
@@ -224,50 +177,4 @@ func extractTLSVersion(tlsVersion string) string {
 		return tlsVersion[4:]
 	}
 	return tlsVersion
-}
-
-// addAttributeValue adds a value to the attribute map based on its type
-func addAttributeValue(attrMap pcommon.Map, key string, value any) {
-	switch v := value.(type) {
-	case string:
-		attrMap.PutStr(key, v)
-	case bool:
-		attrMap.PutBool(key, v)
-	case float64:
-		attrMap.PutDouble(key, v)
-	case int:
-		attrMap.PutInt(key, int64(v))
-	case int64:
-		attrMap.PutInt(key, v)
-	case map[string]any:
-		nestedMap := attrMap.PutEmptyMap(key)
-		for nestedKey, nestedValue := range v {
-			addAttributeValue(nestedMap, nestedKey, nestedValue)
-		}
-	case []any:
-		slice := attrMap.PutEmptySlice(key)
-		for _, item := range v {
-			switch itemVal := item.(type) {
-			case string:
-				slice.AppendEmpty().SetStr(itemVal)
-			case bool:
-				slice.AppendEmpty().SetBool(itemVal)
-			case float64:
-				slice.AppendEmpty().SetDouble(itemVal)
-			case int:
-				slice.AppendEmpty().SetInt(int64(itemVal))
-			case int64:
-				slice.AppendEmpty().SetInt(itemVal)
-			case map[string]any:
-				itemMap := slice.AppendEmpty().SetEmptyMap()
-				for itemKey, itemMapValue := range itemVal {
-					addAttributeValue(itemMap, itemKey, itemMapValue)
-				}
-			default:
-				// Skip null or unsupported types
-			}
-		}
-	default:
-		// Skip null or unsupported types
-	}
 }
