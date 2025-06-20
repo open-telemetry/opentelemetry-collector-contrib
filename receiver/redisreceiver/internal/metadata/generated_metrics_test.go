@@ -408,7 +408,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["redis.db.avg_ttl"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average keyspace keys TTL", ms.At(i).Description())
+					assert.Equal(t, "Average keyspace keys TTL in seconds", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

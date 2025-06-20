@@ -882,7 +882,7 @@ type metricRedisDbAvgTTL struct {
 // init fills redis.db.avg_ttl metric with initial data.
 func (m *metricRedisDbAvgTTL) init() {
 	m.data.SetName("redis.db.avg_ttl")
-	m.data.SetDescription("Average keyspace keys TTL")
+	m.data.SetDescription("Average keyspace keys TTL in seconds")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

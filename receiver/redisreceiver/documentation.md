@@ -92,7 +92,7 @@ System CPU consumed by the Redis server in seconds since server start
 
 ### redis.db.avg_ttl
 
-Average keyspace keys TTL
+Average keyspace keys TTL in seconds
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
