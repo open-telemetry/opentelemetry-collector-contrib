@@ -154,8 +154,10 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
 		}
 
-		// TODO(krajorama): remove once https://github.com/prometheus/prometheus/issues/16750
-		// is solved and we're sure we want the UTF-8 as default.
+		// TODO(krajorama): remove once
+		// https://github.com/prometheus/prometheus/issues/16750 is solved
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35459
+		//   is implemented and is default.
 		if m.promCfg.GlobalConfig.MetricNameValidationScheme == "" {
 			m.promCfg.GlobalConfig.MetricNameValidationScheme = promconfig.LegacyValidationConfig
 		}
