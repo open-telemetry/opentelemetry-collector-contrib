@@ -194,51 +194,6 @@ func TestFranzProducerMetrics(t *testing.T) {
 			metricdatatest.IgnoreTimestamp(),
 		)
 	})
-	t.Run("should report the metrics when OnBrokerWrite hook is called", func(t *testing.T) {
-		testTel := componenttest.NewTelemetry()
-		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
-		require.NoError(t, err)
-		defer tb.Shutdown()
-		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerWrite(kgo.BrokerMetadata{NodeID: 1}, 0, 0, time.Second/2, time.Second/2, nil)
-		fpm.OnBrokerWrite(kgo.BrokerMetadata{NodeID: 1}, 0, 0, 100*time.Second, 0, errors.New(""))
-		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
-		require.NoError(t, err)
-		require.Len(t, rm.ScopeMetrics, 1)
-		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-		metadatatest.AssertEqualKafkaExporterLatency(
-			t,
-			testTel,
-			[]metricdata.HistogramDataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "1"),
-						attribute.String("outcome", "success"),
-					),
-					Count:        1,
-					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-					BucketCounts: []uint64{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0},
-					Min:          metricdata.NewExtrema[int64](1000),
-					Max:          metricdata.NewExtrema[int64](1000),
-					Sum:          1000,
-				},
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "1"),
-						attribute.String("outcome", "failure"),
-					),
-					Count:        1,
-					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-					BucketCounts: []uint64{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
-					Min:          metricdata.NewExtrema[int64](100000),
-					Max:          metricdata.NewExtrema[int64](100000),
-					Sum:          100000,
-				},
-			},
-			metricdatatest.IgnoreTimestamp(),
-		)
-	})
 	t.Run("should report the metrics when OnProduceRecordUnbuffered hook is called", func(t *testing.T) {
 		testTel := componenttest.NewTelemetry()
 		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
@@ -268,7 +223,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 			metricdatatest.IgnoreTimestamp(),
 		)
 	})
-	t.Run("should report the metrics when OnBrokerWrite hook is called", func(t *testing.T) {
+	t.Run("should report the metrics when OnBrokerThrottle hook is called", func(t *testing.T) {
 		testTel := componenttest.NewTelemetry()
 		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 		require.NoError(t, err)

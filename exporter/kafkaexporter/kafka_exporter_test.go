@@ -1201,7 +1201,8 @@ func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafk
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	tb, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
 	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, tb, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
@@ -1221,7 +1222,8 @@ func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kaf
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	tb, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
 	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, tb, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
@@ -1241,7 +1243,8 @@ func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaE
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	tb, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
 	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, tb, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {

@@ -65,7 +65,8 @@ type messenger[T any] interface {
 
 type kafkaExporter[T any] struct {
 	cfg          Config
-	telemetry    component.TelemetrySettings
+	set          component.TelemetrySettings
+	tb           *metadata.TelemetryBuilder
 	logger       *zap.Logger
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
@@ -80,16 +81,17 @@ func newKafkaExporter[T any](
 	return &kafkaExporter[T]{
 		cfg:          config,
 		logger:       set.Logger,
-		telemetry:    set.TelemetrySettings,
+		set:          set.TelemetrySettings,
 		newMessenger: newMessenger,
 	}
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
-	tb, err := metadata.NewTelemetryBuilder(e.telemetry)
+	tb, err := metadata.NewTelemetryBuilder(e.set)
 	if err != nil {
 		return err
 	}
+	e.tb = tb
 
 	if e.messenger, err = e.newMessenger(host); err != nil {
 		return err
@@ -132,6 +134,8 @@ func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 	}
 	err = e.producer.Close()
 	e.producer = nil
+	e.tb.Shutdown()
+	e.tb = nil
 	return err
 }
 
