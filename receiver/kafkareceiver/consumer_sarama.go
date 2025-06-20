@@ -147,7 +147,7 @@ func (c *saramaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler, host c
 			c.settings.Logger.Error("Error closing consumer group", zap.Error(err))
 		}
 	}()
-	c.settings.Logger.Info("Created consumer group")
+	c.settings.Logger.Debug("Created consumer group")
 
 	for {
 		// `Consume` should be called inside an infinite loop, when a
@@ -202,7 +202,7 @@ type consumerGroupHandler struct {
 }
 
 func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
-	c.logger.Info("Consumer group session established")
+	c.logger.Debug("Consumer group session established")
 	componentstatus.ReportStatus(c.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(
 		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
@@ -211,7 +211,7 @@ func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error 
 }
 
 func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	c.logger.Info("Consumer group session stopped")
+	c.logger.Debug("Consumer group session stopped")
 	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(
 		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
 	)
@@ -219,7 +219,7 @@ func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) erro
 }
 
 func (c *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	c.logger.Info(
+	c.logger.Debug(
 		"Consuming Kafka topic-partition",
 		zap.String("topic", claim.Topic()),
 		zap.Int32("partition", claim.Partition()),
