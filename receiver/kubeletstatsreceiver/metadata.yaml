@@ -13,14 +13,46 @@ resource_attributes:
     description: "The name of the Node"
     enabled: true
     type: string
-  k8s.node.labels:
+  k8s.node.label:
     description: "The labels of the Node"
     enabled: false
-    type: map
-  k8s.node.annotations:
+    type: string
+    is_template: true
+  k8s.node.annotation:
+    description: "The annotations of the Node"
+    enabled: false
+    type: string
+    is_template: true
+  k8s.node.bool:
+    description: "The annotations of the Node"
+    enabled: false
+    type: bool
+    is_template: true
+  k8s.node.int:
+    description: "The annotations of the Node"
+    enabled: false
+    type: int
+    is_template: true
+  k8s.node.double:
+    description: "The annotations of the Node"
+    enabled: false
+    type: double
+    is_template: true
+  k8s.node.map:
     description: "The annotations of the Node"
     enabled: false
     type: map
+    is_template: true
+  k8s.node.slice:
+    description: "The annotations of the Node"
+    enabled: false
+    type: slice
+    is_template: true
+  k8s.node.bytes:
+    description: "The annotations of the Node"
+    enabled: false
+    type: bytes
+    is_template: true
   k8s.pod.uid:
     description: "The UID of the Pod"
     enabled: true

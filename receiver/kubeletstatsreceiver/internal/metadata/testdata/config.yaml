@@ -138,11 +138,23 @@ all_set:
       enabled: true
     k8s.namespace.name:
       enabled: true
-    k8s.node.annotations:
+    k8s.node.annotation:
       enabled: true
-    k8s.node.labels:
+    k8s.node.bool:
+      enabled: true
+    k8s.node.bytes:
+      enabled: true
+    k8s.node.double:
+      enabled: true
+    k8s.node.int:
+      enabled: true
+    k8s.node.label:
+      enabled: true
+    k8s.node.map:
       enabled: true
     k8s.node.name:
+      enabled: true
+    k8s.node.slice:
       enabled: true
     k8s.persistentvolumeclaim.name:
       enabled: true
@@ -295,11 +307,23 @@ none_set:
       enabled: false
     k8s.namespace.name:
       enabled: false
-    k8s.node.annotations:
+    k8s.node.annotation:
       enabled: false
-    k8s.node.labels:
+    k8s.node.bool:
+      enabled: false
+    k8s.node.bytes:
+      enabled: false
+    k8s.node.double:
+      enabled: false
+    k8s.node.int:
+      enabled: false
+    k8s.node.label:
+      enabled: false
+    k8s.node.map:
       enabled: false
     k8s.node.name:
+      enabled: false
+    k8s.node.slice:
       enabled: false
     k8s.persistentvolumeclaim.name:
       enabled: false
@@ -347,15 +371,39 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
-    k8s.node.annotations:
+    k8s.node.annotation:
       enabled: true
       metrics_include:
         - regexp: ".*"
-    k8s.node.labels:
+    k8s.node.bool:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.bytes:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.double:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.int:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.label:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.map:
       enabled: true
       metrics_include:
         - regexp: ".*"
     k8s.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.slice:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -417,11 +465,31 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.namespace.name-val"
-    k8s.node.annotations:
+    k8s.node.annotation:
       enabled: true
       metrics_exclude:
         - regexp: ".*"
-    k8s.node.labels:
+    k8s.node.bool:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.node.bytes:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.node.double:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.node.int:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.node.label:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.node.map:
       enabled: true
       metrics_exclude:
         - regexp: ".*"
@@ -429,6 +497,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.name-val"
+    k8s.node.slice:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
     k8s.persistentvolumeclaim.name:
       enabled: true
       metrics_exclude:

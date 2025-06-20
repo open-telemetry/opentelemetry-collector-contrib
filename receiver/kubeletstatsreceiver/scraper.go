@@ -106,8 +106,8 @@ func newKubeletScraper(
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled ||
-		metricsConfig.ResourceAttributes.K8sNodeAnnotations.Enabled ||
-		metricsConfig.ResourceAttributes.K8sNodeLabels.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeAnnotation.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeLabel.Enabled ||
 		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}

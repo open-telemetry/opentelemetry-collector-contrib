@@ -80,9 +80,11 @@ func TestE2E(t *testing.T) {
 			pmetrictest.IgnoreScopeMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreMetricValues(),
-			// this is needed due to node-role.kubernetes.io/master label being present
-			// in the node, since it's not always the case, that the node is master
-			pmetrictest.ChangeResourceAttributeValue("k8s.node.labels", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.node.label.beta.kubernetes.io/arch", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.node.label.kubernetes.io/arch", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.node.label.kubernetes.io/hostname", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.node.label.node-role.kubernetes.io/master", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.node.label.node-role.kubernetes.io/control-plane", replaceWithStar),
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)

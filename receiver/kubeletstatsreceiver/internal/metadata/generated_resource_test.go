@@ -21,9 +21,15 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
-			rb.SetK8sNodeAnnotations(map[string]any{"key1": "k8s.node.annotations-val1", "key2": "k8s.node.annotations-val2"})
-			rb.SetK8sNodeLabels(map[string]any{"key1": "k8s.node.labels-val1", "key2": "k8s.node.labels-val2"})
+			rb.SetK8sNodeAnnotation("key", "val")
+			rb.SetK8sNodeBool("key", true)
+			rb.SetK8sNodeBytes("key", []byte("val"))
+			rb.SetK8sNodeDouble("key", 1.1)
+			rb.SetK8sNodeInt("key", int64(1))
+			rb.SetK8sNodeLabel("key", "val")
+			rb.SetK8sNodeMap("key", map[string]any{"key1": "val1", "key2": "val2"})
 			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sNodeSlice("key", []any{"item1", "item2"})
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -38,7 +44,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 15, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 17, res.Attributes().Len())
+				assert.Equal(t, 23, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -86,20 +92,50 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "k8s.namespace.name-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.node.annotations")
+			val, ok = res.Attributes().Get("k8s.node.annotation.key")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, map[string]any{"key1": "k8s.node.annotations-val1", "key2": "k8s.node.annotations-val2"}, val.Map().AsRaw())
+				assert.Equal(t, "val", val.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.node.labels")
+			val, ok = res.Attributes().Get("k8s.node.bool.key")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, map[string]any{"key1": "k8s.node.labels-val1", "key2": "k8s.node.labels-val2"}, val.Map().AsRaw())
+				assert.Equal(t, true, val.Bool())
+			}
+			val, ok = res.Attributes().Get("k8s.node.bytes.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, []byte("val"), val.Bytes().AsRaw())
+			}
+			val, ok = res.Attributes().Get("k8s.node.double.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, 1.1, val.Double())
+			}
+			val, ok = res.Attributes().Get("k8s.node.int.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, int64(1), val.Int())
+			}
+			val, ok = res.Attributes().Get("k8s.node.label.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.node.map.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, map[string]any{"key1": "val1", "key2": "val2"}, val.Map().AsRaw())
 			}
 			val, ok = res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "k8s.node.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.node.slice.key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, []any{"item1", "item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.name")
 			assert.True(t, ok)

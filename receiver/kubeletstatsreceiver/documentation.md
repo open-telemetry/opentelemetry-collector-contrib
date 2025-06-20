@@ -542,9 +542,15 @@ The time since the pod started
 | glusterfs.path | Glusterfs volume path | Any Str | true |
 | k8s.container.name | Container name used by container runtime | Any Str | true |
 | k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true |
-| k8s.node.annotations | The annotations of the Node | Any Map | false |
-| k8s.node.labels | The labels of the Node | Any Map | false |
+| k8s.node.annotation | The annotations of the Node | Any Str | false |
+| k8s.node.bool | The annotations of the Node | Any Bool | false |
+| k8s.node.bytes | The annotations of the Node | Any Bytes | false |
+| k8s.node.double | The annotations of the Node | Any Double | false |
+| k8s.node.int | The annotations of the Node | Any Int | false |
+| k8s.node.label | The labels of the Node | Any Str | false |
+| k8s.node.map | The annotations of the Node | Any Map | false |
 | k8s.node.name | The name of the Node | Any Str | true |
+| k8s.node.slice | The annotations of the Node | Any Slice | false |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true |
 | k8s.pod.name | The name of the Pod | Any Str | true |
 | k8s.pod.uid | The UID of the Pod | Any Str | true |
