@@ -147,6 +147,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		kgo.OnPartitionsLost(func(ctx context.Context, _ *kgo.Client, m map[string][]int32) {
 			c.lost(ctx, c.client, m, true)
 		}),
+		kgo.WithHooks(c),
 	)
 	if err != nil {
 		return err
@@ -248,6 +249,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 				if !c.config.MessageMarking.After {
 					c.client.MarkCommitRecords(msg)
 				}
+				c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
 				if err := c.handleMessage(pc, wrapFranzMsg(msg)); err != nil {
 					pc.logger.Error("unable to process message",
 						zap.Error(err),

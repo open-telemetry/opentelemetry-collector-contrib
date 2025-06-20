@@ -156,7 +156,7 @@ func newReceiver(
 	if franzGoConsumerFeatureGate.IsEnabled() {
 		return newFranzKafkaConsumer(config, set, signal, topics, consumeFn)
 	}
-	return newSaramaConsumer(config, set, topics, consumeFn)
+	return newSaramaConsumer(config, set, signal, topics, consumeFn)
 }
 
 type logsHandler struct {
@@ -300,10 +300,6 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 		zap.Int32("partition", message.partition()),
 		zap.Int64("offset", message.offset()),
 	)
-
-	// Update telemetry metrics
-	telBldr.KafkaReceiverRecords.Add(ctx, 1, metric.WithAttributeSet(attrs))
-	telBldr.KafkaReceiverCurrentOffset.Record(ctx, message.offset(), metric.WithAttributeSet(attrs))
 
 	ctx = contextWithHeaders(ctx, message.headers())
 

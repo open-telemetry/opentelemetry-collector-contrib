@@ -5,6 +5,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"strconv"
 	"sync"
@@ -25,20 +26,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-func newSaramaConsumer(config *Config, set receiver.Settings, topics []string,
+func newSaramaConsumer(
+	config *Config,
+	set receiver.Settings,
+	signal string,
+	topics []string,
 	newConsumeFn newConsumeMessageFunc,
 ) (*saramaConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
+	attrs := []attribute.KeyValue{
+		attribute.String("otelcol.component.kind", "receiver"),
+		attribute.String("otelcol.component.id", set.ID.String()),
+		attribute.String("otelcol.signal", signal),
+	}
 
 	return &saramaConsumer{
-		config:           config,
-		topics:           topics,
-		newConsumeFn:     newConsumeFn,
-		settings:         set,
-		telemetryBuilder: telemetryBuilder,
+		config:              config,
+		topics:              topics,
+		newConsumeFn:        newConsumeFn,
+		settings:            set,
+		telemetryBuilder:    telemetryBuilder,
+		componentAttributes: attribute.NewSet(attrs...),
 	}, nil
 }
 
@@ -46,11 +57,12 @@ func newSaramaConsumer(config *Config, set receiver.Settings, topics []string,
 // decodes telemetry data using a given unmarshaler, and passes
 // them to a consumer.
 type saramaConsumer struct {
-	config           *Config
-	topics           []string
-	settings         receiver.Settings
-	telemetryBuilder *metadata.TelemetryBuilder
-	newConsumeFn     newConsumeMessageFunc
+	config              *Config
+	topics              []string
+	settings            receiver.Settings
+	telemetryBuilder    *metadata.TelemetryBuilder
+	componentAttributes attribute.Set
+	newConsumeFn        newConsumeMessageFunc
 
 	mu                sync.Mutex
 	started           bool
@@ -79,14 +91,14 @@ func (c *saramaConsumer) Start(_ context.Context, host component.Host) error {
 	}
 
 	handler := &consumerGroupHandler{
-		host:              host,
-		id:                c.settings.ID,
-		logger:            c.settings.Logger,
-		obsrecv:           obsrecv,
-		autocommitEnabled: c.config.AutoCommit.Enable,
-		messageMarking:    c.config.MessageMarking,
-		telemetryBuilder:  c.telemetryBuilder,
-		backOff:           newExponentialBackOff(c.config.ErrorBackOff),
+		host:                host,
+		logger:              c.settings.Logger,
+		obsrecv:             obsrecv,
+		autocommitEnabled:   c.config.AutoCommit.Enable,
+		messageMarking:      c.config.MessageMarking,
+		telemetryBuilder:    c.telemetryBuilder,
+		componentAttributes: c.componentAttributes,
+		backOff:             newExponentialBackOff(c.config.ErrorBackOff),
 	}
 	consumeMessage, err := c.newConsumeFn(host, obsrecv, c.telemetryBuilder)
 	if err != nil {
@@ -150,6 +162,24 @@ func (c *saramaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler, host c
 	}()
 	c.settings.Logger.Debug("Created consumer group")
 
+	go func() {
+		for err := range consumerGroup.Errors() {
+			var consumerError *sarama.ConsumerError
+			if ok := errors.As(err, &consumerError); ok {
+				c.telemetryBuilder.KafkaReceiverRecords.Add(
+					context.Background(),
+					1,
+					metric.WithAttributeSet(c.componentAttributes),
+					metric.WithAttributes(
+						attribute.String(attrTopic, consumerError.Topic),
+						attribute.String(attrPartition, strconv.Itoa(int(consumerError.Partition))),
+						attribute.String("outcome", "failure"),
+					),
+				)
+			}
+		}
+	}()
+
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -189,12 +219,12 @@ func (c *saramaConsumer) Shutdown(ctx context.Context) error {
 
 type consumerGroupHandler struct {
 	host           component.Host
-	id             component.ID
 	consumeMessage consumeMessageFunc
 	logger         *zap.Logger
 
-	obsrecv          *receiverhelper.ObsReport
-	telemetryBuilder *metadata.TelemetryBuilder
+	obsrecv             *receiverhelper.ObsReport
+	telemetryBuilder    *metadata.TelemetryBuilder
+	componentAttributes attribute.Set
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -206,7 +236,7 @@ func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error 
 	c.logger.Debug("Consumer group session established")
 	componentstatus.ReportStatus(c.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(
-		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
+		session.Context(), 1, metric.WithAttributeSet(c.componentAttributes),
 	)
 	return nil
 }
@@ -214,7 +244,7 @@ func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error 
 func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
 	c.logger.Debug("Consumer group session stopped")
 	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(
-		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
+		session.Context(), 1, metric.WithAttributeSet(c.componentAttributes),
 	)
 	return nil
 }
@@ -257,13 +287,31 @@ func (c *consumerGroupHandler) handleMessage(
 		session.MarkMessage(message, "")
 	}
 
-	attrs := attribute.NewSet(
-		attribute.String(attrInstanceName, c.id.String()),
+	attrs := attribute.NewSet(append(c.componentAttributes.ToSlice(),
 		attribute.String(attrTopic, message.Topic),
 		attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
+	)...)
+	c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(
+		context.Background(),
+		message.Offset,
+		metric.WithAttributeSet(attrs),
 	)
-	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(context.Background(),
-		claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs),
+	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
+		context.Background(),
+		claim.HighWaterMarkOffset()-message.Offset-1,
+		metric.WithAttributeSet(attrs),
+	)
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
+		context.Background(),
+		1,
+		metric.WithAttributeSet(attrs),
+		metric.WithAttributes(attribute.String("outcome", "success")),
+	)
+	c.telemetryBuilder.KafkaReceiverBytes.Add(
+		context.Background(),
+		byteSize(message),
+		metric.WithAttributeSet(attrs),
+		metric.WithAttributes(attribute.String("outcome", "success")),
 	)
 	msg := wrapSaramaMsg(message)
 	if err := c.consumeMessage(session.Context(), msg, attrs); err != nil {
@@ -327,4 +375,20 @@ func (c *consumerGroupHandler) resetBackoff() {
 	c.backOffMutex.Lock()
 	defer c.backOffMutex.Unlock()
 	c.backOff.Reset()
+}
+
+// byteSize calculates kafka message size according to
+// https://pkg.go.dev/github.com/Shopify/sarama#ProducerMessage.ByteSize
+func byteSize(m *sarama.ConsumerMessage) int64 {
+	size := 5*binary.MaxVarintLen32 + binary.MaxVarintLen64 + 1
+	for _, h := range m.Headers {
+		size += len(h.Key) + len(h.Value) + 2*binary.MaxVarintLen32
+	}
+	if m.Key != nil {
+		size += len(m.Key)
+	}
+	if m.Value != nil {
+		size += len(m.Value)
+	}
+	return int64(size)
 }

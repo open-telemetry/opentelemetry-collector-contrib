@@ -72,6 +72,7 @@ func NewSaramaConsumerGroup(
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
 	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	saramaConfig.Consumer.Return.Errors = true
 	// Set the rebalance strategy
 	rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
 	if rebalanceStrategy != nil {
