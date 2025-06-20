@@ -11,47 +11,56 @@ resourceLogs:
           value:
             stringValue: "123456789012"
     scopeLogs:
-      - scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
-          version: ""
-        logRecords:
-          - timeUnixNano: 1689801448000000000
-            attributes:
+      - logRecords:
+          - attributes:
               - key: aws.cloudtrail.event_id
-                value: { stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7 }
+                value:
+                  stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7
               - key: rpc.method
-                value: { stringValue: StartInstances }
+                value:
+                  stringValue: StartInstances
               - key: rpc.system
-                value: { stringValue: AwsApiCall }
+                value:
+                  stringValue: AwsApiCall
               - key: rpc.service
-                value: { stringValue: ec2.amazonaws.com }
+                value:
+                  stringValue: ec2.amazonaws.com
               - key: aws.request_id
-                value: { stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16 }
+                value:
+                  stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
               - key: aws.event.category
-                value: { stringValue: Management }
+                value:
+                  stringValue: Management
               - key: aws.event.read_only
-                value: { boolValue: false }
+                value:
+                  boolValue: false
               - key: net.peer.ip
-                value: { stringValue: 192.0.2.0 }
+                value:
+                  stringValue: 192.0.2.0
               - key: user_agent.original
                 value:
-                  stringValue: >
-                    aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64
-                    exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/ec2.start-instances
+                  stringValue: aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64 exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/ec2.start-instances
               - key: aws.session.console
-                value: { boolValue: true }
+                value:
+                  boolValue: true
               - key: principal.id
-                value: { stringValue: EXAMPLE6E4XEGITWATV6R }
+                value:
+                  stringValue: EXAMPLE6E4XEGITWATV6R
               - key: principal.name
-                value: { stringValue: Mateo }
+                value:
+                  stringValue: Mateo
               - key: principal.arn
-                value: { stringValue: arn:aws:iam::123456789012:user/Mateo }
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Mateo
               - key: tls.protocol.version
-                value: { stringValue: "1.2" }
+                value:
+                  stringValue: "1.2"
               - key: tls.cipher
-                value: { stringValue: ECDHE-RSA-AES128-GCM-SHA256 }
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
               - key: server.address
-                value: { stringValue: ec2.us-east-1.amazonaws.com }
+                value:
+                  stringValue: ec2.us-east-1.amazonaws.com
               - key: aws.request.parameters
                 value:
                   kvlistValue:
@@ -67,17 +76,20 @@ resourceLogs:
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
-                                              value: { stringValue: i-EXAMPLE56126103cb }
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
-                                              value: { stringValue: i-EXAMPLEaff4840c22 }
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
               - key: aws.response.elements
                 value:
                   kvlistValue:
                     values:
                       - key: requestId
-                        value: { stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16 }
+                        value:
+                          stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
                       - key: instancesSet
                         value:
                           kvlistValue:
@@ -89,86 +101,113 @@ resourceLogs:
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
-                                              value: { stringValue: i-EXAMPLEaff4840c22 }
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
                                             - key: currentState
                                               value:
                                                 kvlistValue:
                                                   values:
                                                     - key: code
-                                                      value: { doubleValue: 0 }
+                                                      value:
+                                                        doubleValue: 0
                                                     - key: name
-                                                      value: { stringValue: pending }
+                                                      value:
+                                                        stringValue: pending
                                             - key: previousState
                                               value:
                                                 kvlistValue:
                                                   values:
                                                     - key: code
-                                                      value: { doubleValue: 80 }
+                                                      value:
+                                                        doubleValue: 80
                                                     - key: name
-                                                      value: { stringValue: stopped }
+                                                      value:
+                                                        stringValue: stopped
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
-                                              value: { stringValue: i-EXAMPLE56126103cb }
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
                                             - key: currentState
                                               value:
                                                 kvlistValue:
                                                   values:
                                                     - key: code
-                                                      value: { doubleValue: 0 }
+                                                      value:
+                                                        doubleValue: 0
                                                     - key: name
-                                                      value: { stringValue: pending }
+                                                      value:
+                                                        stringValue: pending
                                             - key: previousState
                                               value:
                                                 kvlistValue:
                                                   values:
                                                     - key: code
-                                                      value: { doubleValue: 80 }
+                                                      value:
+                                                        doubleValue: 80
                                                     - key: name
-                                                      value: { stringValue: stopped }
-          - timeUnixNano: 1689801909000000000
-            attributes:
+                                                      value:
+                                                        stringValue: stopped
+            body: {}
+            spanId: ""
+            timeUnixNano: "1689801448000000000"
+            traceId: ""
+          - attributes:
               - key: aws.cloudtrail.event_id
-                value: { stringValue: ba0801a1-87ec-4d26-be87-EXAMPLE75bbb }
+                value:
+                  stringValue: ba0801a1-87ec-4d26-be87-EXAMPLE75bbb
               - key: rpc.method
-                value: { stringValue: CreateUser }
+                value:
+                  stringValue: CreateUser
               - key: rpc.system
-                value: { stringValue: AwsApiCall }
+                value:
+                  stringValue: AwsApiCall
               - key: rpc.service
-                value: { stringValue: iam.amazonaws.com }
+                value:
+                  stringValue: iam.amazonaws.com
               - key: aws.request_id
-                value: { stringValue: 2d528c76-329e-410b-9516-EXAMPLE565dc }
+                value:
+                  stringValue: 2d528c76-329e-410b-9516-EXAMPLE565dc
               - key: aws.event.category
-                value: { stringValue: Management }
+                value:
+                  stringValue: Management
               - key: aws.event.read_only
-                value: { boolValue: false }
+                value:
+                  boolValue: false
               - key: net.peer.ip
-                value: { stringValue: 192.0.2.0 }
+                value:
+                  stringValue: 192.0.2.0
               - key: user_agent.original
                 value:
-                  stringValue: >
-                    aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64
-                    exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/iam.create-user
+                  stringValue: aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64 exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/iam.create-user
               - key: aws.session.console
-                value: { boolValue: true }
+                value:
+                  boolValue: true
               - key: principal.id
-                value: { stringValue: AIDA6ON6E4XEGITEXAMPLE }
+                value:
+                  stringValue: AIDA6ON6E4XEGITEXAMPLE
               - key: principal.name
-                value: { stringValue: Mary }
+                value:
+                  stringValue: Mary
               - key: principal.arn
-                value: { stringValue: arn:aws:iam::123456789012:user/Mary }
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Mary
               - key: tls.protocol.version
-                value: { stringValue: "1.2" }
+                value:
+                  stringValue: "1.2"
               - key: tls.cipher
-                value: { stringValue: ECDHE-RSA-AES128-GCM-SHA256 }
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
               - key: server.address
-                value: { stringValue: iam.amazonaws.com }
+                value:
+                  stringValue: iam.amazonaws.com
               - key: aws.request.parameters
                 value:
                   kvlistValue:
                     values:
                       - key: userName
-                        value: { stringValue: Richard }
+                        value:
+                          stringValue: Richard
               - key: aws.response.elements
                 value:
                   kvlistValue:
@@ -178,12 +217,97 @@ resourceLogs:
                           kvlistValue:
                             values:
                               - key: path
-                                value: { stringValue: / }
+                                value:
+                                  stringValue: /
                               - key: arn
-                                value: { stringValue: arn:aws:iam::123456789012:user/Richard }
+                                value:
+                                  stringValue: arn:aws:iam::123456789012:user/Richard
                               - key: userId
-                                value: { stringValue: AIDA6ON6E4XEP7EXAMPLE }
+                                value:
+                                  stringValue: AIDA6ON6E4XEP7EXAMPLE
                               - key: createDate
-                                value: { stringValue: Jul 19, 2023 9:25:09 PM }
+                                value:
+                                  stringValue: Jul 19, 2023 9:25:09 PM
                               - key: userName
-                                value: { stringValue: Richard }
+                                value:
+                                  stringValue: Richard
+            body: {}
+            spanId: ""
+            timeUnixNano: "1689801909000000000"
+            traceId: ""
+          - attributes:
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: bb3496d4-5252-4660-9c28-3c6aebdb21c0
+              - key: rpc.method
+                value:
+                  stringValue: Publish
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: sns.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: 0a8ab208-11bf-5e01-bd2d-ef55861b545d
+              - key: aws.event.category
+                value:
+                  stringValue: Data
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: net.peer.ip
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/1.29.16 md/Botocore#1.31.16 ua/2.0 os/linux#5.4.250-173.369.amzn2int.x86_64 md/arch#x86_64 lang/python#3.8.17 md/pyimpl#CPython cfg/retry-mode#legacy botocore/1.31.16
+              - key: principal.id
+                value:
+                  stringValue: EX_PRINCIPAL_ID
+              - key: principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Bob
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: sns.us-east-1.amazonaws.com
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: messageStructure
+                        value:
+                          stringValue: json
+                      - key: messageAttributes
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: topicArn
+                        value:
+                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
+                      - key: message
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: subject
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: messageId
+                        value:
+                          stringValue: 0787cd1e-d92b-521c-a8b4-90434e8ef840
+            body: {}
+            spanId: ""
+            timeUnixNano: "1692636517000000000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version
