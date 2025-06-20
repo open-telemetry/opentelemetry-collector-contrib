@@ -6,7 +6,10 @@ package kafkareceiver
 import (
 	"context"
 	"errors"
+	"io"
+	"net"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -18,6 +21,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -576,6 +581,86 @@ func TestNewMetricsReceiver(t *testing.T) {
 	})
 }
 
+func TestComponentStatus(t *testing.T) {
+	t.Parallel()
+	_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+	statusEventCh := make(chan *componentstatus.Event, 10)
+	waitStatusEvent := func() *componentstatus.Event {
+		select {
+		case event := <-statusEventCh:
+			return event
+		case <-time.After(10 * time.Second):
+			t.Fatal("timed out waiting for status event")
+		}
+		panic("unreachable")
+	}
+	assertNoStatusEvent := func(t *testing.T) {
+		t.Helper()
+		select {
+		case event := <-statusEventCh:
+			t.Fatalf("unexpected status event received: %+v", event)
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+
+	// Create an intermediate TCP listener which will proxy the connection to the
+	// fake Kafka cluster. This can be used to verify the initial "OK" status is
+	// reported only after the broker connection is established.
+	lis, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, lis.Close()) })
+	brokers := receiverConfig.Brokers
+	receiverConfig.Brokers = []string{lis.Addr().String()}
+
+	f := NewFactory()
+	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
+	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), &statusReporterHost{
+		report: func(event *componentstatus.Event) {
+			statusEventCh <- event
+		},
+	}))
+	t.Cleanup(func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+	})
+
+	// Connection to the Kafka cluster is asynchronous; the receiver
+	// will report that it is starting before the connection is established.
+	assert.Equal(t, componentstatus.StatusStarting, waitStatusEvent().Status())
+	// The StatusOK event should not be reported yet, as the connection to the
+	// fake Kafka cluster is not established yet.
+	assertNoStatusEvent(t)
+
+	// Accept the connection, proxy to the fake Kafka cluster.
+	var wg sync.WaitGroup
+	conn, err := lis.Accept()
+	require.NoError(t, err)
+	kfakeConn, err := net.Dial("tcp", brokers[0])
+	require.NoError(t, err)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(conn, kfakeConn)
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(kfakeConn, conn)
+	}()
+	defer wg.Wait()
+	defer conn.Close()
+	defer kfakeConn.Close()
+
+	assert.Equal(t, componentstatus.StatusOK, waitStatusEvent().Status())
+	assertNoStatusEvent(t)
+
+	assert.NoError(t, r.Shutdown(context.Background()))
+
+	assert.Equal(t, componentstatus.StatusStopping, waitStatusEvent().Status())
+	assert.Equal(t, componentstatus.StatusStopped, waitStatusEvent().Status())
+	assertNoStatusEvent(t)
+}
+
 func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Traces) {
 	tb.Helper()
 
@@ -652,4 +737,16 @@ func deleteConsumerGroups(tb testing.TB, client *kgo.Client) {
 	assert.NoError(tb, err)
 	_, err = adminClient.DeleteGroups(context.Background(), groups.Groups()...)
 	assert.NoError(tb, err)
+}
+
+type statusReporterHost struct {
+	report func(*componentstatus.Event)
+}
+
+func (h *statusReporterHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (h *statusReporterHost) Report(event *componentstatus.Event) {
+	h.report(event)
 }
