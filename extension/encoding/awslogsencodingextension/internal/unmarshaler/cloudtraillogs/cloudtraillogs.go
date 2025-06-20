@@ -129,34 +129,6 @@ func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) (
 	return logs, nil
 }
 
-// checks if the event is related to EC2 instance operations
-func isEC2InstanceOperation(eventName string) bool {
-	switch eventName {
-	case "StartInstances", "StopInstances", "TerminateInstances", "RebootInstances", "RunInstances":
-		return true
-	default:
-		return false
-	}
-}
-
-func extractInstanceIDs(requestParams map[string]any) []string {
-	var instanceIDs []string
-
-	if instancesSet, ok := requestParams["instancesSet"].(map[string]any); ok {
-		if items, ok := instancesSet["items"].([]any); ok {
-			for _, item := range items {
-				if itemMap, ok := item.(map[string]any); ok {
-					if instanceID, ok := itemMap["instanceId"].(string); ok {
-						instanceIDs = append(instanceIDs, instanceID)
-					}
-				}
-			}
-		}
-	}
-
-	return instanceIDs
-}
-
 func (u *CloudTrailLogsUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attrs.PutStr(string(conventions.CloudRegionKey), record.AwsRegion)
@@ -174,7 +146,7 @@ func (u *CloudTrailLogsUnmarshaler) setLogRecord(logRecord plog.LogRecord, recor
 }
 
 func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
-	attrs.PutStr("request.event_id", record.EventID)
+	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 	attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
 	attrs.PutStr(string(conventions.RPCSystemKey), record.EventType)
 	attrs.PutStr(string(conventions.RPCServiceKey), record.EventSource)
@@ -196,7 +168,7 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 			attrs.PutStr("principal.name", userName)
 		}
 		if arn, ok := record.UserIdentity["arn"].(string); ok {
-			attrs.PutStr("principal.iam.arn", arn)
+			attrs.PutStr("principal.arn", arn)
 		}
 	}
 
@@ -214,46 +186,19 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 		}
 	}
 
+	// Add RequestParameters as a map directly
 	if record.RequestParameters != nil {
-		if userName, ok := record.RequestParameters["userName"].(string); ok {
-			attrs.PutStr("aws.target_user.name", userName)
+		requestParamsMap := attrs.PutEmptyMap("aws.request.parameters")
+		for k, v := range record.RequestParameters {
+			addAttributeValue(requestParamsMap, k, v)
 		}
 	}
 
+	// Add ResponseElements as a map directly
 	if record.ResponseElements != nil {
-		if user, ok := record.ResponseElements["user"].(map[string]any); ok {
-			if arn, ok := user["arn"].(string); ok {
-				attrs.PutStr("aws.target_user.arn", arn)
-			}
-			if userID, ok := user["userId"].(string); ok {
-				attrs.PutStr("aws.target_user.id", userID)
-			}
-			if path, ok := user["path"].(string); ok {
-				attrs.PutStr("aws.target_user.path", path)
-			}
-		}
-	}
-
-	if isEC2InstanceOperation(record.EventName) {
-		instanceIDs := extractInstanceIDs(record.RequestParameters)
-		if len(instanceIDs) > 0 {
-			instancesSlice := attrs.PutEmptySlice("aws.request.parameters.instances")
-			for _, id := range instanceIDs {
-				instancesSlice.AppendEmpty().SetStr(id)
-			}
-		}
-
-		instanceDetails := extractInstanceDetails(record.ResponseElements)
-		if len(instanceDetails) > 0 {
-			respInstances := attrs.PutEmptySlice("aws.response.instances")
-
-			for _, details := range instanceDetails {
-				kvListItem := respInstances.AppendEmpty()
-				kvListValue := kvListItem.SetEmptyMap()
-				for k, v := range details {
-					kvListValue.PutStr(k, v)
-				}
-			}
+		responseElementsMap := attrs.PutEmptyMap("aws.response.elements")
+		for k, v := range record.ResponseElements {
+			addAttributeValue(responseElementsMap, k, v)
 		}
 	}
 }
@@ -266,38 +211,48 @@ func extractTLSVersion(tlsVersion string) string {
 	return tlsVersion
 }
 
-func extractInstanceDetails(responseElements map[string]any) []map[string]string {
-	var instanceDetails []map[string]string
-
-	if instancesSet, ok := responseElements["instancesSet"].(map[string]any); ok {
-		if items, ok := instancesSet["items"].([]any); ok {
-			for _, item := range items {
-				if itemMap, ok := item.(map[string]any); ok {
-					details := make(map[string]string)
-
-					if instanceID, ok := itemMap["instanceId"].(string); ok {
-						details["instanceId"] = instanceID
-					}
-
-					if cs, ok := itemMap["currentState"].(map[string]any); ok {
-						if name, ok := cs["name"].(string); ok {
-							details["currentState"] = name
-						}
-					}
-
-					if ps, ok := itemMap["previousState"].(map[string]any); ok {
-						if name, ok := ps["name"].(string); ok {
-							details["previousState"] = name
-						}
-					}
-
-					if len(details) > 0 {
-						instanceDetails = append(instanceDetails, details)
-					}
+// addAttributeValue adds a value to the attribute map based on its type
+func addAttributeValue(attrMap pcommon.Map, key string, value any) {
+	switch v := value.(type) {
+	case string:
+		attrMap.PutStr(key, v)
+	case bool:
+		attrMap.PutBool(key, v)
+	case float64:
+		attrMap.PutDouble(key, v)
+	case int:
+		attrMap.PutInt(key, int64(v))
+	case int64:
+		attrMap.PutInt(key, v)
+	case map[string]any:
+		nestedMap := attrMap.PutEmptyMap(key)
+		for nestedKey, nestedValue := range v {
+			addAttributeValue(nestedMap, nestedKey, nestedValue)
+		}
+	case []any:
+		slice := attrMap.PutEmptySlice(key)
+		for _, item := range v {
+			switch itemVal := item.(type) {
+			case string:
+				slice.AppendEmpty().SetStr(itemVal)
+			case bool:
+				slice.AppendEmpty().SetBool(itemVal)
+			case float64:
+				slice.AppendEmpty().SetDouble(itemVal)
+			case int:
+				slice.AppendEmpty().SetInt(int64(itemVal))
+			case int64:
+				slice.AppendEmpty().SetInt(itemVal)
+			case map[string]any:
+				itemMap := slice.AppendEmpty().SetEmptyMap()
+				for itemKey, itemMapValue := range itemVal {
+					addAttributeValue(itemMap, itemKey, itemMapValue)
 				}
+			default:
+				// Skip null or unsupported types
 			}
 		}
+	default:
+		// Skip null or unsupported types
 	}
-
-	return instanceDetails
 }
