@@ -2386,12 +2386,14 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 	}{
 		"K8SPodUID": {
 			associations: []Association{
-				{Sources: []AssociationSource{
-					{
-						From: ResourceSource,
-						Name: string(conventions.K8SPodUIDKey),
+				{
+					Sources: []AssociationSource{
+						{
+							From: ResourceSource,
+							Name: string(conventions.K8SPodUIDKey),
+						},
 					},
-				}},
+				},
 			},
 			pod: &Pod{
 				PodUID: "myK8sPodUID",
@@ -2407,12 +2409,14 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 		},
 		"ContainerID": {
 			associations: []Association{
-				{Sources: []AssociationSource{
-					{
-						From: ResourceSource,
-						Name: string(conventions.ContainerIDKey),
+				{
+					Sources: []AssociationSource{
+						{
+							From: ResourceSource,
+							Name: string(conventions.ContainerIDKey),
+						},
 					},
-				}},
+				},
 			},
 			pod: &Pod{
 				PodUID: "myK8sPodUID",
@@ -2442,6 +2446,61 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 				},
 				{
 					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+			},
+		},
+		"multiple associations": {
+			associations: []Association{
+				{
+					Sources: []AssociationSource{
+						{
+							From: ResourceSource,
+							Name: string(conventions.ContainerIDKey),
+						},
+						{
+							From: ConnectionSource,
+						},
+					},
+				},
+			},
+			pod: &Pod{
+				PodUID:  "myK8sPodUID",
+				Address: "localhost",
+				Containers: PodContainers{
+					ByID: map[string]*Container{
+						"id1": {
+							Name: "id1",
+						},
+						"id2": {
+							Name: "id2",
+						},
+					},
+				},
+			},
+			expected: []PodIdentifier{
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id1"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "connection", Name: ""}, Value: "localhost"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id2"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "connection", Name: ""}, Value: "localhost"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.ip"}, Value: "localhost"},
 					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
 					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
 					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},

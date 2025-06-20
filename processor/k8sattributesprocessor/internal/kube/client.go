@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 	"sync"
@@ -980,7 +981,9 @@ func getPodReplicaSetUID(pod *api_v1.Pod) string {
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	var ids []PodIdentifier
 	gotPodUID := false
+	gotPodConnection := false
 	for _, assoc := range c.Associations {
+		retID4containerID := -1
 		ret := PodIdentifier{}
 		skip := false
 		for i, source := range assoc.Sources {
@@ -1000,47 +1003,52 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 					break
 				}
 				ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
+				gotPodConnection = true
 			case ResourceSource:
-				// Special case handling for Pods with multiple containers:
-				if source.Name == string(conventions.ContainerIDKey) {
-					for cid := range pod.Containers.ByID {
-						ids = append(ids, PodIdentifier{
-							PodIdentifierAttributeFromSource(source, cid),
-						})
+				attr := ""
+				switch source.Name {
+				case string(conventions.K8SNamespaceNameKey):
+					attr = pod.Namespace
+				case string(conventions.K8SPodNameKey):
+					attr = pod.Name
+				case string(conventions.K8SPodUIDKey):
+					attr = pod.PodUID
+					gotPodUID = true
+				case string(conventions.HostNameKey):
+					attr = pod.Address
+				// k8s.pod.ip is set by passthrough mode
+				case K8sIPLabelName:
+					attr = pod.Address
+				case string(conventions.ContainerIDKey):
+					retID4containerID = i
+				default:
+					if v, ok := pod.Attributes[source.Name]; ok {
+						attr = v
 					}
-					skip = true
-				} else {
-					attr := ""
-					switch source.Name {
-					case string(conventions.K8SNamespaceNameKey):
-						attr = pod.Namespace
-					case string(conventions.K8SPodNameKey):
-						attr = pod.Name
-					case string(conventions.K8SPodUIDKey):
-						attr = pod.PodUID
-						gotPodUID = true
-					case string(conventions.HostNameKey):
-						attr = pod.Address
-					// k8s.pod.ip is set by passthrough mode
-					case K8sIPLabelName:
-						attr = pod.Address
-					default:
-						if v, ok := pod.Attributes[source.Name]; ok {
-							attr = v
-						}
-					}
-
-					if attr == "" {
-						skip = true
-						break
-					}
-					ret[i] = PodIdentifierAttributeFromSource(source, attr)
 				}
+				_ = retID4containerID
+				if attr == "" && retID4containerID == -1 {
+					skip = true
+					break
+				}
+				ret[i] = PodIdentifierAttributeFromSource(source, attr)
 			}
 		}
 
 		if !skip {
-			ids = append(ids, ret)
+			if retID4containerID != -1 {
+				cIDs := maps.Keys(pod.Containers.ByID)
+				for cID := range cIDs {
+					retCpy := ret
+					retCpy[retID4containerID] = PodIdentifierAttributeFromSource(AssociationSource{
+						From: ResourceSource,
+						Name: string(conventions.ContainerIDKey),
+					}, cID)
+					ids = append(ids, retCpy)
+				}
+			} else {
+				ids = append(ids, ret)
+			}
 		}
 	}
 
@@ -1052,9 +1060,11 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	}
 
 	if pod.Address != "" && !pod.HostNetwork {
-		ids = append(ids, PodIdentifier{
-			PodIdentifierAttributeFromConnection(pod.Address),
-		})
+		if !gotPodConnection {
+			ids = append(ids, PodIdentifier{
+				PodIdentifierAttributeFromConnection(pod.Address),
+			})
+		}
 		// k8s.pod.ip is set by passthrough mode
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
