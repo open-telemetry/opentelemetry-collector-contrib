@@ -129,8 +129,8 @@ var MetricsInfo = metricsInfo{
 	RedisCmdLatency: metricInfo{
 		Name: "redis.cmd.latency",
 	},
-	RedisCmdUsec: metricInfo{
-		Name: "redis.cmd.usec",
+	RedisCmdSec: metricInfo{
+		Name: "redis.cmd.sec",
 	},
 	RedisCommands: metricInfo{
 		Name: "redis.commands",
@@ -225,7 +225,7 @@ type metricsInfo struct {
 	RedisClientsMaxOutputBuffer            metricInfo
 	RedisCmdCalls                          metricInfo
 	RedisCmdLatency                        metricInfo
-	RedisCmdUsec                           metricInfo
+	RedisCmdSec                            metricInfo
 	RedisCommands                          metricInfo
 	RedisCommandsProcessed                 metricInfo
 	RedisConnectionsReceived               metricInfo
@@ -565,43 +565,43 @@ func newMetricRedisCmdLatency(cfg MetricConfig) metricRedisCmdLatency {
 	return m
 }
 
-type metricRedisCmdUsec struct {
+type metricRedisCmdSec struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills redis.cmd.usec metric with initial data.
-func (m *metricRedisCmdUsec) init() {
-	m.data.SetName("redis.cmd.usec")
+// init fills redis.cmd.sec metric with initial data.
+func (m *metricRedisCmdSec) init() {
+	m.data.SetName("redis.cmd.sec")
 	m.data.SetDescription("Total time for all executions of this command")
-	m.data.SetUnit("us")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricRedisCmdUsec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cmdAttributeValue string) {
+func (m *metricRedisCmdSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cmdAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("cmd", cmdAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisCmdUsec) updateCapacity() {
+func (m *metricRedisCmdSec) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisCmdUsec) emit(metrics pmetric.MetricSlice) {
+func (m *metricRedisCmdSec) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -609,8 +609,8 @@ func (m *metricRedisCmdUsec) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCmdUsec(cfg MetricConfig) metricRedisCmdUsec {
-	m := metricRedisCmdUsec{config: cfg}
+func newMetricRedisCmdSec(cfg MetricConfig) metricRedisCmdSec {
+	m := metricRedisCmdSec{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -883,19 +883,19 @@ type metricRedisDbAvgTTL struct {
 func (m *metricRedisDbAvgTTL) init() {
 	m.data.SetName("redis.db.avg_ttl")
 	m.data.SetDescription("Average keyspace keys TTL")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricRedisDbAvgTTL) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbAttributeValue string) {
+func (m *metricRedisDbAvgTTL) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("db", dbAttributeValue)
 }
 
@@ -1239,19 +1239,19 @@ type metricRedisLatestFork struct {
 // init fills redis.latest_fork metric with initial data.
 func (m *metricRedisLatestFork) init() {
 	m.data.SetName("redis.latest_fork")
-	m.data.SetDescription("Duration of the latest fork operation in microseconds")
-	m.data.SetUnit("us")
+	m.data.SetDescription("Duration of the latest fork operation in seconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricRedisLatestFork) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricRedisLatestFork) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2044,7 +2044,7 @@ type MetricsBuilder struct {
 	metricRedisClientsMaxOutputBuffer            metricRedisClientsMaxOutputBuffer
 	metricRedisCmdCalls                          metricRedisCmdCalls
 	metricRedisCmdLatency                        metricRedisCmdLatency
-	metricRedisCmdUsec                           metricRedisCmdUsec
+	metricRedisCmdSec                            metricRedisCmdSec
 	metricRedisCommands                          metricRedisCommands
 	metricRedisCommandsProcessed                 metricRedisCommandsProcessed
 	metricRedisConnectionsReceived               metricRedisConnectionsReceived
@@ -2104,7 +2104,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
 		metricRedisCmdCalls:                          newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
 		metricRedisCmdLatency:                        newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
-		metricRedisCmdUsec:                           newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
+		metricRedisCmdSec:                            newMetricRedisCmdSec(mbc.Metrics.RedisCmdSec),
 		metricRedisCommands:                          newMetricRedisCommands(mbc.Metrics.RedisCommands),
 		metricRedisCommandsProcessed:                 newMetricRedisCommandsProcessed(mbc.Metrics.RedisCommandsProcessed),
 		metricRedisConnectionsReceived:               newMetricRedisConnectionsReceived(mbc.Metrics.RedisConnectionsReceived),
@@ -2229,7 +2229,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
 	mb.metricRedisCmdCalls.emit(ils.Metrics())
 	mb.metricRedisCmdLatency.emit(ils.Metrics())
-	mb.metricRedisCmdUsec.emit(ils.Metrics())
+	mb.metricRedisCmdSec.emit(ils.Metrics())
 	mb.metricRedisCommands.emit(ils.Metrics())
 	mb.metricRedisCommandsProcessed.emit(ils.Metrics())
 	mb.metricRedisConnectionsReceived.emit(ils.Metrics())
@@ -2319,9 +2319,9 @@ func (mb *MetricsBuilder) RecordRedisCmdLatencyDataPoint(ts pcommon.Timestamp, v
 	mb.metricRedisCmdLatency.recordDataPoint(mb.startTime, ts, val, cmdAttributeValue, percentileAttributeValue.String())
 }
 
-// RecordRedisCmdUsecDataPoint adds a data point to redis.cmd.usec metric.
-func (mb *MetricsBuilder) RecordRedisCmdUsecDataPoint(ts pcommon.Timestamp, val int64, cmdAttributeValue string) {
-	mb.metricRedisCmdUsec.recordDataPoint(mb.startTime, ts, val, cmdAttributeValue)
+// RecordRedisCmdSecDataPoint adds a data point to redis.cmd.sec metric.
+func (mb *MetricsBuilder) RecordRedisCmdSecDataPoint(ts pcommon.Timestamp, val float64, cmdAttributeValue string) {
+	mb.metricRedisCmdSec.recordDataPoint(mb.startTime, ts, val, cmdAttributeValue)
 }
 
 // RecordRedisCommandsDataPoint adds a data point to redis.commands metric.
@@ -2350,7 +2350,7 @@ func (mb *MetricsBuilder) RecordRedisCPUTimeDataPoint(ts pcommon.Timestamp, val 
 }
 
 // RecordRedisDbAvgTTLDataPoint adds a data point to redis.db.avg_ttl metric.
-func (mb *MetricsBuilder) RecordRedisDbAvgTTLDataPoint(ts pcommon.Timestamp, val int64, dbAttributeValue string) {
+func (mb *MetricsBuilder) RecordRedisDbAvgTTLDataPoint(ts pcommon.Timestamp, val float64, dbAttributeValue string) {
 	mb.metricRedisDbAvgTTL.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
 }
 
@@ -2385,7 +2385,7 @@ func (mb *MetricsBuilder) RecordRedisKeyspaceMissesDataPoint(ts pcommon.Timestam
 }
 
 // RecordRedisLatestForkDataPoint adds a data point to redis.latest_fork metric.
-func (mb *MetricsBuilder) RecordRedisLatestForkDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordRedisLatestForkDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricRedisLatestFork.recordDataPoint(mb.startTime, ts, val)
 }
 

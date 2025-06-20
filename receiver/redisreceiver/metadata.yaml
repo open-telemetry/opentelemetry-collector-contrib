@@ -89,12 +89,12 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [cmd]
 
-  redis.cmd.usec:
+  redis.cmd.sec:
     enabled: false
     description: Total time for all executions of this command
-    unit: us
+    unit: s
     sum:
-      value_type: int
+      value_type: double
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cmd]
@@ -293,10 +293,10 @@ metrics:
 
   redis.latest_fork:
     enabled: true
-    description: Duration of the latest fork operation in microseconds
-    unit: us
+    description: Duration of the latest fork operation in seconds
+    unit: s
     gauge:
-      value_type: int
+      value_type: double
 
   redis.slaves.connected:
     enabled: true
@@ -323,7 +323,7 @@ metrics:
 
   redis.db.keys:
     enabled: true
-    description: "Number of keyspace keys"
+    description: Number of keyspace keys
     unit: "{key}"
     gauge:
       value_type: int
@@ -331,7 +331,7 @@ metrics:
 
   redis.db.expires:
     enabled: true
-    description: "Number of keyspace keys with an expiration"
+    description: Number of keyspace keys with an expiration
     unit: "{key}"
     gauge:
       value_type: int
@@ -339,15 +339,15 @@ metrics:
 
   redis.db.avg_ttl:
     enabled: true
-    description: "Average keyspace keys TTL"
-    unit: ms
+    description: Average keyspace keys TTL
+    unit: s
     gauge:
-      value_type: int
+      value_type: double
     attributes: [db]
   # below are all disabled by default
   redis.replication.replica_offset:
     enabled: false
-    description: "Offset for redis replica"
+    description: Offset for redis replica
     unit: "By"
     gauge:
       value_type: int

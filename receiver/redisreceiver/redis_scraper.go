@@ -129,12 +129,18 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 				rs.settings.Logger.Warn("failed to parse info float val", zap.String("key", infoKey),
 					zap.String("val", infoVal), zap.Error(err))
 			}
-			recordDataPoint(ts, val)
+			if infoKey == "latest_fork_usec" {
+				val /= 1e6 // Convert us to s
+				recordDataPoint(ts, val)
+			} else {
+				recordDataPoint(ts, val)
+			}
 		}
 	}
 }
 
 // recordKeyspaceMetrics records metrics from 'keyspace' Redis info key-value pairs,
+// e.g. "db0: keys=1,expires=2,avg_ttl=3".
 // e.g. "db0: keys=1,expires=2,avg_ttl=3".
 func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 	for db := range redisMaxDbs {
@@ -151,7 +157,7 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 		}
 		rs.mb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
 		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
-		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
+		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, float64(keyspace.avgTTL)/1e3, keyspace.db) // convert ms to s
 	}
 }
 
@@ -213,7 +219,8 @@ func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val str
 		case "calls":
 			rs.mb.RecordRedisCmdCallsDataPoint(ts, parsed, cmd)
 		case "usec":
-			rs.mb.RecordRedisCmdUsecDataPoint(ts, parsed, cmd)
+			parsedSeconds := float64(parsed) / 1e6 // Convert us to s
+			rs.mb.RecordRedisCmdSecDataPoint(ts, parsedSeconds, cmd)
 		}
 	}
 }
