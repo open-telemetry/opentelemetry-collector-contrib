@@ -8,7 +8,6 @@ import (
 	"errors"
 	"maps"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
@@ -194,8 +193,8 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	var hasError bool
 	fetch.EachError(func(topic string, partition int32, err error) {
 		c.settings.Logger.Error("consumer fetch error", zap.Error(err),
-			zap.String(attrTopic, topic),
-			zap.String(attrPartition, strconv.Itoa(int(partition))),
+			zap.String("topic", topic),
+			zap.Int64("partition", int64(partition)),
 		)
 		if !hasError {
 			hasError = true
@@ -228,8 +227,8 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		if !ok {
 			c.settings.Logger.Warn(
 				"attempted to process records for a partition not assigned to this consumer",
-				zap.String(attrTopic, tp.topic),
-				zap.String(attrPartition, strconv.Itoa(int(tp.partition))),
+				zap.String("topic", tp.topic),
+				zap.Int64("partition", int64(tp.partition)),
 			)
 			return
 		}
@@ -361,12 +360,12 @@ func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned ma
 			partitionConsumer := pc{
 				backOff: newExponentialBackOff(c.config.ErrorBackOff),
 				logger: c.settings.Logger.With(
-					zap.String(attrTopic, topic),
-					zap.String(attrPartition, strconv.Itoa(int(partition))),
+					zap.String("topic", topic),
+					zap.Int64("partition", int64(partition)),
 				),
 				attrs: attribute.NewSet(append(c.componentAttributes.ToSlice(),
-					attribute.String(attrTopic, topic),
-					attribute.String(attrPartition, strconv.Itoa(int(partition))),
+					attribute.String("topic", topic),
+					attribute.Int64("partition", int64(partition)),
 				)...),
 			}
 			partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(ctx)

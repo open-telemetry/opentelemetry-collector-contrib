@@ -25,13 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-const (
-	transport = "kafka"
-	// TODO: update the following attributes to reflect semconv
-	attrInstanceName = "name"
-	attrTopic        = "topic"
-	attrPartition    = "partition"
-)
+const transport = "kafka"
 
 type consumeMessageFunc func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error
 

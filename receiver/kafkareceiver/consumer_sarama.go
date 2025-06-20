@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"strconv"
 	"sync"
 	"time"
 
@@ -171,8 +170,8 @@ func (c *saramaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler, host c
 					1,
 					metric.WithAttributeSet(c.componentAttributes),
 					metric.WithAttributes(
-						attribute.String(attrTopic, consumerError.Topic),
-						attribute.String(attrPartition, strconv.Itoa(int(consumerError.Partition))),
+						attribute.String("topic", consumerError.Topic),
+						attribute.Int64("partition", int64(consumerError.Partition)),
 						attribute.String("outcome", "failure"),
 					),
 				)
@@ -288,8 +287,8 @@ func (c *consumerGroupHandler) handleMessage(
 	}
 
 	attrs := attribute.NewSet(append(c.componentAttributes.ToSlice(),
-		attribute.String(attrTopic, message.Topic),
-		attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
+		attribute.String("topic", message.Topic),
+		attribute.Int64("partition", int64(claim.Partition())),
 	)...)
 	c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(
 		context.Background(),
