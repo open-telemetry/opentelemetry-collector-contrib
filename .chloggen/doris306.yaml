@@ -7,15 +7,15 @@ change_type: bug_fix
 component: dorisexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: fix trace graph for doris 3.0.6
+note: fix ddl for doris 3.0.6 and 2.1.10
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [40578]
+issues: [40578, 40827]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: 1. Use `size_based` compaction policy for the trace graph table instead of `time_series`. | 2. Use `zstd` as the default compression algorithm for all tables.
+subtext: 1. Use `size_based` compaction policy for the trace graph table instead of `time_series`. | 2. Use `"inverted_index_storage_format"="V2"`. | 3. Use `zstd` as the default compression algorithm for all tables.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

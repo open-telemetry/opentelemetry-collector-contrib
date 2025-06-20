@@ -136,7 +136,8 @@ PROPERTIES (
 "dynamic_partition.history_partition_num" = "%d",
 "dynamic_partition.end" = "1",
 "dynamic_partition.prefix" = "p",
-"compression" = "zstd"
+"compression" = "zstd",
+"inverted_index_storage_format" = "V2"
 )
 `
 )
