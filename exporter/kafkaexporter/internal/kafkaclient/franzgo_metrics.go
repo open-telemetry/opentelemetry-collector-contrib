@@ -5,9 +5,7 @@ package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"math"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -34,14 +32,14 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 		outcome = "failure"
 	}
 	fpm.tb.KafkaBrokerConnects.Add(context.Background(), 1, metric.WithAttributes(
-		attribute.String("node_id", strnode(meta.NodeID)),
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("outcome", outcome),
 	))
 }
 
 func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
 	fpm.tb.KafkaBrokerClosed.Add(context.Background(), 1, metric.WithAttributes(
-		attribute.String("node_id", strnode(meta.NodeID)),
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 	))
 }
 
@@ -51,7 +49,7 @@ func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, 
 		outcome = "failure"
 	}
 	fpm.tb.KafkaExporterLatency.Record(context.Background(), writeWait.Milliseconds()+timeToWrite.Milliseconds(), metric.WithAttributes(
-		attribute.String("node_id", strnode(meta.NodeID)),
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("outcome", outcome),
 	))
 }
@@ -60,7 +58,7 @@ func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, 
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookProduceBatchWritten
 func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.ProduceBatchMetrics) {
 	attrs := []attribute.KeyValue{
-		attribute.String("node_id", strnode(meta.NodeID)),
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("topic", topic),
 		attribute.Int64("partition", int64(partition)),
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
@@ -89,15 +87,8 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 
 func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
 	fpm.tb.KafkaExporterThrottlingDuration.Record(context.Background(), throttleInterval.Milliseconds(), metric.WithAttributes(
-		attribute.String("node_id", strnode(meta.NodeID)),
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 	))
-}
-
-func strnode(node int32) string {
-	if node < 0 {
-		return "seed_" + strconv.Itoa(int(node)-math.MinInt32)
-	}
-	return strconv.Itoa(int(node))
 }
 
 func compressionFromCodec(c uint8) string {
