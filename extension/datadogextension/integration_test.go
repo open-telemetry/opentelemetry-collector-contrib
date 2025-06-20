@@ -357,7 +357,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 	version := "0.127.0"
 	site := "datadoghq.com"
 
-	metadata := payload.PrepareOtelCollectorPayload(
+	metadata := payload.PrepareOtelCollectorMetadata(
 		hostname,
 		hostnameSource,
 		extensionUUID,
@@ -563,7 +563,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		Version:     "0.127.0",
 	}
 	fullConfig := componentchecker.DataToFlattenedJSONString(confMap.ToStringMap())
-	otelMetadata := payload.PrepareOtelCollectorPayload(
+	otelMetadata := payload.PrepareOtelCollectorMetadata(
 		testHostname,
 		"config",
 		testUUID,
@@ -721,7 +721,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		Command: "test-collector",
 		Version: "1.0.0",
 	}
-	otelMetadata := payload.PrepareOtelCollectorPayload(
+	otelMetadata := payload.PrepareOtelCollectorMetadata(
 		"test-host",
 		"config",
 		"test-uuid",
@@ -809,7 +809,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		Command: "concurrent-test-collector",
 		Version: "1.0.0",
 	}
-	otelMetadata := payload.PrepareOtelCollectorPayload(
+	otelMetadata := payload.PrepareOtelCollectorMetadata(
 		"concurrent-test-host",
 		"config",
 		"concurrent-test-uuid",

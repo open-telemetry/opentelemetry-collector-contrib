@@ -16,6 +16,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,6 +36,16 @@ const (
 	instanceNameKey  = "sql_instance"
 	serverAddressKey = "server.address"
 	serverPortKey    = "server.port"
+)
+
+const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
+
+var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	removeServerResourceAttributeFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.129.0"),
+	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are removed from metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141"),
 )
 
 type sqlServerScraperHelper struct {
@@ -174,9 +185,12 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
 		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -261,9 +275,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
 		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -535,9 +552,12 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
 		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -575,9 +595,12 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
 		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {

@@ -1,0 +1,61 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: ad8fb2b53dce
+    scopeMetrics:
+      - metrics:
+          - description: The number of databases
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: database.status
+                      value:
+                        stringValue: offline
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: database.status
+                      value:
+                        stringValue: online
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: database.status
+                      value:
+                        stringValue: pending_recovery
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: database.status
+                      value:
+                        stringValue: recovering
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: database.status
+                      value:
+                        stringValue: restoring
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: database.status
+                      value:
+                        stringValue: suspect
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.count
+            unit: '{databases}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

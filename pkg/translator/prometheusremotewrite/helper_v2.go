@@ -4,9 +4,15 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"math"
+	"strconv"
+
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/value"
+	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -65,4 +71,44 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		Type: writev2.Metadata_METRIC_TYPE_GAUGE,
 		Help: "Target metadata",
 	})
+}
+
+// addSampleWithLabels is a helper function to create and add a sample with labels
+func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timestamp int64, noRecordedValue bool,
+	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
+) {
+	sample := &writev2.Sample{
+		Value:     sampleValue,
+		Timestamp: timestamp,
+	}
+	if noRecordedValue {
+		sample.Value = math.Float64frombits(value.StaleNaN)
+	}
+	if labelName != "" && labelValue != "" {
+		c.addSample(sample, createLabels(baseName, baseLabels, labelName, labelValue), metadata)
+	} else {
+		c.addSample(sample, createLabels(baseName, baseLabels), metadata)
+	}
+}
+
+func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
+	settings Settings, baseName string, metadata metadata,
+) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		timestamp := convertTimeStamp(pt.Timestamp())
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+		noRecordedValue := pt.Flags().NoRecordedValue()
+
+		// Add sum and count samples
+		c.addSampleWithLabels(pt.Sum(), timestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
+
+		// Process quantiles
+		for i := 0; i < pt.QuantileValues().Len(); i++ {
+			qt := pt.QuantileValues().At(i)
+			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
+			c.addSampleWithLabels(qt.Value(), timestamp, noRecordedValue, baseName, baseLabels, quantileStr, percentileStr, metadata)
+		}
+	}
 }
