@@ -23,16 +23,16 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                           metric.Meter
-	mu                              sync.Mutex
-	registrations                   []metric.Registration
-	KafkaBrokerClosed               metric.Int64Counter
-	KafkaBrokerConnects             metric.Int64Counter
-	KafkaExporterBytes              metric.Int64Counter
-	KafkaExporterBytesUncompressed  metric.Int64Counter
-	KafkaExporterLatency            metric.Int64Histogram
-	KafkaExporterRecords            metric.Int64Counter
-	KafkaExporterThrottlingDuration metric.Int64Histogram
+	meter                          metric.Meter
+	mu                             sync.Mutex
+	registrations                  []metric.Registration
+	KafkaBrokerClosed              metric.Int64Counter
+	KafkaBrokerConnects            metric.Int64Counter
+	KafkaBrokerThrottlingDuration  metric.Int64Histogram
+	KafkaExporterBytes             metric.Int64Counter
+	KafkaExporterBytesUncompressed metric.Int64Counter
+	KafkaExporterLatency           metric.Int64Histogram
+	KafkaExporterRecords           metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -76,6 +76,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
+	builder.KafkaBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
+		"otelcol_kafka_broker_throttling_duration",
+		metric.WithDescription("The throttling duration in ms imposed by the broker when exporting records."),
+		metric.WithUnit("ms"),
+	)
+	errs = errors.Join(errs, err)
 	builder.KafkaExporterBytes, err = builder.meter.Int64Counter(
 		"otelcol_kafka_exporter_bytes",
 		metric.WithDescription("The size in bytes of exported records seen by the broker."),
@@ -98,12 +104,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_kafka_exporter_records",
 		metric.WithDescription("The number of exported records."),
 		metric.WithUnit("1"),
-	)
-	errs = errors.Join(errs, err)
-	builder.KafkaExporterThrottlingDuration, err = builder.meter.Int64Histogram(
-		"otelcol_kafka_exporter_throttling_duration",
-		metric.WithDescription("The throttling duration in ms imposed by the broker when exporting records."),
-		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

@@ -18,12 +18,13 @@ import (
 // FranzProducerMetrics implements the relevant franz-go hook interfaces to
 // record the metrics defined in the metadata telemetry.
 type FranzProducerMetrics struct {
-	tb *metadata.TelemetryBuilder
+	tb    *metadata.TelemetryBuilder
+	attrs attribute.Set
 }
 
 // NewFranzProducerMetrics creates an instance of FranzProducerMetrics from metadata TelemetryBuilder.
-func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder) FranzProducerMetrics {
-	return FranzProducerMetrics{tb}
+func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder, attributes ...attribute.KeyValue) FranzProducerMetrics {
+	return FranzProducerMetrics{tb: tb, attrs: attribute.NewSet(attributes...)}
 }
 
 func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
@@ -31,16 +32,37 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 	if err != nil {
 		outcome = "failure"
 	}
-	fpm.tb.KafkaBrokerConnects.Add(context.Background(), 1, metric.WithAttributes(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		attribute.String("outcome", outcome),
-	))
+	fpm.tb.KafkaBrokerConnects.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+		metric.WithAttributeSet(fpm.attrs),
+	)
 }
 
 func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
-	fpm.tb.KafkaBrokerClosed.Add(context.Background(), 1, metric.WithAttributes(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-	))
+	fpm.tb.KafkaBrokerClosed.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		),
+		metric.WithAttributeSet(fpm.attrs),
+	)
+}
+
+func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	fpm.tb.KafkaBrokerThrottlingDuration.Record(
+		context.Background(),
+		throttleInterval.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		),
+		metric.WithAttributeSet(fpm.attrs),
+	)
 }
 
 func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, _ int, writeWait, timeToWrite time.Duration, err error) {
@@ -48,10 +70,15 @@ func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, 
 	if err != nil {
 		outcome = "failure"
 	}
-	fpm.tb.KafkaExporterLatency.Record(context.Background(), writeWait.Milliseconds()+timeToWrite.Milliseconds(), metric.WithAttributes(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		attribute.String("outcome", outcome),
-	))
+	fpm.tb.KafkaExporterLatency.Record(
+		context.Background(),
+		writeWait.Milliseconds()+timeToWrite.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+		metric.WithAttributeSet(fpm.attrs),
+	)
 }
 
 // OnProduceBatchWritten is called when a batch has been produced.
@@ -64,9 +91,24 @@ func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, t
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
-	fpm.tb.KafkaExporterRecords.Add(context.Background(), int64(m.NumRecords), metric.WithAttributes(attrs...))
-	fpm.tb.KafkaExporterBytes.Add(context.Background(), int64(m.CompressedBytes), metric.WithAttributes(attrs...))
-	fpm.tb.KafkaExporterBytesUncompressed.Add(context.Background(), int64(m.UncompressedBytes), metric.WithAttributes(attrs...))
+	fpm.tb.KafkaExporterRecords.Add(
+		context.Background(),
+		int64(m.NumRecords),
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(fpm.attrs),
+	)
+	fpm.tb.KafkaExporterBytes.Add(
+		context.Background(),
+		int64(m.CompressedBytes),
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(fpm.attrs),
+	)
+	fpm.tb.KafkaExporterBytesUncompressed.Add(
+		context.Background(),
+		int64(m.UncompressedBytes),
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(fpm.attrs),
+	)
 }
 
 // OnProduceRecordUnbuffered records the number of produced messages that were
@@ -82,13 +124,12 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 		attribute.Int64("partition", int64(r.Partition)),
 		attribute.String("outcome", "failure"),
 	}
-	fpm.tb.KafkaExporterRecords.Add(context.Background(), 1, metric.WithAttributes(attrs...))
-}
-
-func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
-	fpm.tb.KafkaExporterThrottlingDuration.Record(context.Background(), throttleInterval.Milliseconds(), metric.WithAttributes(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-	))
+	fpm.tb.KafkaExporterRecords.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(fpm.attrs),
+	)
 }
 
 func compressionFromCodec(c uint8) string {

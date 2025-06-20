@@ -39,6 +39,22 @@ Only produced when franz-go is enabled.
 | node_id | The Kafka node ID. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
+### otelcol_kafka_broker_throttling_duration
+
+The throttling duration in ms imposed by the broker when exporting records.
+
+Only produced when franz-go is enabled.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+
 ### otelcol_kafka_exporter_bytes
 
 The size in bytes of exported records seen by the broker.
@@ -108,19 +124,3 @@ The number of exported records.
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
-
-### otelcol_kafka_exporter_throttling_duration
-
-The throttling duration in ms imposed by the broker when exporting records.
-
-Only produced when franz-go is enabled.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |

@@ -53,6 +53,21 @@ func AssertEqualKafkaBrokerConnects(t *testing.T, tt *componenttest.Telemetry, d
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualKafkaBrokerThrottlingDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_broker_throttling_duration",
+		Description: "The throttling duration in ms imposed by the broker when exporting records.",
+		Unit:        "ms",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_kafka_broker_throttling_duration")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualKafkaExporterBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_bytes",
@@ -112,21 +127,6 @@ func AssertEqualKafkaExporterRecords(t *testing.T, tt *componenttest.Telemetry, 
 		},
 	}
 	got, err := tt.GetMetric("otelcol_kafka_exporter_records")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualKafkaExporterThrottlingDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_kafka_exporter_throttling_duration",
-		Description: "The throttling duration in ms imposed by the broker when exporting records.",
-		Unit:        "ms",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_kafka_exporter_throttling_duration")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

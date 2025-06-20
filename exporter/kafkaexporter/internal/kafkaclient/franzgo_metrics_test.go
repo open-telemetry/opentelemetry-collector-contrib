@@ -235,7 +235,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-		metadatatest.AssertEqualKafkaExporterThrottlingDuration(
+		metadatatest.AssertEqualKafkaBrokerThrottlingDuration(
 			t,
 			testTel,
 			[]metricdata.HistogramDataPoint[int64]{

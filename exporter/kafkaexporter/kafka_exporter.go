@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
@@ -65,33 +66,41 @@ type messenger[T any] interface {
 
 type kafkaExporter[T any] struct {
 	cfg          Config
-	set          component.TelemetrySettings
+	set          exporter.Settings
 	tb           *metadata.TelemetryBuilder
 	logger       *zap.Logger
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
 	producer     producer
+	signal       string
 }
 
 func newKafkaExporter[T any](
 	config Config,
 	set exporter.Settings,
+	signal string,
 	newMessenger func(component.Host) (messenger[T], error),
 ) *kafkaExporter[T] {
 	return &kafkaExporter[T]{
 		cfg:          config,
+		set:          set,
+		signal:       signal,
 		logger:       set.Logger,
-		set:          set.TelemetrySettings,
 		newMessenger: newMessenger,
 	}
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
-	tb, err := metadata.NewTelemetryBuilder(e.set)
+	tb, err := metadata.NewTelemetryBuilder(e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}
 	e.tb = tb
+	attrs := []attribute.KeyValue{
+		attribute.String("otelcol.component.kind", "exporter"),
+		attribute.String("otelcol.component.id", e.set.ID.String()),
+		attribute.String("otelcol.signal", e.signal),
+	}
 
 	if e.messenger, err = e.newMessenger(host); err != nil {
 		return err
@@ -104,7 +113,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 			e.cfg.Producer,
 			e.cfg.TimeoutSettings.Timeout,
 			e.logger,
-			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
+			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb, attrs...)),
 		)
 		if ferr != nil {
 			return err
@@ -122,7 +131,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	}
 	e.producer = kafkaclient.NewSaramaSyncProducer(
 		producer,
-		tb,
+		kafkaclient.NewSaramaProducerMetrics(tb, attrs...),
 		e.cfg.IncludeMetadataKeys,
 	)
 	return nil
@@ -134,8 +143,10 @@ func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 	}
 	err = e.producer.Close()
 	e.producer = nil
-	e.tb.Shutdown()
-	e.tb = nil
+	if e.tb != nil {
+		e.tb.Shutdown()
+		e.tb = nil
+	}
 	return err
 }
 
@@ -169,7 +180,7 @@ func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptra
 	case "jaeger_proto", "jaeger_json":
 		config.PartitionTracesByID = false
 	}
-	return newKafkaExporter(config, set, func(host component.Host) (messenger[ptrace.Traces], error) {
+	return newKafkaExporter(config, set, "traces", func(host component.Host) (messenger[ptrace.Traces], error) {
 		marshaler, err := getTracesMarshaler(config.Traces.Encoding, host)
 		if err != nil {
 			return nil, err
@@ -214,7 +225,7 @@ func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte,
 }
 
 func newLogsExporter(config Config, set exporter.Settings) *kafkaExporter[plog.Logs] {
-	return newKafkaExporter(config, set, func(host component.Host) (messenger[plog.Logs], error) {
+	return newKafkaExporter(config, set, "logs", func(host component.Host) (messenger[plog.Logs], error) {
 		marshaler, err := getLogsMarshaler(config.Logs.Encoding, host)
 		if err != nil {
 			return nil, err
@@ -257,7 +268,7 @@ func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.
 }
 
 func newMetricsExporter(config Config, set exporter.Settings) *kafkaExporter[pmetric.Metrics] {
-	return newKafkaExporter(config, set, func(host component.Host) (messenger[pmetric.Metrics], error) {
+	return newKafkaExporter(config, set, "metrics", func(host component.Host) (messenger[pmetric.Metrics], error) {
 		marshaler, err := getMetricsMarshaler(config.Metrics.Encoding, host)
 		if err != nil {
 			return nil, err

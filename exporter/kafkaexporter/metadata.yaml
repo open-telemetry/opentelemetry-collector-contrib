@@ -56,6 +56,15 @@ telemetry:
         value_type: int
         monotonic: true
       attributes: [node_id]
+    kafka_broker_throttling_duration:
+      enabled: true
+      description: The throttling duration in ms imposed by the broker when exporting records.
+      extended_documentation: Only produced when franz-go is enabled.
+      optional: true
+      unit: ms
+      histogram:
+        value_type: int
+      attributes: [node_id]
     kafka_exporter_records:
       enabled: true
       description: The number of exported records.
@@ -89,12 +98,3 @@ telemetry:
       histogram:
         value_type: int
       attributes: [node_id, topic, partition, outcome]
-    kafka_exporter_throttling_duration:
-      enabled: true
-      description: The throttling duration in ms imposed by the broker when exporting records.
-      extended_documentation: Only produced when franz-go is enabled.
-      optional: true
-      unit: ms
-      histogram:
-        value_type: int
-      attributes: [node_id]

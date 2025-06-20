@@ -22,16 +22,19 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.KafkaBrokerClosed.Add(context.Background(), 1)
 	tb.KafkaBrokerConnects.Add(context.Background(), 1)
+	tb.KafkaBrokerThrottlingDuration.Record(context.Background(), 1)
 	tb.KafkaExporterBytes.Add(context.Background(), 1)
 	tb.KafkaExporterBytesUncompressed.Add(context.Background(), 1)
 	tb.KafkaExporterLatency.Record(context.Background(), 1)
 	tb.KafkaExporterRecords.Add(context.Background(), 1)
-	tb.KafkaExporterThrottlingDuration.Record(context.Background(), 1)
 	AssertEqualKafkaBrokerClosed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaBrokerConnects(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaBrokerThrottlingDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaExporterBytes(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -44,9 +47,6 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaExporterRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualKafkaExporterThrottlingDuration(t, testTel,
-		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
