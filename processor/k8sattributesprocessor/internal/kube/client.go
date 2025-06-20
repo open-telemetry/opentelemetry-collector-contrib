@@ -1000,30 +1000,39 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				}
 				ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
 			case ResourceSource:
-				attr := ""
-				switch source.Name {
-				case string(conventions.K8SNamespaceNameKey):
-					attr = pod.Namespace
-				case string(conventions.K8SPodNameKey):
-					attr = pod.Name
-				case string(conventions.K8SPodUIDKey):
-					attr = pod.PodUID
-				case string(conventions.HostNameKey):
-					attr = pod.Address
-				// k8s.pod.ip is set by passthrough mode
-				case K8sIPLabelName:
-					attr = pod.Address
-				default:
-					if v, ok := pod.Attributes[source.Name]; ok {
-						attr = v
+				// Special case handling for Pods with multiple containers:
+				if source.Name == string(conventions.ContainerIDKey) {
+					for cid := range pod.Containers.ByID {
+						ids = append(ids, PodIdentifier{
+							PodIdentifierAttributeFromSource(source, cid),
+						})
 					}
-				}
+				} else {
+					attr := ""
+					switch source.Name {
+					case string(conventions.K8SNamespaceNameKey):
+						attr = pod.Namespace
+					case string(conventions.K8SPodNameKey):
+						attr = pod.Name
+					case string(conventions.K8SPodUIDKey):
+						attr = pod.PodUID
+					case string(conventions.HostNameKey):
+						attr = pod.Address
+					// k8s.pod.ip is set by passthrough mode
+					case K8sIPLabelName:
+						attr = pod.Address
+					default:
+						if v, ok := pod.Attributes[source.Name]; ok {
+							attr = v
+						}
+					}
 
-				if attr == "" {
-					skip = true
-					break
+					if attr == "" {
+						skip = true
+						break
+					}
+					ret[i] = PodIdentifierAttributeFromSource(source, attr)
 				}
-				ret[i] = PodIdentifierAttributeFromSource(source, attr)
 			}
 		}
 
