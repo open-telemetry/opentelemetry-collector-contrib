@@ -179,3 +179,88 @@ func TestChainResolver_resolveInSequence(t *testing.T) {
 		})
 	}
 }
+
+func TestChainResolver_Reverse(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name              string
+		ip                string
+		setupResolvers    func() []Resolver
+		expectedHostnames []string
+		expectError       bool
+		expectedError     error
+	}{
+		{
+			name: "First resolver succeeds",
+			ip:   "192.168.1.10",
+			setupResolvers: func() []Resolver {
+				r1 := new(testutil.MockResolver)
+				r1.On("Reverse", ctx, "192.168.1.10").Return([]string{"example.com"}, nil)
+
+				// Second resolver should not be called
+				r2 := new(testutil.MockResolver)
+
+				return []Resolver{r1, r2}
+			},
+			expectedHostnames: []string{"example.com"},
+			expectError:       false,
+		},
+		{
+			name: "First resolver fails with an error, second succeeds",
+			ip:   "192.168.1.10",
+			setupResolvers: func() []Resolver {
+				r1 := new(testutil.MockResolver)
+				r1.On("Reverse", ctx, "192.168.1.10").Return(nil, errors.New("first resolver error"))
+
+				r2 := new(testutil.MockResolver)
+				r2.On("Reverse", ctx, "192.168.1.10").Return([]string{"example.com"}, nil)
+
+				return []Resolver{r1, r2}
+			},
+			expectedHostnames: []string{"example.com"},
+			expectError:       false,
+		},
+		{
+			name: "All resolvers fail",
+			ip:   "192.168.1.10",
+			setupResolvers: func() []Resolver {
+				r1 := new(testutil.MockResolver)
+				r1.On("Reverse", ctx, "192.168.1.10").Return(nil, errors.New("first resolver error"))
+
+				r2 := new(testutil.MockResolver)
+				r2.On("Reverse", ctx, "192.168.1.10").Return(nil, errors.New("second resolver error"))
+
+				return []Resolver{r1, r2}
+			},
+			expectedHostnames: nil,
+			expectError:       true,
+			expectedError:     errors.New("second resolver error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolvers := tt.setupResolvers()
+			chainResolver := NewChainResolver(resolvers)
+
+			hostname, err := chainResolver.Reverse(ctx, tt.ip)
+
+			// Verify resolver mock expectations
+			for _, r := range resolvers {
+				mockResolver, ok := r.(*testutil.MockResolver)
+				if ok {
+					mockResolver.AssertExpectations(t)
+				}
+			}
+
+			if tt.expectError {
+				assert.Equal(t, tt.expectedError, err)
+				assert.Empty(t, hostname)
+			} else {
+				assert.NoError(t, err)
+				assert.ElementsMatch(t, tt.expectedHostnames, hostname)
+			}
+		})
+	}
+}
