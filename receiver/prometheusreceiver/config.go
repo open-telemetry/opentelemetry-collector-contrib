@@ -134,7 +134,6 @@ func findSecretsRecursive(v reflect.Value) bool {
 	}
 
 	return false // No field of type commonconfig.Secret with a non-empty string was found.
-
 }
 
 func (cfg *PromConfig) Reload() error {
