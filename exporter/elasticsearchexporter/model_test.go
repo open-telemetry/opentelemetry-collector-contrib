@@ -492,51 +492,65 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.JSONEq(t, `{
-	  "@timestamp": "2023-04-19T03:04:05.000000006Z",
-	  "trace": {
-	   "id": "01020304050607080807060504030201"
-	  },
-	  "span": {
-	   "id": "1920212223242526",
-	   "name": "client span",
-	   "kind": "SPAN_KIND_CLIENT",
-	   "status": {
-		"code": 2,
-		"message": "Test"
-	   },
-	   "events": {
-		"fooEvent": {
-		 "eventMockFoo": "foo",
-		 "eventMockBar": "bar",
-		 "time": "2023-04-19T03:04:05.000000006Z"
+		"@timestamp": "2023-04-19T03:04:05.000000006Z",
+		"trace": {
+			"id": "01020304050607080807060504030201"
+		},
+		"span": {
+			"id": "1920212223242526",
+			"name": "client span",
+			"kind": "SPAN_KIND_CLIENT",
+			"status": {
+				"code": 2,
+				"message": "Test"
+			},
+			"links": [
+				{
+					"span": {
+						"id": "1112131415161718"
+					},
+					"trace": {
+						"id": "01020304050607080807060504030201"
+					}
+				},
+				{
+					"span": {
+						"id": "3132333435363738"
+					},
+					"trace": {
+						"id": "21222324252627282827262524232221"
+					}
+				}
+			],
+			"events": {
+				"fooEvent": {
+					"eventMockFoo": "foo",
+					"eventMockBar": "bar",
+					"time": "2023-04-19T03:04:05.000000006Z"
+				}
+			}
+		},
+		"cloud": {
+			"provider": "aws",
+			"service": {
+				"name": "aws_elastic_beanstalk"
+			}
+		},
+		"error": {
+			"type": "test-error"
+        },
+        "event": {
+			"action": "test-event"
+        },
+		"service": {
+			"environment": "BETA",
+			"name": "some-service",
+			"node": {
+				"name": "23"
+			},
+			"version": "env-version-1234"
 		}
-	   },
-	   "links": [
-		{"trace_id": "01020304050607080807060504030201", "span_id": "1112131415161718"},
-		{"trace_id": "21222324252627282827262524232221", "span_id": "3132333435363738"}
-	   ]
-	  },
-	  "event": {
-	   "action": "test-event"
-	  },
-	  "error": {
-	   "type": "test-error"
-	  },
-	  "service": {
-	   "name": "some-service",
-	   "node": {
-		"name": "23"
-	   },
-	   "version": "env-version-1234",
-	   "environment": "BETA"
-	  },
-	  "cloud": {
-	   "provider": "aws",
-	   "service": {
-		"name": "aws_elastic_beanstalk"
-	   }
-	  }
-	 }`, buf.String())
+	}`, buf.String())
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
