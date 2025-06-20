@@ -155,7 +155,7 @@ func reportProducerMetric(tb *metadata.TelemetryBuilder, msgs []*sarama.Producer
 		attrs := []attribute.KeyValue{
 			attribute.String("topic", tp.topic),
 			attribute.Int("partition", tp.partition),
-			attribute.String("outcome", "success"),
+			attribute.String("outcome", outcome),
 		}
 		tb.KafkaExporterBytesUncompressed.Add(context.Background(), s.bytes, metric.WithAttributes(attrs...))
 		tb.KafkaExporterRecords.Add(context.Background(), s.records, metric.WithAttributes(attrs...))
