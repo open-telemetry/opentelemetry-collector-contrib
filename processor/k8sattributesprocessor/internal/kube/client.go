@@ -979,6 +979,7 @@ func getPodReplicaSetUID(pod *api_v1.Pod) string {
 // getIdentifiersFromAssoc returns list of PodIdentifiers for given pod
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	var ids []PodIdentifier
+	gotPodUID := false
 	for _, assoc := range c.Associations {
 		ret := PodIdentifier{}
 		skip := false
@@ -1007,6 +1008,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 							PodIdentifierAttributeFromSource(source, cid),
 						})
 					}
+					skip = true
 				} else {
 					attr := ""
 					switch source.Name {
@@ -1016,6 +1018,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 						attr = pod.Name
 					case string(conventions.K8SPodUIDKey):
 						attr = pod.PodUID
+						gotPodUID = true
 					case string(conventions.HostNameKey):
 						attr = pod.Address
 					// k8s.pod.ip is set by passthrough mode
@@ -1042,7 +1045,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	}
 
 	// Ensure backward compatibility
-	if pod.PodUID != "" {
+	if pod.PodUID != "" && !gotPodUID {
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), pod.PodUID),
 		})

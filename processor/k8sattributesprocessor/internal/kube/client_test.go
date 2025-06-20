@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -2373,6 +2374,83 @@ func Test_parseServiceVersionFromImage(t *testing.T) {
 			got, _ := parseServiceVersionFromImage(tt.image)
 			// error is just for debugging
 			assert.Equalf(t, tt.want, got, "parseServiceVersionFromImage(%v)", tt.image)
+		})
+	}
+}
+
+func TestGetIdentifiersFromAssoc(t *testing.T) {
+	tests := map[string]struct {
+		associations []Association
+		pod          *Pod
+		expected     []PodIdentifier
+	}{
+		"K8SPodUID": {
+			associations: []Association{
+				{Sources: []AssociationSource{
+					{From: ResourceSource,
+						Name: string(conventions.K8SPodUIDKey)},
+				}},
+			},
+			pod: &Pod{
+				PodUID: "myK8sPodUID",
+			},
+			expected: []PodIdentifier{
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+			},
+		},
+		"ContainerID": {
+			associations: []Association{
+				{Sources: []AssociationSource{
+					{From: ResourceSource,
+						Name: string(conventions.ContainerIDKey)},
+				}},
+			},
+			pod: &Pod{
+				PodUID: "myK8sPodUID",
+				Containers: PodContainers{
+					ByID: map[string]*Container{
+						"id1": {
+							Name: "id1",
+						},
+						"id2": {
+							Name: "id2",
+						},
+					},
+				},
+			},
+			expected: []PodIdentifier{
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id1"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id2"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+			},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			wc, _ := newTestClient(t)
+			wc.Associations = tc.associations
+			actual := wc.getIdentifiersFromAssoc(tc.pod)
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }
