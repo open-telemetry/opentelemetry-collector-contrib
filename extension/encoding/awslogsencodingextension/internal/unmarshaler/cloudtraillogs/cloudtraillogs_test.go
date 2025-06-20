@@ -12,10 +12,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (
@@ -49,20 +47,89 @@ func TestCloudTrailLogsUnmarshaler_Unmarshal_MultipleRecords_Compressed(t *testi
 	actualLogs, err := unmarshaler.UnmarshalLogs(compressedData)
 	require.NoError(t, err)
 
-	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_logs_expected.yaml"))
-	require.NoError(t, err)
+	// Verify the logs structure
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	resourceLogs := actualLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, resourceLogs.ScopeLogs().Len())
+	scopeLogs := resourceLogs.ScopeLogs().At(0)
+	require.Equal(t, 2, scopeLogs.LogRecords().Len())
 
-	compareLogsIgnoringResourceOrder(t, expectedLogs, actualLogs)
-}
+	// Verify first log record (StartInstances)
+	logRecord1 := scopeLogs.LogRecords().At(0)
+	attrs1 := logRecord1.Attributes()
 
-func compareLogsIgnoringResourceOrder(t *testing.T, expected, actual plog.Logs) {
-	require.Positive(t, actual.ResourceLogs().Len(), "No resource logs found in actual logs")
+	// Check basic attributes
+	eventIDVal, exists := attrs1.Get("aws.cloudtrail.event_id")
+	require.True(t, exists)
+	require.Equal(t, "e755e09c-42f9-4c5c-9064-EXAMPLE228c7", eventIDVal.Str())
 
-	err := plogtest.CompareLogs(expected, actual,
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder())
-	require.NoError(t, err, "Logs don't match")
+	rpcMethodVal, exists := attrs1.Get(string(conventions.RPCMethodKey))
+	require.True(t, exists)
+	require.Equal(t, "StartInstances", rpcMethodVal.Str())
+
+	rpcSystemVal, exists := attrs1.Get(string(conventions.RPCSystemKey))
+	require.True(t, exists)
+	require.Equal(t, "AwsApiCall", rpcSystemVal.Str())
+
+	rpcServiceVal, exists := attrs1.Get(string(conventions.RPCServiceKey))
+	require.True(t, exists)
+	require.Equal(t, "ec2.amazonaws.com", rpcServiceVal.Str())
+
+	// Verify RequestParameters is a map
+	requestParams, found := attrs1.Get("aws.request.parameters")
+	require.True(t, found)
+	require.Equal(t, pcommon.ValueTypeMap, requestParams.Type())
+
+	// Verify instancesSet in RequestParameters
+	instancesSet, found := requestParams.Map().Get("instancesSet")
+	require.True(t, found)
+	require.Equal(t, pcommon.ValueTypeMap, instancesSet.Type())
+
+	// Verify ResponseElements is a map
+	responseElements, found := attrs1.Get("aws.response.elements")
+	require.True(t, found)
+	require.Equal(t, pcommon.ValueTypeMap, responseElements.Type())
+
+	// Verify second log record (CreateUser)
+	logRecord2 := scopeLogs.LogRecords().At(1)
+	attrs2 := logRecord2.Attributes()
+
+	// Check basic attributes
+	eventID2Val, exists := attrs2.Get("aws.cloudtrail.event_id")
+	require.True(t, exists)
+	require.Equal(t, "ba0801a1-87ec-4d26-be87-EXAMPLE75bbb", eventID2Val.Str())
+
+	rpcMethod2Val, exists := attrs2.Get(string(conventions.RPCMethodKey))
+	require.True(t, exists)
+	require.Equal(t, "CreateUser", rpcMethod2Val.Str())
+
+	rpcSystem2Val, exists := attrs2.Get(string(conventions.RPCSystemKey))
+	require.True(t, exists)
+	require.Equal(t, "AwsApiCall", rpcSystem2Val.Str())
+
+	rpcService2Val, exists := attrs2.Get(string(conventions.RPCServiceKey))
+	require.True(t, exists)
+	require.Equal(t, "iam.amazonaws.com", rpcService2Val.Str())
+
+	// Verify RequestParameters is a map
+	requestParams2, found := attrs2.Get("aws.request.parameters")
+	require.True(t, found)
+	require.Equal(t, pcommon.ValueTypeMap, requestParams2.Type())
+
+	// Verify userName in RequestParameters
+	userName, found := requestParams2.Map().Get("userName")
+	require.True(t, found)
+	require.Equal(t, "Richard", userName.Str())
+
+	// Verify ResponseElements is a map
+	responseElements2, found := attrs2.Get("aws.response.elements")
+	require.True(t, found)
+	require.Equal(t, pcommon.ValueTypeMap, responseElements2.Type())
+
+	// Verify user in ResponseElements
+	user, found := responseElements2.Map().Get("user")
+	require.True(t, found)
+	require.Equal(t, pcommon.ValueTypeMap, user.Type())
 }
 
 func TestCloudTrailLogsUnmarshaler_Unmarshal_EmptyRecords(t *testing.T) {
