@@ -141,8 +141,11 @@ func (cfg *PromConfig) Reload() error {
 		return nil
 	}
 
-	// only reload if there are no scrape configs, implying that there is a target_allocator.
-	// reloading existing scrape configs corrupts authentication configurations
+	// Only reload if there are no secrets in the scrape configs, implying that there is
+	// either a target_allocator or a simpleprometheusreceiver creating the config.
+	// Reloading existing scrape configs corrupts authentication configurations.
+	// TODO: undo when https://github.com/prometheus/prometheus/issues/16756
+	// is solved.
 	return reloadPromConfig(cfg, cfg)
 }
 
