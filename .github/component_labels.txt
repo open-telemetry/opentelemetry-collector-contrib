@@ -86,6 +86,7 @@ extension/encoding/otlpencodingextension extension/encoding/otlpencoding
 extension/encoding/skywalkingencodingextension extension/encoding/skywalkingencoding
 extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
+extension/externalauthextension extension/externalauth
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
 extension/healthcheckextension extension/healthcheck
