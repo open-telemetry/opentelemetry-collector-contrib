@@ -364,8 +364,8 @@ func (c snowflakeClient) FetchSnowpipeMetrics(ctx context.Context) (*[]snowpipeM
 
 	for rows.Next() {
 		var pipeName sql.NullString
-		var creditsUsed float64
-		var bytesInserted, filesInserted int64
+		var creditsUsed, bytesInserted float64
+		var filesInserted int64
 
 		err := rows.Scan(&pipeName, &creditsUsed, &bytesInserted, &filesInserted)
 		if err != nil {

@@ -90,6 +90,12 @@ Time a page will stay in the buffer pool.
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| performance_counter.object_name | Category to which this counter belongs | Any Str |
+
 ### sqlserver.page.operation.rate
 
 Number of physical database page operations issued.
@@ -531,6 +537,16 @@ The following events are emitted by default. Each of them can be disabled by app
 events:
   <event_name>:
     enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
 ```
 
 ### db.server.query_sample
