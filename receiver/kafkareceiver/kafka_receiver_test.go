@@ -261,7 +261,7 @@ func TestReceiver_ConsumeError(t *testing.T) {
 
 func TestReceiver_InternalTelemetry(t *testing.T) {
 	runTestForClients(t, func(t *testing.T) {
-		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"), kfake.NumBrokers(1))
 
 		// Send some traces to the otlp_spans topic.
 		traces := testdata.GenerateTraces(1)
@@ -299,26 +299,115 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.String()),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "traces"),
 				attribute.String("topic", "otlp_spans"),
-				attribute.String("partition", "0"),
+				attribute.Int64("partition", 0),
 			),
 		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 		// After receiving messages, the internal metrics should be updated.
 		metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
-			Value:      1,
-			Attributes: attribute.NewSet(attribute.String("name", set.ID.Name())),
-		}}, metricdatatest.IgnoreTimestamp())
-
-		metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{{
-			Value: 5,
+			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.String()),
-				attribute.String("topic", "otlp_spans"),
-				attribute.String("partition", "0"),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "traces"),
 			),
 		}}, metricdatatest.IgnoreTimestamp())
+
+		if franzGoConsumerFeatureGate.IsEnabled() {
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverBytes(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("node_id", "0"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+						attribute.String("compression_codec", "snappy"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverLatency(t, tel, []metricdata.HistogramDataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("node_id", "0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("node_id", "seed_0"),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		} else {
+			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Value: 5,
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
+			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("otelcol.component.kind", "receiver"),
+						attribute.String("otelcol.component.id", set.ID.String()),
+						attribute.String("otelcol.signal", "traces"),
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+						attribute.String("outcome", "success"),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		}
 
 		// Shut down and check that the partition close metric is updated.
 		err = r.Shutdown(context.Background())
@@ -326,7 +415,9 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.Name()),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "traces"),
 			),
 		}}, metricdatatest.IgnoreTimestamp())
 
@@ -339,18 +430,22 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 4, // offset of the final message
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.String()),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "traces"),
 				attribute.String("topic", "otlp_spans"),
-				attribute.String("partition", "0"),
+				attribute.Int64("partition", 0),
 			),
 		}}, metricdatatest.IgnoreTimestamp())
 
 		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 0,
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.String()),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "traces"),
 				attribute.String("topic", "otlp_spans"),
-				attribute.String("partition", "0"),
+				attribute.Int64("partition", 0),
 			),
 		}}, metricdatatest.IgnoreTimestamp())
 	})
@@ -377,7 +472,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			runTestForClients(t, func(t *testing.T) {
-				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"), kfake.NumBrokers(1))
 
 				// Send some invalid data to the otlp_spans topic so unmarshaling fails,
 				// and then send some valid data to show that the invalid data does not
@@ -429,16 +524,37 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message
-					metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
-						{
-							Value: timesProcessed,
-							Attributes: attribute.NewSet(
-								attribute.String("name", set.ID.String()),
-								attribute.String("topic", "otlp_spans"),
-								attribute.String("partition", "0"),
-							),
-						},
-					}, metricdatatest.IgnoreTimestamp())
+					if franzGoConsumerFeatureGate.IsEnabled() {
+						metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+							{
+								Value: timesProcessed,
+								Attributes: attribute.NewSet(
+									attribute.String("otelcol.component.kind", "receiver"),
+									attribute.String("otelcol.component.id", set.ID.String()),
+									attribute.String("otelcol.signal", "traces"),
+									attribute.String("node_id", "0"),
+									attribute.String("topic", "otlp_spans"),
+									attribute.Int64("partition", 0),
+									attribute.String("outcome", "success"),
+									attribute.String("compression_codec", "snappy"),
+								),
+							},
+						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+					} else {
+						metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+							{
+								Value: timesProcessed,
+								Attributes: attribute.NewSet(
+									attribute.String("otelcol.component.kind", "receiver"),
+									attribute.String("otelcol.component.id", set.ID.String()),
+									attribute.String("otelcol.signal", "traces"),
+									attribute.String("topic", "otlp_spans"),
+									attribute.Int64("partition", 0),
+									attribute.String("outcome", "success"),
+								),
+							},
+						}, metricdatatest.IgnoreTimestamp())
+					}
 
 					// The invalid message should block the consumer.
 					assert.Zero(t, calls.Load())
@@ -453,8 +569,12 @@ func TestReceiver_MessageMarking(t *testing.T) {
 
 					// Verify that the consumer did not restart.
 					metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("name", set.ID.Name())),
+						Value: 1,
+						Attributes: attribute.NewSet(
+							attribute.String("otelcol.component.kind", "receiver"),
+							attribute.String("otelcol.component.id", set.ID.String()),
+							attribute.String("otelcol.signal", "traces"),
+						),
 					}}, metricdatatest.IgnoreTimestamp())
 
 					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
@@ -513,9 +633,11 @@ func TestNewLogsReceiver(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.String()),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "logs"),
 				attribute.String("topic", "otlp_logs"),
-				attribute.String("partition", "0"),
+				attribute.Int64("partition", 0),
 			),
 		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -568,9 +690,11 @@ func TestNewMetricsReceiver(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("name", set.ID.String()),
+				attribute.String("otelcol.component.kind", "receiver"),
+				attribute.String("otelcol.component.id", set.ID.String()),
+				attribute.String("otelcol.signal", "metrics"),
 				attribute.String("topic", "otlp_metrics"),
-				attribute.String("partition", "0"),
+				attribute.Int64("partition", 0),
 			),
 		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 

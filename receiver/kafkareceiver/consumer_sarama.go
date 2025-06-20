@@ -161,24 +161,6 @@ func (c *saramaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler, host c
 	}()
 	c.settings.Logger.Debug("Created consumer group")
 
-	go func() {
-		for err := range consumerGroup.Errors() {
-			var consumerError *sarama.ConsumerError
-			if ok := errors.As(err, &consumerError); ok {
-				c.telemetryBuilder.KafkaReceiverRecords.Add(
-					context.Background(),
-					1,
-					metric.WithAttributeSet(c.componentAttributes),
-					metric.WithAttributes(
-						attribute.String("topic", consumerError.Topic),
-						attribute.Int64("partition", int64(consumerError.Partition)),
-						attribute.String("outcome", "failure"),
-					),
-				)
-			}
-		}
-	}()
-
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -306,7 +288,7 @@ func (c *consumerGroupHandler) handleMessage(
 		metric.WithAttributeSet(attrs),
 		metric.WithAttributes(attribute.String("outcome", "success")),
 	)
-	c.telemetryBuilder.KafkaReceiverBytes.Add(
+	c.telemetryBuilder.KafkaReceiverBytesUncompressed.Add(
 		context.Background(),
 		byteSize(message),
 		metric.WithAttributeSet(attrs),

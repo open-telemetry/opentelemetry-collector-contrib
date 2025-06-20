@@ -506,7 +506,7 @@ func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterv
 	)
 }
 
-func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, bytesRead int, readWait, timeToRead time.Duration, err error) {
+func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, readWait, timeToRead time.Duration, err error) {
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
