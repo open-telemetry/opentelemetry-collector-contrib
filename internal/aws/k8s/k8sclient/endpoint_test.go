@@ -416,7 +416,7 @@ func TestNewEndpointClient(t *testing.T) {
 	setKubeConfigPath(t)
 	setOption := epSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	fakeClientSet := fake.NewSimpleClientset(endpointsArray...)
+	fakeClientSet := fake.NewClientset(endpointsArray...)
 	client := newEpClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NotNil(t, client)
 	client.shutdown()
