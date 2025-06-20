@@ -346,7 +346,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
-				mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(receivertest.NopType)),
+				mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
 				lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
 				dbProviderFunc: func() (*sql.DB, error) {
 					return nil, nil

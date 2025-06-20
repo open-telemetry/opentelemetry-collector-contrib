@@ -530,7 +530,7 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		if samplesCollectionErrors != nil {
 			scrapeErrors = append(scrapeErrors, samplesCollectionErrors)
 		} else {
-			sampleLogs.ResourceLogs().CopyTo(logs.ResourceLogs())
+			sampleLogs.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 		}
 	}
 
@@ -574,6 +574,10 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, err
 	rb.SetHostName(s.hostName)
 
 	for _, row := range rows {
+		if row[sqlText] == "" {
+			continue
+		}
+
 		obfuscatedSQL, err := ObfuscateSQL(row[sqlText])
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("oracleScraper failed getting metric row: %s", err))
