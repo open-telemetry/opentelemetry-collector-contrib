@@ -22,8 +22,8 @@ const (
 	attributeApplicationInsightsEventMarkerAttribute string = "APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE"
 )
 
-// NetworkAttributes is the set of known network attributes
-type NetworkAttributes struct {
+// networkAttributes is the set of known network attributes
+type networkAttributes struct {
 	// see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/attributes-registry/network.md#network-attributes
 	NetTransport string
 	NetPeerIP    string
@@ -35,7 +35,7 @@ type NetworkAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *NetworkAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *networkAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventions.NetTransportKey):
 		attrs.NetTransport = v.Str()
@@ -59,8 +59,8 @@ func (attrs *NetworkAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// HTTPAttributes is the set of known attributes for HTTP Spans
-type HTTPAttributes struct {
+// httpAttributes is the set of known attributes for HTTP Spans
+type httpAttributes struct {
 	// common attributes
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#common-attributes
 	HTTPMethod                            string
@@ -84,11 +84,11 @@ type HTTPAttributes struct {
 	HTTPClientIP   string
 
 	// any net.*
-	NetworkAttributes NetworkAttributes
+	NetworkAttributes networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *HTTPAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *httpAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventions.HTTPMethodKey):
 		attrs.HTTPMethod = v.Str()
@@ -141,17 +141,17 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// RPCAttributes is the set of known attributes for RPC Spans
-type RPCAttributes struct {
+// rpcAttributes is the set of known attributes for RPC Spans
+type rpcAttributes struct {
 	RPCSystem         string
 	RPCService        string
 	RPCMethod         string
 	RPCGRPCStatusCode int64
-	NetworkAttributes NetworkAttributes
+	NetworkAttributes networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *RPCAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *rpcAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventions.RPCSystemKey):
 		attrs.RPCSystem = v.Str()
@@ -168,8 +168,8 @@ func (attrs *RPCAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// DatabaseAttributes is the set of known attributes for Database Spans
-type DatabaseAttributes struct {
+// databaseAttributes is the set of known attributes for Database Spans
+type databaseAttributes struct {
 	DBSystem              string
 	DBConnectionString    string
 	DBUser                string
@@ -182,11 +182,11 @@ type DatabaseAttributes struct {
 	DBHBaseNamespace      string
 	DBRedisDatabaseIndex  string
 	DBMongoDBCollection   string
-	NetworkAttributes     NetworkAttributes
+	NetworkAttributes     networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *DatabaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *databaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventions.DBSystemKey):
 		attrs.DBSystem = v.Str()
@@ -217,8 +217,8 @@ func (attrs *DatabaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// MessagingAttributes is the set of known attributes for Messaging Spans
-type MessagingAttributes struct {
+// messagingAttributes is the set of known attributes for Messaging Spans
+type messagingAttributes struct {
 	MessagingSystem                       string
 	MessagingDestination                  string
 	MessagingDestinationKind              string
@@ -231,11 +231,11 @@ type MessagingAttributes struct {
 	MessagingMessagePayloadSize           int64
 	MessagingMessagePayloadCompressedSize int64
 	MessagingOperation                    string
-	NetworkAttributes                     NetworkAttributes
+	NetworkAttributes                     networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *MessagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *messagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventions.MessagingSystemKey):
 		attrs.MessagingSystem = v.Str()
@@ -272,8 +272,8 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// ExceptionAttributes is the set of known attributes for Exception events
-type ExceptionAttributes struct {
+// exceptionAttributes is the set of known attributes for Exception events
+type exceptionAttributes struct {
 	ExceptionEscaped    string
 	ExceptionMessage    string
 	ExceptionStackTrace string
@@ -281,7 +281,7 @@ type ExceptionAttributes struct {
 }
 
 // MapAttribute attempts to map a SpanEvent attribute to one of the known types
-func (attrs *ExceptionAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *exceptionAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case string(conventions.ExceptionEscapedKey):
 		attrs.ExceptionEscaped = v.Str()
