@@ -66,3 +66,4 @@ func (config *Config) Validate() error {
 	}
 	return nil
 }
+// TODO(Sambhav800): Consider adding more configuration options.
