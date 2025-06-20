@@ -80,6 +80,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "waf_log"),
 			expected: &Config{
 				Format: formatWAFLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
 				},
 			},
 		},

@@ -18,6 +18,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 type CloudTrailLogsUnmarshaler struct {
@@ -25,7 +26,10 @@ type CloudTrailLogsUnmarshaler struct {
 	gzipPool  sync.Pool
 }
 
-var _ plog.Unmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
+var (
+	_ plog.Unmarshaler           = (*CloudTrailLogsUnmarshaler)(nil)
+	_ unmarshaler.AWSUnmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
+)
 
 // CloudTrailRecord represents a CloudTrail log record
 // There is no builtin CloudTrailRecord we can leverage like in S3
@@ -58,7 +62,7 @@ type CloudTrailLogs struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
 
-func NewCloudTrailLogsUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
+func NewCloudTrailLogsUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogsUnmarshaler {
 	return &CloudTrailLogsUnmarshaler{
 		buildInfo: buildInfo,
 		gzipPool:  sync.Pool{},
@@ -67,6 +71,20 @@ func NewCloudTrailLogsUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshale
 
 func (u *CloudTrailLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return u.UnmarshalLogs(buf)
+}
+
+func (u *CloudTrailLogsUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	decompressedBuf, err := io.ReadAll(reader)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to read CloudTrail logs: %w", err)
+	}
+
+	var cloudTrailLogs CloudTrailLogs
+	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLogs); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail logs: %w", err)
+	}
+
+	return u.processRecords(cloudTrailLogs.Records)
 }
 
 func (u *CloudTrailLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
