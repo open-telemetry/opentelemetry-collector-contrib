@@ -90,7 +90,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 			)
 		}, nil
 	}
-	return newReceiver(config, set, []string{config.Logs.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, "logs", []string{config.Logs.Topic}, newConsumeMessageFunc)
 }
 
 func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -115,7 +115,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 			)
 		}, nil
 	}
-	return newReceiver(config, set, []string{config.Metrics.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, "metrics", []string{config.Metrics.Topic}, newConsumeMessageFunc)
 }
 
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
@@ -140,16 +140,21 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 			)
 		}, nil
 	}
-	return newReceiver(config, set, []string{config.Traces.Topic}, consumeFn)
+	return newReceiver(config, set, "traces", []string{config.Traces.Topic}, consumeFn)
 }
 
-func newReceiver(config *Config, set receiver.Settings, topics []string, consumeFn func(host component.Host,
-	obsrecv *receiverhelper.ObsReport,
-	telBldr *metadata.TelemetryBuilder,
-) (consumeMessageFunc, error),
+func newReceiver(
+	config *Config,
+	set receiver.Settings,
+	signal string,
+	topics []string,
+	consumeFn func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error),
 ) (component.Component, error) {
 	if franzGoConsumerFeatureGate.IsEnabled() {
-		return newFranzKafkaConsumer(config, set, topics, consumeFn)
+		return newFranzKafkaConsumer(config, set, signal, topics, consumeFn)
 	}
 	return newSaramaConsumer(config, set, topics, consumeFn)
 }
@@ -297,7 +302,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 	)
 
 	// Update telemetry metrics
-	telBldr.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
+	telBldr.KafkaReceiverRecords.Add(ctx, 1, metric.WithAttributeSet(attrs))
 	telBldr.KafkaReceiverCurrentOffset.Record(ctx, message.offset(), metric.WithAttributeSet(attrs))
 
 	ctx = contextWithHeaders(ctx, message.headers())

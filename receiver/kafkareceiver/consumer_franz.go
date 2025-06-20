@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -48,13 +49,13 @@ type topicPartition struct {
 // It provides the same interface as the original kafkaConsumer but uses franz-go
 // for better performance and modern Kafka feature support.
 type franzConsumer struct {
-	id               component.ID
-	config           *Config
-	topics           []string
-	settings         receiver.Settings
-	telemetryBuilder *metadata.TelemetryBuilder
-	newConsumeFn     newConsumeMessageFunc
-	consumeMessage   consumeMessageFunc
+	config              *Config
+	topics              []string
+	settings            receiver.Settings
+	telemetryBuilder    *metadata.TelemetryBuilder
+	componentAttributes attribute.Set
+	newConsumeFn        newConsumeMessageFunc
+	consumeMessage      consumeMessageFunc
 
 	mu             sync.RWMutex
 	started        chan struct{}
@@ -80,24 +81,34 @@ type pc struct {
 }
 
 // newFranzKafkaConsumer creates a new franz-go based Kafka consumer
-func newFranzKafkaConsumer(config *Config, set receiver.Settings, topics []string,
+func newFranzKafkaConsumer(
+	config *Config,
+	set receiver.Settings,
+	signal string,
+	topics []string,
 	newConsumeFn newConsumeMessageFunc,
 ) (*franzConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
+	attrs := []attribute.KeyValue{
+		attribute.String("otelcol.component.kind", "receiver"),
+		attribute.String("otelcol.component.id", set.ID.String()),
+		attribute.String("otelcol.signal", signal),
+	}
+
 	return &franzConsumer{
-		id:               set.ID,
-		config:           config,
-		topics:           topics,
-		newConsumeFn:     newConsumeFn,
-		settings:         set,
-		telemetryBuilder: telemetryBuilder,
-		started:          make(chan struct{}),
-		consumerClosed:   make(chan struct{}),
-		closing:          make(chan struct{}),
-		assignments:      make(map[topicPartition]*pc),
+		config:              config,
+		topics:              topics,
+		newConsumeFn:        newConsumeFn,
+		settings:            set,
+		telemetryBuilder:    telemetryBuilder,
+		componentAttributes: attribute.NewSet(attrs...),
+		started:             make(chan struct{}),
+		consumerClosed:      make(chan struct{}),
+		closing:             make(chan struct{}),
+		assignments:         make(map[topicPartition]*pc),
 	}, nil
 }
 
@@ -343,7 +354,7 @@ func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned ma
 	for topic, partitions := range assigned {
 		for _, partition := range partitions {
 			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(),
-				1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
+				1, metric.WithAttributeSet(c.componentAttributes),
 			)
 			partitionConsumer := pc{
 				backOff: newExponentialBackOff(c.config.ErrorBackOff),
@@ -351,11 +362,10 @@ func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned ma
 					zap.String(attrTopic, topic),
 					zap.String(attrPartition, strconv.Itoa(int(partition))),
 				),
-				attrs: attribute.NewSet(
-					attribute.String(attrInstanceName, c.id.String()),
+				attrs: attribute.NewSet(append(c.componentAttributes.ToSlice(),
 					attribute.String(attrTopic, topic),
 					attribute.String(attrPartition, strconv.Itoa(int(partition))),
-				),
+				)...),
 			}
 			partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(ctx)
 			c.assignments[topicPartition{topic: topic, partition: partition}] = &partitionConsumer
@@ -388,7 +398,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 				pc.wg.Wait()
 			}()
 			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(),
-				1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
+				1, metric.WithAttributeSet(c.componentAttributes),
 			)
 		}
 	}
@@ -451,5 +461,114 @@ func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
 			zap.Int64("offset", msg.offset()),
 		)
 		return nil
+	}
+}
+
+// The methods below implement the relevant franz-go hook interfaces
+// record the metrics defined in the metadata telemetry.
+
+func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+	outcome := "success"
+	if err != nil {
+		outcome = "failure"
+	}
+	c.telemetryBuilder.KafkaBrokerConnects.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+}
+
+func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
+	c.telemetryBuilder.KafkaBrokerClosed.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+}
+
+func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
+		context.Background(),
+		throttleInterval.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+}
+
+func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, bytesRead int, readWait, timeToRead time.Duration, err error) {
+	outcome := "success"
+	if err != nil {
+		outcome = "failure"
+	}
+	c.telemetryBuilder.KafkaReceiverLatency.Record(
+		context.Background(),
+		readWait.Milliseconds()+timeToRead.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+}
+
+// OnFetchBatchRead is called once per batch read from Kafka.
+// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookFetchBatchRead
+func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.FetchBatchMetrics) {
+	attrs := []attribute.KeyValue{
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		attribute.String("topic", topic),
+		attribute.Int64("partition", int64(partition)),
+		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
+		attribute.String("outcome", "success"),
+	}
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
+		context.Background(),
+		int64(m.NumRecords),
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+	c.telemetryBuilder.KafkaReceiverBytes.Add(
+		context.Background(),
+		int64(m.CompressedBytes),
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+	c.telemetryBuilder.KafkaReceiverBytesUncompressed.Add(
+		context.Background(),
+		int64(m.UncompressedBytes),
+		metric.WithAttributes(attrs...),
+		metric.WithAttributeSet(c.componentAttributes),
+	)
+}
+
+func compressionFromCodec(c uint8) string {
+	// CompressionType signifies which algorithm the batch was compressed
+	// with.
+	//
+	// 0 is no compression, 1 is gzip, 2 is snappy, 3 is lz4, and 4 is
+	// zstd.
+	switch c {
+	case 0:
+		return "none"
+	case 1:
+		return "gzip"
+	case 2:
+		return "snappy"
+	case 3:
+		return "lz4"
+	case 4:
+		return "zstd"
+	default:
+		return "unknown"
 	}
 }

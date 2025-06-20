@@ -311,7 +311,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			Attributes: attribute.NewSet(attribute.String("name", set.ID.Name())),
 		}}, metricdatatest.IgnoreTimestamp())
 
-		metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{{
+		metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 5,
 			Attributes: attribute.NewSet(
 				attribute.String("name", set.ID.String()),
@@ -429,7 +429,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message
-					metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+					metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
 						{
 							Value: timesProcessed,
 							Attributes: attribute.NewSet(
