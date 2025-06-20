@@ -5,9 +5,7 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strings"
+
 	"time"
 
 	"go.uber.org/multierr"
@@ -47,27 +45,6 @@ type clientCredentialsTokenSource struct {
 
 // clientCredentialsTokenSource implements TokenSource
 var _ oauth2.TokenSource = (*clientCredentialsTokenSource)(nil)
-
-func readCredentialsFile(path string) (string, error) {
-	f, err := os.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("failed to read credentials file %q: %w", path, err)
-	}
-
-	credential := strings.TrimSpace(string(f))
-	if credential == "" {
-		return "", fmt.Errorf("empty credentials file %q", path)
-	}
-	return credential, nil
-}
-
-func getActualValue(value, filepath string) (string, error) {
-	if len(filepath) > 0 {
-		return readCredentialsFile(filepath)
-	}
-
-	return value, nil
-}
 
 // createConfig creates a proper clientcredentials.Config with values retrieved
 // from files, if the user has specified '*_file' values
