@@ -251,7 +251,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		t.Run("BuildandProcess/"+tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			cfg := tc.op
 			cfg.OutputIDs = []string{"fake"}
 			cfg.OnError = "drop"
