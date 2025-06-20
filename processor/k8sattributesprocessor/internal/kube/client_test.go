@@ -2387,8 +2387,10 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 		"K8SPodUID": {
 			associations: []Association{
 				{Sources: []AssociationSource{
-					{From: ResourceSource,
-						Name: string(conventions.K8SPodUIDKey)},
+					{
+						From: ResourceSource,
+						Name: string(conventions.K8SPodUIDKey),
+					},
 				}},
 			},
 			pod: &Pod{
@@ -2406,8 +2408,10 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 		"ContainerID": {
 			associations: []Association{
 				{Sources: []AssociationSource{
-					{From: ResourceSource,
-						Name: string(conventions.ContainerIDKey)},
+					{
+						From: ResourceSource,
+						Name: string(conventions.ContainerIDKey),
+					},
 				}},
 			},
 			pod: &Pod{
