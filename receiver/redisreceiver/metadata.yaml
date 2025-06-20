@@ -339,7 +339,7 @@ metrics:
 
   redis.db.avg_ttl:
     enabled: true
-    description: Average keyspace keys TTL
+    description: Average keyspace keys TTL in seconds
     unit: s
     gauge:
       value_type: double

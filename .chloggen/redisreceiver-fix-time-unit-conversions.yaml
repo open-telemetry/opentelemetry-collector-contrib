@@ -7,7 +7,7 @@ change_type: 'bug_fix'
 component: redisreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix unit conversions for time-based metrics to properly convert from microseconds/milliseconds to seconds"
+note: "Fix unit conversions for duration-based metrics to properly convert from microseconds/milliseconds to seconds"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40826]  # Replace with your PR/issue number
