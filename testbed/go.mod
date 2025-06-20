@@ -10,7 +10,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.128.0
@@ -26,7 +25,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver v0.128.0
@@ -200,7 +198,6 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.3 // indirect
-	github.com/jaegertracing/jaeger v1.66.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -279,7 +276,6 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
-	github.com/signalfx/sapm-proto v0.17.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
