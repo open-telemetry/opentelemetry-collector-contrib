@@ -22,6 +22,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	go.opentelemetry.io/collector/client v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/component v1.34.1-0.20250610090210-188191247685
+	go.opentelemetry.io/collector/component/componentstatus v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/config/configretry v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/config/configtls v1.34.1-0.20250610090210-188191247685
@@ -43,7 +44,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.36.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/text v0.25.0
+	golang.org/x/text v0.26.0
 )
 
 require (
