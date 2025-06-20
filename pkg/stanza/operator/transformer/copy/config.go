@@ -50,12 +50,18 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	if c.From == entry.NewNilField() {
-		return nil, errMissingFrom
+	validationErrs := []error{}
+
+	if c.From.IsEmpty() {
+		validationErrs = append(validationErrs, errMissingFrom)
 	}
 
-	if c.To == entry.NewNilField() {
-		return nil, errMissingTo
+	if c.To.IsEmpty() {
+		validationErrs = append(validationErrs, errMissingTo)
+	}
+
+	if len(validationErrs) > 0 {
+		return nil, errors.Join(validationErrs...)
 	}
 
 	return &Transformer{

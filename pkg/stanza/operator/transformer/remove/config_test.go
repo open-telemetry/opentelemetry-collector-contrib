@@ -89,8 +89,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:           "invalid_empty_field",
-				ExpectBuildErr: errMissingField,
+				Name:            "invalid_empty_field",
+				ExpectBuildErrs: []error{errMissingField},
 			},
 		},
 	}.Run(t)

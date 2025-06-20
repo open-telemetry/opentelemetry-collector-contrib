@@ -23,10 +23,10 @@ type ConfigUnmarshalTests struct {
 
 // ConfigUnmarshalTest is used for testing golden configs
 type ConfigUnmarshalTest struct {
-	Name           string
-	Expect         any
-	ExpectErr      bool
-	ExpectBuildErr error
+	Name               string
+	Expect             any
+	ExpectUnmarshalErr bool
+	ExpectBuildErrs    []error
 }
 
 // Run Unmarshals yaml files and compares them against the expected.
@@ -43,14 +43,16 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 			cfg := newAnyOpConfig(c.DefaultConfig)
 			err = testConfMap.Unmarshal(cfg)
 
-			if tc.ExpectErr {
+			if tc.ExpectUnmarshalErr {
 				require.Error(t, err)
 				return
 			}
 
-			if tc.ExpectBuildErr != nil {
+			if tc.ExpectBuildErrs != nil {
 				_, err = cfg.Operator.Build(componenttest.NewNopTelemetrySettings())
-				require.ErrorIs(t, err, tc.ExpectBuildErr)
+				for _, expectedErr := range tc.ExpectBuildErrs {
+					require.ErrorIs(t, err, expectedErr)
+				}
 				return
 			}
 

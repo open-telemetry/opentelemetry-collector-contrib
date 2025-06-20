@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -47,7 +46,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	if c.Field.Field == entry.NewNilField() && !c.Field.allAttributes && !c.Field.allResource {
+	if c.Field.IsEmpty() {
 		return nil, errMissingField
 	}
 
