@@ -420,6 +420,27 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 				return fmt.Errorf("undefined function %s", name)
 			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
+		case strings.HasPrefix(fieldType.Name(), "LiteralGetter"):
+			fieldVal, ok := field.Addr().Interface().(typedValueWrapper)
+			if !ok {
+				return err
+			}
+
+			var buildArg any
+			buildArg, err = p.buildArg(arg.Value, fieldVal.getWrappedType())
+			if err != nil {
+				return err
+			}
+
+			if _, ok = buildArg.(literalGetter); !ok {
+				return fmt.Errorf("getter type %T does not support literals values", buildArg)
+			}
+
+			err = fieldVal.setWrappedValue(reflect.ValueOf(buildArg))
+			if err != nil {
+				return err
+			}
+			val = field.Interface()
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:
@@ -563,13 +584,13 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardStringGetter[K]{Getter: arg.Get}, nil
+		return newStandardStringGetter(arg), nil
 	case strings.HasPrefix(name, "StringLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
+		return newStandardStringLikeGetter[K](arg), nil
 	case strings.HasPrefix(name, "FloatGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -609,7 +630,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardPMapGetter[K]{Getter: arg.Get}, nil
+		return newStandardPMapGetter(arg), nil
 	case strings.HasPrefix(name, "DurationGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -749,4 +770,94 @@ func NewTestingOptional[T any](val T) Optional[T] {
 		val:      val,
 		hasValue: true,
 	}
+}
+
+// typedValueWrapper is an interface that allows OTTL functions to wrap getters
+// with generic types, and access the type information at runtime.
+type typedValueWrapper interface {
+	getWrappedType() reflect.Type
+	setWrappedValue(val reflect.Value) error
+}
+
+type typedGetter[K, V any] interface {
+	Get(ctx context.Context, tCtx K) (V, error)
+}
+
+// LiteralGetter allows OTTL functions to use getters that might return literal
+// values. It provides a way to check if the getter is a literal getter and to retrieve
+// the literal value from it.
+// K is the type of the context, G is the type of the getter, and V is the type of
+// the literal value returned by getter G.
+type LiteralGetter[K, V any, G typedGetter[K, V]] struct {
+	getter G
+}
+
+func (p *LiteralGetter[K, V, G]) getWrappedType() reflect.Type {
+	return reflect.TypeFor[G]()
+}
+
+func (p *LiteralGetter[K, V, G]) setWrappedValue(val reflect.Value) error {
+	typedVal, ok := val.Interface().(G)
+	if !ok {
+		return fmt.Errorf("cannot set value of type %s to a Getter of type %s", val.Type(), reflect.TypeFor[G]())
+	}
+	p.getter = typedVal
+	return nil
+}
+
+// IsLiteral checks if the wrapped getter holds a literal getter.
+func (p *LiteralGetter[K, G, V]) IsLiteral() bool {
+	lg, ok := any(p.getter).(literalGetter)
+	return ok && lg.isLiteral()
+}
+
+// GetLiteral retrieves the literal value from the getter.
+// If the getter is not a literal getter, or the value it's holding is not a literal,
+// an error is returned.
+func (p *LiteralGetter[K, V, G]) GetLiteral() (V, error) {
+	lg, ok := any(p.getter).(literalGetter)
+	if !ok {
+		return *new(V), fmt.Errorf("getter of type %T is not a literal getter", p.getter)
+	}
+	val, err := lg.getLiteral()
+	if err != nil {
+		return *new(V), err
+	}
+	if typedVal, ok := val.(V); ok {
+		return typedVal, nil
+	}
+	// should not happen thanks to the type restriction
+	return *new(V), fmt.Errorf("value is not of expected type %T, got %T instead", reflect.TypeFor[V](), val)
+}
+
+func (p *LiteralGetter[K, V, G]) Get(ctx context.Context, tCtx K) (V, error) {
+	return p.getter.Get(ctx, tCtx)
+}
+
+// mockLiteralGetter is a mock implementation of LiteralGetter that can be used for testing.
+type mockLiteralGetter[K, V any] struct {
+	valueGetter func(context.Context, K) (V, error)
+	literal     bool
+}
+
+func (m mockLiteralGetter[K, V]) Get(_ context.Context, _ K) (V, error) {
+	return m.valueGetter(context.TODO(), *new(K))
+}
+
+func (m mockLiteralGetter[K, V]) isLiteral() bool {
+	return m.literal
+}
+
+func (m mockLiteralGetter[K, V]) getLiteral() (any, error) {
+	return m.valueGetter(context.TODO(), *new(K))
+}
+
+// NewTestingLiteralGetter allows creating an LiteralGetter with a getter already populated
+// for use in testing OTTL functions.
+func NewTestingLiteralGetter[K, V any, G typedGetter[K, V]](literal bool, getter G) LiteralGetter[K, V, G] {
+	mockedGetter := mockLiteralGetter[K, V]{
+		valueGetter: getter.Get,
+		literal:     literal,
+	}
+	return LiteralGetter[K, V, G]{getter: any(mockedGetter).(G)}
 }

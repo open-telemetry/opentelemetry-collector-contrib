@@ -14,7 +14,7 @@ import (
 
 type IsMatchArguments[K any] struct {
 	Target  ottl.StringLikeGetter[K]
-	Pattern string
+	Pattern ottl.LiteralGetter[K, string, ottl.StringGetter[K]]
 }
 
 func NewIsMatchFactory[K any]() ottl.Factory[K] {
@@ -23,7 +23,6 @@ func NewIsMatchFactory[K any]() ottl.Factory[K] {
 
 func createIsMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*IsMatchArguments[K])
-
 	if !ok {
 		return nil, errors.New("IsMatchFactory args must be of type *IsMatchArguments[K]")
 	}
@@ -31,12 +30,30 @@ func createIsMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	return isMatch(args.Target, args.Pattern)
 }
 
-func isMatch[K any](target ottl.StringLikeGetter[K], pattern string) (ottl.ExprFunc[K], error) {
-	compiledPattern, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
+func isMatch[K any](target ottl.StringLikeGetter[K], patternGetter ottl.LiteralGetter[K, string, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
+	var patternRegex *regexp.Regexp
+	if patternGetter.IsLiteral() {
+		var err error
+		patternRegex, err = compileIsMatchPattern(patternGetter.GetLiteral)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
+		var regex *regexp.Regexp
+		var err error
+		if patternRegex != nil {
+			regex = patternRegex
+		} else {
+			regex, err = compileIsMatchPattern(func() (string, error) {
+				return patternGetter.Get(ctx, tCtx)
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
@@ -44,6 +61,18 @@ func isMatch[K any](target ottl.StringLikeGetter[K], pattern string) (ottl.ExprF
 		if val == nil {
 			return false, nil
 		}
-		return compiledPattern.MatchString(*val), nil
+		return regex.MatchString(*val), nil
 	}, nil
+}
+
+func compileIsMatchPattern(patternGetter func() (string, error)) (*regexp.Regexp, error) {
+	pattern, err := patternGetter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pattern for IsMatch: %w", err)
+	}
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
+	}
+	return regex, err
 }
