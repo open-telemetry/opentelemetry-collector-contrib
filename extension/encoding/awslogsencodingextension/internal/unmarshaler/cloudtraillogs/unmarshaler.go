@@ -26,10 +26,7 @@ type CloudTrailLogsUnmarshaler struct {
 	gzipPool  sync.Pool
 }
 
-var (
-	_ plog.Unmarshaler           = (*CloudTrailLogsUnmarshaler)(nil)
-	_ unmarshaler.AWSUnmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
-)
+var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
 
 // CloudTrailRecord represents a CloudTrail log record
 // There is no builtin CloudTrailRecord we can leverage like in S3
