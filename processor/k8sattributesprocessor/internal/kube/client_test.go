@@ -466,7 +466,7 @@ func TestPodDelete(t *testing.T) {
 	tsBeforeDelete := time.Now()
 	c.handlePodDelete(pod)
 	assert.Len(t, c.Pods, 5)
-	assert.Len(t, c.deleteQueue, 3)
+	assert.Len(t, c.deleteQueue, 2)
 	deleteRequest := c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1"), deleteRequest.id)
 	assert.Equal(t, "podB", deleteRequest.podName)
@@ -482,7 +482,7 @@ func TestPodDelete(t *testing.T) {
 	tsBeforeDelete = time.Now()
 	c.handlePodDelete(cache.DeletedFinalStateUnknown{Obj: pod})
 	assert.Len(t, c.Pods, 5)
-	assert.Len(t, c.deleteQueue, 4)
+	assert.Len(t, c.deleteQueue, 3)
 	deleteRequest = c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), deleteRequest.id)
 	assert.Equal(t, "podC", deleteRequest.podName)
@@ -577,7 +577,7 @@ func TestDeleteQueue(t *testing.T) {
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodDelete(pod)
 	assert.Len(t, c.Pods, 5)
-	assert.Len(t, c.deleteQueue, 3)
+	assert.Len(t, c.deleteQueue, 2)
 }
 
 func TestDeleteLoop(t *testing.T) {
@@ -592,7 +592,7 @@ func TestDeleteLoop(t *testing.T) {
 
 	c.handlePodDelete(pod)
 	assert.Len(t, c.Pods, 2)
-	assert.Len(t, c.deleteQueue, 3)
+	assert.Len(t, c.deleteQueue, 2)
 
 	gracePeriod := time.Millisecond * 500
 	go c.deleteLoop(time.Millisecond, gracePeriod)
@@ -602,7 +602,7 @@ func TestDeleteLoop(t *testing.T) {
 		assert.Len(t, c.Pods, 2)
 		c.m.Unlock()
 		c.deleteMut.Lock()
-		assert.Len(t, c.deleteQueue, 3)
+		assert.Len(t, c.deleteQueue, 2)
 		c.deleteMut.Unlock()
 
 		time.Sleep(gracePeriod + (time.Millisecond * 50))
