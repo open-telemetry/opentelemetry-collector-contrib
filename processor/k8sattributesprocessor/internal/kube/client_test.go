@@ -482,7 +482,7 @@ func TestPodDelete(t *testing.T) {
 	tsBeforeDelete = time.Now()
 	c.handlePodDelete(cache.DeletedFinalStateUnknown{Obj: pod})
 	assert.Len(t, c.Pods, 5)
-	assert.Len(t, c.deleteQueue, 5)
+	assert.Len(t, c.deleteQueue, 4)
 	deleteRequest = c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), deleteRequest.id)
 	assert.Equal(t, "podC", deleteRequest.podName)
