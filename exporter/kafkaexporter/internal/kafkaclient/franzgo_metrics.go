@@ -87,7 +87,7 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 	fpm.tb.KafkaExporterRecords.Add(context.Background(), 1, metric.WithAttributes(attrs...))
 }
 
-func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, throttledAfterResponse bool) {
+func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
 	fpm.tb.KafkaExporterThrottlingDuration.Record(context.Background(), throttleInterval.Milliseconds(), metric.WithAttributes(
 		attribute.String("node_id", strnode(meta.NodeID)),
 	))

@@ -127,7 +127,7 @@ func reportProducerMetric(tb *metadata.TelemetryBuilder, msgs []*sarama.Producer
 	for _, m := range msgs {
 		k := topicPartition{topic: m.Topic, partition: int(m.Partition)}
 		s := perTopicPartition[k]
-		s.records += 1
+		s.records++
 		s.bytes += int64(m.ByteSize(2))
 		perTopicPartition[k] = s
 	}
@@ -137,7 +137,7 @@ func reportProducerMetric(tb *metadata.TelemetryBuilder, msgs []*sarama.Producer
 			bytes := int64(err.Msg.ByteSize(2))
 			k := topicPartition{topic: err.Msg.Topic, partition: int(err.Msg.Partition)}
 			s := perTopicPartition[k]
-			s.records -= 1
+			s.records--
 			s.bytes -= bytes
 			perTopicPartition[k] = s
 			attrs := []attribute.KeyValue{
