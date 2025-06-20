@@ -136,6 +136,7 @@ func (c *saramaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler, host c
 		}
 		return nil
 	}, backoff.WithContext(
+		// Use a zero max elapsed time to retry indefinitely until the context is canceled.
 		backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(0)),
 		ctx,
 	))
