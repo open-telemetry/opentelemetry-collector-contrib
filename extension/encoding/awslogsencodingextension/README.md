@@ -183,7 +183,7 @@ extensions:
 |---------------------------------------|----------------------------------------------------------------------------------------|
 | `awsRegion`                           | `cloud.region`                                                                         |
 | `recipientAccountId`                  | `cloud.account.id`                                                                     |
-| `eventID`                             | `request.event_id`                                                                     |
+| `eventID`                             | `aws.cloudtrail.event_id`                                                              |
 | `eventType`                           | `rpc.system`                                                                           |
 | `eventCategory`                       | `aws.event.category`                                                                   |
 | `eventSource`                         | `rpc.service`                                                                          |
@@ -196,22 +196,10 @@ extensions:
 | `tlsDetails.tlsVersion`               | `tls.protocol.version` (if available)                                                  |
 | `tlsDetails.cipherSuite`              | `tls.cipher` (if available)                                                            |
 | `tlsDetails.clientProvidedHostHeader` | `server.address` (if available)                                                        |
+| `userIdentity.principalId`            | `principal.id` (if available)                                                          |
+| `userIdentity.userName`               | `principal.name` (if available)                                                        |
+| `userIdentity.arn`                    | `principal.arn` (if available)                                                         |
+| `requestParameters`                   | `aws.request.parameters` (map of all request parameters)                               |
+| `responseElements`                    | `aws.response.elements` (map of all response elements)                                 |
 
-For User Name operations (e.g. CreateUser, DeleteUser):
-
-| CloudTrail field               | Attribute in OpenTelemetry log                                                                |
-|--------------------------------|-----------------------------------------------------------------------------------------------|
-| `userIdentity.principalId`     | `principal.id` (if available)                                                                 |
-| `userIdentity.userName`        | `principal.name` (if available)                                                               |
-| `userIdentity.arn`             | `principal.iam.arn` (if available)                                                            |
-| `requestParameters.userName`   | `aws.target_user.name` (if available)                                                         |
-| `responseElements.user.arn`    | `aws.target_user.arn` (if available)                                                          |
-| `responseElements.user.userId` | `aws.target_user.id` (if available)                                                           |
-| `responseElements.user.path`   | `aws.target_user.path` (if available)                                                         |
-
-For EC2 instance operations (StartInstances, StopInstances, TerminateInstances, RebootInstances, RunInstances), additional attributes are set:
-
-| CloudTrail field                                    | Attribute in OpenTelemetry log                                                                             |
-|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| `requestParameters.instancesSet.items[].instanceId` | `aws.request.parameters.instances` (array of instance IDs)                                                 |
-| `responseElements.instancesSet.items[]`             | `aws.response.instances` (array of instance details including instanceId, currentState, and previousState) |
+All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
