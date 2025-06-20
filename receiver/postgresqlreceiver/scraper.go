@@ -43,6 +43,7 @@ type postgreSQLScraper struct {
 	config        *Config
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
+	lb            *metadata.LogsBuilder
 	excludes      map[string]struct{}
 	cache         *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
@@ -97,6 +98,7 @@ func newPostgreSQLScraper(
 		config:             config,
 		clientFactory:      clientFactory,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
 		excludes:           excludes,
 		cache:              cache,
 		queryPlanCache:     queryPlanCache,
@@ -172,48 +174,30 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
-	logs := plog.NewLogs()
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-
-	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("0.0.1")
-
 	dbClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-		return logs, err
+		return plog.NewLogs(), err
 	}
 
 	var errs errsMux
 
-	logRecords := scopedLog.LogRecords()
-
-	p.collectQuerySamples(ctx, dbClient, &logRecords, maxRowsPerQuery, &errs, p.logger)
+	p.collectQuerySamples(ctx, dbClient, maxRowsPerQuery, &errs, p.logger)
 
 	defer dbClient.Close()
 
-	return logs, nil
+	return p.lb.Emit(), nil
 }
 
 func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery int64, topNQuery int64, maxExplainEachInterval int64) (plog.Logs, error) {
-	logs := plog.NewLogs()
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-
-	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("0.0.1")
-
 	var errs errsMux
 
-	logRecords := scopedLog.LogRecords()
+	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
 
-	p.collectTopQuery(ctx, p.clientFactory, &logRecords, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
-
-	return logs, nil
+	return p.lb.Emit(), nil
 }
 
-func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, logRecords *plog.LogRecordSlice, limit int64, mux *errsMux, logger *zap.Logger) {
+func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	attributes, err := dbClient.getQuerySamples(ctx, limit, logger)
@@ -222,18 +206,27 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 		return
 	}
 	for _, atts := range attributes {
-		record := logRecords.AppendEmpty()
-		record.SetTimestamp(timestamp)
-		record.SetEventName("query sample")
-		if err := record.Attributes().FromRaw(atts); err != nil {
-			mux.addPartial(err)
-			logger.Error("failed to read attributes from row", zap.Error(err))
-		}
-		record.Body().SetStr("sample")
+		p.lb.RecordDbServerQuerySampleEvent(context.Background(),
+			timestamp,
+			metadata.AttributeDbSystemNamePostgresql,
+			atts["db.namespace"].(string),
+			atts["db.query.text"].(string),
+			atts["user.name"].(string),
+			atts[dbAttributePrefix+"state"].(string),
+			atts[dbAttributePrefix+"pid"].(int64),
+			atts[dbAttributePrefix+"application_name"].(string),
+			atts["network.peer.address"].(string),
+			atts["network.peer.port"].(int64),
+			atts[dbAttributePrefix+"client_hostname"].(string),
+			atts[dbAttributePrefix+"query_start"].(string),
+			atts[dbAttributePrefix+"wait_event"].(string),
+			atts[dbAttributePrefix+"wait_event_type"].(string),
+			atts[dbAttributePrefix+"query_id"].(string),
+		)
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, logRecords *plog.LogRecordSlice, limit int64, topNQuery int64, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit int64, topNQuery int64, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
@@ -322,48 +315,52 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	heap.Init(&pq)
 	explained := int64(0)
-	for pq.Len() > 0 && logRecords.Len() < int(topNQuery) {
+	count := 0
+	for pq.Len() > 0 && count < int(topNQuery) {
 		item := heap.Pop(&pq).(*item)
-		record := logRecords.AppendEmpty()
-		record.SetTimestamp(timestamp)
-		record.SetEventName("top query")
-		if err := record.Attributes().FromRaw(item.row); err != nil {
-			mux.addPartial(err)
-			logger.Error("failed to read attributes from row", zap.Error(err))
-		}
 		query := item.row[QueryTextAttributeName].(string)
 		queryID := item.row[dbAttributePrefix+queryidColumnName].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
-		if ok {
-			record.Attributes().PutStr(dbAttributePrefix+"query_plan", plan)
-		} else {
-			if explained < maxExplainEachInterval {
-				database := item.row[DatabaseAttributeName].(string)
-				dbClient, err := clientFactory.getClient(database)
+		if !ok && explained < maxExplainEachInterval {
+			database := item.row[DatabaseAttributeName].(string)
+			dbClient, err := clientFactory.getClient(database)
+			if err == nil {
+				plan, err = dbClient.explainQuery(query, queryID, logger)
 				if err != nil {
-					record.Attributes().PutStr(dbAttributePrefix+"query_plan", "")
-				} else {
-					plan, err := dbClient.explainQuery(query, queryID, logger)
-					if err != nil {
-						logger.Error("failed to explain query", zap.String("query", query), zap.Error(err))
-					}
-					record.Attributes().PutStr(dbAttributePrefix+"query_plan", plan)
-					// to avoid flood the error message. there are some internal queries meant to not be
-					// explained. we wait for the cache to expire and report the error again.
-					p.queryPlanCache.Add(queryID+"-plan", plan)
-					err = dbClient.Close()
-					if err != nil {
-						logger.Error("failed to close", zap.Error(err))
-					}
+					logger.Error("failed to explain query", zap.String("query", query), zap.Error(err))
 				}
-				explained++
-			} else {
-				record.Attributes().PutStr(dbAttributePrefix+"query_plan", "")
+				// to avoid flood the error message. there are some internal queries meant to not be
+				// explained. we wait for the cache to expire and report the error again.
+				p.queryPlanCache.Add(queryID+"-plan", plan)
+				err = dbClient.Close()
+				if err != nil {
+					logger.Error("failed to close", zap.Error(err))
+				}
 			}
+			explained++
 		}
 
-		record.Attributes().PutStr("db.system.name", "postgresql")
-		record.Body().SetStr("top query")
+		p.lb.RecordDbServerTopQueryEvent(
+			context.Background(),
+			timestamp,
+			metadata.AttributeDbSystemNamePostgresql,
+			item.row[DatabaseAttributeName].(string),
+			query,
+			item.row[dbAttributePrefix+callsColumnName].(int64),
+			item.row[dbAttributePrefix+rowsColumnName].(int64),
+			item.row[dbAttributePrefix+sharedBlksDirtiedColumnName].(int64),
+			item.row[dbAttributePrefix+sharedBlksHitColumnName].(int64),
+			item.row[dbAttributePrefix+sharedBlksReadColumnName].(int64),
+			item.row[dbAttributePrefix+sharedBlksWrittenColumnName].(int64),
+			item.row[dbAttributePrefix+tempBlksReadColumnName].(int64),
+			item.row[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
+			queryID,
+			item.row[dbAttributePrefix+"rolname"].(string),
+			item.row[dbAttributePrefix+totalExecTimeColumnName].(float64),
+			item.row[dbAttributePrefix+totalPlanTimeColumnName].(float64),
+			plan,
+		)
+		count++
 	}
 }
 
