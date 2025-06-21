@@ -44,7 +44,7 @@ func NewGauges(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Me
 	return md
 }
 
-func NewSums(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
+func NewSums(resourceIDs, scopeIDs, metricIDs, dataPointIDs string, isMonotonic bool, aggregationTemporality pmetric.AggregationTemporality) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
 		rm := md.ResourceMetrics().AppendEmpty()
@@ -56,6 +56,8 @@ func NewSums(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metr
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptySum()
+				dps.SetAggregationTemporality(aggregationTemporality)
+				dps.SetIsMonotonic(isMonotonic)
 				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
@@ -168,10 +170,12 @@ func Gauge(id string, dps ...pmetric.NumberDataPoint) pmetric.Metric {
 	return m
 }
 
-func Sum(id string, dps ...pmetric.NumberDataPoint) pmetric.Metric {
+func Sum(id string, isMonotonic bool, aggregationTemporality pmetric.AggregationTemporality, dps ...pmetric.NumberDataPoint) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName("metric" + id)
 	g := m.SetEmptySum()
+	g.SetIsMonotonic(isMonotonic)
+	g.SetAggregationTemporality(aggregationTemporality)
 	for _, dp := range dps {
 		dp.CopyTo(g.DataPoints().AppendEmpty())
 	}

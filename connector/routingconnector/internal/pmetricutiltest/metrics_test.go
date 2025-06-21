@@ -17,7 +17,7 @@ func TestNewMetrics(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		expected := pmetric.NewMetrics()
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewGauges("", "", "", "")))
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("", "", "", "")))
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("", "", "", "", false, pmetric.AggregationTemporalityUnspecified)))
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewHistograms("", "", "", "")))
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewExponentialHistograms("", "", "", "")))
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSummaries("", "", "", "")))
@@ -60,10 +60,10 @@ func TestNewMetrics(t *testing.T) {
 				dp.Attributes().PutStr("dpName", "dpD") // resourceA.scopeB.metricC.dpD
 				return md
 			}()
-			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("A", "B", "C", "D")))
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("A", "B", "C", "D", false, pmetric.AggregationTemporalityUnspecified)))
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("B", pmetricutiltest.Sum("C", pmetricutiltest.NumberDataPoint("D"))),
+					pmetricutiltest.Scope("B", pmetricutiltest.Sum("C", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("D"))),
 				),
 			)))
 		})
@@ -245,12 +245,12 @@ func TestNewMetrics(t *testing.T) {
 				dp.Attributes().PutStr("dpName", "dpE") // resourceA.scopeB.metricD.dpE
 				return md
 			}()
-			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("A", "B", "CD", "E")))
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("A", "B", "CD", "E", false, pmetric.AggregationTemporalityUnspecified)))
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("B",
-						pmetricutiltest.Sum("C", pmetricutiltest.NumberDataPoint("E")),
-						pmetricutiltest.Sum("D", pmetricutiltest.NumberDataPoint("E")),
+						pmetricutiltest.Sum("C", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("E")),
+						pmetricutiltest.Sum("D", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("E")),
 					),
 				),
 			)))
@@ -384,10 +384,10 @@ func TestNewMetrics(t *testing.T) {
 				dp.Attributes().PutStr("dpName", "dpE") // resourceA.scopeB.metricC.dpE
 				return md
 			}()
-			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("A", "B", "C", "DE")))
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewSums("A", "B", "C", "DE", false, pmetric.AggregationTemporalityUnspecified)))
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("B", pmetricutiltest.Sum("C", pmetricutiltest.NumberDataPoint("D"), pmetricutiltest.NumberDataPoint("E"))),
+					pmetricutiltest.Scope("B", pmetricutiltest.Sum("C", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("D"), pmetricutiltest.NumberDataPoint("E"))),
 				),
 			)))
 		})
@@ -516,7 +516,7 @@ func TestNewMetrics(t *testing.T) {
 			pmetricutiltest.Resource("A",
 				pmetricutiltest.Scope("B",
 					pmetricutiltest.Gauge("C", pmetricutiltest.NumberDataPoint("X"), pmetricutiltest.NumberDataPoint("Y")),
-					pmetricutiltest.Sum("D", pmetricutiltest.NumberDataPoint("X"), pmetricutiltest.NumberDataPoint("Y")),
+					pmetricutiltest.Sum("D", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("X"), pmetricutiltest.NumberDataPoint("Y")),
 					pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("X"), pmetricutiltest.HistogramDataPoint("Y")),
 					pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("X"), pmetricutiltest.ExponentialHistogramDataPoint("Y")),
 					pmetricutiltest.Summary("G", pmetricutiltest.SummaryDataPoint("X"), pmetricutiltest.SummaryDataPoint("Y")),
