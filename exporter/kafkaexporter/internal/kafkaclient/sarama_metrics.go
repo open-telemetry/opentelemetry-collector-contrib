@@ -17,13 +17,12 @@ import (
 
 // SaramaProducerMetrics helps to record the metrics defined in the metadata telemetry for Sarama.
 type SaramaProducerMetrics struct {
-	tb    *metadata.TelemetryBuilder
-	attrs attribute.Set
+	tb *metadata.TelemetryBuilder
 }
 
 // NewSaramaProducerMetrics creates an instance of SaramaProducerMetrics from metadata TelemetryBuilder.
-func NewSaramaProducerMetrics(tb *metadata.TelemetryBuilder, attributes ...attribute.KeyValue) SaramaProducerMetrics {
-	return SaramaProducerMetrics{tb: tb, attrs: attribute.NewSet(attributes...)}
+func NewSaramaProducerMetrics(tb *metadata.TelemetryBuilder) SaramaProducerMetrics {
+	return SaramaProducerMetrics{tb: tb}
 }
 
 func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMessage, err error, t time.Time) {
@@ -37,7 +36,6 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMe
 		metric.WithAttributes(
 			attribute.String("outcome", outcome),
 		),
-		metric.WithAttributeSet(spm.attrs),
 	)
 	type topicPartition struct {
 		topic     string
@@ -73,13 +71,11 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMe
 				context.Background(),
 				bytes,
 				metric.WithAttributes(attrs...),
-				metric.WithAttributeSet(spm.attrs),
 			)
 			spm.tb.KafkaExporterRecords.Add(
 				context.Background(),
 				1,
 				metric.WithAttributes(attrs...),
-				metric.WithAttributeSet(spm.attrs),
 			)
 		}
 		// All failed records are already reported, all the remaining records should have succeeded.
@@ -95,13 +91,11 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMe
 			context.Background(),
 			s.bytes,
 			metric.WithAttributes(attrs...),
-			metric.WithAttributeSet(spm.attrs),
 		)
 		spm.tb.KafkaExporterRecords.Add(
 			context.Background(),
 			s.records,
 			metric.WithAttributes(attrs...),
-			metric.WithAttributeSet(spm.attrs),
 		)
 	}
 }

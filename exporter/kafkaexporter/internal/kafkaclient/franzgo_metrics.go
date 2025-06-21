@@ -18,13 +18,12 @@ import (
 // FranzProducerMetrics implements the relevant franz-go hook interfaces to
 // record the metrics defined in the metadata telemetry.
 type FranzProducerMetrics struct {
-	tb    *metadata.TelemetryBuilder
-	attrs attribute.Set
+	tb *metadata.TelemetryBuilder
 }
 
 // NewFranzProducerMetrics creates an instance of FranzProducerMetrics from metadata TelemetryBuilder.
-func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder, attributes ...attribute.KeyValue) FranzProducerMetrics {
-	return FranzProducerMetrics{tb: tb, attrs: attribute.NewSet(attributes...)}
+func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder) FranzProducerMetrics {
+	return FranzProducerMetrics{tb: tb}
 }
 
 func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
@@ -39,7 +38,6 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
 		),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 }
 
@@ -50,7 +48,6 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 }
 
@@ -61,7 +58,6 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 }
 
@@ -77,7 +73,6 @@ func (fpm FranzProducerMetrics) OnBrokerWrite(meta kgo.BrokerMetadata, _ int16, 
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
 		),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 }
 
@@ -95,19 +90,16 @@ func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, t
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 	fpm.tb.KafkaExporterBytes.Add(
 		context.Background(),
 		int64(m.CompressedBytes),
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 	fpm.tb.KafkaExporterBytesUncompressed.Add(
 		context.Background(),
 		int64(m.UncompressedBytes),
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 }
 
@@ -128,7 +120,6 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 		context.Background(),
 		1,
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(fpm.attrs),
 	)
 }
 
