@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 	"sync"
@@ -980,6 +981,7 @@ func getPodReplicaSetUID(pod *api_v1.Pod) string {
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	var ids []PodIdentifier
 	for _, assoc := range c.Associations {
+		retID4containerID := -1
 		ret := PodIdentifier{}
 		skip := false
 		for i, source := range assoc.Sources {
@@ -1013,13 +1015,17 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				// k8s.pod.ip is set by passthrough mode
 				case K8sIPLabelName:
 					attr = pod.Address
+				case string(conventions.ContainerIDKey):
+					// At this point just an empty attr is added and we remember the position.
+					// Later this position in PodIdentifier will be filled with the actual
+					// value for container.ID.
+					retID4containerID = i
 				default:
 					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v
 					}
 				}
-
-				if attr == "" {
+				if attr == "" && retID4containerID == -1 {
 					skip = true
 					break
 				}
@@ -1028,7 +1034,21 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		}
 
 		if !skip {
-			ids = append(ids, ret)
+			if retID4containerID != -1 {
+				// As there can be multiple container.IDs per pod,
+				// one PodIdentifier is added per container.ID.
+				cIDs := maps.Keys(pod.Containers.ByID)
+				for cID := range cIDs {
+					retCpy := ret
+					retCpy[retID4containerID] = PodIdentifierAttributeFromSource(AssociationSource{
+						From: ResourceSource,
+						Name: string(conventions.ContainerIDKey),
+					}, cID)
+					ids = append(ids, retCpy)
+				}
+			} else {
+				ids = append(ids, ret)
+			}
 		}
 	}
 
@@ -1043,6 +1063,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromConnection(pod.Address),
 		})
+
 		// k8s.pod.ip is set by passthrough mode
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
