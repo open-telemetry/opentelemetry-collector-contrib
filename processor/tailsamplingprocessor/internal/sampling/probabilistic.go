@@ -5,68 +5,82 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"hash/fnv"
-	"math"
-	"math/big"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-)
 
-const (
-	defaultHashSalt = "default-hash-seed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type probabilisticSampler struct {
-	logger    *zap.Logger
-	threshold uint64
-	hashSalt  string
+	logger              *zap.Logger
+	samplingProbability float64
+	threshold           sampling.Threshold
 }
 
 var _ PolicyEvaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
-// traces.
+// traces using OTEP 235 consistent probability sampling.
 func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) PolicyEvaluator {
-	if hashSalt == "" {
-		hashSalt = defaultHashSalt
+	// Convert percentage to probability (0.0 to 1.0)
+	probability := samplingPercentage / 100
+
+	// Handle edge cases first
+	var threshold sampling.Threshold
+	if probability <= 0 {
+		// 0% or negative percentage should never sample
+		threshold = sampling.NeverSampleThreshold
+	} else if probability >= 1 {
+		// 100% or higher percentage should always sample
+		threshold = sampling.AlwaysSampleThreshold
+	} else {
+		// Convert probability to OTEP 235 threshold
+		var err error
+		threshold, err = sampling.ProbabilityToThreshold(probability)
+		if err != nil {
+			settings.Logger.Error("Invalid sampling probability, using never sample",
+				zap.Float64("probability", probability), zap.Error(err))
+			threshold = sampling.NeverSampleThreshold
+		}
 	}
 
 	return &probabilisticSampler{
-		logger: settings.Logger,
-		// calculate threshold once
-		threshold: calculateThreshold(samplingPercentage / 100),
-		hashSalt:  hashSalt,
+		logger:              settings.Logger,
+		samplingProbability: probability,
+		threshold:           threshold,
 	}
 }
 
-// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
-	s.logger.Debug("Evaluating spans in probabilistic filter")
+// Evaluate looks at the trace data and returns a corresponding SamplingDecision
+// using OTEP 235 threshold-based sampling for consistency.
+func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+	s.logger.Debug("Evaluating trace in probabilistic filter using OTEP 235 threshold")
 
-	if hashTraceID(s.hashSalt, traceID[:]) <= s.threshold {
+	// Use the randomness value already extracted in TraceData (from TraceState rv or TraceID)
+	randomness := trace.RandomnessValue
+
+	// Use pkg/sampling for consistent OTEP 235 decision
+	if s.threshold.ShouldSample(randomness) {
+		// Update trace threshold to reflect this sampling decision
+		s.updateTraceThreshold(trace, s.threshold)
 		return Sampled, nil
 	}
 
 	return NotSampled, nil
 }
 
-// calculateThreshold converts a ratio into a value between 0 and MaxUint64
-func calculateThreshold(ratio float64) uint64 {
-	// Use big.Float and big.Int to calculate threshold because directly convert
-	// math.MaxUint64 to float64 will cause digits/bits to be cut off if the converted value
-	// doesn't fit into bits that are used to store digits for float64 in Golang
-	boundary := new(big.Float).SetInt(new(big.Int).SetUint64(math.MaxUint64))
-	res, _ := boundary.Mul(boundary, big.NewFloat(ratio)).Uint64()
-	return res
-}
-
-// hashTraceID creates a hash using the FNV-1a algorithm.
-func hashTraceID(salt string, b []byte) uint64 {
-	hasher := fnv.New64a()
-	// the implementation fnv.Write() never returns an error, see hash/fnv/fnv.go
-	_, _ = hasher.Write([]byte(salt))
-	_, _ = hasher.Write(b)
-	return hasher.Sum64()
+// updateTraceThreshold updates the trace's final threshold to be the most restrictive
+// (highest) threshold applied by any policy.
+func (s *probabilisticSampler) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
+	if trace.FinalThreshold == nil {
+		// First policy to set a threshold
+		trace.FinalThreshold = &policyThreshold
+	} else {
+		// Use the more restrictive (higher) threshold
+		if sampling.ThresholdGreater(policyThreshold, *trace.FinalThreshold) {
+			trace.FinalThreshold = &policyThreshold
+		}
+	}
 }

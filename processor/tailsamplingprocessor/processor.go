@@ -66,6 +66,9 @@ type tailSamplingSpanProcessor struct {
 	setPolicyMux       sync.Mutex
 	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
+
+	// OTEP 235 TraceState management for consistent probability sampling
+	traceStateManager *sampling.TraceStateManager
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -126,6 +129,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		numTracesOnMap:     &atomic.Uint64{},
 		deleteChan:         make(chan pcommon.TraceID, cfg.NumTraces),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
+		traceStateManager:  sampling.NewTraceStateManager(),
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -542,6 +546,8 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			}
+
+			tsp.traceStateManager.InitializeTraceData(tsp.ctx, id, td)
 
 			if d, loaded = tsp.idToTrace.LoadOrStore(id, td); !loaded {
 				newTraceIDs++
