@@ -16,6 +16,7 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
+ - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
  - (More to be added later.)
 
 Example for Amazon CloudWatch Logs Subscription Filters:
@@ -46,6 +47,13 @@ Example for S3 access logs:
 extensions:
   awslogs_encoding/s3_access_log:
     format: s3_access_log
+```
+
+Example for CloudTrail logs:
+```yaml
+extensions:
+  awslogs_encoding/cloudtrail:
+    format: cloudtrail_logs
 ```
 
 #### VPC flow log record fields
@@ -128,8 +136,6 @@ extensions:
 | TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
 | Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
 | aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |
-
-
 #### AWS WAF log record fields
 
 [AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
@@ -168,3 +174,32 @@ extensions:
 | `cfDistributionTenantId`      | _Currently not supported_                                                                        |
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
+
+#### CloudTrail log record fields
+
+[CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
+
+| CloudTrail field                      | Attribute in OpenTelemetry log                                                         |
+|---------------------------------------|----------------------------------------------------------------------------------------|
+| `awsRegion`                           | `cloud.region`                                                                         |
+| `recipientAccountId`                  | `cloud.account.id`                                                                     |
+| `eventID`                             | `aws.cloudtrail.event_id`                                                              |
+| `eventType`                           | `rpc.system`                                                                           |
+| `eventCategory`                       | `aws.event.category`                                                                   |
+| `eventSource`                         | `rpc.service`                                                                          |
+| `eventName`                           | `rpc.method`                                                                           |
+| `requestID`                           | `aws.request_id`                                                                       |
+| `sourceIPAddress`                     | `net.peer.ip`                                                                          |
+| `userAgent`                           | `user_agent.original`                                                                  |
+| `readOnly`                            | `aws.event.read_only`                                                                  |
+| `sessionCredentialFromConsole`        | `aws.session.console` (set to true if value is "true")                                 |
+| `tlsDetails.tlsVersion`               | `tls.protocol.version` (if available)                                                  |
+| `tlsDetails.cipherSuite`              | `tls.cipher` (if available)                                                            |
+| `tlsDetails.clientProvidedHostHeader` | `server.address` (if available)                                                        |
+| `userIdentity.principalId`            | `principal.id` (if available)                                                          |
+| `userIdentity.userName`               | `principal.name` (if available)                                                        |
+| `userIdentity.arn`                    | `principal.arn` (if available)                                                         |
+| `requestParameters`                   | `aws.request.parameters` (map of all request parameters)                               |
+| `responseElements`                    | `aws.response.elements` (map of all response elements)                                 |
+
+All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.

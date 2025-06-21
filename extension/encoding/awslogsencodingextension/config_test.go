@@ -85,6 +85,15 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "cloudtrail_logs"),
+			expected: &Config{
+				Format: formatCloudTrailLogs,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
