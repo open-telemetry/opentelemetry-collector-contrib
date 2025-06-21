@@ -190,6 +190,7 @@ type Agent struct {
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
+	ValidateConfig          bool              `mapstructure:"validate"`
 }
 
 func (a Agent) Validate() error {
