@@ -240,7 +240,7 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 	go func() {
 		err := cmd.Wait()
 		if err != nil {
-			c.logger.Error("One-shot Collector encountered an error during execution", zap.Error(err))
+			c.logger.Error("One-shot Collector encountered an error during execution", zap.Any("args", c.args), zap.ByteString("error", stderr))
 		}
 		doneCh <- struct{}{}
 	}()
