@@ -25,14 +25,29 @@ func Transform(service *corev1.Service) *corev1.Service {
 }
 
 // GetPodServiceTags returns a set of services associated with the pod.
-func GetPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
+func GetPodServiceTags(pod *corev1.Pod, services map[string]cache.Store) map[string]string {
 	properties := map[string]string{}
 
-	for _, ser := range services.List() {
-		serObj := ser.(*corev1.Service)
-		if serObj.Namespace == pod.Namespace &&
-			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
+	serviceFound := false
+	if servicesStore, ok := services[""]; ok {
+		for _, ser := range servicesStore.List() {
+			serObj := ser.(*corev1.Service)
+			if serObj.Namespace == pod.Namespace &&
+				labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
+				serviceFound = true
+				properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
+			}
+		}
+	}
+	if !serviceFound {
+		if servicesStore, ok := services[pod.Namespace]; ok {
+			for _, ser := range servicesStore.List() {
+				serObj := ser.(*corev1.Service)
+				if serObj.Namespace == pod.Namespace &&
+					labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
+					properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
+				}
+			}
 		}
 	}
 
