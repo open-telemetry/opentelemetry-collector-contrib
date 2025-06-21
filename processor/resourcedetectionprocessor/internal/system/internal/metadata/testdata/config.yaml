@@ -35,6 +35,10 @@ all_set:
       enabled: true
     os.version:
       enabled: true
+    system.cpu.core.id:
+      enabled: true
+    system.cpu.socket.id:
+      enabled: true
 none_set:
   resource_attributes:
     host.arch:
@@ -70,4 +74,8 @@ none_set:
     os.type:
       enabled: false
     os.version:
+      enabled: false
+    system.cpu.core.id:
+      enabled: false
+    system.cpu.socket.id:
       enabled: false
