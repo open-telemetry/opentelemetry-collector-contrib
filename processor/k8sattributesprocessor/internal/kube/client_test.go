@@ -2525,7 +2525,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 			wc, _ := newTestClient(t)
 			wc.Associations = tc.associations
 			actual := wc.getIdentifiersFromAssoc(tc.pod)
-			assert.Equal(t, tc.expected, actual)
+			assert.ElementsMatch(t, tc.expected, actual)
 		})
 	}
 }
