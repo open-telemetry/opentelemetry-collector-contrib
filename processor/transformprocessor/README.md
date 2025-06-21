@@ -254,6 +254,8 @@ In addition to the common OTTL functions, the processor defines its own function
 **Metrics only functions**
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
+- [extract_count_metric](#extract_count_metric)
+- [extract_sum_metric](#extract_sum_metric)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
@@ -296,13 +298,15 @@ Examples:
 > [!NOTE]  
 > This function supports Histograms, ExponentialHistograms and Summaries.
 
-`extract_count_metric(is_monotonic)`
+`extract_count_metric(is_monotonic, Optional[suffix])`
 
 The `extract_count_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's count value. A metric will only be created if there is at least one data point.
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_count`.
+For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.count` instead. This default is expected to change in a future release.
 
-The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
@@ -311,22 +315,24 @@ The new metric that is created will be passed to all subsequent statements in th
 
 Examples:
 
-- `extract_count_metric(true)`
+- `extract_count_metric(true, ".count")`
 
-- `extract_count_metric(false)`
+- `extract_count_metric(false, ".count")`
 
 ### extract_sum_metric
 
 > [!NOTE]  
 > This function supports Histograms, ExponentialHistograms and Summaries.
 
-`extract_sum_metric(is_monotonic)`
+`extract_sum_metric(is_monotonic, Optional[suffix])`
 
 The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value. If the sum value of a Histogram or ExponentialHistogram data point is missing, no data point is added to the output metric. A metric will only be created if there is at least one data point.
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_sum`.
+For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.sum` instead. This default is expected to change in a future release.
 
-The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
@@ -335,47 +341,50 @@ The new metric that is created will be passed to all subsequent statements in th
 
 Examples:
 
-- `extract_sum_metric(true)`
+- `extract_sum_metric(true, ".sum")`
 
-- `extract_sum_metric(false)`
+- `extract_sum_metric(false, ".sum")`
 
 ### convert_summary_count_val_to_sum
 
-`convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)`
+`convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic, Optional[suffix])`
 
 The `convert_summary_count_val_to_sum` function creates a new Sum metric from a Summary's count value.
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<summary metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_count`.
+For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.count` instead. This default is expected to change in a future release.
+
+The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Examples:
 
-- `convert_summary_count_val_to_sum("delta", true)`
+- `convert_summary_count_val_to_sum("delta", true, ".count")`
 
-
-- `convert_summary_count_val_to_sum("cumulative", false)`
+- `convert_summary_count_val_to_sum("cumulative", false, ".count")`
 
 ### convert_summary_sum_val_to_sum
 
-`convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)`
+`convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic, Optional[suffix])`
 
 The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Summary's sum value.
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_sum`.
+For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.sum` instead. This default is expected to change in a future release.
 
-The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Examples:
 
-- `convert_summary_sum_val_to_sum("delta", true)`
+- `convert_summary_sum_val_to_sum("delta", true, ".sum")`
 
-
-- `convert_summary_sum_val_to_sum("cumulative", false)`
+- `convert_summary_sum_val_to_sum("cumulative", false, ".sum")`
 
 ### copy_metric
 
