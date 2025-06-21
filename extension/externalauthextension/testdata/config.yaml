@@ -1,0 +1,49 @@
+externalauth:
+
+externalauth/valid:
+  endpoint: "https://auth.example.com/validate"
+  refresh_interval: "1h"
+  header: "Authorization"
+  expected_codes: [200]
+  scheme: "Bearer"
+  method: "POST"
+  http_client_timeout: "10s"
+  telemetry_type: "traces"
+
+externalauth/metrics:
+  endpoint: "https://auth.example.com/validate"
+  telemetry_type: "metrics"
+
+externalauth/logs:
+  endpoint: "https://auth.example.com/validate"
+  telemetry_type: "logs"
+
+externalauth/custom_settings:
+  endpoint: "https://custom-auth.example.com"
+  refresh_interval: "30m"
+  header: "X-Custom-Auth"
+  expected_codes: [200, 201]
+  scheme: "Custom"
+  method: "GET"
+  http_client_timeout: "5s"
+
+externalauth/k8s_dns:
+  endpoint: "dns:///auth-service.namespace.svc.cluster.local"
+
+externalauth/missing_endpoint:
+  endpoint: ""
+
+externalauth/invalid_endpoint:
+  endpoint: "invalid-url"
+
+externalauth/invalid_interval:
+  endpoint: "https://auth.example.com"
+  refresh_interval: "invalid-interval"
+
+externalauth/invalid_http_code:
+  endpoint: "https://auth.example.com"
+  expected_codes: [999]
+
+externalauth/invalid_telemetry_type:
+  endpoint: "https://auth.example.com"
+  telemetry_type: "invalid" 

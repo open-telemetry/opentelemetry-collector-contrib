@@ -324,6 +324,10 @@ component_management:
     name: extension_datadog
     paths:
     - extension/datadogextension/**
+  - component_id: extension_externalauth
+    name: extension_externalauth
+    paths:
+    - extension/externalauthextension/**
   - component_id: extension_googleclientauth
     name: extension_googleclientauth
     paths:
