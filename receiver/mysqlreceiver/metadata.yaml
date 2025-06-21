@@ -489,7 +489,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.max_used_connections:
-    enabled: true
+    enabled: false
     description: Maximum number of connections used simultaneously since the server started.
     unit: "1"
     sum:
