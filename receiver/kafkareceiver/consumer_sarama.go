@@ -28,7 +28,6 @@ import (
 func newSaramaConsumer(
 	config *Config,
 	set receiver.Settings,
-	signal string,
 	topics []string,
 	newConsumeFn newConsumeMessageFunc,
 ) (*saramaConsumer, error) {
@@ -36,19 +35,13 @@ func newSaramaConsumer(
 	if err != nil {
 		return nil, err
 	}
-	attrs := []attribute.KeyValue{
-		attribute.String("otelcol.component.kind", "receiver"),
-		attribute.String("otelcol.component.id", set.ID.String()),
-		attribute.String("otelcol.signal", signal),
-	}
 
 	return &saramaConsumer{
-		config:              config,
-		topics:              topics,
-		newConsumeFn:        newConsumeFn,
-		settings:            set,
-		telemetryBuilder:    telemetryBuilder,
-		componentAttributes: attribute.NewSet(attrs...),
+		config:           config,
+		topics:           topics,
+		newConsumeFn:     newConsumeFn,
+		settings:         set,
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
@@ -56,12 +49,11 @@ func newSaramaConsumer(
 // decodes telemetry data using a given unmarshaler, and passes
 // them to a consumer.
 type saramaConsumer struct {
-	config              *Config
-	topics              []string
-	settings            receiver.Settings
-	telemetryBuilder    *metadata.TelemetryBuilder
-	componentAttributes attribute.Set
-	newConsumeFn        newConsumeMessageFunc
+	config           *Config
+	topics           []string
+	settings         receiver.Settings
+	telemetryBuilder *metadata.TelemetryBuilder
+	newConsumeFn     newConsumeMessageFunc
 
 	mu                sync.Mutex
 	started           bool
@@ -90,14 +82,13 @@ func (c *saramaConsumer) Start(_ context.Context, host component.Host) error {
 	}
 
 	handler := &consumerGroupHandler{
-		host:                host,
-		logger:              c.settings.Logger,
-		obsrecv:             obsrecv,
-		autocommitEnabled:   c.config.AutoCommit.Enable,
-		messageMarking:      c.config.MessageMarking,
-		telemetryBuilder:    c.telemetryBuilder,
-		componentAttributes: c.componentAttributes,
-		backOff:             newExponentialBackOff(c.config.ErrorBackOff),
+		host:              host,
+		logger:            c.settings.Logger,
+		obsrecv:           obsrecv,
+		autocommitEnabled: c.config.AutoCommit.Enable,
+		messageMarking:    c.config.MessageMarking,
+		telemetryBuilder:  c.telemetryBuilder,
+		backOff:           newExponentialBackOff(c.config.ErrorBackOff),
 	}
 	consumeMessage, err := c.newConsumeFn(host, obsrecv, c.telemetryBuilder)
 	if err != nil {
@@ -203,9 +194,8 @@ type consumerGroupHandler struct {
 	consumeMessage consumeMessageFunc
 	logger         *zap.Logger
 
-	obsrecv             *receiverhelper.ObsReport
-	telemetryBuilder    *metadata.TelemetryBuilder
-	componentAttributes attribute.Set
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -216,17 +206,13 @@ type consumerGroupHandler struct {
 func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	c.logger.Debug("Consumer group session established")
 	componentstatus.ReportStatus(c.host, componentstatus.NewEvent(componentstatus.StatusOK))
-	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(
-		session.Context(), 1, metric.WithAttributeSet(c.componentAttributes),
-	)
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1)
 	return nil
 }
 
 func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
 	c.logger.Debug("Consumer group session stopped")
-	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(
-		session.Context(), 1, metric.WithAttributeSet(c.componentAttributes),
-	)
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1)
 	return nil
 }
 
@@ -268,10 +254,10 @@ func (c *consumerGroupHandler) handleMessage(
 		session.MarkMessage(message, "")
 	}
 
-	attrs := attribute.NewSet(append(c.componentAttributes.ToSlice(),
+	attrs := attribute.NewSet(
 		attribute.String("topic", message.Topic),
 		attribute.Int64("partition", int64(claim.Partition())),
-	)...)
+	)
 	c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(
 		context.Background(),
 		message.Offset,

@@ -196,7 +196,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		test := func(tb testing.TB, expected int64) {
 			ctx := context.Background()
 			consumeFn, consuming := newConsumeFunc()
-			consumer, e := newFranzKafkaConsumer(cfg, settings, "traces", []string{topic}, consumeFn)
+			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
 			require.NoError(tb, e)
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
@@ -235,7 +235,7 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 
 	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 	settings, _, _ := mustNewSettings(t)
-	c, err := newFranzKafkaConsumer(cfg, settings, "traces", []string{"test"}, nil)
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil)
 	require.NoError(t, err)
 
 	for i := 0; i < 2; i++ {

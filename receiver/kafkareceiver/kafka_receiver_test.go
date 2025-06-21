@@ -299,9 +299,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "traces"),
 				attribute.String("topic", "otlp_spans"),
 				attribute.Int64("partition", 0),
 			),
@@ -310,11 +307,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		// After receiving messages, the internal metrics should be updated.
 		metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "traces"),
-			),
 		}}, metricdatatest.IgnoreTimestamp())
 
 		if franzGoConsumerFeatureGate.IsEnabled() {
@@ -322,9 +314,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("node_id", "0"),
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
@@ -336,9 +325,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			metadatatest.AssertEqualKafkaReceiverBytes(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("node_id", "0"),
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
@@ -350,9 +336,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("node_id", "0"),
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
@@ -364,18 +347,12 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			metadatatest.AssertEqualKafkaReceiverLatency(t, tel, []metricdata.HistogramDataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("node_id", "0"),
 						attribute.String("outcome", "success"),
 					),
 				},
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("node_id", "seed_0"),
 						attribute.String("outcome", "success"),
 					),
@@ -386,9 +363,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
@@ -398,9 +372,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("otelcol.component.kind", "receiver"),
-						attribute.String("otelcol.component.id", set.ID.String()),
-						attribute.String("otelcol.signal", "traces"),
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
@@ -414,11 +385,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		require.NoError(t, err)
 		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "traces"),
-			),
 		}}, metricdatatest.IgnoreTimestamp())
 
 		observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
@@ -430,9 +396,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 4, // offset of the final message
 			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "traces"),
 				attribute.String("topic", "otlp_spans"),
 				attribute.Int64("partition", 0),
 			),
@@ -441,9 +404,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 0,
 			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "traces"),
 				attribute.String("topic", "otlp_spans"),
 				attribute.Int64("partition", 0),
 			),
@@ -529,9 +489,6 @@ func TestReceiver_MessageMarking(t *testing.T) {
 							{
 								Value: timesProcessed,
 								Attributes: attribute.NewSet(
-									attribute.String("otelcol.component.kind", "receiver"),
-									attribute.String("otelcol.component.id", set.ID.String()),
-									attribute.String("otelcol.signal", "traces"),
 									attribute.String("node_id", "0"),
 									attribute.String("topic", "otlp_spans"),
 									attribute.Int64("partition", 0),
@@ -545,9 +502,6 @@ func TestReceiver_MessageMarking(t *testing.T) {
 							{
 								Value: timesProcessed,
 								Attributes: attribute.NewSet(
-									attribute.String("otelcol.component.kind", "receiver"),
-									attribute.String("otelcol.component.id", set.ID.String()),
-									attribute.String("otelcol.signal", "traces"),
 									attribute.String("topic", "otlp_spans"),
 									attribute.Int64("partition", 0),
 									attribute.String("outcome", "success"),
@@ -570,11 +524,6 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					// Verify that the consumer did not restart.
 					metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{{
 						Value: 1,
-						Attributes: attribute.NewSet(
-							attribute.String("otelcol.component.kind", "receiver"),
-							attribute.String("otelcol.component.id", set.ID.String()),
-							attribute.String("otelcol.signal", "traces"),
-						),
 					}}, metricdatatest.IgnoreTimestamp())
 
 					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
@@ -633,9 +582,6 @@ func TestNewLogsReceiver(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "logs"),
 				attribute.String("topic", "otlp_logs"),
 				attribute.Int64("partition", 0),
 			),
@@ -690,9 +636,6 @@ func TestNewMetricsReceiver(t *testing.T) {
 		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 1,
 			Attributes: attribute.NewSet(
-				attribute.String("otelcol.component.kind", "receiver"),
-				attribute.String("otelcol.component.id", set.ID.String()),
-				attribute.String("otelcol.signal", "metrics"),
 				attribute.String("topic", "otlp_metrics"),
 				attribute.Int64("partition", 0),
 			),

@@ -48,13 +48,12 @@ type topicPartition struct {
 // It provides the same interface as the original kafkaConsumer but uses franz-go
 // for better performance and modern Kafka feature support.
 type franzConsumer struct {
-	config              *Config
-	topics              []string
-	settings            receiver.Settings
-	telemetryBuilder    *metadata.TelemetryBuilder
-	componentAttributes attribute.Set
-	newConsumeFn        newConsumeMessageFunc
-	consumeMessage      consumeMessageFunc
+	config           *Config
+	topics           []string
+	settings         receiver.Settings
+	telemetryBuilder *metadata.TelemetryBuilder
+	newConsumeFn     newConsumeMessageFunc
+	consumeMessage   consumeMessageFunc
 
 	mu             sync.RWMutex
 	started        chan struct{}
@@ -83,7 +82,6 @@ type pc struct {
 func newFranzKafkaConsumer(
 	config *Config,
 	set receiver.Settings,
-	signal string,
 	topics []string,
 	newConsumeFn newConsumeMessageFunc,
 ) (*franzConsumer, error) {
@@ -91,23 +89,17 @@ func newFranzKafkaConsumer(
 	if err != nil {
 		return nil, err
 	}
-	attrs := []attribute.KeyValue{
-		attribute.String("otelcol.component.kind", "receiver"),
-		attribute.String("otelcol.component.id", set.ID.String()),
-		attribute.String("otelcol.signal", signal),
-	}
 
 	return &franzConsumer{
-		config:              config,
-		topics:              topics,
-		newConsumeFn:        newConsumeFn,
-		settings:            set,
-		telemetryBuilder:    telemetryBuilder,
-		componentAttributes: attribute.NewSet(attrs...),
-		started:             make(chan struct{}),
-		consumerClosed:      make(chan struct{}),
-		closing:             make(chan struct{}),
-		assignments:         make(map[topicPartition]*pc),
+		config:           config,
+		topics:           topics,
+		newConsumeFn:     newConsumeFn,
+		settings:         set,
+		telemetryBuilder: telemetryBuilder,
+		started:          make(chan struct{}),
+		consumerClosed:   make(chan struct{}),
+		closing:          make(chan struct{}),
+		assignments:      make(map[topicPartition]*pc),
 	}, nil
 }
 
@@ -354,19 +346,17 @@ func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned ma
 	defer c.mu.Unlock()
 	for topic, partitions := range assigned {
 		for _, partition := range partitions {
-			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(),
-				1, metric.WithAttributeSet(c.componentAttributes),
-			)
+			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(), 1)
 			partitionConsumer := pc{
 				backOff: newExponentialBackOff(c.config.ErrorBackOff),
 				logger: c.settings.Logger.With(
 					zap.String("topic", topic),
 					zap.Int64("partition", int64(partition)),
 				),
-				attrs: attribute.NewSet(append(c.componentAttributes.ToSlice(),
+				attrs: attribute.NewSet(
 					attribute.String("topic", topic),
 					attribute.Int64("partition", int64(partition)),
-				)...),
+				),
 			}
 			partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(ctx)
 			c.assignments[topicPartition{topic: topic, partition: partition}] = &partitionConsumer
@@ -398,9 +388,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 				defer wg.Done()
 				pc.wg.Wait()
 			}()
-			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(),
-				1, metric.WithAttributeSet(c.componentAttributes),
-			)
+			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 		}
 	}
 	if fatal {
@@ -480,7 +468,6 @@ func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
 		),
-		metric.WithAttributeSet(c.componentAttributes),
 	)
 }
 
@@ -488,10 +475,7 @@ func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) 
 	c.telemetryBuilder.KafkaBrokerClosed.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		),
-		metric.WithAttributeSet(c.componentAttributes),
+		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
 	)
 }
 
@@ -499,10 +483,7 @@ func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterv
 	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		),
-		metric.WithAttributeSet(c.componentAttributes),
+		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
 	)
 }
 
@@ -518,7 +499,6 @@ func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, re
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
 		),
-		metric.WithAttributeSet(c.componentAttributes),
 	)
 }
 
@@ -536,19 +516,16 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(c.componentAttributes),
 	)
 	c.telemetryBuilder.KafkaReceiverBytes.Add(
 		context.Background(),
 		int64(m.CompressedBytes),
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(c.componentAttributes),
 	)
 	c.telemetryBuilder.KafkaReceiverBytesUncompressed.Add(
 		context.Background(),
 		int64(m.UncompressedBytes),
 		metric.WithAttributes(attrs...),
-		metric.WithAttributeSet(c.componentAttributes),
 	)
 }
 
