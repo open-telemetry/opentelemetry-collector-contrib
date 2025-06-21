@@ -353,7 +353,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-				metric.SetEmptyHistogram()
+				// Histograms that comes with samples are considered as classic histograms and are not supported.
+				if len(ts.Samples) == 0 {
+					metric.SetEmptyExponentialHistogram()
+				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				metric.SetEmptySummary()
 			}
@@ -374,7 +377,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
+			// Histograms that comes with samples are considered as classic histograms and are not supported.
+			if len(ts.Samples) == 0 {
+				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts, &stats)
+			}
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
@@ -413,24 +419,150 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 		dp.SetDoubleValue(sample.Value)
 
 		attributes := dp.Attributes()
-		for _, l := range ls {
-			if l.Name == "instance" || l.Name == "job" || // Become resource attributes
-				l.Name == labels.MetricName || // Becomes metric name
-				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
-				continue
-			}
-			attributes.PutStr(l.Name, l.Value)
-		}
-		stats.Samples++
+		extractAttributes(ls).CopyTo(attributes)
 	}
+	stats.Samples += len(ts.Samples)
 }
 
 func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
+	for _, histogram := range ts.Histograms {
+		dp := datapoints.AppendEmpty()
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
+		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
+
+		// The difference between float and integer histograms is that float histograms are stored as absolute counts
+		// while integer histograms are stored as deltas.
+		if histogram.IsFloatHistogram() {
+			// If the histogram is not a RESET_HINT_GAUGE, it is a counter histogram. Which means that it should
+			// not have negative counts.
+			isCounterHistogram := histogram.ResetHint != writev2.Histogram_RESET_HINT_GAUGE
+
+			// Float histograms
+			if len(histogram.PositiveSpans) > 0 {
+				// If the histogram is a counter histogram, we need to drop negative counts.
+				if isCounterHistogram {
+					for i, count := range histogram.PositiveCounts {
+						if count < 0 {
+							histogram.PositiveCounts[i] = 0
+						}
+					}
+				}
+				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
+			}
+			if len(histogram.NegativeSpans) > 0 {
+				// If the histogram is a counter histogram, we need to drop negative counts.
+				if isCounterHistogram {
+					for i, count := range histogram.NegativeCounts {
+						if count < 0 {
+							histogram.NegativeCounts[i] = 0
+						}
+					}
+				}
+
+				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
+			}
+
+			dp.SetScale(histogram.Schema)
+			dp.SetZeroThreshold(histogram.ZeroThreshold)
+			zeroCountFloat := histogram.GetZeroCountFloat()
+			dp.SetZeroCount(uint64(zeroCountFloat))
+			dp.SetSum(histogram.Sum)
+			countFloat := histogram.GetCountFloat()
+			dp.SetCount(uint64(countFloat))
+		} else {
+			// Integer histograms
+			if len(histogram.PositiveSpans) > 0 {
+				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts())
+			}
+			if len(histogram.NegativeSpans) > 0 {
+				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts())
+			}
+
+			dp.SetScale(histogram.Schema)
+			dp.SetZeroThreshold(histogram.ZeroThreshold)
+			zeroCountInt := histogram.GetZeroCountInt()
+			dp.SetZeroCount(zeroCountInt)
+			dp.SetSum(histogram.Sum)
+			countInt := histogram.GetCountInt()
+			dp.SetCount(countInt)
+		}
+
+		attributes := dp.Attributes()
+		stats.Histograms++
+		extractAttributes(ls).CopyTo(attributes)
+	}
+}
+
+// convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
+// For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
+	// The total capacity is the sum of the deltas and the offsets of the spans.
+	totalCapacity := len(deltas)
+	for _, span := range spans {
+		totalCapacity += int(span.Offset)
+	}
+	buckets.EnsureCapacity(totalCapacity)
+
+	bucketIdx := 0
+	bucketCount := int64(0)
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			bucketCount += deltas[bucketIdx]
+			bucketIdx++
+			buckets.Append(uint64(bucketCount))
+		}
+	}
+}
+
+// convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
+// For float buckets, the values are absolute counts, and must be 0 or positive.
+func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
+	// The total capacity is the sum of the counts and the offsets of the spans.
+	totalCapacity := len(counts)
+	for _, span := range spans {
+		totalCapacity += int(span.Offset)
+	}
+	buckets.EnsureCapacity(totalCapacity)
+
+	bucketIdx := 0
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			buckets.Append(uint64(counts[bucketIdx]))
+			bucketIdx++
+		}
+	}
+}
+
+// extractAttributes return all attributes different from job, instance, metric name and scope name/version
+func extractAttributes(ls labels.Labels) pcommon.Map {
+	attrs := pcommon.NewMap()
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" || // Become resource attributes
+			l.Name == labels.MetricName || // Becomes metric name
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+			continue
+		}
+		attrs.PutStr(l.Name, l.Value)
+	}
+	return attrs
 }
 
 // extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
