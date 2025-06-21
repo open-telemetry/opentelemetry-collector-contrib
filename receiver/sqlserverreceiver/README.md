@@ -23,6 +23,32 @@ Make sure to run the collector as administrator in order to collect all performa
 
 ## Configuration
 
+## Example configuration
+Following is one example configuration, with that, you can basically have all the Logs / Metrics exported
+by current sqlserver receiver. We also provided some basic explanation on some of the fields. For the detail 
+documents, please refer the following section.
+
+```yaml
+sqlserver:
+  collection_interval: 10s                     # interval for overall collection
+  computer_name: CustomServer
+  instance_name: CustomInstance
+  username: myusername
+  password: mypassword
+  server: sqlserver.address
+  port: 1433
+  top_query_collection:                        # this collection exports the most expensive queries as logs
+    enabled: true
+    lookback_time: 60                          # which time window should we look for the top queries
+    max_query_sample_count: 1000               # maximum number of records to fetch in a single run.
+    top_query_count: 200                       # The maximum number of active queries to report in a single run.
+    collection_interval: 60                    # collection interval for top query collection specifically
+  query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries
+    max_rows_per_query: 1450                   # the maximum number of samples to return for one single query.
+    enabled: true
+```
+
+
 The following settings are optional:
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
 - `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
@@ -109,7 +135,6 @@ Top query collection enabled:
         query_sample_collection:
           enabled: true
           max_rows_per_query: 1450
-          
 ```
 
 ## Feature Gate
