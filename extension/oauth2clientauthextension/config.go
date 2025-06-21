@@ -14,13 +14,17 @@ import (
 )
 
 var (
-	errNoClientIDProvided     = errors.New("no ClientID provided in the OAuth2 exporter configuration")
-	errNoTokenURLProvided     = errors.New("no TokenURL provided in OAuth Client Credentials configuration")
-	errNoClientSecretProvided = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
+	errNoClientIDProvided        = errors.New("no ClientID provided in the OAuth2 exporter configuration")
+	errNoTokenURLProvided        = errors.New("no TokenURL provided in OAuth Client Credentials configuration")
+	errNoClientSecretProvided    = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
+	errNoSecretTokenTypeProvided = errors.New("no SecretTokenType provided in OAuth configuration")
 )
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
 type Config struct {
+	//
+	// ************ 2 Legged Authentication specific fields *********************************
+
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
 	ClientID string `mapstructure:"client_id"`
@@ -32,16 +36,38 @@ type Config struct {
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
 	ClientSecret configopaque.String `mapstructure:"client_secret"`
 
-	// ClientSecretFile is the file pathg to read the application's secret from.
+	// ClientSecretFile is the file path to read the application's secret from.
 	ClientSecretFile string `mapstructure:"client_secret_file"`
 
-	// EndpointParams specifies additional parameters for requests to the token endpoint.
-	EndpointParams url.Values `mapstructure:"endpoint_params"`
+	//
+	// ************ STS Token Exchange Authentication specific fields **************************
+
+	// A security token that represents the identity of the party on behalf of whom the request is being made.
+	SubjectToken string `mapstructure:"subject_token"`
+
+	// SubjectTokenFile is the file path to read the SubjectToken from.
+	SubjectTokenFile string `mapstructure:"subject_token_file"`
+
+	// The type of security token provided.
+	// See https://datatracker.ietf.org/doc/html/rfc8693#TokenTypeIdentifiers
+	SubjectTokenType string `mapstructure:"subject_token_type"`
+
+	// Name of the target service that we want to access
+	Audience string `mapstructure:"audience"`
+
+	// DisableTLSOnUse turns off TLS when using the credentials. i.e. sets TokenSource.RequireTransportSecurity to false. Only supported for STS mode.
+	DisableTLSOnUse bool `mapstructure:"disable_tls_on_use, omitempty"`
+
+	//
+	// ******************************** Shared fields **********************************************
 
 	// TokenURL is the resource server's token endpoint
 	// URL. This is a constant specific to each server.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-3.2
 	TokenURL string `mapstructure:"token_url"`
+
+	// EndpointParams specifies additional parameters for requests to the token endpoint.
+	EndpointParams url.Values `mapstructure:"endpoint_params"`
 
 	// Scope specifies optional requested permissions.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3
@@ -60,16 +86,32 @@ type Config struct {
 
 var _ component.Config = (*Config)(nil)
 
+func (cfg *Config) getMode() string {
+	if cfg.SubjectToken != "" || cfg.SubjectTokenFile != "" {
+		return "sts"
+	}
+	return "two-legged"
+}
+
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.TokenURL == "" {
+		return errNoTokenURLProvided
+	}
+	// STS Token Exchange Mode
+	if cfg.getMode() == "sts" {
+		if cfg.SubjectTokenType == "" {
+			return errNoSecretTokenTypeProvided
+		}
+		return nil
+	}
+
+	// 2 Legged Oauth Mode
 	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return errNoClientIDProvided
 	}
 	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
 		return errNoClientSecretProvided
-	}
-	if cfg.TokenURL == "" {
-		return errNoTokenURLProvided
 	}
 	return nil
 }
