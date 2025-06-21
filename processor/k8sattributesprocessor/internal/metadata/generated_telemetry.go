@@ -23,26 +23,29 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                       metric.Meter
-	mu                          sync.Mutex
-	registrations               []metric.Registration
-	OtelsvcK8sDeploymentAdded   metric.Int64Counter
-	OtelsvcK8sDeploymentDeleted metric.Int64Counter
-	OtelsvcK8sDeploymentUpdated metric.Int64Counter
-	OtelsvcK8sIPLookupMiss      metric.Int64Counter
-	OtelsvcK8sNamespaceAdded    metric.Int64Counter
-	OtelsvcK8sNamespaceDeleted  metric.Int64Counter
-	OtelsvcK8sNamespaceUpdated  metric.Int64Counter
-	OtelsvcK8sNodeAdded         metric.Int64Counter
-	OtelsvcK8sNodeDeleted       metric.Int64Counter
-	OtelsvcK8sNodeUpdated       metric.Int64Counter
-	OtelsvcK8sPodAdded          metric.Int64Counter
-	OtelsvcK8sPodDeleted        metric.Int64Counter
-	OtelsvcK8sPodTableSize      metric.Int64Gauge
-	OtelsvcK8sPodUpdated        metric.Int64Counter
-	OtelsvcK8sReplicasetAdded   metric.Int64Counter
-	OtelsvcK8sReplicasetDeleted metric.Int64Counter
-	OtelsvcK8sReplicasetUpdated metric.Int64Counter
+	meter                        metric.Meter
+	mu                           sync.Mutex
+	registrations                []metric.Registration
+	OtelsvcK8sDeploymentAdded    metric.Int64Counter
+	OtelsvcK8sDeploymentDeleted  metric.Int64Counter
+	OtelsvcK8sDeploymentUpdated  metric.Int64Counter
+	OtelsvcK8sIPLookupMiss       metric.Int64Counter
+	OtelsvcK8sNamespaceAdded     metric.Int64Counter
+	OtelsvcK8sNamespaceDeleted   metric.Int64Counter
+	OtelsvcK8sNamespaceUpdated   metric.Int64Counter
+	OtelsvcK8sNodeAdded          metric.Int64Counter
+	OtelsvcK8sNodeDeleted        metric.Int64Counter
+	OtelsvcK8sNodeUpdated        metric.Int64Counter
+	OtelsvcK8sPodAdded           metric.Int64Counter
+	OtelsvcK8sPodDeleted         metric.Int64Counter
+	OtelsvcK8sPodTableSize       metric.Int64Gauge
+	OtelsvcK8sPodUpdated         metric.Int64Counter
+	OtelsvcK8sReplicasetAdded    metric.Int64Counter
+	OtelsvcK8sReplicasetDeleted  metric.Int64Counter
+	OtelsvcK8sReplicasetUpdated  metric.Int64Counter
+	OtelsvcK8sStatefulsetAdded   metric.Int64Counter
+	OtelsvcK8sStatefulsetDeleted metric.Int64Counter
+	OtelsvcK8sStatefulsetUpdated metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -173,6 +176,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.OtelsvcK8sReplicasetUpdated, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_replicaset_updated",
 		metric.WithDescription("Number of ReplicaSet update events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sStatefulsetAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_statefulset_added",
+		metric.WithDescription("Number of statefulset add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sStatefulsetDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_statefulset_deleted",
+		metric.WithDescription("Number of statefulset delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sStatefulsetUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_statefulset_updated",
+		metric.WithDescription("Number of statefulset update events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
