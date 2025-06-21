@@ -42,9 +42,6 @@ func createDefaultConfig() component.Config {
 		DomainSettings: configgrpc.ClientConfig{
 			Compression: configcompression.TypeGzip,
 		},
-		ClientConfig: configgrpc.ClientConfig{
-			Endpoint: "https://",
-		},
 		// Traces GRPC client
 		Traces: configgrpc.ClientConfig{
 			Endpoint:    "https://",
