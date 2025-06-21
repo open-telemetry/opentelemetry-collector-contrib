@@ -362,7 +362,7 @@ func TestObfuscate(t *testing.T) {
 func TestNoPanic(t *testing.T) {
 	c, _ := creteConnectorNative(t)
 	c.metricsConsumer = consumertest.NewErr(errors.New("error"))
-	c.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
 	trace1 := generateTrace()
 
 	err := c.ConsumeTraces(context.Background(), trace1)
