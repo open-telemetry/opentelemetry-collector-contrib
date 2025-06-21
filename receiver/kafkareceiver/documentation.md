@@ -6,6 +6,91 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_kafka_broker_closed
+
+The total number of connections closed.
+
+Only produced when franz-go is enabled.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+
+### otelcol_kafka_broker_connects
+
+The total number of connections opened.
+
+Only produced when franz-go is enabled.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+
+### otelcol_kafka_broker_throttling_duration
+
+The throttling duration in ms imposed by the broker when receiving records.
+
+Only produced when franz-go is enabled.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+
+### otelcol_kafka_receiver_bytes
+
+The size in bytes of received records seen by the broker.
+
+Only produced when franz-go is enabled.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+
+### otelcol_kafka_receiver_bytes_uncompressed
+
+The uncompressed size in bytes of received records seen by the client.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+
 ### otelcol_kafka_receiver_current_offset
 
 Current message offset
@@ -14,13 +99,29 @@ Current message offset
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### otelcol_kafka_receiver_messages
+#### Attributes
 
-Number of received messages
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+### otelcol_kafka_receiver_latency
+
+The time it took in ms to receive a batch of records.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
 ### otelcol_kafka_receiver_offset_lag
 
@@ -29,6 +130,13 @@ Current offset lag
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
 
 ### otelcol_kafka_receiver_partition_close
 
@@ -46,6 +154,23 @@ Number of started partitions
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_kafka_receiver_records
+
+The number of received records.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| node_id | The Kafka node ID. | Any Int |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+
 ### otelcol_kafka_receiver_unmarshal_failed_log_records
 
 Number of log records failed to be unmarshaled
@@ -53,6 +178,13 @@ Number of log records failed to be unmarshaled
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
 
 ### otelcol_kafka_receiver_unmarshal_failed_metric_points
 
@@ -62,6 +194,13 @@ Number of metric points failed to be unmarshaled
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
+
 ### otelcol_kafka_receiver_unmarshal_failed_spans
 
 Number of spans failed to be unmarshaled
@@ -69,3 +208,10 @@ Number of spans failed to be unmarshaled
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
