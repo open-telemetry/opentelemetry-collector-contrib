@@ -112,3 +112,38 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		}
 	}
 }
+
+func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
+	resource pcommon.Resource, settings Settings, baseName string, metadata metadata,
+) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		timestamp := convertTimeStamp(pt.Timestamp())
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+		noRecordedValue := pt.Flags().NoRecordedValue()
+
+		// If the sum is unset, it indicates the _sum metric point should be
+		// omitted
+		if pt.HasSum() {
+			c.addSampleWithLabels(pt.Sum(), timestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
+		}
+
+		// treat count as a sample in an individual TimeSeries
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
+
+		// cumulative count for conversion to cumulative histogram
+		var cumulativeCount uint64
+
+		// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
+		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
+			bound := pt.ExplicitBounds().At(i)
+			cumulativeCount += pt.BucketCounts().At(i)
+			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
+			c.addSampleWithLabels(float64(cumulativeCount), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
+		}
+		// add le=+Inf bucket
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
+
+		// TODO implement exemplars support
+	}
+}
