@@ -265,12 +265,15 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			)
 
 			s := &azureBatchScraper{
-				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				cfg: tt.fields.cfg,
+				mbs: map[string]*metadata.MetricsBuilder{
+					"subscriptionId1": metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+					"subscriptionId3": metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				},
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
-				settings:              settings.TelemetrySettings,
+				settings:              settings,
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{
