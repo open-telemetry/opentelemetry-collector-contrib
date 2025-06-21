@@ -23,7 +23,7 @@ Make sure to run the collector as administrator in order to collect all performa
 
 ## Configuration
 
-Following is one example configuration, with that, you can basically have all the Logs / Metrics exported
+Following is one generic configuration, with that, you can basically have all the logs / metrics exported
 by current sqlserver receiver. We also provided some basic explanation on some of the fields. For the detail 
 documents, please refer the following section.
 
@@ -42,7 +42,7 @@ sqlserver:
     max_query_sample_count: 1000               # maximum number of records to fetch in a single run.
     top_query_count: 200                       # The maximum number of active queries to report in a single run.
     collection_interval: 60                    # collection interval for top query collection specifically
-  query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries
+  query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
     max_rows_per_query: 1450                   # the maximum number of samples to return for one single query.
     enabled: true
 ```
