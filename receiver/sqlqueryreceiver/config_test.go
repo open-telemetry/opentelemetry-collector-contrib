@@ -60,6 +60,41 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:    component.NewIDWithName(metadata.Type, ""),
+			fname: "config-datasource-config.yaml",
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:   "mydriver",
+					Host:     "localhost",
+					Port:     5432,
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			fname:        "config-invalid-datatype.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "unsupported data_type: 'xyzgauge'",
@@ -107,7 +142,51 @@ func TestLoadConfig(t *testing.T) {
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource' cannot be empty",
+			errorMessage: "'datasource' must be specified",
+		},
+		{
+			fname: "config-invalid-missing-datasource-config-port-sql-server.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:   "sqlserver",
+					Host:     "localhost",
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			fname:        "config-invalid-missing-datasource-config-port.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'port' or 'datasource' must be specified",
+		},
+		{
+			fname:        "config-invalid-missing-datasource-config-database.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'database' or 'datasource' must be specified",
 		},
 		{
 			fname: "config-logs.yaml",
@@ -137,6 +216,37 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			fname: "config-logs-datasource-config.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:   "mydriver",
+					Host:     "localhost",
+					Port:     5432,
+					Database: "mydb",
+					Username: "me",
+					Password: "s3cr3t",
+					Queries: []sqlquery.Query{
+						{
+							SQL:                "select * from test_logs where log_id > ?",
+							TrackingColumn:     "log_id",
+							TrackingStartValue: "10",
+							Logs: []sqlquery.LogsCfg{
+								{
+									BodyColumn:       "log_body",
+									AttributeColumns: []string{"log_attribute_1", "log_attribute_2"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			fname:        "config-logs-missing-body-column.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "'body_column' must not be empty",
@@ -145,6 +255,42 @@ func TestLoadConfig(t *testing.T) {
 			fname:        "config-unnecessary-aggregation.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "aggregation=cumulative but data_type=gauge does not support aggregation",
+		},
+		{
+			fname: "config-both-datasource.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:     "mysql",
+					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Host:       "localhost",
+					Port:       5432,
+					Database:   "mydb",
+					Username:   "me",
+					Password:   "s3cr3t",
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 

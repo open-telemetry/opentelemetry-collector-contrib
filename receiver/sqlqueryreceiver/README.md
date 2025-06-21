@@ -26,10 +26,20 @@ The SQL Query Receiver uses custom SQL queries to generate metrics from a databa
 The configuration supports the following top-level fields:
 
 - `driver`(required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
-  HANA), _oracle_ (Oracle DB),  _tds_ (SapASE/Sybase).
-- `datasource`(required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This is
-  a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
-  referred to as the "connection string" in driver documentation. Examples:
+  HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
+- `host` (optional): The hostname or IP address of the database server.
+  - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
+- `port` (optional for `sqlserver`, otherwise required): The port number of the database server.
+- `database` (optional): The name of the database to connect to.
+- `username` (optional): The username for database authentication.
+  - The `username` will be properly escaped and securely handled when building the connection string. Special characters (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+  - For `mysql`: No URL encoding is applied
+- `password` (optional): The password for database authentication. Supports environment variable substitution.
+  - The `password` field supports sensitive value handling through environment variables or other secure value sources. Special characters (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+  - For `mysql`: No URL encoding is applied
+- `additional_params` (optional): Additional driver-specific connection parameters.
+- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value overrides the optional fields listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
+
   - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
   - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
@@ -66,13 +76,60 @@ Additionally, each `query` section supports the following properties:
 - `attribute_columns`(optional): a list of column names in the returned dataset used to set attributes on the signal.
   These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 
-Example:
+### Example using datasource:
 
 ```yaml
 receivers:
   sqlquery:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
+    queries:
+      - sql: "select * from my_logs where log_id > $$1"
+        tracking_start_value: "10000"
+        tracking_column: log_id
+        logs:
+          - body_column: log_body
+      - sql: "select count(*) as count, genre from movie group by genre"
+        metrics:
+          - metric_name: movie.genres
+            value_column: "count"
+```
+
+### Example without using datasource:
+
+```yaml
+receivers:
+  sqlquery:
+    driver: postgres
+    host: localhost
+    port: 5432
+    user: postgres
+    password: s3cr3t
+    additional_params:
+      sslmode: disable
+    queries:
+      - sql: "select * from my_logs where log_id > $$1"
+        tracking_start_value: "10000"
+        tracking_column: log_id
+        logs:
+          - body_column: log_body
+      - sql: "select count(*) as count, genre from movie group by genre"
+        metrics:
+          - metric_name: movie.genres
+            value_column: "count"
+```
+
+### SQL Server example without using datasource:
+
+```yaml
+receivers:
+  sqlquery:
+    driver: sqlserver
+    host: localhost/instance
+    user: sql_server
+    password: s3cr3t
+    additional_params:
+      sslmode: disable
     queries:
       - sql: "select * from my_logs where log_id > $$1"
         tracking_start_value: "10000"
@@ -124,10 +181,10 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 - `description` (optional): the description applied to the metric.
 - `unit` (optional): the units applied to the metric.
 - `static_attributes` (optional): static attributes applied to the metrics.
-- `start_ts_column` (optional): the name of the column containing the start timestamp, the value of which is applied to 
-  the metric's start timestamp (otherwise the current time is used). Only applies if the metric is of type cumulative 
+- `start_ts_column` (optional): the name of the column containing the start timestamp, the value of which is applied to
+  the metric's start timestamp (otherwise the current time is used). Only applies if the metric is of type cumulative
   sum.
-- `ts_column` (optional): the name of the column containing the timestamp, the value of which is applied to the 
+- `ts_column` (optional): the name of the column containing the timestamp, the value of which is applied to the
   metric's timestamp. This can be current timestamp depending upon the time of last recorded metric's datapoint.
 
 ### Example
@@ -144,7 +201,7 @@ receivers:
         tracking_column: log_id
         logs:
           - body_column: log_body
-            attribute_columns: [ "log_attribute_1", "log_attribute_2" ]
+            attribute_columns: ["log_attribute_1", "log_attribute_2"]
       - sql: "select count(*) as count, genre from movie group by genre"
         metrics:
           - metric_name: movie.genres
@@ -204,10 +261,11 @@ either case, the receiver will continue to operate.
 Refer to the config file [provided](./testdata/oracledb-receiver-config.yaml) for an example of using the
 Oracle DB driver to connect and query the same table schema and contents as the example above.
 The Oracle DB driver documentation can be found [here.](https://github.com/sijms/go-ora)
-Another usage example is the `go_ora`
-example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database)
+
+<!-- This link below causes the check-links check to fail.  -->
+<!-- Another usage example is the `go_ora` example here: https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database -->
 
 #### MySQL Datasource Format Example
 
 The `datasource` format for MySQL works as follows:  
-`user:password@tcp(host:port)/databasename`  
+`user:password@tcp(host:port)/databasename`
