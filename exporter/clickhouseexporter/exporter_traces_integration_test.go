@@ -32,10 +32,9 @@ func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *trac
 }
 
 func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
-	// 3 pushes
-	mustPushTracesData(t, exporter, simpleTraces(5000))
-	mustPushTracesData(t, exporter, simpleTraces(5000))
-	mustPushTracesData(t, exporter, simpleTraces(5000))
+	pushConcurrentlyNoError(t, func() error {
+		return exporter.pushTraceData(context.Background(), simpleTraces(5000))
+	})
 
 	type trace struct {
 		Timestamp          time.Time           `ch:"Timestamp"`
@@ -115,11 +114,6 @@ func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 	require.NoError(t, err)
 
 	require.Equal(t, expectedTrace, actualTrace)
-}
-
-func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces) {
-	err := exporter.pushTraceData(context.Background(), td)
-	require.NoError(t, err)
 }
 
 func simpleTraces(count int) ptrace.Traces {

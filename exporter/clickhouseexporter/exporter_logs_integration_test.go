@@ -32,10 +32,9 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 }
 
 func verifyExportLogs(t *testing.T, exporter *logsExporter) {
-	// 3 pushes
-	mustPushLogsData(t, exporter, simpleLogs(5000))
-	mustPushLogsData(t, exporter, simpleLogs(5000))
-	mustPushLogsData(t, exporter, simpleLogs(5000))
+	pushConcurrentlyNoError(t, func() error {
+		return exporter.pushLogsData(context.Background(), simpleLogs(5000))
+	})
 
 	type log struct {
 		Timestamp          time.Time         `ch:"Timestamp"`
@@ -88,11 +87,6 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter) {
 	require.NoError(t, err)
 
 	require.Equal(t, expectedLog, actualLog)
-}
-
-func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
-	err := exporter.pushLogsData(context.Background(), ld)
-	require.NoError(t, err)
 }
 
 func simpleLogs(count int) plog.Logs {
