@@ -49,6 +49,9 @@ const (
 	_ AttributeRole = iota
 	AttributeRoleReplica
 	AttributeRolePrimary
+	AttributeRoleMaster
+	AttributeRoleSlave
+	AttributeRoleSentinel
 )
 
 // String returns the string representation of the AttributeRole.
@@ -58,14 +61,23 @@ func (av AttributeRole) String() string {
 		return "replica"
 	case AttributeRolePrimary:
 		return "primary"
+	case AttributeRoleMaster:
+		return "master"
+	case AttributeRoleSlave:
+		return "slave"
+	case AttributeRoleSentinel:
+		return "sentinel"
 	}
 	return ""
 }
 
 // MapAttributeRole is a helper map of string to AttributeRole attribute value.
 var MapAttributeRole = map[string]AttributeRole{
-	"replica": AttributeRoleReplica,
-	"primary": AttributeRolePrimary,
+	"replica":  AttributeRoleReplica,
+	"primary":  AttributeRolePrimary,
+	"master":   AttributeRoleMaster,
+	"slave":    AttributeRoleSlave,
+	"sentinel": AttributeRoleSentinel,
 }
 
 // AttributeState specifies the value state attribute.
@@ -271,16 +283,14 @@ func (m *metricRedisClientsBlocked) init() {
 	m.data.SetName("redis.clients.blocked")
 	m.data.SetDescription("Number of clients pending on a blocking call")
 	m.data.SetUnit("{client}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisClientsBlocked) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -288,14 +298,14 @@ func (m *metricRedisClientsBlocked) recordDataPoint(start pcommon.Timestamp, ts 
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricRedisClientsBlocked) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRedisClientsBlocked) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -322,16 +332,14 @@ func (m *metricRedisClientsConnected) init() {
 	m.data.SetName("redis.clients.connected")
 	m.data.SetDescription("Number of client connections (excluding connections from replicas)")
 	m.data.SetUnit("{client}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisClientsConnected) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -339,14 +347,14 @@ func (m *metricRedisClientsConnected) recordDataPoint(start pcommon.Timestamp, t
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricRedisClientsConnected) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRedisClientsConnected) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1686,16 +1694,14 @@ func (m *metricRedisRdbChangesSinceLastSave) init() {
 	m.data.SetName("redis.rdb.changes_since_last_save")
 	m.data.SetDescription("Number of changes since the last dump")
 	m.data.SetUnit("{change}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisRdbChangesSinceLastSave) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -1703,14 +1709,14 @@ func (m *metricRedisRdbChangesSinceLastSave) recordDataPoint(start pcommon.Times
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricRedisRdbChangesSinceLastSave) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRedisRdbChangesSinceLastSave) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1736,7 +1742,7 @@ type metricRedisReplicationBacklogFirstByteOffset struct {
 func (m *metricRedisReplicationBacklogFirstByteOffset) init() {
 	m.data.SetName("redis.replication.backlog_first_byte_offset")
 	m.data.SetDescription("The master offset of the replication backlog buffer")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
@@ -1785,7 +1791,7 @@ type metricRedisReplicationOffset struct {
 func (m *metricRedisReplicationOffset) init() {
 	m.data.SetName("redis.replication.offset")
 	m.data.SetDescription("The server's current replication offset")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
@@ -1834,7 +1840,7 @@ type metricRedisReplicationReplicaOffset struct {
 func (m *metricRedisReplicationReplicaOffset) init() {
 	m.data.SetName("redis.replication.replica_offset")
 	m.data.SetDescription("Offset for redis replica")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
@@ -1884,17 +1890,15 @@ func (m *metricRedisRole) init() {
 	m.data.SetName("redis.role")
 	m.data.SetDescription("Redis node's role")
 	m.data.SetUnit("{role}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricRedisRole) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, roleAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -1903,14 +1907,14 @@ func (m *metricRedisRole) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricRedisRole) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRedisRole) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1937,16 +1941,14 @@ func (m *metricRedisSlavesConnected) init() {
 	m.data.SetName("redis.slaves.connected")
 	m.data.SetDescription("Number of connected replicas")
 	m.data.SetUnit("{replica}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricRedisSlavesConnected) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -1954,14 +1956,14 @@ func (m *metricRedisSlavesConnected) recordDataPoint(start pcommon.Timestamp, ts
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricRedisSlavesConnected) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRedisSlavesConnected) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
