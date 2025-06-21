@@ -96,6 +96,10 @@ func (r *RootableField) UnmarshalText(text []byte) error {
 	return err
 }
 
+func (f *Field) IsEmpty() bool {
+	return *f == Field{}
+}
+
 func NewField(s string) (Field, error) {
 	return newField(s, false)
 }

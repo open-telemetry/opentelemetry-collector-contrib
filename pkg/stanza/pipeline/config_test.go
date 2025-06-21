@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/copy"
@@ -399,5 +400,10 @@ func newDummyJSON(dummyID string) operator.Config {
 }
 
 func newDummyCopy(dummyID string) operator.Config {
-	return operator.Config{Builder: copy.NewConfigWithID(dummyID)}
+	copyConfig := copy.NewConfigWithID(dummyID)
+	copyConfig.From = entry.NewBodyField("body.something")
+	copyConfig.To = entry.NewBodyField("body.something_else")
+	return operator.Config{
+		Builder: copyConfig,
+	}
 }
