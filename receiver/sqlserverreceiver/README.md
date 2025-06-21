@@ -23,7 +23,7 @@ Make sure to run the collector as administrator in order to collect all performa
 
 ## Configuration
 
-## Example configuration
+## Generic configuration
 Following is one example configuration, with that, you can basically have all the Logs / Metrics exported
 by current sqlserver receiver. We also provided some basic explanation on some of the fields. For the detail 
 documents, please refer the following section.
