@@ -113,11 +113,6 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 	case MappingECS:
 		return ecsModeEncoder{
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
-			nonOTelSpanEncoder: nonOTelSpanEncoder{
-				attributesPrefix: "Attributes",
-				eventsPrefix:     "Events",
-				dedot:            true,
-			},
 		}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
@@ -144,7 +139,6 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	nonOTelSpanEncoder
 	nopSpanEventEncoder
 	profilesUnsupportedEncoder
 }
@@ -217,7 +211,7 @@ func (e ecsModeEncoder) encodeLog(
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, ec.resource)
 	encodeLogAgentVersionECSMode(&document, ec.resource)
-	encodeLogHostOsTypeECSMode(&document, ec.resource)
+	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
@@ -230,6 +224,50 @@ func (e ecsModeEncoder) encodeLog(
 	if record.Body().Type() == pcommon.ValueTypeStr {
 		document.AddAttribute("message", record.Body())
 	}
+
+	return document.Serialize(buf, true)
+}
+
+func (e ecsModeEncoder) encodeSpan(
+	ec encodingContext,
+	span ptrace.Span,
+	idx elasticsearch.Index,
+	buf *bytes.Buffer,
+) error {
+	var document objmodel.Document
+
+	// First, try to map resource-level attributes to ECS fields.
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Then, try to map scope-level attributes to ECS fields.
+	scopeAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Finally, try to map record-level attributes to ECS fields.
+	spanAttrsConversionMap := map[string]string{
+		"event.name":                           "event.action",
+		string(semconv.ExceptionMessageKey):    "error.message",
+		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
+		string(semconv.ExceptionTypeKey):       "error.type",
+		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
+	}
+
+	// Handle special cases.
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
+	encodeHostOsTypeECSMode(&document, ec.resource)
+	addDataStreamAttributes(&document, "", idx)
+
+	document.AddTimestamp("@timestamp", span.StartTimestamp())
+	document.AddTraceID("trace.id", span.TraceID())
+	document.AddSpanID("span.id", span.SpanID())
+	document.AddString("span.name", span.Name())
+	document.AddString("span.kind", traceutil.SpanKindStr(span.Kind()))
+	document.AddInt("span.status.code", int64(span.Status().Code()))
+	document.AddString("span.status.message", span.Status().Message())
+	document.AddEvents("span.events", span.Events())
+	document.AddLinks("span.links", span.Links())
 
 	return document.Serialize(buf, true)
 }
@@ -533,7 +571,7 @@ func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.
 	}
 }
 
-func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
 	//
 	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
