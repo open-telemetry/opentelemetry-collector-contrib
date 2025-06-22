@@ -5,6 +5,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/chjson"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
@@ -23,39 +23,13 @@ type logsJSONExporter struct {
 	logger    *zap.Logger
 	db        driver.Conn
 	insertSQL string
-
-	resourceAttributesBufferPool *internal.ExporterStructPool[*chjson.JSONBuffer]
-	scopeAttributesBufferPool    *internal.ExporterStructPool[*chjson.JSONBuffer]
-	logAttributesBufferPool      *internal.ExporterStructPool[*chjson.JSONBuffer]
-	traceHexBufferPool           *internal.ExporterStructPool[[]byte]
-	spanHexBufferPool            *internal.ExporterStructPool[[]byte]
 }
 
 func newLogsJSONExporter(logger *zap.Logger, cfg *Config) *logsJSONExporter {
-	numConsumers := cfg.QueueSettings.NumConsumers
-
-	newJSONBuffer := func() (*chjson.JSONBuffer, error) {
-		return chjson.NewJSONBuffer(2048, 256), nil
-	}
-	newHexBuffer := func() ([]byte, error) {
-		return make([]byte, 0, 128), nil
-	}
-
-	resourceAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	scopeAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	logAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	traceHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
-	spanHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
-
 	return &logsJSONExporter{
-		cfg:                          cfg,
-		logger:                       logger,
-		insertSQL:                    renderInsertLogsJSONSQL(cfg),
-		resourceAttributesBufferPool: resourceAttributesBufferPool,
-		scopeAttributesBufferPool:    scopeAttributesBufferPool,
-		logAttributesBufferPool:      logAttributesBufferPool,
-		traceHexBufferPool:           traceHexBufferPool,
-		spanHexBufferPool:            spanHexBufferPool,
+		cfg:       cfg,
+		logger:    logger,
+		insertSQL: renderInsertLogsJSONSQL(cfg),
 	}
 }
 
@@ -90,12 +64,6 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 		}
 	}
 
-	e.resourceAttributesBufferPool.Destroy()
-	e.scopeAttributesBufferPool.Destroy()
-	e.logAttributesBufferPool.Destroy()
-	e.traceHexBufferPool.Destroy()
-	e.spanHexBufferPool.Destroy()
-
 	return nil
 }
 
@@ -111,17 +79,6 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		}
 	}(batch)
 
-	resourceAttributesBuffer := e.resourceAttributesBufferPool.Acquire()
-	defer e.resourceAttributesBufferPool.Release(resourceAttributesBuffer)
-	scopeAttributesBuffer := e.scopeAttributesBufferPool.Acquire()
-	defer e.scopeAttributesBufferPool.Release(scopeAttributesBuffer)
-	logAttributesBuffer := e.logAttributesBufferPool.Acquire()
-	defer e.logAttributesBufferPool.Release(logAttributesBuffer)
-	traceHexBuffer := e.traceHexBufferPool.Acquire()
-	defer e.traceHexBufferPool.Release(traceHexBuffer)
-	spanHexBuffer := e.spanHexBufferPool.Acquire()
-	defer e.spanHexBufferPool.Release(spanHexBuffer)
-
 	processStart := time.Now()
 
 	var logCount int
@@ -133,8 +90,10 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		resURL := logs.SchemaUrl()
 		resAttr := res.Attributes()
 		serviceName := internal.GetServiceName(resAttr)
-		resourceAttributesBuffer.Reset()
-		chjson.AttributesToJSON(resourceAttributesBuffer, resAttr)
+		resAttrBytes, resAttrErr := json.Marshal(resAttr.AsRaw())
+		if resAttrErr != nil {
+			return fmt.Errorf("failed to marshal json log resource attributes: %w", resAttrErr)
+		}
 
 		slLen := logs.ScopeLogs().Len()
 		for j := 0; j < slLen; j++ {
@@ -144,38 +103,40 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			scopeName := scopeLogScope.Name()
 			scopeVersion := scopeLogScope.Version()
 			scopeLogRecords := scopeLog.LogRecords()
-			scopeAttributesBuffer.Reset()
-			chjson.AttributesToJSON(scopeAttributesBuffer, scopeLogScope.Attributes())
+			scopeAttrBytes, scopeAttrErr := json.Marshal(scopeLogScope.Attributes().AsRaw())
+			if scopeAttrErr != nil {
+				return fmt.Errorf("failed to marshal json log scope attributes: %w", scopeAttrErr)
+			}
 
 			slrLen := scopeLogRecords.Len()
 			for k := 0; k < slrLen; k++ {
 				r := scopeLogRecords.At(k)
-				logAttributesBuffer.Reset()
-				chjson.AttributesToJSON(logAttributesBuffer, r.Attributes())
+				logAttrBytes, logAttrErr := json.Marshal(r.Attributes().AsRaw())
+				if logAttrErr != nil {
+					return fmt.Errorf("failed to marshal json log attributes: %w", logAttrErr)
+				}
 
 				timestamp := r.Timestamp()
 				if timestamp == 0 {
 					timestamp = r.ObservedTimestamp()
 				}
 
-				traceHexBuffer = chjson.AppendTraceIDToHex(traceHexBuffer[:0], r.TraceID())
-				spanHexBuffer = chjson.AppendSpanIDToHex(spanHexBuffer[:0], r.SpanID())
 				appendErr := batch.Append(
 					timestamp.AsTime(),
-					traceHexBuffer,
-					spanHexBuffer,
+					r.TraceID().String(),
+					r.SpanID().String(),
 					uint8(r.Flags()),
 					r.SeverityText(),
 					uint8(r.SeverityNumber()),
 					serviceName,
 					r.Body().Str(),
 					resURL,
-					resourceAttributesBuffer.Bytes(),
+					resAttrBytes,
 					scopeURL,
 					scopeName,
 					scopeVersion,
-					scopeAttributesBuffer.Bytes(),
-					logAttributesBuffer.Bytes(),
+					scopeAttrBytes,
+					logAttrBytes,
 				)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append json log row: %w", appendErr)

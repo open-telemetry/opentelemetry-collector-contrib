@@ -5,6 +5,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/chjson"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
@@ -23,48 +23,13 @@ type tracesJSONExporter struct {
 	logger    *zap.Logger
 	db        driver.Conn
 	insertSQL string
-
-	resourceAttributesBufferPool *internal.ExporterStructPool[*chjson.JSONBuffer]
-	spanAttributesBufferPool     *internal.ExporterStructPool[*chjson.JSONBuffer]
-	eventsAttributesBufferPool   *internal.ExporterStructPool[*chjson.JSONBuffer]
-	linksAttributesBufferPool    *internal.ExporterStructPool[*chjson.JSONBuffer]
-	traceHexBufferPool           *internal.ExporterStructPool[[]byte]
-	spanHexBufferPool            *internal.ExporterStructPool[[]byte]
-	parentSpanHexBufferPool      *internal.ExporterStructPool[[]byte]
-	linksHexBufferPool           *internal.ExporterStructPool[[]byte]
 }
 
 func newTracesJSONExporter(logger *zap.Logger, cfg *Config) *tracesJSONExporter {
-	numConsumers := cfg.QueueSettings.NumConsumers
-
-	newJSONBuffer := func() (*chjson.JSONBuffer, error) {
-		return chjson.NewJSONBuffer(2048, 256), nil
-	}
-	newHexBuffer := func() ([]byte, error) {
-		return make([]byte, 0, 128), nil
-	}
-
-	resourceAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	spanAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	eventsAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	linksAttributesBufferPool, _ := internal.NewExporterStructPool[*chjson.JSONBuffer](numConsumers, newJSONBuffer)
-	traceHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
-	spanHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
-	parentSpanHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
-	linksHexBufferPool, _ := internal.NewExporterStructPool[[]byte](numConsumers, newHexBuffer)
-
 	return &tracesJSONExporter{
-		cfg:                          cfg,
-		logger:                       logger,
-		insertSQL:                    renderInsertTracesJSONSQL(cfg),
-		resourceAttributesBufferPool: resourceAttributesBufferPool,
-		spanAttributesBufferPool:     spanAttributesBufferPool,
-		eventsAttributesBufferPool:   eventsAttributesBufferPool,
-		linksAttributesBufferPool:    linksAttributesBufferPool,
-		traceHexBufferPool:           traceHexBufferPool,
-		spanHexBufferPool:            spanHexBufferPool,
-		parentSpanHexBufferPool:      parentSpanHexBufferPool,
-		linksHexBufferPool:           linksHexBufferPool,
+		cfg:       cfg,
+		logger:    logger,
+		insertSQL: renderInsertTracesJSONSQL(cfg),
 	}
 }
 
@@ -99,15 +64,6 @@ func (e *tracesJSONExporter) shutdown(_ context.Context) error {
 		}
 	}
 
-	e.resourceAttributesBufferPool.Destroy()
-	e.spanAttributesBufferPool.Destroy()
-	e.eventsAttributesBufferPool.Destroy()
-	e.linksAttributesBufferPool.Destroy()
-	e.traceHexBufferPool.Destroy()
-	e.spanHexBufferPool.Destroy()
-	e.parentSpanHexBufferPool.Destroy()
-	e.linksHexBufferPool.Destroy()
-
 	return nil
 }
 
@@ -122,23 +78,6 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 		}
 	}(batch)
 
-	resourceAttributesBuffer := e.resourceAttributesBufferPool.Acquire()
-	defer e.resourceAttributesBufferPool.Release(resourceAttributesBuffer)
-	spanAttributesBuffer := e.spanAttributesBufferPool.Acquire()
-	defer e.spanAttributesBufferPool.Release(spanAttributesBuffer)
-	eventsAttributesBuffer := e.eventsAttributesBufferPool.Acquire()
-	defer e.eventsAttributesBufferPool.Release(eventsAttributesBuffer)
-	linksAttributesBuffer := e.linksAttributesBufferPool.Acquire()
-	defer e.linksAttributesBufferPool.Release(linksAttributesBuffer)
-	traceHexBuffer := e.traceHexBufferPool.Acquire()
-	defer e.traceHexBufferPool.Release(traceHexBuffer)
-	spanHexBuffer := e.spanHexBufferPool.Acquire()
-	defer e.spanHexBufferPool.Release(spanHexBuffer)
-	parentSpanHexBuffer := e.parentSpanHexBufferPool.Acquire()
-	defer e.parentSpanHexBufferPool.Release(parentSpanHexBuffer)
-	linksHexBuffer := e.linksHexBufferPool.Acquire()
-	defer e.linksHexBufferPool.Release(linksHexBuffer)
-
 	processStart := time.Now()
 
 	var spanCount int
@@ -149,8 +88,10 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 		res := spans.Resource()
 		resAttr := res.Attributes()
 		serviceName := internal.GetServiceName(resAttr)
-		resourceAttributesBuffer.Reset()
-		chjson.AttributesToJSON(resourceAttributesBuffer, resAttr)
+		resAttrBytes, resAttrErr := json.Marshal(resAttr.AsRaw())
+		if resAttrErr != nil {
+			return fmt.Errorf("failed to marshal json trace resource attributes: %w", resAttrErr)
+		}
 
 		ssRootLen := spans.ScopeSpans().Len()
 		for j := 0; j < ssRootLen; j++ {
@@ -165,29 +106,33 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 				span := scopeSpans.At(k)
 				spanStatus := span.Status()
 				spanDurationNanos := span.EndTimestamp() - span.StartTimestamp()
-				spanAttributesBuffer.Reset()
-				chjson.AttributesToJSON(spanAttributesBuffer, span.Attributes())
+				spanAttrBytes, spanAttrErr := json.Marshal(span.Attributes().AsRaw())
+				if spanAttrErr != nil {
+					return fmt.Errorf("failed to marshal json trace span attributes: %w", spanAttrErr)
+				}
 
-				eventTimes, eventNames, eventAttrs := convertEventsJSON(span.Events(), eventsAttributesBuffer)
-				linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinksJSON(span.Links(), linksHexBuffer, linksAttributesBuffer)
-
-				traceHexBuffer = chjson.AppendTraceIDToHex(traceHexBuffer[:0], span.TraceID())
-				spanHexBuffer = chjson.AppendSpanIDToHex(spanHexBuffer[:0], span.SpanID())
-				parentSpanHexBuffer = chjson.AppendSpanIDToHex(parentSpanHexBuffer[:0], span.ParentSpanID())
+				eventTimes, eventNames, eventAttrs, eventsErr := convertEventsJSON(span.Events())
+				if eventsErr != nil {
+					return fmt.Errorf("failed to convert json trace events: %w", eventsErr)
+				}
+				linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs, linksErr := convertLinksJSON(span.Links())
+				if linksErr != nil {
+					return fmt.Errorf("failed to convert json trace links: %w", linksErr)
+				}
 
 				appendErr := batch.Append(
 					span.StartTimestamp().AsTime(),
-					traceHexBuffer,
-					spanHexBuffer,
-					parentSpanHexBuffer,
+					span.TraceID().String(),
+					span.SpanID().String(),
+					span.ParentSpanID().String(),
 					span.TraceState().AsRaw(),
 					span.Name(),
 					span.Kind().String(),
 					serviceName,
-					resourceAttributesBuffer.Bytes(),
+					resAttrBytes,
 					scopeName,
 					scopeVersion,
-					spanAttributesBuffer.Bytes(),
+					spanAttrBytes,
 					spanDurationNanos,
 					spanStatus.Code().String(),
 					spanStatus.Message(),
@@ -225,32 +170,34 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 	return nil
 }
 
-func convertEventsJSON(events ptrace.SpanEventSlice, attrBuffer *chjson.JSONBuffer) (times []time.Time, names []string, attrs []string) {
+func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []string, err error) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
 
-		attrBuffer.Reset()
-		chjson.AttributesToJSON(attrBuffer, event.Attributes())
-		attrs = append(attrs, string(attrBuffer.Bytes()))
+		eventAttrBytes, eventAttrErr := json.Marshal(event.Attributes().AsRaw())
+		if eventAttrErr != nil {
+			return nil, nil, nil, fmt.Errorf("failed to marshal json trace event attributes: %w", eventAttrErr)
+		}
+		attrs = append(attrs, string(eventAttrBytes))
 	}
 
 	return
 }
 
-func convertLinksJSON(links ptrace.SpanLinkSlice, linksHexBuffer []byte, attrBuffer *chjson.JSONBuffer) (traceIDs []string, spanIDs []string, states []string, attrs []string) {
+func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []string, states []string, attrs []string, err error) {
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
-		linksHexBuffer = chjson.AppendTraceIDToHex(linksHexBuffer[:0], link.TraceID())
-		traceIDs = append(traceIDs, string(linksHexBuffer))
-		linksHexBuffer = chjson.AppendSpanIDToHex(linksHexBuffer[:0], link.SpanID())
-		spanIDs = append(spanIDs, string(linksHexBuffer))
+		traceIDs = append(traceIDs, link.TraceID().String())
+		spanIDs = append(spanIDs, link.SpanID().String())
 		states = append(states, link.TraceState().AsRaw())
 
-		attrBuffer.Reset()
-		chjson.AttributesToJSON(attrBuffer, link.Attributes())
-		attrs = append(attrs, string(attrBuffer.Bytes()))
+		linkAttrBytes, linkAttrErr := json.Marshal(link.Attributes().AsRaw())
+		if linkAttrErr != nil {
+			return nil, nil, nil, nil, fmt.Errorf("failed to marshal json trace link attributes: %w", linkAttrErr)
+		}
+		attrs = append(attrs, string(linkAttrBytes))
 	}
 
 	return
