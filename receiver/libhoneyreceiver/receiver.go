@@ -139,7 +139,7 @@ func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Reques
 	authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
 	authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
 	if err != nil {
-		errJSON, _ := json.Marshal(`{"error": "failed to create authInfo request"}`)
+		errJSON, _ := json.Marshal(`{"error": "failed to create auth request"}`)
 		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 		return
 	}
