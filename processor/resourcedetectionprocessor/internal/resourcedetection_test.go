@@ -213,7 +213,7 @@ type mockParallelDetector struct {
 	ch chan struct{}
 }
 
-func NewmockParallelDetector() *mockParallelDetector {
+func newMockParallelDetector() *mockParallelDetector {
 	return &mockParallelDetector{ch: make(chan struct{})}
 }
 
@@ -228,12 +228,12 @@ func (p *mockParallelDetector) Detect(_ context.Context) (pcommon.Resource, stri
 func TestDetectResource_Parallel(t *testing.T) {
 	const iterations = 5
 
-	md1 := NewmockParallelDetector()
+	md1 := newMockParallelDetector()
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
 	md1.On("Detect").Return(res1, nil)
 
-	md2 := NewmockParallelDetector()
+	md2 := newMockParallelDetector()
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "11", "c": "3"}))
 	md2.On("Detect").Return(res2, nil)
