@@ -131,7 +131,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlLogOperationsDataPoint(ts, "1", AttributeLogOperationsWaits)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlMaxUsedConnectionsDataPoint(ts, "1")
 

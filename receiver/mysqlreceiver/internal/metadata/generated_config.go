@@ -131,7 +131,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MysqlMaxUsedConnections: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MysqlMysqlxConnections: MetricConfig{
 			Enabled: true,
