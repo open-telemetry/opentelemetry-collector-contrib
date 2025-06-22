@@ -543,3 +543,30 @@ func TestSetSaramaProducerConfig_Compression(t *testing.T) {
 		})
 	}
 }
+
+func TestNewSaramaClientConfigWithAWSMSKIAM(t *testing.T) {
+	// Test case for AWS_MSK_IAM_OAUTHBEARER mechanism
+	clientConfig := configkafka.ClientConfig{
+		Brokers: []string{"localhost:9092"},
+		Authentication: configkafka.AuthenticationConfig{
+			SASL: &configkafka.SASLConfig{
+				Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
+				AWSMSK: configkafka.AWSMSKConfig{
+					Region: "us-west-2",
+				},
+			},
+		},
+	}
+
+	saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+	assert.NoError(t, err)
+
+	// Verify that TLS is enabled, not just SASL
+	assert.True(t, saramaConfig.Net.TLS.Enable, "TLS should be enabled for AWS_MSK_IAM_OAUTHBEARER")
+	assert.NotNil(t, saramaConfig.Net.TLS.Config, "TLS config should not be nil for AWS_MSK_IAM_OAUTHBEARER")
+
+	// Also verify that SASL is enabled and properly configured
+	assert.True(t, saramaConfig.Net.SASL.Enable, "SASL should be enabled for AWS_MSK_IAM_OAUTHBEARER")
+	assert.Equal(t, sarama.SASLMechanism(sarama.SASLTypeOAuth), saramaConfig.Net.SASL.Mechanism)
+	assert.NotNil(t, saramaConfig.Net.SASL.TokenProvider, "TokenProvider should not be nil for AWS_MSK_IAM_OAUTHBEARER")
+}
