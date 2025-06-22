@@ -685,16 +685,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: Maximum number of connections used simultaneously since the server started.
-            name: mysql.max_used_connections
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "297"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: false
-            unit: "1"
           - description: The number of mysqlx connections.
             name: mysql.mysqlx_connections
             sum:
