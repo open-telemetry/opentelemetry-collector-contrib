@@ -110,7 +110,7 @@ func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter:
+	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLogs:
 		reader, err := e.getGzipReader(buf)
 		return gzipEncoding, reader, err
 	case formatS3AccessLog:
