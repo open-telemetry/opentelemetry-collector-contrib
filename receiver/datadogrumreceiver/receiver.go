@@ -60,13 +60,11 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 
 	var err error
 
-	// TODO: ask dinesh about this
-	// TODO: look over this
+	// TODO: double check this
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://localhost:*", "http://localhost:*"},    // Specify allowed origins
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},                       // Specify allowed methods
 		AllowedHeaders:   []string{"Content-Type", "Authorization", "Traceparent"}, // Specify allowed headers
-		ExposedHeaders:   []string{"Traceparent"},                                  // Expose trace context headers
 		AllowCredentials: true,                                                     // Allow credentials
 	}).Handler(ddmux)
 
