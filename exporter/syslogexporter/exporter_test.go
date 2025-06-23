@@ -247,11 +247,11 @@ func prepareUnixSocketExporterTest(t *testing.T, cfg *Config, invalidExporter bo
 
 	var exp *syslogexporter
 	if invalidExporter {
-		cfg := &Config{
+		invalidCfg := &Config{
 			Endpoint: "invalid.sock",
 			Network:  "unix",
 		}
-		exp, err = initExporter(cfg, createExporterCreateSettings())
+		exp, err = initExporter(invalidCfg, createExporterCreateSettings())
 	} else {
 		exp, err = initExporter(cfg, createExporterCreateSettings())
 	}
@@ -261,8 +261,8 @@ func prepareUnixSocketExporterTest(t *testing.T, cfg *Config, invalidExporter bo
 		srv: testServer,
 		exp: exp,
 	}
-
 }
+
 func TestUnixSocketExporterSuccess(t *testing.T) {
 	test := prepareUnixSocketExporterTest(t, createUnixSocketTestConfig(t), false)
 	require.NotNil(t, test.exp)

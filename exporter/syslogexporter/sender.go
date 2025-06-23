@@ -52,7 +52,7 @@ type sender struct {
 }
 
 func connect(ctx context.Context, logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, error) {
-	addr := ""
+	var addr string
 	if cfg.Network == string(confignet.TransportTypeUnix) {
 		addr = cfg.Endpoint
 	} else {
