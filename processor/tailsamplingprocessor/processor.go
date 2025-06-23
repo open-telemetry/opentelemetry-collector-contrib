@@ -31,6 +31,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
+// DecisionInfo stores sampling decision information including the decision time
+// for late span age tracking.
+type DecisionInfo struct {
+	Sampled      bool
+	DecisionTime time.Time
+}
+
 // policy combines a sampling policy evaluator with the destinations to be
 // used for that policy.
 type policy struct {
@@ -42,8 +49,8 @@ type policy struct {
 	attribute metric.MeasurementOption
 }
 
-// tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
-// policy to sample traces.
+// tailSamplingSpanProcessor handles the incoming trace data and forward the appropriate
+// sampling decision to the next stage of the pipeline.
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
 
@@ -58,8 +65,8 @@ type tailSamplingSpanProcessor struct {
 	policyTicker       timeutils.TTicker
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
-	sampledIDCache     cache.Cache[bool]
-	nonSampledIDCache  cache.Cache[bool]
+	sampledIDCache     cache.Cache[DecisionInfo]
+	nonSampledIDCache  cache.Cache[DecisionInfo]
 	deleteChan         chan pcommon.TraceID
 	numTracesOnMap     *atomic.Uint64
 	recordPolicy       bool
@@ -101,17 +108,17 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	if err != nil {
 		return nil, err
 	}
-	nopCache := cache.NewNopDecisionCache[bool]()
+	nopCache := cache.NewNopDecisionCache[DecisionInfo]()
 	sampledDecisions := nopCache
 	nonSampledDecisions := nopCache
 	if cfg.DecisionCache.SampledCacheSize > 0 {
-		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
+		sampledDecisions, err = cache.NewLRUDecisionCache[DecisionInfo](cfg.DecisionCache.SampledCacheSize)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if cfg.DecisionCache.NonSampledCacheSize > 0 {
-		nonSampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.NonSampledCacheSize)
+		nonSampledDecisions, err = cache.NewLRUDecisionCache[DecisionInfo](cfg.DecisionCache.NonSampledCacheSize)
 		if err != nil {
 			return nil, err
 		}
@@ -184,14 +191,14 @@ func withTickerFrequency(frequency time.Duration) Option {
 }
 
 // WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
-func WithSampledDecisionCache(c cache.Cache[bool]) Option {
+func WithSampledDecisionCache(c cache.Cache[DecisionInfo]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.sampledIDCache = c
 	}
 }
 
 // WithNonSampledDecisionCache sets the cache which the processor uses to store recently non-sampled trace IDs.
-func WithNonSampledDecisionCache(c cache.Cache[bool]) Option {
+func WithNonSampledDecisionCache(c cache.Cache[DecisionInfo]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledIDCache = c
 	}
@@ -380,9 +387,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		switch decision {
 		case sampling.Sampled:
-			tsp.releaseSampledTrace(ctx, id, allSpans)
+			tsp.releaseSampledTrace(ctx, id, allSpans, trace.DecisionTime)
 		case sampling.NotSampled:
-			tsp.releaseNotSampledTrace(id)
+			tsp.releaseNotSampledTrace(id, trace.DecisionTime)
 		}
 	}
 
@@ -524,19 +531,31 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	var newTraceIDs int64
 	for id, spans := range idToSpansAndScope {
 		// If the trace ID is in the sampled cache, short circuit the decision
-		if _, ok := tsp.sampledIDCache.Get(id); ok {
+		if decisionInfo, ok := tsp.sampledIDCache.Get(id); ok {
 			tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", id))
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
-			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+			tsp.releaseSampledTrace(tsp.ctx, id, traceTd, decisionInfo.DecisionTime)
+
+			// Record late span age metric for sampled traces
+			if !decisionInfo.DecisionTime.IsZero() {
+				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(currTime.Sub(decisionInfo.DecisionTime)/time.Second))
+			}
+
 			metric.WithAttributeSet(attribute.NewSet())
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 				Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
 			continue
 		}
 		// If the trace ID is in the non-sampled cache, short circuit the decision
-		if _, ok := tsp.nonSampledIDCache.Get(id); ok {
+		if decisionInfo, ok := tsp.nonSampledIDCache.Get(id); ok {
 			tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", id))
+
+			// Record late span age metric for non-sampled traces
+			if !decisionInfo.DecisionTime.IsZero() {
+				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(currTime.Sub(decisionInfo.DecisionTime)/time.Second))
+			}
+
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
 			continue
@@ -595,9 +614,9 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		case sampling.Sampled:
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
-			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+			tsp.releaseSampledTrace(tsp.ctx, id, traceTd, actualData.DecisionTime)
 		case sampling.NotSampled:
-			tsp.releaseNotSampledTrace(id)
+			tsp.releaseNotSampledTrace(id, actualData.DecisionTime)
 		default:
 			tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
 		}
@@ -646,13 +665,13 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 // releaseSampledTrace sends the trace data to the next consumer. It
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
-func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces, decisionTime time.Time) {
 	// OTEP 235 Phase 5: Ensure TraceState is properly propagated in outgoing spans
 	// This is particularly important for span batches that might not have gone through
 	// the full policy evaluation pipeline (e.g., cached decisions)
 	tsp.propagateTraceStateIfNeeded(ctx, id, td)
 
-	tsp.sampledIDCache.Put(id, true)
+	tsp.sampledIDCache.Put(id, DecisionInfo{Sampled: true, DecisionTime: decisionTime})
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
@@ -666,8 +685,8 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 
 // releaseNotSampledTrace adds the trace ID to the non-sampled cache and drops the trace.
 // This ensures that future spans with the same trace ID are quickly rejected.
-func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID) {
-	tsp.nonSampledIDCache.Put(id, true)
+func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID, decisionTime time.Time) {
+	tsp.nonSampledIDCache.Put(id, DecisionInfo{Sampled: false, DecisionTime: decisionTime})
 	tsp.dropTrace(id, time.Now())
 }
 

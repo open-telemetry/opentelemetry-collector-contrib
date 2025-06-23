@@ -493,7 +493,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	}
 
 	// Use this instead of the default no-op cache
-	c, err := cache.NewLRUDecisionCache[bool](200)
+	c, err := cache.NewLRUDecisionCache[DecisionInfo](200)
 	require.NoError(t, err)
 
 	cfg := Config{
@@ -570,7 +570,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	}
 
 	// Use this instead of the default no-op cache
-	c, err := cache.NewLRUDecisionCache[bool](200)
+	c, err := cache.NewLRUDecisionCache[DecisionInfo](200)
 	require.NoError(t, err)
 
 	cfg := Config{

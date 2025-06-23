@@ -480,6 +480,11 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		Options: []Option{
 			withDecisionBatcher(syncBatcher),
 		},
+		// Enable decision cache to test late span age tracking
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    100,
+			NonSampledCacheSize: 100,
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
