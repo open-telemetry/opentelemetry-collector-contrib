@@ -252,9 +252,11 @@ These common functions can be used for any Signal.
 In addition to the common OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
 
 **Metrics only functions**
+
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
+- [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
@@ -355,8 +357,26 @@ Examples:
 
 - `convert_summary_count_val_to_sum("delta", true)`
 
-
 - `convert_summary_count_val_to_sum("cumulative", false)`
+
+### convert_summary_quantile_val_to_gauge
+
+`convert_summary_quantile_val_to_gauge(Optional[attributeKey], Optional[suffix])`
+
+The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric and injects each of the Summary's quantiles into a single Gauge datapoint.
+
+`attributeKey` is an optional string that specifies the attribute key holding the quantile value for each corresponding output data point. The default key is `quantile`.
+`suffix` is an optional string representing the suffix of the metric name. The default value is `.quantiles`.
+
+The name for the new metric will be `<summary metric name>.quantiles`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+
+Examples:
+
+- `convert_summary_quantile_val_to_gauge("custom_quantile", "custom_suffix")`
+
+- `convert_summary_quantile_val_to_gauge("custom_quantile")`
+
+- `convert_summary_quantile_val_to_gauge()`
 
 ### convert_summary_sum_val_to_sum
 
@@ -373,7 +393,6 @@ The name for the new metric will be `<summary metric name>_sum`. The fields that
 Examples:
 
 - `convert_summary_sum_val_to_sum("delta", true)`
-
 
 - `convert_summary_sum_val_to_sum("cumulative", false)`
 
