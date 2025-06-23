@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
@@ -32,14 +33,22 @@ func createDefaultConfig() component.Config {
 		},
 		ReadTimeout:      60 * time.Second,
 		TraceIDCacheSize: 100,
+		Intake: IntakeConfig{
+			Behavior: defaultConfigIntakeBehavior,
+			Proxy: ProxyConfig{
+				API: datadogconfig.APIConfig{
+					Site: defaultConfigIntakeProxyAPISite,
+				},
+			},
+		},
 	}
 }
 
-func createTracesReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+func createTracesReceiver(ctx context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
 	var err error
 	rcfg := cfg.(*Config)
 	r := receivers.GetOrAdd(rcfg, func() (dd component.Component) {
-		dd, err = newDataDogReceiver(rcfg, params)
+		dd, err = newDataDogReceiver(ctx, rcfg, params)
 		return dd
 	})
 	if err != nil {
@@ -50,11 +59,11 @@ func createTracesReceiver(_ context.Context, params receiver.Settings, cfg compo
 	return r, nil
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(ctx context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	var err error
 	rcfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() (dd component.Component) {
-		dd, err = newDataDogReceiver(rcfg, params)
+		dd, err = newDataDogReceiver(ctx, rcfg, params)
 		return dd
 	})
 	if err != nil {
