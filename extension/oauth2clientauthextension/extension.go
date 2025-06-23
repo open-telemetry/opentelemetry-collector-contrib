@@ -51,7 +51,7 @@ var errFailedToGetSecurityToken = errors.New("failed to get security token from 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
-	tlsCfg, err := cfg.TLSSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := cfg.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}

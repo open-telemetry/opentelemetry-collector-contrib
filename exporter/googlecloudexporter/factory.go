@@ -24,14 +24,6 @@ const (
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.googlecloud.OTLPDirect",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
-	featuregate.WithRegisterToVersion("v0.69.0"),
-)
-
 var customMonitoredResourcesGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.googlecloud.CustomMonitoredResources",
 	featuregate.StageAlpha,

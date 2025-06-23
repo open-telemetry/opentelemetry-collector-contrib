@@ -6,6 +6,7 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -37,6 +38,11 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 	var expandedTargets []*targetConfig
 
 	for _, target := range h.cfg.Targets {
+		if target.Timeout == 0 {
+			// Set a reasonable timeout to prevent hanging requests
+			target.Timeout = 30 * time.Second
+		}
+
 		// Create a unified list of endpoints
 		var allEndpoints []string
 		if len(target.Endpoints) > 0 {
@@ -103,6 +109,18 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Send the request and measure response time
 			start := time.Now()
 			resp, err := targetClient.Do(req)
+
+			// Always close response body if it exists, even on error
+			if resp != nil && resp.Body != nil {
+				defer func() {
+					// Drain the body to allow connection reuse
+					_, _ = io.Copy(io.Discard, resp.Body)
+					if closeErr := resp.Body.Close(); closeErr != nil {
+						h.settings.Logger.Error("failed to close response body", zap.Error(closeErr))
+					}
+				}()
+			}
+
 			mux.Lock()
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
