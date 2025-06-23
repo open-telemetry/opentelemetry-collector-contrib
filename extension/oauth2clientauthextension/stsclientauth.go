@@ -7,6 +7,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc/credentials"
+	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -52,7 +53,12 @@ func (o *stsClientAuthenticator) RoundTripper(base http.RoundTripper) (http.Roun
 }
 
 func (o *stsClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	return o, nil
+	return grpcOAuth.TokenSource{
+		TokenSource: errorWrappingTokenSource{
+			ts:       o.tokenSource,
+			tokenURL: o.config.TokenURL,
+		},
+	}, nil
 }
 
 func (o *stsClientAuthenticator) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {

@@ -6,7 +6,6 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -80,13 +79,13 @@ func (ts stsTokenSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("failed to decode token from response: %v", err)
 	}
 	if token.AccessToken == "" {
-		return nil, errors.New("invalid token response: access_token missing")
+		return nil, fmt.Errorf("invalid token response: access_token missing")
 	}
 	if token.ExpiresIn != 0 {
 		now := time.Now()
-		token.Expiry = now.Add(time.Second*time.Duration(expiresInFloat64) - jitterTime)
+		token.Expiry = now.Add(time.Second*time.Duration(token.ExpiresIn) - jitterTime)
 		if token.Expiry.Before(now) {
-			return nil, errors.New("invalid token response: token expired")
+			return nil, fmt.Errorf("invalid token response: token expired")
 		}
 	}
 	return &token, nil
