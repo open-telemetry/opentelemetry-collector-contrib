@@ -24,6 +24,7 @@ vendor/
 bin/
 dist/
 .tools/
+ocb
 
 # Emacs
 *~
