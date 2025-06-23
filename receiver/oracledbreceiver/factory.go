@@ -124,8 +124,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 		if err != nil {
 			return nil, err
 		}
-		// adding a logs scraper is still not properly implemented in the helper, so we need to c&p some of that code here
-		// to make a logs scraper work
+
 		f := scraper.NewFactory(metadata.Type, nil,
 			scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 				return mp, nil

@@ -71,8 +71,6 @@ const (
 	childAddressAttr      = "CHILD_ADDRESS"
 	childNumberAttr       = "CHILD_NUMBER"
 	sqlTextAttr           = "SQL_FULLTEXT"
-	dbPrefix              = "oracledb."
-	queryPrefix           = "query."
 	dbSystemNameVal       = "oracle"
 
 	queryExecutionMetric        = "EXECUTIONS"
@@ -620,14 +618,14 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, e
 		return plog.NewLogs(), errors.Join(errs...)
 	}
 
-	enabledColumns := s.getEnabledMetricColumns()
-	s.logger.Debug("Enabled metric columns", zap.Strings("names", enabledColumns))
+	metricNames := s.getTopNMetricNames()
+	s.logger.Debug("Metric columns", zap.Strings("names", metricNames))
 	s.logger.Debug("Cache", zap.Int("size", s.metricCache.Len()))
 	var hits []queryMetricCacheHit
 	var cacheUpdates, discardedHits int
 	for _, row := range metricRows {
-		newCacheVal := make(map[string]int64, len(enabledColumns))
-		for _, columnName := range enabledColumns {
+		newCacheVal := make(map[string]int64, len(metricNames))
+		for _, columnName := range metricNames {
 			val := row[columnName]
 			valInt64, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
@@ -646,12 +644,12 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, e
 				queryText:    row[sqlTextAttr],
 				childNumber:  row[childNumberAttr],
 				childAddress: row[childAddressAttr],
-				metrics:      make(map[string]int64, len(enabledColumns)),
+				metrics:      make(map[string]int64, len(metricNames)),
 			}
 
 			// it is possible we get a record with all deltas equal to zero. we don't want to process it any further
 			var possiblePurge, positiveDelta bool
-			for _, columnName := range enabledColumns {
+			for _, columnName := range metricNames {
 				delta := newCacheVal[columnName] - oldCacheVal[columnName]
 
 				// if any of the deltas is less than zero, cursor was likely purged from the shared pool
@@ -811,15 +809,13 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 	return childAddressToPlanMap
 }
 
-func (s *oracleScraper) getEnabledMetricColumns() []string {
-	// This function will later be extended to read enabled metrics from configuration once mdatagen can support it.
-	enabledColumns := []string{
+func (s *oracleScraper) getTopNMetricNames() []string {
+	return []string{
 		elapsedTimeMetric, queryExecutionMetric, cpuTimeMetric, applicationWaitTimeMetric,
 		concurrencyWaitTimeMetric, userIoWaitTimeMetric, clusterWaitTimeMetric, rowsProcessedMetric, bufferGetsMetric,
 		physicalReadRequestsMetric, physicalWriteRequestsMetric, physicalReadBytesMetric, physicalWriteBytesMetric,
 		queryDirectReadsMetric, queryDirectWritesMetric, queryDiskReadsMetric,
 	}
-	return enabledColumns
 }
 
 func (s *oracleScraper) shutdown(_ context.Context) error {
