@@ -151,13 +151,9 @@ func BuildDataSourceString(config Config) (string, error) {
 		// if host contains a "/", split it into hostname and instance
 		parts := strings.SplitN(host, "/", 2)
 		hostname := parts[0]
-		var instance string
-		if len(parts) > 1 {
-			instance = parts[1]
-		}
 		query.Set("database", config.Database)
-		if instance != "" {
-			connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, config.Port, instance)
+		if len(parts) > 1 {
+			connStr = fmt.Sprintf("sqlserver://%s%s:%d/%s", auth, hostname, config.Port, parts[1])
 		} else {
 			connStr = fmt.Sprintf("sqlserver://%s%s:%d", auth, hostname, config.Port)
 		}
@@ -170,7 +166,7 @@ func BuildDataSourceString(config Config) (string, error) {
 
 	// Append query parameters if any exist
 	if len(query) > 0 {
-		connStr += "?" + query.Encode()
+		connStr = fmt.Sprintf("%s?%s", connStr, query.Encode())
 	}
 
 	return connStr, nil
