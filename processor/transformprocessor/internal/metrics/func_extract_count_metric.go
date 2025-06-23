@@ -17,6 +17,7 @@ const sumCountName = "extract_count_metric"
 
 type extractCountMetricArguments struct {
 	Monotonic bool
+	Suffix    ottl.Optional[string]
 }
 
 func newExtractCountMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -30,10 +31,14 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, errors.New("extractCountMetricFactory args must be of type *extractCountMetricArguments")
 	}
 
-	return extractCountMetric(args.Monotonic)
+	return extractCountMetric(args.Monotonic, args.Suffix)
 }
 
-func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func extractCountMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	metricNameSuffix := "_count"
+	if !suffix.IsEmpty() {
+		metricNameSuffix = suffix.Get()
+	}
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -44,7 +49,7 @@ func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformConte
 
 		countMetric := pmetric.NewMetric()
 		countMetric.SetDescription(metric.Description())
-		countMetric.SetName(metric.Name() + "_count")
+		countMetric.SetName(metric.Name() + metricNameSuffix)
 		// Use the default unit as the original metric unit does not apply to the 'count' field
 		countMetric.SetUnit("1")
 		countMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
