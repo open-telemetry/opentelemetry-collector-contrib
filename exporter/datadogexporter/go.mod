@@ -20,11 +20,11 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.66.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.39.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.28.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.28.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.28.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.29.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.128.0

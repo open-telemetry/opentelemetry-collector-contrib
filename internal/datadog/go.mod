@@ -7,8 +7,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.39.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.28.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.28.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/config v1.29.16
@@ -162,7 +162,6 @@ require (
 	go.opentelemetry.io/collector/receiver v1.34.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.128.1-0.20250610090210-188191247685 // indirect
-	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
