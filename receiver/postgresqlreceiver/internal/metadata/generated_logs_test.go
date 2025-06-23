@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,15 +11,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+)
+
+type eventsTestDataSet int
+
+const (
+	eventTestDataSetDefault eventsTestDataSet = iota
+	eventTestDataSetAll
+	eventTestDataSetNone
 )
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
 	settings.Logger = zap.New(observedZapCore)
-	lb := NewLogsBuilder(settings)
+	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
@@ -67,4 +77,199 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
+}
+func TestLogsBuilder(t *testing.T) {
+	tests := []struct {
+		name        string
+		eventsSet   eventsTestDataSet
+		resAttrsSet eventsTestDataSet
+		expectEmpty bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:        "all_set",
+			eventsSet:   eventTestDataSetAll,
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "none_set",
+			eventsSet:   eventTestDataSetNone,
+			resAttrsSet: eventTestDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: eventTestDataSetAll,
+			expectEmpty: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			timestamp := pcommon.Timestamp(1_000_001_000)
+			traceID := [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			spanID := [8]byte{0, 1, 2, 3, 4, 5, 6, 7}
+			ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID(traceID),
+				SpanID:     trace.SpanID(spanID),
+				TraceFlags: trace.FlagsSampled,
+			}))
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopSettings(receivertest.NopType)
+			settings.Logger = zap.New(observedZapCore)
+			lb := NewLogsBuilder(loadLogsBuilderConfig(t, tt.name), settings)
+
+			expectedWarnings := 0
+
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultEventsCount := 0
+			allEventsCount := 0
+			defaultEventsCount++
+			allEventsCount++
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", "user.name-val", "postgresql.state-val", 14, "postgresql.application_name-val", "network.peer.address-val", 17, "postgresql.client_hostname-val", "postgresql.query_start-val", "postgresql.wait_event-val", "postgresql.wait_event_type-val", "postgresql.query_id-val")
+			defaultEventsCount++
+			allEventsCount++
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", 16, 15, 30, 26, 27, 30, 25, 28, "postgresql.queryid-val", "postgresql.rolname-val", 26.100000, 26.100000, "postgresql.query_plan-val")
+
+			rb := lb.NewResourceBuilder()
+			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlIndexName("postgresql.index.name-val")
+			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
+			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			res := rb.Emit()
+			logs := lb.Emit(WithLogsResource(res))
+
+			if tt.expectEmpty || ((tt.name == "default" || tt.name == "filter_set_include") && defaultEventsCount == 0) {
+				assert.Equal(t, 0, logs.ResourceLogs().Len())
+				return
+			}
+
+			assert.Equal(t, 1, logs.ResourceLogs().Len())
+			rl := logs.ResourceLogs().At(0)
+			assert.Equal(t, res, rl.Resource())
+			assert.Equal(t, 1, rl.ScopeLogs().Len())
+			lrs := rl.ScopeLogs().At(0).LogRecords()
+			if tt.eventsSet == eventTestDataSetDefault {
+				assert.Equal(t, defaultEventsCount, lrs.Len())
+			}
+			if tt.eventsSet == eventTestDataSetAll {
+				assert.Equal(t, allEventsCount, lrs.Len())
+			}
+			validatedEvents := make(map[string]bool)
+			for i := 0; i < lrs.Len(); i++ {
+				switch lrs.At(i).EventName() {
+				case "db.server.query_sample":
+					assert.False(t, validatedEvents["db.server.query_sample"], "Found a duplicate in the events slice: db.server.query_sample")
+					validatedEvents["db.server.query_sample"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.namespace")
+					assert.True(t, ok)
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.text")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("user.name")
+					assert.True(t, ok)
+					assert.Equal(t, "user.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.state")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.state-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.pid")
+					assert.True(t, ok)
+					assert.EqualValues(t, 14, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.application_name")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.application_name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("network.peer.address")
+					assert.True(t, ok)
+					assert.Equal(t, "network.peer.address-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("network.peer.port")
+					assert.True(t, ok)
+					assert.EqualValues(t, 17, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.client_hostname")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.client_hostname-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.query_start")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.query_start-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.wait_event")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.wait_event-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.wait_event_type")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.wait_event_type-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.query_id")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.query_id-val", attrVal.Str())
+				case "db.server.top_query":
+					assert.False(t, validatedEvents["db.server.top_query"], "Found a duplicate in the events slice: db.server.top_query")
+					validatedEvents["db.server.top_query"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.namespace")
+					assert.True(t, ok)
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.text")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.calls")
+					assert.True(t, ok)
+					assert.EqualValues(t, 16, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.rows")
+					assert.True(t, ok)
+					assert.EqualValues(t, 15, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.shared_blks_dirtied")
+					assert.True(t, ok)
+					assert.EqualValues(t, 30, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.shared_blks_hit")
+					assert.True(t, ok)
+					assert.EqualValues(t, 26, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.shared_blks_read")
+					assert.True(t, ok)
+					assert.EqualValues(t, 27, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.shared_blks_written")
+					assert.True(t, ok)
+					assert.EqualValues(t, 30, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.temp_blks_read")
+					assert.True(t, ok)
+					assert.EqualValues(t, 25, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.temp_blks_written")
+					assert.True(t, ok)
+					assert.EqualValues(t, 28, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.queryid")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.queryid-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.rolname")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.rolname-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.total_exec_time")
+					assert.True(t, ok)
+					assert.Equal(t, 26.100000, attrVal.Double())
+					attrVal, ok = lr.Attributes().Get("postgresql.total_plan_time")
+					assert.True(t, ok)
+					assert.Equal(t, 26.100000, attrVal.Double())
+					attrVal, ok = lr.Attributes().Get("postgresql.query_plan")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.query_plan-val", attrVal.Str())
+				}
+			}
+		})
+	}
 }

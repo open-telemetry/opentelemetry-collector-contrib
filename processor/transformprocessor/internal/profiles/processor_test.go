@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
@@ -28,6 +29,8 @@ var (
 	TestObservedTimestamp = pcommon.NewTimestampFromTime(TestObservedTime)
 
 	profileID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+
+	DefaultProfileFunctions = ProfileFunctions()
 )
 
 func Test_ProcessProfiles_ResourceContext(t *testing.T) {
@@ -57,7 +60,7 @@ func Test_ProcessProfiles_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -98,7 +101,7 @@ func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -139,7 +142,7 @@ func Test_ProcessProfiles_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -180,7 +183,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -395,7 +398,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "profile", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "profile", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -601,7 +604,7 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -718,7 +721,7 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -808,7 +811,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -844,7 +847,7 @@ func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.context), func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -927,7 +930,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -1068,7 +1071,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -1151,7 +1154,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 					if tt.profileStatements != nil && ctx == "profile" {
 						statements = tt.profileStatements
 					}
-					_, err := NewProcessor(statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+					_, err := NewProcessor(statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 					if tt.wantErrorWith != "" {
 						if err == nil {
 							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1209,7 +1212,7 @@ func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(context.Background(), td)
@@ -1219,6 +1222,68 @@ func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+type TestFuncArguments[K any] struct{}
+
+func createTestFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, _ K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+func NewTestProfileFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestProfileFunc", &TestFuncArguments[K]{}, createTestFunc[K])
+}
+
+func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
+	type testCase struct {
+		name             string
+		statements       []common.ContextStatements
+		wantErrorWith    string
+		profileFunctions map[string]ottl.Factory[ottlprofile.TransformContext]
+	}
+
+	tests := []testCase{
+		{
+			name: "profile funcs : statement with added profile func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("profile"),
+					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
+				},
+			},
+			profileFunctions: map[string]ottl.Factory[ottlprofile.TransformContext]{
+				"set":             DefaultProfileFunctions["set"],
+				"TestProfileFunc": NewTestProfileFuncFactory[ottlprofile.TransformContext](),
+			},
+		},
+		{
+			name: "profile funcs : statement with missing profile func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("profile"),
+					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
+				},
+			},
+			wantErrorWith:    `undefined function "TestProfileFunc"`,
+			profileFunctions: DefaultProfileFunctions,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.profileFunctions)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
