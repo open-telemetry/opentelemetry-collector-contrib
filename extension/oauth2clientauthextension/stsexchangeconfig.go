@@ -75,38 +75,19 @@ func (ts stsTokenSource) Token() (*oauth2.Token, error) {
 	}
 	defer resp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
+	var token oauth2.Token
+	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
+		return nil, fmt.Errorf("failed to decode token from response: %v", err)
 	}
-
-	var jsonResponse map[string]interface{}
-	if err := json.Unmarshal(bodyBytes, &jsonResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse STS Server json response: %v", err)
+	if token.AccessToken == "" {
+		return nil, errors.New("invalid token response: access_token missing")
 	}
-
-	accessToken, tokenFound := jsonResponse["access_token"]
-	if !tokenFound {
-		return nil, fmt.Errorf("access_token not found")
+	if token.ExpiresIn != 0 {
+		now := time.Now()
+		token.Expiry = now.Add(time.Second*time.Duration(expiresInFloat64) - jitterTime)
+		if token.Expiry.Before(now) {
+			return nil, errors.New("invalid token response: token expired")
+		}
 	}
-
-	expiresIn, expiryFound := jsonResponse["expires_in"]
-	if !expiryFound {
-		return nil, fmt.Errorf("expires_in not found in JSON response")
-	}
-	expiresInFloat64, ok := expiresIn.(float64)
-	if !ok {
-		return nil, fmt.Errorf("expires_in type assertion failed: %v", expiresIn)
-	}
-
-	expirationTime := time.Now().Add(time.Second*time.Duration(int64(expiresInFloat64)) - jitterTime)
-
-	stsToken, ok := accessToken.(string)
-	if !ok {
-		return nil, fmt.Errorf("access_token is not a string")
-	}
-	return &oauth2.Token{
-		AccessToken: stsToken,
-		Expiry:      expirationTime,
-	}, nil
+	return &token, nil
 }
