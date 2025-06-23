@@ -23,10 +23,10 @@ The SQL Query Receiver uses custom SQL queries to generate metrics from a databa
 
 ## Configuration
 
-The configuration supports the following top-level fields:
+**Connection Configuration (choose one approach):**
 
-- `driver`(required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
-  HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
+**Option 1: Individual connection parameters** (cannot be used when `datasource` is set):
+
 - `host` (optional): The hostname or IP address of the database server.
   - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
 - `port` (optional for `sqlserver`, otherwise required): The port number of the database server.
@@ -38,7 +38,10 @@ The configuration supports the following top-level fields:
   - The `password` field supports sensitive value handling through environment variables or other secure value sources. Special characters (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
   - For `mysql`: No URL encoding is applied
 - `additional_params` (optional): Additional driver-specific connection parameters.
-- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value overrides the optional fields listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
+
+**Option 2: Datasource string:**
+
+- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value is used instead of the individual connection parameters listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
 
   - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
@@ -48,7 +51,10 @@ The configuration supports the following top-level fields:
   - [sqlserver](https://github.com/microsoft/go-mssqldb) - `sqlserver://username:user_password@localhost:1433?database=db_name`
   - [tds](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
 
-- `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
+**Other configuration fields:**
+- `driver` (required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
+  HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
+- `queries` (required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
 - `telemetry` (optional) Defines settings for the component's own telemetry - logs, metrics or traces.

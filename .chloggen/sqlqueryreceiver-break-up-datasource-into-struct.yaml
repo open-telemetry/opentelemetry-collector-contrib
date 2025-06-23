@@ -5,7 +5,7 @@ change_type: enhancement
 component: sqlqueryreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Break up datasource into a struct with fields `host`, `port`, `database`, `username`, `password`, and `additional_params`.
+note: Add SQL connection fields `host`, `port`, `database`, `username`, `password`, and `additional_params`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39760]
@@ -13,7 +13,7 @@ issues: [39760]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: These options can be used instead of the existing `datasource` configuration option.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
