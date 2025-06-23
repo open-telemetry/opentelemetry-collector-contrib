@@ -539,6 +539,16 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			expectTo:   pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
 		},
 		{
+			name: "sum/move_all_aggregation_temporality_and_is_monotonic_are_preserved",
+			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+				return true
+			},
+			from:       pmetricutiltest.NewSums("AB", "CD", "EF", "GH", true, pmetric.AggregationTemporalityCumulative),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetric.NewMetrics(),
+			expectTo:   pmetricutiltest.NewSums("AB", "CD", "EF", "GH", true, pmetric.AggregationTemporalityCumulative),
+		},
+		{
 			name: "sum/move_all_from_one_resource",
 			moveIf: func(rl pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
@@ -721,29 +731,29 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB" && m.Name() == "metricE"
 			},
-			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", false, pmetric.AggregationTemporalityUnspecified),
+			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", true, pmetric.AggregationTemporalityCumulative),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
+						pmetricutiltest.Sum("E", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
+						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Sum("E", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
+						pmetricutiltest.Sum("E", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
+						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
+						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Sum("F", false, pmetric.AggregationTemporalityUnspecified, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
+						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityCumulative, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewSums("B", "CD", "E", "GH", false, pmetric.AggregationTemporalityUnspecified),
+			expectTo: pmetricutiltest.NewSums("B", "CD", "E", "GH", true, pmetric.AggregationTemporalityCumulative),
 		},
 		{
 			name: "sum/move_some_to_preexisting",
@@ -761,36 +771,6 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				return orig
 			}(),
 		},
-		{
-			name: "sum/aggregation_temporality_and_monotonic_properties_are_preserved",
-			moveIf: func(rl pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric, _ any) bool {
-				rname, ok := rl.Resource().Attributes().Get("resourceName")
-				return ok && rname.AsString() == "resourceB" && m.Name() == "metricE"
-			},
-			from: pmetricutiltest.NewSums("AB", "CD", "EF", "GH", true, pmetric.AggregationTemporalityDelta),
-			to:   pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewMetricsFromOpts(
-				pmetricutiltest.Resource("A",
-					pmetricutiltest.Scope("C",
-						pmetricutiltest.Sum("E", true, pmetric.AggregationTemporalityDelta, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityDelta, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-					),
-					pmetricutiltest.Scope("D",
-						pmetricutiltest.Sum("E", true, pmetric.AggregationTemporalityDelta, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityDelta, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-					),
-				),
-				pmetricutiltest.Resource("B",
-					pmetricutiltest.Scope("C",
-						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityDelta, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-					),
-					pmetricutiltest.Scope("D",
-						pmetricutiltest.Sum("F", true, pmetric.AggregationTemporalityDelta, pmetricutiltest.NumberDataPoint("G"), pmetricutiltest.NumberDataPoint("H")),
-					),
-				),
-			),
-			expectTo: pmetricutiltest.NewSums("B", "CD", "E", "GH", true, pmetric.AggregationTemporalityDelta),
-		},
 
 		// histogram
 		{
@@ -798,9 +778,9 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				return false
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			expectTo:   pmetric.NewMetrics(),
 		},
 		{
@@ -808,10 +788,20 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				return true
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
 			expectFrom: pmetric.NewMetrics(),
-			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+		},
+		{
+			name: "histogram/move_all_aggregation_temporality_preserved",
+			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+				return true
+			},
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetric.NewMetrics(),
+			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
 		},
 		{
 			name: "histogram/move_all_from_one_resource",
@@ -819,10 +809,10 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB"
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewHistograms("A", "CD", "EF", "GH"),
-			expectTo:   pmetricutiltest.NewHistograms("B", "CD", "EF", "GH"),
+			expectFrom: pmetricutiltest.NewHistograms("A", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewHistograms("B", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_all_from_one_scope",
@@ -830,57 +820,57 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB" && sl.Scope().Name() == "scopeC"
 			},
-			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewHistograms("B", "C", "EF", "GH"),
+			expectTo: pmetricutiltest.NewHistograms("B", "C", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_all_from_one_metric",
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric, _ any) bool {
 				return m.Name() == "metricE"
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "F", "GH"),
-			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "E", "GH"),
+			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "F", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "E", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_all_from_one_scope_in_each_resource",
 			moveIf: func(_ pmetric.ResourceMetrics, sl pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				return sl.Scope().Name() == "scopeD"
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewHistograms("AB", "C", "EF", "GH"),
-			expectTo:   pmetricutiltest.NewHistograms("AB", "D", "EF", "GH"),
+			expectFrom: pmetricutiltest.NewHistograms("AB", "C", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewHistograms("AB", "D", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_all_from_one_metric_in_each_scope",
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric, _ any) bool {
 				return m.Name() == "metricF"
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "E", "GH"),
-			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "F", "GH"),
+			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "E", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "F", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_one",
@@ -889,31 +879,31 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok2 := dp.(pmetric.HistogramDataPoint).Attributes().Get("dpName")
 				return ok1 && ok2 && rname.AsString() == "resourceA" && sl.Scope().Name() == "scopeD" && m.Name() == "metricF" && dpname.AsString() == "dpG"
 			},
-			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewHistograms("A", "D", "F", "G"),
+			expectTo: pmetricutiltest.NewHistograms("A", "D", "F", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_one_from_each_resource",
@@ -921,31 +911,31 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.HistogramDataPoint).Attributes().Get("dpName")
 				return ok && sl.Scope().Name() == "scopeD" && m.Name() == "metricE" && dpname.AsString() == "dpG"
 			},
-			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewHistograms("AB", "D", "E", "G"),
+			expectTo: pmetricutiltest.NewHistograms("AB", "D", "E", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_one_from_each_scope",
@@ -953,31 +943,31 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.HistogramDataPoint).Attributes().Get("dpName")
 				return ok && m.Name() == "metricE" && dpname.AsString() == "dpG"
 			},
-			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewHistograms("AB", "CD", "E", "G"),
+			expectTo: pmetricutiltest.NewHistograms("AB", "CD", "E", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_one_from_each_metric",
@@ -985,10 +975,10 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.HistogramDataPoint).Attributes().Get("dpName")
 				return ok && dpname.AsString() == "dpG"
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "EF", "H"),
-			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "EF", "G"),
+			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "EF", "H", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewHistograms("AB", "CD", "EF", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "histogram/move_one_from_each_scope_in_one_resource",
@@ -996,29 +986,29 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB" && m.Name() == "metricE"
 			},
-			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("E", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.Histogram("F", pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
+						pmetricutiltest.Histogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.HistogramDataPoint("G"), pmetricutiltest.HistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewHistograms("B", "CD", "E", "GH"),
+			expectTo: pmetricutiltest.NewHistograms("B", "CD", "E", "GH", pmetric.AggregationTemporalityCumulative),
 		},
 		{
 			name: "histogram/move_some_to_preexisting",
@@ -1026,12 +1016,12 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.HistogramDataPoint).Attributes().Get("dpName")
 				return ok && dpname.AsString() == "dpG"
 			},
-			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH"),
-			to:         pmetricutiltest.NewHistograms("1", "2", "3", "4"),
-			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "EF", "H"),
+			from:       pmetricutiltest.NewHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+			to:         pmetricutiltest.NewHistograms("1", "2", "3", "4", pmetric.AggregationTemporalityUnspecified),
+			expectFrom: pmetricutiltest.NewHistograms("AB", "CD", "EF", "H", pmetric.AggregationTemporalityUnspecified),
 			expectTo: func() pmetric.Metrics {
-				orig := pmetricutiltest.NewHistograms("1", "2", "3", "4")
-				extra := pmetricutiltest.NewHistograms("AB", "CD", "EF", "G")
+				orig := pmetricutiltest.NewHistograms("1", "2", "3", "4", pmetric.AggregationTemporalityUnspecified)
+				extra := pmetricutiltest.NewHistograms("AB", "CD", "EF", "G", pmetric.AggregationTemporalityUnspecified)
 				extra.ResourceMetrics().MoveAndAppendTo(orig.ResourceMetrics())
 				return orig
 			}(),
@@ -1043,9 +1033,9 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				return false
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			expectTo:   pmetric.NewMetrics(),
 		},
 		{
@@ -1053,10 +1043,20 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				return true
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
 			expectFrom: pmetric.NewMetrics(),
-			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+		},
+		{
+			name: "exponential_histogram/move_all_aggregation_temporality_preserved",
+			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
+				return true
+			},
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetric.NewMetrics(),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
 		},
 		{
 			name: "exponential_histogram/move_all_from_one_resource",
@@ -1064,10 +1064,10 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB"
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("A", "CD", "EF", "GH"),
-			expectTo:   pmetricutiltest.NewExponentialHistograms("B", "CD", "EF", "GH"),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("A", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("B", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_all_from_one_scope",
@@ -1075,57 +1075,57 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB" && sl.Scope().Name() == "scopeC"
 			},
-			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewExponentialHistograms("B", "C", "EF", "GH"),
+			expectTo: pmetricutiltest.NewExponentialHistograms("B", "C", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_all_from_one_metric",
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric, _ any) bool {
 				return m.Name() == "metricE"
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "F", "GH"),
-			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "E", "GH"),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "F", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "E", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_all_from_one_scope_in_each_resource",
 			moveIf: func(_ pmetric.ResourceMetrics, sl pmetric.ScopeMetrics, _ pmetric.Metric, _ any) bool {
 				return sl.Scope().Name() == "scopeD"
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "C", "EF", "GH"),
-			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "D", "EF", "GH"),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "C", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "D", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_all_from_one_metric_in_each_scope",
 			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric, _ any) bool {
 				return m.Name() == "metricF"
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "E", "GH"),
-			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "F", "GH"),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "E", "GH", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "F", "GH", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_one",
@@ -1134,31 +1134,31 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok2 := dp.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("dpName")
 				return ok1 && ok2 && rname.AsString() == "resourceA" && sl.Scope().Name() == "scopeD" && m.Name() == "metricF" && dpname.AsString() == "dpG"
 			},
-			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewExponentialHistograms("A", "D", "F", "G"),
+			expectTo: pmetricutiltest.NewExponentialHistograms("A", "D", "F", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_one_from_each_resource",
@@ -1166,31 +1166,31 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("dpName")
 				return ok && sl.Scope().Name() == "scopeD" && m.Name() == "metricE" && dpname.AsString() == "dpG"
 			},
-			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewExponentialHistograms("AB", "D", "E", "G"),
+			expectTo: pmetricutiltest.NewExponentialHistograms("AB", "D", "E", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_one_from_each_scope",
@@ -1198,31 +1198,31 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("dpName")
 				return ok && m.Name() == "metricE" && dpname.AsString() == "dpG"
 			},
-			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityUnspecified, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewExponentialHistograms("AB", "CD", "E", "G"),
+			expectTo: pmetricutiltest.NewExponentialHistograms("AB", "CD", "E", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_one_from_each_metric",
@@ -1230,10 +1230,10 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("dpName")
 				return ok && dpname.AsString() == "dpG"
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
 			to:         pmetric.NewMetrics(),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "H"),
-			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "G"),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "H", pmetric.AggregationTemporalityUnspecified),
+			expectTo:   pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "G", pmetric.AggregationTemporalityUnspecified),
 		},
 		{
 			name: "exponential_histogram/move_one_from_each_scope_in_one_resource",
@@ -1241,29 +1241,29 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB" && m.Name() == "metricE"
 			},
-			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
+			from: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityCumulative),
 			to:   pmetric.NewMetrics(),
 			expectFrom: pmetricutiltest.NewMetricsFromOpts(
 				pmetricutiltest.Resource("A",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("E", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("E", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 				pmetricutiltest.Resource("B",
 					pmetricutiltest.Scope("C",
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 					pmetricutiltest.Scope("D",
-						pmetricutiltest.ExponentialHistogram("F", pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
+						pmetricutiltest.ExponentialHistogram("F", pmetric.AggregationTemporalityCumulative, pmetricutiltest.ExponentialHistogramDataPoint("G"), pmetricutiltest.ExponentialHistogramDataPoint("H")),
 					),
 				),
 			),
-			expectTo: pmetricutiltest.NewExponentialHistograms("B", "CD", "E", "GH"),
+			expectTo: pmetricutiltest.NewExponentialHistograms("B", "CD", "E", "GH", pmetric.AggregationTemporalityCumulative),
 		},
 		{
 			name: "exponential_histogram/move_some_to_preexisting",
@@ -1271,12 +1271,12 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 				dpname, ok := dp.(pmetric.ExponentialHistogramDataPoint).Attributes().Get("dpName")
 				return ok && dpname.AsString() == "dpG"
 			},
-			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH"),
-			to:         pmetricutiltest.NewExponentialHistograms("1", "2", "3", "4"),
-			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "H"),
+			from:       pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "GH", pmetric.AggregationTemporalityUnspecified),
+			to:         pmetricutiltest.NewExponentialHistograms("1", "2", "3", "4", pmetric.AggregationTemporalityUnspecified),
+			expectFrom: pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "H", pmetric.AggregationTemporalityUnspecified),
 			expectTo: func() pmetric.Metrics {
-				orig := pmetricutiltest.NewExponentialHistograms("1", "2", "3", "4")
-				extra := pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "G")
+				orig := pmetricutiltest.NewExponentialHistograms("1", "2", "3", "4", pmetric.AggregationTemporalityUnspecified)
+				extra := pmetricutiltest.NewExponentialHistograms("AB", "CD", "EF", "G", pmetric.AggregationTemporalityUnspecified)
 				extra.ResourceMetrics().MoveAndAppendTo(orig.ResourceMetrics())
 				return orig
 			}(),

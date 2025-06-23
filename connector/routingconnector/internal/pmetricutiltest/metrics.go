@@ -68,7 +68,7 @@ func NewSums(resourceIDs, scopeIDs, metricIDs, dataPointIDs string, isMonotonic 
 	return md
 }
 
-func NewHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
+func NewHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string, aggregationTemporality pmetric.AggregationTemporality) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
 		rm := md.ResourceMetrics().AppendEmpty()
@@ -80,6 +80,7 @@ func NewHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetri
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptyHistogram()
+				dps.SetAggregationTemporality(aggregationTemporality)
 				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
@@ -90,7 +91,7 @@ func NewHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetri
 	return md
 }
 
-func NewExponentialHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
+func NewExponentialHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string, aggregationTemporality pmetric.AggregationTemporality) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
 		rm := md.ResourceMetrics().AppendEmpty()
@@ -102,6 +103,7 @@ func NewExponentialHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs str
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptyExponentialHistogram()
+				dps.SetAggregationTemporality(aggregationTemporality)
 				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
@@ -188,10 +190,11 @@ func NumberDataPoint(id string) pmetric.NumberDataPoint {
 	return dp
 }
 
-func Histogram(id string, dps ...pmetric.HistogramDataPoint) pmetric.Metric {
+func Histogram(id string, aggregationTemporality pmetric.AggregationTemporality, dps ...pmetric.HistogramDataPoint) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName("metric" + id)
 	g := m.SetEmptyHistogram()
+	g.SetAggregationTemporality(aggregationTemporality)
 	for _, dp := range dps {
 		dp.CopyTo(g.DataPoints().AppendEmpty())
 	}
@@ -204,10 +207,11 @@ func HistogramDataPoint(id string) pmetric.HistogramDataPoint {
 	return dp
 }
 
-func ExponentialHistogram(id string, dps ...pmetric.ExponentialHistogramDataPoint) pmetric.Metric {
+func ExponentialHistogram(id string, aggregationTemporality pmetric.AggregationTemporality, dps ...pmetric.ExponentialHistogramDataPoint) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName("metric" + id)
 	g := m.SetEmptyExponentialHistogram()
+	g.SetAggregationTemporality(aggregationTemporality)
 	for _, dp := range dps {
 		dp.CopyTo(g.DataPoints().AppendEmpty())
 	}
