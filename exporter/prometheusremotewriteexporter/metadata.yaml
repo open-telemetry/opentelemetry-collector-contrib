@@ -10,6 +10,11 @@ status:
 
 tests:
   expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"
 
 telemetry:
   metrics:
@@ -38,6 +43,34 @@ telemetry:
       enabled: true
       description: Number of remote write request batches sent to the remote write endpoint regardless of success or failure
       unit: "{batch}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes:
+      enabled: true
+      description: Number of WAL writes
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes_failures:
+      enabled: true
+      description: Number of WAL writes that failed
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_reads:
+      enabled: true
+      description: Number of WAL reads
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_reads_failures:
+      enabled: true
+      description: Number of WAL reads that failed
+      unit: "1"
       sum:
         value_type: int
         monotonic: true

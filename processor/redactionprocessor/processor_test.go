@@ -25,6 +25,7 @@ type TestConfig struct {
 	masked        map[string]pcommon.Value
 	blockedKeys   map[string]pcommon.Value
 	allowedValues map[string]pcommon.Value
+	logBody       *pcommon.Value
 	config        *Config
 }
 
@@ -59,13 +60,13 @@ func TestRedactUnknownAttributes(t *testing.T) {
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
-
 	for _, attr := range attrs {
 		for k, v := range testConfig.allowed {
 			val, ok := attr.Get(k)
@@ -106,6 +107,7 @@ func TestAllowAllKeys(t *testing.T) {
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -157,6 +159,7 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -223,10 +226,12 @@ func TestRedactSummaryDebug(t *testing.T) {
 	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
 	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
 	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -241,34 +246,69 @@ func TestRedactSummaryDebug(t *testing.T) {
 			assert.False(t, ok)
 			deleted = append(deleted, k)
 		}
-		maskedKeys, ok := attr.Get(redactedKeys)
+		redactedKeys, ok := attr.Get(redactionRedactedKeys)
 		assert.True(t, ok)
 		sort.Strings(deleted)
-		assert.Equal(t, strings.Join(deleted, ","), maskedKeys.Str())
-		maskedKeyCount, ok := attr.Get(redactedKeyCount)
+		assert.Equal(t, strings.Join(deleted, ","), redactedKeys.Str())
+		redactedKeyCount, ok := attr.Get(redactionRedactedCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
+		assert.Equal(t, int64(len(deleted)), redactedKeyCount.Int())
 
-		ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
+		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(len(testConfig.ignored)), ignoredKeyCount.Int())
 
 		blockedKeys := []string{"api_key_some", "name", "token_some"}
-		maskedValues, ok := attr.Get(maskedValues)
+		maskedKeys, ok := attr.Get(redactionMaskedKeys)
 		assert.True(t, ok)
-		assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
-		maskedValueCount, ok := attr.Get(maskedValueCount)
+		assert.Equal(t, strings.Join(blockedKeys, ","), maskedKeys.Str())
+		maskedKeyCount, ok := attr.Get(redactionMaskedCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(3), maskedValueCount.Int())
+		assert.Equal(t, int64(3), maskedKeyCount.Int())
 		value, _ := attr.Get("name")
 		assert.Equal(t, "placeholder ****", value.Str())
 
-		allowedValueCount, ok := attr.Get(allowedValueCount)
+		allowedValueCount, ok := attr.Get(redactionAllowedCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(1), allowedValueCount.Int())
 		value, _ = attr.Get("email")
 		assert.Equal(t, "user@mycompany.com", value.Str())
 	}
+}
+
+func getLogBodyWithDebugAttrs(outLogs plog.Logs) pcommon.Map {
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
+	outLogAttr := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+	bodyRedactedKeys, ok := outLogAttr.Get(redactionBodyRedactedKeys)
+	if ok {
+		outLogBody.PutStr(redactionRedactedKeys, bodyRedactedKeys.Str())
+	}
+	bodyRedactedCount, ok := outLogAttr.Get(redactionBodyRedactedCount)
+	if ok {
+		outLogBody.PutInt(redactionRedactedCount, bodyRedactedCount.Int())
+	}
+	bodyMaskedKeys, ok := outLogAttr.Get(redactionBodyMaskedKeys)
+	if ok {
+		outLogBody.PutStr(redactionMaskedKeys, bodyMaskedKeys.Str())
+	}
+	bodyMaskedCount, ok := outLogAttr.Get(redactionBodyMaskedCount)
+	if ok {
+		outLogBody.PutInt(redactionMaskedCount, bodyMaskedCount.Int())
+	}
+	bodyAllowedKeys, ok := outLogAttr.Get(redactionBodyAllowedKeys)
+	if ok {
+		outLogBody.PutStr(redactionAllowedKeys, bodyAllowedKeys.Str())
+	}
+	bodyAllowedCount, ok := outLogAttr.Get(redactionBodyAllowedCount)
+	if ok {
+		outLogBody.PutInt(redactionAllowedCount, bodyAllowedCount.Int())
+	}
+	bodyIgnoredCount, ok := outLogAttr.Get(redactionBodyIgnoredCount)
+	if ok {
+		outLogBody.PutInt(redactionIgnoredCount, bodyIgnoredCount.Int())
+	}
+	return outLogBody
 }
 
 func TestRedactSummaryDebugHashMD5(t *testing.T) {
@@ -311,10 +351,12 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
 	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
 	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -329,23 +371,23 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 			assert.False(t, ok)
 			deleted = append(deleted, k)
 		}
-		maskedKeys, ok := attr.Get(redactedKeys)
+		redactedKeys, ok := attr.Get(redactionRedactedKeys)
 		assert.True(t, ok)
 		sort.Strings(deleted)
-		assert.Equal(t, strings.Join(deleted, ","), maskedKeys.Str())
-		maskedKeyCount, ok := attr.Get(redactedKeyCount)
+		assert.Equal(t, strings.Join(deleted, ","), redactedKeys.Str())
+		maskedKeyCount, ok := attr.Get(redactionRedactedCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
 
-		ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
+		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(len(testConfig.ignored)), ignoredKeyCount.Int())
 
 		blockedKeys := []string{"api_key_some", "name", "token_some"}
-		maskedValues, ok := attr.Get(maskedValues)
+		maskedKeys, ok := attr.Get(redactionMaskedKeys)
 		assert.True(t, ok)
-		assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
-		maskedValueCount, ok := attr.Get(maskedValueCount)
+		assert.Equal(t, strings.Join(blockedKeys, ","), maskedKeys.Str())
+		maskedValueCount, ok := attr.Get(redactionMaskedCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(3), maskedValueCount.Int())
 		value, _ := attr.Get("name")
@@ -394,10 +436,12 @@ func TestRedactSummaryInfo(t *testing.T) {
 	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
 	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
 	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -412,27 +456,27 @@ func TestRedactSummaryInfo(t *testing.T) {
 			assert.False(t, ok)
 			deleted = append(deleted, k)
 		}
-		_, ok := attr.Get(redactedKeys)
+		_, ok := attr.Get(redactionRedactedKeys)
 		assert.False(t, ok)
-		maskedKeyCount, ok := attr.Get(redactedKeyCount)
+		maskedKeyCount, ok := attr.Get(redactionRedactedCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
-		_, ok = attr.Get(maskedValues)
+		_, ok = attr.Get(redactionMaskedKeys)
 		assert.False(t, ok)
 
-		maskedValueCount, ok := attr.Get(maskedValueCount)
+		maskedValueCount, ok := attr.Get(redactionMaskedCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(1), maskedValueCount.Int())
 		value, _ := attr.Get("name")
 		assert.Equal(t, "placeholder ****", value.Str())
 
-		allowedValueCount, ok := attr.Get(allowedValueCount)
+		allowedValueCount, ok := attr.Get(redactionAllowedCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(1), allowedValueCount.Int())
 		value, _ = attr.Get("email")
 		assert.Equal(t, "user@mycompany.com", value.Str())
 
-		ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
+		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(1), ignoredKeyCount.Int())
 		value, _ = attr.Get("safe_attribute")
@@ -467,10 +511,12 @@ func TestRedactSummarySilent(t *testing.T) {
 	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
 	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
 	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -483,13 +529,13 @@ func TestRedactSummarySilent(t *testing.T) {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 		}
-		_, ok := attr.Get(redactedKeys)
+		_, ok := attr.Get(redactionRedactedKeys)
 		assert.False(t, ok)
-		_, ok = attr.Get(redactedKeyCount)
+		_, ok = attr.Get(redactionRedactedCount)
 		assert.False(t, ok)
-		_, ok = attr.Get(maskedValues)
+		_, ok = attr.Get(redactionMaskedKeys)
 		assert.False(t, ok)
-		_, ok = attr.Get(maskedValueCount)
+		_, ok = attr.Get(redactionMaskedCount)
 		assert.False(t, ok)
 		value, _ := attr.Get("name")
 		assert.Equal(t, "placeholder ****", value.Str())
@@ -519,10 +565,12 @@ func TestRedactSummaryDefault(t *testing.T) {
 	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
 	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
 	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -531,15 +579,15 @@ func TestRedactSummaryDefault(t *testing.T) {
 	}
 
 	for _, attr := range attrs {
-		_, ok := attr.Get(redactedKeys)
+		_, ok := attr.Get(redactionRedactedKeys)
 		assert.False(t, ok)
-		_, ok = attr.Get(redactedKeyCount)
+		_, ok = attr.Get(redactionRedactedCount)
 		assert.False(t, ok)
-		_, ok = attr.Get(maskedValues)
+		_, ok = attr.Get(redactionMaskedKeys)
 		assert.False(t, ok)
-		_, ok = attr.Get(maskedValueCount)
+		_, ok = attr.Get(redactionMaskedCount)
 		assert.False(t, ok)
-		_, ok = attr.Get(ignoredKeyCount)
+		_, ok = attr.Get(redactionIgnoredCount)
 		assert.False(t, ok)
 	}
 }
@@ -572,10 +620,12 @@ func TestMultipleBlockValues(t *testing.T) {
 	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
 	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
 	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
@@ -590,23 +640,23 @@ func TestMultipleBlockValues(t *testing.T) {
 			assert.False(t, ok)
 			deleted = append(deleted, k)
 		}
-		maskedKeys, ok := attr.Get(redactedKeys)
+		redactedKeys, ok := attr.Get(redactionRedactedKeys)
 		assert.True(t, ok)
-		assert.Equal(t, strings.Join(deleted, ","), maskedKeys.Str())
-		maskedKeyCount, ok := attr.Get(redactedKeyCount)
+		assert.Equal(t, strings.Join(deleted, ","), redactedKeys.Str())
+		redactedKeyCount, ok := attr.Get(redactionRedactedCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
+		assert.Equal(t, int64(len(deleted)), redactedKeyCount.Int())
 
 		blockedKeys := []string{"name", "mystery"}
-		maskedValues, ok := attr.Get(maskedValues)
+		maskedValues, ok := attr.Get(redactionMaskedKeys)
 		assert.True(t, ok)
 		sort.Strings(blockedKeys)
 		assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
 		assert.Equal(t, pcommon.ValueTypeStr, maskedValues.Type())
 		assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
-		maskedValueCount, ok := attr.Get(maskedValueCount)
+		maskedKeyCount, ok := attr.Get(redactionMaskedCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(len(blockedKeys)), maskedValueCount.Int())
+		assert.Equal(t, int64(len(blockedKeys)), maskedKeyCount.Int())
 		nameValue, _ := attr.Get("name")
 		mysteryValue, _ := attr.Get("mystery")
 		assert.Equal(t, "placeholder **** ****", nameValue.Str())
@@ -627,28 +677,25 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 
 	attrs := pcommon.NewMap()
 	assert.NoError(t, attrs.FromRaw(map[string]any{
-		"id":             5,
-		"redundant":      1.2,
-		"mystery":        "mystery ****",
-		"credit_card":    "4111111111111111",
-		redactedKeys:     "dropped_attr1,dropped_attr2",
-		redactedKeyCount: 2,
-		maskedValues:     "mystery",
-		maskedValueCount: 1,
+		"id":                   5,
+		"redundant":            1.2,
+		"mystery":              "mystery ****",
+		"credit_card":          "4111111111111111",
+		redactionRedactedKeys:  "dropped_attr1,dropped_attr2",
+		redactionRedactedCount: 2,
+		redactionMaskedKeys:    "mystery",
+		redactionMaskedCount:   1,
 	}))
 	processor.processAttrs(context.TODO(), attrs)
 
 	assert.Equal(t, 7, attrs.Len())
-	val, found := attrs.Get(redactedKeys)
+	val, found := attrs.Get(redactionRedactedKeys)
 	assert.True(t, found)
 	assert.Equal(t, "dropped_attr1,dropped_attr2,redundant", val.Str())
-	val, found = attrs.Get(redactedKeyCount)
+	val, found = attrs.Get(redactionRedactedCount)
 	assert.True(t, found)
 	assert.Equal(t, int64(3), val.Int())
-	val, found = attrs.Get(maskedValues)
-	assert.True(t, found)
-	assert.Equal(t, "credit_card,mystery", val.Str())
-	val, found = attrs.Get(maskedValueCount)
+	val, found = attrs.Get(redactionMaskedCount)
 	assert.True(t, found)
 	assert.Equal(t, int64(2), val.Int())
 }
@@ -690,6 +737,107 @@ func TestSpanEventRedacted(t *testing.T) {
 	val, ok = attr.Get("username")
 	require.True(t, ok)
 	require.Equal(t, "foobar", val.Str())
+}
+
+func TestLogBodyRedactionDifferentTypes(t *testing.T) {
+	stringBody := pcommon.NewValueStr("placeholder 4111111111111111")
+	testConfig := TestConfig{
+		config: &Config{
+			AllowedKeys:   []string{"id", "email", "credit_card", "nested", "slice"},
+			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			Summary:       "debug",
+		},
+		logBody: &stringBody,
+	}
+
+	outLogs := runLogsTest(t, testConfig)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+	outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	assert.Equal(t, pcommon.ValueTypeStr, outLogBody.Type())
+	assert.Equal(t, "placeholder ****", outLogBody.Str())
+	val, found := outLogAttrs.Get(redactionBodyMaskedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "body", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyMaskedCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(1), val.Int())
+
+	nestedBodyMap := pcommon.NewValueMap()
+	nestedBodyMap.Map().PutStr("credit_card", "4111111111111111")
+	nestedBodyMap.Map().PutStr("not_allowed_key", "temp")
+	nestedBodyMap.Map().PutStr("id", "user123")
+
+	innerMap := nestedBodyMap.Map().PutEmptyMap("nested")
+	innerMap.PutStr("credit_card", "4111111111111111")
+	innerMap.PutStr("not_allowed_key", "temp")
+	innerMap.PutStr("id", "user123")
+	innerMap.PutStr("safe_attribute", "4111111111111111")
+	innerMap.PutStr("email", "user@mycompany.com")
+
+	slice := nestedBodyMap.Map().PutEmptySlice("slice")
+	slice.AppendEmpty().SetStr("4111111111111111")
+	slice.AppendEmpty().SetStr("user123")
+
+	testConfig = TestConfig{
+		config: &Config{
+			AllowedKeys:   []string{"id", "email", "credit_card", "nested", "slice"},
+			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			IgnoredKeys:   []string{"safe_attribute"},
+			AllowedValues: []string{".+@mycompany.com"},
+			Summary:       "debug",
+		},
+		logBody: &nestedBodyMap,
+	}
+
+	outLogs = runLogsTest(t, testConfig)
+
+	outLogBody = outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+	assert.Equal(t, pcommon.ValueTypeMap, outLogBody.Type())
+
+	creditCardValue, _ := outLogBody.Map().Get("credit_card")
+	assert.Equal(t, "****", creditCardValue.Str())
+	_, ok := outLogBody.Map().Get("not_allowed_key")
+	assert.False(t, ok)
+	id, ok := outLogBody.Map().Get("id")
+	assert.True(t, ok)
+	assert.Equal(t, "user123", id.Str())
+
+	innerMapValue, _ := outLogBody.Map().Get("nested")
+	assert.Equal(t, pcommon.ValueTypeMap, innerMapValue.Type())
+	creditCardValue, _ = innerMapValue.Map().Get("credit_card")
+	assert.Equal(t, "****", creditCardValue.Str())
+	_, ok = innerMapValue.Map().Get("not_allowed_key")
+	assert.False(t, ok)
+	id, ok = innerMapValue.Map().Get("id")
+	assert.True(t, ok)
+	assert.Equal(t, "user123", id.Str())
+
+	sliceValue, _ := outLogBody.Map().Get("slice")
+	assert.Equal(t, pcommon.ValueTypeSlice, sliceValue.Type())
+	assert.Equal(t, "****", sliceValue.Slice().At(0).Str())
+
+	outLogAttrs = outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	val, found = outLogAttrs.Get(redactionBodyRedactedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "nested.not_allowed_key,not_allowed_key", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyRedactedCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(2), val.Int())
+	val, found = outLogAttrs.Get(redactionBodyMaskedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "credit_card,nested.credit_card,slice.[0]", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyMaskedCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(3), val.Int())
+	val, found = outLogAttrs.Get(redactionBodyAllowedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "nested.email", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyAllowedCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(1), val.Int())
+	val, found = outLogAttrs.Get(redactionBodyIgnoredCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(1), val.Int())
 }
 
 // runTest transforms the test input data and passes it through the processor
@@ -758,30 +906,40 @@ func runLogsTest(
 	library := ils.Scope()
 	library.SetName("first-library")
 	logEntry := ils.LogRecords().AppendEmpty()
-	logEntry.Body().SetStr("first-batch-first-logEntry")
 	logEntry.SetTraceID([16]byte{1, 2, 3, 4})
+	logEntry.Body().SetEmptyMap()
 
 	length := len(cfg.allowed) + len(cfg.masked) + len(cfg.redacted) + len(cfg.ignored) + len(cfg.blockedKeys) + len(cfg.allowedValues)
 	for k, v := range cfg.allowed {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
 	}
 	for k, v := range cfg.masked {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
 	}
 	for k, v := range cfg.allowedValues {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
 	}
 	for k, v := range cfg.redacted {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
 	}
 	for k, v := range cfg.blockedKeys {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
 	}
 	for k, v := range cfg.redacted {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
 	}
 	for k, v := range cfg.ignored {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+	}
+	if cfg.logBody != nil {
+		cfg.logBody.CopyTo(logEntry.Body())
 	}
 
 	assert.Equal(t, logEntry.Attributes().Len(), length)

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.7.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
 /*
@@ -22,8 +22,8 @@ const (
 	attributeApplicationInsightsEventMarkerAttribute string = "APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE"
 )
 
-// NetworkAttributes is the set of known network attributes
-type NetworkAttributes struct {
+// networkAttributes is the set of known network attributes
+type networkAttributes struct {
 	// see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/attributes-registry/network.md#network-attributes
 	NetTransport string
 	NetPeerIP    string
@@ -35,32 +35,32 @@ type NetworkAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *NetworkAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *networkAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case conventions.AttributeNetTransport:
+	case string(conventions.NetTransportKey):
 		attrs.NetTransport = v.Str()
-	case conventions.AttributeNetPeerIP:
+	case string(conventions.NetPeerIPKey):
 		attrs.NetPeerIP = v.Str()
-	case conventions.AttributeNetPeerPort:
+	case string(conventions.NetPeerPortKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.NetPeerPort = val
 		}
-	case conventions.AttributeNetPeerName:
+	case string(conventions.NetPeerNameKey):
 		attrs.NetPeerName = v.Str()
-	case conventions.AttributeNetHostIP:
+	case string(conventions.NetHostIPKey):
 		attrs.NetHostIP = v.Str()
-	case conventions.AttributeNetHostPort:
+	case string(conventions.NetHostPortKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.NetHostPort = val
 		}
-	case conventions.AttributeNetHostName:
+	case string(conventions.NetHostNameKey):
 		attrs.NetHostName = v.Str()
 	}
 	return true
 }
 
-// HTTPAttributes is the set of known attributes for HTTP Spans
-type HTTPAttributes struct {
+// httpAttributes is the set of known attributes for HTTP Spans
+type httpAttributes struct {
 	// common attributes
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#common-attributes
 	HTTPMethod                            string
@@ -84,54 +84,54 @@ type HTTPAttributes struct {
 	HTTPClientIP   string
 
 	// any net.*
-	NetworkAttributes NetworkAttributes
+	NetworkAttributes networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *HTTPAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *httpAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case conventions.AttributeHTTPMethod:
+	case string(conventions.HTTPMethodKey):
 		attrs.HTTPMethod = v.Str()
-	case conventions.AttributeHTTPURL:
+	case string(conventions.HTTPURLKey):
 		attrs.HTTPURL = v.Str()
-	case conventions.AttributeHTTPTarget:
+	case string(conventions.HTTPTargetKey):
 		attrs.HTTPTarget = v.Str()
-	case conventions.AttributeHTTPHost:
+	case string(conventions.HTTPHostKey):
 		attrs.HTTPHost = v.Str()
-	case conventions.AttributeHTTPScheme:
+	case string(conventions.HTTPSchemeKey):
 		attrs.HTTPScheme = v.Str()
-	case conventions.AttributeHTTPStatusCode:
+	case string(conventions.HTTPStatusCodeKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPStatusCode = val
 		}
 	case "http.status_text":
 		attrs.HTTPStatusText = v.Str()
-	case conventions.AttributeHTTPFlavor:
+	case string(conventions.HTTPFlavorKey):
 		attrs.HTTPFlavor = v.Str()
-	case conventions.AttributeHTTPUserAgent:
+	case string(conventions.HTTPUserAgentKey):
 		attrs.HTTPUserAgent = v.Str()
-	case conventions.AttributeHTTPRequestContentLength:
+	case string(conventions.HTTPRequestContentLengthKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPRequestContentLength = val
 		}
-	case conventions.AttributeHTTPRequestContentLengthUncompressed:
+	case string(conventions.HTTPRequestContentLengthUncompressedKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPRequestContentLengthUncompressed = val
 		}
-	case conventions.AttributeHTTPResponseContentLength:
+	case string(conventions.HTTPResponseContentLengthKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPResponseContentLength = val
 		}
-	case conventions.AttributeHTTPResponseContentLengthUncompressed:
+	case string(conventions.HTTPResponseContentLengthUncompressedKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPResponseContentLengthUncompressed = val
 		}
 
-	case conventions.AttributeHTTPRoute:
+	case string(conventions.HTTPRouteKey):
 		attrs.HTTPRoute = v.Str()
-	case conventions.AttributeHTTPServerName:
+	case string(conventions.HTTPServerNameKey):
 		attrs.HTTPServerName = v.Str()
-	case conventions.AttributeHTTPClientIP:
+	case string(conventions.HTTPClientIPKey):
 		attrs.HTTPClientIP = v.Str()
 
 	default:
@@ -141,25 +141,25 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// RPCAttributes is the set of known attributes for RPC Spans
-type RPCAttributes struct {
+// rpcAttributes is the set of known attributes for RPC Spans
+type rpcAttributes struct {
 	RPCSystem         string
 	RPCService        string
 	RPCMethod         string
 	RPCGRPCStatusCode int64
-	NetworkAttributes NetworkAttributes
+	NetworkAttributes networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *RPCAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *rpcAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case conventions.AttributeRPCSystem:
+	case string(conventions.RPCSystemKey):
 		attrs.RPCSystem = v.Str()
-	case conventions.AttributeRPCService:
+	case string(conventions.RPCServiceKey):
 		attrs.RPCService = v.Str()
-	case conventions.AttributeRPCMethod:
+	case string(conventions.RPCMethodKey):
 		attrs.RPCMethod = v.Str()
-	case conventions.AttributeRPCGRPCStatusCode:
+	case string(conventions.RPCGRPCStatusCodeKey):
 		attrs.RPCGRPCStatusCode = v.Int()
 
 	default:
@@ -168,8 +168,8 @@ func (attrs *RPCAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// DatabaseAttributes is the set of known attributes for Database Spans
-type DatabaseAttributes struct {
+// databaseAttributes is the set of known attributes for Database Spans
+type databaseAttributes struct {
 	DBSystem              string
 	DBConnectionString    string
 	DBUser                string
@@ -182,33 +182,33 @@ type DatabaseAttributes struct {
 	DBHBaseNamespace      string
 	DBRedisDatabaseIndex  string
 	DBMongoDBCollection   string
-	NetworkAttributes     NetworkAttributes
+	NetworkAttributes     networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *DatabaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *databaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case conventions.AttributeDBSystem:
+	case string(conventions.DBSystemKey):
 		attrs.DBSystem = v.Str()
-	case conventions.AttributeDBConnectionString:
+	case string(conventions.DBConnectionStringKey):
 		attrs.DBConnectionString = v.Str()
-	case conventions.AttributeDBUser:
+	case string(conventions.DBUserKey):
 		attrs.DBUser = v.Str()
-	case conventions.AttributeDBStatement:
+	case string(conventions.DBStatementKey):
 		attrs.DBStatement = v.Str()
-	case conventions.AttributeDBOperation:
+	case string(conventions.DBOperationKey):
 		attrs.DBOperation = v.Str()
-	case conventions.AttributeDBMSSQLInstanceName:
+	case string(conventions.DBMSSQLInstanceNameKey):
 		attrs.DBMSSQLInstanceName = v.Str()
-	case conventions.AttributeDBJDBCDriverClassname:
+	case string(conventions.DBJDBCDriverClassnameKey):
 		attrs.DBJDBCDriverClassName = v.Str()
-	case conventions.AttributeDBCassandraKeyspace:
+	case string(conventions.DBCassandraKeyspaceKey):
 		attrs.DBCassandraKeyspace = v.Str()
-	case conventions.AttributeDBHBaseNamespace:
+	case string(conventions.DBHBaseNamespaceKey):
 		attrs.DBHBaseNamespace = v.Str()
-	case conventions.AttributeDBRedisDBIndex:
+	case string(conventions.DBRedisDBIndexKey):
 		attrs.DBRedisDatabaseIndex = v.Str()
-	case conventions.AttributeDBMongoDBCollection:
+	case string(conventions.DBMongoDBCollectionKey):
 		attrs.DBMongoDBCollection = v.Str()
 
 	default:
@@ -217,8 +217,8 @@ func (attrs *DatabaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// MessagingAttributes is the set of known attributes for Messaging Spans
-type MessagingAttributes struct {
+// messagingAttributes is the set of known attributes for Messaging Spans
+type messagingAttributes struct {
 	MessagingSystem                       string
 	MessagingDestination                  string
 	MessagingDestinationKind              string
@@ -231,39 +231,39 @@ type MessagingAttributes struct {
 	MessagingMessagePayloadSize           int64
 	MessagingMessagePayloadCompressedSize int64
 	MessagingOperation                    string
-	NetworkAttributes                     NetworkAttributes
+	NetworkAttributes                     networkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *MessagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *messagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case conventions.AttributeMessagingSystem:
+	case string(conventions.MessagingSystemKey):
 		attrs.MessagingSystem = v.Str()
-	case conventions.AttributeMessagingDestination:
+	case string(conventions.MessagingDestinationKey):
 		attrs.MessagingDestination = v.Str()
-	case conventions.AttributeMessagingDestinationKind:
+	case string(conventions.MessagingDestinationKindKey):
 		attrs.MessagingDestinationKind = v.Str()
-	case conventions.AttributeMessagingTempDestination:
+	case string(conventions.MessagingTempDestinationKey):
 		attrs.MessagingTempDestination = v.Str()
-	case conventions.AttributeMessagingProtocol:
+	case string(conventions.MessagingProtocolKey):
 		attrs.MessagingProtocol = v.Str()
-	case conventions.AttributeMessagingProtocolVersion:
+	case string(conventions.MessagingProtocolVersionKey):
 		attrs.MessagingProtocolVersion = v.Str()
-	case conventions.AttributeMessagingURL:
+	case string(conventions.MessagingURLKey):
 		attrs.MessagingURL = v.Str()
-	case conventions.AttributeMessagingMessageID:
+	case string(conventions.MessagingMessageIDKey):
 		attrs.MessagingMessageID = v.Str()
-	case conventions.AttributeMessagingConversationID:
+	case string(conventions.MessagingConversationIDKey):
 		attrs.MessagingConversationID = v.Str()
-	case conventions.AttributeMessagingMessagePayloadSizeBytes:
+	case string(conventions.MessagingMessagePayloadSizeBytesKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.MessagingMessagePayloadSize = val
 		}
-	case conventions.AttributeMessagingMessagePayloadCompressedSizeBytes:
+	case string(conventions.MessagingMessagePayloadCompressedSizeBytesKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.MessagingMessagePayloadCompressedSize = val
 		}
-	case conventions.AttributeMessagingOperation:
+	case string(conventions.MessagingOperationKey):
 		attrs.MessagingOperation = v.Str()
 
 	default:
@@ -272,8 +272,8 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	return true
 }
 
-// ExceptionAttributes is the set of known attributes for Exception events
-type ExceptionAttributes struct {
+// exceptionAttributes is the set of known attributes for Exception events
+type exceptionAttributes struct {
 	ExceptionEscaped    string
 	ExceptionMessage    string
 	ExceptionStackTrace string
@@ -281,15 +281,15 @@ type ExceptionAttributes struct {
 }
 
 // MapAttribute attempts to map a SpanEvent attribute to one of the known types
-func (attrs *ExceptionAttributes) MapAttribute(k string, v pcommon.Value) bool {
+func (attrs *exceptionAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
-	case conventions.AttributeExceptionEscaped:
+	case string(conventions.ExceptionEscapedKey):
 		attrs.ExceptionEscaped = v.Str()
-	case conventions.AttributeExceptionMessage:
+	case string(conventions.ExceptionMessageKey):
 		attrs.ExceptionMessage = v.Str()
-	case conventions.AttributeExceptionStacktrace:
+	case string(conventions.ExceptionStacktraceKey):
 		attrs.ExceptionStackTrace = v.Str()
-	case conventions.AttributeExceptionType:
+	case string(conventions.ExceptionTypeKey):
 		attrs.ExceptionType = v.Str()
 	}
 	return true

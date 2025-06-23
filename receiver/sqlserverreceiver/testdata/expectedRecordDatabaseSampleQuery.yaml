@@ -13,6 +13,9 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: client.address
+                value:
+                  stringValue: DESKTOP-GHAEGRD
               - key: client.port
                 value:
                   intValue: "59286"
@@ -34,6 +37,9 @@ resourceLogs:
               - key: sqlserver.blocking_session_id
                 value:
                   intValue: "0"
+              - key: sqlserver.context_info
+                value:
+                  stringValue: ""
               - key: sqlserver.command
                 value:
                   stringValue: SELECT
@@ -91,9 +97,6 @@ resourceLogs:
               - key: sqlserver.transaction_isolation_level
                 value:
                   intValue: "2"
-              - key: sqlserver.username
-                value:
-                  stringValue: sa
               - key: sqlserver.wait_resource
                 value:
                   stringValue: ""
@@ -106,14 +109,13 @@ resourceLogs:
               - key: sqlserver.writes
                 value:
                   intValue: "0"
-              - key: client.address
+              - key: user.name
                 value:
-                  stringValue: DESKTOP-GHAEGRD
-            body:
-              stringValue: sample
-            eventName: query sample
+                  stringValue: sa
+            body: {}
+            eventName: db.server.query_sample
             spanId: a7ad6a7169203331
-            timeUnixNano: "1746443501202499000"
+            timeUnixNano: "1748221338306918262"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
