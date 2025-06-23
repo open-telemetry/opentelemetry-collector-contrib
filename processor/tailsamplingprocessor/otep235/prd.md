@@ -295,67 +295,118 @@ Update individual policies to use OTEP 235 threshold-based algorithms instead of
 - Ensure all policies coordinate to maintain sampling consistency
 - Preserve existing configuration APIs and expected behaviors
 
-### Phase 5 📋 PLANNED (Integration and Coordination)
+### Phase 5 ✅ COMPLETE (Integration and Coordination)
 
 Implement policy coordination and TraceState propagation throughout the processor.
 
+**Completed Deliverables:**
+- [x] Policy coordination mechanism for threshold management
+- [x] TraceState propagation to outgoing spans with updated thresholds
+- [x] Cross-policy consistency validation
+- [x] Integration testing with realistic multi-policy scenarios
+- [x] Performance optimization for TraceState operations
+
+### Phase 6 📋 PLANNED (Per-Span Threshold Adjustments)
+
+Implement per-span threshold adjustments while maintaining per-trace sampling decisions, addressing the requirement that adjusted counts must be calculated per-span based on individual span thresholds.
+
 **Planned Deliverables:**
-- [ ] Policy coordination mechanism for threshold management
-- [ ] TraceState propagation to outgoing spans with updated thresholds
-- [ ] Cross-policy consistency validation
-- [ ] Integration testing with realistic multi-policy scenarios
-- [ ] Performance optimization for TraceState operations
+- [ ] **Per-Span Threshold Management**: Enhance TraceStateManager to track and update thresholds for individual spans within a trace
+- [ ] **Span-Level Adjusted Counts**: Implement adjusted count calculation per span based on original vs final threshold for each span
+- [ ] **TraceState Span Coordination**: Update TraceState propagation to handle different thresholds for spans within the same trace
+- [ ] **Policy Interface Extension**: Extend policy evaluators to specify per-span threshold adjustments
+- [ ] **Testing Infrastructure**: Add tests validating per-span threshold behavior and adjusted count calculations
 
-### Phase 6 📋 PLANNED (Testing and Performance Validation)
+**Key Requirements:**
+- Sampling decisions remain per-trace for trace completeness
+- Threshold adjustments and adjusted counts calculated per-span for observability accuracy
+- Handle cases where spans in same trace have different incoming thresholds
+- Maintain OTEP 235 compliance for threshold propagation rules
 
-Comprehensive testing and performance validation of the complete OTEP 235 implementation.
+### Phase 7 📋 PLANNED (Rate Limiting with Batch-Based Thresholds)
+
+Implement proper rate limiting algorithm that applies appropriate thresholds based on accumulation periods and trace randomness sorting.
 
 **Planned Deliverables:**
-- [ ] Complete test suite with >95% coverage for OTEP 235 paths
+- [ ] **Batch-Based Rate Limiting**: Replace simple time-based rate limiting with PRD algorithm that operates on trace batches
+- [ ] **Randomness-Based Sorting**: Implement trace sorting by randomness value for deterministic rate limiting decisions
+- [ ] **Threshold Calculation**: Calculate appropriate threshold for each batch period based on target rate and input volume
+- [ ] **Accumulation Period Management**: Handle rate limiting across multiple flush periods with consistent threshold application
+- [ ] **Algorithm Implementation**: Full implementation of PRD rate limiting algorithm: sort by randomness, remove excess traces, adjust thresholds
+
+**Key Algorithm:**
+```go
+// PRD Rate Limiting Algorithm
+1. Sort traces ascending by randomness value (TraceID or rv)
+2. Determine target traces for current period based on rate limit
+3. Calculate threshold from Nth trace randomness value  
+4. Apply threshold to all spans in remaining traces
+5. Maintain threshold consistency across accumulation periods
+```
+
+**Expected Behavior:**
+- Rate-limited traces get calculated threshold (e.g., th:fd70a3d70a3d7 for 1% sampling)
+- Deterministic selection based on trace randomness, not arrival time
+- Proper adjusted count calculation for rate-limited spans
+- Consistent behavior across different batch sizes and timing
+
+### Phase 8 📋 PLANNED (Testing and Performance Validation)
+
+Comprehensive testing and performance validation of the complete OTEP 235 implementation with per-span adjustments and proper rate limiting.
+
+**Planned Deliverables:**
+- [ ] Complete test suite with >95% coverage for OTEP 235 paths including per-span behavior
 - [ ] Performance benchmarks comparing legacy vs OTEP 235 implementation
-- [ ] Load testing with various TraceState scenarios
+- [ ] Load testing with various TraceState scenarios and mixed span thresholds
+- [ ] Rate limiting algorithm validation with different batch sizes and rates
 - [ ] Backward compatibility verification across all policy combinations
-- [ ] Memory and CPU impact analysis
+- [ ] Memory and CPU impact analysis for per-span threshold management
 - [ ] Performance regression tests
 
-### Phase 7 📋 PLANNED (Documentation and Examples)
+### Phase 9 📋 PLANNED (Documentation and Examples)
 
 Final documentation, examples, and migration guidance for users.
 
 **Planned Deliverables:**
-- [ ] Updated processor documentation with OTEP 235 features
+- [ ] Updated processor documentation with OTEP 235 features including per-span threshold behavior
 - [ ] Migration guide explaining algorithm changes and expected impacts
 - [ ] Configuration examples for common OTEP 235 scenarios
-- [ ] Performance tuning recommendations
+- [ ] Performance tuning recommendations for per-span threshold management
 - [ ] Troubleshooting guide for TraceState-related issues
 - [ ] Integration examples with other OTEP 235-compliant components
+- [ ] Rate limiting configuration examples with proper threshold calculations
 
 ## Success Criteria
 
-### Phase 4 Completed ✅
+### Phase 5 Completed ✅
 
-- [x] All sampling policies updated to use OTEP 235 threshold-based algorithms
-- [x] Probabilistic sampler completely rewritten with threshold comparison
-- [x] Rate limiting enhanced with OTEP 235 coordination and threshold management
-- [x] Composite policy updated to maintain threshold consistency across sub-policies
-- [x] Comprehensive testing with 138/138 tests passing
-- [x] Backward compatibility maintained for all existing configurations
-- [x] Edge case handling implemented (0%, negative, >100% probabilities)
+- [x] Policy coordination mechanism implemented for threshold management
+- [x] TraceState propagation to outgoing spans with updated thresholds
+- [x] Cross-policy consistency validation working
+- [x] Integration testing with realistic multi-policy scenarios
+- [x] Performance optimization for TraceState operations
 
-### Functional Requirements (Phase 5-7)
+### Updated Functional Requirements (Phase 6-9)
 
-- [x] All traces with TraceState `th` values are processed using OTEP 235 algorithms
-- [x] Probabilistic sampling produces consistent decisions across sampling stages
-- [x] Rate limiting maintains sampling consistency through threshold adjustment
-- [x] All existing policy types continue to work with enhanced consistency
-- [ ] TraceState values are properly propagated to downstream processors
+- [ ] **Per-Span Threshold Management**: Individual spans within traces have independently calculated adjusted counts
+- [ ] **Rate Limiting Algorithm**: Proper PRD algorithm implementation with randomness-based sorting and threshold calculation
+- [ ] **Batch-Based Processing**: Rate limiting operates on trace batches with consistent threshold application across accumulation periods
+- [ ] **Observability Accuracy**: Adjusted counts correctly reflect individual span representativity for metrics calculations
+- [ ] **TraceState Consistency**: All spans propagate correct threshold values based on final sampling decisions
+
+### Technical Requirements (Phase 6-7)
+
+- [ ] **Per-Span Data Structures**: Support for tracking different thresholds per span within same trace
+- [ ] **Rate Limiting Infrastructure**: Batch processing with trace sorting and threshold calculation
+- [ ] **Algorithm Compliance**: Full implementation of PRD rate limiting algorithm
+- [ ] **Performance Optimization**: Efficient handling of per-span calculations without significant overhead
 
 ### Non-Functional Requirements
 
 - [ ] Performance degradation < 5% for existing workloads
-- [ ] Memory overhead for threshold tracking < 10% of current usage
+- [ ] Memory overhead for per-span threshold tracking < 15% of current usage  
 - [x] 100% backward compatibility for existing configurations (Phase 3 validated)
-- [ ] Comprehensive test coverage for both legacy and OTEP 235 modes
+- [ ] Comprehensive test coverage for per-span and rate limiting behavior
 
 ### Documentation Requirements
 
@@ -363,6 +414,8 @@ Final documentation, examples, and migration guidance for users.
 - [ ] Migration guide for existing users
 - [ ] Configuration examples for common scenarios
 - [ ] Performance tuning recommendations
+- [ ] Per-span threshold behavior explanation
+- [ ] Rate limiting algorithm documentation
 
 ## Implementation Decision: Simplified Algorithm Replacement
 
@@ -409,20 +462,30 @@ All sampling policies have been successfully updated to use OTEP 235 algorithms:
 3. **Composite Policy**: ✅ Updated to maintain threshold consistency across sub-policies
 4. **Testing**: ✅ All 138 tests passing with comprehensive validation of new algorithms
 
-### Ready for Phase 5: Integration and Coordination
+### Ready for Phase 6: Per-Span Threshold Adjustments
 
-The next phase focuses on processor integration and TraceState propagation:
+The next phase focuses on implementing per-span threshold management:
 
-1. **TraceState Propagation**: Implement TraceState updates with new threshold values in outgoing spans
-2. **Policy Coordination**: Ensure multiple policies coordinate properly for final threshold decisions
-3. **Integration Testing**: Validate end-to-end OTEP 235 behavior with realistic scenarios
-4. **Performance Optimization**: Optimize TraceState operations for production workloads
+1. **Per-Span Threshold Tracking**: Implement individual threshold management for spans within traces
+2. **Span-Level Adjusted Counts**: Calculate adjusted counts per span based on original vs final thresholds  
+3. **TraceState Span Coordination**: Handle different thresholds for spans within the same trace
+4. **Policy Interface Extension**: Extend policies to specify per-span threshold adjustments
+
+### Ready for Phase 7: Rate Limiting Algorithm Implementation
+
+Following per-span support, implement proper rate limiting:
+
+1. **PRD Algorithm**: Full implementation of randomness-based sorting and threshold calculation
+2. **Batch Processing**: Rate limiting on trace batches rather than simple time-based counting
+3. **Threshold Calculation**: Determine appropriate thresholds based on target rates and trace volumes
+4. **Accumulation Period Management**: Consistent threshold application across flush periods
 
 ### Long-term Roadmap
 
-- **Phase 5**: Integration and coordination (next)
-- **Phase 6**: Testing and performance validation  
-- **Phase 7**: Documentation and examples for users
-- **Expected Completion**: Full OTEP 235 compliance with maintained backward compatibility
+- **Phase 6**: Per-Span Threshold Adjustments (next)
+- **Phase 7**: Rate Limiting with Batch-Based Thresholds
+- **Phase 8**: Testing and performance validation  
+- **Phase 9**: Documentation and examples for users
+- **Expected Completion**: Full OTEP 235 compliance with per-span accuracy and proper rate limiting
 
-The project has successfully completed 4 of 7 phases (57% complete) with solid progress toward full OTEP 235 compliance.
+The project has successfully completed 5 of 9 phases (56% complete) with solid progress toward full OTEP 235 compliance including per-span threshold management and proper rate limiting algorithms.
