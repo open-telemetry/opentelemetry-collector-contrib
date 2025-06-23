@@ -11,9 +11,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestPathGetSetter(t *testing.T) {
@@ -21,6 +24,7 @@ func TestPathGetSetter(t *testing.T) {
 	tests := []struct {
 		path     string
 		val      any
+		keys     []ottl.Key[*profileContext]
 		setFails bool
 	}{
 		{
@@ -109,29 +113,78 @@ func TestPathGetSetter(t *testing.T) {
 			path: "original_payload",
 			val:  []byte{1, 2, 3},
 		},
+		{
+			path: "attributes",
+			val: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("akey", "val")
+				return m
+			}(),
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("akey"),
+				},
+			},
+			val: "val",
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("akey"),
+				},
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("bkey"),
+				},
+			},
+			val: "val",
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					G: &ottl.StandardGetSetter[*profileContext]{
+						Getter: func(context.Context, *profileContext) (any, error) {
+							return "", nil
+						},
+						Setter: func(context.Context, *profileContext, any) error {
+							return nil
+						},
+					},
+				},
+			},
+			val: "val",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			pathParts := strings.Split(tt.path, " ")
 			path := &pathtest.Path[*profileContext]{N: pathParts[0]}
+			if tt.keys != nil {
+				path.KeySlice = tt.keys
+			}
 			if len(pathParts) > 1 {
 				path.NextPath = &pathtest.Path[*profileContext]{N: pathParts[1]}
 			}
 
 			profile := pprofile.NewProfile()
+			dictionary := pprofile.NewProfilesDictionary()
 
-			accessor, err := PathGetSetter[*profileContext](path)
+			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(context.Background(), newProfileContext(profile), tt.val)
+			err = accessor.Set(context.Background(), newProfileContext(profile, dictionary), tt.val)
 			if tt.setFails {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), newProfileContext(profile))
+			got, err := accessor.Get(context.Background(), newProfileContext(profile, dictionary))
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
@@ -140,15 +193,20 @@ func TestPathGetSetter(t *testing.T) {
 }
 
 type profileContext struct {
-	profile pprofile.Profile
+	profile    pprofile.Profile
+	dictionary pprofile.ProfilesDictionary
+}
+
+func (p *profileContext) GetProfilesDictionary() pprofile.ProfilesDictionary {
+	return p.dictionary
 }
 
 func (p *profileContext) GetProfile() pprofile.Profile {
 	return p.profile
 }
 
-func newProfileContext(profile pprofile.Profile) *profileContext {
-	return &profileContext{profile: profile}
+func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDictionary) *profileContext {
+	return &profileContext{profile: profile, dictionary: dictionary}
 }
 
 func createValueTypeSlice() pprofile.ValueTypeSlice {
