@@ -263,9 +263,11 @@ func (e ecsModeEncoder) encodeSpan(
 	document.AddTraceID("trace.id", span.TraceID())
 	document.AddSpanID("span.id", span.SpanID())
 	document.AddString("span.name", span.Name())
-	document.AddString("span.kind", traceutil.SpanKindStr(span.Kind()))
-	document.AddInt("span.status.code", int64(span.Status().Code()))
-	document.AddString("span.status.message", span.Status().Message())
+	if span.Status().Code() == ptrace.StatusCodeOk {
+		document.AddString("event.outcome", "success")
+	} else if span.Status().Code() == ptrace.StatusCodeError {
+		document.AddString("event.outcome", "failure")
+	}
 	document.AddEvents("span.events", span.Events())
 	document.AddLinks("span.links", span.Links())
 

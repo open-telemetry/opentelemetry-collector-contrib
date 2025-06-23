@@ -454,7 +454,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	span.SetKind(ptrace.SpanKindClient)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)))
-	span.Status().SetCode(2)
+	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Status().SetMessage("Test")
 	err = span.Attributes().FromRaw(map[string]any{
 		"event.name": "test-event",
@@ -492,64 +492,60 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.JSONEq(t, `{
-		"@timestamp": "2023-04-19T03:04:05.000000006Z",
-		"trace": {
-			"id": "01020304050607080807060504030201"
+	  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+	  "trace": {
+		"id": "01020304050607080807060504030201"
+	  },
+	  "span": {
+		"id": "1920212223242526",
+		"name": "client span",
+		"events": {
+		  "fooEvent": {
+			"eventMockFoo": "foo",
+			"eventMockBar": "bar",
+			"time": "2023-04-19T03:04:05.000000006Z"
+		  }
 		},
-		"span": {
-			"id": "1920212223242526",
-			"name": "client span",
-			"kind": "SPAN_KIND_CLIENT",
-			"status": {
-				"code": 2,
-				"message": "Test"
+		"links": [
+		  {
+			"span": {
+			  "id": "1112131415161718"
 			},
-			"links": [
-				{
-					"span": {
-						"id": "1112131415161718"
-					},
-					"trace": {
-						"id": "01020304050607080807060504030201"
-					}
-				},
-				{
-					"span": {
-						"id": "3132333435363738"
-					},
-					"trace": {
-						"id": "21222324252627282827262524232221"
-					}
-				}
-			],
-			"events": {
-				"fooEvent": {
-					"eventMockFoo": "foo",
-					"eventMockBar": "bar",
-					"time": "2023-04-19T03:04:05.000000006Z"
-				}
+			"trace": {
+			  "id": "01020304050607080807060504030201"
 			}
-		},
-		"cloud": {
-			"provider": "aws",
-			"service": {
-				"name": "aws_elastic_beanstalk"
+		  },
+		  {
+			"span": {
+			  "id": "3132333435363738"
+			},
+			"trace": {
+			  "id": "21222324252627282827262524232221"
 			}
-		},
-		"error": {
-			"type": "test-error"
-        },
-        "event": {
-			"action": "test-event"
-        },
+		  }
+		]
+	  },
+	  "cloud": {
+		"provider": "aws",
 		"service": {
-			"environment": "BETA",
-			"name": "some-service",
-			"node": {
-				"name": "23"
-			},
-			"version": "env-version-1234"
+		  "name": "aws_elastic_beanstalk"
 		}
+	  },
+	  "error": {
+		"type": "test-error"
+	  },
+	  "event": {
+		"action": "test-event",
+		"outcome": "failure"
+	  },
+	  "service": {
+		"environment": "BETA",
+		"name": "some-service",
+		"node": {
+		  "name": "23"
+		},
+		"version": "env-version-1234"
+	  }
 	}`, buf.String())
 }
 
