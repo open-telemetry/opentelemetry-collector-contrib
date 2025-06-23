@@ -110,11 +110,11 @@ func (s *Scraper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func BuildDataSourceString(driver string, config Config) (string, error) {
+func BuildDataSourceString(config Config) (string, error) {
 	var auth string
 	if config.Username != "" {
 		// MySQL doesn't need URL escaping
-		if driver == DriverMySQL {
+		if config.Driver == DriverMySQL {
 			auth = fmt.Sprintf("%s:%s@", config.Username, string(config.Password))
 		} else {
 			auth = fmt.Sprintf("%s:%s@", url.QueryEscape(config.Username), url.QueryEscape(string(config.Password)))
@@ -127,7 +127,7 @@ func BuildDataSourceString(driver string, config Config) (string, error) {
 	}
 
 	var connStr string
-	switch driver {
+	switch config.Driver {
 	case DriverHDB:
 		// HDB connection string format: hdb://user:pass@host:port?param1=value1
 		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, config.Host, config.Port)
@@ -165,7 +165,7 @@ func BuildDataSourceString(driver string, config Config) (string, error) {
 		// TDS connection string format: tds://user:pass@host:port/database
 		connStr = fmt.Sprintf("tds://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	default:
-		return "", fmt.Errorf("unsupported driver: %s", driver)
+		return "", fmt.Errorf("unsupported driver: %s", config.Driver)
 	}
 
 	// Append query parameters if any exist

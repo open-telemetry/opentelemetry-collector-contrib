@@ -60,7 +60,7 @@ func newLogsReceiver(
 	if config.DataSource != "" {
 		dataSource = config.DataSource
 	} else {
-		dataSource, err = sqlquery.BuildDataSourceString(config.Driver, config.Config)
+		dataSource, err = sqlquery.BuildDataSourceString(config.Config)
 		if err != nil {
 			return nil, err
 		}

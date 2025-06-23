@@ -750,7 +750,8 @@ func TestBuildDataSourceString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildDataSourceString(tt.driver, Config{
+			got, err := BuildDataSourceString(Config{
+				Driver:           tt.driver,
 				Host:             tt.host,
 				Port:             tt.port,
 				Database:         tt.database,
@@ -769,7 +770,7 @@ func TestBuildDataSourceString(t *testing.T) {
 	}
 }
 
-func TestBuildDataSourceString_SQLServer(t *testing.T) {
+func TestBuildDataSourceStringSQLServer(t *testing.T) {
 	tests := []struct {
 		name     string
 		config   Config
@@ -782,6 +783,7 @@ func TestBuildDataSourceString_SQLServer(t *testing.T) {
 				Host:     "localhost",
 				Port:     1433,
 				Database: "mydb",
+				Driver:   "sqlserver",
 				Username: "test",
 				Password: "password",
 			},
@@ -795,6 +797,7 @@ func TestBuildDataSourceString_SQLServer(t *testing.T) {
 				Port:     1433,
 				Database: "mydb",
 				Username: "test",
+				Driver:   "sqlserver",
 				Password: "password",
 			},
 			expected: "sqlserver://test:password@localhost:1433/instance?database=mydb",
@@ -806,6 +809,7 @@ func TestBuildDataSourceString_SQLServer(t *testing.T) {
 				Host:     "localhost\\instance",
 				Port:     1433,
 				Database: "mydb",
+				Driver:   "sqlserver",
 				Username: "test",
 				Password: "password",
 				AdditionalParams: map[string]any{
@@ -819,7 +823,7 @@ func TestBuildDataSourceString_SQLServer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildDataSourceString(DriverSQLServer, tt.config)
+			got, err := BuildDataSourceString(tt.config)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
