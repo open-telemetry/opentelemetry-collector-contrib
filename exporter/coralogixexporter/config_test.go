@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,

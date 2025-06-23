@@ -33,7 +33,7 @@ func lazyInitObfuscator() *obfuscate.Obfuscator {
 
 // ObfuscateSQL obfuscates & normalizes the provided SQL query, writing the error into errResult if the operation fails.
 func obfuscateSQL(rawQuery string) (string, error) {
-	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLStringWithOptions(rawQuery, &obfuscate.SQLConfig{})
+	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLStringWithOptions(rawQuery, &obfuscate.SQLConfig{DBMS: "mssql"})
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func obfuscateXMLPlan(rawPlan string) (string, error) {
 						val, err := obfuscateSQL(elem.Attr[i].Value)
 						if err != nil {
 							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							continue
+							return "", nil
 						}
 						elem.Attr[i].Value = val
 					}

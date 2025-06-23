@@ -20,12 +20,12 @@ type client interface {
 	getVersion() (*version.Version, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
-	getTableStats() ([]TableStats, error)
-	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
-	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
-	getStatementEventsStats() ([]StatementEventStats, error)
+	getTableStats() ([]tableStats, error)
+	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
+	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
+	getStatementEventsStats() ([]statementEventStats, error)
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
-	getReplicaStatusStats() ([]ReplicaStatusStats, error)
+	getReplicaStatusStats() ([]replicaStatusStats, error)
 	Close() error
 }
 
@@ -37,7 +37,7 @@ type mySQLClient struct {
 	statementEventsTimeLimit       time.Duration
 }
 
-type IoWaitsStats struct {
+type ioWaitsStats struct {
 	schema      string
 	name        string
 	countDelete int64
@@ -50,16 +50,16 @@ type IoWaitsStats struct {
 	timeUpdate  int64
 }
 
-type TableIoWaitsStats struct {
-	IoWaitsStats
+type tableIoWaitsStats struct {
+	ioWaitsStats
 }
 
-type IndexIoWaitsStats struct {
-	IoWaitsStats
+type indexIoWaitsStats struct {
+	ioWaitsStats
 	index string
 }
 
-type TableStats struct {
+type tableStats struct {
 	schema           string
 	name             string
 	rows             int64
@@ -68,7 +68,7 @@ type TableStats struct {
 	indexLength      int64
 }
 
-type StatementEventStats struct {
+type statementEventStats struct {
 	schema                    string
 	digest                    string
 	digestText                string
@@ -110,7 +110,7 @@ type tableLockWaitEventStats struct {
 	sumTimerWriteExternal         int64
 }
 
-type ReplicaStatusStats struct {
+type replicaStatusStats struct {
 	replicaIOState              string
 	sourceHost                  string
 	sourceUser                  string
@@ -260,7 +260,7 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 }
 
 // getTableStats queries the db for information_schema table size metrics.
-func (c *mySQLClient) getTableStats() ([]TableStats, error) {
+func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 	query := "SELECT TABLE_SCHEMA, TABLE_NAME, " +
 		"COALESCE(TABLE_ROWS, 0) as TABLE_ROWS, " +
 		"COALESCE(AVG_ROW_LENGTH, 0) as AVG_ROW_LENGTH, " +
@@ -273,9 +273,9 @@ func (c *mySQLClient) getTableStats() ([]TableStats, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var stats []TableStats
+	var stats []tableStats
 	for rows.Next() {
-		var s TableStats
+		var s tableStats
 		err := rows.Scan(&s.schema, &s.name,
 			&s.rows, &s.averageRowLength,
 			&s.dataLength, &s.indexLength)
@@ -289,7 +289,7 @@ func (c *mySQLClient) getTableStats() ([]TableStats, error) {
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.
-func (c *mySQLClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
+func (c *mySQLClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
 	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, " +
 		"COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE," +
 		"FLOOR(SUM_TIMER_DELETE/1000), FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000) " +
@@ -300,9 +300,9 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var stats []TableIoWaitsStats
+	var stats []tableIoWaitsStats
 	for rows.Next() {
-		var s TableIoWaitsStats
+		var s tableIoWaitsStats
 		err := rows.Scan(&s.schema, &s.name,
 			&s.countDelete, &s.countFetch, &s.countInsert, &s.countUpdate,
 			&s.timeDelete, &s.timeFetch, &s.timeInsert, &s.timeUpdate)
@@ -316,7 +316,7 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 }
 
 // getIndexIoWaitsStats queries the db for index_io_waits metrics.
-func (c *mySQLClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
+func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
 	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
 		"COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE," +
 		"FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000), FLOOR(SUM_TIMER_DELETE/1000) " +
@@ -328,9 +328,9 @@ func (c *mySQLClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var stats []IndexIoWaitsStats
+	var stats []indexIoWaitsStats
 	for rows.Next() {
-		var s IndexIoWaitsStats
+		var s indexIoWaitsStats
 		err := rows.Scan(&s.schema, &s.name, &s.index,
 			&s.countDelete, &s.countFetch, &s.countInsert, &s.countUpdate,
 			&s.timeDelete, &s.timeFetch, &s.timeInsert, &s.timeUpdate)
@@ -343,7 +343,7 @@ func (c *mySQLClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
+func (c *mySQLClient) getStatementEventsStats() ([]statementEventStats, error) {
 	query := fmt.Sprintf("SELECT ifnull(SCHEMA_NAME, 'NONE') as SCHEMA_NAME, DIGEST,"+
 		"LEFT(DIGEST_TEXT, %d) as DIGEST_TEXT, FLOOR(SUM_TIMER_WAIT/1000), SUM_ERRORS,"+
 		"SUM_WARNINGS, SUM_ROWS_AFFECTED, SUM_ROWS_SENT, SUM_ROWS_EXAMINED,"+
@@ -364,9 +364,9 @@ func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
 	}
 	defer rows.Close()
 
-	var stats []StatementEventStats
+	var stats []statementEventStats
 	for rows.Next() {
-		var s StatementEventStats
+		var s statementEventStats
 		err := rows.Scan(&s.schema, &s.digest, &s.digestText,
 			&s.sumTimerWait, &s.countErrors, &s.countWarnings,
 			&s.countRowsAffected, &s.countRowsSent, &s.countRowsExamined, &s.countCreatedTmpDiskTables,
@@ -414,7 +414,7 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 	return stats, nil
 }
 
-func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
+func (c *mySQLClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
 	mysqlVersion, err := c.getVersion()
 	if err != nil {
 		return nil, err
@@ -439,9 +439,9 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 		return nil, err
 	}
 
-	var stats []ReplicaStatusStats
+	var stats []replicaStatusStats
 	for rows.Next() {
-		var s ReplicaStatusStats
+		var s replicaStatusStats
 		dest := []any{}
 		for _, col := range cols {
 			switch strings.ToLower(col) {
