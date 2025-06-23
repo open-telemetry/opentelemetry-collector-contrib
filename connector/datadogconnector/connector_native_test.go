@@ -5,6 +5,7 @@ package datadogconnector
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"testing"
 	"time"
@@ -356,4 +357,19 @@ func TestObfuscate(t *testing.T) {
 		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary")); diff != "" {
 		t.Errorf("Diff between APM stats -want +got:\n%v", diff)
 	}
+}
+
+func TestNoPanic(t *testing.T) {
+	c, _ := creteConnectorNative(t)
+	c.metricsConsumer = consumertest.NewErr(errors.New("error"))
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
+	trace1 := generateTrace()
+
+	err := c.ConsumeTraces(context.Background(), trace1)
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	err = c.Shutdown(context.Background())
+	require.NoError(t, err)
 }
