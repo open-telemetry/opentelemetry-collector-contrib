@@ -181,25 +181,32 @@ extensions:
 
 | CloudTrail field                      | Attribute in OpenTelemetry log                                                         |
 |---------------------------------------|----------------------------------------------------------------------------------------|
-| `awsRegion`                           | `cloud.region`                                                                         |
-| `recipientAccountId`                  | `cloud.account.id`                                                                     |
 | `eventID`                             | `aws.cloudtrail.event_id`                                                              |
-| `eventType`                           | `rpc.system`                                                                           |
+| `eventVersion`                        | `aws.cloudtrail.event_version`                                                         |
+| `errorCode`                           | `aws.error.code`                                                                       |
+| `errorMessage`                        | `aws.error.message`                                                                    |
 | `eventCategory`                       | `aws.event.category`                                                                   |
-| `eventSource`                         | `rpc.service`                                                                          |
-| `eventName`                           | `rpc.method`                                                                           |
-| `requestID`                           | `aws.request_id`                                                                       |
-| `sourceIPAddress`                     | `net.peer.ip`                                                                          |
-| `userAgent`                           | `user_agent.original`                                                                  |
+| `managementEvent`                     | `aws.event.management`                                                                 |
 | `readOnly`                            | `aws.event.read_only`                                                                  |
+| `insightDetails`                      | `aws.insight_details` (as a map, if available)                                         |
+| `requestParameters`                   | `aws.request.parameters` (map of all request parameters)                               |
+| `requestID`                           | `aws.request_id`                                                                       |
+| `resources`                           | `aws.resources` (as an array, if available)                                            |
+| `responseElements`                    | `aws.response.elements` (map of all response elements)                                 |
 | `sessionCredentialFromConsole`        | `aws.session.console` (set to true if value is "true")                                 |
-| `tlsDetails.tlsVersion`               | `tls.protocol.version` (if available)                                                  |
-| `tlsDetails.cipherSuite`              | `tls.cipher` (if available)                                                            |
-| `tlsDetails.clientProvidedHostHeader` | `server.address` (if available)                                                        |
+| `sharedEventID`                       | `aws.shared_event_id`                                                                  |
+| `recipientAccountId`                  | `cloud.account.id`                                                                     |
+| `awsRegion`                           | `cloud.region`                                                                         |
+| `userIdentity.arn`                    | `principal.arn` (if available)                                                         |
 | `userIdentity.principalId`            | `principal.id` (if available)                                                          |
 | `userIdentity.userName`               | `principal.name` (if available)                                                        |
-| `userIdentity.arn`                    | `principal.arn` (if available)                                                         |
-| `requestParameters`                   | `aws.request.parameters` (map of all request parameters)                               |
-| `responseElements`                    | `aws.response.elements` (map of all response elements)                                 |
+| `eventName`                           | `rpc.method`                                                                           |
+| `eventSource`                         | `rpc.service`                                                                          |
+| `eventType`                           | `rpc.system`                                                                           |
+| `tlsDetails.clientProvidedHostHeader` | `server.address` (if available)                                                        |
+| `sourceIPAddress`                     | `source.address`                                                                       |
+| `tlsDetails.cipherSuite`              | `tls.cipher` (if available)                                                            |
+| `tlsDetails.tlsVersion`               | `tls.protocol.version` (if available)                                                  |
+| `userAgent`                           | `user_agent.original`                                                                  |
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
