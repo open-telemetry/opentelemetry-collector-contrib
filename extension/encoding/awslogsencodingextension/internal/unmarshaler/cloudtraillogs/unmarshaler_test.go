@@ -27,6 +27,7 @@ func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.NoError(t, err)
 
+	// Read the expected logs from the file
 	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_logs_expected.yaml"))
 	require.NoError(t, err)
 

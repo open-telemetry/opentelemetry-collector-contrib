@@ -44,10 +44,14 @@ type CloudTrailRecord struct {
 	ResponseElements             map[string]any `json:"responseElements"`
 	RequestParameters            map[string]any `json:"requestParameters"`
 	Resources                    []any          `json:"resources"`
-	ReadOnly                     bool           `json:"readOnly"`
-	ManagementEvent              bool           `json:"managementEvent"`
+	ReadOnly                     *bool          `json:"readOnly"`
+	ManagementEvent              *bool          `json:"managementEvent"`
 	TLSDetails                   map[string]any `json:"tlsDetails"`
 	SessionCredentialFromConsole string         `json:"sessionCredentialFromConsole"`
+	ErrorCode                    string         `json:"errorCode"`
+	ErrorMessage                 string         `json:"errorMessage"`
+	InsightDetails               map[string]any `json:"insightDetails"`
+	SharedEventID                string         `json:"sharedEventID"`
 }
 
 type CloudTrailLogs struct {
@@ -118,15 +122,41 @@ func (u *CloudTrailLogsUnmarshaler) setLogRecord(logRecord plog.LogRecord, recor
 }
 
 func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
+
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
-	attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
+
+	if record.EventName != "" {
+		attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
+	}
+
 	attrs.PutStr(string(conventions.RPCSystemKey), record.EventType)
-	attrs.PutStr(string(conventions.RPCServiceKey), record.EventSource)
-	attrs.PutStr(string(conventions.AWSRequestIDKey), record.RequestID)
+
+	if record.EventSource != "" {
+		attrs.PutStr(string(conventions.RPCServiceKey), record.EventSource)
+	}
+
+	if record.RequestID != "" {
+		attrs.PutStr(string(conventions.AWSRequestIDKey), record.RequestID)
+	}
+
 	attrs.PutStr("aws.event.category", record.EventCategory)
-	attrs.PutBool("aws.event.read_only", record.ReadOnly)
-	attrs.PutStr("net.peer.ip", record.SourceIPAddress)
-	attrs.PutStr(string(conventions.UserAgentOriginalKey), record.UserAgent)
+
+	if record.ReadOnly != nil {
+		attrs.PutBool("aws.event.read_only", *record.ReadOnly)
+	}
+
+	if record.ManagementEvent != nil {
+		attrs.PutBool("aws.event.management", *record.ManagementEvent)
+	}
+
+	if record.SourceIPAddress != "" {
+		attrs.PutStr(string(conventions.SourceAddressKey), record.SourceIPAddress)
+	}
+
+	if record.UserAgent != "" {
+		attrs.PutStr(string(conventions.UserAgentOriginalKey), record.UserAgent)
+	}
 
 	if record.SessionCredentialFromConsole == "true" {
 		attrs.PutBool("aws.session.console", true)
@@ -158,16 +188,36 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 		}
 	}
 
-	// Add RequestParameters as a map directly
+	if record.ErrorCode != "" {
+		attrs.PutStr("aws.error.code", record.ErrorCode)
+	}
+
+	if record.ErrorMessage != "" {
+		attrs.PutStr("aws.error.message", record.ErrorMessage)
+	}
+
+	if record.SharedEventID != "" {
+		attrs.PutStr("aws.shared_event_id", record.SharedEventID)
+	}
+
+	if record.InsightDetails != nil {
+		insightDetailsMap := attrs.PutEmptyMap("aws.insight_details")
+		_ = insightDetailsMap.FromRaw(record.InsightDetails)
+	}
+
 	if record.RequestParameters != nil {
 		requestParamsMap := attrs.PutEmptyMap("aws.request.parameters")
 		_ = requestParamsMap.FromRaw(record.RequestParameters)
 	}
 
-	// Add ResponseElements as a map directly
 	if record.ResponseElements != nil {
 		responseElementsMap := attrs.PutEmptyMap("aws.response.elements")
 		_ = responseElementsMap.FromRaw(record.ResponseElements)
+	}
+
+	if len(record.Resources) > 0 {
+		resourcesArray := attrs.PutEmptySlice("aws.resources")
+		_ = resourcesArray.FromRaw(record.Resources)
 	}
 }
 
