@@ -43,6 +43,6 @@ func keys[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 			output.AppendEmpty().SetStr(key)
 		}
 
-		return output, err
+		return output, nil
 	}
 }
