@@ -465,6 +465,14 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		sampledPolicy = samplingDecisions[sampling.InvertSampled]
 	}
 
+	// OTEP 235 Phase 5: Update TraceState if threshold changed and TraceState is present
+	if trace.TraceStatePresent && trace.FinalThreshold != nil {
+		if err := tsp.traceStateManager.UpdateTraceState(trace, *trace.FinalThreshold); err != nil {
+			tsp.logger.Warn("Failed to update TraceState with final threshold",
+				zap.Stringer("traceID", id), zap.Error(err))
+		}
+	}
+
 	if tsp.recordPolicy && sampledPolicy != nil {
 		sampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
@@ -639,6 +647,11 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+	// OTEP 235 Phase 5: Ensure TraceState is properly propagated in outgoing spans
+	// This is particularly important for span batches that might not have gone through
+	// the full policy evaluation pipeline (e.g., cached decisions)
+	tsp.propagateTraceStateIfNeeded(ctx, id, td)
+
 	tsp.sampledIDCache.Put(id, true)
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
@@ -651,13 +664,35 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	}
 }
 
-// releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
-// IDs. If the trace ID is cached, it deletes the spans from the internal map.
+// releaseNotSampledTrace adds the trace ID to the non-sampled cache and drops the trace.
+// This ensures that future spans with the same trace ID are quickly rejected.
 func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID) {
 	tsp.nonSampledIDCache.Put(id, true)
-	_, ok := tsp.nonSampledIDCache.Get(id)
-	if ok {
-		tsp.dropTrace(id, time.Now())
+	tsp.dropTrace(id, time.Now())
+}
+
+// propagateTraceStateIfNeeded ensures TraceState consistency for outgoing spans.
+// This handles cases where spans arrive after sampling decisions are made.
+func (tsp *tailSamplingSpanProcessor) propagateTraceStateIfNeeded(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+	// Check if we have trace data with OTEP 235 information
+	if d, ok := tsp.idToTrace.Load(id); ok {
+		trace := d.(*sampling.TraceData)
+
+		// If trace has TraceState and a final threshold, ensure consistency
+		if trace.TraceStatePresent && trace.FinalThreshold != nil {
+			// Create a temporary TraceData for the outgoing spans
+			tempTrace := &sampling.TraceData{
+				ReceivedBatches:   td,
+				TraceStatePresent: true,
+				FinalThreshold:    trace.FinalThreshold,
+			}
+
+			// Update TraceState in outgoing spans
+			if err := tsp.traceStateManager.UpdateTraceState(tempTrace, *trace.FinalThreshold); err != nil {
+				tsp.logger.Debug("Failed to propagate TraceState to outgoing spans",
+					zap.Stringer("traceID", id), zap.Error(err))
+			}
+		}
 	}
 }
 
