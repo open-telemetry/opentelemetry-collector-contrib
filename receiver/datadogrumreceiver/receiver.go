@@ -63,10 +63,11 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 	// TODO: ask dinesh about this
 	// TODO: look over this
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://localhost:*", "http://localhost:*"}, // Specify allowed origins
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},                    // Specify allowed methods
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},             // Specify allowed headers
-		AllowCredentials: true,                                                  // Allow credentials
+		AllowedOrigins:   []string{"https://localhost:*", "http://localhost:*"},    // Specify allowed origins
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},                       // Specify allowed methods
+		AllowedHeaders:   []string{"Content-Type", "Authorization", "Traceparent"}, // Specify allowed headers
+		ExposedHeaders:   []string{"Traceparent"},                                  // Expose trace context headers
+		AllowCredentials: true,                                                     // Allow credentials
 	}).Handler(ddmux)
 
 	ddr.server, err = ddr.config.ServerConfig.ToServer(
@@ -94,6 +95,8 @@ func (ddr *datadogRUMReceiver) Start(ctx context.Context, host component.Host) e
 }
 
 func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("%%%%%%%%%%%%%% STARTING RUM RECEIVER", req.Header)
+
 	obsCtx := ddr.lReceiver.StartTracesOp(req.Context())
 	var err error
 	var eventCount int
@@ -132,17 +135,18 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 		}
 		jsonEvents = append(jsonEvents, event)
 	}
-
+	fmt.Println("%%%%%%%%%%%%%% HEADER: ", req.Header)
 	for _, event := range jsonEvents {
-		_, ok := event["_dd"].(map[string]any)["trace_id"].(string)
-		if !ok {
-			fmt.Println("failed to retrieve traceID from RUM event payload; treating as log instead")
+		traceparent := req.Header.Get("traceparent")
+		if traceparent == "" && event["_dd"].(map[string]any)["trace_id"] == nil {
+			fmt.Println("failed to retrieve W3Ctraceparent or trace_id from header; treating as log instead")
 			otelLogs := translator.ToLogs(event, req, reqBytes)
 			if ddr.nextLogsConsumer != nil {
 				err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, otelLogs)
 			}
 		} else {
-			otelTraces := translator.ToTraces(event, req, reqBytes)
+			fmt.Println("%%%%%%%%%%%%%% TO TRACES!!!!")
+			otelTraces := translator.ToTraces(event, req, reqBytes, traceparent)
 			if ddr.nextTracesConsumer != nil {
 				err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 			}

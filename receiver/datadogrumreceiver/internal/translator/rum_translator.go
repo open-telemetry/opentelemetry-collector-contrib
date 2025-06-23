@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -15,26 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 )
-
-// Attribute prefixes
-const prefixDatadog = "datadog."
-const prefixUser = "user."
-const prefixGeo = "geo."
-const prefixDevice = "device."
-const prefixOs = "os."
-const prefixSession = "session."
-const prefixView = "view."
-const prefixResource = "resource."
-const prefixAction = "action."
-
-// User attribute names
-const attrID = "id"
-const attrName = "name"
-const attrEmail = "email"
-
-// Application attribute names
-const attrApplicationID = "id"
-const attrApplicationName = "name"
 
 var bufferPool = sync.Pool{
 	New: func() any {
@@ -56,7 +37,7 @@ type RUMPayload struct {
 	Type string
 }
 
-func parseW3CTraceContext(traceparent string) (traceID pcommon.TraceID, spanID pcommon.SpanID, err error) {
+func ParseW3CTraceContext(traceparent string) (traceID pcommon.TraceID, spanID pcommon.SpanID, err error) {
 	// W3C traceparent format: version-traceID-spanID-flags
 	parts := strings.Split(traceparent, "-")
 	if len(parts) != 4 {
@@ -80,34 +61,32 @@ func parseW3CTraceContext(traceparent string) (traceID pcommon.TraceID, spanID p
 	return traceID, spanID, nil
 }
 
-/*
-func parseIDs(payload map[string]any, req *http.Request) (traceID uint64, spanID uint64, err error) {
+func parseIDs(payload map[string]any, req *http.Request) (pcommon.TraceID, pcommon.SpanID, error) {
 	ddMetadata, ok := payload["_dd"].(map[string]any)
 	if !ok {
-		return 0, 0, fmt.Errorf("failed to find _dd metadata in payload")
+		return pcommon.NewTraceIDEmpty(), pcommon.NewSpanIDEmpty(), fmt.Errorf("failed to find _dd metadata in payload")
 	}
 
 	traceIDString, ok := ddMetadata["trace_id"].(string)
 	if !ok {
-		return 0, 0, fmt.Errorf("failed to retrieve traceID from payload")
+		return pcommon.NewTraceIDEmpty(), pcommon.NewSpanIDEmpty(), fmt.Errorf("failed to retrieve traceID from payload")
 	}
-	traceID, err = strconv.ParseUint(traceIDString, 10, 64)
+	traceID, err := strconv.ParseUint(traceIDString, 10, 64)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to parse traceID: %w", err)
+		return pcommon.NewTraceIDEmpty(), pcommon.NewSpanIDEmpty(), fmt.Errorf("failed to parse traceID: %w", err)
 	}
 
 	spanIDString, ok := ddMetadata["span_id"].(string)
 	if !ok {
-		return 0, 0, fmt.Errorf("failed to retrieve spanID from payload")
+		return pcommon.NewTraceIDEmpty(), pcommon.NewSpanIDEmpty(), fmt.Errorf("failed to retrieve spanID from payload")
 	}
-	spanID, err = strconv.ParseUint(spanIDString, 10, 64)
+	spanID, err := strconv.ParseUint(spanIDString, 10, 64)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to parse spanID: %w", err)
+		return pcommon.NewTraceIDEmpty(), pcommon.NewSpanIDEmpty(), fmt.Errorf("failed to parse spanID: %w", err)
 	}
 
-	return traceID, spanID, nil
+	return uInt64ToTraceID(0, traceID), uInt64ToSpanID(spanID), nil
 }
-*/
 
 func setNumberAttributes(span ptrace.Span, data map[string]any, prefix string, attributes []string) {
 	for _, attribute := range attributes {
@@ -130,51 +109,51 @@ func setSession(newSpan ptrace.Span, session map[string]any) {
 		return
 	}
 
-	if timeSpent, ok := session["time_spent"].(float64); ok {
-		newSpan.Attributes().PutInt("datadog.session.time_spent", int64(timeSpent))
+	if timeSpent, ok := session[ATTR_TIME_SPENT].(float64); ok {
+		newSpan.Attributes().PutInt(PREFIX_DATADOG+"."+PREFIX_SESSION+"."+ATTR_TIME_SPENT, int64(timeSpent))
 	}
 
 	countCategories := []string{
-		"error",
-		"long_task",
-		"resource",
-		"action",
-		"frustration",
+		PREFIX_ERROR,
+		ATTR_LONG_TASK,
+		PREFIX_RESOURCE,
+		PREFIX_ACTION,
+		ATTR_FRUSTRATION,
 	}
 	for _, category := range countCategories {
 		if countCategory, ok := session[category].(map[string]any); ok {
-			setNumberAttributes(newSpan, countCategory, "datadog.session."+category+".", []string{"count"})
+			setNumberAttributes(newSpan, countCategory, PREFIX_DATADOG+"."+PREFIX_SESSION+"."+category+".", []string{ATTR_COUNT})
 		}
 	}
 
-	if id, ok := session["id"].(string); ok {
-		newSpan.Attributes().PutStr("session.id", id)
+	if id, ok := session[ATTR_ID].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_SESSION+"."+ATTR_ID, id)
 	}
-	if ip, ok := session["ip"].(string); ok {
-		newSpan.Attributes().PutStr("client.address", ip)
+	if ip, ok := session[ATTR_IP].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_CLIENT+"."+ATTR_ADDRESS, ip)
 	}
 
-	if isActive, ok := session["is_active"].(bool); ok {
-		newSpan.Attributes().PutBool("datadog.session.is_active", isActive)
+	if isActive, ok := session[ATTR_IS_ACTIVE].(bool); ok {
+		newSpan.Attributes().PutBool(PREFIX_DATADOG+"."+PREFIX_SESSION+"."+ATTR_IS_ACTIVE, isActive)
 	}
 
 	sessionAttributes := []string{
-		"type",
-		"referrer",
+		ATTR_TYPE,
+		ATTR_REFERRER,
 	}
-	setStringAttributes(newSpan, session, "datadog.session.", sessionAttributes)
+	setStringAttributes(newSpan, session, PREFIX_DATADOG+"."+PREFIX_SESSION+".", sessionAttributes)
 
-	if initialView, ok := session["initial_view"].(map[string]any); ok {
+	if initialView, ok := session[PREFIX_INITIAL_VIEW].(map[string]any); ok {
 		initialViewAttributes := []string{
-			"id",
-			"url_host",
-			"url_path",
-			"url_path_group",
+			ATTR_ID,
+			ATTR_URL_HOST,
+			ATTR_URL_PATH,
+			ATTR_URL_PATH_GROUP,
 		}
-		setStringAttributes(newSpan, initialView, "datadog.session.initial_view.", initialViewAttributes)
+		setStringAttributes(newSpan, initialView, PREFIX_DATADOG+"."+PREFIX_SESSION+"."+PREFIX_INITIAL_VIEW+".", initialViewAttributes)
 
-		if urlQuery, ok := initialView["url_query"].(map[string]any); ok {
-			queryMap := newSpan.Attributes().PutEmptyMap("datadog.session.initial_view.url_query")
+		if urlQuery, ok := initialView[ATTR_URL_QUERY].(map[string]any); ok {
+			queryMap := newSpan.Attributes().PutEmptyMap(PREFIX_DATADOG + "." + PREFIX_SESSION + "." + PREFIX_INITIAL_VIEW + "." + ATTR_URL_QUERY)
 			for key, value := range urlQuery {
 				if strValue, ok := value.(string); ok {
 					queryMap.PutStr(key, strValue)
@@ -182,8 +161,8 @@ func setSession(newSpan ptrace.Span, session map[string]any) {
 			}
 		}
 
-		if urlScheme, ok := initialView["url_scheme"].(map[string]any); ok {
-			schemeMap := newSpan.Attributes().PutEmptyMap("datadog.session.initial_view.url_scheme")
+		if urlScheme, ok := initialView[ATTR_URL_SCHEME].(map[string]any); ok {
+			schemeMap := newSpan.Attributes().PutEmptyMap(PREFIX_DATADOG + "." + PREFIX_SESSION + "." + PREFIX_INITIAL_VIEW + "." + ATTR_URL_SCHEME)
 			for key, value := range urlScheme {
 				if strValue, ok := value.(string); ok {
 					schemeMap.PutStr(key, strValue)
@@ -192,17 +171,17 @@ func setSession(newSpan ptrace.Span, session map[string]any) {
 		}
 	}
 
-	if lastView, ok := session["last_view"].(map[string]any); ok {
+	if lastView, ok := session[PREFIX_LAST_VIEW].(map[string]any); ok {
 		lastViewAttributes := []string{
-			"id",
-			"url_host",
-			"url_path",
-			"url_path_group",
+			ATTR_ID,
+			ATTR_URL_HOST,
+			ATTR_URL_PATH,
+			ATTR_URL_PATH_GROUP,
 		}
-		setStringAttributes(newSpan, lastView, "datadog.session.last_view.", lastViewAttributes)
+		setStringAttributes(newSpan, lastView, PREFIX_DATADOG+"."+PREFIX_SESSION+"."+PREFIX_LAST_VIEW+".", lastViewAttributes)
 
-		if urlQuery, ok := lastView["url_query"].(map[string]any); ok {
-			queryMap := newSpan.Attributes().PutEmptyMap("datadog.session.last_view.url_query")
+		if urlQuery, ok := lastView[ATTR_URL_QUERY].(map[string]any); ok {
+			queryMap := newSpan.Attributes().PutEmptyMap(PREFIX_DATADOG + "." + PREFIX_SESSION + "." + PREFIX_LAST_VIEW + "." + ATTR_URL_QUERY)
 			for key, value := range urlQuery {
 				if strValue, ok := value.(string); ok {
 					queryMap.PutStr(key, strValue)
@@ -210,8 +189,8 @@ func setSession(newSpan ptrace.Span, session map[string]any) {
 			}
 		}
 
-		if urlScheme, ok := lastView["url_scheme"].(map[string]any); ok {
-			schemeMap := newSpan.Attributes().PutEmptyMap("datadog.session.last_view.url_scheme")
+		if urlScheme, ok := lastView[ATTR_URL_SCHEME].(map[string]any); ok {
+			schemeMap := newSpan.Attributes().PutEmptyMap(PREFIX_DATADOG + "." + PREFIX_SESSION + "." + PREFIX_LAST_VIEW + "." + ATTR_URL_SCHEME)
 			for key, value := range urlScheme {
 				if strValue, ok := value.(string); ok {
 					schemeMap.PutStr(key, strValue)
@@ -227,63 +206,63 @@ func setView(newSpan ptrace.Span, view map[string]any) {
 	}
 
 	viewMetrics := []string{
-		"time_spent",
-		"first_byte",
-		"largest_contentful_paint",
-		"first_input_delay",
-		"interaction_to_next_paint",
-		"cumulative_layout_shift",
-		"loading_time",
-		"first_contentful_paint",
-		"dom_interactive",
-		"dom_content_loaded",
-		"dom_complete",
-		"load_event",
+		ATTR_TIME_SPENT,
+		ATTR_FIRST_BYTE,
+		ATTR_LARGEST_CONTENTFUL_PAINT,
+		ATTR_FIRST_INPUT_DELAY,
+		ATTR_INTERACTION_TO_NEXT_PAINT,
+		ATTR_CUMULATIVE_LAYOUT_SHIFT,
+		ATTR_LOADING_TIME,
+		ATTR_FIRST_CONTENTFUL_PAINT,
+		ATTR_DOM_INTERACTIVE,
+		ATTR_DOM_CONTENT_LOADED,
+		ATTR_DOM_COMPLETE,
+		ATTR_LOAD_EVENT,
 	}
-	setNumberAttributes(newSpan, view, "datadog.view.", viewMetrics)
+	setNumberAttributes(newSpan, view, PREFIX_DATADOG+"."+PREFIX_VIEW+".", viewMetrics)
 
 	countCategories := []string{
-		"error",
-		"long_task",
-		"resource",
-		"action",
-		"frustration",
+		PREFIX_ERROR,
+		ATTR_LONG_TASK,
+		PREFIX_RESOURCE,
+		PREFIX_ACTION,
+		ATTR_FRUSTRATION,
 	}
 	for _, category := range countCategories {
 		if countCategory, ok := view[category].(map[string]any); ok {
-			setNumberAttributes(newSpan, countCategory, "datadog.view."+category+".", []string{"count"})
+			setNumberAttributes(newSpan, countCategory, PREFIX_DATADOG+"."+PREFIX_VIEW+"."+category+".", []string{ATTR_COUNT})
 		}
 	}
 	//TO-DO: create mappings doc on confluence
 	viewAttributes := []string{
-		"id",
-		"loading_type",
-		"referrer",
-		"url",
-		"url_hash",
-		"url_host",
-		"url_path",
-		"url_path_group",
-		"largest_contentful_paint_target_selector",
-		"first_input_delay_target_selector",
-		"interaction_to_next_paint_target_selector",
-		"cumulative_layout_shift_target_selector",
+		ATTR_ID,
+		ATTR_LOADING_TYPE,
+		ATTR_REFERRER,
+		ATTR_URL,
+		ATTR_URL_HASH,
+		ATTR_URL_HOST,
+		ATTR_URL_PATH,
+		ATTR_URL_PATH_GROUP,
+		ATTR_LARGEST_CONTENTFUL_PAINT_TARGET_SELECTOR,
+		ATTR_FIRST_INPUT_DELAY_TARGET_SELECTOR,
+		ATTR_INTERACTION_TO_NEXT_PAINT_TARGET_SELECTOR,
+		ATTR_CUMULATIVE_LAYOUT_SHIFT_TARGET_SELECTOR,
 	}
-	setStringAttributes(newSpan, view, "datadog.view.", viewAttributes)
+	setStringAttributes(newSpan, view, PREFIX_DATADOG+"."+PREFIX_VIEW+".", viewAttributes)
 
-	if urlQuery, ok := view["url_query"].(map[string]any); ok {
+	if urlQuery, ok := view[ATTR_URL_QUERY].(map[string]any); ok {
 		urlQueryAttributes := []string{
-			"utm_source",
-			"utm_medium",
-			"utm_campaign",
-			"utm_content",
-			"utm_term",
+			ATTR_UTM_SOURCE,
+			ATTR_UTM_MEDIUM,
+			ATTR_UTM_CAMPAIGN,
+			ATTR_UTM_CONTENT,
+			ATTR_UTM_TERM,
 		}
-		setStringAttributes(newSpan, urlQuery, "datadog.view.url_query.", urlQueryAttributes)
+		setStringAttributes(newSpan, urlQuery, PREFIX_DATADOG+"."+PREFIX_VIEW+"."+ATTR_URL_QUERY+".", urlQueryAttributes)
 	}
 
-	if urlScheme, ok := view["url_scheme"].(map[string]any); ok {
-		schemeMap := newSpan.Attributes().PutEmptyMap("datadog.view.url_scheme")
+	if urlScheme, ok := view[ATTR_URL_SCHEME].(map[string]any); ok {
+		schemeMap := newSpan.Attributes().PutEmptyMap(PREFIX_DATADOG + "." + PREFIX_VIEW + "." + ATTR_URL_SCHEME)
 		for key, value := range urlScheme {
 			if strValue, ok := value.(string); ok {
 				schemeMap.PutStr(key, strValue)
@@ -299,37 +278,37 @@ func setResource(newSpan ptrace.Span, resource map[string]any) {
 	}
 
 	resourceMetrics := []string{
-		"duration",
-		"size",
-		"status_code",
+		ATTR_DURATION,
+		ATTR_SIZE,
+		ATTR_STATUS_CODE,
 	}
-	setNumberAttributes(newSpan, resource, "datadog.resource.", resourceMetrics)
+	setNumberAttributes(newSpan, resource, PREFIX_DATADOG+"."+PREFIX_RESOURCE+".", resourceMetrics)
 
 	durationCategories := []string{
-		"ssl",
-		"dns",
-		"redirect",
-		"first_byte",
-		"download",
+		ATTR_SSL,
+		ATTR_DNS,
+		ATTR_REDIRECT,
+		ATTR_FIRST_BYTE,
+		ATTR_DOWNLOAD,
 	}
 	for _, category := range durationCategories {
 		if durationCategory, ok := resource[category].(map[string]any); ok {
-			setNumberAttributes(newSpan, durationCategory, "datadog.resource."+category+".", []string{"duration"})
+			setNumberAttributes(newSpan, durationCategory, PREFIX_DATADOG+"."+PREFIX_RESOURCE+"."+category+".", []string{ATTR_DURATION})
 		}
 	}
 
 	resourceAttributes := []string{
-		"type",
-		"method",
-		"url",
-		"url_host",
-		"url_path",
-		"url_scheme",
+		ATTR_TYPE,
+		ATTR_METHOD,
+		ATTR_URL,
+		ATTR_URL_HOST,
+		ATTR_URL_PATH,
+		ATTR_URL_SCHEME,
 	}
-	setStringAttributes(newSpan, resource, "ur", resourceAttributes)
+	setStringAttributes(newSpan, resource, PREFIX_DATADOG+"."+PREFIX_RESOURCE+".", resourceAttributes)
 
-	if urlQuery, ok := resource["url_query"].(map[string]any); ok {
-		queryMap := newSpan.Attributes().PutEmptyMap("datadog.resource.url_query")
+	if urlQuery, ok := resource[ATTR_URL_QUERY].(map[string]any); ok {
+		queryMap := newSpan.Attributes().PutEmptyMap(PREFIX_DATADOG + "." + PREFIX_RESOURCE + "." + ATTR_URL_QUERY)
 		for key, value := range urlQuery {
 			if strValue, ok := value.(string); ok {
 				queryMap.PutStr(key, strValue)
@@ -337,13 +316,13 @@ func setResource(newSpan ptrace.Span, resource map[string]any) {
 		}
 	}
 
-	if provider, ok := resource["provider"].(map[string]any); ok {
+	if provider, ok := resource[ATTR_PROVIDER].(map[string]any); ok {
 		providerAttributes := []string{
-			"name",
-			"domain",
-			"type",
+			ATTR_NAME,
+			ATTR_DOMAIN,
+			ATTR_TYPE,
 		}
-		setStringAttributes(newSpan, provider, "datadog.resource.provider.", providerAttributes)
+		setStringAttributes(newSpan, provider, PREFIX_DATADOG+"."+PREFIX_RESOURCE+"."+ATTR_PROVIDER+".", providerAttributes)
 	}
 }
 
@@ -353,16 +332,16 @@ func setError(newSpan ptrace.Span, error map[string]any) {
 	}
 
 	ddErrorAttributes := []string{
-		"source",
-		"stack",
+		ATTR_SOURCE,
+		ATTR_STACK,
 	}
-	setStringAttributes(newSpan, error, "datadog.error.", ddErrorAttributes)
+	setStringAttributes(newSpan, error, PREFIX_DATADOG+"."+PREFIX_ERROR+".", ddErrorAttributes)
 
 	errorAttributes := []string{
-		"type",
-		"message",
+		ATTR_TYPE,
+		ATTR_MESSAGE,
 	}
-	setStringAttributes(newSpan, error, "error.", errorAttributes)
+	setStringAttributes(newSpan, error, PREFIX_ERROR+".", errorAttributes)
 }
 
 func setAction(newSpan ptrace.Span, action map[string]any) {
@@ -370,39 +349,39 @@ func setAction(newSpan ptrace.Span, action map[string]any) {
 		return
 	}
 
-	if loadingTime, ok := action["loading_time"].(float64); ok {
-		newSpan.Attributes().PutInt("datadog.action.loading_time", int64(loadingTime))
+	if loadingTime, ok := action[ATTR_LOADING_TIME].(float64); ok {
+		newSpan.Attributes().PutInt(PREFIX_DATADOG+"."+PREFIX_ACTION+"."+ATTR_LOADING_TIME, int64(loadingTime))
 	}
 
 	countCategories := []string{
-		"error",
-		"long_task",
-		"resource",
+		PREFIX_ERROR,
+		ATTR_LONG_TASK,
+		PREFIX_RESOURCE,
 	}
 	for _, category := range countCategories {
 		if countCategory, ok := action[category].(map[string]any); ok {
-			setNumberAttributes(newSpan, countCategory, "datadog.action."+category+".", []string{"count"})
+			setNumberAttributes(newSpan, countCategory, PREFIX_DATADOG+"."+PREFIX_ACTION+"."+category+".", []string{"count"})
 		}
 	}
 
 	actionAttributes := []string{
-		"id",
-		"type",
-		"name",
+		ATTR_ID,
+		ATTR_TYPE,
+		ATTR_NAME,
 	}
-	setStringAttributes(newSpan, action, "datadog.action.", actionAttributes)
+	setStringAttributes(newSpan, action, PREFIX_DATADOG+"."+PREFIX_ACTION+".", actionAttributes)
 
-	if target, ok := action["target"].(map[string]any); ok {
-		setStringAttributes(newSpan, target, "datadog.action.target.", []string{"name"})
+	if target, ok := action[ATTR_TARGET].(map[string]any); ok {
+		setStringAttributes(newSpan, target, PREFIX_DATADOG+"."+PREFIX_ACTION+"."+ATTR_TARGET+".", []string{"name"})
 	}
 
-	if frustration, ok := action["frustration"].(map[string]any); ok {
+	if frustration, ok := action[ATTR_FRUSTRATION].(map[string]any); ok {
 		frustrationAttributes := []string{
-			"type:dead_click",
-			"type:rage_click",
-			"type:error_click",
+			ATTR_TYPE + ":" + ATTR_DEAD_CLICK,
+			ATTR_TYPE + ":" + ATTR_RAGE_CLICK,
+			ATTR_TYPE + ":" + ATTR_ERROR_CLICK,
 		}
-		setStringAttributes(newSpan, frustration, "datadog.action.frustration.", frustrationAttributes)
+		setStringAttributes(newSpan, frustration, PREFIX_DATADOG+"."+PREFIX_ACTION+"."+ATTR_FRUSTRATION+".", frustrationAttributes)
 	}
 }
 
@@ -411,24 +390,24 @@ func setGeo(newSpan ptrace.Span, geo map[string]any) {
 		return
 	}
 
-	if countryIsoCode, ok := geo["country_iso_code"].(string); ok {
-		newSpan.Attributes().PutStr("geo.country.iso_code", countryIsoCode)
+	if countryIsoCode, ok := geo[ATTR_COUNTRY_ISO_CODE].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_GEO+"."+ATTR_COUNTRY+"."+ATTR_ISO_CODE, countryIsoCode)
 	}
 
-	if city, ok := geo["city"].(string); ok {
-		newSpan.Attributes().PutStr("geo.locality.name", city)
+	if city, ok := geo[ATTR_CITY].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_GEO+"."+ATTR_LOCALITY+"."+ATTR_NAME, city)
 	}
 
-	if continentCode, ok := geo["continent_code"].(string); ok {
-		newSpan.Attributes().PutStr("geo.continent_code", continentCode)
+	if continentCode, ok := geo[ATTR_CONTINENT_CODE].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_GEO+"."+ATTR_CONTINENT_CODE, continentCode)
 	}
 
 	geoAttributes := []string{
-		"country",
-		"country_subdivision",
-		"continent",
+		ATTR_COUNTRY,
+		ATTR_COUNTRY_SUBDIVISION,
+		ATTR_CONTINENT,
 	}
-	setStringAttributes(newSpan, geo, "datadog.geo.", geoAttributes)
+	setStringAttributes(newSpan, geo, PREFIX_DATADOG+"."+PREFIX_GEO+".", geoAttributes)
 }
 
 func ToLogs(payload map[string]any, req *http.Request, reqBytes []byte) plog.Logs {
@@ -441,13 +420,13 @@ func ToLogs(payload map[string]any, req *http.Request, reqBytes []byte) plog.Log
 	in.Scope().SetName("Datadog")
 
 	newLogRecord := in.LogRecords().AppendEmpty()
-	newLogRecord.Attributes().PutBool("datadog.is_rum", true)
+	newLogRecord.Attributes().PutBool(PREFIX_DATADOG+"."+ATTR_IS_RUM, true)
 
 	fmt.Println("%%%%% SUCCESSFUL LOG PARSE")
 	return results
 }
 
-func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte) ptrace.Traces {
+func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte, traceparent string) ptrace.Traces {
 	results := ptrace.NewTraces()
 	rs := results.ResourceSpans().AppendEmpty()
 	rs.SetSchemaUrl(semconv.SchemaURL)
@@ -456,108 +435,112 @@ func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte) ptrace
 	in := rs.ScopeSpans().AppendEmpty()
 	in.Scope().SetName("Datadog")
 
-	traceparent := req.Header.Get("traceparent")
-	if traceparent == "" {
-		return results
-	}
-	traceID, spanID, err := parseW3CTraceContext(traceparent)
+	traceID, spanID, err := ParseW3CTraceContext(traceparent)
+	fmt.Println("%%%%%%%%%%%%%% W3C TRACE ID: ", traceID)
+	fmt.Println("%%%%%%%%%%%%%% W3C SPAN ID: ", spanID)
 	if err != nil {
-		fmt.Println(err)
-		return results
+		err = nil
+		traceID, spanID, err = parseIDs(payload, req)
+		if err != nil {
+			fmt.Println(err)
+			return results
+		}
 	}
 
+	fmt.Println("%%%%%%%%%%%%%% TRACE ID: ", traceID)
+	fmt.Println("%%%%%%%%%%%%%% SPAN ID: ", spanID)
 	newSpan := in.Spans().AppendEmpty()
 	newSpan.SetName("RUMResource")
 	newSpan.SetTraceID(traceID)
 	newSpan.SetSpanID(spanID)
-	newSpan.Attributes().PutBool("datadog.is_rum", true)
+	newSpan.Attributes().PutBool(PREFIX_DATADOG+"."+ATTR_IS_RUM, true)
 
-	if date, ok := payload["date"].(float64); ok {
-		newSpan.Attributes().PutInt("datadog.date", int64(date))
+	if date, ok := payload[ATTR_DATE].(float64); ok {
+		newSpan.Attributes().PutInt(PREFIX_DATADOG+"."+ATTR_DATE, int64(date))
 	}
 
-	if device, ok := payload["device"].(string); ok {
-		newSpan.Attributes().PutStr("datadog.device", device)
+	if device, ok := payload[PREFIX_DEVICE].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_DATADOG+"."+PREFIX_DEVICE, device)
 	}
 
-	if service, ok := payload["service"].(string); ok {
-		newSpan.Attributes().PutStr("datadog.service", service)
+	if service, ok := payload[ATTR_SERVICE].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_DATADOG+"."+ATTR_SERVICE, service)
 	}
 
-	if user, ok := payload["usr"].(map[string]any); ok {
+	if user, ok := payload[PREFIX_USR].(map[string]any); ok {
 		userAttributes := []string{
-			"id",
-			"name",
-			"email",
+			ATTR_ID,
+			ATTR_NAME,
+			ATTR_EMAIL,
 		}
-		setStringAttributes(newSpan, user, "user.", userAttributes)
+		setStringAttributes(newSpan, user, PREFIX_USER+".", userAttributes)
 	}
 
-	if eventType, ok := payload["type"].(string); ok {
-		newSpan.Attributes().PutStr("datadog.type", eventType)
+	if eventType, ok := payload[ATTR_TYPE].(string); ok {
+		newSpan.Attributes().PutStr(PREFIX_DATADOG+"."+ATTR_TYPE, eventType)
 	}
 
-	if application, ok := payload["application"].(map[string]any); ok {
+	if application, ok := payload[PREFIX_APPLICATION].(map[string]any); ok {
 		applicationAttributes := []string{
-			"id",
-			"name",
+			ATTR_ID,
+			ATTR_NAME,
 		}
-		setStringAttributes(newSpan, application, "datadog.application.", applicationAttributes)
+		setStringAttributes(newSpan, application, PREFIX_DATADOG+"."+PREFIX_APPLICATION+".", applicationAttributes)
 	}
 
 	//TO-DO: device.type and device.name
-	if device, ok := payload["device"].(map[string]any); ok {
-		if deviceType, ok := device["type"].(string); ok {
-			newSpan.Attributes().PutStr("datadog.device.type", deviceType)
+	if device, ok := payload[PREFIX_DEVICE].(map[string]any); ok {
+		if deviceType, ok := device[ATTR_TYPE].(string); ok {
+			newSpan.Attributes().PutStr(PREFIX_DATADOG+"."+PREFIX_DEVICE+"."+ATTR_TYPE, deviceType)
 		}
-		if brand, ok := device["brand"].(string); ok {
-			newSpan.Attributes().PutStr("device.manufacturer", brand)
+		if brand, ok := device[ATTR_BRAND].(string); ok {
+			newSpan.Attributes().PutStr(PREFIX_DEVICE+"."+ATTR_MANUFACTURER, brand)
 		}
-		if model, ok := device["model"].(string); ok {
-			newSpan.Attributes().PutStr("device.model.identifier", model)
+		if model, ok := device[ATTR_MODEL].(string); ok {
+			newSpan.Attributes().PutStr(PREFIX_DEVICE+"."+PREFIX_MODEL+"."+ATTR_IDENTIFIER, model)
 		}
-		if name, ok := device["name"].(string); ok {
-			newSpan.Attributes().PutStr("device.model.name", name)
+		if name, ok := device[ATTR_NAME].(string); ok {
+			newSpan.Attributes().PutStr(PREFIX_DEVICE+"."+PREFIX_MODEL+"."+ATTR_NAME, name)
 		}
 	}
 
-	if os, ok := payload["os"].(map[string]any); ok {
+	if os, ok := payload[PREFIX_OS].(map[string]any); ok {
 		osAttributes := []string{
-			"name",
-			"version",
+			ATTR_NAME,
+			ATTR_VERSION,
 		}
-		setStringAttributes(newSpan, os, "os.", osAttributes)
+		setStringAttributes(newSpan, os, PREFIX_OS, osAttributes)
 
-		setStringAttributes(newSpan, os, "datadog.os.", []string{"version_major"})
+		setStringAttributes(newSpan, os, PREFIX_DATADOG+"."+PREFIX_OS+".", []string{ATTR_VERSION_MAJOR})
 	}
 
-	if geo, ok := payload["geo"].(map[string]any); ok {
+	if geo, ok := payload[PREFIX_GEO].(map[string]any); ok {
 		setGeo(newSpan, geo)
 	}
 
-	if session, ok := payload["session"].(map[string]any); ok {
+	if session, ok := payload[PREFIX_SESSION].(map[string]any); ok {
 		setSession(newSpan, session)
 	}
 
-	if view, ok := payload["view"].(map[string]any); ok {
+	if view, ok := payload[PREFIX_VIEW].(map[string]any); ok {
 		setView(newSpan, view)
 	}
 
-	if resource, ok := payload["resource"].(map[string]any); ok {
+	if resource, ok := payload[PREFIX_RESOURCE].(map[string]any); ok {
 		setResource(newSpan, resource)
 	}
 
-	if longTask, ok := payload["long_task"].(map[string]any); ok {
-		if duration, ok := longTask["duration"].(float64); ok {
-			newSpan.Attributes().PutInt("datadog.long_task.duration", int64(duration))
+	if longTask, ok := payload[ATTR_LONG_TASK].(map[string]any); ok {
+		if duration, ok := longTask[ATTR_DURATION].(float64); ok {
+			newSpan.Attributes().PutInt(PREFIX_DATADOG+"."+ATTR_LONG_TASK+"."+ATTR_DURATION, int64(duration))
 		}
 	}
 
-	if error, ok := payload["error"].(map[string]any); ok {
+	if error, ok := payload[PREFIX_ERROR].(map[string]any); ok {
 		setError(newSpan, error)
 	}
 
-	if action, ok := payload["action"].(map[string]any); ok {
+	if action, ok := payload[PREFIX_ACTION].(map[string]any); ok {
 		setAction(newSpan, action)
 	}
 
