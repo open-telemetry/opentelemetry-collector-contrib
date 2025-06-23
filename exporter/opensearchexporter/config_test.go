@@ -114,6 +114,83 @@ func TestLoadConfig(t *testing.T) {
 				return assert.ErrorContains(t, err, errBulkActionInvalid.Error())
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "dynamic_log_indexing"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "invalid_dynamic_log_indexing"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}-%{invalid.placeholder}"
+				config.LogsIndexFallback = "default-service"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexInvalidPlaceholder.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_valid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_empty"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = ""
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_invalid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "invalid_format!"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_whitespace"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "   "
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_special_chars"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "yyyy/MM/dd@!#"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexTimeFormatInvalid.Error())
+			},
+		},
 	}
 
 	for _, tt := range tests {

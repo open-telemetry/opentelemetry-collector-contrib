@@ -43,3 +43,51 @@ opensearch/trace:
     enabled: true
     initial_interval: 100000000
     randomization_factor: 0.5
+
+opensearch/dynamic_log_indexing:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}"
+  logs_index_fallback: "default-service"
+  logs_index_time_format: "yyyy.MM.dd"
+
+opensearch/invalid_dynamic_log_indexing:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}-%{invalid.placeholder}"
+  logs_index_fallback: "default-service"
+
+opensearch/log_index_time_format_valid:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}"
+  logs_index_fallback: "default-service"
+  logs_index_time_format: "yyyy.MM.dd"
+
+opensearch/log_index_time_format_empty:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}"
+  logs_index_fallback: "default-service"
+  logs_index_time_format: ""
+
+opensearch/log_index_time_format_invalid:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}"
+  logs_index_fallback: "default-service"
+  logs_index_time_format: "invalid_format!"
+
+opensearch/log_index_time_format_whitespace:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}"
+  logs_index_fallback: "default-service"
+  logs_index_time_format: "   "
+
+opensearch/log_index_time_format_special_chars:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: "otel-logs-%{service.name}"
+  logs_index_fallback: "default-service"
+  logs_index_time_format: "yyyy/MM/dd@!#"
