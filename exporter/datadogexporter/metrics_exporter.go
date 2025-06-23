@@ -5,11 +5,13 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -19,10 +21,13 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/DataDog/sketches-go/ddsketch"
+	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
@@ -32,6 +37,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+
+	"crypto/tls"
+
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 )
 
 type metricsExporter struct {
@@ -52,6 +61,7 @@ type metricsExporter struct {
 	getPushTime func() uint64
 
 	gatewayUsage *attributes.GatewayUsage
+	statsOut     chan []byte
 }
 
 func newMetricsExporter(
@@ -94,6 +104,7 @@ func newMetricsExporter(
 		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 		metadataReporter: metadataReporter,
 		gatewayUsage:     gatewayUsage,
+		statsOut:         statsOut,
 	}
 	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
@@ -140,7 +151,12 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	if isMetricExportV2Enabled() {
 		resp, err = exp.metricsAPI.Client.Cfg.HTTPClient.Do(req)
 	} else {
-		resp, err = exp.client.HttpClient.Do(req)
+		// Create an HTTP client with TLS verification disabled (insecure)
+		insecureTransport := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: insecureTransport}
+		resp, err = client.Do(req)
 	}
 
 	if err != nil {
@@ -189,6 +205,237 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		consumer = metrics.NewZorkianConsumer()
 	}
+
+	processAndReturnErrorIf := func(condition bool) error {
+		if !condition {
+			return nil
+		}
+		return errors.New("cannot unmarshal OTLP stats")
+	}
+	fmt.Println("********** PUSH STATS **********")
+
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+
+		// Get values from resource attributes
+		hostname := ""
+		env := ""
+		service := ""
+		version := ""
+		hostnameVal, ok := rm.Resource().Attributes().Get("host.name")
+		if ok {
+			hostname = hostnameVal.AsString()
+		}
+		envVal, ok := rm.Resource().Attributes().Get("dd.env")
+		if ok {
+			env = envVal.AsString()
+		}
+		serviceVal, ok := rm.Resource().Attributes().Get("dd.service")
+		if ok {
+			service = serviceVal.AsString()
+		}
+		if service == "" {
+			serviceVal, ok = rm.Resource().Attributes().Get("service.name")
+			if ok {
+				service = serviceVal.AsString()
+			}
+		}
+		versionVal, ok := rm.Resource().Attributes().Get("dd.version")
+		if ok {
+			version = versionVal.AsString()
+		}
+
+		// Defaults for missing values
+		if hostname == "" {
+			hostname = "fallbackHostname"
+		}
+		if env == "" {
+			env = "default"
+		}
+		if service == "" {
+			service = "otlpresourcenoservicename"
+		}
+		// - No default for version
+
+		sms := rm.ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			sm := sms.At(j)
+			scopeName := sm.Scope().Name()
+			if scopeName != "datadog.trace.metrics" {
+				continue
+			}
+
+			sps := sm.Metrics()
+			for k := 0; k < sps.Len(); k++ {
+				sp := sps.At(k)
+				if err := processAndReturnErrorIf(sp.Type() != pmetric.MetricTypeHistogram); err != nil {
+					return err
+				}
+				hist := sp.Histogram()
+				for l := 0; l < hist.DataPoints().Len(); l++ {
+					dp := hist.DataPoints().At(l)
+
+					duration := dp.Sum()
+
+					clientStatsBucket := pb.ClientStatsBucket{
+						Start:    uint64(dp.Timestamp().AsTime().UnixNano()),
+						Duration: uint64(duration),
+						Stats:    make([]*pb.ClientGroupedStats, 0),
+					}
+
+					// Reconstructing the key
+					name := ""
+					nameVal, ok := dp.Attributes().Get("Name")
+					if ok {
+						name = nameVal.AsString()
+					}
+
+					resource := ""
+					resourceVal, ok := dp.Attributes().Get("Resource")
+					if ok {
+						resource = resourceVal.AsString()
+					}
+
+					typ := ""
+					typeVal, ok := dp.Attributes().Get("Type")
+					if ok {
+						typ = typeVal.AsString()
+					}
+
+					statusCode := uint32(0)
+					statusCodeVal, ok := dp.Attributes().Get("Status")
+					if ok {
+						statusCode = uint32(statusCodeVal.Int())
+					}
+					if statusCode == 0 {
+						statusCode = 200
+					}
+
+					isTraceRoot := pb.Trilean_NOT_SET
+					topLevelVal, ok := dp.Attributes().Get("TopLevel")
+					if ok {
+						if topLevelVal.Bool() {
+							isTraceRoot = pb.Trilean_TRUE
+						} else {
+							isTraceRoot = pb.Trilean_FALSE
+						}
+					}
+
+					isErrorDistribtion := false
+					errorVal, ok := dp.Attributes().Get("Error")
+					if ok {
+						isErrorDistribtion = errorVal.Bool()
+					}
+
+					// Reconstructing the value
+					clientGroupedStatsValue := pb.ClientGroupedStats{
+						Service:        service,
+						Name:           name,
+						Resource:       resource,
+						Type:           typ,
+						HTTPStatusCode: statusCode,
+						IsTraceRoot:    isTraceRoot,
+						Duration:       uint64(duration),
+					}
+					count := dp.Count()
+					if isTraceRoot == pb.Trilean_TRUE {
+						clientGroupedStatsValue.TopLevelHits = count
+					}
+
+					// XXX chosen to match the trace metrics computation in datadogconnector
+					sketch, err := ddsketch.LogCollapsingLowestDenseDDSketch(0.01, 2048)
+					bounds := dp.ExplicitBounds()
+					buckets := dp.BucketCounts()
+					for i := 1; i < buckets.Len(); i++ {
+						bucketCount := buckets.At(i)
+						boundaryValue := bounds.At(i - 1)
+						sketch.AddWithCount(boundaryValue, float64(bucketCount))
+					}
+					if err := processAndReturnErrorIf(err != nil); err != nil {
+						return err
+					}
+					sketchProto := sketch.ToProto()
+					sketchBytes, err := proto.Marshal(sketchProto)
+					if err != nil {
+						return err
+					}
+					if isErrorDistribtion {
+						clientGroupedStatsValue.Errors = count
+						clientGroupedStatsValue.ErrorSummary = sketchBytes
+					} else {
+						clientGroupedStatsValue.Hits = count
+						clientGroupedStatsValue.OkSummary = sketchBytes
+					}
+
+					clientStatsBucket.Stats = append(clientStatsBucket.Stats, &clientGroupedStatsValue)
+					clientStatsPayload := pb.ClientStatsPayload{
+						Env:      env,
+						Service:  service,
+						Hostname: hostname,
+						Version:  version,
+						Stats: []*pb.ClientStatsBucket{
+							&clientStatsBucket,
+						},
+					}
+					payload := &pb.StatsPayload{
+						Stats:          []*pb.ClientStatsPayload{&clientStatsPayload},
+						ClientComputed: true,
+						SplitPayload:   true,
+						AgentHostname:  exp.agntConfig.Hostname,
+						AgentEnv:       exp.agntConfig.DefaultEnv,
+						AgentVersion:   exp.agntConfig.AgentVersion,
+					}
+
+					apiKey := os.Getenv("DD_API_KEY")
+					ddSite := os.Getenv("DD_SITE")
+					if ddSite == "" {
+						ddSite = "datadoghq.com"
+					}
+					url := fmt.Sprintf("https://trace.agent.%s/api/v0.2/stats", ddSite)
+
+					w := bytes.NewBuffer(nil)
+					gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "failed to create gzip writer: %v\n", err)
+						os.Exit(1)
+					}
+					msgp.Encode(gz, payload)
+					gz.Close()
+
+					req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, w)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "failed to create HTTP request: %v\n", err)
+						os.Exit(1)
+					}
+					req.Header.Set("Dd-Api-Key", apiKey)
+					req.Header.Set("X-Datadog-Reported-Languages", "go")
+					req.Header.Set("Content-Type", "application/msgpack")
+					req.Header.Set("Content-Encoding", "gzip")
+
+					client := &http.Client{}
+					resp, err := client.Do(req)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "failed to execute HTTP request: %v\n", err)
+						os.Exit(1)
+					}
+					defer resp.Body.Close()
+
+					// Discard the body so the connection can be reused
+					if resp.StatusCode/100 != 2 {
+						fmt.Fprintf(os.Stderr, "status code %d returned\n", resp.StatusCode)
+						fmt.Fprintf(os.Stderr, "body: %s\n", resp.Body)
+					} else {
+						fmt.Println("Payload sent successfully!")
+						fmt.Println(">> resp.StatusCode", resp.StatusCode)
+					}
+
+					io.Copy(io.Discard, resp.Body)
+				}
+			}
+		}
+	}
+
 	metadata, err := exp.tr.MapMetrics(ctx, md, consumer, exp.gatewayUsage)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)

@@ -267,6 +267,7 @@ func (f *factory) createMetricsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Metrics, error) {
+	fmt.Println("********** createMetricsExporter **********")
 	cfg := checkAndCastConfig(c, set.Logger)
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
 	if err != nil {
