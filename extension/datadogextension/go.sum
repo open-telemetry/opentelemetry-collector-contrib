@@ -432,7 +432,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.128.0
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.128.0/go.mod h1:Fh2SXPeFkr4J97w9CV/apFAib8TC9Hi0P08xtiT7Lng=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.128.0 h1:8OWwRSdIhm3DY3PEYJ0PtSEz1a1OjL0fghLXSr14JMk=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.128.0/go.mod h1:32OeaysZe4vkSmD1LJ18Q1DfooryYqpSzFNmz+5A5RU=
-github.com/openshift/api v0.0.0-20210521075222-e273a339932a/go.mod h1:izBmoXbUu3z5kUa4FjZhvekTsyzIWiOoaIgJiZBBMQs=
 github.com/openshift/api v3.9.0+incompatible h1:fJ/KsefYuZAjmrr3+5U9yZIZbTOpVkDDLDLFresAeYs=
 github.com/openshift/api v3.9.0+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071 h1:l0++HnGVKBcs8kXFL/1yeozxioxPGNpp0PYe3Y+0sq4=
