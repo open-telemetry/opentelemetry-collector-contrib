@@ -32,6 +32,11 @@ func (c Config) Validate() error {
 		return errors.New("'driver' cannot be empty")
 	}
 
+	// check if driver is supported
+	if !IsValidDriver(c.Driver) {
+		return fmt.Errorf("unsupported driver: %s", c.Driver)
+	}
+
 	// If datasource is set, none of the individual connection parameters should be set
 	if c.DataSource != "" {
 		if c.Host != "" {

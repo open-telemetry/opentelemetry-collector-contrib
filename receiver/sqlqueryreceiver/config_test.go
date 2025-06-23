@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:     "mydriver",
+					Driver:     "postgres",
 					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
 					Queries: []sqlquery.Query{
 						{
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:   "mydriver",
+					Driver:   "postgres",
 					Host:     "localhost",
 					Port:     5432,
 					Database: "mydb",
@@ -197,7 +197,7 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:     "mydriver",
+					Driver:     "postgres",
 					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
 					Queries: []sqlquery.Query{
 						{
@@ -224,7 +224,7 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:   "mydriver",
+					Driver:   "postgres",
 					Host:     "localhost",
 					Port:     5432,
 					Database: "mydb",
@@ -257,40 +257,24 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "aggregation=cumulative but data_type=gauge does not support aggregation",
 		},
 		{
-			fname: "config-both-datasource.yaml",
-			id:    component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{
-				Config: sqlquery.Config{
-					ControllerConfig: scraperhelper.ControllerConfig{
-						CollectionInterval: 10 * time.Second,
-						InitialDelay:       time.Second,
-					},
-					Driver:     "mysql",
-					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
-					Host:       "localhost",
-					Port:       5432,
-					Database:   "mydb",
-					Username:   "me",
-					Password:   "s3cr3t",
-					Queries: []sqlquery.Query{
-						{
-							SQL: "select count(*) as count, type from mytable group by type",
-							Metrics: []sqlquery.MetricCfg{
-								{
-									MetricName:       "val.count",
-									ValueColumn:      "count",
-									AttributeColumns: []string{"type"},
-									Monotonic:        false,
-									ValueType:        sqlquery.MetricValueTypeInt,
-									DataType:         sqlquery.MetricTypeSum,
-									Aggregation:      sqlquery.MetricAggregationCumulative,
-									StaticAttributes: map[string]string{"foo": "bar"},
-								},
-							},
-						},
-					},
-				},
-			},
+			fname:        "config-both-datasource.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'host' cannot be set when 'datasource' is specified",
+		},
+		{
+			fname:        "config-invalid-driver.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "unsupported driver: invalid_driver",
+		},
+		{
+			fname:        "config-invalid-driver-case-sensitive.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "unsupported driver: POSTGRES",
+		},
+		{
+			fname:        "config-invalid-driver-partial-match.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "unsupported driver: postgre",
 		},
 	}
 
@@ -338,4 +322,31 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")
 	assert.ErrorContains(t, err, "metric config has unsupported data_type: 'xgauge'")
 	assert.ErrorContains(t, err, "metric config has unsupported aggregation: 'xcumulative'")
+}
+
+func TestIsValidDriver(t *testing.T) {
+	tests := []struct {
+		name     string
+		driver   string
+		expected bool
+	}{
+		{"hdb driver", sqlquery.DriverHDB, true},
+		{"mysql driver", sqlquery.DriverMySQL, true},
+		{"oracle driver", sqlquery.DriverOracle, true},
+		{"postgres driver", sqlquery.DriverPostgres, true},
+		{"snowflake driver", sqlquery.DriverSnowflake, true},
+		{"sqlserver driver", sqlquery.DriverSQLServer, true},
+		{"tds driver", sqlquery.DriverTDS, true},
+		{"invalid driver", "invalid", false},
+		{"empty driver", "", false},
+		{"case sensitive", "POSTGRES", false},
+		{"partial match", "postgre", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sqlquery.IsValidDriver(tt.driver)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

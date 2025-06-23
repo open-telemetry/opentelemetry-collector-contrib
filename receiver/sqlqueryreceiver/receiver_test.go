@@ -31,7 +31,7 @@ func TestCreateLogs(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 10 * time.Second,
 				},
-				Driver:     "mydriver",
+				Driver:     "postgres",
 				DataSource: "my-datasource",
 				Queries: []sqlquery.Query{{
 					SQL: "select * from foo",
@@ -61,7 +61,7 @@ func TestCreateMetrics(t *testing.T) {
 					CollectionInterval: 10 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				Driver:     "mydriver",
+				Driver:     "postgres",
 				DataSource: "my-datasource",
 				Queries: []sqlquery.Query{{
 					SQL: "select * from foo",
