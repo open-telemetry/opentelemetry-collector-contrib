@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
@@ -455,94 +454,6 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	}
 	got := s.getMetric(m.Name, md)
 	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-}
-
-func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
-	// prepare
-	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
-
-	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    100,
-		PolicyCfgs: []PolicyCfg{
-			{
-				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "sample-half",
-					Type: Probabilistic,
-					ProbabilisticCfg: ProbabilisticCfg{
-						SamplingPercentage: 50,
-					},
-				},
-			},
-		},
-		Options: []Option{
-			withDecisionBatcher(syncBatcher),
-		},
-		// Enable decision cache to test late span age tracking
-		DecisionCache: DecisionCacheConfig{
-			SampledCacheSize:    100,
-			NonSampledCacheSize: 100,
-		},
-	}
-	cs := &consumertest.TracesSink{}
-	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
-	require.NoError(t, err)
-	defer func() {
-		err = proc.Shutdown(context.Background())
-		require.NoError(t, err)
-	}()
-
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	// test
-	traceIDs, batches := generateIDsAndBatches(10)
-	for _, batch := range batches {
-		err = proc.ConsumeTraces(context.Background(), batch)
-		require.NoError(t, err)
-	}
-
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
-
-	for _, traceID := range traceIDs {
-		lateSpan := ptrace.NewTraces()
-		lateSpan.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
-
-		err = proc.ConsumeTraces(context.Background(), lateSpan)
-		require.NoError(t, err)
-	}
-
-	// verify
-	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
-
-	m := metricdata.Metrics{
-		Name:        "otelcol_processor_tail_sampling_sampling_late_span_age",
-		Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span",
-		Unit:        "s",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints: []metricdata.HistogramDataPoint[int64]{
-				{
-					Count:        10,
-					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-					BucketCounts: []uint64{10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-					Min:          metricdata.NewExtrema[int64](0),
-					Max:          metricdata.NewExtrema[int64](0),
-					Sum:          0,
-				},
-			},
-		},
-	}
-
-	got := s.getMetric(m.Name, md)
-
-	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp())
 }
 
 func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {

@@ -91,14 +91,20 @@ func (tsm *TraceStateManager) ExtractRandomness(otelTS *sampling.OpenTelemetryTr
 	return sampling.TraceIDToRandomness(traceID)
 }
 
-// UpdateTraceState updates all spans in the trace with the constraint threshold.
-// Phase 6: Uses pkg/sampling equalizing pattern - each span gets the more restrictive of
-// its original threshold vs the constraint threshold. This enables proper per-span adjusted counts.
+// UpdateTraceState updates all spans in the trace with the final constraint threshold.
+// Simplified to apply the same final threshold to all spans uniformly.
+// Uses pkg/sampling equalizing pattern for OTEP 235 consistency.
 func (tsm *TraceStateManager) UpdateTraceState(trace *TraceData, constraintThreshold sampling.Threshold) error {
+	// Early return if no TraceState to update
 	if !trace.TraceStatePresent {
-		return nil // No TraceState to update
+		return nil
 	}
 
+	// TODO: For enhanced consistency, we should validate that all spans yield
+	// the same randomness value during this update process. Log warnings if
+	// inconsistencies are detected, as this could indicate upstream sampling issues.
+
+	// Update TraceState in all spans uniformly with the constraint threshold
 	batches := trace.ReceivedBatches
 	for i := 0; i < batches.ResourceSpans().Len(); i++ {
 		rs := batches.ResourceSpans().At(i)
@@ -106,18 +112,12 @@ func (tsm *TraceStateManager) UpdateTraceState(trace *TraceData, constraintThres
 			ss := rs.ScopeSpans().At(j)
 			for k := 0; k < ss.Spans().Len(); k++ {
 				span := ss.Spans().At(k)
-				spanID := span.SpanID()
 
-				// Update TraceState for this specific span using pkg/sampling API
-				finalThreshold, err := tsm.updateSpanTraceStateAndGetFinal(span, constraintThreshold)
+				// Update TraceState for this span using pkg/sampling API
+				_, err := tsm.updateSpanTraceStateAndGetFinal(span, constraintThreshold)
 				if err != nil {
 					// Log but continue processing other spans
 					continue
-				}
-
-				// Update the SpanThresholds map with the final threshold for this span
-				if spanInfo, exists := trace.SpanThresholds[spanID]; exists {
-					spanInfo.FinalThreshold = &finalThreshold
 				}
 			}
 		}
@@ -197,16 +197,13 @@ func (tsm *TraceStateManager) HasTraceState(trace *TraceData) bool {
 }
 
 // InitializeTraceData initializes OTEP 235 fields in TraceData based on TraceID and TraceState.
-// Phase 6: Enhanced to support per-span threshold tracking for accurate adjusted counts.
+// Simplified to use trace-level threshold management instead of per-span tracking.
 // This should be called when a new trace is first encountered.
 func (tsm *TraceStateManager) InitializeTraceData(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) {
 	// Check if any spans have TraceState
 	trace.TraceStatePresent = tsm.HasTraceState(trace)
 
-	// Initialize per-span threshold tracking
-	trace.SpanThresholds = make(map[pcommon.SpanID]*SpanThresholdInfo)
-
-	// Extract TraceState if present and process each span individually
+	// Extract TraceState if present (use first span with TraceState as representative)
 	var globalOtelTS *sampling.OpenTelemetryTraceState
 	if trace.TraceStatePresent {
 		if parsed, err := tsm.ParseTraceState(trace); err == nil {
@@ -217,45 +214,35 @@ func (tsm *TraceStateManager) InitializeTraceData(ctx context.Context, traceID p
 	// Extract randomness (either from TraceState rv or TraceID)
 	trace.RandomnessValue = tsm.ExtractRandomness(globalOtelTS, traceID)
 
-	// Process each span to extract individual threshold information
+	// TODO: For consistency validation, we should check that all spans in the trace
+	// have the same randomness value. Inconsistent randomness could indicate:
+	// 1. Different rv values in TraceState across spans (should be identical)
+	// 2. Mix of spans with/without TraceState (acceptable, fall back to TraceID)
+	// 3. Upstream sampling inconsistencies that we should detect and log
+
+	// Extract the most restrictive threshold from any span's TraceState
 	var mostRestrictiveThreshold *sampling.Threshold
-
-	batches := trace.ReceivedBatches
-	for i := 0; i < batches.ResourceSpans().Len(); i++ {
-		rs := batches.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
-			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
-				span := ss.Spans().At(k)
-				spanID := span.SpanID()
-
-				// Parse individual span's TraceState
-				var spanThreshold *sampling.Threshold
-				if span.TraceState().AsRaw() != "" {
-					if w3cTS, err := sampling.NewW3CTraceState(span.TraceState().AsRaw()); err == nil {
-						otelTS := w3cTS.OTelValue()
-						if threshold, err := tsm.ExtractThreshold(otelTS); err == nil {
-							spanThreshold = threshold
-						}
-					}
-				}
-
-				// Track per-span threshold information
-				spanInfo := &SpanThresholdInfo{
-					SpanID:            spanID,
-					OriginalThreshold: spanThreshold,
-					FinalThreshold:    nil, // Will be set when sampling decision is made
-				}
-				trace.SpanThresholds[spanID] = spanInfo
-
-				// Track most restrictive threshold across all spans
-				if spanThreshold != nil {
-					if mostRestrictiveThreshold == nil {
-						mostRestrictiveThreshold = spanThreshold
-					} else {
-						// Use the more restrictive (higher) threshold
-						if sampling.ThresholdGreater(*spanThreshold, *mostRestrictiveThreshold) {
-							mostRestrictiveThreshold = spanThreshold
+	if trace.TraceStatePresent {
+		batches := trace.ReceivedBatches
+		for i := 0; i < batches.ResourceSpans().Len(); i++ {
+			rs := batches.ResourceSpans().At(i)
+			for j := 0; j < rs.ScopeSpans().Len(); j++ {
+				ss := rs.ScopeSpans().At(j)
+				for k := 0; k < ss.Spans().Len(); k++ {
+					span := ss.Spans().At(k)
+					if span.TraceState().AsRaw() != "" {
+						if w3cTS, err := sampling.NewW3CTraceState(span.TraceState().AsRaw()); err == nil {
+							otelTS := w3cTS.OTelValue()
+							if threshold, err := tsm.ExtractThreshold(otelTS); err == nil && threshold != nil {
+								if mostRestrictiveThreshold == nil {
+									mostRestrictiveThreshold = threshold
+								} else {
+									// Use the more restrictive (higher) threshold
+									if sampling.ThresholdGreater(*threshold, *mostRestrictiveThreshold) {
+										mostRestrictiveThreshold = threshold
+									}
+								}
+							}
 						}
 					}
 				}
@@ -269,44 +256,10 @@ func (tsm *TraceStateManager) InitializeTraceData(ctx context.Context, traceID p
 	}
 }
 
-// CalculateSpanAdjustedCount calculates the adjusted count for a specific span
-// based on its original threshold and the final threshold applied.
-// Phase 6: This implements per-span adjusted count calculation for accurate observability.
-func (tsm *TraceStateManager) CalculateSpanAdjustedCount(spanID pcommon.SpanID, trace *TraceData) float64 {
-	spanInfo, exists := trace.SpanThresholds[spanID]
-	if !exists {
-		// No threshold information available for this span
-		return 0.0
-	}
-
-	// If no final threshold was applied, return 0 (span was not sampled)
-	if spanInfo.FinalThreshold == nil {
-		return 0.0
-	}
-
-	// If no original threshold, use the final threshold directly
-	if spanInfo.OriginalThreshold == nil {
-		return spanInfo.FinalThreshold.AdjustedCount()
-	}
-
-	// For OTEP 235 per-span adjusted count calculation:
-	// Adjusted count = original sampling probability / final sampling probability
-	// This represents how many original spans this sampled span represents
-
-	originalProb := spanInfo.OriginalThreshold.Probability()
-	finalProb := spanInfo.FinalThreshold.Probability()
-
-	if finalProb == 0.0 {
-		return 0.0 // Should not have been sampled
-	}
-
-	return originalProb / finalProb
-}
-
 // GetSpanAdjustedCount calculates the adjusted count for a span based on its final threshold.
-// Phase 6: This is primarily used for testing and validation to verify that per-span
-// threshold adjustments produce the correct adjusted counts. In production, the
-// observability backend calculates adjusted counts from the updated TraceState.
+// This is used for testing and validation to verify that threshold adjustments produce
+// the correct adjusted counts. In production, the observability backend calculates
+// adjusted counts from the updated TraceState.
 func (tsm *TraceStateManager) GetSpanAdjustedCount(span ptrace.Span) float64 {
 	traceStateRaw := span.TraceState().AsRaw()
 	if traceStateRaw == "" {
@@ -328,17 +281,7 @@ func (tsm *TraceStateManager) GetSpanAdjustedCount(span ptrace.Span) float64 {
 	return 1.0 // No threshold, default to 1
 }
 
-// GetSpanThresholds returns a copy of the span threshold information for external access
-// Phase 6: Allows other components to access per-span threshold data
-func (tsm *TraceStateManager) GetSpanThresholds(trace *TraceData) map[pcommon.SpanID]*SpanThresholdInfo {
-	result := make(map[pcommon.SpanID]*SpanThresholdInfo)
-	for spanID, info := range trace.SpanThresholds {
-		// Create a copy to avoid external modification
-		result[spanID] = &SpanThresholdInfo{
-			SpanID:            info.SpanID,
-			OriginalThreshold: info.OriginalThreshold,
-			FinalThreshold:    info.FinalThreshold,
-		}
-	}
-	return result
-}
+// TODO: For enhanced consistency validation, consider adding methods to:
+// 1. ValidateTraceRandomnessConsistency() - check all spans have same randomness
+// 2. ValidateTraceThresholdConsistency() - check incoming thresholds are consistent
+// 3. DetectUpstreamSamplingInconsistencies() - log warnings for inconsistent traces
