@@ -1,49 +1,70 @@
-# OTEP 235 Tail Sampling Implementation
+# Updated tail sampling processor - Complete Project Summary
 
-This document summarizes the OTEP 235 consistent probability sampling implementation for the tail sampling processor.
+This document provides a comprehensive summary of the project to update the tail sampling processor in this
+repository to use new conventions, based on the OpenTelemetry
+consistent probability sampling specifications (OTEP 235).
 
-## Overview
+## Project Overview
 
-The tail sampling processor has been updated to support OTEP 235 consistent probability sampling through:
+In the processor/tailsamplingprocessor/otep235 directory, find several
+relevant documents and artifacts:
 
-1. **Threshold-based sampling decisions** using `pkg/sampling`
-2. **TraceState propagation** with final sampling thresholds  
-3. **Cache system** storing `sampling.Threshold` instead of boolean decisions
-4. **Late-arriving span evaluation** against cached thresholds
+- tracestate-probability-sampling.md: contains new specification
+- tracestate-handling.md: contains syntax details for W3C tracestate
+- 0235-sampling-threshold-in-trace-state.md: text of OTEP 235 with original details
+- 0250-Composite_Samplers.md: text of OTEP 250 with design for SDK samplers
 
-## Key Changes
+Two sub-directories contain prototype implementations of the SDK
+feature for composable, rule-based samplers in Golang (go-sampler) and
+Rust (rust-sampler) based on OTEP 250.
 
-### Core OTEP 235 Features
+The tail sampling processor in processor/tailsamplingprocessor is a
+community-owned component with a configurable rule engine with
+features allowing users to shape their trace data.  These rules
+include rate-limiting and probability-based decisions, but they were
+designed before OTEP 235 was published.
 
-- **TraceStateManager**: Parses and updates W3C TraceState with OTEP 235 fields
-- **Threshold-based decisions**: Policies coordinate through `FinalThreshold` in TraceData
-- **Randomness extraction**: From TraceState `rv` value or derived from TraceID
-- **Consistent sampling**: Late-arriving spans evaluated against cached final thresholds
+Note that there is a helper library for OTEP 235 in pkg/sampling
+which has been incorporated into the intermediate span sampler
+processor in processor/probabilisticsamplerprocessor.
 
-### Simplified Implementation
+## Definition of done
 
-- **Trace-level threshold management** instead of complex per-span tracking
-- **Essential functionality only** - removed complex telemetry tests and per-span calculations
-- **Backward compatibility** - all existing functionality preserved
+After this project is complete, the tailsampling processor will be
+fully compatible with OTEP 235, meaning that changes of effective
+probability for a trace correctly changes the sampling threshold in
+individual span tracestate values.
 
-## Architecture
+## New tailsamplingprocessor requirements
 
-```text
-Incoming Spans → TraceStateManager.InitializeTraceData() → Policy Evaluation → Final Threshold → Cache Decision → Late Span Evaluation
-```
+The OpenTelemetry tracestate threshold value known as T (encoded `th`)
+directly indicates effective sampling probability. Changes in
+effective probability must be achieved in a way consistent with this
+definition.
 
-## Testing
+OTEP 250 demonstrates how to implement a rule-based head sampler which
+maintains consistent probability sampling. Many of the aspects of the
+updated processor will be similar to the SDK samplers, however
+establishing rate limits is different for tail sampling compared with
+head sampling, in part because spans arrive in batches, and largely
+because the unit of sampling is whole traces.
 
-Core functionality validated through:
+### Rate limiting traces: high-level approach
 
-- `TestOTEP235Integration` - Basic OTEP 235 TraceState handling
-- `TestPhase5_TraceStateProcessing` - End-to-end trace processing
-- Existing processor tests - Backward compatibility verification
+The tail sampling processor with its existing logic accumulates
+batches of unfinished traces, then evaluates them and flushes them
+after an elapsed time. We can implement a rate limit at the moment of
+flushing by adjusting thresholds.
 
-## TODOs for Enhanced Consistency
+There is a complication that we will ignore in order to make progress,
+which is that incoming spans can be sampled with independent
+thresholds, which will cause the simple algorithm described here to
+sometimes break traces without further sophistication.
 
-1. **Randomness validation**: Check all spans in a trace have the same randomness value
-2. **Upstream detection**: Log warnings for inconsistent sampling across spans
-3. **Threshold validation**: Detect conflicting thresholds within traces
+Nevertheless, a simple algorithm can be implemented:
 
-The implementation prioritizes essential OTEP 235 compliance while maintaining simplicity and performance.
+1. Sort traces ascending by randomness value (TraceID or `rv`)
+2. Repeat the following steps until the batch meets the rate limit
+3. Find the minimum randomness value MR.
+4. Remove this trace from the batch; adjust threshold for all spans
+   in batch to `max(existing, MR+1)` considering the existing threshold.
