@@ -389,9 +389,7 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].OriginalPayloadFormat = "pass"
 				return p.Transform()
 			},
-			createProfiles: func() pprofile.Profiles {
-				return basicProfiles().Transform()
-			},
+			createProfiles: basicProfiles().Transform,
 		},
 		{
 			name:       "create profiles processor and pass profile context with a statement condition that meets the specified condition",
@@ -402,20 +400,14 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].OriginalPayloadFormat = "pass"
 				return p.Transform()
 			},
-			createProfiles: func() pprofile.Profiles {
-				return basicProfiles().Transform()
-			},
+			createProfiles: basicProfiles().Transform,
 		},
 		{
 			name:       "create profiles processor and pass log context with a global condition that fails the specified condition",
 			conditions: []string{`original_payload_format == "operationB"`},
 			statements: []string{`set(original_payload_format, "pass")`},
-			want: func() pprofile.Profiles {
-				return basicProfiles().Transform()
-			},
-			createProfiles: func() pprofile.Profiles {
-				return basicProfiles().Transform()
-			},
+			want: basicProfiles().Transform,
+			createProfiles: basicProfiles().Transform,
 		},
 	}
 
