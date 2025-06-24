@@ -14,7 +14,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
@@ -37,16 +36,13 @@ type azureType struct {
 
 func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScraper {
 	return &azureBatchScraper{
-		cfg:                      conf,
-		settings:                 settings.TelemetrySettings,
-		mb:                       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		azDefaultCredentialsFunc: azidentity.NewDefaultAzureCredential,
-		azIDCredentialsFunc:      azidentity.NewClientSecretCredential,
-		azIDWorkloadFunc:         azidentity.NewWorkloadIdentityCredential,
-		azManagedIdentityFunc:    azidentity.NewManagedIdentityCredential,
-		mutex:                    &sync.Mutex{},
-		time:                     &timeWrapper{},
-		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
+		cfg:                   conf,
+		settings:              settings.TelemetrySettings,
+		mb:                    metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		mutex:                 &sync.Mutex{},
+		time:                  &timeWrapper{},
+		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
+		loadCredentialsFunc:   loadCredentials,
 	}
 }
 
@@ -62,12 +58,9 @@ type azureBatchScraper struct {
 	subscriptions        map[string]*azureSubscription
 	subscriptionsUpdated time.Time
 	// regions on which we'll collect metrics. Stored by subscription id.
-	regions                  map[string]map[string]struct{}
-	mb                       *metadata.MetricsBuilder
-	azDefaultCredentialsFunc func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
-	azIDCredentialsFunc      func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
-	azIDWorkloadFunc         func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
-	azManagedIdentityFunc    func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
+	regions             map[string]map[string]struct{}
+	mb                  *metadata.MetricsBuilder
+	loadCredentialsFunc func(*zap.Logger, *Config, component.Host) (azcore.TokenCredential, error)
 
 	mutex                 *sync.Mutex
 	time                  timeNowIface
@@ -81,7 +74,7 @@ func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetri
 }
 
 func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err error) {
-	if err = s.loadCredentials(host); err != nil {
+	if s.cred, err = loadCredentials(s.settings.Logger, s.cfg, host); err != nil {
 		return err
 	}
 
@@ -108,45 +101,6 @@ func (s *azureBatchScraper) unloadSubscription(id string) {
 	delete(s.resourceTypes, id)
 	delete(s.resources, id)
 	delete(s.regions, id)
-}
-
-// TODO: duplicate
-func (s *azureBatchScraper) loadCredentials(host component.Host) (err error) {
-	if s.cfg.Authentication != nil {
-		s.settings.Logger.Info("'auth.authenticator' will be used to get the token credential")
-		if s.cred, err = loadTokenProvider(host, s.cfg.Authentication.AuthenticatorID); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	switch s.cfg.Credentials {
-	case defaultCredentials:
-		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
-			return err
-		}
-	case servicePrincipal:
-		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
-			return err
-		}
-	case workloadIdentity:
-		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
-			return err
-		}
-	case managedIdentity:
-		var options *azidentity.ManagedIdentityCredentialOptions
-		if s.cfg.ClientID != "" {
-			options = &azidentity.ManagedIdentityCredentialOptions{
-				ID: azidentity.ClientID(s.cfg.ClientID),
-			}
-		}
-		if s.cred, err = s.azManagedIdentityFunc(options); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown credentials %v", s.cfg.Credentials)
-	}
-	return nil
 }
 
 func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
