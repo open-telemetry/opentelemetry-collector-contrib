@@ -430,6 +430,12 @@ func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ wr
 
 func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	for _, histogram := range ts.Histograms {
+		// Drop histograms with RESET_HINT_GAUGE or negative counts.
+		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE || hasNegativeCounts(histogram) {
+			continue
+		}
+
+		// If we reach here, the histogram passed validation - proceed with conversion
 		dp := datapoints.AppendEmpty()
 		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
 		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
@@ -437,33 +443,12 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		// The difference between float and integer histograms is that float histograms are stored as absolute counts
 		// while integer histograms are stored as deltas.
 		if histogram.IsFloatHistogram() {
-			// If the histogram is not a RESET_HINT_GAUGE, it is a counter histogram. Which means that it should
-			// not have negative counts.
-			isCounterHistogram := histogram.ResetHint != writev2.Histogram_RESET_HINT_GAUGE
-
 			// Float histograms
 			if len(histogram.PositiveSpans) > 0 {
-				// If the histogram is a counter histogram, we need to drop negative counts.
-				if isCounterHistogram {
-					for i, count := range histogram.PositiveCounts {
-						if count < 0 {
-							histogram.PositiveCounts[i] = 0
-						}
-					}
-				}
 				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
 			}
 			if len(histogram.NegativeSpans) > 0 {
-				// If the histogram is a counter histogram, we need to drop negative counts.
-				if isCounterHistogram {
-					for i, count := range histogram.NegativeCounts {
-						if count < 0 {
-							histogram.NegativeCounts[i] = 0
-						}
-					}
-				}
-
 				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 				convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
 			}
@@ -499,6 +484,38 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 		stats.Histograms++
 		extractAttributes(ls).CopyTo(attributes)
 	}
+}
+
+// hasNegativeCounts checks if a histogram has any negative counts
+// For now just checking float histograms.
+func hasNegativeCounts(histogram writev2.Histogram) bool {
+	if histogram.IsFloatHistogram() {
+		// Check overall count
+		if histogram.GetCountFloat() < 0 {
+			return true
+		}
+
+		// Check zero count
+		if histogram.GetZeroCountFloat() < 0 {
+			return true
+		}
+
+		// Check positive bucket counts
+		for _, count := range histogram.PositiveCounts {
+			if count < 0 {
+				return true
+			}
+		}
+
+		// Check negative bucket counts
+		for _, count := range histogram.NegativeCounts {
+			if count < 0 {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts

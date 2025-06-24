@@ -667,10 +667,7 @@ func TestTranslateV2(t *testing.T) {
 								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}, {Offset: 5, Length: 1}},
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
 								NegativeCounts: []float64{1},
-								// As we are passing the second positive counts as a negative value(-30),
-								// On the translation it must be replaced with 0. Because positive bucket just stores 0 or positive values.
-								// The same for the last value(-100)
-								PositiveCounts: []float64{33, -30, 26, -100},
+								PositiveCounts: []float64{33, 30, 26, 100},
 							},
 						},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
@@ -702,7 +699,7 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.Positive().SetOffset(0)
-				dp.Positive().BucketCounts().FromRaw([]uint64{33, 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0})
+				dp.Positive().BucketCounts().FromRaw([]uint64{33, 30, 0, 0, 0, 26, 0, 0, 0, 0, 0, 100})
 				dp.Negative().BucketCounts().FromRaw([]uint64{1})
 				dp.Negative().SetOffset(-1)
 				dp.Negative().BucketCounts().FromRaw([]uint64{1})
@@ -716,6 +713,138 @@ func TestTranslateV2(t *testing.T) {
 				Histograms: 1,
 				Exemplars:  0,
 			},
+		},
+		{
+			name: "exponential histogram - float with negative counts",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountFloat{
+									CountFloat: 20,
+								},
+								Sum:           33.3,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountFloat{
+									ZeroCountFloat: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}, {Offset: 5, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+								NegativeCounts: []float64{1},
+								// As we are passing negative counts, the translation should drop the sample.
+								PositiveCounts: []float64{-33, 30, 26, -100},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+
+				m.SetEmptyExponentialHistogram()
+
+				return metrics
+			}(),
+		},
+		{
+			name: "reset hint gauge should be dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								ResetHint: writev2.Histogram_RESET_HINT_GAUGE,
+								Count: &writev2.Histogram_CountFloat{
+									CountFloat: 20,
+								},
+								Sum:           33.3,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountFloat{
+									ZeroCountFloat: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+								NegativeCounts: []float64{1},
+								PositiveCounts: []float64{33},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+
+				m.SetEmptyExponentialHistogram()
+
+				return metrics
+			}(),
 		},
 		{
 			name: "classic histogram - should be dropped",
