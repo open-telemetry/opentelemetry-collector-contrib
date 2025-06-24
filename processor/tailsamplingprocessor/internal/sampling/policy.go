@@ -67,27 +67,14 @@ var (
 	Dropped = Decision{Threshold: sampling.NeverSampleThreshold, Attributes: map[string]any{"dropped": true}}
 	// Error is used to indicate that policy evaluation was not succeeded.
 	ErrorDecision = Decision{Threshold: sampling.NeverSampleThreshold, Attributes: map[string]any{"error": true}}
-	// InvertSampled is used on the invert match flow and indicates weak sampling intent.
-	// This has a small non-zero threshold so it can be overridden by explicit NotSampled decisions.
-	// Represents "sample this unless something else says not to".
-	InvertSampled = Decision{Threshold: createWeakSampleThreshold(), Attributes: map[string]any{"inverted": true}}
-	// InvertNotSampled is used on the invert match flow and indicates to not sample the data.
-	// This represents mathematically inverted threshold: when original condition would be "always sample",
-	// inversion makes it "never sample".
+	// InvertNotSampled is used when mathematically inverting AlwaysSampleThreshold.
+	// This represents proper OTEP 250 mathematical inversion: AlwaysSample -> NeverSample
 	InvertNotSampled = NewInvertedDecision(sampling.AlwaysSampleThreshold)
-)
 
-// createWeakSampleThreshold creates a small non-zero threshold for weak sampling intent.
-// This allows InvertSampled to be overridden by explicit NotSampled decisions in OR logic.
-func createWeakSampleThreshold() sampling.Threshold {
-	// Use threshold value 1 out of MaxAdjustedCount to represent weak sampling intent
-	threshold, err := sampling.UnsignedToThreshold(1)
-	if err != nil {
-		// Fallback to AlwaysSampleThreshold if creation fails
-		return sampling.AlwaysSampleThreshold
-	}
-	return threshold
-}
+	// TODO: Remove this temporary constant - used for test compatibility during refactor
+	// This should be replaced with proper threshold-based decisions in tests
+	InvertSampled = NewInvertedDecision(sampling.NeverSampleThreshold)
+)
 
 // InvertThreshold mathematically inverts a threshold for OTEP 250 compliance.
 // Inverted threshold = MaxAdjustedCount - threshold
@@ -111,7 +98,10 @@ func NewInvertedDecision(originalThreshold sampling.Threshold) Decision {
 
 // NewDecisionWithThreshold creates a new Decision with the specified threshold.
 func NewDecisionWithThreshold(threshold sampling.Threshold) Decision {
-	return Decision{Threshold: threshold}
+	return Decision{
+		Threshold:  threshold,
+		Attributes: make(map[string]any), // Ensure non-nil to avoid zero-value confusion
+	}
 }
 
 // NewDecisionWithError creates a new Decision representing an error condition.

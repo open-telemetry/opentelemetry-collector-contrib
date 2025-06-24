@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestBooleanTagFilter(t *testing.T) {
@@ -30,17 +32,17 @@ func TestBooleanTagFilter(t *testing.T) {
 		{
 			Desc:     "non-matching span attribute",
 			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
-			Decision: NotSampled,
+			Decision: NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 		},
 		{
 			Desc:     "span attribute with unwanted boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", false),
-			Decision: NotSampled,
+			Decision: NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 		},
 		{
 			Desc:     "span attribute with wanted boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", true),
-			Decision: Sampled,
+			Decision: NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		},
 	}
 
@@ -70,28 +72,28 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 		{
 			Desc:     "non-matching span attribute",
 			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
-			Decision: InvertSampled,
+			Decision: NewInvertedDecision(sampling.AlwaysSampleThreshold),
 		},
 		{
 			Desc:     "span attribute with non matching boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", false),
-			Decision: InvertSampled,
+			Decision: NewInvertedDecision(sampling.AlwaysSampleThreshold),
 		},
 		{
 			Desc:     "span attribute with matching boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", true),
-			Decision: InvertNotSampled,
+			Decision: NewInvertedDecision(sampling.NeverSampleThreshold),
 		},
 		{
 			Desc:                  "span attribute with non matching boolean value with DisableInvertDecision",
 			Trace:                 newTraceBoolAttrs(empty, "example", false),
-			Decision:              Sampled,
+			Decision:              NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 			DisableInvertDecision: true,
 		},
 		{
 			Desc:                  "span attribute with matching boolean value with DisableInvertDecision",
 			Trace:                 newTraceBoolAttrs(empty, "example", true),
-			Decision:              NotSampled,
+			Decision:              NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 			DisableInvertDecision: true,
 		},
 	}

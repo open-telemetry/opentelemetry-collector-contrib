@@ -6,6 +6,8 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 // hasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
@@ -20,48 +22,28 @@ func hasResourceOrSpanWithCondition(
 
 		resource := rs.Resource()
 		if shouldSampleResource(resource) {
-			return Sampled
+			return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
 		}
 
 		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, false) {
-			return Sampled
+			return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
 		}
 	}
-	return NotSampled
+	return NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 }
 
-// invertHasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
-// callback returns false.
+// invertHasResourceOrSpanWithCondition mathematically inverts the result of hasResourceOrSpanWithCondition.
+// This implements proper OTEP 250 threshold inversion instead of boolean-style logic.
 func invertHasResourceOrSpanWithCondition(
 	td ptrace.Traces,
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
 ) Decision {
-	isd := IsInvertDecisionsDisabled()
+	// First get the normal (non-inverted) decision
+	normalDecision := hasResourceOrSpanWithCondition(td, shouldSampleResource, shouldSampleSpan)
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rs := td.ResourceSpans().At(i)
-
-		resource := rs.Resource()
-		if !shouldSampleResource(resource) {
-			if isd {
-				return NotSampled
-			}
-			return InvertNotSampled
-		}
-
-		if !hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, true) {
-			if isd {
-				return NotSampled
-			}
-			return InvertNotSampled
-		}
-	}
-
-	if isd {
-		return Sampled
-	}
-	return InvertSampled
+	// Apply mathematical inversion using OTEP 250 semantics
+	return NewInvertedDecision(normalDecision.Threshold)
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.
@@ -70,10 +52,10 @@ func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) 
 		rs := td.ResourceSpans().At(i)
 
 		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample, false) {
-			return Sampled
+			return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
 		}
 	}
-	return NotSampled
+	return NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 }
 
 func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool, invert bool) bool {
