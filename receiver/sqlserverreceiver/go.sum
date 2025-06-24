@@ -12,10 +12,14 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 h1:XHOnouVk1mx
 github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.1 h1:sZEua4ArlPJyn8DxpIw85iYuDSmCXp1h/utS4jHj8Lo=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.66.1/go.mod h1:NH6IHfS2BEWP3i8JBxr6EIuD4TXprGny8dJZZs5QdwQ=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.67.0 h1:NcvyDVIUA0NbBDbp7QJnsYhoBv548g8bXq886795mCQ=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.67.0/go.mod h1:1oPcs3BUTQhiTkmk789rb7ob105MxNV6OuBa28BdukQ=
 github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEUqFvRDw=
 github.com/DataDog/datadog-go/v5 v5.6.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.3 h1:Kl2T6QVndMEZqQSY8rkoltYP+LVNaA54N+EwAMc9N5w=
 github.com/DataDog/go-sqllexer v0.1.3/go.mod h1:KwkYhpFEVIq+BfobkTC1vfqm4gTi65skV/DpDBXtexc=
+github.com/DataDog/go-sqllexer v0.1.6 h1:skEXpWEVCpeZFIiydoIa2f2rf+ymNpjiIMqpW4w3YAk=
+github.com/DataDog/go-sqllexer v0.1.6/go.mod h1:GGpo1h9/BVSN+6NJKaEcJ9Jn44Hqc63Rakeb+24Mjgo=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
