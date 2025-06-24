@@ -5,26 +5,183 @@ package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/resolver"
 )
 
-type dnsLookupProcessor struct{}
+var (
+	errUnknownContextID     = errors.New("unknown attribute context")
+	errHostnameOrIPNotFound = errors.New("hostname/ip not found in attributes")
+)
 
-func newDNSLookupProcessor() *dnsLookupProcessor {
-	return &dnsLookupProcessor{}
+type dnsLookupProcessor struct {
+	config       *Config
+	resolver     resolver.Resolver
+	processPairs []ProcessPair
+	logger       *zap.Logger
 }
 
-func (g *dnsLookupProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
+// ProcessPair holds a context ID and a function to process DNS lookups
+type ProcessPair struct {
+	ContextID ContextID
+	ProcessFn func(ctx context.Context, pMap pcommon.Map) error
+}
+
+func newDNSLookupProcessor(config *Config, logger *zap.Logger) (*dnsLookupProcessor, error) {
+	dnsResolver, err := createResolverChain(config, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resolver chain: %w", err)
+	}
+
+	dp := &dnsLookupProcessor{
+		logger:   logger,
+		config:   config,
+		resolver: dnsResolver,
+	}
+
+	dp.processPairs = dp.createProcessPairs()
+
+	return dp, nil
+}
+
+// createResolverChain creates a chain of resolvers based on the provided configuration.
+// Returns an error if no resolvers are configured or if any of the resolvers fail to initialize.
+func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver, error) {
+	if len(config.Hostfiles) > 0 {
+		hostFileResolver, err := resolver.NewHostFileResolver(config.Hostfiles, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create hostfile resolver: %w", err)
+		}
+
+		return hostFileResolver, nil
+	}
+
+	// TODO: replace with actual chain resolver implementation
+	return resolver.NewNoOpResolver(), nil
+}
+
+// createProcessPairs creates a list of ProcessPair based on the configuration.
+func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
+	if dp.config.Resolve.Enabled && dp.config.Reverse.Enabled &&
+		(dp.config.Resolve.Context == dp.config.Reverse.Context) {
+		return []ProcessPair{
+			{
+				ContextID: dp.config.Resolve.Context,
+				ProcessFn: dp.processDNSLookup,
+			},
+		}
+	}
+
+	var processPairs []ProcessPair
+
+	if dp.config.Resolve.Enabled {
+		processPairs = append(processPairs, ProcessPair{
+			ContextID: dp.config.Resolve.Context,
+			ProcessFn: dp.processResolveLookup,
+		})
+	}
+
+	if dp.config.Reverse.Enabled {
+		processPairs = append(processPairs, ProcessPair{
+			ContextID: dp.config.Reverse.Context,
+			ProcessFn: dp.processReverseLookup,
+		})
+	}
+
+	return processPairs
+}
+
+// processDNSLookup performs both DNS forward and reverse lookups on a set of attributes
+func (dp *dnsLookupProcessor) processDNSLookup(ctx context.Context, pMap pcommon.Map) error {
+	resolveErr := dp.processResolveLookup(ctx, pMap)
+	reverseErr := dp.processReverseLookup(ctx, pMap)
+
+	return errors.Join(resolveErr, reverseErr)
+}
+
+// processResolveLookup finds the hostname from attributes and resolves it to an IP address
+func (dp *dnsLookupProcessor) processResolveLookup(ctx context.Context, pMap pcommon.Map) error {
+	return dp.processLookup(
+		ctx,
+		pMap,
+		dp.config.Resolve,
+		func(hostname string) (string, error) {
+			return resolver.ValidateHostname(resolver.NormalizeHostname(hostname))
+		},
+		dp.resolver.Resolve,
+	)
+}
+
+// processReverseLookup finds the IP from attributes and resolves it to a hostname
+func (dp *dnsLookupProcessor) processReverseLookup(ctx context.Context, pMap pcommon.Map) error {
+	return dp.processLookup(
+		ctx,
+		pMap,
+		dp.config.Reverse,
+		resolver.ValidateIP,
+		dp.resolver.Reverse,
+	)
+}
+
+func (dp *dnsLookupProcessor) processLookup(
+	ctx context.Context,
+	pMap pcommon.Map,
+	config LookupConfig,
+	validateFn func(string) (string, error),
+	lookupFn func(context.Context, string) ([]string, error),
+) error {
+	source, err := strFromAttributes(config.SourceAttributes, pMap, validateFn)
+
+	// no hostname/IP found in attributes
+	if source == "" || err != nil {
+		return nil
+	}
+
+	results, err := lookupFn(ctx, source)
+	if err != nil {
+		return err
+	}
+
+	// Successfully resolved with content. Save the results to attribute
+	if len(results) > 0 {
+		slice := pMap.PutEmptySlice(config.TargetAttribute)
+		for _, res := range results {
+			slice.AppendEmpty().SetStr(res)
+		}
+	}
+	return nil
+}
+
+// strFromAttributes returns the first IP/hostname from the given attributes.
+// It uses validateFn to check the format. If no valid IP/hostname is found, it returns an error.
+func strFromAttributes(attributes []string, pMap pcommon.Map, validateFn func(string) (string, error)) (string, error) {
+	lastErr := errHostnameOrIPNotFound
+
+	for _, attr := range attributes {
+		if val, found := pMap.Get(attr); found {
+			parsedStr, err := validateFn(val.Str())
+			if err == nil {
+				return parsedStr, nil
+			}
+
+			lastErr = err
+		}
+	}
+
+	return "", lastErr
+}
+
+func (dp *dnsLookupProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	return ms, nil
 }
 
-func (g *dnsLookupProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
+func (dp *dnsLookupProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
 	return ts, nil
-}
-
-func (g *dnsLookupProcessor) processLogs(_ context.Context, ls plog.Logs) (plog.Logs, error) {
-	return ls, nil
 }

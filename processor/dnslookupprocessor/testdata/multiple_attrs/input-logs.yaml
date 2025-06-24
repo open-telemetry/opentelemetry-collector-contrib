@@ -1,0 +1,32 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: bad.address
+          value:
+            stringValue: "www.-example_.com"
+        - key: good.address
+          value:
+            stringValue: "example.com"
+        - key: bad.ip
+          value:
+            stringValue: "999.999.99.9"
+        - key: good.ip
+          value:
+            stringValue: "192.168.1.30"
+        - key: ip
+          value:
+            stringValue: 1.2.2.1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: host.name
+                value:
+                  stringValue: HOST.ONE
+              - key: log.file.name
+                value:
+                  stringValue: one.log
+            body:
+              stringValue: hello one
+            spanId: ""
+            traceId: ""
+        scope: {}
