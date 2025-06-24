@@ -1362,6 +1362,7 @@ func constructTestProfiles() pprofiletest.Profiles {
 	}
 }
 
+//nolint:unparam // This can be removed when more tests become unlocked by #39416.
 func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, key string, value any) {
 	t.Helper()
 	dic := td.ProfilesDictionary()

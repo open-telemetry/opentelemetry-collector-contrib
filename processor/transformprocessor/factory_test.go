@@ -403,10 +403,10 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 			createProfiles: basicProfiles().Transform,
 		},
 		{
-			name:       "create profiles processor and pass log context with a global condition that fails the specified condition",
-			conditions: []string{`original_payload_format == "operationB"`},
-			statements: []string{`set(original_payload_format, "pass")`},
-			want: basicProfiles().Transform,
+			name:           "create profiles processor and pass log context with a global condition that fails the specified condition",
+			conditions:     []string{`original_payload_format == "operationB"`},
+			statements:     []string{`set(original_payload_format, "pass")`},
+			want:           basicProfiles().Transform,
 			createProfiles: basicProfiles().Transform,
 		},
 	}
