@@ -62,7 +62,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/tagset v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.67.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.66.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/common v0.67.0 // indirect
@@ -82,7 +82,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.67.0 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.39.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.41.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.0 // indirect
@@ -149,7 +149,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
