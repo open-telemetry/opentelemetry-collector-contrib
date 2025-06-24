@@ -138,15 +138,15 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	return NotSampled, nil
 }
 
-// updateTraceThreshold updates the trace's final threshold to be the most restrictive
-// (highest) threshold applied by any policy.
+// updateTraceThreshold updates the trace's final threshold according to OTEP 250 AnyOf logic.
+// For AnyOf (OR) logic, use the minimum (least restrictive) threshold as specified in OTEP 250.
 func (c *Composite) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
 	if trace.FinalThreshold == nil {
 		// First policy to set a threshold
 		trace.FinalThreshold = &policyThreshold
 	} else {
-		// Use the more restrictive (higher) threshold
-		if sampling.ThresholdGreater(policyThreshold, *trace.FinalThreshold) {
+		// Use the less restrictive (lower) threshold for AnyOf logic per OTEP 250
+		if sampling.ThresholdGreater(*trace.FinalThreshold, policyThreshold) {
 			trace.FinalThreshold = &policyThreshold
 		}
 	}

@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type And struct {
@@ -30,14 +32,39 @@ func NewAnd(
 func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
 	// If any subpolicy returns NotSampled or InvertNotSampled, it returns NotSampled Decision.
+	allSampled := true
+	
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
 			return Unspecified, err
 		}
 		if decision == NotSampled || decision == InvertNotSampled {
-			return NotSampled, nil
+			allSampled = false
+			// Don't return early - continue evaluating all policies to collect thresholds
 		}
 	}
-	return Sampled, nil
+	
+	if allSampled {
+		// For AND logic, we want the most restrictive (maximum) threshold per OTEP 250
+		// This ensures that only traces that ALL policies would sample get sampled
+		c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
+		return Sampled, nil
+	}
+	
+	return NotSampled, nil
+}
+
+// updateTraceThreshold updates the trace's final threshold using AND logic (maximum threshold).
+// For AND logic, we use the most restrictive (maximum) threshold per OTEP 250 AndOf semantics.
+func (c *And) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
+	if trace.FinalThreshold == nil {
+		// First policy to set a threshold
+		trace.FinalThreshold = &policyThreshold
+	} else {
+		// Use the more restrictive (higher) threshold for AND logic
+		if sampling.ThresholdGreater(policyThreshold, *trace.FinalThreshold) {
+			trace.FinalThreshold = &policyThreshold
+		}
+	}
 }
