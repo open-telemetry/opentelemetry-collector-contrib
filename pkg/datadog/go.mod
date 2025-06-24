@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/config v0.67.0
 	github.com/DataDog/datadog-agent/comp/core/log/def v0.67.0
 	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.67.0
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.67.0
 	github.com/DataDog/datadog-agent/pkg/config/model v0.67.0
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.67.0
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.67.0

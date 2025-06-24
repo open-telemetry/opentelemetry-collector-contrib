@@ -34,6 +34,8 @@ github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.67.0 h1:vZTD
 github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.67.0/go.mod h1:WfNHlGyZu4DocYRTO+QyV9RcleXEmLe8DNbg574UYno=
 github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.67.0 h1:M+q1zx3hUJPtF5+HA2VLRa6cR8o2DS+yZ4C7qerlz74=
 github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.67.0/go.mod h1:cZGSQu7XpCZPBc8ZsgevfbmNLnLuzfQgGGwWrQijhas=
+github.com/DataDog/datadog-agent/comp/logs/agent/config v0.67.0 h1:5w1/OoHhJMdDnz1D9WnzXMUPkbjReCBRIQnSpHDLZ4o=
+github.com/DataDog/datadog-agent/comp/logs/agent/config v0.67.0/go.mod h1:rGDLlaiajhgqm3XszjzlNVWSvNnYvrHq6Hj7y5vh7xA=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.67.0 h1:jnZ7fTQd/HXxxuMMbMZuKQ5XltPdg1fO8mufW91mr2c=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.67.0/go.mod h1:IE0OqLuTyWKy/xHscRzgrYvUIgy+TKwoC9tt6TgUnnY=
 github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.67.0 h1:L96yBlbWETGr3WyNRB6MlblSg0m7jgWHTi292W0utQo=

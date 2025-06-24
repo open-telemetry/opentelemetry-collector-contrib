@@ -40,6 +40,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.67.0 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.67.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.67.0 // indirect
