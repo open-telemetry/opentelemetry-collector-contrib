@@ -189,9 +189,9 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			rateLimitErr := errors.New("rate limit exceeded")
-			exp.EnableRateLimit(rateLimitErr)
-			exp.EnableRateLimit(rateLimitErr)
+			// Add two rate limit errors
+			exp.EnableRateLimit()
+			exp.EnableRateLimit()
 
 			traces := ptrace.NewTraces()
 			resourceSpans := traces.ResourceSpans()
@@ -202,7 +202,7 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			err = exp.pushTraces(context.Background(), traces)
 			assert.Error(t, err)
 			if tt.configEnabled {
-				assert.Contains(t, err.Error(), rateLimitErr.Error())
+				assert.Contains(t, err.Error(), "rate limit exceeded")
 			} else {
 				assert.Contains(t, err.Error(), "no such host")
 			}
@@ -439,9 +439,8 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		rateLimitErr := errors.New("rate limit exceeded")
 		for i := 0; i < 5; i++ {
-			exp.EnableRateLimit(rateLimitErr)
+			exp.EnableRateLimit()
 		}
 
 		traces := ptrace.NewTraces()
@@ -471,7 +470,22 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 
 	t.Run("Rate limit reset", func(t *testing.T) {
 		mockSrv.recvCount = 0
-		time.Sleep(2 * time.Second)
+
+		require.Eventually(t, func() bool {
+			testTraces := ptrace.NewTraces()
+			testRs := testTraces.ResourceSpans().AppendEmpty()
+			testRs.Resource().Attributes().PutStr("service.name", "test-service")
+			testSs := testRs.ScopeSpans().AppendEmpty()
+			testSpan := testSs.Spans().AppendEmpty()
+			testSpan.SetName("test-span")
+
+			errPush := exp.pushTraces(context.Background(), testTraces)
+			return errPush == nil
+		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
+
+		// It's 1 because the last push is successful
+		require.Equal(t, 1, mockSrv.recvCount)
+		mockSrv.recvCount = 0
 
 		traces := ptrace.NewTraces()
 		rs := traces.ResourceSpans().AppendEmpty()
@@ -495,5 +509,138 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, spanCount, mockSrv.recvCount, "Expected to receive exactly %d spans after rate limit reset", spanCount)
 		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+}
+
+func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpTracesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Traces: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+			Headers: map[string]configopaque.String{},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	for i := 0; i < 5; i++ {
+		exp.EnableRateLimit()
+	}
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	rs := resourceSpans.AppendEmpty()
+	resource := rs.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeSpans := rs.ScopeSpans().AppendEmpty()
+	span := scopeSpans.Spans().AppendEmpty()
+	span.SetName("test-span")
+
+	err = exp.pushTraces(context.Background(), traces)
+	assert.Error(t, err)
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+	assert.Equal(t, 0, srv.recvCount)
+
+	require.Eventually(t, func() bool {
+		err = exp.pushTraces(context.Background(), traces)
+		return err == nil &&
+			exp.rateError.errorCount.Load() == 0 &&
+			srv.recvCount == 1
+	}, 3*time.Second, 100*time.Millisecond)
+}
+
+func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpTracesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Traces: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	createTestTraces := func() ptrace.Traces {
+		traces := ptrace.NewTraces()
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resource := resourceSpans.Resource()
+		resource.Attributes().PutStr("service.name", "test-service")
+		scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+		span := scopeSpans.Spans().AppendEmpty()
+		span.SetName("test-span")
+		span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		return traces
+	}
+
+	t.Run("Initial successful push", func(t *testing.T) {
+		traces := createTestTraces()
+		err = exp.pushTraces(context.Background(), traces)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 1, srv.recvCount)
+	})
+
+	t.Run("Trigger errors below threshold", func(t *testing.T) {
+		for i := 0; i < 4; i++ {
+			exp.EnableRateLimit()
+		}
+		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
+		assert.False(t, exp.rateError.isRateLimited(), "Should not be rate limited yet")
+	})
+
+	t.Run("Successful push after errors", func(t *testing.T) {
+		traces := createTestTraces()
+		err = exp.pushTraces(context.Background(), traces)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 2, srv.recvCount)
+	})
+
+	t.Run("Verify error count stays at 0", func(t *testing.T) {
+		traces := createTestTraces()
+		err = exp.pushTraces(context.Background(), traces)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 3, srv.recvCount)
 	})
 }
