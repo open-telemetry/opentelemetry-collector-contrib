@@ -7,7 +7,114 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+func TestAddCustomPropertiesToAttrs(t *testing.T) {
+	tests := []struct {
+		name         string
+		customProps  map[string]interface{}
+		expectedKeys []string
+		expectedVals map[string]interface{}
+	}{
+		{
+			name: "adds string custom properties",
+			customProps: map[string]interface{}{
+				"team_name":    "open-telemetry",
+				"environment":  "development",
+				"service_name": "should-be-skipped", // This should be skipped
+			},
+			expectedKeys: []string{
+				"github.repository.custom_properties.team_name",
+				"github.repository.custom_properties.environment",
+			},
+			expectedVals: map[string]interface{}{
+				"github.repository.custom_properties.team_name":   "open-telemetry",
+				"github.repository.custom_properties.environment": "development",
+			},
+		},
+		{
+			name: "adds different types of custom properties",
+			customProps: map[string]interface{}{
+				"string_prop": "string-value",
+				"int_prop":    42,
+				"float_prop":  3.14,
+				"bool_prop":   true,
+			},
+			expectedKeys: []string{
+				"github.repository.custom_properties.string_prop",
+				"github.repository.custom_properties.int_prop",
+				"github.repository.custom_properties.float_prop",
+				"github.repository.custom_properties.bool_prop",
+			},
+			expectedVals: map[string]interface{}{
+				"github.repository.custom_properties.string_prop": "string-value",
+				"github.repository.custom_properties.int_prop":    int64(42),
+				"github.repository.custom_properties.float_prop":  3.14,
+				"github.repository.custom_properties.bool_prop":   true,
+			},
+		},
+		{
+			name:         "handles empty custom properties",
+			customProps:  map[string]interface{}{},
+			expectedKeys: []string{},
+			expectedVals: map[string]interface{}{},
+		},
+		{
+			name:         "handles nil custom properties",
+			customProps:  nil,
+			expectedKeys: []string{},
+			expectedVals: map[string]interface{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new resource with empty attributes
+			resource := pcommon.NewResource()
+			attrs := resource.Attributes()
+
+			// Add custom properties to attributes
+			addCustomPropertiesToAttrs(attrs, tt.customProps)
+
+			// Check that all expected keys exist
+			for _, key := range tt.expectedKeys {
+				_, exists := attrs.Get(key)
+				assert.True(t, exists, "Expected key %s not found", key)
+			}
+
+			// Check that service_name is not added
+			_, exists := attrs.Get("github.repository.custom_properties.service_name")
+			assert.False(t, exists)
+
+			// Check values
+			for key, expectedVal := range tt.expectedVals {
+				switch expected := expectedVal.(type) {
+				case string:
+					val, _ := attrs.Get(key)
+					assert.Equal(t, expected, val.Str())
+				case int64:
+					val, _ := attrs.Get(key)
+					assert.Equal(t, expected, val.Int())
+				case float64:
+					val, _ := attrs.Get(key)
+					assert.Equal(t, expected, val.Double())
+				case bool:
+					val, _ := attrs.Get(key)
+					assert.Equal(t, expected, val.Bool())
+				}
+			}
+
+			// Check that no unexpected keys were added
+			count := 0
+			attrs.Range(func(k string, v pcommon.Value) bool {
+				count++
+				return true
+			})
+			assert.Equal(t, len(tt.expectedKeys), count)
+		})
+	}
+}
 
 func TestFormatString(t *testing.T) {
 	tests := []struct {

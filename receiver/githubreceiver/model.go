@@ -5,6 +5,7 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/google/go-github/v72/github"
@@ -105,6 +106,7 @@ const (
 	// The following attributes are exclusive to GitHub but not listed under
 	// Vendor Extensions within Semantic Conventions yet.
 	AttributeGitHubAppInstallationID            = "github.app.installation.id"             // GitHub's Installation ID
+	AttributeGitHubRepositoryCustomProperty     = "github.repository.custom_properties"    // GitHub's Repository Custom Properties
 	AttributeGitHubWorkflowRunAttempt           = "github.workflow.run.attempt"            // GitHub's Run Attempt
 	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
 
@@ -146,6 +148,9 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 	}
 
 	attrs.PutStr(string(semconv.ServiceNameKey), svc)
+
+	// Add all custom properties from the repository as resource attributes
+	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -219,6 +224,9 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 	}
 
 	attrs.PutStr(string(semconv.ServiceNameKey), svc)
+
+	// Add all custom properties from the repository as resource attributes
+	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -314,6 +322,41 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 		// This should never happen, but in the event it does, unknown_service
 		// and a error will be returned to abide by semantic conventions.
 		return "unknown_service", errors.New("unable to generate service.name resource attribute")
+	}
+}
+
+// addCustomPropertiesToAttrs adds all custom properties from the repository as resource attributes
+// with the prefix AttributeGitHubCustomProperty.
+func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]interface{}) {
+	if len(customProps) == 0 {
+		return
+	}
+
+	for key, value := range customProps {
+		// Skip service_name as it's already handled separately
+		if key == "service_name" {
+			continue
+		}
+
+		// Use dot notation for keys, following OpenTelemetry convention
+		attrKey := fmt.Sprintf("%s.%s", AttributeGitHubRepositoryCustomProperty, key)
+
+		// Handle different value types
+		switch v := value.(type) {
+		case string:
+			attrs.PutStr(attrKey, v)
+		case int:
+			attrs.PutInt(attrKey, int64(v))
+		case int64:
+			attrs.PutInt(attrKey, v)
+		case float64:
+			attrs.PutDouble(attrKey, v)
+		case bool:
+			attrs.PutBool(attrKey, v)
+		default:
+			// For any other types, convert to string
+			attrs.PutStr(attrKey, fmt.Sprintf("%v", v))
+		}
 	}
 }
 
