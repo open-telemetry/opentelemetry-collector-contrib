@@ -18,5 +18,6 @@ sqlserver/named:
     lookback_time: 60
     max_query_sample_count: 1000
     top_query_count: 200
+    collection_interval: 80s
   query_sample_collection:
     max_rows_per_query: 1450
