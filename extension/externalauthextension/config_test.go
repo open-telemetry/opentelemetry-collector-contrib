@@ -33,6 +33,7 @@ func TestLoadConfig(t *testing.T) {
 				Method:            "POST",
 				HTTPClientTimeout: 10 * time.Second,
 				TelemetryType:     "traces",
+				TokenFormat:       "raw",
 			},
 		},
 		{
@@ -46,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 				Method:            "POST",
 				HTTPClientTimeout: 10 * time.Second,
 				TelemetryType:     "metrics",
+				TokenFormat:       "raw",
 			},
 		},
 		{
@@ -59,6 +61,7 @@ func TestLoadConfig(t *testing.T) {
 				Method:            "POST",
 				HTTPClientTimeout: 10 * time.Second,
 				TelemetryType:     "logs",
+				TokenFormat:       "raw",
 			},
 		},
 		{
@@ -72,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				Method:            "GET",
 				HTTPClientTimeout: 5 * time.Second,
 				TelemetryType:     "traces",
+				TokenFormat:       "raw",
 			},
 		},
 		{
@@ -85,6 +89,7 @@ func TestLoadConfig(t *testing.T) {
 				Method:            "POST",
 				HTTPClientTimeout: 10 * time.Second,
 				TelemetryType:     "traces",
+				TokenFormat:       "raw",
 			},
 		},
 		{
@@ -105,6 +110,10 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_telemetry_type"),
+			expectedErr: true,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_token_format"),
 			expectedErr: true,
 		},
 	}

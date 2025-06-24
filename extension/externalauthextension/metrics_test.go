@@ -35,7 +35,7 @@ func TestMetrics(t *testing.T) {
 	code := 200
 	telemetryType := "metrics"
 
-	// Test auth attempts
+	// Test auth attempts with user (basic_auth format)
 	metrics.authAttempts.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("user", user),
 		attribute.String("telemetry_type", telemetryType),
@@ -235,14 +235,17 @@ func TestMetricsWithServer(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		tokenFormat    string
 		headers        map[string][]string
 		expectedError  error
 		expectedUser   string
 		expectedCode   int
 		expectCacheHit bool
+		expectUserAttr bool
 	}{
 		{
-			name: "Successful authentication",
+			name:        "Successful authentication with basic_auth",
+			tokenFormat: "basic_auth",
 			headers: map[string][]string{
 				DefaultAuthorizationHeader: {"Bearer validtoken:pass"},
 			},
@@ -250,9 +253,11 @@ func TestMetricsWithServer(t *testing.T) {
 			expectedUser:   "validtoken",
 			expectedCode:   http.StatusOK,
 			expectCacheHit: false,
+			expectUserAttr: true,
 		},
 		{
-			name: "Failed authentication",
+			name:        "Failed authentication with basic_auth",
+			tokenFormat: "basic_auth",
 			headers: map[string][]string{
 				DefaultAuthorizationHeader: {"Bearer invalidtoken:pass"},
 			},
@@ -260,9 +265,23 @@ func TestMetricsWithServer(t *testing.T) {
 			expectedUser:   "invalidtoken",
 			expectedCode:   http.StatusUnauthorized,
 			expectCacheHit: false,
+			expectUserAttr: true,
 		},
 		{
-			name: "Cache hit with valid token",
+			name:        "Successful authentication with raw format",
+			tokenFormat: "raw",
+			headers: map[string][]string{
+				DefaultAuthorizationHeader: {"Bearer validtoken:pass"},
+			},
+			expectedError:  nil,
+			expectedUser:   "",
+			expectedCode:   http.StatusOK,
+			expectCacheHit: false,
+			expectUserAttr: false, // No user attribute for raw format
+		},
+		{
+			name:        "Cache hit with valid token (basic_auth)",
+			tokenFormat: "basic_auth",
 			headers: map[string][]string{
 				DefaultAuthorizationHeader: {"Bearer validtoken:pass"},
 			},
@@ -270,6 +289,19 @@ func TestMetricsWithServer(t *testing.T) {
 			expectedUser:   "validtoken",
 			expectedCode:   http.StatusOK,
 			expectCacheHit: true,
+			expectUserAttr: true,
+		},
+		{
+			name:        "Cache hit with valid token (raw format)",
+			tokenFormat: "raw",
+			headers: map[string][]string{
+				DefaultAuthorizationHeader: {"Bearer validtoken:pass"},
+			},
+			expectedError:  nil,
+			expectedUser:   "",
+			expectedCode:   http.StatusOK,
+			expectCacheHit: false,
+			expectUserAttr: false,
 		},
 	}
 
@@ -283,6 +315,7 @@ func TestMetricsWithServer(t *testing.T) {
 			cfg := &Config{
 				Endpoint:      server.URL,
 				TelemetryType: "metrics",
+				TokenFormat:   tt.tokenFormat,
 			}
 
 			telemetry := component.TelemetrySettings{
@@ -317,14 +350,39 @@ func TestMetricsWithServer(t *testing.T) {
 				return nil
 			}
 
+			// Helper function to check if metric has user attribute
+			hasUserAttribute := func(m metricdata.Metrics) bool {
+				switch data := m.Data.(type) {
+				case metricdata.Sum[int64]:
+					for _, dp := range data.DataPoints {
+						if dp.Attributes.HasValue(attribute.Key("user")) {
+							return true
+						}
+					}
+				case metricdata.Histogram[float64]:
+					for _, dp := range data.DataPoints {
+						if dp.Attributes.HasValue(attribute.Key("user")) {
+							return true
+						}
+					}
+				}
+				return false
+			}
+
 			// Verify auth attempts
 			if m := findMetric("externalauth_attempts_total"); m != nil {
 				sum, ok := m.Data.(metricdata.Sum[int64])
 				require.True(t, ok)
 				require.Equal(t, int64(1), sum.DataPoints[0].Value)
 				metricdatatest.AssertHasAttributes(t, *m,
-					attribute.String("user", tt.expectedUser),
 					attribute.String("telemetry_type", "metrics"))
+
+				// Check user attribute based on token format
+				if tt.expectUserAttr {
+					metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+				} else {
+					assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+				}
 			}
 
 			// Verify auth successes/failures
@@ -334,9 +392,15 @@ func TestMetricsWithServer(t *testing.T) {
 					require.True(t, ok)
 					require.Equal(t, int64(1), sum.DataPoints[0].Value)
 					metricdatatest.AssertHasAttributes(t, *m,
-						attribute.String("user", tt.expectedUser),
 						attribute.Int("code", tt.expectedCode),
 						attribute.String("telemetry_type", "metrics"))
+
+					// Check user attribute based on token format
+					if tt.expectUserAttr {
+						metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+					} else {
+						assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+					}
 				}
 			} else {
 				if m := findMetric("externalauth_failures_total"); m != nil {
@@ -344,9 +408,15 @@ func TestMetricsWithServer(t *testing.T) {
 					require.True(t, ok)
 					require.Equal(t, int64(1), sum.DataPoints[0].Value)
 					metricdatatest.AssertHasAttributes(t, *m,
-						attribute.String("user", tt.expectedUser),
 						attribute.Int("code", tt.expectedCode),
 						attribute.String("telemetry_type", "metrics"))
+
+					// Check user attribute based on token format
+					if tt.expectUserAttr {
+						metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+					} else {
+						assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+					}
 				}
 			}
 
@@ -357,8 +427,14 @@ func TestMetricsWithServer(t *testing.T) {
 				require.Equal(t, 1, len(hist.DataPoints))
 				require.Greater(t, hist.DataPoints[0].Sum, float64(0))
 				metricdatatest.AssertHasAttributes(t, *m,
-					attribute.String("user", tt.expectedUser),
 					attribute.String("telemetry_type", "metrics"))
+
+				// Check user attribute based on token format
+				if tt.expectUserAttr {
+					metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+				} else {
+					assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+				}
 			}
 
 			// Verify cache hits/misses
@@ -368,8 +444,14 @@ func TestMetricsWithServer(t *testing.T) {
 					require.True(t, ok)
 					require.Equal(t, int64(1), sum.DataPoints[0].Value)
 					metricdatatest.AssertHasAttributes(t, *m,
-						attribute.String("user", tt.expectedUser),
 						attribute.String("telemetry_type", "metrics"))
+
+					// Check user attribute based on token format
+					if tt.expectUserAttr {
+						metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+					} else {
+						assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+					}
 				}
 			} else {
 				if m := findMetric("externalauth_cache_misses_total"); m != nil {
@@ -377,8 +459,14 @@ func TestMetricsWithServer(t *testing.T) {
 					require.True(t, ok)
 					require.Equal(t, int64(1), sum.DataPoints[0].Value)
 					metricdatatest.AssertHasAttributes(t, *m,
-						attribute.String("user", tt.expectedUser),
 						attribute.String("telemetry_type", "metrics"))
+
+					// Check user attribute based on token format
+					if tt.expectUserAttr {
+						metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+					} else {
+						assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+					}
 				}
 			}
 
@@ -389,8 +477,14 @@ func TestMetricsWithServer(t *testing.T) {
 					require.True(t, ok)
 					require.Equal(t, int64(1), sum.DataPoints[0].Value)
 					metricdatatest.AssertHasAttributes(t, *m,
-						attribute.String("user", tt.expectedUser),
 						attribute.String("telemetry_type", "metrics"))
+
+					// Check user attribute based on token format
+					if tt.expectUserAttr {
+						metricdatatest.AssertHasAttributes(t, *m, attribute.String("user", tt.expectedUser))
+					} else {
+						assert.False(t, hasUserAttribute(*m), "User attribute should not be present for raw format")
+					}
 				}
 			}
 		})

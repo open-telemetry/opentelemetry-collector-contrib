@@ -46,4 +46,8 @@ externalauth/invalid_http_code:
 
 externalauth/invalid_telemetry_type:
   endpoint: "https://auth.example.com"
-  telemetry_type: "invalid" 
+  telemetry_type: "invalid"
+
+externalauth/invalid_token_format:
+  endpoint: "https://auth.example.com"
+  token_format: "invalid_format" 

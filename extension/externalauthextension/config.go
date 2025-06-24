@@ -17,6 +17,7 @@ const (
 	defaultMethod            = "POST"
 	defaultHttpClientTimeout = 10 * time.Second
 	defaultTelemetryType     = "traces"
+	defaultTokenFormat       = "raw"
 )
 
 type Config struct {
@@ -32,6 +33,8 @@ type Config struct {
 	Scheme string `mapstructure:"scheme,omitempty"`
 	// Method specifies the HTTP method used in the request. Defaults to "POST"
 	Method string `mapstructure:"method,omitempty"`
+	// TokenFormat specifies the format of the token. Options: "raw", "basic_auth". Defaults to "raw"
+	TokenFormat string `mapstructure:"token_format,omitempty"`
 	// HTTPClientTimeout specifies the timeout for the HTTP client. Defaults to "10s"
 	HTTPClientTimeout time.Duration `mapstructure:"http_client_timeout,omitempty"`
 	// TelemetryType specifies the telemetry type for this endpoint. Options: "traces", "metrics", "logs". Defaults to "traces"
@@ -45,6 +48,7 @@ var (
 	errInvalidEndpoint                       = errors.New("invalid remote endpoint")
 	errInvalidHttpCode                       = errors.New("code provided is not a valid HTTP code")
 	errInvalidTelemetryType                  = errors.New("telemetry_type must be one of: traces, metrics, logs")
+	errInvalidTokenFormat                    = errors.New("token_format must be one of: raw, basic_auth")
 )
 
 // Validate checks if the extension configuration is valid
@@ -96,6 +100,17 @@ func (cfg *Config) Validate() error {
 		}
 		if !validTypes[cfg.TelemetryType] {
 			return errInvalidTelemetryType
+		}
+	}
+	if cfg.TokenFormat == "" {
+		cfg.TokenFormat = defaultTokenFormat
+	} else {
+		validFormats := map[string]bool{
+			"raw":        true,
+			"basic_auth": true,
+		}
+		if !validFormats[cfg.TokenFormat] {
+			return errInvalidTokenFormat
 		}
 	}
 	return nil

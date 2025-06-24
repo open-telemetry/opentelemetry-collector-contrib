@@ -16,8 +16,7 @@ type authMetrics struct {
 	remoteAuthCalls metric.Int64Counter
 }
 
-// extractUserFromAuthHeader extracts the user from an Authorization header in the format "Bearer user:pass"
-func extractUserFromAuthHeader(authHeader string) string {
+func extractUserBasicAuthHeader(authHeader string) string {
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
 		return ""

@@ -48,6 +48,7 @@ The following settings are available:
 - `method` (default = "POST"): Specifies the HTTP method to use for the authentication request
 - `http_client_timeout` (default = "10s"): Specifies the timeout for the HTTP client when making requests to the external authentication service
 - `telemetry_type` (default = "traces"): Specifies the telemetry type for this endpoint. Options: `traces`, `metrics`, `logs`. Only used to be added as a label to metrics
+- `token_format` (default = "raw"): Specifies the format of the token. Options: `raw`, `basic_auth`. When `basic_auth` is used, the user label will be added to metrics.
 
 ### Example Configuration
 
