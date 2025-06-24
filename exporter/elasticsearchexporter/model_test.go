@@ -451,6 +451,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	span.SetName("client span")
 	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetParentSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
 	span.SetKind(ptrace.SpanKindClient)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)))
@@ -508,22 +509,17 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		},
 		"links": [
 		  {
-			"span": {
-			  "id": "1112131415161718"
-			},
-			"trace": {
-			  "id": "01020304050607080807060504030201"
-			}
+			"span_id": "1112131415161718",
+			"trace_id": "01020304050607080807060504030201"
 		  },
 		  {
-			"span": {
-			  "id": "3132333435363738"
-			},
-			"trace": {
-			  "id": "21222324252627282827262524232221"
-			}
+			"span_id": "3132333435363738",
+			"trace_id": "21222324252627282827262524232221"
 		  }
 		]
+	  },
+      "parent": {
+		"id": "0102030405060708"
 	  },
 	  "cloud": {
 		"provider": "aws",

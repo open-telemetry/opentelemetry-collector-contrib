@@ -263,6 +263,7 @@ func (e ecsModeEncoder) encodeSpan(
 	document.AddTraceID("trace.id", span.TraceID())
 	document.AddSpanID("span.id", span.SpanID())
 	document.AddString("span.name", span.Name())
+	document.AddSpanID("parent.id", span.ParentSpanID())
 	if span.Status().Code() == ptrace.StatusCodeOk {
 		document.AddString("event.outcome", "success")
 	} else if span.Status().Code() == ptrace.StatusCodeError {
