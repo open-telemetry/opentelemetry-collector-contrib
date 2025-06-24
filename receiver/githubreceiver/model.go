@@ -328,7 +328,7 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 
 // addCustomPropertiesToAttrs adds all custom properties from the repository as resource attributes
 // with the prefix AttributeGitHubCustomProperty. Keys are converted to snake_case to follow
-// OpenTelemetry convention for resource attribute names.
+// resource attribute naming convention.
 func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]interface{}) {
 	if len(customProps) == 0 {
 		return
@@ -340,10 +340,10 @@ func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]interf
 			continue
 		}
 
-		// Convert key to snake_case to follow OpenTelemetry convention
+		// Convert key to snake_case
 		snakeCaseKey := toSnakeCase(key)
 
-		// Use dot notation for keys, following OpenTelemetry convention
+		// Use dot notation for keys, following resource attribute naming convention
 		attrKey := fmt.Sprintf("%s.%s", AttributeGitHubRepositoryCustomProperty, snakeCaseKey)
 
 		// Handle different value types
@@ -378,8 +378,8 @@ func replaceAPIURL(apiURL string) (htmlURL string) {
 }
 
 // toSnakeCase converts a string to snake_case format.
-// It handles all GitHub-supported characters for custom property names: a-z, A-Z, 0-9, _, -, $, #.
-// This function ensures that the resulting string follows OpenTelemetry's snake_case convention.
+// It handles all GitHub supported characters for custom property names: a-z, A-Z, 0-9, _, -, $, #.
+// This function ensures that the resulting string follows snake_case convention.
 func toSnakeCase(s string) string {
 	// Replace hyphens, spaces, and dots with underscores
 	s = strings.ReplaceAll(s, "-", "_")
