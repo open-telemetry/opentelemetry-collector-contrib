@@ -168,6 +168,9 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 
 	if mi, ok := host.(moduleInfo); ok {
 		o.initAvailableComponents(mi.GetModuleInfos())
+	} else if o.capabilities.ReportsAvailableComponents {
+		// init empty availableComponents to not get an error when starting the opampClient
+		o.initAvailableComponents(service.ModuleInfos{})
 	}
 
 	if o.availableComponents != nil {
