@@ -72,28 +72,28 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 		{
 			Desc:     "non-matching span attribute",
 			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
-			Decision: NewInvertedDecision(sampling.AlwaysSampleThreshold),
+			Decision: InvertSampled,
 		},
 		{
 			Desc:     "span attribute with non matching boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", false),
-			Decision: NewInvertedDecision(sampling.AlwaysSampleThreshold),
+			Decision: InvertSampled,
 		},
 		{
 			Desc:     "span attribute with matching boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", true),
-			Decision: NewInvertedDecision(sampling.NeverSampleThreshold),
+			Decision: InvertNotSampled,
 		},
 		{
 			Desc:                  "span attribute with non matching boolean value with DisableInvertDecision",
 			Trace:                 newTraceBoolAttrs(empty, "example", false),
-			Decision:              NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
+			Decision:              InvertNotSampled,
 			DisableInvertDecision: true,
 		},
 		{
 			Desc:                  "span attribute with matching boolean value with DisableInvertDecision",
 			Trace:                 newTraceBoolAttrs(empty, "example", true),
-			Decision:              NewDecisionWithThreshold(sampling.NeverSampleThreshold),
+			Decision:              InvertSampled,
 			DisableInvertDecision: true,
 		},
 	}

@@ -39,24 +39,29 @@ func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 	batches := trace.ReceivedBatches
 
 	if baf.invertMatch {
-		return invertHasResourceOrSpanWithCondition(
+		// Use mathematical threshold inversion per OTEP 250
+		normalDecision := hasResourceOrSpanWithCondition(
 			batches,
 			func(resource pcommon.Resource) bool {
 				if v, ok := resource.Attributes().Get(baf.key); ok {
 					value := v.Bool()
-					return value != baf.value
+					return value == baf.value
 				}
-				return true
+				return false
 			},
 			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(baf.key); ok {
 					value := v.Bool()
-					return value != baf.value
+					return value == baf.value
 				}
-				return true
+				return false
 			},
-		), nil
+		)
+
+		// Apply mathematical inversion to the threshold
+		return NewInvertedDecision(normalDecision.Threshold), nil
 	}
+
 	return hasResourceOrSpanWithCondition(
 		batches,
 		func(resource pcommon.Resource) bool {

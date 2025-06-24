@@ -121,12 +121,22 @@ func (d Decision) isZeroValue() bool {
 
 // IsSampled returns true if this decision represents a sampling intent.
 // This provides backward compatibility for boolean decision logic.
+// NOTE: This method is deprecated in favor of ShouldSample(randomness) which implements
+// proper OTEP 235 threshold comparison: (randomness >= threshold) = sampled
 func (d Decision) IsSampled() bool {
 	// Zero-value Decision{} should be treated as unspecified, not sampled
 	if d.isZeroValue() {
 		return false
 	}
-	return d.Threshold != sampling.NeverSampleThreshold && d.Error == nil
+
+	// Error conditions are never sampled
+	if d.Error != nil {
+		return false
+	}
+
+	// For backward compatibility only: assume AlwaysSampleThreshold means "sample"
+	// In the new threshold paradigm, use ShouldSample(randomness) instead
+	return d.Threshold == sampling.AlwaysSampleThreshold
 }
 
 // IsError returns true if this decision represents an error condition.
