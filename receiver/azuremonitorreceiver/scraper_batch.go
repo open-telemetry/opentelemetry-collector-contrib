@@ -80,8 +80,8 @@ func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetri
 	return azmetrics.NewClient(endpoint, s.cred, s.clientOptionsResolver.GetAzMetricsClientOptions())
 }
 
-func (s *azureBatchScraper) start(_ context.Context, _ component.Host) (err error) {
-	if err = s.loadCredentials(); err != nil {
+func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err error) {
+	if err = s.loadCredentials(host); err != nil {
 		return err
 	}
 
@@ -111,7 +111,15 @@ func (s *azureBatchScraper) unloadSubscription(id string) {
 }
 
 // TODO: duplicate
-func (s *azureBatchScraper) loadCredentials() (err error) {
+func (s *azureBatchScraper) loadCredentials(host component.Host) (err error) {
+	if s.cfg.Authentication != nil {
+		s.settings.Logger.Info("'auth.authenticator' will be used to get the token credential")
+		if s.cred, err = loadTokenProvider(host, s.cfg.Authentication.AuthenticatorID); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	switch s.cfg.Credentials {
 	case defaultCredentials:
 		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
