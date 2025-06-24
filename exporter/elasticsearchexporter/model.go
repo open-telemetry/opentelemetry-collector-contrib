@@ -269,7 +269,6 @@ func (e ecsModeEncoder) encodeSpan(
 	} else if span.Status().Code() == ptrace.StatusCodeError {
 		document.AddString("event.outcome", "failure")
 	}
-	document.AddEvents("span.events", span.Events())
 	document.AddLinks("span.links", span.Links())
 
 	return document.Serialize(buf, true)

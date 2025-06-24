@@ -471,15 +471,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	link2.SetTraceID([16]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21})
 	link2.SetSpanID([8]byte{0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38})
 
-	event := span.Events().AppendEmpty()
-	event.SetName("fooEvent")
-	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
-	err = event.Attributes().FromRaw(map[string]any{
-		"eventMockFoo": "foo",
-		"eventMockBar": "bar",
-	})
-	require.NoError(t, err)
-
 	var buf bytes.Buffer
 	err = encoder.encodeSpan(
 		encodingContext{
@@ -500,13 +491,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  "span": {
 		"id": "1920212223242526",
 		"name": "client span",
-		"events": {
-		  "fooEvent": {
-			"eventMockFoo": "foo",
-			"eventMockBar": "bar",
-			"time": "2023-04-19T03:04:05.000000006Z"
-		  }
-		},
 		"links": [
 		  {
 			"span_id": "1112131415161718",
