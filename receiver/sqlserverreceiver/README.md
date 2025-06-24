@@ -23,9 +23,9 @@ Make sure to run the collector as administrator in order to collect all performa
 
 ## Configuration
 
-Following is one generic configuration, with that, you can basically have all the logs / metrics exported
-by current sqlserver receiver. We also provided some basic explanation on some of the fields. For the detail 
-documents, please refer the following section.
+The following is a generic configuration that can be used for the default logs and metrics scraped
+by the SQL Server receiver. A basic explanation on some of the fields has also been provided. For more
+information, please reference the following section.
 
 ```yaml
 sqlserver:
@@ -45,7 +45,6 @@ sqlserver:
     enabled: true
     max_rows_per_query: 100                    # the maximum number of samples to return for one single query.
 ```
-
 
 The following settings are optional:
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
