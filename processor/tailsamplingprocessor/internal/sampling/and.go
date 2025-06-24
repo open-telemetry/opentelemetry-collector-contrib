@@ -32,26 +32,39 @@ func NewAnd(
 func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
 	// If any subpolicy returns NotSampled or InvertNotSampled, it returns NotSampled Decision.
+	var maxThreshold sampling.Threshold = sampling.AlwaysSampleThreshold // Start with 0 (most permissive)
 	allSampled := true
-	
+
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
-			return Unspecified, err
+			return NewDecisionWithError(err), err
 		}
-		if decision == NotSampled || decision == InvertNotSampled {
+
+		// Check if this decision represents sampling
+		if !decision.IsSampled() {
 			allSampled = false
 			// Don't return early - continue evaluating all policies to collect thresholds
+		} else {
+			// For AND logic, collect the maximum (most restrictive) threshold per OTEP 250
+			if sampling.ThresholdGreater(decision.Threshold, maxThreshold) {
+				maxThreshold = decision.Threshold
+			}
 		}
 	}
-	
+
 	if allSampled {
 		// For AND logic, we want the most restrictive (maximum) threshold per OTEP 250
 		// This ensures that only traces that ALL policies would sample get sampled
-		c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
-		return Sampled, nil
+		c.updateTraceThreshold(trace, maxThreshold)
+
+		// For backward compatibility, return the Sampled constant if threshold equals AlwaysSampleThreshold
+		if maxThreshold == sampling.AlwaysSampleThreshold {
+			return Sampled, nil
+		}
+		return NewDecisionWithThreshold(maxThreshold), nil
 	}
-	
+
 	return NotSampled, nil
 }
 

@@ -72,7 +72,7 @@ func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.Trace
 }
 
 // updateTraceThreshold updates the trace's final threshold using OR logic (minimum threshold).
-// Since the tail sampler uses OR logic (any policy can trigger sampling), 
+// Since the tail sampler uses OR logic (any policy can trigger sampling),
 // we use the least restrictive (minimum) threshold per OTEP 250 AnyOf semantics.
 func (s *probabilisticSampler) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
 	if trace.FinalThreshold == nil {

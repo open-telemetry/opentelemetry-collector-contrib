@@ -81,7 +81,7 @@ func TestProbabilisticSampling(t *testing.T) {
 				decision, err := probabilisticSampler.Evaluate(context.Background(), traceID, trace)
 				assert.NoError(t, err)
 
-				if decision == Sampled {
+				if decision.IsSampled() {
 					sampled++
 				}
 			}

@@ -81,16 +81,17 @@ type spanAndScope struct {
 }
 
 var (
-	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
-	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
-	decisionToAttribute = map[internalsampling.Decision]metric.MeasurementOption{
-		internalsampling.Sampled:          attrSampledTrue,
-		internalsampling.NotSampled:       attrSampledFalse,
-		internalsampling.InvertNotSampled: attrSampledFalse,
-		internalsampling.InvertSampled:    attrSampledTrue,
-		internalsampling.Dropped:          attrSampledFalse,
-	}
+	attrSampledTrue  = metric.WithAttributes(attribute.String("sampled", "true"))
+	attrSampledFalse = metric.WithAttributes(attribute.String("sampled", "false"))
 )
+
+// decisionToMetricAttribute converts a Decision to a metric attribute for telemetry.
+func decisionToMetricAttribute(decision internalsampling.Decision) metric.MeasurementOption {
+	if decision.IsSampled() {
+		return attrSampledTrue
+	}
+	return attrSampledFalse
+}
 
 type Option func(*tailSamplingSpanProcessor)
 
@@ -369,7 +370,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		decision := tsp.makeDecision(id, trace, &metrics)
 
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToMetricAttribute(decision))
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -378,10 +379,10 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
-		switch decision {
-		case internalsampling.Sampled:
+		switch {
+		case decision.IsSampled():
 			tsp.releaseSampledTrace(ctx, id, allSpans)
-		case internalsampling.NotSampled:
+		default:
 			tsp.releaseNotSampledTrace(id)
 		}
 	}
@@ -402,67 +403,116 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *internalsampling.TraceData, metrics *policyMetrics) internalsampling.Decision {
 	finalDecision := internalsampling.NotSampled
-	samplingDecisions := map[internalsampling.Decision]*policy{
-		internalsampling.Error:            nil,
-		internalsampling.Sampled:          nil,
-		internalsampling.NotSampled:       nil,
-		internalsampling.InvertSampled:    nil,
-		internalsampling.InvertNotSampled: nil,
-		internalsampling.Dropped:          nil,
-	}
+
+	// Track policy decisions without using Decision as map key
+	var errorPolicy *policy
+	var sampledPolicy *policy
+	var policyDecisions []internalsampling.Decision
+	var droppedPolicy *policy
 
 	ctx := context.Background()
 	startTime := time.Now()
 
-	// Check all policies before making a final decision.
+	// Check all policies and collect their threshold decisions.
 	for _, p := range tsp.policies {
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		latency := time.Since(startTime)
 		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute)
 
 		if err != nil {
-			if samplingDecisions[internalsampling.Error] == nil {
-				samplingDecisions[internalsampling.Error] = p
+			if errorPolicy == nil {
+				errorPolicy = p
 			}
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 			continue
 		}
 
-		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToMetricAttribute(decision))
 
 		if telemetry.IsMetricStatCountSpansSampledEnabled() {
-			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
 		}
 
-		// We associate the first policy with the sampling decision to understand what policy sampled a span
-		if samplingDecisions[decision] == nil {
-			samplingDecisions[decision] = p
+		// Collect all policy decisions for OTEP 250 threshold combination
+		policyDecisions = append(policyDecisions, decision)
+
+		// Track policies for metrics and debugging (first occurrence only)
+		if decision.IsDropped() && droppedPolicy == nil {
+			droppedPolicy = p
+		} else if decision.IsSampled() && sampledPolicy == nil {
+			sampledPolicy = p
 		}
 
 		// Break early if dropped. This can drastically reduce tick/decision latency.
-		if decision == internalsampling.Dropped {
+		if decision.IsDropped() {
 			break
 		}
 		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
-		if tsp.sampleOnFirstMatch && decision == internalsampling.Sampled {
+		if tsp.sampleOnFirstMatch && decision.IsSampled() {
 			break
 		}
 	}
 
-	var sampledPolicy *policy
-
+	// OTEP 250 Decision Logic with precedence for backward compatibility
 	switch {
-	case samplingDecisions[internalsampling.Dropped] != nil: // Dropped takes precedence
+	case droppedPolicy != nil:
+		// Dropped takes precedence over all other decisions
 		finalDecision = internalsampling.NotSampled
-	case samplingDecisions[internalsampling.InvertNotSampled] != nil: // Then InvertNotSampled
-		finalDecision = internalsampling.NotSampled
-	case samplingDecisions[internalsampling.Sampled] != nil:
-		finalDecision = internalsampling.Sampled
-		sampledPolicy = samplingDecisions[internalsampling.Sampled]
-	case samplingDecisions[internalsampling.InvertSampled] != nil && samplingDecisions[internalsampling.NotSampled] == nil:
-		finalDecision = internalsampling.Sampled
-		sampledPolicy = samplingDecisions[internalsampling.InvertSampled]
+	default:
+		// Check for explicit non-sampling decisions first
+		hasExplicitNotSampled := false
+		hasRegularSampled := false
+		hasInvertSampled := false
+		minThreshold := sampling.NeverSampleThreshold
+
+		for _, decision := range policyDecisions {
+			if decision.IsDropped() || decision.IsError() {
+				continue
+			}
+
+			// Track decision types for precedence logic
+			if decision.IsNotSampled() {
+				hasExplicitNotSampled = true
+			} else if decision.IsSampled() && !decision.IsInverted() {
+				hasRegularSampled = true
+			} else if decision.IsInvertSampled() {
+				hasInvertSampled = true
+			}
+
+			// Track minimum threshold for pure threshold-based policies
+			if sampling.ThresholdLessThan(decision.Threshold, minThreshold) {
+				minThreshold = decision.Threshold
+			}
+		}
+
+		// Apply precedence rules for backward compatibility:
+		// 1. Explicit NotSampled overrides InvertSampled
+		// 2. Regular Sampled takes precedence
+		// 3. InvertSampled only works if no explicit NotSampled
+		if hasExplicitNotSampled {
+			finalDecision = internalsampling.NotSampled
+			finalThreshold := sampling.NeverSampleThreshold
+			trace.FinalThreshold = &finalThreshold
+		} else if hasRegularSampled {
+			finalDecision = internalsampling.Sampled
+			finalThreshold := sampling.AlwaysSampleThreshold
+			trace.FinalThreshold = &finalThreshold
+		} else if hasInvertSampled {
+			finalDecision = internalsampling.Sampled
+			finalThreshold := sampling.AlwaysSampleThreshold
+			trace.FinalThreshold = &finalThreshold
+		} else {
+			// No explicit sampling decisions, use pure threshold logic
+			if minThreshold == sampling.AlwaysSampleThreshold {
+				finalDecision = internalsampling.Sampled
+			} else if minThreshold == sampling.NeverSampleThreshold {
+				finalDecision = internalsampling.NotSampled
+			} else {
+				finalDecision = internalsampling.NewDecisionWithThreshold(minThreshold)
+			}
+			trace.FinalThreshold = &minThreshold
+		}
 	}
 
 	// OTEP 235 Phase 5: Update TraceState if threshold changed and TraceState is present
@@ -477,10 +527,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		internalsampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
 
-	switch finalDecision {
-	case internalsampling.Sampled:
+	if finalDecision.IsSampled() {
 		metrics.decisionSampled++
-	case internalsampling.NotSampled:
+	} else {
 		metrics.decisionNotSampled++
 	}
 
@@ -593,7 +642,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		actualData.Lock()
 		finalDecision := actualData.FinalDecision
 
-		if finalDecision == internalsampling.Unspecified {
+		if finalDecision.IsUnspecified() {
 			// If the final decision hasn't been made, add the new spans under the lock.
 			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
 			actualData.Unlock()
@@ -602,15 +651,14 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		actualData.Unlock()
 
-		switch finalDecision {
-		case internalsampling.Sampled:
+		if finalDecision.IsSampled() {
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-		case internalsampling.NotSampled:
+		} else if !finalDecision.IsError() {
 			tsp.releaseNotSampledTrace(id)
-		default:
-			tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
+		} else {
+			tsp.logger.Warn("Unexpected sampling decision", zap.String("decision", "error"))
 		}
 	}
 
