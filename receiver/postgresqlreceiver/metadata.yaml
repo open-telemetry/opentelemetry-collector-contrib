@@ -8,7 +8,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [antonblock, ishleenk17]
-    seeking_new: true
+    seeking_new: false
     emeritus: [djaglowski]
 
 resource_attributes:
