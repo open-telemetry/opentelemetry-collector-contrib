@@ -14,7 +14,7 @@ status:
 resource_attributes:
   postgresql.database.name:
     description: The name of the database.
-    enabled: true
+    enabled: truee
     type: string
   postgresql.schema.name:
     description: The schema name.
