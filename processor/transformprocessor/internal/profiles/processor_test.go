@@ -197,8 +197,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 	}
 }
 
-// The commented test cases require these PRs to be merged:
-// - https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39681
+// The commented test cases require this PR to be merged:
 // - https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39416
 func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 	tests := []struct {
@@ -206,9 +205,22 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 		want      func(td pprofile.Profiles)
 	}{
 		{
+			statement: `set(attributes["test"], "pass") where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", "pass")
+			},
+		},
+		{
 			statement: `set(original_payload_format, "pass") where original_payload_format == "operationA"`,
 			want: func(td pprofile.Profiles) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", "pass")
+				putProfileAttribute(t, td, 1, "test", "pass")
 			},
 		},
 		{
@@ -330,18 +342,16 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("rat")
 			},
 		},
-		/*
-			{
-				statement: `set(original_payload_format, Substring(attributes["not_exist"], 3, 3))`,
-				want:      func(_ pprofile.Profiles) {},
+		{
+			statement: `set(original_payload_format, Substring(attributes["not_exist"], 3, 3))`,
+			want:      func(_ pprofile.Profiles) {},
+		},
+		{
+			statement: `set(attributes["test"], ["A", "B", "C"]) where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
 			},
-			{
-				statement: `set(attributes["test"], ["A", "B", "C"]) where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
-				},
-			},
-		*/
+		},
 		{
 			statement: `set(original_payload_format, ConvertCase(original_payload_format, "lower")) where original_payload_format == "operationA"`,
 			want: func(td pprofile.Profiles) {
@@ -412,8 +422,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 	}
 }
 
-// The commented test cases require these PRs to be merged:
-// - https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39681
+// The commented test cases require this PR to be merged:
 // - https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39416
 func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 	tests := []struct {
@@ -421,9 +430,22 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 		want      func(td pprofile.Profiles)
 	}{
 		{
+			statement: `set(profile.attributes["test"], "pass") where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", "pass")
+			},
+		},
+		{
 			statement: `set(profile.original_payload_format, "pass") where profile.original_payload_format == "operationA"`,
 			want: func(td pprofile.Profiles) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
+			},
+		},
+		{
+			statement: `set(profile.attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", "pass")
+				putProfileAttribute(t, td, 1, "test", "pass")
 			},
 		},
 		{
@@ -507,21 +529,19 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("operationA: operationA")
 			},
 		},
-		/*
-			{
-				statement: `set(profile.attributes["test"], Split(profile.attributes["flags"], "|"))`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
-					putProfileAttribute(t, td, 1, "test", []any{"C", "D"})
-				},
+		{
+			statement: `set(profile.attributes["test"], Split(profile.attributes["flags"], "|"))`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
+				putProfileAttribute(t, td, 1, "test", []any{"C", "D"})
 			},
-			{
-				statement: `set(profile.attributes["test"], Split(profile.attributes["flags"], "|")) where profile.original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
-				},
+		},
+		{
+			statement: `set(profile.attributes["test"], Split(profile.attributes["flags"], "|")) where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
 			},
-		*/
+		},
 		{
 			statement: `set(profile.original_payload_format, Split(resource.attributes["not_exist"], "|"))`,
 			want:      func(_ pprofile.Profiles) {},
@@ -1339,5 +1359,21 @@ func constructTestProfiles() pprofiletest.Profiles {
 				},
 			},
 		},
+	}
+}
+
+func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, key string, value any) {
+	t.Helper()
+	dic := td.ProfilesDictionary()
+	profile := td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(profileIndex)
+	switch v := value.(type) {
+	case string:
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, pcommon.NewValueStr(v)))
+	case []any:
+		sl := pcommon.NewValueSlice()
+		require.NoError(t, sl.FromRaw(v))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, sl))
+	default:
+		t.Fatalf("unsupported value type: %T", v)
 	}
 }
