@@ -37,6 +37,7 @@ pkg/stanza
 receiver/carbonreceiver
 internal/exp/metrics
 receiver/datadogreceiver
+receiver/datadogrumreceiver
 receiver/jaegerreceiver
 receiver/sapmreceiver
 receiver/signalfxreceiver
