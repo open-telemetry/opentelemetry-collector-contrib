@@ -1,0 +1,1020 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of unrestricted full table or index scans.
+            gauge:
+              dataPoints:
+                - asDouble: 1341
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.full_scan.rate
+            unit: '{scans}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of index searches.
+            gauge:
+              dataPoints:
+                - asDouble: 179630
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.search.rate
+            unit: “{searches}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Throughput rate of replica data.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: replica.direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.replica.data.rate
+            unit: By/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Throughput rate of replica data.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: replica.direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.replica.data.rate
+            unit: By/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Pages found in the buffer pool without having to read from disk.
+            gauge:
+              dataPoints:
+                - asDouble: 100
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.buffer_cache.hit_ratio
+            unit: '%'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of free list stalls.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.buffer_cache.free_list.stalls.rate
+            unit: “{stalls}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Time a page will stay in the buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "16771"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: SQLServer:Buffer Manager
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.life_expectancy
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of page lookups.
+            gauge:
+              dataPoints:
+                - asDouble: 389865
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.lookup.rate
+            unit: “{lookups}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Time a page will stay in the buffer pool.
+            gauge:
+              dataPoints:
+                - asInt: "16771"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: SQLServer:Buffer Node
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.page.life_expectancy
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of mirror write transactions.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.transaction.mirror_write.rate
+            unit: “{transactions}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Time consumed in transaction delays.
+            name: sqlserver.transaction.delay
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of backups/restores.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.backup_or_restore.rate
+            unit: “{backups_or_restores}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of execution errors.
+            gauge:
+              dataPoints:
+                - asInt: "18256656"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.execution.errors
+            unit: “{errors}”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of tables.
+            name: sqlserver.table.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: table.state
+                      value:
+                        stringValue: active
+                    - key: table.status
+                      value:
+                        stringValue: temporary
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: “{tables}”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of logins.
+            gauge:
+              dataPoints:
+                - asDouble: 75
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.login.rate
+            unit: “{logins}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of logouts.
+            gauge:
+              dataPoints:
+                - asDouble: 72
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.logout.rate
+            unit: “{logouts}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of processes that are currently blocked
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.processes.blocked
+            unit: '{processes}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of users connected to the SQL Server.
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.user.connection.count
+            unit: '{connections}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of lock timeouts.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.lock.timeout.rate
+            unit: “{timeouts}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of lock requests resulting in a wait.
+            gauge:
+              dataPoints:
+                - asDouble: 15
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.lock.wait.rate
+            unit: '{requests}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of deadlocks.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.deadlock.rate
+            unit: “{deadlocks}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total number of memory grants pending.
+            name: sqlserver.memory.grants.pending.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: “{grants}”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total memory in use.
+            name: sqlserver.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 24944
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: “KB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of read operations that were throttled in the last second
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.throttled.read.rate
+            unit: '{reads}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The rate of operations issued.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.operations
+            unit: '{operations}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of write operations that were throttled in the last second
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.throttled.write.rate
+            unit: '{writes}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The rate of operations issued.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.operations
+            unit: '{operations}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The rate of operations issued.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.operations
+            unit: '{operations}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of write operations that were throttled in the last second
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.throttled.write.rate
+            unit: '{writes}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The rate of operations issued.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.operations
+            unit: '{operations}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: The number of read operations that were throttled in the last second
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.throttled.read.rate
+            unit: '{reads}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total memory in use.
+            name: sqlserver.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 234720
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: “KB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of batch requests received by SQL Server.
+            gauge:
+              dataPoints:
+                - asDouble: 431
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.batch.request.rate
+            unit: '{requests}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of SQL compilations needed.
+            gauge:
+              dataPoints:
+                - asDouble: 264
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.batch.sql_compilation.rate
+            unit: '{compilations}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of SQL recompilations needed.
+            gauge:
+              dataPoints:
+                - asDouble: 25
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.batch.sql_recompilation.rate
+            unit: '{compilations}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total free space in temporary DB.
+            name: sqlserver.database.tempdb.space
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "18256656"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: “KB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: TempDB version store size.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.tempdb.version_store.size
+            unit: “KB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Cumulative count of lock waits that occurred.
+            name: sqlserver.lock.wait.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{wait}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Cumulative count of lock waits that occurred.
+            name: sqlserver.lock.wait.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "20"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{wait}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
