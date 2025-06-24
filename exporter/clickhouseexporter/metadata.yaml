@@ -9,6 +9,7 @@ status:
   codeowners:
     active: [hanjm, dmitryax, Frapschen, SpencerTorres]
 
-# TODO: Update the exporter to pass the tests
 tests:
+  config:
+    endpoint: clickhouse://localhost:9000
   skip_lifecycle: true
