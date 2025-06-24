@@ -27,6 +27,15 @@ externalauth/custom_settings:
   method: "GET"
   http_client_timeout: "5s"
 
+externalauth/endpoint_mapping:
+  endpoint: "https://default-auth.example.com"
+  header_endpoint_mapping:
+    Destination:
+      stage: "https://stage-auth.example.com"
+      prod: "https://prod-auth.example.com"
+      dev: "https://dev-auth.example.com"
+  telemetry_type: "traces"
+
 externalauth/k8s_dns:
   endpoint: "dns:///auth-service.namespace.svc.cluster.local"
 

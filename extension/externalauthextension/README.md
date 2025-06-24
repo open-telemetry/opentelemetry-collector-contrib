@@ -41,6 +41,10 @@ The externalauth extension solves this by performing authentication validation a
 The following settings are available:
 
 - `endpoint` (required): The URL of the external authentication service
+- `header_endpoint_mapping` (optional): Maps header values to different endpoints for dynamic routing
+  - Format: `{"header_name": {"header_value": "endpoint_url"}}`
+  - Example: `{"Destination": {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"}}`
+  - Falls back to the default `endpoint` if no mapping is found or if not provided
 - `refresh_interval` (default = "1h"): Specifies the time that a newly checked token will be valid for
 - `header` (default = "Authorization"): Specifies the header to use for the token
 - `scheme` (default = "Bearer"): Specifies the authentication scheme used for the request
@@ -77,10 +81,19 @@ service:
 
 ### Advanced Configuration
 
+**Note**: If multiple headers under header_endpoint_mapping match in a request, the first header defined in the configuration takes precedence.
+
 ```yaml
 extensions:
   externalauth/custom:
     endpoint: "https://custom-auth.example.com"
+    header_endpoint_mapping:
+      Destination:
+        stage: "https://stage-auth.example.com"
+        prod: "https://prod-auth.example.com"
+      Region:
+        us: "https://us-auth.example.com"
+        eu: "https://eu-auth.example.com"
     refresh_interval: "30m"
     header: "X-Custom-Auth"
     expected_codes: [200, 201]

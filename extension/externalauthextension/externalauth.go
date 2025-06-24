@@ -26,21 +26,23 @@ var (
 )
 
 type externalauth struct {
-	endpoint          string
-	refreshInterval   string
-	header            string
-	expectedCodes     []int
-	scheme            string
-	method            string
-	tokenCache        *TokenCache
-	telemetry         component.TelemetrySettings
-	httpClientTimeout time.Duration
-	client            *http.Client
-	metrics           *authMetrics
-	telemetryType     string
-	tokenFormat       string
+	endpoint              string                       // Default endpoint for authentication
+	headerEndpointMapping map[string]map[string]string // Maps header values to different endpoints
+	refreshInterval       string                       // How long cached tokens remain valid
+	header                string                       // Header name to extract token from
+	expectedCodes         []int                        // HTTP status codes indicating successful auth
+	scheme                string                       // Authentication scheme (e.g., "Bearer")
+	method                string                       // HTTP method for auth requests
+	tokenCache            *TokenCache                  // Local cache for token validation results
+	telemetry             component.TelemetrySettings  // Logging and metrics
+	httpClientTimeout     time.Duration                // Timeout for HTTP requests
+	client                *http.Client                 // HTTP client for external auth calls
+	metrics               *authMetrics                 // Metrics for monitoring auth performance
+	telemetryType         string                       // Type of telemetry (traces/metrics/logs)
+	tokenFormat           string                       // Token format (raw/basic_auth)
 }
 
+// Creates a new external authentication instance with the given configuration
 func newExternalAuth(cfg *Config, telemetry component.TelemetrySettings) (*externalauth, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -52,15 +54,16 @@ func newExternalAuth(cfg *Config, telemetry component.TelemetrySettings) (*exter
 	}
 
 	ce := &externalauth{
-		endpoint:        cfg.Endpoint,
-		refreshInterval: cfg.RefreshInterval,
-		header:          cfg.Header,
-		expectedCodes:   cfg.ExpectedCodes,
-		scheme:          cfg.Scheme,
-		method:          cfg.Method,
-		tokenCache:      newTokenCache(),
-		telemetry:       telemetry,
-		metrics:         metrics,
+		endpoint:              cfg.Endpoint,
+		headerEndpointMapping: cfg.HeaderEndpointMapping,
+		refreshInterval:       cfg.RefreshInterval,
+		header:                cfg.Header,
+		expectedCodes:         cfg.ExpectedCodes,
+		scheme:                cfg.Scheme,
+		method:                cfg.Method,
+		tokenCache:            newTokenCache(),
+		telemetry:             telemetry,
+		metrics:               metrics,
 		client: &http.Client{
 			Timeout: cfg.HTTPClientTimeout,
 		},
@@ -83,7 +86,8 @@ func (b *externalauth) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (b *externalauth) remoteServerAuthenticate(token string, telemetryType string, user string) int {
+// Makes an HTTP request to the external authentication service to validate the token
+func (b *externalauth) remoteServerAuthenticate(token string, telemetryType string, user string, headers map[string][]string) int {
 	b.telemetry.Logger.Debug("Attempting remote server authentication")
 	authHeader := fmt.Sprintf("%s %s", b.scheme, token)
 
@@ -91,7 +95,11 @@ func (b *externalauth) remoteServerAuthenticate(token string, telemetryType stri
 		b.buildConditionalUserAttributes(user, telemetryType, 0)...,
 	))
 
-	request, err := http.NewRequest(b.method, b.endpoint, nil)
+	// Determine the endpoint to use based on headers
+	endpoint := b.getEndpointForHeaders(headers)
+	b.telemetry.Logger.Debug(fmt.Sprintf("Using endpoint: %s", endpoint))
+
+	request, err := http.NewRequest(b.method, endpoint, nil)
 	if err != nil {
 		b.telemetry.Logger.Error("Failed to create request")
 		return http.StatusInternalServerError
@@ -117,6 +125,36 @@ func (b *externalauth) remoteServerAuthenticate(token string, telemetryType stri
 	return http.StatusUnauthorized
 }
 
+// Returns the appropriate endpoint based on header values for dynamic routing
+func (b *externalauth) getEndpointForHeaders(headers map[string][]string) string {
+	if b.headerEndpointMapping == nil {
+		return b.endpoint
+	}
+
+	// Convert headers to canonical form for lookup
+	canonicalHeaders := make(map[string][]string)
+	for k, v := range headers {
+		canonicalHeaders[http.CanonicalHeaderKey(k)] = v
+	}
+
+	// Check each header in the mapping
+	for headerName, valueMap := range b.headerEndpointMapping {
+		canonicalHeaderName := http.CanonicalHeaderKey(headerName)
+		if headerValues, exists := canonicalHeaders[canonicalHeaderName]; exists && len(headerValues) > 0 {
+			headerValue := headerValues[0]
+			if endpoint, found := valueMap[headerValue]; found {
+				b.telemetry.Logger.Debug(fmt.Sprintf("Found endpoint mapping for header %s=%s: %s", headerName, headerValue, endpoint))
+				return endpoint
+			}
+		}
+	}
+
+	// Fall back to default endpoint if no mapping found
+	b.telemetry.Logger.Debug(fmt.Sprintf("No endpoint mapping found, using default: %s", b.endpoint))
+	return b.endpoint
+}
+
+// Creates metric attributes for monitoring with telemetry type, status code, and user info
 func (b *externalauth) buildConditionalUserAttributes(user string, telemetryType string, code int) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{
 		attribute.String("telemetry_type", telemetryType),
@@ -128,10 +166,11 @@ func (b *externalauth) buildConditionalUserAttributes(user string, telemetryType
 	return attrs
 }
 
+// Main authentication entry point implementing caching and dynamic endpoint routing
 func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	start := time.Now()
 
-	// Convert headers to canonical form
+	// Convert headers to canonical form for consistent lookup
 	canonicalHeaders := make(map[string][]string)
 	for k, v := range headers {
 		canonicalHeaders[http.CanonicalHeaderKey(k)] = v
@@ -139,7 +178,7 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 
 	b.telemetry.Logger.Debug("Starting server authentication")
 
-	// Use canonical header name for lookup
+	// Extract and validate the authorization header
 	canonicalHeader := http.CanonicalHeaderKey(b.header)
 
 	potentialAuthorization, ok := canonicalHeaders[canonicalHeader]
@@ -169,6 +208,7 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 
 	authHeader := potentialAuthorization[0]
 
+	// Extract user information if using basic auth format
 	var user string
 	if b.tokenFormat == "basic_auth" {
 		user = extractUserBasicAuthHeader(authHeader)
@@ -182,6 +222,7 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 		b.buildConditionalUserAttributes(user, telemetryType, 0)...,
 	))
 
+	// Record authentication latency when function returns
 	defer func() {
 		duration := time.Since(start).Seconds()
 		b.metrics.authLatency.Record(ctx, duration, metric.WithAttributes(
@@ -189,6 +230,7 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 		))
 	}()
 
+	// Parse the authorization header to extract the token
 	potentialAuthorizationSegments := strings.Split(authHeader, " ")
 	if len(potentialAuthorizationSegments) != 2 {
 		b.telemetry.Logger.Debug("Invalid authorization header format")
@@ -215,12 +257,13 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 
 	b.telemetry.Logger.Debug("Checking token cache")
 
+	// Cache Miss: Token not found in cache
 	if !b.tokenCache.tokenExists(auth) {
 		b.telemetry.Logger.Debug("Token not found in cache, attempting remote authentication")
 		b.metrics.cacheMisses.Add(ctx, 1, metric.WithAttributes(
 			b.buildConditionalUserAttributes(user, telemetryType, 0)...,
 		))
-		status := b.remoteServerAuthenticate(auth, telemetryType, user)
+		status := b.remoteServerAuthenticate(auth, telemetryType, user, headers)
 		if status == http.StatusOK {
 			b.telemetry.Logger.Debug("Remote authentication successful, adding token to cache")
 			b.tokenCache.addToken(auth, true)
@@ -240,12 +283,13 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 		return nil, errUnauthorized
 	}
 
+	// Cache Hit - Expired Token: Token exists but has expired
 	if b.tokenCache.isTokenExpired(auth, b.refreshInterval) {
 		b.telemetry.Logger.Debug("Token expired, attempting remote authentication")
 		b.metrics.cacheMisses.Add(ctx, 1, metric.WithAttributes(
 			b.buildConditionalUserAttributes(user, telemetryType, 0)...,
 		))
-		status := b.remoteServerAuthenticate(auth, telemetryType, user)
+		status := b.remoteServerAuthenticate(auth, telemetryType, user, headers)
 		if status == http.StatusOK {
 			b.telemetry.Logger.Debug("Remote authentication successful for expired token")
 			b.metrics.authSuccesses.Add(ctx, 1, metric.WithAttributes(
@@ -264,6 +308,7 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 		return nil, errUnauthorized
 	}
 
+	// Cache Hit - Valid Token: Token exists and is still valid
 	if b.tokenCache.isTokenValid(auth) {
 		b.telemetry.Logger.Debug("Using cached valid token")
 		b.metrics.cacheHits.Add(ctx, 1, metric.WithAttributes(
@@ -275,6 +320,7 @@ func (b *externalauth) Authenticate(ctx context.Context, headers map[string][]st
 		return ctx, nil
 	}
 
+	// Cache Hit - Invalid Token: Token exists but is marked as invalid
 	b.telemetry.Logger.Debug("Token found but invalid")
 	b.metrics.authFailures.Add(ctx, 1, metric.WithAttributes(
 		b.buildConditionalUserAttributes(user, telemetryType, http.StatusUnauthorized)...,

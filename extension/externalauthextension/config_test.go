@@ -79,6 +79,27 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "endpoint_mapping"),
+			expected: &Config{
+				Endpoint: "https://default-auth.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{
+					"Destination": {
+						"stage": "https://stage-auth.example.com",
+						"prod":  "https://prod-auth.example.com",
+						"dev":   "https://dev-auth.example.com",
+					},
+				},
+				RefreshInterval:   "1h",
+				Header:            "Authorization",
+				ExpectedCodes:     []int{200},
+				Scheme:            "Bearer",
+				Method:            "POST",
+				HTTPClientTimeout: 10 * time.Second,
+				TelemetryType:     "traces",
+				TokenFormat:       "raw",
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "k8s_dns"),
 			expected: &Config{
 				Endpoint:          "dns:///auth-service.namespace.svc.cluster.local",
@@ -133,6 +154,161 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfig_ValidateEndpointMapping(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name: "valid endpoint mapping",
+			config: &Config{
+				Endpoint: "https://default.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{
+					"Destination": {
+						"stage": "https://stage.example.com",
+						"prod":  "https://prod.example.com",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty endpoint mapping",
+			config: &Config{
+				Endpoint:              "https://default.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty header name",
+			config: &Config{
+				Endpoint: "https://default.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{
+					"": {
+						"stage": "https://stage.example.com",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty header value",
+			config: &Config{
+				Endpoint: "https://default.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{
+					"Destination": {
+						"": "https://stage.example.com",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty endpoint",
+			config: &Config{
+				Endpoint: "https://default.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{
+					"Destination": {
+						"stage": "",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid endpoint URL",
+			config: &Config{
+				Endpoint: "https://default.example.com",
+				HeaderEndpointMapping: map[string]map[string]string{
+					"Destination": {
+						"stage": "invalid-url",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfig_GetEndpointForHeaders(t *testing.T) {
+	eauth := &externalauth{
+		endpoint: "https://default.example.com",
+		headerEndpointMapping: map[string]map[string]string{
+			"Destination": {
+				"stage": "https://stage.example.com",
+				"prod":  "https://prod.example.com",
+			},
+		},
+	}
+
+	tests := []struct {
+		name    string
+		headers map[string][]string
+		want    string
+	}{
+		{
+			name: "stage destination",
+			headers: map[string][]string{
+				"Destination": {"stage"},
+			},
+			want: "https://stage.example.com",
+		},
+		{
+			name: "prod destination",
+			headers: map[string][]string{
+				"Destination": {"prod"},
+			},
+			want: "https://prod.example.com",
+		},
+		{
+			name: "case insensitive header",
+			headers: map[string][]string{
+				"destination": {"stage"},
+			},
+			want: "https://stage.example.com",
+		},
+		{
+			name: "unknown destination",
+			headers: map[string][]string{
+				"Destination": {"unknown"},
+			},
+			want: "https://default.example.com",
+		},
+		{
+			name:    "no headers",
+			headers: map[string][]string{},
+			want:    "https://default.example.com",
+		},
+		{
+			name: "unrelated header",
+			headers: map[string][]string{
+				"X-Custom": {"value"},
+			},
+			want: "https://default.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := eauth.getEndpointForHeaders(tt.headers)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

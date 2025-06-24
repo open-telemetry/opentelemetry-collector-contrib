@@ -23,6 +23,10 @@ const (
 type Config struct {
 	// Endpoint specifies the endpoint to authenticate against. Required
 	Endpoint string `mapstructure:"endpoint"`
+	// HeaderEndpointMapping allows mapping Destination header values to different endpoints
+	// Format: {"Destination": {"header_value": "endpoint_url"}}
+	// Example: {"Destination": {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"}}
+	HeaderEndpointMapping map[string]map[string]string `mapstructure:"header_endpoint_mapping,omitempty"`
 	//RefreshInterval specifies the time that a newly checked token will be valid for. Defaults to "1h"
 	RefreshInterval string `mapstructure:"refresh_interval,omitempty"`
 	// Header specifies the header used in the request. Defaults to "Authorization"
@@ -42,25 +46,35 @@ type Config struct {
 }
 
 var (
-	_                       component.Config = (*Config)(nil)
-	errNoEndpointProvided                    = errors.New("no endpoint to authenticate against provided")
-	errInvalidInterval                       = errors.New("invalid refresh interval")
-	errInvalidEndpoint                       = errors.New("invalid remote endpoint")
-	errInvalidHttpCode                       = errors.New("code provided is not a valid HTTP code")
-	errInvalidTelemetryType                  = errors.New("telemetry_type must be one of: traces, metrics, logs")
-	errInvalidTokenFormat                    = errors.New("token_format must be one of: raw, basic_auth")
+	_                         component.Config = (*Config)(nil)
+	errNoEndpointProvided                      = errors.New("no endpoint to authenticate against provided")
+	errInvalidInterval                         = errors.New("invalid refresh interval")
+	errInvalidEndpoint                         = errors.New("invalid remote endpoint")
+	errInvalidHttpCode                         = errors.New("code provided is not a valid HTTP code")
+	errInvalidTelemetryType                    = errors.New("telemetry_type must be one of: traces, metrics, logs")
+	errInvalidTokenFormat                      = errors.New("token_format must be one of: raw, basic_auth")
+	errInvalidEndpointMapping                  = errors.New("invalid endpoint mapping configuration")
 )
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" {
-		return errNoEndpointProvided
+	// If endpoint mapping is provided, validate it
+	if cfg.HeaderEndpointMapping != nil {
+		if err := cfg.validateEndpointMapping(); err != nil {
+			return err
+		}
 	} else {
-		_, err := url.ParseRequestURI(cfg.Endpoint)
-		if err != nil {
-			return errInvalidEndpoint
+		// Fall back to single endpoint validation
+		if cfg.Endpoint == "" {
+			return errNoEndpointProvided
+		} else {
+			_, err := url.ParseRequestURI(cfg.Endpoint)
+			if err != nil {
+				return errInvalidEndpoint
+			}
 		}
 	}
+
 	if cfg.RefreshInterval == "" {
 		cfg.RefreshInterval = defaultRefreshInterval
 	} else {
@@ -111,6 +125,32 @@ func (cfg *Config) Validate() error {
 		}
 		if !validFormats[cfg.TokenFormat] {
 			return errInvalidTokenFormat
+		}
+	}
+	return nil
+}
+
+// validateEndpointMapping validates the endpoint mapping configuration
+func (cfg *Config) validateEndpointMapping() error {
+	if len(cfg.HeaderEndpointMapping) == 0 {
+		return errInvalidEndpointMapping
+	}
+
+	for headerName, valueMap := range cfg.HeaderEndpointMapping {
+		if headerName == "" {
+			return errInvalidEndpointMapping
+		}
+		if len(valueMap) == 0 {
+			return errInvalidEndpointMapping
+		}
+		for headerValue, endpoint := range valueMap {
+			if headerValue == "" || endpoint == "" {
+				return errInvalidEndpointMapping
+			}
+			_, err := url.ParseRequestURI(endpoint)
+			if err != nil {
+				return errInvalidEndpoint
+			}
 		}
 	}
 	return nil
