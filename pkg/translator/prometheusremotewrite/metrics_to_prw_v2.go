@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
@@ -74,7 +74,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := prometheustranslator.BuildCompliantMetricName(metric, settings.Namespace, settings.AddMetricSuffixes)
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),

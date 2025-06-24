@@ -8,13 +8,13 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMetadata_MetricType {
 	// metric metadata can be used to support Prometheus types that don't exist
 	// in OpenTelemetry.
-	typeFromMetadata, hasTypeFromMetadata := otelMetric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey)
+	typeFromMetadata, hasTypeFromMetadata := otelMetric.Metadata().Get(metricMetadataTypeKey)
 	switch otelMetric.Type() {
 	case pmetric.MetricTypeGauge:
 		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeUnknown) {
