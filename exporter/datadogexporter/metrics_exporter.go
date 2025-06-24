@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"sync"
@@ -181,6 +182,9 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 
+const ddSketchRelativeAccuracy = 0.01
+const ddSketchGamma = (1 + ddSketchRelativeAccuracy) / (1 - ddSketchRelativeAccuracy)
+
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	if exp.cfg.HostMetadata.Enabled {
 		// Start host metadata with resource attributes from
@@ -343,18 +347,35 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 						clientGroupedStatsValue.TopLevelHits = count
 					}
 
-					// XXX chosen to match the trace metrics computation in datadogconnector
-					sketch, err := ddsketch.LogCollapsingLowestDenseDDSketch(0.01, 2048)
-					bounds := dp.ExplicitBounds()
-					buckets := dp.BucketCounts()
-					for i := 1; i < buckets.Len(); i++ {
-						bucketCount := buckets.At(i)
-						boundaryValue := bounds.At(i - 1)
-						sketch.AddWithCount(boundaryValue, float64(bucketCount))
-					}
+					// Constructing the DDSketch from the OTLP histogram.
+					sketch, err := ddsketch.LogCollapsingLowestDenseDDSketch(ddSketchRelativeAccuracy, 2048)
 					if err := processAndReturnErrorIf(err != nil); err != nil {
 						return err
 					}
+
+					bounds := dp.ExplicitBounds()
+					bucketCounts := dp.BucketCounts()
+					// Carefully choose the first count to be inserted at the midpoint between the lowest bucket boundary in the histogram and what would be the next lowest boundary in the DDSketch.
+					// This is done so that the first bucket in the DDSketch represents [-Inf, lowestBound).
+					lowestBound := bounds.At(0)
+					insertFirstCountAt := lowestBound * (1 + math.Exp(-1/ddSketchGamma)) / 2
+					firstCount := bucketCounts.At(0)
+					sketch.AddWithCount(insertFirstCountAt, float64(firstCount))
+					// The remaining buckets are inserted at the midpoints between the boundaries of the histogram.
+					// This induces the desired bucket boundaries in the DDSketch
+					for i := 1; i < bounds.Len(); i++ {
+						bucketCount := bucketCounts.At(i)
+						insertAt := (bounds.At(i) + bounds.At(i-1)) / 2
+						sketch.AddWithCount(insertAt, float64(bucketCount))
+					}
+					// OTLP histograms have an additional bucket representing [highest bound, +Inf).
+					// The last bucket is inserted at the midpoint between the highest bucket boundary in the histogram and what would bethe next highest boundary in the DDSketch.
+					// This is technically not correct, but it's the best we can do with the current implementation of the DDSketch, and with the specified parameters we will never get values in the highest bucket
+					highestBound := bounds.At(bounds.Len() - 1)
+					insertLastCountAt := highestBound * (1 + math.Exp(1/ddSketchGamma)) / 2
+					lastCount := bucketCounts.At(bucketCounts.Len() - 1)
+					sketch.AddWithCount(insertLastCountAt, float64(lastCount))
+
 					sketchProto := sketch.ToProto()
 					sketchBytes, err := proto.Marshal(sketchProto)
 					if err != nil {
