@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/google/go-github/v72/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -326,7 +327,8 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 }
 
 // addCustomPropertiesToAttrs adds all custom properties from the repository as resource attributes
-// with the prefix AttributeGitHubCustomProperty.
+// with the prefix AttributeGitHubCustomProperty. Keys are converted to snake_case to follow
+// OpenTelemetry convention for resource attribute names.
 func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]interface{}) {
 	if len(customProps) == 0 {
 		return
@@ -338,8 +340,11 @@ func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]interf
 			continue
 		}
 
+		// Convert key to snake_case to follow OpenTelemetry convention
+		snakeCaseKey := toSnakeCase(key)
+
 		// Use dot notation for keys, following OpenTelemetry convention
-		attrKey := fmt.Sprintf("%s.%s", AttributeGitHubRepositoryCustomProperty, key)
+		attrKey := fmt.Sprintf("%s.%s", AttributeGitHubRepositoryCustomProperty, snakeCaseKey)
 
 		// Handle different value types
 		switch v := value.(type) {
@@ -370,4 +375,42 @@ func formatString(input string) string {
 func replaceAPIURL(apiURL string) (htmlURL string) {
 	// TODO: Support enterpise server configuration with custom domain.
 	return strings.Replace(apiURL, "api.github.com/repos", "github.com", 1)
+}
+
+// toSnakeCase converts a string to snake_case format.
+// It handles all GitHub-supported characters for custom property names: a-z, A-Z, 0-9, _, -, $, #.
+// This function ensures that the resulting string follows OpenTelemetry's snake_case convention.
+func toSnakeCase(s string) string {
+	// Replace hyphens, spaces, and dots with underscores
+	s = strings.ReplaceAll(s, "-", "_")
+	s = strings.ReplaceAll(s, " ", "_")
+	s = strings.ReplaceAll(s, ".", "_")
+
+	// Replace special characters with underscores
+	s = strings.ReplaceAll(s, "$", "_dollar_")
+	s = strings.ReplaceAll(s, "#", "_hash_")
+
+	// Handle camelCase and PascalCase
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && unicode.IsUpper(r) {
+			// If current char is uppercase and previous char is lowercase or a digit,
+			// or if current char is uppercase and next char is lowercase,
+			// add an underscore before the current char
+			prevIsLower := i > 0 && (unicode.IsLower(rune(s[i-1])) || unicode.IsDigit(rune(s[i-1])))
+			nextIsLower := i < len(s)-1 && unicode.IsLower(rune(s[i+1]))
+			if prevIsLower || nextIsLower {
+				result.WriteRune('_')
+			}
+		}
+		result.WriteRune(unicode.ToLower(r))
+	}
+
+	// Replace multiple consecutive underscores with a single one
+	output := result.String()
+	for strings.Contains(output, "__") {
+		output = strings.ReplaceAll(output, "__", "_")
+	}
+
+	return output
 }
