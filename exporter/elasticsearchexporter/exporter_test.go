@@ -2160,6 +2160,9 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	noneContext := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
 	})
+	multipleModesContext := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel", "ecs"}}),
+	})
 
 	defaultScope := pcommon.NewInstrumentationScope()
 	ecsScope := pcommon.NewInstrumentationScope()
@@ -2259,7 +2262,12 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		name:      "none",
 		ctx:       noneContext,
 		scopes:    []pcommon.InstrumentationScope{defaultScope},
-		expectErr: `invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		expectErr: `Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+	}, {
+		name:      "multiple modes",
+		ctx:       multipleModesContext,
+		scopes:    []pcommon.InstrumentationScope{defaultScope},
+		expectErr: `Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 	}, {
 		name:   "ecs_scope",
 		ctx:    context.Background(),
@@ -2274,7 +2282,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		name:      "bodymap_scope",
 		ctx:       otelContext, // scope overrides context
 		scopes:    []pcommon.InstrumentationScope{bodymapScope},
-		expectErr: `invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
+		expectErr: `Permanent error: invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
 	}}
 
 	t.Run("logs", func(t *testing.T) {
@@ -2329,11 +2337,16 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	})
 	t.Run("profiles", func(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
-		// the metadata is picked up and an invalid mode is rejected.
+		// the metadata is picked up and an invalid modes is rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
-			`invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+			`Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		)
+
+		err = exporter.ConsumeProfiles(multipleModesContext, pprofile.NewProfiles())
+		assert.EqualError(t, err,
+			`Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 		)
 	})
 	t.Run("traces", func(t *testing.T) {
