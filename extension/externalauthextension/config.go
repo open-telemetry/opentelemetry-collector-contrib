@@ -23,10 +23,10 @@ const (
 type Config struct {
 	// Endpoint specifies the endpoint to authenticate against. Required
 	Endpoint string `mapstructure:"endpoint"`
-	// HeaderEndpointMapping allows mapping Destination header values to different endpoints
-	// Format: {"Destination": {"header_value": "endpoint_url"}}
-	// Example: {"Destination": {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"}}
-	HeaderEndpointMapping map[string]map[string]string `mapstructure:"header_endpoint_mapping,omitempty"`
+	// HeaderEndpointMapping allows mapping header values to different endpoints with guaranteed order
+	// Format: [{"header": "header_name", "values": {"header_value": "endpoint_url"}}]
+	// Example: [{"header": "Destination", "values": {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"}}]
+	HeaderEndpointMapping []HeaderMapping `mapstructure:"header_endpoint_mapping,omitempty"`
 	//RefreshInterval specifies the time that a newly checked token will be valid for. Defaults to "1h"
 	RefreshInterval string `mapstructure:"refresh_interval,omitempty"`
 	// Header specifies the header used in the request. Defaults to "Authorization"
@@ -43,6 +43,12 @@ type Config struct {
 	HTTPClientTimeout time.Duration `mapstructure:"http_client_timeout,omitempty"`
 	// TelemetryType specifies the telemetry type for this endpoint. Options: "traces", "metrics", "logs". Defaults to "traces"
 	TelemetryType string `mapstructure:"telemetry_type,omitempty"`
+}
+
+// HeaderMapping represents a single header-to-endpoint mapping with ordered values
+type HeaderMapping struct {
+	Header string            `mapstructure:"header"`
+	Values map[string]string `mapstructure:"values"`
 }
 
 var (
@@ -136,14 +142,14 @@ func (cfg *Config) validateEndpointMapping() error {
 		return errInvalidEndpointMapping
 	}
 
-	for headerName, valueMap := range cfg.HeaderEndpointMapping {
-		if headerName == "" {
+	for _, mapping := range cfg.HeaderEndpointMapping {
+		if mapping.Header == "" {
 			return errInvalidEndpointMapping
 		}
-		if len(valueMap) == 0 {
+		if len(mapping.Values) == 0 {
 			return errInvalidEndpointMapping
 		}
-		for headerValue, endpoint := range valueMap {
+		for headerValue, endpoint := range mapping.Values {
 			if headerValue == "" || endpoint == "" {
 				return errInvalidEndpointMapping
 			}

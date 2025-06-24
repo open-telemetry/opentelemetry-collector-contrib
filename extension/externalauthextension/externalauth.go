@@ -26,20 +26,20 @@ var (
 )
 
 type externalauth struct {
-	endpoint              string                       // Default endpoint for authentication
-	headerEndpointMapping map[string]map[string]string // Maps header values to different endpoints
-	refreshInterval       string                       // How long cached tokens remain valid
-	header                string                       // Header name to extract token from
-	expectedCodes         []int                        // HTTP status codes indicating successful auth
-	scheme                string                       // Authentication scheme (e.g., "Bearer")
-	method                string                       // HTTP method for auth requests
-	tokenCache            *TokenCache                  // Local cache for token validation results
-	telemetry             component.TelemetrySettings  // Logging and metrics
-	httpClientTimeout     time.Duration                // Timeout for HTTP requests
-	client                *http.Client                 // HTTP client for external auth calls
-	metrics               *authMetrics                 // Metrics for monitoring auth performance
-	telemetryType         string                       // Type of telemetry (traces/metrics/logs)
-	tokenFormat           string                       // Token format (raw/basic_auth)
+	endpoint              string                      // Default endpoint for authentication
+	headerEndpointMapping []HeaderMapping             // Maps header values to different endpoints with guaranteed order
+	refreshInterval       string                      // How long cached tokens remain valid
+	header                string                      // Header name to extract token from
+	expectedCodes         []int                       // HTTP status codes indicating successful auth
+	scheme                string                      // Authentication scheme (e.g., "Bearer")
+	method                string                      // HTTP method for auth requests
+	tokenCache            *TokenCache                 // Local cache for token validation results
+	telemetry             component.TelemetrySettings // Logging and metrics
+	httpClientTimeout     time.Duration               // Timeout for HTTP requests
+	client                *http.Client                // HTTP client for external auth calls
+	metrics               *authMetrics                // Metrics for monitoring auth performance
+	telemetryType         string                      // Type of telemetry (traces/metrics/logs)
+	tokenFormat           string                      // Token format (raw/basic_auth)
 }
 
 // Creates a new external authentication instance with the given configuration
@@ -138,12 +138,12 @@ func (b *externalauth) getEndpointForHeaders(headers map[string][]string) string
 	}
 
 	// Check each header in the mapping
-	for headerName, valueMap := range b.headerEndpointMapping {
-		canonicalHeaderName := http.CanonicalHeaderKey(headerName)
+	for _, mapping := range b.headerEndpointMapping {
+		canonicalHeaderName := http.CanonicalHeaderKey(mapping.Header)
 		if headerValues, exists := canonicalHeaders[canonicalHeaderName]; exists && len(headerValues) > 0 {
 			headerValue := headerValues[0]
-			if endpoint, found := valueMap[headerValue]; found {
-				b.telemetry.Logger.Debug(fmt.Sprintf("Found endpoint mapping for header %s=%s: %s", headerName, headerValue, endpoint))
+			if endpoint, found := mapping.Values[headerValue]; found {
+				b.telemetry.Logger.Debug(fmt.Sprintf("Found endpoint mapping for header %s=%s: %s", mapping.Header, headerValue, endpoint))
 				return endpoint
 			}
 		}

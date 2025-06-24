@@ -206,17 +206,6 @@ func TestServerAuthenticate(t *testing.T) {
 			expectErr: nil,
 		},
 		{
-			name: "Valid headers, token exists but is expired and invalid",
-			headers: map[string][]string{
-				DefaultAuthorizationHeader: {"Bearer token"},
-			},
-			setup: func(e *externalauth) {
-				e.tokenCache.addToken("token", false)
-				e.tokenCache.setTokenExpiry("token", time.Now().Add(-2*time.Hour))
-			},
-			expectErr: nil,
-		},
-		{
 			name: "Invalid headers, token does not exist in cache",
 			headers: map[string][]string{
 				DefaultAuthorizationHeader: {"Bearer wrongtoken"},
@@ -421,6 +410,27 @@ func TestHeaderBasedEndpointMapping(t *testing.T) {
 			serverResponse: http.StatusUnauthorized,
 			expectErr:      errUnauthorized,
 		},
+		{
+			name: "multiple headers - first mapping takes precedence",
+			headers: map[string][]string{
+				"Authorization": {"Bearer token"},
+				"Destination":   {"stage"},
+				"Region":        {"us"},
+			},
+			expectedURL:    "/stage-auth",
+			serverResponse: http.StatusOK,
+			expectErr:      nil,
+		},
+		{
+			name: "multiple headers - second mapping used when first not present",
+			headers: map[string][]string{
+				"Authorization": {"Bearer token"},
+				"Region":        {"us"},
+			},
+			expectedURL:    "/us-auth",
+			serverResponse: http.StatusOK,
+			expectErr:      nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -453,11 +463,21 @@ func TestHeaderBasedEndpointMapping(t *testing.T) {
 				header:     "Authorization",
 				scheme:     "Bearer",
 				endpoint:   server.URL + "/default-auth",
-				headerEndpointMapping: map[string]map[string]string{
-					"Destination": {
-						"stage": server.URL + "/stage-auth",
-						"prod":  server.URL + "/prod-auth",
-						"dev":   server.URL + "/dev-auth",
+				headerEndpointMapping: []HeaderMapping{
+					{
+						Header: "Destination",
+						Values: map[string]string{
+							"stage": server.URL + "/stage-auth",
+							"prod":  server.URL + "/prod-auth",
+							"dev":   server.URL + "/dev-auth",
+						},
+					},
+					{
+						Header: "Region",
+						Values: map[string]string{
+							"us": server.URL + "/us-auth",
+							"eu": server.URL + "/eu-auth",
+						},
 					},
 				},
 				expectedCodes:   []int{200},

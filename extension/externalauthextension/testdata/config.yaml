@@ -30,10 +30,11 @@ externalauth/custom_settings:
 externalauth/endpoint_mapping:
   endpoint: "https://default-auth.example.com"
   header_endpoint_mapping:
-    Destination:
-      stage: "https://stage-auth.example.com"
-      prod: "https://prod-auth.example.com"
-      dev: "https://dev-auth.example.com"
+    - header: "Destination"
+      values:
+        stage: "https://stage-auth.example.com"
+        prod: "https://prod-auth.example.com"
+        dev: "https://dev-auth.example.com"
   telemetry_type: "traces"
 
 externalauth/k8s_dns:

@@ -42,9 +42,9 @@ The following settings are available:
 
 - `endpoint` (required): The URL of the external authentication service
 - `header_endpoint_mapping` (optional): Maps header values to different endpoints for dynamic routing
-  - Format: `{"header_name": {"header_value": "endpoint_url"}}`
-  - Example: `{"Destination": {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"}}`
+  - Format: `[ { header: "header_name", values: { "header_value": "endpoint_url" } } ]`
   - Falls back to the default `endpoint` if no mapping is found or if not provided
+  - **Note**: Only one endpoint mapping will be used per request. If multiple headers in the mapping are present in the request, the first matching header in the array (in the order specified in the configuration) will be used.
 - `refresh_interval` (default = "1h"): Specifies the time that a newly checked token will be valid for
 - `header` (default = "Authorization"): Specifies the header to use for the token
 - `scheme` (default = "Bearer"): Specifies the authentication scheme used for the request
@@ -87,13 +87,15 @@ service:
 extensions:
   externalauth/custom:
     endpoint: "https://custom-auth.example.com"
-    header_endpoint_mapping:
-      Destination:
-        stage: "https://stage-auth.example.com"
-        prod: "https://prod-auth.example.com"
-      Region:
-        us: "https://us-auth.example.com"
-        eu: "https://eu-auth.example.com"
+     header_endpoint_mapping:
+      - header: "Destination"
+        values:
+          stage: "https://stage-auth.example.com"
+          prod: "https://prod-auth.example.com"
+      - header: "Region"
+        values:
+          us: "https://us-auth.example.com"
+          eu: "https://eu-auth.example.com"
     refresh_interval: "30m"
     header: "X-Custom-Auth"
     expected_codes: [200, 201]
