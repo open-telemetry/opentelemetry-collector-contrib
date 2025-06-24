@@ -14,7 +14,7 @@ This example demonstrates OTEP 235 threshold-based consistent probability sampli
 
 ### Incoming TraceState Configuration
 - **Root spans**: 100% sampling probability → `th:0` (AlwaysSampleThreshold)
-- **Child spans**: 25% sampling probability → `th:c000000000000` (75th percentile threshold)
+- **Child spans**: 25% sampling probability → `th:c` (75th percentile threshold)
 - **Error rate**: 1 in 16 root spans (6.25%) report errors
 
 ### Tail Sampling Policies
@@ -111,7 +111,7 @@ if trace.TraceStatePresent && trace.FinalThreshold != nil {
 - **Output Rate**: 1.0 trace/sec
 - **Span-Level Adjusted Counts**:
   - Root spans: 100 (original th:0 → final th:fd70a3d70a3d7)
-  - Child spans: 25 (original th:c000000000000 → final th:fd70a3d70a3d7)
+  - Child spans: 25 (original th:c → final th:fd70a3d70a3d7)
 
 ### Overall System Output
 
@@ -125,7 +125,7 @@ if trace.TraceStatePresent && trace.FinalThreshold != nil {
 - Error trace spans: Adjusted count = 1.0 (sampled at th:0)
 - Normal trace spans: 
   - Root spans: Adjusted count = 100.0 (th:0 → th:fd70a3d70a3d7)  
-  - Child spans: Adjusted count = 25.0 (th:c000000000000 → th:fd70a3d70a3d7)
+  - Child spans: Adjusted count = 25.0 (th:c → th:fd70a3d70a3d7)
 
 **Weighted Average**: Varies by span type and original threshold
 
@@ -134,7 +134,7 @@ if trace.TraceStatePresent && trace.FinalThreshold != nil {
 #### Incoming Span TraceState
 ```
 Root span:  "ot=th:0"                    # 100% sampling
-Child span: "ot=th:c000000000000"       # 25% sampling  
+Child span: "ot=th:c"       # 25% sampling  
 ```
 
 #### After Tail Sampling Decision
@@ -164,7 +164,7 @@ Original Error Child Spans = 18.75 × 1.0 = 18.75/sec
 
 # Normal spans - sampled at th:fd70a3d70a3d7 
 Original Normal Root Spans = 1.0 × 100.0 = 100.0/sec (from th:0 → th:fd70a3d70a3d7)
-Original Normal Child Spans = 3.0 × 25.0 = 75.0/sec (from th:c000000000000 → th:fd70a3d70a3d7)
+Original Normal Child Spans = 3.0 × 25.0 = 75.0/sec (from th:c → th:fd70a3d70a3d7)
 
 # Total reconstruction
 Total Original Root Spans = 6.25 + 100.0 = 106.25/sec ≈ 100/sec ✓
@@ -201,7 +201,7 @@ func TestWorkExample(t *testing.T) {
             if span.isRoot() {
                 span.TraceState = "ot=th:0"
             } else {
-                span.TraceState = "ot=th:c000000000000" 
+                span.TraceState = "ot=th:c" 
             }
         }
         
@@ -240,7 +240,7 @@ func TestWorkExample(t *testing.T) {
             if span.IsRoot() {
                 assert.Equal(t, 100.0, span.AdjustedCount()) // Root: th:0 → th:fd70a3d70a3d7
             } else {
-                assert.Equal(t, 25.0, span.AdjustedCount()) // Child: th:c000000000000 → th:fd70a3d70a3d7
+                assert.Equal(t, 25.0, span.AdjustedCount()) // Child: th:c → th:fd70a3d70a3d7
             }
         }
     }

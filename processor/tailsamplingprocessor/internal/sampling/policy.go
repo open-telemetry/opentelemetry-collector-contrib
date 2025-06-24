@@ -27,8 +27,6 @@ type TraceData struct {
 	sync.Mutex
 	// Arrival time the first span for the trace was received.
 	ArrivalTime time.Time
-	// Decisiontime time when sampling decision was taken.
-	DecisionTime time.Time
 	// SpanCount track the number of spans on the trace.
 	SpanCount *atomic.Int64
 	// ReceivedBatches stores all the batches received for the trace.

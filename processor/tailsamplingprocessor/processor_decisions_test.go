@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -493,7 +494,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	}
 
 	// Use this instead of the default no-op cache
-	c, err := cache.NewLRUDecisionCache[DecisionInfo](200)
+	c, err := cache.NewLRUDecisionCache[pkgsampling.Threshold](200)
 	require.NoError(t, err)
 
 	cfg := Config{
@@ -570,7 +571,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	}
 
 	// Use this instead of the default no-op cache
-	c, err := cache.NewLRUDecisionCache[DecisionInfo](200)
+	c, err := cache.NewLRUDecisionCache[bool](200)
 	require.NoError(t, err)
 
 	cfg := Config{
