@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: ottl
+component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Added the keys function to the OpenTelemetry Transformation Language (OTTL)."
+note: "Add new `Keys` converter to extract all keys from a given map."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues:
@@ -16,7 +16,7 @@ issues:
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: "This function allows users to extract all keys from a map or struct."
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
