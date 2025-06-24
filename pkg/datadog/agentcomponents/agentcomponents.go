@@ -228,7 +228,7 @@ func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) forw
 	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
 		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
 	}
-	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
+	forwarderOptions, _ := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
 	forwarderOptions.DisableAPIKeyChecking = true
 	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
 }
