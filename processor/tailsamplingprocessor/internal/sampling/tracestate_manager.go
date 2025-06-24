@@ -136,7 +136,7 @@ func (tsm *TraceStateManager) updateSpanTraceState(span ptrace.Span, constraintT
 	}
 
 	otelTS := w3cTS.OTelValue()
-	
+
 	// Simply apply the constraint threshold (simplified approach)
 	err = otelTS.UpdateTValueWithSampling(constraintThreshold)
 	if err != nil {
