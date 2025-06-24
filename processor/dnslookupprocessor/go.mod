@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/component v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/confmap v1.34.1-0.20250610090210-188191247685
-	go.opentelemetry.io/collector/confmap/xconfmap v0.128.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/consumer v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/consumer/consumertest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/pdata v1.34.1-0.20250610090210-188191247685
@@ -67,3 +67,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
