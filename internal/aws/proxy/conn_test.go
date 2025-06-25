@@ -37,7 +37,7 @@ func (m *mock) getEC2Region(_ *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (m *mock) newAWSSession(string, string, *zap.Logger) (*session.Session, error) {
+func (m *mock) newAWSSession(_ string, _ string, _ string, _ *zap.Logger) (*session.Session, error) {
 	return m.sn, nil
 }
 
@@ -47,7 +47,7 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
+	f2 func(roleArn string, sharedCredentialsFile string, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	f1 = getEC2Region
 	f2 = newAWSSession
@@ -59,7 +59,7 @@ func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, erro
 
 func tearDownMock(
 	f1 func(s *session.Session) (string, error),
-	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
+	f2 func(roleArn string, sharedCredentialsFile string, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	getEC2Region = f1
 	newAWSSession = f2
@@ -326,7 +326,7 @@ func TestNewSessionCreationFailed(t *testing.T) {
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
 
-	_, err := newAWSSession("", "dontCare", zap.NewNop())
+	_, err := newAWSSession("", "", "dontCare", zap.NewNop())
 	assert.Error(t, err, "expected failure")
 }
 
@@ -335,7 +335,7 @@ func TestGetSTSCredsFailed(t *testing.T) {
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
 
-	_, err := newAWSSession("ROLEARN", "us-west-2", zap.NewNop())
+	_, err := newAWSSession("ROLEARN", "", "us-west-2", zap.NewNop())
 	assert.Error(t, err, "expected failure")
 }
 

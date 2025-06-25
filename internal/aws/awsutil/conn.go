@@ -104,6 +104,10 @@ func getAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	var options []func(*config.LoadOptions) error
 	options = append(options, config.WithEC2IMDSRegion())
 
+	if settings.SharedCredentialsFile != "" {
+		options = append(options, config.WithSharedCredentialsFiles([]string{settings.SharedCredentialsFile}))
+	}
+
 	if settings.Region != "" {
 		options = append(options, config.WithRegion(settings.Region))
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", settings.Region))

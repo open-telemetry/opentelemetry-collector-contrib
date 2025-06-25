@@ -58,6 +58,27 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "2"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "us-west-2",
+					SharedCredentialsFile: "temp-file-path",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				Version:               "2",
+				logger:                zap.NewNop(),
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "resource_attr_to_label"),
 			expected: &Config{
 				AWSSessionSettings: awsutil.AWSSessionSettings{

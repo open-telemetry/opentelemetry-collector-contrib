@@ -22,6 +22,7 @@ func TestDefaultSessionConfig(t *testing.T) {
 		LocalMode:             false,
 		ResourceARN:           "",
 		RoleARN:               "",
+		SharedCredentialsFile: "",
 	}
 	assert.Equal(t, expectedCfg, CreateDefaultSessionConfig())
 }

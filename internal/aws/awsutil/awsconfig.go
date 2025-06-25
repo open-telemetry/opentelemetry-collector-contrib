@@ -28,6 +28,10 @@ type AWSSessionSettings struct {
 	RoleARN string `mapstructure:"role_arn"`
 	// External ID to verify third party role assumption
 	ExternalID string `mapstructure:"external_id"`
+	// Per-component shared credentials file. If set, this will be used instead
+	// of the default credential resolution chain. This has a higher precedence
+	// over role_arn.
+	SharedCredentialsFile string `mapstructure:"shared_credentials_file"`
 }
 
 func CreateDefaultSessionConfig() AWSSessionSettings {
@@ -42,5 +46,6 @@ func CreateDefaultSessionConfig() AWSSessionSettings {
 		LocalMode:             false,
 		ResourceARN:           "",
 		RoleARN:               "",
+		SharedCredentialsFile: "",
 	}
 }

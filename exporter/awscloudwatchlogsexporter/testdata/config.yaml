@@ -10,6 +10,11 @@ awscloudwatchlogs/e2-no-retries-short-queue:
   retry_on_failure:
     enabled: false
 
+awscloudwatchlogs/shared_credentials_file:
+  log_group_name: "test-1"
+  log_stream_name: "testing"
+  shared_credentials_file: "temp-file-path"
+
 awscloudwatchlogs/invalid_queue_setting:
   log_group_name: "test-4"
   log_stream_name: "testing"
