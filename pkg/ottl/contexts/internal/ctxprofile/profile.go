@@ -348,27 +348,11 @@ func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K]
 			if err != nil {
 				return err
 			}
-			v := getAttributeValue(tCtx, *newKey)
+			v := pcommon.NewValueEmpty()
 			if err = ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
 				return err
 			}
 			return pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), *newKey, v)
 		},
 	}
-}
-
-func getAttributeValue[K ProfileContext](tCtx K, key string) pcommon.Value {
-	// Find the index of the attribute in the profile's attribute indices
-	// and return the corresponding value from the attribute table.
-	table := tCtx.GetProfilesDictionary().AttributeTable()
-	indices := tCtx.GetProfile().AttributeIndices().AsRaw()
-
-	for _, tableIndex := range indices {
-		attr := table.At(int(tableIndex))
-		if attr.Key() == key {
-			return attr.Value()
-		}
-	}
-
-	return pcommon.NewValueEmpty()
 }
