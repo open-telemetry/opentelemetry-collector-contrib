@@ -44,3 +44,5 @@ internal/tools/testresults/*
 go.work*
 
 /result
+
+copilot-instructions.yaml

@@ -24,10 +24,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	internalsampling "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
@@ -37,13 +38,13 @@ type policy struct {
 	// name used to identify this policy instance.
 	name string
 	// evaluator that decides if a trace is sampled or not by this policy instance.
-	evaluator sampling.PolicyEvaluator
+	evaluator internalsampling.PolicyEvaluator
 	// attribute to use in the telemetry to denote the policy.
 	attribute metric.MeasurementOption
 }
 
-// tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
-// policy to sample traces.
+// tailSamplingSpanProcessor handles the incoming trace data and forward the appropriate
+// sampling decision to the next stage of the pipeline.
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
 
@@ -58,7 +59,7 @@ type tailSamplingSpanProcessor struct {
 	policyTicker       timeutils.TTicker
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
-	sampledIDCache     cache.Cache[bool]
+	sampledIDCache     cache.Cache[sampling.Threshold]
 	nonSampledIDCache  cache.Cache[bool]
 	deleteChan         chan pcommon.TraceID
 	numTracesOnMap     *atomic.Uint64
@@ -66,6 +67,9 @@ type tailSamplingSpanProcessor struct {
 	setPolicyMux       sync.Mutex
 	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
+
+	// OTEP 235 TraceState management for consistent probability sampling
+	traceStateManager *internalsampling.TraceStateManager
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -77,16 +81,17 @@ type spanAndScope struct {
 }
 
 var (
-	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
-	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
-	decisionToAttribute = map[sampling.Decision]metric.MeasurementOption{
-		sampling.Sampled:          attrSampledTrue,
-		sampling.NotSampled:       attrSampledFalse,
-		sampling.InvertNotSampled: attrSampledFalse,
-		sampling.InvertSampled:    attrSampledTrue,
-		sampling.Dropped:          attrSampledFalse,
-	}
+	attrSampledTrue  = metric.WithAttributes(attribute.String("sampled", "true"))
+	attrSampledFalse = metric.WithAttributes(attribute.String("sampled", "false"))
 )
+
+// decisionToMetricAttribute converts a Decision to a metric attribute for telemetry.
+func decisionToMetricAttribute(decision internalsampling.Decision) metric.MeasurementOption {
+	if decision.IsSampled() {
+		return attrSampledTrue
+	}
+	return attrSampledFalse
+}
 
 type Option func(*tailSamplingSpanProcessor)
 
@@ -98,11 +103,11 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	if err != nil {
 		return nil, err
 	}
-	nopCache := cache.NewNopDecisionCache[bool]()
+	nopCache := cache.NewNopDecisionCache[sampling.Threshold]()
 	sampledDecisions := nopCache
-	nonSampledDecisions := nopCache
+	nonSampledDecisions := cache.NewNopDecisionCache[bool]()
 	if cfg.DecisionCache.SampledCacheSize > 0 {
-		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
+		sampledDecisions, err = cache.NewLRUDecisionCache[sampling.Threshold](cfg.DecisionCache.SampledCacheSize)
 		if err != nil {
 			return nil, err
 		}
@@ -126,6 +131,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		numTracesOnMap:     &atomic.Uint64{},
 		deleteChan:         make(chan pcommon.TraceID, cfg.NumTraces),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
+		traceStateManager:  internalsampling.NewTraceStateManager(),
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -180,7 +186,7 @@ func withTickerFrequency(frequency time.Duration) Option {
 }
 
 // WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
-func WithSampledDecisionCache(c cache.Cache[bool]) Option {
+func WithSampledDecisionCache(c cache.Cache[sampling.Threshold]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.sampledIDCache = c
 	}
@@ -199,7 +205,7 @@ func withRecordPolicy() Option {
 	}
 }
 
-func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
+func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (internalsampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case Composite:
 		return getNewCompositePolicy(settings, &cfg.CompositeCfg)
@@ -212,44 +218,44 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 	}
 }
 
-func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
+func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (internalsampling.PolicyEvaluator, error) {
 	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
 
 	switch cfg.Type {
 	case AlwaysSample:
-		return sampling.NewAlwaysSample(settings), nil
+		return internalsampling.NewAlwaysSample(settings), nil
 	case Latency:
 		lfCfg := cfg.LatencyCfg
-		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
+		return internalsampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
 		minValue := nafCfg.MinValue
 		maxValue := nafCfg.MaxValue
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, &minValue, &maxValue, nafCfg.InvertMatch), nil
+		return internalsampling.NewNumericAttributeFilter(settings, nafCfg.Key, &minValue, &maxValue, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
-		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
+		return internalsampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(settings, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
+		return internalsampling.NewStringAttributeFilter(settings, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
 	case StatusCode:
 		scfCfg := cfg.StatusCodeCfg
-		return sampling.NewStatusCodeFilter(settings, scfCfg.StatusCodes)
+		return internalsampling.NewStatusCodeFilter(settings, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
-		return sampling.NewRateLimiting(settings, rlfCfg.SpansPerSecond), nil
+		return internalsampling.NewRateLimiting(settings, rlfCfg.SpansPerSecond), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
-		return sampling.NewSpanCount(settings, spCfg.MinSpans, spCfg.MaxSpans), nil
+		return internalsampling.NewSpanCount(settings, spCfg.MinSpans, spCfg.MaxSpans), nil
 	case TraceState:
 		tsfCfg := cfg.TraceStateCfg
-		return sampling.NewTraceStateFilter(settings, tsfCfg.Key, tsfCfg.Values), nil
+		return internalsampling.NewTraceStateFilter(settings, tsfCfg.Key, tsfCfg.Values), nil
 	case BooleanAttribute:
 		bafCfg := cfg.BooleanAttributeCfg
-		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
+		return internalsampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
-		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
+		return internalsampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
 
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
@@ -360,12 +366,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
-		trace := d.(*sampling.TraceData)
-		trace.DecisionTime = time.Now()
+		trace := d.(*internalsampling.TraceData)
 
 		decision := tsp.makeDecision(id, trace, &metrics)
 
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToMetricAttribute(decision))
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -374,10 +379,10 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
-		switch decision {
-		case sampling.Sampled:
+		switch {
+		case decision.IsSampled():
 			tsp.releaseSampledTrace(ctx, id, allSpans)
-		case sampling.NotSampled:
+		default:
 			tsp.releaseNotSampledTrace(id)
 		}
 	}
@@ -396,79 +401,135 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) sampling.Decision {
-	finalDecision := sampling.NotSampled
-	samplingDecisions := map[sampling.Decision]*policy{
-		sampling.Error:            nil,
-		sampling.Sampled:          nil,
-		sampling.NotSampled:       nil,
-		sampling.InvertSampled:    nil,
-		sampling.InvertNotSampled: nil,
-		sampling.Dropped:          nil,
-	}
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *internalsampling.TraceData, metrics *policyMetrics) internalsampling.Decision {
+	finalDecision := internalsampling.NotSampled
+
+	// Track policy decisions without using Decision as map key
+	var errorPolicy *policy
+	var sampledPolicy *policy
+	var policyDecisions []internalsampling.Decision
+	var droppedPolicy *policy
 
 	ctx := context.Background()
 	startTime := time.Now()
 
-	// Check all policies before making a final decision.
+	// Check all policies and collect their threshold decisions.
 	for _, p := range tsp.policies {
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		latency := time.Since(startTime)
 		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute)
 
 		if err != nil {
-			if samplingDecisions[sampling.Error] == nil {
-				samplingDecisions[sampling.Error] = p
+			if errorPolicy == nil {
+				errorPolicy = p
 			}
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 			continue
 		}
 
-		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToMetricAttribute(decision))
 
 		if telemetry.IsMetricStatCountSpansSampledEnabled() {
-			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
 		}
 
-		// We associate the first policy with the sampling decision to understand what policy sampled a span
-		if samplingDecisions[decision] == nil {
-			samplingDecisions[decision] = p
+		// Collect all policy decisions for OTEP 250 threshold combination
+		policyDecisions = append(policyDecisions, decision)
+
+		// Track policies for metrics and debugging (first occurrence only)
+		if decision.IsDropped() && droppedPolicy == nil {
+			droppedPolicy = p
+		} else if decision.IsSampled() && sampledPolicy == nil {
+			sampledPolicy = p
 		}
 
 		// Break early if dropped. This can drastically reduce tick/decision latency.
-		if decision == sampling.Dropped {
+		if decision.IsDropped() {
 			break
 		}
 		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
-		if tsp.sampleOnFirstMatch && decision == sampling.Sampled {
+		if tsp.sampleOnFirstMatch && decision.IsSampled() {
 			break
 		}
 	}
 
-	var sampledPolicy *policy
-
+	// OTEP 250 Decision Logic with precedence for backward compatibility
 	switch {
-	case samplingDecisions[sampling.Dropped] != nil: // Dropped takes precedence
-		finalDecision = sampling.NotSampled
-	case samplingDecisions[sampling.InvertNotSampled] != nil: // Then InvertNotSampled
-		finalDecision = sampling.NotSampled
-	case samplingDecisions[sampling.Sampled] != nil:
-		finalDecision = sampling.Sampled
-		sampledPolicy = samplingDecisions[sampling.Sampled]
-	case samplingDecisions[sampling.InvertSampled] != nil && samplingDecisions[sampling.NotSampled] == nil:
-		finalDecision = sampling.Sampled
-		sampledPolicy = samplingDecisions[sampling.InvertSampled]
+	case droppedPolicy != nil:
+		// Dropped takes precedence over all other decisions
+		finalDecision = internalsampling.NotSampled
+	default:
+		// Check for explicit non-sampling decisions first
+		hasExplicitNotSampled := false
+		hasRegularSampled := false
+		hasInvertSampled := false
+		minThreshold := sampling.NeverSampleThreshold
+
+		for _, decision := range policyDecisions {
+			if decision.IsDropped() || decision.IsError() {
+				continue
+			}
+
+			// Track decision types for precedence logic
+			if decision.IsNotSampled() {
+				hasExplicitNotSampled = true
+			} else if decision.IsSampled() && !decision.IsInverted() {
+				hasRegularSampled = true
+			} else if decision.IsInvertSampled() {
+				hasInvertSampled = true
+			}
+
+			// Track minimum threshold for pure threshold-based policies
+			if sampling.ThresholdLessThan(decision.Threshold, minThreshold) {
+				minThreshold = decision.Threshold
+			}
+		}
+
+		// Apply precedence rules for backward compatibility:
+		// 1. Explicit NotSampled overrides InvertSampled
+		// 2. Regular Sampled takes precedence
+		// 3. InvertSampled only works if no explicit NotSampled
+		if hasExplicitNotSampled {
+			finalDecision = internalsampling.NotSampled
+			finalThreshold := sampling.NeverSampleThreshold
+			trace.FinalThreshold = &finalThreshold
+		} else if hasRegularSampled {
+			finalDecision = internalsampling.Sampled
+			finalThreshold := sampling.AlwaysSampleThreshold
+			trace.FinalThreshold = &finalThreshold
+		} else if hasInvertSampled {
+			finalDecision = internalsampling.Sampled
+			finalThreshold := sampling.AlwaysSampleThreshold
+			trace.FinalThreshold = &finalThreshold
+		} else {
+			// No explicit sampling decisions, use pure threshold logic
+			if minThreshold == sampling.AlwaysSampleThreshold {
+				finalDecision = internalsampling.Sampled
+			} else if minThreshold == sampling.NeverSampleThreshold {
+				finalDecision = internalsampling.NotSampled
+			} else {
+				finalDecision = internalsampling.NewDecisionWithThreshold(minThreshold)
+			}
+			trace.FinalThreshold = &minThreshold
+		}
+	}
+
+	// OTEP 235 Phase 5: Update TraceState if threshold changed and TraceState is present
+	if trace.TraceStatePresent && trace.FinalThreshold != nil {
+		if err := tsp.traceStateManager.UpdateTraceState(trace, *trace.FinalThreshold); err != nil {
+			tsp.logger.Warn("Failed to update TraceState with final threshold",
+				zap.Stringer("traceID", id), zap.Error(err))
+		}
 	}
 
 	if tsp.recordPolicy && sampledPolicy != nil {
-		sampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
+		internalsampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
 
-	switch finalDecision {
-	case sampling.Sampled:
+	if finalDecision.IsSampled() {
 		metrics.decisionSampled++
-	case sampling.NotSampled:
+	} else {
 		metrics.decisionNotSampled++
 	}
 
@@ -505,26 +566,37 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.
 }
 
 func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
-	currTime := time.Now()
-
 	// Group spans per their traceId to minimize contention on idToTrace
 	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
 	for id, spans := range idToSpansAndScope {
-		// If the trace ID is in the sampled cache, short circuit the decision
-		if _, ok := tsp.sampledIDCache.Get(id); ok {
+		// If the trace ID is in the sampled cache, apply threshold-based evaluation
+		if finalThreshold, ok := tsp.sampledIDCache.Get(id); ok {
 			tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", id))
+
+			// For OTEP 235 correctness, evaluate each span against the cached final threshold
 			traceTd := ptrace.NewTraces()
-			appendToTraces(traceTd, resourceSpans, spans)
-			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			metric.WithAttributeSet(attribute.NewSet())
+			sampledSpans := []spanAndScope{}
+			for _, spanAndScope := range spans {
+				// Extract span's current threshold and compare with final threshold
+				if tsp.shouldIncludeSpanBasedOnThreshold(spanAndScope.span, finalThreshold) {
+					sampledSpans = append(sampledSpans, spanAndScope)
+				}
+			}
+
+			if len(sampledSpans) > 0 {
+				appendToTraces(traceTd, resourceSpans, sampledSpans)
+				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+			}
+
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-				Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
+				Add(tsp.ctx, int64(len(sampledSpans)), attrSampledTrue)
 			continue
 		}
 		// If the trace ID is in the non-sampled cache, short circuit the decision
-		if _, ok := tsp.nonSampledIDCache.Get(id); ok {
+		if notSampled, ok := tsp.nonSampledIDCache.Get(id); ok && !notSampled {
 			tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", id))
+
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
 			continue
@@ -537,11 +609,13 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			spanCount := &atomic.Int64{}
 			spanCount.Store(lenSpans)
 
-			td := &sampling.TraceData{
-				ArrivalTime:     currTime,
+			td := &internalsampling.TraceData{
+				ArrivalTime:     time.Now(),
 				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			}
+
+			tsp.traceStateManager.InitializeTraceData(tsp.ctx, id, td)
 
 			if d, loaded = tsp.idToTrace.LoadOrStore(id, td); !loaded {
 				newTraceIDs++
@@ -554,13 +628,13 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 						postDeletion = true
 					default:
 						traceKeyToDrop := <-tsp.deleteChan
-						tsp.dropTrace(traceKeyToDrop, currTime)
+						tsp.dropTrace(traceKeyToDrop, time.Now())
 					}
 				}
 			}
 		}
 
-		actualData := d.(*sampling.TraceData)
+		actualData := d.(*internalsampling.TraceData)
 		if loaded {
 			actualData.SpanCount.Add(lenSpans)
 		}
@@ -568,7 +642,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		actualData.Lock()
 		finalDecision := actualData.FinalDecision
 
-		if finalDecision == sampling.Unspecified {
+		if finalDecision.IsUnspecified() {
 			// If the final decision hasn't been made, add the new spans under the lock.
 			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
 			actualData.Unlock()
@@ -577,19 +651,14 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		actualData.Unlock()
 
-		switch finalDecision {
-		case sampling.Sampled:
+		if finalDecision.IsSampled() {
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-		case sampling.NotSampled:
+		} else if !finalDecision.IsError() {
 			tsp.releaseNotSampledTrace(id)
-		default:
-			tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
-		}
-
-		if !actualData.DecisionTime.IsZero() {
-			tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
+		} else {
+			tsp.logger.Warn("Unexpected sampling decision", zap.String("decision", "error"))
 		}
 	}
 
@@ -614,9 +683,9 @@ func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 }
 
 func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) {
-	var trace *sampling.TraceData
+	var trace *internalsampling.TraceData
 	if d, ok := tsp.idToTrace.Load(traceID); ok {
-		trace = d.(*sampling.TraceData)
+		trace = d.(*internalsampling.TraceData)
 		tsp.idToTrace.Delete(traceID)
 		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
 		tsp.numTracesOnMap.Add(^uint64(0))
@@ -629,29 +698,96 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
 }
 
-// releaseSampledTrace sends the trace data to the next consumer. It
+// shouldIncludeSpanBasedOnThreshold evaluates if a span should be included
+// based on the final threshold decision for the trace
+func (tsp *tailSamplingSpanProcessor) shouldIncludeSpanBasedOnThreshold(span *ptrace.Span, finalThreshold sampling.Threshold) bool {
+	// Extract current threshold from span's TraceState (if present)
+	traceState := span.TraceState()
+	if traceState.AsRaw() == "" {
+		// If no TraceState, include the span (backward compatibility)
+		return true
+	}
+
+	// Parse the W3C TraceState to extract threshold
+	w3cTS, err := sampling.NewW3CTraceState(traceState.AsRaw())
+	if err != nil {
+		// If parsing fails, include the span (backward compatibility)
+		return true
+	}
+
+	otelTS := w3cTS.OTelValue()
+	if otelTS == nil {
+		// No OpenTelemetry TraceState, include the span
+		return true
+	}
+
+	spanThreshold, err := tsp.traceStateManager.ExtractThreshold(otelTS)
+	if err != nil {
+		// If no threshold in TraceState, include the span (backward compatibility)
+		return true
+	}
+
+	// Include span if the final threshold is more permissive than or equal to the span's threshold
+	return !sampling.ThresholdGreater(finalThreshold, *spanThreshold)
+}
+
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
-	tsp.sampledIDCache.Put(id, true)
+	// OTEP 235 Phase 5: Ensure TraceState is properly propagated in outgoing spans
+	// This is particularly important for span batches that might not have gone through
+	// the full policy evaluation pipeline (e.g., cached decisions)
+	tsp.propagateTraceStateIfNeeded(ctx, id, td)
+
+	// Store the final threshold in cache for OTEP 235 correctness
+	finalThreshold := sampling.AlwaysSampleThreshold // Default for backward compatibility
+	if d, ok := tsp.idToTrace.Load(id); ok {
+		trace := d.(*internalsampling.TraceData)
+		if trace.FinalThreshold != nil {
+			finalThreshold = *trace.FinalThreshold
+		}
+	}
+
+	tsp.sampledIDCache.Put(id, finalThreshold)
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
 			zap.Error(err))
 	}
-	_, ok := tsp.sampledIDCache.Get(id)
-	if ok {
+	if _, ok := tsp.sampledIDCache.Get(id); ok {
 		tsp.dropTrace(id, time.Now())
 	}
 }
 
-// releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
-// IDs. If the trace ID is cached, it deletes the spans from the internal map.
+// releaseNotSampledTrace adds the trace ID to the non-sampled cache and drops the trace.
+// This ensures that future spans with the same trace ID are quickly rejected.
 func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID) {
-	tsp.nonSampledIDCache.Put(id, true)
-	_, ok := tsp.nonSampledIDCache.Get(id)
-	if ok {
-		tsp.dropTrace(id, time.Now())
+	tsp.nonSampledIDCache.Put(id, false)
+	tsp.dropTrace(id, time.Now())
+}
+
+// propagateTraceStateIfNeeded ensures TraceState consistency for outgoing spans.
+// This handles cases where spans arrive after sampling decisions are made.
+func (tsp *tailSamplingSpanProcessor) propagateTraceStateIfNeeded(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+	// Check if we have trace data with OTEP 235 information
+	if d, ok := tsp.idToTrace.Load(id); ok {
+		trace := d.(*internalsampling.TraceData)
+
+		// If trace has TraceState and a final threshold, ensure consistency
+		if trace.TraceStatePresent && trace.FinalThreshold != nil {
+			// Create a temporary TraceData for the outgoing spans
+			tempTrace := &internalsampling.TraceData{
+				ReceivedBatches:   td,
+				TraceStatePresent: true,
+				FinalThreshold:    trace.FinalThreshold,
+			}
+
+			// Update TraceState in outgoing spans
+			if err := tsp.traceStateManager.UpdateTraceState(tempTrace, *trace.FinalThreshold); err != nil {
+				tsp.logger.Debug("Failed to propagate TraceState to outgoing spans",
+					zap.Stringer("traceID", id), zap.Error(err))
+			}
+		}
 	}
 }
 

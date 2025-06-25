@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type subpolicy struct {
@@ -105,7 +107,7 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 			return Unspecified, err
 		}
 
-		if decision == Sampled || decision == InvertSampled {
+		if decision.IsSampled() {
 			// The subpolicy made a decision to Sample. Now we need to make our decision.
 
 			// Calculate resulting SPS counter if we decide to sample this trace
@@ -114,6 +116,9 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 			// Check if the rate will be within the allocated bandwidth.
 			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
 				sub.sampledSPS = spansInSecondIfSampled
+
+				// Update trace threshold for OTEP 235 consistency when sampling
+				c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
 
 				// Let the sampling happen
 				if c.recordSubPolicy {
@@ -131,4 +136,18 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	}
 
 	return NotSampled, nil
+}
+
+// updateTraceThreshold updates the trace's final threshold according to OTEP 250 AnyOf logic.
+// For AnyOf (OR) logic, use the minimum (least restrictive) threshold as specified in OTEP 250.
+func (c *Composite) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
+	if trace.FinalThreshold == nil {
+		// First policy to set a threshold
+		trace.FinalThreshold = &policyThreshold
+	} else {
+		// Use the less restrictive (lower) threshold for AnyOf logic per OTEP 250
+		if sampling.ThresholdGreater(*trace.FinalThreshold, policyThreshold) {
+			trace.FinalThreshold = &policyThreshold
+		}
+	}
 }

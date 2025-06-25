@@ -98,29 +98,33 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 	batches := trace.ReceivedBatches
 
 	if saf.invertMatch {
-		// Invert Match returns true by default, except when key and value are matched
-		return invertHasResourceOrSpanWithCondition(
+		// Use mathematical threshold inversion per OTEP 250
+		// This applies proper threshold mathematics instead of boolean logic
+		normalDecision := hasResourceOrSpanWithCondition(
 			batches,
 			func(resource pcommon.Resource) bool {
 				if v, ok := resource.Attributes().Get(saf.key); ok {
 					if ok := saf.matcher(v.Str()); ok {
-						return false
+						return true
 					}
 				}
-				return true
+				return false
 			},
 			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(saf.key); ok {
 					truncatableStr := v.Str()
 					if len(truncatableStr) > 0 {
 						if ok := saf.matcher(v.Str()); ok {
-							return false
+							return true
 						}
 					}
 				}
-				return true
+				return false
 			},
-		), nil
+		)
+
+		// Apply mathematical inversion to the threshold
+		return NewInvertedDecision(normalDecision.Threshold), nil
 	}
 
 	return hasResourceOrSpanWithCondition(

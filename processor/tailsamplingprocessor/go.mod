@@ -25,6 +25,7 @@ require (
 )
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.128.0
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/consumer/consumertest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/processor/processortest v0.128.1-0.20250610090210-188191247685
@@ -93,6 +94,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 

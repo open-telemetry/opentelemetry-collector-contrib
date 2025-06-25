@@ -34,9 +34,9 @@ func (c *Drop) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Tra
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
-			return Unspecified, err
+			return NewDecisionWithError(err), err
 		}
-		if decision == NotSampled || decision == InvertNotSampled {
+		if !decision.IsSampled() {
 			return NotSampled, nil
 		}
 	}
