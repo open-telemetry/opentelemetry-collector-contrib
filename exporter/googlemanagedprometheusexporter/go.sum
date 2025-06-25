@@ -189,8 +189,8 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector v0.128.0 h1:HtOLtsKpGnTwicdXRk98/XyIe8MJvvmQvv2nICEPirU=
 go.opentelemetry.io/collector v0.128.0/go.mod h1:OFW6Zbs4prxfO0JBYE0xw2W+i6JVyFXYjnYze6EQ3HE=
-go.opentelemetry.io/collector/client v1.34.0 h1:u0s/veXnajFOuxgBCvASeEjl4KhjM3ZLcCtsrZowOJ4=
-go.opentelemetry.io/collector/client v1.34.0/go.mod h1:lSm836uOWXKMZ9VlbevcwY6wLJEl7l9xqhEySNcmtL8=
+go.opentelemetry.io/collector/client v1.34.1-0.20250624152751-a33fdf3cb754 h1:OXabyI49Qy6gMTyrLjmd8IRx4jcpF4W3svVOhEeM41E=
+go.opentelemetry.io/collector/client v1.34.1-0.20250624152751-a33fdf3cb754/go.mod h1:cmztISC80TVGM6lxanuHTnOf13PJDnqw6Ngg6DzDbEs=
 go.opentelemetry.io/collector/component v1.34.1-0.20250624152751-a33fdf3cb754 h1:y8UAT1MUUO+gnSpGI/bDtkhYKS5oltfHKmYh/5utH0U=
 go.opentelemetry.io/collector/component v1.34.1-0.20250624152751-a33fdf3cb754/go.mod h1:YmlVIxw+tr5SyyRAngBLaBl+MlvfkL1SdMtsLuU7sPM=
 go.opentelemetry.io/collector/component/componentstatus v0.128.1-0.20250624152751-a33fdf3cb754 h1:USu+vh6JI6qP+BkpUvbmO4gLRuZvmAt66ZHwdmWN+os=
