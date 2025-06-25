@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"reflect"
 	"testing"
 
@@ -534,6 +535,9 @@ func Test_NewFunctionCall(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	testMap := pcommon.NewMap()
+	testMap.PutStr("foo", "bar")
+
 	tests := []struct {
 		name string
 		inv  editor
@@ -937,6 +941,87 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "literalstringgetter arg",
+			inv: editor{
+				Function: "testing_literalstringgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("test"),
+						},
+					},
+				},
+			},
+			want: "test",
+		},
+		{
+			name: "literalintgetter arg",
+			inv: editor{
+				Function: "testing_literalintgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Int: ottltest.Intp(1),
+							},
+						},
+					},
+				},
+			},
+			want: int64(1),
+		},
+		{
+			name: "literalfloatgetter arg",
+			inv: editor{
+				Function: "testing_literalfloatgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(1),
+							},
+						},
+					},
+				},
+			},
+			want: float64(1),
+		},
+		{
+			name: "literalboolgetter arg",
+			inv: editor{
+				Function: "testing_literalboolgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Bool: (*boolean)(ottltest.Boolp(true)),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "literalpmapgetter arg",
+			inv: editor{
+				Function: "testing_literalpmapgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Map: &mapValue{
+								Values: []mapItem{
+									{
+										Key:   ottltest.Strp("foo"),
+										Value: &value{String: ottltest.Strp("bar")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: testMap,
 		},
 		{
 			name: "stringlikegetter slice arg",
@@ -2053,6 +2138,46 @@ func functionWithPMapGetter(PMapGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type literalStringGetterArguments struct {
+	LiteralGetter[any, string, StringGetter[any]]
+}
+
+func functionWithLiteralStringGetter(getter LiteralGetter[any, string, StringGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalIntGetterArguments struct {
+	LiteralGetter[any, int64, IntGetter[any]]
+}
+
+func functionWithLiteralIntGetter(getter LiteralGetter[any, int64, IntGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalFloatGetterArguments struct {
+	LiteralGetter[any, float64, FloatGetter[any]]
+}
+
+func functionWithLiteralFloatGetter(getter LiteralGetter[any, float64, FloatGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalBoolGetterArguments struct {
+	LiteralGetter[any, bool, BoolGetter[any]]
+}
+
+func functionWithLiteralBoolGetter(getter LiteralGetter[any, bool, BoolGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalPMapGetterArguments struct {
+	LiteralGetter[any, pcommon.Map, PMapGetter[any]]
+}
+
+func functionWithLiteralPMapGetter(getter LiteralGetter[any, pcommon.Map, PMapGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
 type stringArguments struct {
 	StringArg string
 }
@@ -2343,6 +2468,31 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pmapgetter",
 			&pMapGetterArguments{},
 			functionWithPMapGetter,
+		),
+		createFactory[any](
+			"testing_literalstringgetter",
+			&literalStringGetterArguments{},
+			functionWithLiteralStringGetter,
+		),
+		createFactory[any](
+			"testing_literalintgetter",
+			&literalIntGetterArguments{},
+			functionWithLiteralIntGetter,
+		),
+		createFactory[any](
+			"testing_literalfloatgetter",
+			&literalFloatGetterArguments{},
+			functionWithLiteralFloatGetter,
+		),
+		createFactory[any](
+			"testing_literalboolgetter",
+			&literalBoolGetterArguments{},
+			functionWithLiteralBoolGetter,
+		),
+		createFactory[any](
+			"testing_literalpmapgetter",
+			&literalPMapGetterArguments{},
+			functionWithLiteralPMapGetter,
 		),
 		createFactory[any](
 			"testing_string",
