@@ -4,7 +4,7 @@
 package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor"
 import (
 	"errors"
-	fmt "fmt"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
