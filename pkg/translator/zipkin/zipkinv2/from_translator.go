@@ -90,10 +90,10 @@ func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) 
 	}
 
 	if ilName := il.Name(); ilName != "" {
-		zTags[string(conventions.OtelLibraryNameKey)] = ilName
+		zTags[string(conventions.OtelScopeNameKey)] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[string(conventions.OtelLibraryVersionKey)] = ilVer
+		zTags[string(conventions.OtelScopeVersionKey)] = ilVer
 	}
 }
 

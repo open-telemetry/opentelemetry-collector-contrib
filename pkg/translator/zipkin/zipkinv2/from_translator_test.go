@@ -107,8 +107,8 @@ func TestExtractScopeTags(t *testing.T) {
 			},
 			res: map[string]string{
 				"custom.key":         "custom.val",
-				"otel.library.name":    "otel-lib",
-				"otel.library.version": "v1.2.3",
+				"otel.scope.name":    "otel-lib",
+				"otel.scope.version": "v1.2.3",
 			},
 		},
 	}
@@ -118,10 +118,10 @@ func TestExtractScopeTags(t *testing.T) {
 			il := pcommon.NewInstrumentationScope()
 			tt.scopeCfg(il)
 
-			got := map[string]string{}
-			extractScopeTags(il, got)
+			zTags := map[string]string{}
+			extractScopeTags(il, zTags)
 
-			assert.Equal(t, tt.res, got)
+			assert.Equal(t, tt.res, zTags)
 		})
 	}
 }
