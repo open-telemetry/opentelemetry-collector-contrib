@@ -21,7 +21,8 @@ func GetEntityEvents(oldMetadata, newMetadata map[metadataPkg.ResourceID]*Kubern
 			entityEvent := out.AppendEmpty()
 			entityEvent.SetTimestamp(timestamp)
 			entityEvent.ID().PutStr(oldObj.ResourceIDKey, string(oldObj.ResourceID))
-			entityEvent.SetEntityDelete()
+			deleteEvent := entityEvent.SetEntityDelete()
+			deleteEvent.SetEntityType(oldObj.EntityType)
 		}
 	}
 

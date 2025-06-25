@@ -20,10 +20,12 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -64,39 +66,86 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
 
-	return prwReceiver.(*prometheusRemoteWriteReceiver)
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	assert.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+
+	// Add cleanup to ensure LRU cache is properly purged
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	return writeReceiver
 }
 
 func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	for _, tc := range []struct {
-		name         string
-		contentType  string
-		expectedCode int
+		name          string
+		contentType   string
+		expectedCode  int
+		expectedStats remote.WriteResponseStats
 	}{
 		{
 			name:         "no content type",
 			contentType:  "",
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "unsupported content type",
 			contentType:  "application/json",
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "x-protobuf/no proto parameter",
 			contentType:  "application/x-protobuf",
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "x-protobuf/v1 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV1),
 			expectedCode: http.StatusUnsupportedMediaType,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name:         "x-protobuf/v2 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
 			expectedCode: http.StatusNoContent,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -152,6 +201,12 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectError: "missing metric name in labels",
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "duplicate label",
@@ -165,6 +220,12 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectError: `duplicate label "__name__" in labels`,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "UnitRef bigger than symbols length",
@@ -248,7 +309,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return expected
 			}(),
-			expectedStats: remote.WriteResponseStats{},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    3,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "timeseries with different scopes",
@@ -324,7 +390,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return expected
 			}(),
-			expectedStats: remote.WriteResponseStats{},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    3,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "separate timeseries - same labels - should be same datapointslice",
@@ -408,6 +479,12 @@ func TestTranslateV2(t *testing.T) {
 
 				return expected
 			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    3,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 		{
 			name: "service with target_info metric",
@@ -470,11 +547,17 @@ func TestTranslateV2(t *testing.T) {
 
 				return metrics
 			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
-			prwReceiver.rmCache = make(map[uint64]pmetric.ResourceMetrics)
+			prwReceiver.rmCache.Purge()
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
@@ -495,14 +578,14 @@ func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-type MockConsumer struct {
+type mockConsumer struct {
 	nonMutatingConsumer
 	mu         sync.Mutex
 	metrics    []pmetric.Metrics
 	dataPoints int
 }
 
-func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.metrics = append(m.metrics, md)
@@ -622,7 +705,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockConsumer := new(MockConsumer)
+			mockConsumer := new(mockConsumer)
 			prwReceiver := setupMetricsReceiver(t)
 			prwReceiver.nextConsumer = mockConsumer
 
@@ -653,4 +736,202 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
 		})
 	}
+}
+
+// TestLRUCacheResourceMetrics verifies the LRU cache behavior for resource metrics:
+// 1. Caching: Metrics with same job/instance share resource attributes
+// 2. Eviction: When cache is full, least recently used entries are evicted
+// 3. Reuse: After eviction, same job/instance metrics create new resource attributes
+func TestLRUCacheResourceMetrics(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+
+	// Set a small cache size to emulate the cache eviction
+	prwReceiver.rmCache.Resize(1)
+
+	t.Cleanup(func() {
+		prwReceiver.rmCache.Purge()
+	})
+
+	// Metric 1.
+	targetInfoRequest := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"machine_type", "n1-standard-1", // 5, 6
+			"cloud_provider", "gcp", // 7, 8
+			"region", "us-central1", // 9, 10
+			"__name__", "target_info", // 11, 12
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+			},
+		},
+	}
+
+	// Metric 1 because it has the same job/instance as the target_info metric.
+	metric1 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"__name__", "normal_metric", // 5, 6
+			"foo", "bar", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	}
+
+	// Metric 2. Different job/instance than metric1/target_info.
+	metric2 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_b", // 1, 2
+			"instance", "host2", // 3, 4
+			"__name__", "different_metric", // 5, 6
+			"baz", "qux", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+			},
+		},
+	}
+
+	// Metric 1_1. Same job/instance as metric 1. As it will be inserted after cache eviction, it should not be cached.
+	// And should generate a new resource metric/metric even having the same job/instance than the metric1.
+	metric1_1 := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"__name__", "normal_metric2", // 5, 6
+			"joo", "kar", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 11, Timestamp: 11}},
+			},
+		},
+	}
+
+	// This metric is the result of target_info and metric1.
+	expectedMetrics1 := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.namespace", "production")
+		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.instance.id", "host1")
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
+		attrs.PutStr("region", "us-central1")
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("OpenTelemetry Collector")
+		sm.Scope().SetVersion("latest")
+
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("normal_metric")
+		m1.SetUnit("")
+		m1.SetDescription("")
+
+		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp1.SetDoubleValue(1.0)
+		dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+		dp1.Attributes().PutStr("foo", "bar")
+
+		return metrics
+	}()
+
+	// Result of metric2.
+	expectedMetrics2 := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.namespace", "production")
+		attrs.PutStr("service.name", "service_b")
+		attrs.PutStr("service.instance.id", "host2")
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("OpenTelemetry Collector")
+		sm.Scope().SetVersion("latest")
+
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("different_metric")
+		m2.SetUnit("")
+
+		dp1 := m2.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp1.SetDoubleValue(2.0)
+		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+		dp1.Attributes().PutStr("baz", "qux")
+
+		return metrics
+	}()
+
+	// Result of metric1_1.
+	expectedMetrics1_1 := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.namespace", "production")
+		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.instance.id", "host1")
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("OpenTelemetry Collector")
+		sm.Scope().SetVersion("latest")
+
+		m1_1 := sm.Metrics().AppendEmpty()
+		m1_1.SetName("normal_metric2")
+		m1_1.SetUnit("")
+
+		dp1_1 := m1_1.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp1_1.SetDoubleValue(11.0)
+		dp1_1.SetTimestamp(pcommon.Timestamp(11 * int64(time.Millisecond)))
+		dp1_1.Attributes().PutStr("joo", "kar")
+
+		return metrics
+	}()
+
+	mockConsumer := new(mockConsumer)
+	prwReceiver.nextConsumer = mockConsumer
+
+	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+	defer ts.Close()
+
+	for _, req := range []*writev2.Request{targetInfoRequest, metric1, metric2, metric1_1} {
+		pBuf := proto.NewBuffer(nil)
+		err := pBuf.Marshal(req)
+		assert.NoError(t, err)
+
+		resp, err := http.Post(
+			ts.URL,
+			fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+			bytes.NewBuffer(pBuf.Bytes()),
+		)
+		assert.NoError(t, err)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+	}
+
+	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
+	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
+	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
 }

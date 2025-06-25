@@ -47,37 +47,25 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func getListenerURL(region string) string {
+func getListenerURL(region, dataType string) string {
 	var url string
 	lowerCaseRegion := strings.ToLower(region)
 	switch lowerCaseRegion {
-	case "us":
-		url = "https://listener.logz.io:8071"
-	case "ca":
-		url = "https://listener-ca.logz.io:8071"
-	case "eu":
-		url = "https://listener-eu.logz.io:8071"
-	case "uk":
-		url = "https://listener-uk.logz.io:8071"
-	case "au":
-		url = "https://listener-au.logz.io:8071"
-	case "nl":
-		url = "https://listener-nl.logz.io:8071"
-	case "wa":
-		url = "https://listener-wa.logz.io:8071"
+	case "ca", "eu", "uk", "au":
+		url = fmt.Sprintf("https://otlp-listener-%s.logz.io/v1/%s", lowerCaseRegion, dataType)
 	default:
-		url = "https://listener.logz.io:8071"
+		url = fmt.Sprintf("https://otlp-listener.logz.io/v1/%s", dataType)
 	}
 	return url
 }
 
-func generateEndpoint(cfg *Config) (string, error) {
-	defaultURL := fmt.Sprintf("%s/?token=%s", getListenerURL(""), string(cfg.Token))
+func generateEndpoint(cfg *Config, dataType string) (string, error) {
+	defaultURL := getListenerURL("", dataType)
 	switch {
 	case cfg.Endpoint != "":
 		return cfg.Endpoint, nil
 	case cfg.Region != "":
-		return fmt.Sprintf("%s/?token=%s", getListenerURL(cfg.Region), string(cfg.Token)), nil
+		return getListenerURL(cfg.Region, dataType), nil
 	case cfg.Endpoint == "" && cfg.Region == "":
 		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
 	default:
