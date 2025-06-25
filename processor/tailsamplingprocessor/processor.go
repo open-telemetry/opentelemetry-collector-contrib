@@ -448,8 +448,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		if decision.IsDropped() {
 			break
 		}
-		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
-		if tsp.sampleOnFirstMatch && decision.IsSampled() {
+		// If sampleOnFirstMatch is enabled, make decision as soon as a policy produces a sampling decision
+		if tsp.sampleOnFirstMatch && (decision.IsSampled() || decision.IsInvertSampled()) {
 			break
 		}
 	}
@@ -460,58 +460,76 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		// Dropped takes precedence over all other decisions
 		finalDecision = internalsampling.NotSampled
 	default:
-		// Check for explicit non-sampling decisions first
-		hasExplicitNotSampled := false
-		hasRegularSampled := false
-		hasInvertSampled := false
-		minThreshold := sampling.NeverSampleThreshold
-
-		for _, decision := range policyDecisions {
-			if decision.IsDropped() || decision.IsError() {
-				continue
-			}
-
-			// Track decision types for precedence logic
-			if decision.IsNotSampled() {
-				hasExplicitNotSampled = true
-			} else if decision.IsSampled() && !decision.IsInverted() {
-				hasRegularSampled = true
-			} else if decision.IsInvertSampled() {
-				hasInvertSampled = true
-			}
-
-			// Track minimum threshold for pure threshold-based policies
-			if sampling.ThresholdLessThan(decision.Threshold, minThreshold) {
-				minThreshold = decision.Threshold
-			}
-		}
-
-		// Apply precedence rules for backward compatibility:
-		// 1. Explicit NotSampled overrides InvertSampled
-		// 2. Regular Sampled takes precedence
-		// 3. InvertSampled only works if no explicit NotSampled
-		if hasExplicitNotSampled {
-			finalDecision = internalsampling.NotSampled
-			finalThreshold := sampling.NeverSampleThreshold
-			trace.FinalThreshold = &finalThreshold
-		} else if hasRegularSampled {
-			finalDecision = internalsampling.Sampled
-			finalThreshold := sampling.AlwaysSampleThreshold
-			trace.FinalThreshold = &finalThreshold
-		} else if hasInvertSampled {
-			finalDecision = internalsampling.Sampled
-			finalThreshold := sampling.AlwaysSampleThreshold
-			trace.FinalThreshold = &finalThreshold
-		} else {
-			// No explicit sampling decisions, use pure threshold logic
-			if minThreshold == sampling.AlwaysSampleThreshold {
+		// For SampleOnFirstMatch, use the last collected decision (which was the matching one)
+		if tsp.sampleOnFirstMatch && len(policyDecisions) > 0 {
+			lastDecision := policyDecisions[len(policyDecisions)-1]
+			if lastDecision.IsSampled() || lastDecision.IsInvertSampled() {
 				finalDecision = internalsampling.Sampled
-			} else if minThreshold == sampling.NeverSampleThreshold {
-				finalDecision = internalsampling.NotSampled
+				finalThreshold := sampling.AlwaysSampleThreshold
+				trace.FinalThreshold = &finalThreshold
 			} else {
-				finalDecision = internalsampling.NewDecisionWithThreshold(minThreshold)
+				finalDecision = internalsampling.NotSampled
+				finalThreshold := sampling.NeverSampleThreshold
+				trace.FinalThreshold = &finalThreshold
 			}
-			trace.FinalThreshold = &minThreshold
+		} else {
+			// Normal precedence-based logic when not using SampleOnFirstMatch
+			// Check for explicit non-sampling decisions first
+			hasExplicitNotSampled := false
+			hasRegularSampled := false
+			hasInvertSampled := false
+			hasInvertNotSampled := false
+			minThreshold := sampling.NeverSampleThreshold
+
+			for _, decision := range policyDecisions {
+				if decision.IsDropped() || decision.IsError() {
+					continue
+				}
+
+				// Track decision types for precedence logic
+				if decision.IsNotSampled() {
+					hasExplicitNotSampled = true
+				} else if decision.IsSampled() && !decision.IsInverted() {
+					hasRegularSampled = true
+				} else if decision.IsInvertSampled() {
+					hasInvertSampled = true
+				} else if decision.IsInvertNotSampled() {
+					hasInvertNotSampled = true
+				}
+
+				// Track minimum threshold for pure threshold-based policies
+				if sampling.ThresholdLessThan(decision.Threshold, minThreshold) {
+					minThreshold = decision.Threshold
+				}
+			}
+
+			// Apply precedence rules for backward compatibility:
+			// 1. Explicit NotSampled and InvertNotSampled override everything else (they both mean "don't sample")
+			// 2. Regular Sampled takes precedence over InvertSampled
+			// 3. InvertSampled only works if no explicit NotSampled or InvertNotSampled
+			if hasExplicitNotSampled || hasInvertNotSampled {
+				finalDecision = internalsampling.NotSampled
+				finalThreshold := sampling.NeverSampleThreshold
+				trace.FinalThreshold = &finalThreshold
+			} else if hasRegularSampled {
+				finalDecision = internalsampling.Sampled
+				finalThreshold := sampling.AlwaysSampleThreshold
+				trace.FinalThreshold = &finalThreshold
+			} else if hasInvertSampled {
+				finalDecision = internalsampling.Sampled
+				finalThreshold := sampling.AlwaysSampleThreshold
+				trace.FinalThreshold = &finalThreshold
+			} else {
+				// No explicit sampling decisions, use pure threshold logic
+				if minThreshold == sampling.AlwaysSampleThreshold {
+					finalDecision = internalsampling.Sampled
+				} else if minThreshold == sampling.NeverSampleThreshold {
+					finalDecision = internalsampling.NotSampled
+				} else {
+					finalDecision = internalsampling.NewDecisionWithThreshold(minThreshold)
+				}
+				trace.FinalThreshold = &minThreshold
+			}
 		}
 	}
 
