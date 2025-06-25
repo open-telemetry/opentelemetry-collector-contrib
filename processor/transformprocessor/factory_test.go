@@ -49,7 +49,7 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
 	}
 	for _, f := range DefaultProfileFunctions() {
-		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
+		assert.Contains(t, config.profileFunctions, f.Name(), "missing profile function %v", f.Name())
 	}
 }
 
