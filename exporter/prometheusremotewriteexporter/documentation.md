@@ -76,7 +76,7 @@ Number of Prometheus Exemplars that were successfully written to the remote writ
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {exemplar} | Sum | Int | true |
 
 ### otelcol_exporter_prometheusremotewrite_written_histograms
 
@@ -84,7 +84,7 @@ Number of Prometheus Histograms that were successfully written to the remote wri
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {histogram} | Sum | Int | true |
 
 ### otelcol_exporter_prometheusremotewrite_written_samples
 
@@ -92,4 +92,4 @@ Number of Prometheus Samples that were successfully written to the remote write 
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {sample} | Sum | Int | true |

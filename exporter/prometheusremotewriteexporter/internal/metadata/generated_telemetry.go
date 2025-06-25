@@ -119,19 +119,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteWrittenExemplars, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_written_exemplars",
 		metric.WithDescription("Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{exemplar}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWrittenHistograms, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_written_histograms",
 		metric.WithDescription("Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{histogram}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWrittenSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_written_samples",
 		metric.WithDescription("Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

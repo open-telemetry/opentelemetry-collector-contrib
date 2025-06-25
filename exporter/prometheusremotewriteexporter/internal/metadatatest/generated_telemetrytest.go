@@ -153,7 +153,7 @@ func AssertEqualExporterPrometheusremotewriteWrittenExemplars(t *testing.T, tt *
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_written_exemplars",
 		Description: "Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)",
-		Unit:        "1",
+		Unit:        "{exemplar}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -169,7 +169,7 @@ func AssertEqualExporterPrometheusremotewriteWrittenHistograms(t *testing.T, tt 
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_written_histograms",
 		Description: "Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)",
-		Unit:        "1",
+		Unit:        "{histogram}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -185,7 +185,7 @@ func AssertEqualExporterPrometheusremotewriteWrittenSamples(t *testing.T, tt *co
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_written_samples",
 		Description: "Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)",
-		Unit:        "1",
+		Unit:        "{sample}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
