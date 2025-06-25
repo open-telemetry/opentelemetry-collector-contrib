@@ -58,30 +58,6 @@ func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt stri
 func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating trace in probabilistic filter using OTEP 235 threshold")
 
-	// Use the randomness value already extracted in TraceData (from TraceState rv or TraceID)
-	randomness := trace.RandomnessValue
-
-	// Use pkg/sampling for consistent OTEP 235 decision
-	if s.threshold.ShouldSample(randomness) {
-		// Update trace threshold to reflect this sampling decision
-		s.updateTraceThreshold(trace, s.threshold)
-		return Sampled, nil
-	}
-
-	return NotSampled, nil
-}
-
-// updateTraceThreshold updates the trace's final threshold using OR logic (minimum threshold).
-// Since the tail sampler uses OR logic (any policy can trigger sampling),
-// we use the least restrictive (minimum) threshold per OTEP 250 AnyOf semantics.
-func (s *probabilisticSampler) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
-	if trace.FinalThreshold == nil {
-		// First policy to set a threshold
-		trace.FinalThreshold = &policyThreshold
-	} else {
-		// Use the less restrictive (lower) threshold for OR logic
-		if sampling.ThresholdGreater(*trace.FinalThreshold, policyThreshold) {
-			trace.FinalThreshold = &policyThreshold
-		}
-	}
+	// Return the threshold intent directly - the processor will handle final decision
+	return Decision{Threshold: s.threshold}, nil
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestProbabilisticSampling(t *testing.T) {
@@ -81,7 +83,8 @@ func TestProbabilisticSampling(t *testing.T) {
 				decision, err := probabilisticSampler.Evaluate(context.Background(), traceID, trace)
 				assert.NoError(t, err)
 
-				if decision.IsSampled() {
+				// OTEP 235: Use the threshold decision with the trace's randomness
+				if decision.ShouldSample(trace.RandomnessValue) {
 					sampled++
 				}
 			}
@@ -90,6 +93,50 @@ func TestProbabilisticSampling(t *testing.T) {
 			assert.InDelta(t, tt.expectedSamplingPercentage, effectiveSamplingPercentage, 0.2,
 				"Effective sampling percentage is %f, expected %f", effectiveSamplingPercentage, tt.expectedSamplingPercentage,
 			)
+		})
+	}
+}
+
+// TestProbabilisticThresholds tests that the probabilistic sampler returns correct OTEP 235 thresholds
+func TestProbabilisticThresholds(t *testing.T) {
+	tests := []struct {
+		name               string
+		samplingPercentage float64
+		expectedThreshold  sampling.Threshold
+	}{
+		{
+			"0% should be NeverSampleThreshold",
+			0,
+			sampling.NeverSampleThreshold,
+		},
+		{
+			"100% should be AlwaysSampleThreshold",
+			100,
+			sampling.AlwaysSampleThreshold,
+		},
+		{
+			"negative should be NeverSampleThreshold",
+			-10,
+			sampling.NeverSampleThreshold,
+		},
+		{
+			"over 100% should be AlwaysSampleThreshold",
+			150,
+			sampling.AlwaysSampleThreshold,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sampler := NewProbabilisticSampler(componenttest.NewNopTelemetrySettings(), "", tt.samplingPercentage)
+
+			// Create a dummy trace for evaluation
+			trace := newTraceStringAttrs(nil, "example", "value")
+			traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+			decision, err := sampler.Evaluate(context.Background(), traceID, trace)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedThreshold, decision.Threshold, "Threshold should match expected value for %f%%", tt.samplingPercentage)
 		})
 	}
 }

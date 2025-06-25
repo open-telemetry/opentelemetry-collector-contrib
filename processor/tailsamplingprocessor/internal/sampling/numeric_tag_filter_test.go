@@ -15,7 +15,38 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
+
+// testOTEP235BehaviorNumeric tests sampling decision using proper OTEP 235 threshold logic
+// for numeric filter tests. Uses fixed randomness values to make tests deterministic.
+func testOTEP235BehaviorNumeric(t *testing.T, filter PolicyEvaluator, traceID pcommon.TraceID, trace *TraceData, expectSampled bool) {
+	decision, err := filter.Evaluate(context.Background(), traceID, trace)
+	assert.NoError(t, err)
+
+	// Test with randomness = 0 (always samples if threshold is AlwaysSampleThreshold)
+	randomnessZero, err := sampling.UnsignedToRandomness(0)
+	assert.NoError(t, err)
+
+	// Test with randomness near max (only samples if threshold is very high)
+	randomnessHigh, err := sampling.UnsignedToRandomness(sampling.MaxAdjustedCount - 1)
+	assert.NoError(t, err)
+
+	if expectSampled {
+		// If we expect sampling, the decision should have a low threshold that allows sampling
+		assert.True(t, decision.ShouldSample(randomnessZero), "Decision should sample with randomness=0")
+		// For true "always sample" decisions, even high randomness should work
+		if decision.Threshold == sampling.AlwaysSampleThreshold {
+			assert.True(t, decision.ShouldSample(randomnessHigh), "AlwaysSampleThreshold should sample with any randomness")
+		}
+	} else {
+		// If we expect no sampling, the decision should have high threshold (NeverSampleThreshold)
+		assert.False(t, decision.ShouldSample(randomnessZero), "Decision should not sample with randomness=0")
+		assert.False(t, decision.ShouldSample(randomnessHigh), "Decision should not sample with randomness=high")
+		assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold, "Non-sampling decision should have NeverSampleThreshold")
+	}
+}
 
 func TestNumericTagFilter(t *testing.T) {
 	empty := map[string]any{}
@@ -27,63 +58,61 @@ func TestNumericTagFilter(t *testing.T) {
 	resAttr["example"] = 8
 
 	cases := []struct {
-		Desc     string
-		Trace    *TraceData
-		Decision Decision
+		Desc         string
+		Trace        *TraceData
+		ExpectSample bool
 	}{
 		{
-			Desc:     "nonmatching span attribute",
-			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
-			Decision: NotSampled,
+			Desc:         "nonmatching span attribute",
+			Trace:        newTraceIntAttrs(empty, "non_matching", math.MinInt32),
+			ExpectSample: false,
 		},
 		{
-			Desc:     "span attribute at the lower limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
-			Decision: Sampled,
+			Desc:         "span attribute at the lower limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MinInt32),
+			ExpectSample: true,
 		},
 		{
-			Desc:     "resource attribute at the lower limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
-			Decision: Sampled,
+			Desc:         "resource attribute at the lower limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
+			ExpectSample: true,
 		},
 		{
-			Desc:     "span attribute at the upper limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
-			Decision: Sampled,
+			Desc:         "span attribute at the upper limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MaxInt32),
+			ExpectSample: true,
 		},
 		{
-			Desc:     "resource attribute at the upper limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt),
-			Decision: Sampled,
+			Desc:         "resource attribute at the upper limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt),
+			ExpectSample: true,
 		},
 		{
-			Desc:     "span attribute below min limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
-			Decision: NotSampled,
+			Desc:         "span attribute below min limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MinInt32-1),
+			ExpectSample: false,
 		},
 		{
-			Desc:     "resource attribute below min limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
-			Decision: NotSampled,
+			Desc:         "resource attribute below min limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
+			ExpectSample: false,
 		},
 		{
-			Desc:     "span attribute above max limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
-			Decision: NotSampled,
+			Desc:         "span attribute above max limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MaxInt32+1),
+			ExpectSample: false,
 		},
 		{
-			Desc:     "resource attribute above max limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32),
-			Decision: NotSampled,
+			Desc:         "resource attribute above max limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32),
+			ExpectSample: false,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorNumeric(t, filter, pcommon.TraceID(u), c.Trace, c.ExpectSample)
 		})
 	}
 }
@@ -100,64 +129,64 @@ func TestNumericTagFilterInverted(t *testing.T) {
 	cases := []struct {
 		Desc                  string
 		Trace                 *TraceData
-		Decision              Decision
+		ExpectSample          bool
 		DisableInvertDecision bool
 	}{
 		{
-			Desc:     "nonmatching span attribute",
-			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
-			Decision: InvertSampled,
+			Desc:         "nonmatching span attribute",
+			Trace:        newTraceIntAttrs(empty, "non_matching", math.MinInt32),
+			ExpectSample: true, // Inverted: no match -> sample
 		},
 		{
-			Desc:     "span attribute at the lower limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
-			Decision: InvertNotSampled,
+			Desc:         "span attribute at the lower limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MinInt32),
+			ExpectSample: false, // Inverted: match -> don't sample
 		},
 		{
-			Desc:     "resource attribute at the lower limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
-			Decision: InvertNotSampled,
+			Desc:         "resource attribute at the lower limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
+			ExpectSample: false, // Inverted: match -> don't sample
 		},
 		{
-			Desc:     "span attribute at the upper limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
-			Decision: InvertNotSampled,
+			Desc:         "span attribute at the upper limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MaxInt32),
+			ExpectSample: false, // Inverted: match -> don't sample
 		},
 		{
-			Desc:     "resource attribute at the upper limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt32),
-			Decision: InvertNotSampled,
+			Desc:         "resource attribute at the upper limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt32),
+			ExpectSample: false, // Inverted: match -> don't sample
 		},
 		{
-			Desc:     "span attribute below min limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
-			Decision: InvertSampled,
+			Desc:         "span attribute below min limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MinInt32-1),
+			ExpectSample: true, // Inverted: no match -> sample
 		},
 		{
-			Desc:     "resource attribute below min limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
-			Decision: InvertSampled,
+			Desc:         "resource attribute below min limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
+			ExpectSample: true, // Inverted: no match -> sample
 		},
 		{
-			Desc:     "span attribute above max limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
-			Decision: InvertSampled,
+			Desc:         "span attribute above max limit",
+			Trace:        newTraceIntAttrs(empty, "example", math.MaxInt32+1),
+			ExpectSample: true, // Inverted: no match -> sample
 		},
 		{
-			Desc:     "resource attribute above max limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32+1),
-			Decision: InvertSampled,
+			Desc:         "resource attribute above max limit",
+			Trace:        newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32+1),
+			ExpectSample: true, // Inverted: no match -> sample
 		},
 		{
 			Desc:                  "nonmatching span attribute with DisableInvertDecision",
 			Trace:                 newTraceIntAttrs(empty, "non_matching", math.MinInt32),
-			Decision:              Sampled,
+			ExpectSample:          true, // Legacy logic: no match -> sample
 			DisableInvertDecision: true,
 		},
 		{
 			Desc:                  "span attribute at the lower limit with DisableInvertDecision",
 			Trace:                 newTraceIntAttrs(empty, "example", math.MinInt32),
-			Decision:              NotSampled,
+			ExpectSample:          false, // Legacy logic: match -> don't sample
 			DisableInvertDecision: true,
 		},
 	}
@@ -173,79 +202,77 @@ func TestNumericTagFilterInverted(t *testing.T) {
 				}()
 			}
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorNumeric(t, filter, pcommon.TraceID(u), c.Trace, c.ExpectSample)
 		})
 	}
 }
 
 func TestNumericTagFilterOptionalBounds(t *testing.T) {
 	tests := []struct {
-		name        string
-		min         *int64
-		max         *int64
-		value       int64
-		invertMatch bool
-		want        Decision
+		name         string
+		min          *int64
+		max          *int64
+		value        int64
+		invertMatch  bool
+		expectSample bool
 	}{
 		{
-			name:  "only min set - value above min",
-			min:   ptr(int64(100)),
-			max:   nil,
-			value: 200,
-			want:  Sampled,
+			name:         "only min set - value above min",
+			min:          ptr(int64(100)),
+			max:          nil,
+			value:        200,
+			expectSample: true,
 		},
 		{
-			name:  "only min set - value below min",
-			min:   ptr(int64(100)),
-			max:   nil,
-			value: 50,
-			want:  NotSampled,
+			name:         "only min set - value below min",
+			min:          ptr(int64(100)),
+			max:          nil,
+			value:        50,
+			expectSample: false,
 		},
 		{
-			name:  "only max set - value below max",
-			min:   nil,
-			max:   ptr(int64(100)),
-			value: 50,
-			want:  Sampled,
+			name:         "only max set - value below max",
+			min:          nil,
+			max:          ptr(int64(100)),
+			value:        50,
+			expectSample: true,
 		},
 		{
-			name:  "only max set - value above max",
-			min:   nil,
-			max:   ptr(int64(100)),
-			value: 200,
-			want:  NotSampled,
+			name:         "only max set - value above max",
+			min:          nil,
+			max:          ptr(int64(100)),
+			value:        200,
+			expectSample: false,
 		},
 		{
-			name:  "both set - value in range",
-			min:   ptr(int64(100)),
-			max:   ptr(int64(200)),
-			value: 150,
-			want:  Sampled,
+			name:         "both set - value in range",
+			min:          ptr(int64(100)),
+			max:          ptr(int64(200)),
+			value:        150,
+			expectSample: true,
 		},
 		{
-			name:  "both set - value out of range",
-			min:   ptr(int64(100)),
-			max:   ptr(int64(200)),
-			value: 50,
-			want:  NotSampled,
+			name:         "both set - value out of range",
+			min:          ptr(int64(100)),
+			max:          ptr(int64(200)),
+			value:        50,
+			expectSample: false,
 		},
 		{
-			name:        "inverted match - only min set - value above min",
-			min:         ptr(int64(100)),
-			max:         nil,
-			value:       200,
-			invertMatch: true,
-			want:        InvertNotSampled,
+			name:         "inverted match - only min set - value above min",
+			min:          ptr(int64(100)),
+			max:          nil,
+			value:        200,
+			invertMatch:  true,
+			expectSample: false, // Inverted: match -> don't sample
 		},
 		{
-			name:        "inverted match - only max set - value below max",
-			min:         nil,
-			max:         ptr(int64(100)),
-			value:       50,
-			invertMatch: true,
-			want:        InvertNotSampled,
+			name:         "inverted match - only max set - value below max",
+			min:          nil,
+			max:          ptr(int64(100)),
+			value:        50,
+			invertMatch:  true,
+			expectSample: false, // Inverted: match -> don't sample
 		},
 	}
 
@@ -255,9 +282,7 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 			require.NotNil(t, filter, "filter should not be nil")
 
 			trace := newTraceIntAttrs(map[string]any{}, "example", tt.value)
-			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID{}, trace)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want, decision)
+			testOTEP235BehaviorNumeric(t, filter, pcommon.TraceID{}, trace, tt.expectSample)
 		})
 	}
 }

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type numericAttributeFilter struct {
@@ -56,48 +58,37 @@ func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 		maxVal = *naf.maxValue
 	}
 
-	if naf.invertMatch {
-		return invertHasResourceOrSpanWithCondition(
-			batches,
-			func(resource pcommon.Resource) bool {
-				if v, ok := resource.Attributes().Get(naf.key); ok {
-					value := v.Int()
-					if value >= minVal && value <= maxVal {
-						return false
-					}
-				}
-				return true
-			},
-			func(span ptrace.Span) bool {
-				if v, ok := span.Attributes().Get(naf.key); ok {
-					value := v.Int()
-					if value >= minVal && value <= maxVal {
-						return false
-					}
-				}
-				return true
-			},
-		), nil
+	// Define separate functions for resource and span conditions
+	resourceCondition := func(resource pcommon.Resource) bool {
+		if v, ok := resource.Attributes().Get(naf.key); ok {
+			value := v.Int()
+			return value >= minVal && value <= maxVal
+		}
+		return false
 	}
-	return hasResourceOrSpanWithCondition(
-		batches,
-		func(resource pcommon.Resource) bool {
-			if v, ok := resource.Attributes().Get(naf.key); ok {
-				value := v.Int()
-				if value >= minVal && value <= maxVal {
-					return true
-				}
+
+	spanCondition := func(span ptrace.Span) bool {
+		if v, ok := span.Attributes().Get(naf.key); ok {
+			value := v.Int()
+			return value >= minVal && value <= maxVal
+		}
+		return false
+	}
+
+	if naf.invertMatch {
+		// Use feature gate to determine inversion behavior
+		if IsInvertDecisionsDisabled() {
+			// Legacy logic: Simple boolean NOT
+			normalDecision := hasResourceOrSpanWithCondition(batches, resourceCondition, spanCondition)
+			if normalDecision.Threshold == sampling.AlwaysSampleThreshold {
+				return Decision{Threshold: sampling.NeverSampleThreshold}, nil
 			}
-			return false
-		},
-		func(span ptrace.Span) bool {
-			if v, ok := span.Attributes().Get(naf.key); ok {
-				value := v.Int()
-				if value >= minVal && value <= maxVal {
-					return true
-				}
-			}
-			return false
-		},
-	), nil
+			return Decision{Threshold: sampling.AlwaysSampleThreshold}, nil
+		}
+		// OTEP 235 logic: Mathematical inversion
+		normalDecision := hasResourceOrSpanWithCondition(batches, resourceCondition, spanCondition)
+		return NewInvertedDecision(normalDecision.Threshold), nil
+	}
+
+	return hasResourceOrSpanWithCondition(batches, resourceCondition, spanCondition), nil
 }

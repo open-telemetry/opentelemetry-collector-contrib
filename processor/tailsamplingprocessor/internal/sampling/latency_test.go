@@ -12,7 +12,38 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
+
+// testOTEP235BehaviorLatency tests sampling decision using proper OTEP 235 threshold logic
+// for latency filter tests. Uses fixed randomness values to make tests deterministic.
+func testOTEP235BehaviorLatency(t *testing.T, filter PolicyEvaluator, traceID pcommon.TraceID, trace *TraceData, expectSampled bool) {
+	decision, err := filter.Evaluate(context.Background(), traceID, trace)
+	assert.NoError(t, err)
+
+	// Test with randomness = 0 (always samples if threshold is AlwaysSampleThreshold)
+	randomnessZero, err := sampling.UnsignedToRandomness(0)
+	assert.NoError(t, err)
+
+	// Test with randomness near max (only samples if threshold is very high)
+	randomnessHigh, err := sampling.UnsignedToRandomness(sampling.MaxAdjustedCount - 1)
+	assert.NoError(t, err)
+
+	if expectSampled {
+		// If we expect sampling, the decision should have a low threshold that allows sampling
+		assert.True(t, decision.ShouldSample(randomnessZero), "Decision should sample with randomness=0")
+		// For true "always sample" decisions, even high randomness should work
+		if decision.Threshold == sampling.AlwaysSampleThreshold {
+			assert.True(t, decision.ShouldSample(randomnessHigh), "AlwaysSampleThreshold should sample with any randomness")
+		}
+	} else {
+		// If we expect no sampling, the decision should have high threshold (NeverSampleThreshold)
+		assert.False(t, decision.ShouldSample(randomnessZero), "Decision should not sample with randomness=0")
+		assert.False(t, decision.ShouldSample(randomnessHigh), "Decision should not sample with randomness=high")
+		assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold, "Non-sampling decision should have NeverSampleThreshold")
+	}
+}
 
 func TestEvaluate_Latency(t *testing.T) {
 	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
@@ -21,9 +52,9 @@ func TestEvaluate_Latency(t *testing.T) {
 	now := time.Now()
 
 	cases := []struct {
-		Desc     string
-		Spans    []spanWithTimeAndDuration
-		Decision Decision
+		Desc         string
+		Spans        []spanWithTimeAndDuration
+		ExpectSample bool
 	}{
 		{
 			"trace duration shorter than threshold",
@@ -33,7 +64,7 @@ func TestEvaluate_Latency(t *testing.T) {
 					Duration:  4500 * time.Millisecond,
 				},
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"trace duration is equal to threshold",
@@ -43,7 +74,7 @@ func TestEvaluate_Latency(t *testing.T) {
 					Duration:  5000 * time.Millisecond,
 				},
 			},
-			Sampled,
+			true,
 		},
 		{
 			"total trace duration is longer than threshold but every single span is shorter",
@@ -57,16 +88,13 @@ func TestEvaluate_Latency(t *testing.T) {
 					Duration:  3000 * time.Millisecond,
 				},
 			},
-			Sampled,
+			true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
-
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorLatency(t, filter, traceID, newTraceWithSpans(c.Spans), c.ExpectSample)
 		})
 	}
 }
@@ -78,9 +106,9 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 	now := time.Now()
 
 	cases := []struct {
-		Desc     string
-		Spans    []spanWithTimeAndDuration
-		Decision Decision
+		Desc         string
+		Spans        []spanWithTimeAndDuration
+		ExpectSample bool
 	}{
 		{
 			"trace duration shorter than lower bound",
@@ -90,7 +118,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  4500 * time.Millisecond,
 				},
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"trace duration is equal to lower bound",
@@ -100,7 +128,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  5000 * time.Millisecond,
 				},
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"trace duration is within lower and upper bounds",
@@ -110,7 +138,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  5001 * time.Millisecond,
 				},
 			},
-			Sampled,
+			true,
 		},
 		{
 			"trace duration is above upper bound",
@@ -120,7 +148,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  10001 * time.Millisecond,
 				},
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"trace duration equals upper bound",
@@ -130,7 +158,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  10000 * time.Millisecond,
 				},
 			},
-			Sampled,
+			true,
 		},
 		{
 			"total trace duration is longer than threshold but every single span is shorter",
@@ -144,16 +172,13 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 					Duration:  3000 * time.Millisecond,
 				},
 			},
-			Sampled,
+			true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
-
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorLatency(t, filter, traceID, newTraceWithSpans(c.Spans), c.ExpectSample)
 		})
 	}
 }
