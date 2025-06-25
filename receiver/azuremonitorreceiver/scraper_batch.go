@@ -42,7 +42,6 @@ func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScrape
 		mutex:                 &sync.Mutex{},
 		time:                  &timeWrapper{},
 		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
-		loadCredentialsFunc:   loadCredentials,
 	}
 }
 
@@ -58,9 +57,8 @@ type azureBatchScraper struct {
 	subscriptions        map[string]*azureSubscription
 	subscriptionsUpdated time.Time
 	// regions on which we'll collect metrics. Stored by subscription id.
-	regions             map[string]map[string]struct{}
-	mb                  *metadata.MetricsBuilder
-	loadCredentialsFunc func(*zap.Logger, *Config, component.Host) (azcore.TokenCredential, error)
+	regions map[string]map[string]struct{}
+	mb      *metadata.MetricsBuilder
 
 	mutex                 *sync.Mutex
 	time                  timeNowIface

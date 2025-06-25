@@ -105,7 +105,6 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 		mutex:                 &sync.Mutex{},
 		time:                  &timeWrapper{},
 		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
-		loadCredentialsFunc:   loadCredentials,
 	}
 }
 
@@ -120,7 +119,6 @@ type azureScraper struct {
 	subscriptions        map[string]*azureSubscription
 	subscriptionsUpdated time.Time
 	mb                   *metadata.MetricsBuilder
-	loadCredentialsFunc  func(*zap.Logger, *Config, component.Host) (azcore.TokenCredential, error)
 
 	mutex                 *sync.Mutex
 	time                  timeNowIface

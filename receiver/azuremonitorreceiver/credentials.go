@@ -50,7 +50,7 @@ func loadCredentials(logger *zap.Logger, cfg *Config, host component.Host) (azco
 		options := &azidentity.WorkloadIdentityCredentialOptions{
 			ClientID:      cfg.ClientID,
 			TokenFilePath: cfg.FederatedTokenFile,
-			TenantID:      "test",
+			TenantID:      cfg.TenantID,
 		}
 		if cred, err = azidentity.NewWorkloadIdentityCredential(options); err != nil {
 			return nil, err
