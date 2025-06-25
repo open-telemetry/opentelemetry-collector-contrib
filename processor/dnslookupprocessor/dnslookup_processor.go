@@ -6,7 +6,6 @@ package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,7 +36,7 @@ type ProcessPair struct {
 func newDNSLookupProcessor(config *Config, logger *zap.Logger) (*dnsLookupProcessor, error) {
 	dnsResolver, err := createResolverChain(config, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create resolver chain: %w", err)
+		return nil, err
 	}
 
 	dp := &dnsLookupProcessor{
@@ -57,9 +56,10 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	if len(config.Hostfiles) > 0 {
 		hostFileResolver, err := resolver.NewHostFileResolver(config.Hostfiles, logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create hostfile resolver: %w", err)
+			return nil, err
 		}
 
+		// TODO: replace with actual chain resolver implementation
 		return hostFileResolver, nil
 	}
 
@@ -74,7 +74,7 @@ func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
 		return []ProcessPair{
 			{
 				ContextID: dp.config.Resolve.Context,
-				ProcessFn: dp.processDNSLookup,
+				ProcessFn: dp.processResolveReverseLookup,
 			},
 		}
 	}
@@ -98,8 +98,8 @@ func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
 	return processPairs
 }
 
-// processDNSLookup performs both DNS forward and reverse lookups on a set of attributes
-func (dp *dnsLookupProcessor) processDNSLookup(ctx context.Context, pMap pcommon.Map) error {
+// processResolveReverseLookup performs both DNS forward and reverse lookups on a set of attributes
+func (dp *dnsLookupProcessor) processResolveReverseLookup(ctx context.Context, pMap pcommon.Map) error {
 	resolveErr := dp.processResolveLookup(ctx, pMap)
 	reverseErr := dp.processReverseLookup(ctx, pMap)
 
