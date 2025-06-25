@@ -15,6 +15,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
+type topicPartition struct {
+	topic     string
+	partition int
+}
+type producerStats struct {
+	records int64
+	bytes   int64
+}
+
 // SaramaProducerMetrics helps to record the metrics defined in the metadata telemetry for Sarama.
 type SaramaProducerMetrics struct {
 	tb *metadata.TelemetryBuilder
@@ -25,27 +34,24 @@ func NewSaramaProducerMetrics(tb *metadata.TelemetryBuilder) SaramaProducerMetri
 	return SaramaProducerMetrics{tb: tb}
 }
 
-func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMessage, err error, t time.Time) {
+func (spm SaramaProducerMetrics) ReportProducerMetrics(
+	ctx context.Context,
+	msgs []*sarama.ProducerMessage,
+	err error,
+	t time.Time,
+) {
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
 	}
 	spm.tb.KafkaExporterLatency.Record(
-		context.Background(),
+		ctx,
 		time.Since(t).Milliseconds(),
 		metric.WithAttributes(
 			attribute.String("outcome", outcome),
 		),
 	)
-	type topicPartition struct {
-		topic     string
-		partition int
-	}
-	type stats struct {
-		records int64
-		bytes   int64
-	}
-	perTopicPartition := make(map[topicPartition]stats, len(msgs))
+	perTopicPartition := make(map[topicPartition]producerStats, len(msgs))
 	for _, m := range msgs {
 		k := topicPartition{topic: m.Topic, partition: int(m.Partition)}
 		s := perTopicPartition[k]
@@ -68,12 +74,12 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMe
 				attribute.String("outcome", "failure"),
 			}
 			spm.tb.KafkaExporterBytesUncompressed.Add(
-				context.Background(),
+				ctx,
 				bytes,
 				metric.WithAttributes(attrs...),
 			)
 			spm.tb.KafkaExporterRecords.Add(
-				context.Background(),
+				ctx,
 				1,
 				metric.WithAttributes(attrs...),
 			)
@@ -88,12 +94,12 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(msgs []*sarama.ProducerMe
 			attribute.String("outcome", outcome),
 		}
 		spm.tb.KafkaExporterBytesUncompressed.Add(
-			context.Background(),
+			ctx,
 			s.bytes,
 			metric.WithAttributes(attrs...),
 		)
 		spm.tb.KafkaExporterRecords.Add(
-			context.Background(),
+			ctx,
 			s.records,
 			metric.WithAttributes(attrs...),
 		)

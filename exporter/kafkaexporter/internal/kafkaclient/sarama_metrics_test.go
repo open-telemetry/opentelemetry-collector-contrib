@@ -28,7 +28,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(nil, nil, time.Now().Add(-time.Minute))
+		spm.ReportProducerMetrics(context.TODO(), nil, nil, time.Now().Add(-time.Minute))
 		var rm metricdata.ResourceMetrics
 		err = testTel.Reader.Collect(context.Background(), &rm)
 		require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(makeSaramaMessages(Messages{
+		spm.ReportProducerMetrics(context.TODO(), makeSaramaMessages(Messages{
 			TopicMessages: []TopicMessages{
 				{Topic: "foo", Messages: []marshaler.Message{
 					{Key: []byte("k1"), Value: []byte("v1")},
@@ -142,7 +142,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(makeSaramaMessages(Messages{
+		spm.ReportProducerMetrics(context.TODO(), makeSaramaMessages(Messages{
 			TopicMessages: []TopicMessages{
 				{Topic: "foo", Messages: []marshaler.Message{
 					{Key: []byte("k1"), Value: []byte("v1")},
@@ -227,7 +227,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(makeSaramaMessages(Messages{
+		spm.ReportProducerMetrics(context.TODO(), makeSaramaMessages(Messages{
 			TopicMessages: []TopicMessages{
 				{Topic: "foo", Messages: []marshaler.Message{
 					{Key: []byte("k1"), Value: []byte("v1")},

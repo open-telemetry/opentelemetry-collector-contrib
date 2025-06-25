@@ -47,14 +47,15 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
+	opts, err := commonOpts(ctx, clientCfg, logger, append(
+		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
 		// Use the UniformBytesPartitioner that is the default in franz-go with
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
-	}, opts...)...)
+	)...)
 	if err != nil {
 		return nil, err
 	}

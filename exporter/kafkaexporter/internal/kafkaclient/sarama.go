@@ -45,11 +45,11 @@ func (p *SaramaSyncProducer) ExportData(ctx context.Context, msgs Messages) (err
 		func(m *sarama.ProducerMessage) []sarama.RecordHeader { return m.Headers },
 		func(m *sarama.ProducerMessage, h []sarama.RecordHeader) { m.Headers = h },
 	)
-	defer p.spm.ReportProducerMetrics(messages, err, time.Now())
+	defer p.spm.ReportProducerMetrics(ctx, messages, err, time.Now())
 	if err = p.producer.SendMessages(messages); err != nil {
 		err = wrapKafkaProducerError(err)
 	}
-	return
+	return err
 }
 
 // Close shuts down the producer and flushes any remaining messages.
