@@ -120,9 +120,9 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 				// Update trace threshold for OTEP 235 consistency when sampling
 				c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
 
-				// Let the sampling happen
+				// Let the sampling happen with deferred attribute insertion
 				if c.recordSubPolicy {
-					SetAttrOnScopeSpans(trace, "tailsampling.composite_policy", sub.name)
+					return NewSampledDecisionWithCompositePolicy(sub.name), nil
 				}
 				return Sampled, nil
 			}

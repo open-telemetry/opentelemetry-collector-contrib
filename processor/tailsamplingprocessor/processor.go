@@ -527,6 +527,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		internalsampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
 
+	// OTEP 250: Apply deferred attribute inserters from the final decision
+	// This implements the deferred attribute pattern for rule-based sampling outcomes
+	if finalDecision.IsSampled() {
+		finalDecision.ApplyAttributeInserters(trace)
+	}
+
 	if finalDecision.IsSampled() {
 		metrics.decisionSampled++
 	} else {

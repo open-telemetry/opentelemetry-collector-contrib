@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type FakeTimeProvider struct {
@@ -106,9 +108,17 @@ func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
 	decision, err := c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
-	// The second policy is AlwaysSample, so the decision should be Sampled.
-	expected := Sampled
-	assert.Equal(t, expected, decision)
+	// Check that the decision is sampled (threshold comparison, not struct comparison)
+	assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold, "Decision should be Sampled")
+	assert.True(t, decision.IsSampled(), "Decision should be sampled")
+
+	// Set up randomness value for the trace (needed for deferred attribute application)
+	trace.RandomnessValue = sampling.TraceIDToRandomness(traceID)
+
+	// Apply deferred attributes now that randomness is available
+	decision.ApplyAttributeInserters(trace)
+
+	// Now check that the composite policy attribute was inserted
 	val, ok := trace.ReceivedBatches.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.composite_policy")
 	assert.True(t, ok, "Did not find expected key")
 	assert.Equal(t, "eval-2", val.AsString())
@@ -202,8 +212,17 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled_RecordSubPolicy(t *testi
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
-		expected := Sampled
-		assert.Equal(t, expected, decision)
+		// With deferred attributes, we compare the key fields rather than the entire struct
+		assert.Equal(t, Sampled.Threshold, decision.Threshold)
+		assert.Equal(t, Sampled.Attributes, decision.Attributes)
+		assert.Nil(t, decision.Error)
+
+		// Set up randomness value for the trace (needed for deferred attribute application)
+		trace.RandomnessValue = sampling.TraceIDToRandomness(traceID)
+
+		// Apply deferred attributes now that randomness is available
+		decision.ApplyAttributeInserters(trace)
+
 		val, ok := trace.ReceivedBatches.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.composite_policy")
 		assert.True(t, ok, "Did not find expected key")
 		assert.Equal(t, "eval-2", val.AsString())

@@ -33,30 +33,49 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Trac
 	// OTEP 250 AND logic: Collect threshold intents and return maximum (most restrictive) threshold
 	// This implements proper threshold composition for intersection semantics
 	var maxThreshold sampling.Threshold = sampling.AlwaysSampleThreshold // Start with 0 (most permissive)
+	var subDecisions []SubPolicyDecision
 
-	for _, sub := range c.subpolicies {
+	for i, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
 			return NewDecisionWithError(err), err
 		}
 
-		// For OTEP 250 threshold composition, we work with raw threshold values
-		// The "inverted" metadata is just bookkeeping - the threshold value is what matters
-		policyThreshold := decision.Threshold
+		// Store sub-policy decision for deferred attribute application
+		subDecisions = append(subDecisions, SubPolicyDecision{
+			Threshold:         decision.Threshold,
+			AttributeInserter: CombineAttributeInserterFuncs(decision.AttributeInserters...),
+			PolicyName:        c.logger.Name() + ".sub" + string(rune(i)), // For debugging
+		})
 
 		// For AND logic, collect the maximum (most restrictive) threshold per OTEP 250
 		// This ensures that only traces that ALL policies would sample get sampled
-		if sampling.ThresholdGreater(policyThreshold, maxThreshold) {
-			maxThreshold = policyThreshold
+		if sampling.ThresholdGreater(decision.Threshold, maxThreshold) {
+			maxThreshold = decision.Threshold
 		}
 	}
 
 	// Update trace's final threshold using AND logic (maximum threshold)
 	c.updateTraceThreshold(trace, maxThreshold)
 
-	// Return the combined threshold intent - pure OTEP 250 approach
-	// Final sampling decision will be made via randomness >= threshold comparison
-	return NewDecisionWithThreshold(maxThreshold), nil
+	// Create deferred attribute inserter that only applies attributes from
+	// sub-policies that would actually sample given the final randomness value
+	deferredInserter := NewDeferredAttributeInserter(subDecisions, "AND")
+
+	// Return decision with threshold and deferred attributes
+	// For consistency with simple policies, return attributes that match the sampling decision pattern
+	var attributes map[string]any
+	if maxThreshold == sampling.AlwaysSampleThreshold {
+		attributes = map[string]any{"sampled": true}
+	} else {
+		attributes = make(map[string]any) // Empty but non-nil for consistency
+	}
+
+	return Decision{
+		Threshold:          maxThreshold,
+		Attributes:         attributes,
+		AttributeInserters: []AttributeInserter{deferredInserter},
+	}, nil
 }
 
 // updateTraceThreshold updates the trace's final threshold using AND logic (maximum threshold).

@@ -220,6 +220,7 @@ func combineWithOrLogic(decisions []Decision) Decision {
 	hasDropped := false
 
 	var firstError error
+	var subPolicyDecisions []SubPolicyDecision
 
 	for _, decision := range decisions {
 		// Handle error decisions - check both Error field and error attribute
@@ -241,6 +242,18 @@ func combineWithOrLogic(decisions []Decision) Decision {
 		if decision.Threshold.Unsigned() < minThreshold.Unsigned() {
 			minThreshold = decision.Threshold
 		}
+
+		// Collect sub-policy decisions for deferred attribute insertion
+		// Each sub-policy contributes its threshold and attribute inserters
+		if len(decision.AttributeInserters) > 0 {
+			// If the decision has multiple inserters, combine them
+			combinedInserter := CombineAttributeInserterFuncs(decision.AttributeInserters...)
+			subPolicyDecisions = append(subPolicyDecisions, SubPolicyDecision{
+				Threshold:         decision.Threshold,
+				AttributeInserter: combinedInserter,
+				PolicyName:        "or-subpolicy", // TODO: could get actual policy name if available
+			})
+		}
 	}
 
 	// Precedence: Errors and drops override sampling decisions
@@ -254,7 +267,14 @@ func combineWithOrLogic(decisions []Decision) Decision {
 		return Dropped
 	}
 
-	return NewDecisionWithThreshold(minThreshold)
+	// Create decision with deferred attribute insertion
+	result := NewDecisionWithThreshold(minThreshold)
+	if len(subPolicyDecisions) > 0 {
+		result.AttributeInserters = []AttributeInserter{
+			NewDeferredAttributeInserter(subPolicyDecisions, "OR"),
+		}
+	}
+	return result
 }
 
 // combineWithAndLogic implements pure AND logic by taking maximum threshold.
@@ -269,6 +289,7 @@ func combineWithAndLogic(decisions []Decision) Decision {
 	hasDropped := false
 
 	var firstError error
+	var subPolicyDecisions []SubPolicyDecision
 
 	for _, decision := range decisions {
 		// Handle error decisions - check both Error field and error attribute
@@ -290,6 +311,18 @@ func combineWithAndLogic(decisions []Decision) Decision {
 		if decision.Threshold.Unsigned() > maxThreshold.Unsigned() {
 			maxThreshold = decision.Threshold
 		}
+
+		// Collect sub-policy decisions for deferred attribute insertion
+		// Each sub-policy contributes its threshold and attribute inserters
+		if len(decision.AttributeInserters) > 0 {
+			// If the decision has multiple inserters, combine them
+			combinedInserter := CombineAttributeInserterFuncs(decision.AttributeInserters...)
+			subPolicyDecisions = append(subPolicyDecisions, SubPolicyDecision{
+				Threshold:         decision.Threshold,
+				AttributeInserter: combinedInserter,
+				PolicyName:        "and-subpolicy", // TODO: could get actual policy name if available
+			})
+		}
 	}
 
 	// Precedence: Errors and drops override sampling decisions
@@ -303,7 +336,14 @@ func combineWithAndLogic(decisions []Decision) Decision {
 		return Dropped
 	}
 
-	return NewDecisionWithThreshold(maxThreshold)
+	// Create decision with deferred attribute insertion
+	result := NewDecisionWithThreshold(maxThreshold)
+	if len(subPolicyDecisions) > 0 {
+		result.AttributeInserters = []AttributeInserter{
+			NewDeferredAttributeInserter(subPolicyDecisions, "AND"),
+		}
+	}
+	return result
 }
 
 // hasNotSampledDecision checks if any decision is explicit NotSampled.

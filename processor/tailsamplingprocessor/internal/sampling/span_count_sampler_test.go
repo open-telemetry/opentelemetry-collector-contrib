@@ -12,7 +12,38 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
+
+// testOTEP235BehaviorSpanCount tests sampling decision using proper OTEP 235 threshold logic
+// instead of boolean comparison. Uses fixed randomness values to make tests deterministic.
+func testOTEP235BehaviorSpanCount(t *testing.T, filter PolicyEvaluator, traceID pcommon.TraceID, trace *TraceData, expectSampled bool) {
+	decision, err := filter.Evaluate(context.Background(), traceID, trace)
+	assert.NoError(t, err)
+
+	// Test with randomness = 0 (always samples if threshold is AlwaysSampleThreshold)
+	randomnessZero, err := sampling.UnsignedToRandomness(0)
+	assert.NoError(t, err)
+
+	// Test with randomness near max (only samples if threshold is very high)
+	randomnessHigh, err := sampling.UnsignedToRandomness(sampling.MaxAdjustedCount - 1)
+	assert.NoError(t, err)
+
+	if expectSampled {
+		// If we expect sampling, the decision should have a low threshold that allows sampling
+		assert.True(t, decision.ShouldSample(randomnessZero), "Decision should sample with randomness=0")
+		// For true "always sample" decisions, even high randomness should work
+		if decision.Threshold == sampling.AlwaysSampleThreshold {
+			assert.True(t, decision.ShouldSample(randomnessHigh), "AlwaysSampleThreshold should sample with any randomness")
+		}
+	} else {
+		// If we expect no sampling, the decision should have high threshold (NeverSampleThreshold)
+		assert.False(t, decision.ShouldSample(randomnessZero), "Decision should not sample with randomness=0")
+		assert.False(t, decision.ShouldSample(randomnessHigh), "Decision should not sample with any randomness")
+		assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold, "Non-sampling decision should have NeverSampleThreshold")
+	}
+}
 
 func TestEvaluate_OnlyMinSpans(t *testing.T) {
 	filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), 3, 0)
@@ -20,60 +51,57 @@ func TestEvaluate_OnlyMinSpans(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
-		Desc        string
-		NumberSpans []int32
-		Decision    Decision
+		Desc         string
+		NumberSpans  []int32
+		ExpectSample bool
 	}{
 		{
 			"Spans less than the minSpans, in one single batch",
 			[]int32{
 				1,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Same number of spans as the minSpans, in one single batch",
 			[]int32{
 				3,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans greater than the minSpans, in one single batch",
 			[]int32{
 				4,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans less than the minSpans, across multiple batches",
 			[]int32{
 				1, 1,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Same number of spans as the minSpans, across multiple batches",
 			[]int32{
 				1, 2, 1,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans greater than the minSpans, across multiple batches",
 			[]int32{
 				1, 2, 3,
 			},
-			Sampled,
+			true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
-
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorSpanCount(t, filter, traceID, newTraceWithMultipleSpans(c.NumberSpans), c.ExpectSample)
 		})
 	}
 }
@@ -84,60 +112,57 @@ func TestEvaluate_OnlyMaxSpans(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
-		Desc        string
-		NumberSpans []int32
-		Decision    Decision
+		Desc         string
+		NumberSpans  []int32
+		ExpectSample bool
 	}{
 		{
 			"Spans greater than the maxSpans, in one single batch",
 			[]int32{
 				21,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Same number of spans as the maxSpans, in one single batch",
 			[]int32{
 				20,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans less than the maxSpans, in one single batch",
 			[]int32{
 				19,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans gather than the maxSpans, across multiple batches",
 			[]int32{
 				1, 2, 3, 4, 5, 6,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Same number of spans as the maxSpans, across multiple batches",
 			[]int32{
 				1, 2, 3, 4, 5, 5,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans less than the maxSpans, across multiple batches",
 			[]int32{
 				1, 2, 3, 4, 5,
 			},
-			Sampled,
+			true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
-
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorSpanCount(t, filter, traceID, newTraceWithMultipleSpans(c.NumberSpans), c.ExpectSample)
 		})
 	}
 }
@@ -148,88 +173,85 @@ func TestEvaluate_RangeOfSpans(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
-		Desc        string
-		NumberSpans []int32
-		Decision    Decision
+		Desc         string
+		NumberSpans  []int32
+		ExpectSample bool
 	}{
 		{
 			"Spans less than the minSpans, in one single batch",
 			[]int32{
 				1,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Spans greater than the maxSpans, in one single batch",
 			[]int32{
 				21,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Spans range of minSpan and maxSpans, in one single batch",
 			[]int32{
 				4,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Spans less than the minSpans, across multiple batches",
 			[]int32{
 				1, 1,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Spans greater than the maxSpans, across multiple batches",
 			[]int32{
 				1, 2, 3, 4, 5, 6,
 			},
-			NotSampled,
+			false,
 		},
 		{
 			"Spans range of minSpan and maxSpans, across multiple batches",
 			[]int32{
 				1, 2, 1,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Same number of spans as the minSpans, in one single batch",
 			[]int32{
 				3,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Same number of spans as the maxSpans, in one single batch",
 			[]int32{
 				20,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Same number of spans as the minSpans, across multiple batches",
 			[]int32{
 				1, 2,
 			},
-			Sampled,
+			true,
 		},
 		{
 			"Same number of spans as the maxSpans, across multiple batches",
 			[]int32{
 				1, 2, 3, 4, 5, 5,
 			},
-			Sampled,
+			true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
-
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			testOTEP235BehaviorSpanCount(t, filter, traceID, newTraceWithMultipleSpans(c.NumberSpans), c.ExpectSample)
 		})
 	}
 }

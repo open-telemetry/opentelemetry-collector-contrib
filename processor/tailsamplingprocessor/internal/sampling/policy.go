@@ -42,15 +42,22 @@ type TraceData struct {
 	// Inconsistent randomness values could indicate upstream sampling inconsistencies.
 }
 
+// AttributeInserter represents a function that can insert attributes into trace data
+// when a sampling decision is applied. This supports OTEP 250's deferred attribute pattern.
+type AttributeInserter func(*TraceData)
+
 // Decision represents a sampling intent with threshold and metadata (OTEP 250 Sampling Intent pattern).
 // This structure replaces the previous enum while maintaining backward compatibility.
 type Decision struct {
 	// Threshold represents the sampling intent as a threshold value
 	Threshold sampling.Threshold
-	// Attributes contains additional decision metadata
+	// Attributes contains additional decision metadata (for backward compatibility)
 	Attributes map[string]any
 	// Error contains error information if decision failed
 	Error error
+	// AttributeInserters contains functions to insert attributes when sampling decision is applied
+	// This implements OTEP 250's deferred attribute pattern for tail sampling
+	AttributeInserters []AttributeInserter
 }
 
 // Legacy compatibility constants that return Decision structs
@@ -110,6 +117,34 @@ func NewDecisionWithError(err error) Decision {
 		Threshold:  sampling.NeverSampleThreshold,
 		Error:      err,
 		Attributes: map[string]any{"error": true},
+	}
+}
+
+// NewDecisionWithAttributeInserters creates a new Decision with the specified threshold and attribute inserters.
+func NewDecisionWithAttributeInserters(threshold sampling.Threshold, inserters ...AttributeInserter) Decision {
+	return Decision{
+		Threshold:          threshold,
+		Attributes:         make(map[string]any),
+		AttributeInserters: inserters,
+	}
+}
+
+// NewSampledDecisionWithAttributes creates a Sampled decision with additional attribute inserters.
+// This preserves the {"sampled": true} attribute for backward compatibility.
+func NewSampledDecisionWithAttributes(inserters ...AttributeInserter) Decision {
+	return Decision{
+		Threshold:          sampling.AlwaysSampleThreshold,
+		Attributes:         map[string]any{"sampled": true},
+		AttributeInserters: inserters,
+	}
+}
+
+// NewNotSampledDecisionWithAttributes creates a NotSampled decision with additional attribute inserters.
+func NewNotSampledDecisionWithAttributes(inserters ...AttributeInserter) Decision {
+	return Decision{
+		Threshold:          sampling.NeverSampleThreshold,
+		Attributes:         nil, // NotSampled has nil attributes for backward compatibility
+		AttributeInserters: inserters,
 	}
 }
 
@@ -205,9 +240,120 @@ func (d Decision) ShouldSample(randomness sampling.Randomness) bool {
 	return d.Threshold.ShouldSample(randomness)
 }
 
+// ApplyAttributeInserters applies all deferred attribute inserters to the trace data.
+// This should be called after the final sampling decision is made and randomness is available.
+func (d Decision) ApplyAttributeInserters(trace *TraceData) {
+	for _, inserter := range d.AttributeInserters {
+		if inserter != nil {
+			inserter(trace)
+		}
+	}
+}
+
+// CombineAttributeInserters combines attribute inserters from multiple decisions.
+// This is used when combining decisions in composite policies.
+func CombineAttributeInserters(decisions ...Decision) []AttributeInserter {
+	var combined []AttributeInserter
+	for _, decision := range decisions {
+		combined = append(combined, decision.AttributeInserters...)
+	}
+	return combined
+}
+
+// CombineAttributeInserterFuncs combines multiple AttributeInserter functions into one
+func CombineAttributeInserterFuncs(inserters ...AttributeInserter) AttributeInserter {
+	return func(trace *TraceData) {
+		for _, inserter := range inserters {
+			if inserter != nil {
+				inserter(trace)
+			}
+		}
+	}
+}
+
+// Common attribute inserter functions for tail sampling patterns
+
+// PolicyNameInserter creates an attribute inserter that records which policy sampled the trace.
+func PolicyNameInserter(policyName string) AttributeInserter {
+	return func(trace *TraceData) {
+		SetAttrOnScopeSpans(trace, "tailsampling.policy", policyName)
+	}
+}
+
+// CompositePolicyNameInserter creates an attribute inserter that records which composite sub-policy sampled the trace.
+func CompositePolicyNameInserter(subPolicyName string) AttributeInserter {
+	return func(trace *TraceData) {
+		SetAttrOnScopeSpans(trace, "tailsampling.composite_policy", subPolicyName)
+	}
+}
+
+// CustomAttributeInserter creates an attribute inserter for custom key-value pairs.
+func CustomAttributeInserter(key, value string) AttributeInserter {
+	return func(trace *TraceData) {
+		SetAttrOnScopeSpans(trace, key, value)
+	}
+}
+
+// SubPolicyDecision represents a sub-policy's threshold intent and attribute inserter.
+// This is used to track which sub-policies contributed to a composite decision
+// so that attributes can be applied only from policies that actually sample given randomness.
+type SubPolicyDecision struct {
+	Threshold         sampling.Threshold
+	AttributeInserter AttributeInserter
+	PolicyName        string // For debugging/tracing
+}
+
+// DeferredAttributeInserter creates an inserter that applies attributes only from
+// sub-policies that would sample given the provided randomness value.
+// This implements the core OTEP 250 deferred pattern for OR/AND composite decisions.
+func NewDeferredAttributeInserter(subDecisions []SubPolicyDecision, combineLogic string) AttributeInserter {
+	return func(trace *TraceData) {
+		if trace.RandomnessValue == (sampling.Randomness{}) {
+			// No randomness available, can't determine which policies would sample
+			return
+		}
+
+		for _, subDecision := range subDecisions {
+			// Check if this sub-policy would actually sample given the randomness
+			if subDecision.Threshold.ShouldSample(trace.RandomnessValue) {
+				// This sub-policy contributed to the sampling decision, apply its attributes
+				if subDecision.AttributeInserter != nil {
+					subDecision.AttributeInserter(trace)
+				}
+			}
+		}
+	}
+}
+
 // PolicyEvaluator implements a tail-based sampling policy evaluator,
 // which makes a sampling decision for a given trace when requested.
 type PolicyEvaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+}
+
+// Helper functions for creating decisions with common attribute patterns
+
+// NewSampledDecisionWithPolicyName creates a Sampled decision that inserts a policy name attribute
+func NewSampledDecisionWithPolicyName(policyName string) Decision {
+	inserter := func(trace *TraceData) {
+		SetAttrOnScopeSpans(trace, "tailsampling.policy", policyName)
+	}
+	return Decision{
+		Threshold:          sampling.AlwaysSampleThreshold,
+		Attributes:         map[string]any{"sampled": true},
+		AttributeInserters: []AttributeInserter{inserter},
+	}
+}
+
+// NewSampledDecisionWithCompositePolicy creates a Sampled decision that inserts a composite policy name
+func NewSampledDecisionWithCompositePolicy(policyName string) Decision {
+	inserter := func(trace *TraceData) {
+		SetAttrOnScopeSpans(trace, "tailsampling.composite_policy", policyName)
+	}
+	return Decision{
+		Threshold:          sampling.AlwaysSampleThreshold,
+		Attributes:         map[string]any{"sampled": true},
+		AttributeInserters: []AttributeInserter{inserter},
+	}
 }
