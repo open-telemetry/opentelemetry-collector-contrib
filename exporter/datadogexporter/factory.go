@@ -78,10 +78,6 @@ func isMetricExportV2Enabled() bool {
 	return metricExportNativeClientFeatureGate.IsEnabled()
 }
 
-func isLogsAgentExporterEnabled() bool {
-	return logsAgentExporterFeatureGate.IsEnabled()
-}
-
 func isMetricExportSerializerEnabled() bool {
 	return metricExportSerializerClientFeatureGate.IsEnabled()
 }
@@ -543,17 +539,8 @@ func (f *factory) createLogsExporter(
 ) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c, set.Logger)
 
-	if cfg.Logs.DumpPayloads && isLogsAgentExporterEnabled() {
-		set.Logger.Warn("logs::dump_payloads is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled")
-	}
-	if cfg.Logs.UseCompression && !isLogsAgentExporterEnabled() {
-		set.Logger.Warn("logs::use_compression is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
-	}
-	if cfg.Logs.CompressionLevel != 0 && !isLogsAgentExporterEnabled() {
-		set.Logger.Warn("logs::compression_level is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
-	}
-	if cfg.Logs.BatchWait != 0 && !isLogsAgentExporterEnabled() {
-		set.Logger.Warn("logs::batch_wait is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is disabled")
+	if cfg.Logs.DumpPayloads {
+		set.Logger.Warn("logs::dump_payloads is not valid")
 	}
 
 	var pusher consumer.ConsumeLogsFunc
@@ -576,12 +563,6 @@ func (f *factory) createLogsExporter(
 		}
 	}
 
-	attributesTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
-	}
-
 	switch {
 	case cfg.OnlyMetadata:
 		// only host metadata needs to be sent, once.
@@ -596,7 +577,7 @@ func (f *factory) createLogsExporter(
 			}
 			return nil
 		}
-	case isLogsAgentExporterEnabled():
+	default:
 		la, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider, f.gatewayUsage)
 		if err != nil {
 			cancel()
@@ -604,13 +585,6 @@ func (f *factory) createLogsExporter(
 		}
 		logsAgent = la
 		pusher = exp.ConsumeLogs
-	default:
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter, f.gatewayUsage)
-		if err != nil {
-			cancel()
-			return nil, err
-		}
-		pusher = exp.consumeLogs
 	}
 	return exporterhelper.NewLogs(
 		ctx,

@@ -57,61 +57,6 @@ type logsExporter struct {
 	gatewayUsage     *attributes.GatewayUsage
 }
 
-// newLogsExporter creates a new instance of logsExporter
-func newLogsExporter(
-	ctx context.Context,
-	params exporter.Settings,
-	cfg *datadogconfig.Config,
-	onceMetadata *sync.Once,
-	attributesTranslator *attributes.Translator,
-	sourceProvider source.Provider,
-	metadataReporter *inframetadata.Reporter,
-	gatewayUsage *attributes.GatewayUsage,
-) (*logsExporter, error) {
-	// create Datadog client
-	// validation endpoint is provided by Metrics
-	errchan := make(chan error)
-	var metricsAPI *datadogV2.MetricsApi
-	if isMetricExportV2Enabled() {
-		apiClient := clientutil.CreateAPIClient(
-			params.BuildInfo,
-			cfg.Metrics.Endpoint,
-			cfg.ClientConfig)
-		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
-		metricsAPI = datadogV2.NewMetricsApi(apiClient)
-	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
-		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
-	}
-	// validate the apiKey
-	if cfg.API.FailOnInvalidKey {
-		if err := <-errchan; err != nil {
-			return nil, err
-		}
-	}
-
-	translator, err := logsmapping.NewTranslator(params.TelemetrySettings, attributesTranslator, otelSource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create logs translator: %w", err)
-	}
-	s := logs.NewSender(cfg.Logs.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
-	scrubber := scrub.NewScrubber()
-	return &logsExporter{
-		params:           params,
-		cfg:              cfg,
-		ctx:              ctx,
-		translator:       translator,
-		sender:           s,
-		onceMetadata:     onceMetadata,
-		scrubber:         scrubber,
-		sourceProvider:   sourceProvider,
-		metadataReporter: metadataReporter,
-		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
-		metricsAPI:       metricsAPI,
-		gatewayUsage:     gatewayUsage,
-	}, nil
-}
-
 var _ consumer.ConsumeLogsFunc = (*logsExporter)(nil).consumeLogs
 
 // consumeLogs is implementation of consumer.ConsumeLogsFunc
