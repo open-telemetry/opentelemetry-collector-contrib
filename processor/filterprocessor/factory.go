@@ -12,29 +12,131 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
-// NewFactory returns a new factory for the Filter processor.
-func NewFactory() processor.Factory {
-	return processor.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-	)
+type filterProcessorFactory struct {
+	dataPointFunctions                  map[string]ottl.Factory[ottldatapoint.TransformContext]
+	logFunctions                        map[string]ottl.Factory[ottllog.TransformContext]
+	metricFunctions                     map[string]ottl.Factory[ottlmetric.TransformContext]
+	spanEventFunctions                  map[string]ottl.Factory[ottlspanevent.TransformContext]
+	spanFunctions                       map[string]ottl.Factory[ottlspan.TransformContext]
+	defaultDataPointFunctionsOverridden bool
+	defaultLogFunctionsOverridden       bool
+	defaultMetricFunctionsOverridden    bool
+	defaultSpanEventFunctionsOverridden bool
+	defaultSpanFunctionsOverridden      bool
 }
 
-func createDefaultConfig() component.Config {
-	return &Config{
-		ErrorMode: ottl.PropagateError,
+// FactoryOption applies changes to filterProcessorFactory.
+type FactoryOption func(factory *filterProcessorFactory)
+
+// WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
+// Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
+func WithDataPointFunctions(dataPointFunctions []ottl.Factory[ottldatapoint.TransformContext]) FactoryOption {
+	return func(factory *filterProcessorFactory) {
+		if !factory.defaultDataPointFunctionsOverridden {
+			factory.dataPointFunctions = map[string]ottl.Factory[ottldatapoint.TransformContext]{}
+			factory.defaultDataPointFunctionsOverridden = true
+		}
+		factory.dataPointFunctions = mergeFunctionsToMap(factory.dataPointFunctions, dataPointFunctions)
 	}
 }
 
-func createMetricsProcessor(
+// WithLogFunctions will override the default OTTL log context functions with the provided logFunctions in the resulting processor.
+// Subsequent uses of WithLogFunctions will merge the provided logFunctions with the previously registered functions.
+func WithLogFunctions(logFunctions []ottl.Factory[ottllog.TransformContext]) FactoryOption {
+	return func(factory *filterProcessorFactory) {
+		if !factory.defaultLogFunctionsOverridden {
+			factory.logFunctions = map[string]ottl.Factory[ottllog.TransformContext]{}
+			factory.defaultLogFunctionsOverridden = true
+		}
+		factory.logFunctions = mergeFunctionsToMap(factory.logFunctions, logFunctions)
+	}
+}
+
+// WithMetricFunctions will override the default OTTL metric context functions with the provided metricFunctions in the resulting processor.
+// Subsequent uses of WithMetricFunctions will merge the provided metricFunctions with the previously registered functions.
+func WithMetricFunctions(metricFunctions []ottl.Factory[ottlmetric.TransformContext]) FactoryOption {
+	return func(factory *filterProcessorFactory) {
+		if !factory.defaultMetricFunctionsOverridden {
+			factory.metricFunctions = map[string]ottl.Factory[ottlmetric.TransformContext]{}
+			factory.defaultMetricFunctionsOverridden = true
+		}
+		factory.metricFunctions = mergeFunctionsToMap(factory.metricFunctions, metricFunctions)
+	}
+}
+
+// WithSpanEventFunctions will override the default OTTL spanevent context functions with the provided spanEventFunctions in the resulting processor.
+// Subsequent uses of WithSpanEventFunctions will merge the provided spanEventFunctions with the previously registered functions.
+func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[ottlspanevent.TransformContext]) FactoryOption {
+	return func(factory *filterProcessorFactory) {
+		if !factory.defaultSpanEventFunctionsOverridden {
+			factory.spanEventFunctions = map[string]ottl.Factory[ottlspanevent.TransformContext]{}
+			factory.defaultSpanEventFunctionsOverridden = true
+		}
+		factory.spanEventFunctions = mergeFunctionsToMap(factory.spanEventFunctions, spanEventFunctions)
+	}
+}
+
+// WithSpanFunctions will override the default OTTL span context functions with the provided spanFunctions in the resulting processor.
+// Subsequent uses of WithSpanFunctions will merge the provided spanFunctions with the previously registered functions.
+func WithSpanFunctions(spanFunctions []ottl.Factory[ottlspan.TransformContext]) FactoryOption {
+	return func(factory *filterProcessorFactory) {
+		if !factory.defaultSpanFunctionsOverridden {
+			factory.spanFunctions = map[string]ottl.Factory[ottlspan.TransformContext]{}
+			factory.defaultSpanFunctionsOverridden = true
+		}
+		factory.spanFunctions = mergeFunctionsToMap(factory.spanFunctions, spanFunctions)
+	}
+}
+
+// NewFactory returns a new factory for the Filter processor.
+func NewFactory() processor.Factory {
+	return NewFactoryWithOptions()
+}
+
+// NewFactoryWithOptions can receive FactoryOption like With*Functions to register non-default OTTL functions in the resulting processor.
+func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
+	f := &filterProcessorFactory{
+		dataPointFunctions: defaultDataPointFunctionsMap(),
+		logFunctions:       defaultLogFunctionsMap(),
+		metricFunctions:    defaultMetricFunctionsMap(),
+		spanEventFunctions: defaultSpanEventFunctionsMap(),
+		spanFunctions:      defaultSpanFunctionsMap(),
+	}
+	for _, o := range options {
+		o(f)
+	}
+
+	return processor.NewFactory(
+		metadata.Type,
+		f.createDefaultConfig,
+		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+	)
+}
+
+func (f *filterProcessorFactory) createDefaultConfig() component.Config {
+	return &Config{
+		ErrorMode:          ottl.PropagateError,
+		dataPointFunctions: f.dataPointFunctions,
+		logFunctions:       f.logFunctions,
+		metricFunctions:    f.metricFunctions,
+		spanEventFunctions: f.spanEventFunctions,
+		spanFunctions:      f.spanFunctions,
+	}
+}
+
+func (f *filterProcessorFactory) createMetricsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -53,7 +155,7 @@ func createMetricsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogsProcessor(
+func (f *filterProcessorFactory) createLogsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
@@ -72,7 +174,7 @@ func createLogsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createTracesProcessor(
+func (f *filterProcessorFactory) createTracesProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
