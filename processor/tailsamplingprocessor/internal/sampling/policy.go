@@ -77,10 +77,6 @@ var (
 	// InvertNotSampled is used when mathematically inverting AlwaysSampleThreshold.
 	// This represents proper OTEP 250 mathematical inversion: AlwaysSample -> NeverSample
 	InvertNotSampled = NewInvertedDecision(sampling.AlwaysSampleThreshold)
-
-	// TODO: Remove this temporary constant - used for test compatibility during refactor
-	// This should be replaced with proper threshold-based decisions in tests
-	InvertSampled = NewInvertedDecision(sampling.NeverSampleThreshold)
 )
 
 // InvertThreshold mathematically inverts a threshold for OTEP 250 compliance.

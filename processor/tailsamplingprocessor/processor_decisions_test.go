@@ -95,7 +95,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		require.NoError(t, p.Shutdown(context.Background()))
 	}()
 
-	mpe1.NextDecision = sampling.InvertSampled
+	mpe1.NextDecision = sampling.NewInvertedDecision(pkgsampling.NeverSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -444,7 +444,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The combined decision from the policies is NotSampled
-	mpe1.NextDecision = sampling.InvertSampled
+	mpe1.NextDecision = sampling.NewInvertedDecision(pkgsampling.NeverSampleThreshold)
 	mpe2.NextDecision = sampling.NotSampled
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.

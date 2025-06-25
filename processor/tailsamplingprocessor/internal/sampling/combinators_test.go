@@ -99,7 +99,7 @@ func TestInvertAwareOrCombinator(t *testing.T) {
 			newMockPolicy(NotSampled), // Explicit NotSampled
 		}
 		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(InvertSampled), // Inverted sampling intent
+			newMockPolicy(NewInvertedDecision(sampling.NeverSampleThreshold)), // Inverted sampling intent
 		}
 
 		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
@@ -115,7 +115,7 @@ func TestInvertAwareOrCombinator(t *testing.T) {
 			newMockPolicy(Sampled), // Regular Sampled
 		}
 		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(InvertSampled), // Inverted sampling
+			newMockPolicy(NewInvertedDecision(sampling.NeverSampleThreshold)), // Inverted sampling
 		}
 
 		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
@@ -130,14 +130,14 @@ func TestInvertAwareOrCombinator(t *testing.T) {
 	t.Run("only inverted policies", func(t *testing.T) {
 		normalPolicies := []PolicyEvaluator{}
 		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(InvertSampled),
+			newMockPolicy(NewInvertedDecision(sampling.NeverSampleThreshold)),
 		}
 
 		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
 		decision, err := combinator.Evaluate(ctx, traceID, trace)
 		require.NoError(t, err)
 
-		// Should use the inverted policy's threshold (InvertSampled = inverted NeverSample = AlwaysSample)
+		// Should use the inverted policy's threshold (NewInvertedDecision(NeverSample) = inverted NeverSample = AlwaysSample)
 		assert.Equal(t, sampling.AlwaysSampleThreshold.Unsigned(), decision.Threshold.Unsigned())
 	})
 
@@ -249,7 +249,7 @@ func TestCombinationHelpers(t *testing.T) {
 		assert.True(t, hasNotSampledDecision(decisions))
 
 		// Test without NotSampled
-		decisions = []Decision{Sampled, InvertSampled}
+		decisions = []Decision{Sampled, NewInvertedDecision(sampling.NeverSampleThreshold)}
 		assert.False(t, hasNotSampledDecision(decisions))
 	})
 
