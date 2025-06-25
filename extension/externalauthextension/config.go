@@ -23,10 +23,10 @@ const (
 type Config struct {
 	// Endpoint specifies the endpoint to authenticate against. Required
 	Endpoint string `mapstructure:"endpoint"`
-	// HeaderEndpointMapping allows mapping header values to different endpoints with guaranteed order
-	// Format: [{"header": "header_name", "values": {"header_value": "endpoint_url"}}]
-	// Example: [{"header": "Destination", "values": {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"}}]
-	HeaderEndpointMapping []HeaderMapping `mapstructure:"header_endpoint_mapping,omitempty"`
+	// HeaderEndpointMapping allows mapping a single header value to different endpoints
+	// Format: { header: "header_name", values: {"header_value": "endpoint_url"} }
+	// Example: { header: "Destination", values: {"stage": "https://stage-auth.example.com", "prod": "https://prod-auth.example.com"} }
+	HeaderEndpointMapping *HeaderMapping `mapstructure:"header_endpoint_mapping,omitempty"`
 	//RefreshInterval specifies the time that a newly checked token will be valid for. Defaults to "1h"
 	RefreshInterval string `mapstructure:"refresh_interval,omitempty"`
 	// Header specifies the header used in the request. Defaults to "Authorization"
@@ -138,25 +138,23 @@ func (cfg *Config) Validate() error {
 
 // validateEndpointMapping validates the endpoint mapping configuration
 func (cfg *Config) validateEndpointMapping() error {
-	if len(cfg.HeaderEndpointMapping) == 0 {
+	if cfg.HeaderEndpointMapping == nil {
 		return errInvalidEndpointMapping
 	}
 
-	for _, mapping := range cfg.HeaderEndpointMapping {
-		if mapping.Header == "" {
+	if cfg.HeaderEndpointMapping.Header == "" {
+		return errInvalidEndpointMapping
+	}
+	if len(cfg.HeaderEndpointMapping.Values) == 0 {
+		return errInvalidEndpointMapping
+	}
+	for headerValue, endpoint := range cfg.HeaderEndpointMapping.Values {
+		if headerValue == "" || endpoint == "" {
 			return errInvalidEndpointMapping
 		}
-		if len(mapping.Values) == 0 {
-			return errInvalidEndpointMapping
-		}
-		for headerValue, endpoint := range mapping.Values {
-			if headerValue == "" || endpoint == "" {
-				return errInvalidEndpointMapping
-			}
-			_, err := url.ParseRequestURI(endpoint)
-			if err != nil {
-				return errInvalidEndpoint
-			}
+		_, err := url.ParseRequestURI(endpoint)
+		if err != nil {
+			return errInvalidEndpoint
 		}
 	}
 	return nil

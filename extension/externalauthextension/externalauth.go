@@ -27,7 +27,7 @@ var (
 
 type externalauth struct {
 	endpoint              string                      // Default endpoint for authentication
-	headerEndpointMapping []HeaderMapping             // Maps header values to different endpoints with guaranteed order
+	headerEndpointMapping *HeaderMapping              // Maps a single header value to different endpoints
 	refreshInterval       string                      // How long cached tokens remain valid
 	header                string                      // Header name to extract token from
 	expectedCodes         []int                       // HTTP status codes indicating successful auth
@@ -137,15 +137,13 @@ func (b *externalauth) getEndpointForHeaders(headers map[string][]string) string
 		canonicalHeaders[http.CanonicalHeaderKey(k)] = v
 	}
 
-	// Check each header in the mapping
-	for _, mapping := range b.headerEndpointMapping {
-		canonicalHeaderName := http.CanonicalHeaderKey(mapping.Header)
-		if headerValues, exists := canonicalHeaders[canonicalHeaderName]; exists && len(headerValues) > 0 {
-			headerValue := headerValues[0]
-			if endpoint, found := mapping.Values[headerValue]; found {
-				b.telemetry.Logger.Debug(fmt.Sprintf("Found endpoint mapping for header %s=%s: %s", mapping.Header, headerValue, endpoint))
-				return endpoint
-			}
+	// Check if the configured header exists in the request
+	canonicalHeaderName := http.CanonicalHeaderKey(b.headerEndpointMapping.Header)
+	if headerValues, exists := canonicalHeaders[canonicalHeaderName]; exists && len(headerValues) > 0 {
+		headerValue := headerValues[0]
+		if endpoint, found := b.headerEndpointMapping.Values[headerValue]; found {
+			b.telemetry.Logger.Debug(fmt.Sprintf("Found endpoint mapping for header %s=%s: %s", b.headerEndpointMapping.Header, headerValue, endpoint))
+			return endpoint
 		}
 	}
 

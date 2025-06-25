@@ -83,14 +83,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "endpoint_mapping"),
 			expected: &Config{
 				Endpoint: "https://default-auth.example.com",
-				HeaderEndpointMapping: []HeaderMapping{
-					{
-						Header: "Destination",
-						Values: map[string]string{
-							"stage": "https://stage-auth.example.com",
-							"prod":  "https://prod-auth.example.com",
-							"dev":   "https://dev-auth.example.com",
-						},
+				HeaderEndpointMapping: &HeaderMapping{
+					Header: "Destination",
+					Values: map[string]string{
+						"stage": "https://stage-auth.example.com",
+						"prod":  "https://prod-auth.example.com",
+						"dev":   "https://dev-auth.example.com",
 					},
 				},
 				RefreshInterval:   "1h",
@@ -172,13 +170,11 @@ func TestConfig_ValidateEndpointMapping(t *testing.T) {
 			name: "valid endpoint mapping",
 			config: &Config{
 				Endpoint: "https://default.example.com",
-				HeaderEndpointMapping: []HeaderMapping{
-					{
-						Header: "Destination",
-						Values: map[string]string{
-							"stage": "https://stage.example.com",
-							"prod":  "https://prod.example.com",
-						},
+				HeaderEndpointMapping: &HeaderMapping{
+					Header: "Destination",
+					Values: map[string]string{
+						"stage": "https://stage.example.com",
+						"prod":  "https://prod.example.com",
 					},
 				},
 			},
@@ -188,20 +184,18 @@ func TestConfig_ValidateEndpointMapping(t *testing.T) {
 			name: "empty endpoint mapping",
 			config: &Config{
 				Endpoint:              "https://default.example.com",
-				HeaderEndpointMapping: []HeaderMapping{},
+				HeaderEndpointMapping: nil,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "empty header name",
 			config: &Config{
 				Endpoint: "https://default.example.com",
-				HeaderEndpointMapping: []HeaderMapping{
-					{
-						Header: "",
-						Values: map[string]string{
-							"stage": "https://stage.example.com",
-						},
+				HeaderEndpointMapping: &HeaderMapping{
+					Header: "",
+					Values: map[string]string{
+						"stage": "https://stage.example.com",
 					},
 				},
 			},
@@ -211,12 +205,10 @@ func TestConfig_ValidateEndpointMapping(t *testing.T) {
 			name: "empty header value",
 			config: &Config{
 				Endpoint: "https://default.example.com",
-				HeaderEndpointMapping: []HeaderMapping{
-					{
-						Header: "Destination",
-						Values: map[string]string{
-							"": "https://stage.example.com",
-						},
+				HeaderEndpointMapping: &HeaderMapping{
+					Header: "Destination",
+					Values: map[string]string{
+						"": "https://stage.example.com",
 					},
 				},
 			},
@@ -226,12 +218,10 @@ func TestConfig_ValidateEndpointMapping(t *testing.T) {
 			name: "empty endpoint",
 			config: &Config{
 				Endpoint: "https://default.example.com",
-				HeaderEndpointMapping: []HeaderMapping{
-					{
-						Header: "Destination",
-						Values: map[string]string{
-							"stage": "",
-						},
+				HeaderEndpointMapping: &HeaderMapping{
+					Header: "Destination",
+					Values: map[string]string{
+						"stage": "",
 					},
 				},
 			},
@@ -241,12 +231,10 @@ func TestConfig_ValidateEndpointMapping(t *testing.T) {
 			name: "invalid endpoint URL",
 			config: &Config{
 				Endpoint: "https://default.example.com",
-				HeaderEndpointMapping: []HeaderMapping{
-					{
-						Header: "Destination",
-						Values: map[string]string{
-							"stage": "invalid-url",
-						},
+				HeaderEndpointMapping: &HeaderMapping{
+					Header: "Destination",
+					Values: map[string]string{
+						"stage": "invalid-url",
 					},
 				},
 			},
@@ -269,13 +257,11 @@ func TestConfig_ValidateEndpointMapping(t *testing.T) {
 func TestConfig_GetEndpointForHeaders(t *testing.T) {
 	eauth := &externalauth{
 		endpoint: "https://default.example.com",
-		headerEndpointMapping: []HeaderMapping{
-			{
-				Header: "Destination",
-				Values: map[string]string{
-					"stage": "https://stage.example.com",
-					"prod":  "https://prod.example.com",
-				},
+		headerEndpointMapping: &HeaderMapping{
+			Header: "Destination",
+			Values: map[string]string{
+				"stage": "https://stage.example.com",
+				"prod":  "https://prod.example.com",
 			},
 		},
 		telemetry: componenttest.NewNopTelemetrySettings(),
