@@ -7,24 +7,38 @@ import "fmt"
 
 type JSONEncodingMode string
 
+type ProcessingMode string
+
 const (
 	JSONEncodingModeBodyWithInlineAttributes JSONEncodingMode = "body_with_inline_attributes"
 	JSONEncodingModeBody                     JSONEncodingMode = "body"
+	ArrayMode                                ProcessingMode   = "array"
+	SingleMode                               ProcessingMode   = "single"
+	NDJsonMode                               ProcessingMode   = "ndjson"
 )
 
 type Config struct {
 	// Export raw log string instead of log wrapper
-	Mode JSONEncodingMode `mapstructure:"mode,omitempty"`
+	Mode           JSONEncodingMode `mapstructure:"mode,omitempty"`
+	ProcessingMode ProcessingMode   `mapstructure:"processing_mode,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (c *Config) Validate() error {
+	// validate marshaling mode
 	switch c.Mode {
-	case JSONEncodingModeBodyWithInlineAttributes:
-	case JSONEncodingModeBody:
+	case JSONEncodingModeBodyWithInlineAttributes, JSONEncodingModeBody:
 	default:
 		return fmt.Errorf("invalid mode %q", c.Mode)
 	}
-	return nil
+
+	// validate unmarshaling mode
+	switch c.ProcessingMode {
+	case ArrayMode, SingleMode, NDJsonMode:
+		return nil
+	default:
+		return fmt.Errorf("invalid decoding mode %q", c.ProcessingMode)
+	}
 }

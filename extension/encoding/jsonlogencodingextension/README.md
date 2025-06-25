@@ -13,11 +13,10 @@
 
 ## Configuration
 
-| Name                     | Description                                        | Default                                      |
-| ------------------------ | -------------------------------------------------- | -------------------------------------------- |
-| mode                     | What mode of the JSON encoding extension you want  | body                                         |
-
-
+| Name            | Description                                                                                   | Default |
+|-----------------|-----------------------------------------------------------------------------------------------|---------|
+| mode            | What mode of the JSON encoding extension you want                                             | body    |
+| processing_mode | Format of JSON payloads processed by the extension. Select from `array`, `single` or `ndjson` | array   |
 
 ### Mode
 
@@ -51,3 +50,20 @@ The `body_with_inline_attributes` mode within the JSON encoding extension grabs 
   }
 ]
 ```
+
+### processing_mode
+
+Configuration allows to define the format of JSON payload this extension is expected to process.
+
+- `array` : This is the default mode to preserve backward compatibility. JSON input is expected as an array
+  
+   > [{"key": "value"}, {"key": "value"}]
+
+- `single` : This mode expect input to contain a single JSON payload
+
+  > {"key": "value"}
+  
+- `ndjson` : This mode allows to handle new delimited JSON payloads
+
+  > {"key": "value"}\
+  > {"key": "value"}
