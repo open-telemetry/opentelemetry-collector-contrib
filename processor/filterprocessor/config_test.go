@@ -91,7 +91,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -173,7 +173,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -235,7 +235,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -297,7 +297,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -359,7 +359,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -421,7 +421,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -486,7 +486,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -575,7 +575,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -625,7 +625,7 @@ func TestLoadingSpans(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -710,7 +710,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -922,7 +922,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
-				assert.Equal(t, tt.expected, cfg)
+				assert.EqualExportedValues(t, tt.expected, cfg)
 			}
 		})
 	}
