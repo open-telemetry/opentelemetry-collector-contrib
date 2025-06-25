@@ -185,7 +185,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.ProfileStatements) > 0 {
-		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(profiles.ProfileFunctions()))
+		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
 		if err != nil {
 			return err
 		}
