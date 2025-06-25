@@ -43,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
+//nolint:unused
 var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.UseLogsAgentExporter",
 	featuregate.StageStable,
