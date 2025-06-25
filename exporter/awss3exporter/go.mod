@@ -79,7 +79,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.34.0 // indirect
+	go.opentelemetry.io/collector/client v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
@@ -105,7 +105,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250620153441-35668a11dade // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pipeline v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/processor v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
