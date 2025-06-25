@@ -287,7 +287,7 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.0 // indirect
+	github.com/knadh/koanf/v2 v2.2.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-syslog/v4 v4.2.0 // indirect
@@ -419,6 +419,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250620153441-35668a11dade // indirect
 	go.opentelemetry.io/collector/pipeline v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper v0.128.1-0.20250624152751-a33fdf3cb754 // indirect

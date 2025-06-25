@@ -38,7 +38,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.0 // indirect
+	github.com/knadh/koanf/v2 v2.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
@@ -48,6 +48,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/ztrue/tracerr v0.4.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/client v1.34.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/consumer v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
@@ -59,6 +60,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250620153441-35668a11dade // indirect
 	go.opentelemetry.io/collector/pipeline v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/receiver v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
@@ -73,8 +75,8 @@ require (
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
-	google.golang.org/grpc v1.72.2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
+	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
