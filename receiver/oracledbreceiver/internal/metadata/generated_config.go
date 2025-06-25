@@ -199,6 +199,42 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for oracledb events.
+type EventsConfig struct {
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopQuery: EventConfig{
+			Enabled: false,
+		},
+	}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -209,6 +245,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -227,11 +270,15 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
+	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
 	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		OracledbInstanceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -247,6 +294,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for oracledb logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

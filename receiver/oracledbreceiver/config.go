@@ -17,14 +17,23 @@ import (
 )
 
 var (
-	errBadDataSource = errors.New("datasource is invalid")
-	errBadEndpoint   = errors.New("endpoint must be specified as host:port")
-	errBadPort       = errors.New("invalid port in endpoint")
-	errEmptyEndpoint = errors.New("endpoint must be specified")
-	errEmptyPassword = errors.New("password must be set")
-	errEmptyService  = errors.New("service must be specified")
-	errEmptyUsername = errors.New("username must be set")
+	errBadDataSource       = errors.New("datasource is invalid")
+	errBadEndpoint         = errors.New("endpoint must be specified as host:port")
+	errBadPort             = errors.New("invalid port in endpoint")
+	errEmptyEndpoint       = errors.New("endpoint must be specified")
+	errEmptyPassword       = errors.New("password must be set")
+	errEmptyService        = errors.New("service must be specified")
+	errEmptyUsername       = errors.New("username must be set")
+	errMaxQuerySampleCount = errors.New("`max_query_sample_count` must be between 1 and 10000")
+	errTopQueryCount       = errors.New("`top_query_count` must be between 1 and 200 and less than or equal to `max_query_sample_count`")
+	errQueryCacheSize      = errors.New("`query_cache_size` must be strictly positive")
 )
+
+type TopQueryCollection struct {
+	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint `mapstructure:"top_query_count"`
+	QueryCacheSize      int  `mapstructure:"query_cache_size"`
+}
 
 type Config struct {
 	DataSource                     string `mapstructure:"datasource"`
@@ -34,6 +43,9 @@ type Config struct {
 	Username                       string `mapstructure:"username"`
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	metadata.LogsBuilderConfig     `mapstructure:",squash"`
+
+	TopQueryCollection `mapstructure:"top_query_collection"`
 }
 
 func (c Config) Validate() error {
@@ -78,6 +90,16 @@ func (c Config) Validate() error {
 		if _, err := url.Parse(c.DataSource); err != nil {
 			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadDataSource, err.Error()))
 		}
+	}
+
+	if c.MaxQuerySampleCount < 1 || c.MaxQuerySampleCount > 10000 {
+		allErrs = multierr.Append(allErrs, errMaxQuerySampleCount)
+	}
+	if c.TopQueryCount < 1 || c.TopQueryCount > 200 || c.TopQueryCount > c.MaxQuerySampleCount {
+		allErrs = multierr.Append(allErrs, errTopQueryCount)
+	}
+	if c.QueryCacheSize <= 0 {
+		allErrs = multierr.Append(allErrs, errQueryCacheSize)
 	}
 	return allErrs
 }
