@@ -41,7 +41,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_broker_throttling_duration
 
-The throttling duration in ms imposed by the broker when exporting records.
+The throttling duration in ms imposed by the broker when exporting messages.
 
 Only produced when franz-go is enabled.
 
@@ -57,7 +57,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_exporter_bytes
 
-The size in bytes of exported records seen by the broker.
+The size in bytes of exported messages seen by the broker.
 
 Only produced when franz-go is enabled.
 
@@ -76,7 +76,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_exporter_bytes_uncompressed
 
-The uncompressed size in bytes of exported records seen by the client.
+The uncompressed size in bytes of exported messages seen by the client.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -93,7 +93,7 @@ The uncompressed size in bytes of exported records seen by the client.
 
 ### otelcol_kafka_exporter_latency
 
-The time it took in ms to export a batch of records.
+The time it took in ms to export a batch of messages.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -108,9 +108,9 @@ The time it took in ms to export a batch of records.
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
-### otelcol_kafka_exporter_records
+### otelcol_kafka_exporter_messages
 
-The number of exported records.
+The number of exported messages.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

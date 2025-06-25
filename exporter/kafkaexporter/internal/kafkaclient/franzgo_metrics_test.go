@@ -142,7 +142,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
-		metadatatest.AssertEqualKafkaExporterRecords(
+		metadatatest.AssertEqualKafkaExporterMessages(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -207,7 +207,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-		metadatatest.AssertEqualKafkaExporterRecords(
+		metadatatest.AssertEqualKafkaExporterMessages(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{

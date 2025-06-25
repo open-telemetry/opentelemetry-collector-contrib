@@ -26,7 +26,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaExporterBytes.Add(context.Background(), 1)
 	tb.KafkaExporterBytesUncompressed.Add(context.Background(), 1)
 	tb.KafkaExporterLatency.Record(context.Background(), 1)
-	tb.KafkaExporterRecords.Add(context.Background(), 1)
+	tb.KafkaExporterMessages.Add(context.Background(), 1)
 	AssertEqualKafkaBrokerClosed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -45,7 +45,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualKafkaExporterLatency(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualKafkaExporterRecords(t, testTel,
+	AssertEqualKafkaExporterMessages(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

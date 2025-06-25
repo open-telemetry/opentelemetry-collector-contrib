@@ -89,7 +89,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
-		metadatatest.AssertEqualKafkaExporterRecords(
+		metadatatest.AssertEqualKafkaExporterMessages(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -174,7 +174,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
-		metadatatest.AssertEqualKafkaExporterRecords(
+		metadatatest.AssertEqualKafkaExporterMessages(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -267,7 +267,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
-		metadatatest.AssertEqualKafkaExporterRecords(
+		metadatatest.AssertEqualKafkaExporterMessages(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{

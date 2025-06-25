@@ -78,7 +78,7 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(
 				bytes,
 				metric.WithAttributes(attrs...),
 			)
-			spm.tb.KafkaExporterRecords.Add(
+			spm.tb.KafkaExporterMessages.Add(
 				ctx,
 				1,
 				metric.WithAttributes(attrs...),
@@ -98,7 +98,7 @@ func (spm SaramaProducerMetrics) ReportProducerMetrics(
 			s.bytes,
 			metric.WithAttributes(attrs...),
 		)
-		spm.tb.KafkaExporterRecords.Add(
+		spm.tb.KafkaExporterMessages.Add(
 			ctx,
 			s.records,
 			metric.WithAttributes(attrs...),

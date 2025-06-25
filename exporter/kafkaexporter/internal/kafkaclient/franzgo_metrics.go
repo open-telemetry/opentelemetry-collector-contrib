@@ -86,7 +86,7 @@ func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, t
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
-	fpm.tb.KafkaExporterRecords.Add(
+	fpm.tb.KafkaExporterMessages.Add(
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),
@@ -116,7 +116,7 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 		attribute.Int64("partition", int64(r.Partition)),
 		attribute.String("outcome", "failure"),
 	}
-	fpm.tb.KafkaExporterRecords.Add(
+	fpm.tb.KafkaExporterMessages.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(attrs...),

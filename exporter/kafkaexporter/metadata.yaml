@@ -58,16 +58,16 @@ telemetry:
       attributes: [node_id]
     kafka_broker_throttling_duration:
       enabled: true
-      description: The throttling duration in ms imposed by the broker when exporting records.
+      description: The throttling duration in ms imposed by the broker when exporting messages.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
       unit: ms
       histogram:
         value_type: int
       attributes: [node_id]
-    kafka_exporter_records:
+    kafka_exporter_messages:
       enabled: true
-      description: The number of exported records.
+      description: The number of exported messages.
       unit: "1"
       sum:
         value_type: int
@@ -75,7 +75,7 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_exporter_bytes:
       enabled: true
-      description: The size in bytes of exported records seen by the broker.
+      description: The size in bytes of exported messages seen by the broker.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
       unit: By
@@ -85,7 +85,7 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_exporter_bytes_uncompressed:
       enabled: true
-      description: The uncompressed size in bytes of exported records seen by the client.
+      description: The uncompressed size in bytes of exported messages seen by the client.
       unit: By
       sum:
         value_type: int
@@ -93,7 +93,7 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_exporter_latency:
       enabled: true
-      description: The time it took in ms to export a batch of records.
+      description: The time it took in ms to export a batch of messages.
       unit: ms
       histogram:
         value_type: int

@@ -32,7 +32,7 @@ type TelemetryBuilder struct {
 	KafkaExporterBytes             metric.Int64Counter
 	KafkaExporterBytesUncompressed metric.Int64Counter
 	KafkaExporterLatency           metric.Int64Histogram
-	KafkaExporterRecords           metric.Int64Counter
+	KafkaExporterMessages          metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -78,31 +78,31 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.KafkaBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
 		"otelcol_kafka_broker_throttling_duration",
-		metric.WithDescription("The throttling duration in ms imposed by the broker when exporting records."),
+		metric.WithDescription("The throttling duration in ms imposed by the broker when exporting messages."),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaExporterBytes, err = builder.meter.Int64Counter(
 		"otelcol_kafka_exporter_bytes",
-		metric.WithDescription("The size in bytes of exported records seen by the broker."),
+		metric.WithDescription("The size in bytes of exported messages seen by the broker."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaExporterBytesUncompressed, err = builder.meter.Int64Counter(
 		"otelcol_kafka_exporter_bytes_uncompressed",
-		metric.WithDescription("The uncompressed size in bytes of exported records seen by the client."),
+		metric.WithDescription("The uncompressed size in bytes of exported messages seen by the client."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaExporterLatency, err = builder.meter.Int64Histogram(
 		"otelcol_kafka_exporter_latency",
-		metric.WithDescription("The time it took in ms to export a batch of records."),
+		metric.WithDescription("The time it took in ms to export a batch of messages."),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaExporterRecords, err = builder.meter.Int64Counter(
-		"otelcol_kafka_exporter_records",
-		metric.WithDescription("The number of exported records."),
+	builder.KafkaExporterMessages, err = builder.meter.Int64Counter(
+		"otelcol_kafka_exporter_messages",
+		metric.WithDescription("The number of exported messages."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
