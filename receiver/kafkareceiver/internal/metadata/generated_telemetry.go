@@ -33,10 +33,10 @@ type TelemetryBuilder struct {
 	KafkaReceiverBytesUncompressed           metric.Int64Counter
 	KafkaReceiverCurrentOffset               metric.Int64Gauge
 	KafkaReceiverLatency                     metric.Int64Histogram
+	KafkaReceiverMessages                    metric.Int64Counter
 	KafkaReceiverOffsetLag                   metric.Int64Gauge
 	KafkaReceiverPartitionClose              metric.Int64Counter
 	KafkaReceiverPartitionStart              metric.Int64Counter
-	KafkaReceiverRecords                     metric.Int64Counter
 	KafkaReceiverUnmarshalFailedLogRecords   metric.Int64Counter
 	KafkaReceiverUnmarshalFailedMetricPoints metric.Int64Counter
 	KafkaReceiverUnmarshalFailedSpans        metric.Int64Counter
@@ -85,19 +85,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.KafkaBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
 		"otelcol_kafka_broker_throttling_duration",
-		metric.WithDescription("The throttling duration in ms imposed by the broker when receiving records."),
+		metric.WithDescription("The throttling duration in ms imposed by the broker when receiving messages."),
 		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverBytes, err = builder.meter.Int64Counter(
 		"otelcol_kafka_receiver_bytes",
-		metric.WithDescription("The size in bytes of received records seen by the broker."),
+		metric.WithDescription("The size in bytes of received messages seen by the broker."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverBytesUncompressed, err = builder.meter.Int64Counter(
 		"otelcol_kafka_receiver_bytes_uncompressed",
-		metric.WithDescription("The uncompressed size in bytes of received records seen by the client."),
+		metric.WithDescription("The uncompressed size in bytes of received messages seen by the client."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -109,8 +109,14 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverLatency, err = builder.meter.Int64Histogram(
 		"otelcol_kafka_receiver_latency",
-		metric.WithDescription("The time it took in ms to receive a batch of records."),
+		metric.WithDescription("The time it took in ms to receive a batch of messages."),
 		metric.WithUnit("ms"),
+	)
+	errs = errors.Join(errs, err)
+	builder.KafkaReceiverMessages, err = builder.meter.Int64Counter(
+		"otelcol_kafka_receiver_messages",
+		metric.WithDescription("The number of received messages."),
+		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverOffsetLag, err = builder.meter.Int64Gauge(
@@ -128,12 +134,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.KafkaReceiverPartitionStart, err = builder.meter.Int64Counter(
 		"otelcol_kafka_receiver_partition_start",
 		metric.WithDescription("Number of started partitions"),
-		metric.WithUnit("1"),
-	)
-	errs = errors.Join(errs, err)
-	builder.KafkaReceiverRecords, err = builder.meter.Int64Counter(
-		"otelcol_kafka_receiver_records",
-		metric.WithDescription("The number of received records."),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

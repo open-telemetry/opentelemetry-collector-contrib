@@ -512,7 +512,7 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
-	c.telemetryBuilder.KafkaReceiverRecords.Add(
+	c.telemetryBuilder.KafkaReceiverMessages.Add(
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),

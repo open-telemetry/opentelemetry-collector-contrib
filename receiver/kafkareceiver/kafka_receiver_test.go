@@ -310,7 +310,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		}}, metricdatatest.IgnoreTimestamp())
 
 		if franzGoConsumerFeatureGate.IsEnabled() {
-			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
@@ -359,7 +359,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		} else {
-			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 				{
 					Value: 5,
 					Attributes: attribute.NewSet(
@@ -485,7 +485,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 
 					// reprocesses of the same message
 					if franzGoConsumerFeatureGate.IsEnabled() {
-						metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+						metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 							{
 								Value: timesProcessed,
 								Attributes: attribute.NewSet(
@@ -498,7 +498,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 							},
 						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 					} else {
-						metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+						metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 							{
 								Value: timesProcessed,
 								Attributes: attribute.NewSet(

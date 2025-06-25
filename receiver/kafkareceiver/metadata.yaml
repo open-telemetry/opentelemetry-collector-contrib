@@ -57,16 +57,16 @@ telemetry:
       attributes: [node_id]
     kafka_broker_throttling_duration:
       enabled: true
-      description: The throttling duration in ms imposed by the broker when receiving records.
+      description: The throttling duration in ms imposed by the broker when receiving messages.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
       unit: ms
       histogram:
         value_type: int
       attributes: [node_id]
-    kafka_receiver_records:
+    kafka_receiver_messages:
       enabled: true
-      description: The number of received records.
+      description: The number of received messages.
       unit: "1"
       sum:
         value_type: int
@@ -74,7 +74,7 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_receiver_bytes:
       enabled: true
-      description: The size in bytes of received records seen by the broker.
+      description: The size in bytes of received messages seen by the broker.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
       unit: By
@@ -84,7 +84,7 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_receiver_bytes_uncompressed:
       enabled: true
-      description: The uncompressed size in bytes of received records seen by the client.
+      description: The uncompressed size in bytes of received messages seen by the client.
       unit: By
       sum:
         value_type: int
@@ -92,7 +92,7 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_receiver_latency:
       enabled: true
-      description: The time it took in ms to receive a batch of records.
+      description: The time it took in ms to receive a batch of messages.
       unit: ms
       histogram:
         value_type: int

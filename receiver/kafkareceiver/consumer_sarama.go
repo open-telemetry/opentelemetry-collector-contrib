@@ -268,7 +268,7 @@ func (c *consumerGroupHandler) handleMessage(
 		claim.HighWaterMarkOffset()-message.Offset-1,
 		metric.WithAttributeSet(attrs),
 	)
-	c.telemetryBuilder.KafkaReceiverRecords.Add(
+	c.telemetryBuilder.KafkaReceiverMessages.Add(
 		context.Background(),
 		1,
 		metric.WithAttributeSet(attrs),

@@ -27,10 +27,10 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaReceiverBytesUncompressed.Add(context.Background(), 1)
 	tb.KafkaReceiverCurrentOffset.Record(context.Background(), 1)
 	tb.KafkaReceiverLatency.Record(context.Background(), 1)
+	tb.KafkaReceiverMessages.Add(context.Background(), 1)
 	tb.KafkaReceiverOffsetLag.Record(context.Background(), 1)
 	tb.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 	tb.KafkaReceiverPartitionStart.Add(context.Background(), 1)
-	tb.KafkaReceiverRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedLogRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedMetricPoints.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedSpans.Add(context.Background(), 1)
@@ -55,6 +55,9 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualKafkaReceiverLatency(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverMessages(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverOffsetLag(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -62,9 +65,6 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverPartitionStart(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualKafkaReceiverRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, testTel,
