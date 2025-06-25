@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const defaultCacheSize = 128
@@ -98,33 +100,67 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 	batches := trace.ReceivedBatches
 
 	if saf.invertMatch {
-		// Use mathematical threshold inversion per OTEP 250
-		// This applies proper threshold mathematics instead of boolean logic
-		normalDecision := hasResourceOrSpanWithCondition(
-			batches,
-			func(resource pcommon.Resource) bool {
-				if v, ok := resource.Attributes().Get(saf.key); ok {
-					if ok := saf.matcher(v.Str()); ok {
-						return true
-					}
-				}
-				return false
-			},
-			func(span ptrace.Span) bool {
-				if v, ok := span.Attributes().Get(saf.key); ok {
-					truncatableStr := v.Str()
-					if len(truncatableStr) > 0 {
+		if IsInvertDecisionsDisabled() {
+			// Legacy invert behavior: simple boolean NOT operation
+			// This matches the old InvertSampled/InvertNotSampled logic
+			normalDecision := hasResourceOrSpanWithCondition(
+				batches,
+				func(resource pcommon.Resource) bool {
+					if v, ok := resource.Attributes().Get(saf.key); ok {
 						if ok := saf.matcher(v.Str()); ok {
 							return true
 						}
 					}
-				}
-				return false
-			},
-		)
+					return false
+				},
+				func(span ptrace.Span) bool {
+					if v, ok := span.Attributes().Get(saf.key); ok {
+						truncatableStr := v.Str()
+						if len(truncatableStr) > 0 {
+							if ok := saf.matcher(v.Str()); ok {
+								return true
+							}
+						}
+					}
+					return false
+				},
+			)
 
-		// Apply mathematical inversion to the threshold
-		return NewInvertedDecision(normalDecision.Threshold), nil
+			// Apply simple boolean NOT inversion (legacy behavior)
+			if normalDecision.Threshold == sampling.AlwaysSampleThreshold {
+				return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
+			} else {
+				return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
+			}
+		} else {
+			// Use mathematical threshold inversion per OTEP 250
+			// This applies proper threshold mathematics instead of boolean logic
+			normalDecision := hasResourceOrSpanWithCondition(
+				batches,
+				func(resource pcommon.Resource) bool {
+					if v, ok := resource.Attributes().Get(saf.key); ok {
+						if ok := saf.matcher(v.Str()); ok {
+							return true
+						}
+					}
+					return false
+				},
+				func(span ptrace.Span) bool {
+					if v, ok := span.Attributes().Get(saf.key); ok {
+						truncatableStr := v.Str()
+						if len(truncatableStr) > 0 {
+							if ok := saf.matcher(v.Str()); ok {
+								return true
+							}
+						}
+					}
+					return false
+				},
+			)
+
+			// Apply mathematical inversion to the threshold
+			return NewInvertedDecision(normalDecision.Threshold), nil
+		}
 	}
 
 	return hasResourceOrSpanWithCondition(
