@@ -92,6 +92,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -174,6 +175,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -236,6 +238,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -298,6 +301,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -360,6 +364,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -422,6 +427,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -487,6 +493,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -576,6 +583,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -626,6 +634,7 @@ func TestLoadingSpans(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -711,6 +720,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -923,6 +933,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
+				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
 		})
 	}
