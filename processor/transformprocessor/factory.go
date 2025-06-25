@@ -252,7 +252,7 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
 
-	if f.defaultLogFunctionsOverridden {
+	if f.defaultProfileFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"transform\" processor", zap.Bool("profile", f.defaultProfileFunctionsOverridden))
 	}
 	proc, err := profiles.NewProcessor(oCfg.ProfileStatements, oCfg.ErrorMode, set.TelemetrySettings, f.profileFunctions)
