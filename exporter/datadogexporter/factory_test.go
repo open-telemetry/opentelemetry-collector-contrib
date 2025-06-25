@@ -139,8 +139,9 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
@@ -214,8 +215,9 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
