@@ -222,7 +222,7 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
-		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
 	}
 	if err != nil {
 		prwe.telemetry.recordTranslationFailure(ctx)
@@ -255,7 +255,6 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 			return prwe.pushMetricsV1(ctx, md)
 		case config.RemoteWriteProtoMsgV2:
 			return prwe.pushMetricsV2(ctx, md)
-
 		default:
 			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
 		}
@@ -415,6 +414,21 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			_, _ = io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}()
+
+		// Per the Prometheus remote write 2.0 specification, the response should contain
+		// X-Prometheus-Remote-Write-Samples-Written header.
+		// If the header is missing, it suggests that the endpoint does not support RW2 or the
+		// implementation is not compliant with the specification. Reference:
+		// https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
+		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
+			samplesWritten := resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written")
+			if samplesWritten == "" {
+				prwe.settings.Logger.Warn(
+					"X-Prometheus-Remote-Write-Samples-Written header is missing from the response, suggesting that the endpoint doesn't support RW2 and might be silently dropping data.",
+					zap.String("url", resp.Request.URL.String()),
+				)
+			}
+		}
 
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry

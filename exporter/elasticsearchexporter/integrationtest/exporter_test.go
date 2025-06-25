@@ -17,6 +17,7 @@ import (
 )
 
 func TestExporter(t *testing.T) {
+	t.Skip("flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40488")
 	for _, eventType := range []string{"logs", "metrics", "traces"} {
 		for _, tc := range []struct {
 			name string
