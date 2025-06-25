@@ -247,11 +247,7 @@ func (e ecsModeEncoder) encodeSpan(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	spanAttrsConversionMap := map[string]string{
-		"event.name":                           "event.action",
-		string(semconv.ExceptionMessageKey):    "error.message",
-		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
-		string(semconv.ExceptionTypeKey):       "error.type",
-		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
+		// None at the moment
 	}
 
 	// Handle special cases.

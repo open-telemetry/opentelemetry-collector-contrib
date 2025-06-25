@@ -457,10 +457,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)))
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Status().SetMessage("Test")
-	err = span.Attributes().FromRaw(map[string]any{
-		"event.name": "test-event",
-		"error.type": "test-error",
-	})
 	require.NoError(t, err)
 
 	link1 := span.Links().AppendEmpty()
@@ -511,11 +507,7 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		  "name": "aws_elastic_beanstalk"
 		}
 	  },
-	  "error": {
-		"type": "test-error"
-	  },
 	  "event": {
-		"action": "test-event",
 		"outcome": "failure"
 	  },
 	  "service": {
