@@ -1412,7 +1412,7 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			name: "delete matching keys of map literal",
 			statements: []string{
 				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
-				`delete_matching_keys({"foo":"bar", "list":[{"test":"hello"}]}, ".*oo")`,
+				`delete_matching_keys(attributes["test"], ".*oo")`,
 			},
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
