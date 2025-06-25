@@ -377,16 +377,22 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
 			tp := topicPartition{topic: topic, partition: partition}
-			pc := c.assignments[tp]
-			delete(c.assignments, tp)
-			pc.cancel(errors.New(
-				"stopping processing: partition reassigned or lost",
-			))
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				pc.wg.Wait()
-			}()
+			pc, ok := c.assignments[tp]
+			// For fatal true, called from OnPartitionLost, we need to ensure
+			// that the assignments exist as OnPartitionLost is called on any
+			// fatal group errors and thus it is possible that this method is
+			// called without the group ever joining and getting assigned.
+			if !fatal || (fatal && ok) {
+				delete(c.assignments, tp)
+				pc.cancel(errors.New(
+					"stopping processing: partition reassigned or lost",
+				))
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					pc.wg.Wait()
+				}()
+			}
 			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(),
 				1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
 			)
