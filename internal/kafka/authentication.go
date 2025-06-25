@@ -11,7 +11,6 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -55,11 +54,6 @@ func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaCon
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
 	case PLAIN:
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
-	case AWSMSKIAM:
-		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-			return awsmsk.NewIAMSASLClient(config.AWSMSK.BrokerAddr, config.AWSMSK.Region, saramaConfig.ClientID)
-		}
-		saramaConfig.Net.SASL.Mechanism = awsmsk.Mechanism
 	case AWSMSKIAMOAUTHBEARER:
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{ctx: ctx, region: config.AWSMSK.Region}

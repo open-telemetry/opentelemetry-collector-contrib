@@ -32,7 +32,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestFactory_CreateTraces(t *testing.T) {
@@ -45,7 +45,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestFactory_CreateMetrics(t *testing.T) {
@@ -58,5 +58,5 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }

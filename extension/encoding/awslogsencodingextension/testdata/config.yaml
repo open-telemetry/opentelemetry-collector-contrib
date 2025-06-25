@@ -20,3 +20,6 @@ awslogs_encoding/invalid_vpc_flow_log:
 
 awslogs_encoding/s3_access_log:
   format: s3_access_log
+
+awslogs_encoding/waf_log:
+  format: waf_log

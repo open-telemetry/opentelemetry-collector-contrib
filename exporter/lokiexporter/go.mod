@@ -8,7 +8,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.128.0
-	github.com/prometheus/common v0.64.0
+	github.com/prometheus/common v0.65.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.34.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/component v1.34.1-0.20250610090210-188191247685
@@ -97,9 +97,9 @@ require (
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250414145226-207652e42e2e // indirect
-	google.golang.org/grpc v1.72.2 // indirect
+	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

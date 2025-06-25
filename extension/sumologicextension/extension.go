@@ -633,12 +633,12 @@ var (
 	errUnauthorizedMetadata  = errors.New("metadata update unauthorized")
 )
 
-type ErrorAPI struct {
+type errorAPI struct {
 	status int
 	body   string
 }
 
-func (e ErrorAPI) Error() string {
+func (e errorAPI) Error() string {
 	return fmt.Sprintf("API error (status code: %d): %s", e.status, e.body)
 }
 
@@ -671,7 +671,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 		}
 
 		return fmt.Errorf("collector heartbeat request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -889,7 +889,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			zap.String("body", buff.String()))
 
 		return fmt.Errorf("collector metadata request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
