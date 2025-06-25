@@ -194,10 +194,13 @@ func createTestTraceData(traceState string) *TraceData {
 		span.TraceState().FromRaw(traceState)
 	}
 
+	spanCount := &atomic.Int64{}
+	spanCount.Store(int64(traces.SpanCount()))
+
 	return &TraceData{
 		ArrivalTime:     time.Now(),
 		DecisionTime:    time.Time{},
-		SpanCount:       &atomic.Int64{},
+		SpanCount:       spanCount,
 		ReceivedBatches: traces,
 		FinalDecision:   Pending,
 	}

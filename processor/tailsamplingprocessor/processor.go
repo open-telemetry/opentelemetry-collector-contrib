@@ -29,7 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	internalsampling "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 // policy combines a sampling policy evaluator with the destinations to be
@@ -63,7 +62,6 @@ type tailSamplingSpanProcessor struct {
 	nonSampledIDCache  cache.Cache[bool]
 	deleteChan         chan pcommon.TraceID
 	numTracesOnMap     *atomic.Uint64
-	recordPolicy       bool
 	setPolicyMux       sync.Mutex
 	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
@@ -196,12 +194,6 @@ func WithSampledDecisionCache(c cache.Cache[sampling.Threshold]) Option {
 func WithNonSampledDecisionCache(c cache.Cache[bool]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledIDCache = c
-	}
-}
-
-func withRecordPolicy() Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.recordPolicy = true
 	}
 }
 
@@ -430,9 +422,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 
 		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToMetricAttribute(decision))
 
-		if telemetry.IsMetricStatCountSpansSampledEnabled() {
-			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
-		}
+		// Span-level metrics enabled by default (feature gate finalized)
+		tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
 
 		// Collect all policy decisions for OTEP 250 threshold combination
 		policyDecisions = append(policyDecisions, decision)
@@ -463,7 +454,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		// For SampleOnFirstMatch, use the last collected decision (which was the matching one)
 		if tsp.sampleOnFirstMatch && len(policyDecisions) > 0 {
 			lastDecision := policyDecisions[len(policyDecisions)-1]
-			if lastDecision.IsSampled() || lastDecision.IsInvertSampled() {
+			if lastDecision.IsSampled() {
 				finalDecision = internalsampling.Sampled
 				finalThreshold := sampling.AlwaysSampleThreshold
 				trace.FinalThreshold = &finalThreshold
@@ -473,54 +464,35 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 				trace.FinalThreshold = &finalThreshold
 			}
 		} else {
-			// Normal precedence-based logic when not using SampleOnFirstMatch
-			// Check for explicit non-sampling decisions first
-			hasExplicitNotSampled := false
-			hasRegularSampled := false
-			hasInvertSampled := false
-			hasInvertNotSampled := false
+			// Standard threshold-based decision logic (OTEP 250)
+			// Find the minimum (most restrictive) threshold from all policies
 			minThreshold := sampling.NeverSampleThreshold
+			hasExplicitNotSampled := false
 
 			for _, decision := range policyDecisions {
 				if decision.IsDropped() || decision.IsError() {
 					continue
 				}
 
-				// Track decision types for precedence logic
+				// Explicit NotSampled decisions override everything
 				if decision.IsNotSampled() {
 					hasExplicitNotSampled = true
-				} else if decision.IsSampled() && !decision.IsInverted() {
-					hasRegularSampled = true
-				} else if decision.IsInvertSampled() {
-					hasInvertSampled = true
-				} else if decision.IsInvertNotSampled() {
-					hasInvertNotSampled = true
+					break
 				}
 
-				// Track minimum threshold for pure threshold-based policies
+				// Track minimum threshold for threshold-based policies
 				if sampling.ThresholdLessThan(decision.Threshold, minThreshold) {
 					minThreshold = decision.Threshold
 				}
 			}
 
-			// Apply precedence rules for backward compatibility:
-			// 1. Explicit NotSampled and InvertNotSampled override everything else (they both mean "don't sample")
-			// 2. Regular Sampled takes precedence over InvertSampled
-			// 3. InvertSampled only works if no explicit NotSampled or InvertNotSampled
-			if hasExplicitNotSampled || hasInvertNotSampled {
+			// Apply simplified decision logic
+			if hasExplicitNotSampled {
 				finalDecision = internalsampling.NotSampled
 				finalThreshold := sampling.NeverSampleThreshold
 				trace.FinalThreshold = &finalThreshold
-			} else if hasRegularSampled {
-				finalDecision = internalsampling.Sampled
-				finalThreshold := sampling.AlwaysSampleThreshold
-				trace.FinalThreshold = &finalThreshold
-			} else if hasInvertSampled {
-				finalDecision = internalsampling.Sampled
-				finalThreshold := sampling.AlwaysSampleThreshold
-				trace.FinalThreshold = &finalThreshold
 			} else {
-				// No explicit sampling decisions, use pure threshold logic
+				// Use pure threshold logic
 				if minThreshold == sampling.AlwaysSampleThreshold {
 					finalDecision = internalsampling.Sampled
 				} else if minThreshold == sampling.NeverSampleThreshold {
@@ -541,7 +513,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		}
 	}
 
-	if tsp.recordPolicy && sampledPolicy != nil {
+	// Policy recording enabled by default (feature gate finalized)
+	if sampledPolicy != nil {
 		internalsampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
 
@@ -611,10 +584,13 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			if len(sampledSpans) > 0 {
 				appendToTraces(traceTd, resourceSpans, sampledSpans)
 				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			}
 
-			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-				Add(tsp.ctx, int64(len(sampledSpans)), attrSampledTrue)
+				tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
+					Add(tsp.ctx, int64(traceTd.SpanCount()), attrSampledTrue)
+			} else {
+				tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
+					Add(tsp.ctx, 0, attrSampledTrue)
+			}
 			continue
 		}
 		// If the trace ID is in the non-sampled cache, short circuit the decision

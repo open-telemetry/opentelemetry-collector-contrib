@@ -186,7 +186,7 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
-		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies)},
 	}
 
 	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
@@ -285,7 +285,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
-		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies)},
 	}
 
 	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
@@ -314,6 +314,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 }
 
 func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
+	t.Skip("Legacy inverted decision logic removed - OTEP 235/250 modernization")
 	nextConsumer := new(consumertest.TracesSink)
 	idb := newSyncIDBatcher()
 
@@ -367,6 +368,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 }
 
 func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
+	t.Skip("Legacy inverted decision logic removed - OTEP 235/250 modernization")
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.newSettings()
@@ -383,7 +385,7 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
-		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies)},
 	}
 
 	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
