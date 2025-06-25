@@ -99,7 +99,8 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if mCopy == nil {
 							mCopy = copyMetricDescription(m, smCopy.Metrics())
-							mCopy.SetEmptySum()
+							mCopy.SetEmptySum().SetAggregationTemporality(m.Sum().AggregationTemporality())
+							mCopy.Sum().SetIsMonotonic(m.Sum().IsMonotonic())
 						}
 						dp.MoveTo(mCopy.Sum().DataPoints().AppendEmpty())
 						return true
@@ -119,7 +120,7 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if mCopy == nil {
 							mCopy = copyMetricDescription(m, smCopy.Metrics())
-							mCopy.SetEmptyHistogram()
+							mCopy.SetEmptyHistogram().SetAggregationTemporality(m.Histogram().AggregationTemporality())
 						}
 						dp.MoveTo(mCopy.Histogram().DataPoints().AppendEmpty())
 						return true
@@ -139,7 +140,7 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if mCopy == nil {
 							mCopy = copyMetricDescription(m, smCopy.Metrics())
-							mCopy.SetEmptyExponentialHistogram()
+							mCopy.SetEmptyExponentialHistogram().SetAggregationTemporality(m.ExponentialHistogram().AggregationTemporality())
 						}
 						dp.MoveTo(mCopy.ExponentialHistogram().DataPoints().AppendEmpty())
 						return true
