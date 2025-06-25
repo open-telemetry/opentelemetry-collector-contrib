@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [colelaven]
+    active: [colelaven, ishleenk17]
     emeritus: [djaglowski]
 
 resource_attributes:
