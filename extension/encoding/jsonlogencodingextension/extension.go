@@ -4,6 +4,8 @@
 package jsonlogencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 
@@ -21,11 +23,11 @@ var (
 )
 
 type jsonLogExtension struct {
-	config component.Config
+	config *Config
 }
 
 func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
-	if e.config.(*Config).Mode == JSONEncodingModeBodyWithInlineAttributes {
+	if e.config.Mode == JSONEncodingModeBodyWithInlineAttributes {
 		return e.logProcessor(ld)
 	}
 	logs := make([]map[string]any, 0, ld.LogRecordCount())
@@ -48,6 +50,32 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 			}
 		}
 	}
+
+	// check for processing mode so we can return the best format
+	switch e.config.ProcessingMode {
+	case SingleMode:
+		if len(logs) == 1 {
+			return json.Marshal(logs[0])
+		}
+	case NDJsonMode:
+		var buf bytes.Buffer
+
+		for i, log := range logs {
+			m, err := json.Marshal(log)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling error with ndjson log: %w", err)
+			}
+
+			buf.Write(m)
+			if i < len(logs)-1 {
+				buf.WriteByte('\n')
+			}
+		}
+
+		return buf.Bytes(), nil
+	}
+
+	// default mode
 	return json.Marshal(logs)
 }
 
@@ -55,13 +83,38 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 
 	// get json logs from the buffer
-	var jsonVal []map[string]any
-	if err := json.Unmarshal(buf, &jsonVal); err != nil {
-		return p, err
+	var jsonLogs []map[string]any
+	switch e.config.ProcessingMode {
+	case ArrayMode:
+		if err := json.Unmarshal(buf, &jsonLogs); err != nil {
+			return p, err
+		}
+	case SingleMode:
+		var doc map[string]any
+		if err := json.Unmarshal(buf, &doc); err != nil {
+			return p, err
+		}
+		jsonLogs = append(jsonLogs, doc)
+	case NDJsonMode:
+		sc := bufio.NewScanner(bytes.NewReader(buf))
+		for sc.Scan() {
+			var line map[string]any
+			err := json.Unmarshal(sc.Bytes(), &line)
+			if err != nil {
+				return p, err
+			}
+
+			jsonLogs = append(jsonLogs, line)
+		}
+
+		if err := sc.Err(); err != nil {
+			// consider this as an error
+			return p, err
+		}
 	}
 
 	sl := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
-	for _, r := range jsonVal {
+	for _, r := range jsonLogs {
 		if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(r); err != nil {
 			return p, err
 		}
