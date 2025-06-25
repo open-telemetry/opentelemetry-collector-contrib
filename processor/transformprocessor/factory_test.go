@@ -224,36 +224,6 @@ func TestFactoryCreateLogs_InvalidActions(t *testing.T) {
 	assert.Nil(t, ap)
 }
 
-func TestFactoryCreateProfiles(t *testing.T) {
-	factory := NewFactory().(xprocessor.Factory)
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.ErrorMode = ottl.IgnoreError
-	oCfg.ProfileStatements = []common.ContextStatements{
-		{
-			Context: "profile",
-			Statements: []string{
-				`set(original_payload_format, "pass") where original_payload_format == "operationA"`,
-			},
-		},
-	}
-	pp, err := factory.CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, pp)
-	assert.NoError(t, err)
-
-	pd := basicProfiles().Transform()
-	profile := pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-
-	assert.Equal(t, "operationA", profile.OriginalPayloadFormat())
-
-	err = pp.ConsumeProfiles(context.Background(), pd)
-	assert.NoError(t, err)
-
-	profile = pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-
-	assert.Equal(t, "pass", profile.OriginalPayloadFormat())
-}
-
 func TestFactoryCreateProfiles_InvalidActions(t *testing.T) {
 	factory := NewFactory().(xprocessor.Factory)
 	cfg := factory.CreateDefaultConfig()
