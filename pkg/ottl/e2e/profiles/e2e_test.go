@@ -561,10 +561,10 @@ func Test_e2e_converters(t *testing.T) {
 				putProfileAttribute(t, tCtx, "test", map[string]any{
 					"url.scheme":   "http",
 					"url.username": "user",
-					"url.domain": "example.com",
-					"url.port":   80,
-					"url.path":   "/path",
-					"url.query":  "query=string",
+					"url.domain":   "example.com",
+					"url.port":     80,
+					"url.path":     "/path",
+					"url.query":    "query=string",
 				})
 			},
 		},
@@ -1640,6 +1640,7 @@ func removeAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key string
 	tCtx.GetProfile().AttributeIndices().FromRaw(indices[:len(indices)-1])
 }
 
+//nolint:unparam // Silence linter to keep key as param for future changes.
 func getProfileAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key string) pcommon.Value {
 	table := tCtx.GetProfilesDictionary().AttributeTable()
 	indices := tCtx.GetProfile().AttributeIndices().AsRaw()
