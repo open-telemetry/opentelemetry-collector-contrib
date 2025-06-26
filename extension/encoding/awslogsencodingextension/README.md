@@ -53,7 +53,7 @@ Example for CloudTrail logs:
 ```yaml
 extensions:
   awslogs_encoding/cloudtrail:
-    format: cloudtrail_logs
+    format: cloudtrail_log
 ```
 
 #### VPC flow log record fields

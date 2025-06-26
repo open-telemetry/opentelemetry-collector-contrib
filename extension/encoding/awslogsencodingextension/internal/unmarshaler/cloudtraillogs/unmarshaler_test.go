@@ -23,12 +23,12 @@ const filesDirectory = "testdata"
 func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	t.Parallel()
 	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{Version: "test-version"})
-	reader := readLogFile(t, filesDirectory, "cloudtrail_logs.json")
+	reader := readLogFile(t, filesDirectory, "cloudtrail_log.json")
 	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.NoError(t, err)
 
 	// Read the expected logs from the file
-	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_logs_expected.yaml"))
+	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_log_expected.yaml"))
 	require.NoError(t, err)
 
 	compareOptions := []plogtest.CompareLogsOption{

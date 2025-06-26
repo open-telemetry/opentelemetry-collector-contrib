@@ -18,7 +18,7 @@ import (
 // Ensures all records have the same region and account ID.
 func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 	// Read the sample CloudTrail log
-	data, err := os.ReadFile("testdata/cloudtrail_logs.json")
+	data, err := os.ReadFile("testdata/cloudtrail_log.json")
 	require.NoError(b, err)
 
 	// Parse the sample log to get the records

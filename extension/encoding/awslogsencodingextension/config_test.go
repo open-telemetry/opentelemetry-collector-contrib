@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "cloudtrail_logs"),
+			id: component.NewIDWithName(metadata.Type, "cloudtrail_log"),
 			expected: &Config{
 				Format: formatCloudTrailLogs,
 				VPCFlowLogConfig: VPCFlowLogConfig{

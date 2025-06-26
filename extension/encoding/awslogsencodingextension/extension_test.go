@@ -33,7 +33,7 @@ func TestNew_CloudTrailLogs(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, "failed to get reader for \"cloudtrail_logs\" logs: failed to decompress content")
+	require.ErrorContains(t, err, "failed to get reader for \"cloudtrail_log\" logs: failed to decompress content")
 }
 
 func TestNew_VPCFlowLog(t *testing.T) {

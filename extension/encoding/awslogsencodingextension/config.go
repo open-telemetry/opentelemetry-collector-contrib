@@ -17,7 +17,7 @@ const (
 	formatVPCFlowLog                       = "vpc_flow_log"
 	formatS3AccessLog                      = "s3_access_log"
 	formatWAFLog                           = "waf_log"
-	formatCloudTrailLogs                   = "cloudtrail_logs"
+	formatCloudTrailLogs                   = "cloudtrail_log"
 
 	fileFormatPlainText = "plain-text"
 	fileFormatParquet   = "parquet"
@@ -41,7 +41,7 @@ type Config struct {
 	// - vpc_flow_log
 	// - s3_access_log
 	// - waf_log
-	// - cloudtrail_logs
+	// - cloudtrail_log
 	//
 	Format string `mapstructure:"format"`
 
