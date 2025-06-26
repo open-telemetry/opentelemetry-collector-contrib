@@ -223,7 +223,7 @@ receiver/awss3receiver/                                          @open-telemetry
 receiver/awsxrayreceiver/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins
-receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @nslaughter @celian-garcia
+receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @nslaughter @celian-garcia @ishleenk17
 receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers @StefanKurek
 receiver/chronyreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
 receiver/cloudflarereceiver/                                     @open-telemetry/collector-contrib-approvers @dehaansa
@@ -260,7 +260,7 @@ receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/httpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @codeboten @VenuEmmadi
 receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @heitorganzeli @narcis96 @mwear
-receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
+receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @ishleenk17 @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
 receiver/jmxreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme @rogercoll
