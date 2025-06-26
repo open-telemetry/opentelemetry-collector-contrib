@@ -21,7 +21,7 @@ func TestGetMetricScalarOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: "1",
 								},
@@ -100,7 +100,7 @@ func TestGetMetricColumnOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".1",
 								},
@@ -110,7 +110,7 @@ func TestGetMetricColumnOIDs(t *testing.T) {
 							},
 						},
 						"m2": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".3",
 								},
@@ -160,7 +160,7 @@ func TestGetAttributeColumnOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".1",
 								},
@@ -223,7 +223,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".1",
 								},
@@ -305,7 +305,7 @@ func TestGetMetricName(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".1",
 								},
@@ -914,7 +914,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".1",
 									ResourceAttributes: []string{
@@ -941,7 +941,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID: ".1",
 								},
@@ -966,7 +966,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ColumnOIDs: []ColumnOID{
+							ColumnOIDs: []columnOID{
 								{
 									OID:                ".1",
 									ResourceAttributes: attributes,

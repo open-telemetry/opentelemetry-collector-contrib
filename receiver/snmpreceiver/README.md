@@ -103,7 +103,7 @@ attribute configurations are used to define what resource attributes will be use
 | `unit`        | Required. To display what is actually being measured for this metric | string                | 1       |
 | `gauge`       | Required if no `sum`. Details that this metric is of the gauge type | gaugeMetric              |         |
 | `sum`         | Required if no `gauge`. Details that this metric is of the sum type | SumMetric                |         |
-| `column_oids` | Required if no `scalar_oids`. Details that this metric is made from one or more columns in an SNMP table. The returned indexed SNMP data for these OIDs might either be datapoints on a single metrics, or datapoints across multiple metrics attached to different resources depending on the column OID configurations | ColumnOID[] |        |
+| `column_oids` | Required if no `scalar_oids`. Details that this metric is made from one or more columns in an SNMP table. The returned indexed SNMP data for these OIDs might either be datapoints on a single metrics, or datapoints across multiple metrics attached to different resources depending on the column OID configurations | columnOID[] |        |
 | `scalar_oids` | Required if no `column_oids`. Details that this metric is made from one or more scalard SNMP values (multiple scalar OIDs would represent multiple datapoints within the same metric) | ScalarOID[]       |       |
 | `description` | Definition of what the metric represents                       | string                      |         |
 
@@ -129,7 +129,7 @@ attribute configurations are used to define what resource attributes will be use
 | `resource_attributes` | The names of the related resource attribute configurations, allowing scalar oid metrics to be added to resources that have one or more scalar oid resource attributes. Cannot have indexed resource attributes as values. | string[] | | 
 | `attributes` | The names of the related attribute enum configurations as well as the values to attach to this returned SNMP scalar data. This can be used to have a metric config with multiple ScalarOIDs as different datapoints with different attribute values within the same metric | attribute              |    |
 
-#### ColumnOID Configuration
+#### columnOID Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |

@@ -292,7 +292,7 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
 			},
 		}
 	} else {
-		metricCfg["m3"].ColumnOIDs = []ColumnOID{
+		metricCfg["m3"].ColumnOIDs = []columnOID{
 			{
 				OID: "1",
 			},
@@ -517,7 +517,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			Aggregation: "cumulative",
 			ValueType:   "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				Attributes: []attribute{
@@ -533,7 +533,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				Attributes: []attribute{
@@ -625,7 +625,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
@@ -639,7 +639,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
@@ -653,7 +653,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
@@ -668,7 +668,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{

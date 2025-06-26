@@ -188,7 +188,7 @@ type metricConfig struct {
 	// ColumnOIDs is used if one or more column OID indexed set of values is used
 	// for this metric.
 	ScalarOIDs []ScalarOID `mapstructure:"scalar_oids"`
-	ColumnOIDs []ColumnOID `mapstructure:"column_oids"`
+	ColumnOIDs []columnOID `mapstructure:"column_oids"`
 }
 
 // gaugeMetric contains info about the value of the gauge metric
@@ -228,9 +228,9 @@ type ScalarOID struct {
 	_ struct{}
 }
 
-// ColumnOID holds OID info for an indexed metric as well as any attributes
+// columnOID holds OID info for an indexed metric as well as any attributes
 // or resource attributes that are attached to it
-type ColumnOID struct {
+type columnOID struct {
 	// OID is required and is the column OID that is associated with a metric
 	OID string `mapstructure:"oid"`
 	// ResourceAttributes is required only if there are no Attributes associated with non enum
@@ -430,8 +430,8 @@ func validateMetricConfigs(cfg *Config) error {
 	return combinedErr
 }
 
-// validateColumnOID validates a ColumnOID
-func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) error {
+// validateColumnOID validates a columnOID
+func validateColumnOID(metricName string, columnOID columnOID, cfg *Config) error {
 	var combinedErr error
 
 	// Ensure that it contains an OID
