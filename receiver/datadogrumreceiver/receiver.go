@@ -1,6 +1,7 @@
 package datadogrumreceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -107,8 +108,7 @@ func (ddr *datadogRUMReceiver) handleEvent(w http.ResponseWriter, req *http.Requ
 		err = errors.Join(err, errs, req.Body.Close())
 	}()
 
-	buf := translator.GetBuffer()
-	defer translator.PutBuffer(buf)
+	buf := bytes.NewBuffer([]byte{})
 	_, err = io.Copy(buf, req.Body)
 	if err != nil {
 		http.Error(w, "Unable to read request body", http.StatusBadRequest)
