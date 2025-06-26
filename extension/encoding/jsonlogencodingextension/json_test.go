@@ -4,11 +4,11 @@
 package jsonlogencodingextension
 
 import (
-	"bufio"
 	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -22,14 +22,20 @@ func TestMarshalUnmarshal(t *testing.T) {
 		wantLogs     int
 	}{
 		{
-			name:         "Single log in array",
+			name:         "Array mode - single log",
 			decodingMode: ArrayMode,
 			input:        `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}]`,
 			wantLogs:     1,
 		},
 		{
-			name:         "Single log as Json",
-			decodingMode: SingleMode,
+			name:         "Array mode - multiple logs",
+			decodingMode: ArrayMode,
+			input:        `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}, {"key": "value"}]`,
+			wantLogs:     2,
+		},
+		{
+			name:         "JSON mode - single log pretty print",
+			decodingMode: JSONMode,
 			input: `{
 					  "key-string": "value",
 					  "key-int": 123456789,
@@ -38,8 +44,8 @@ func TestMarshalUnmarshal(t *testing.T) {
 			wantLogs: 1,
 		},
 		{
-			name:         "Logs in ndjson format",
-			decodingMode: NDJsonMode,
+			name:         "JSON mode - new line delimited logs",
+			decodingMode: JSONMode,
 			input:        "{\"key-string\": \"value\",\"key-int\": 123456789,\"key-boolean\": true}\n{\"key-string\": \"value\",\"key-int\": 987654321,\"key-boolean\": false}",
 			wantLogs:     2,
 		},
@@ -62,27 +68,21 @@ func TestMarshalUnmarshal(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotEmpty(t, buf)
 
-			if tt.decodingMode != NDJsonMode {
+			if tt.decodingMode == ArrayMode {
 				assert.JSONEq(t, tt.input, string(buf))
 				return
 			}
 
-			// special comparison for ndjson
-			inputScanner := bufio.NewScanner(bytes.NewReader([]byte(tt.input)))
-			var inputLines []string
-			for inputScanner.Scan() {
-				inputLines = append(inputLines, inputScanner.Text())
-			}
+			// special comparison for JSON. Compared in decoded format.
+			inputDocuments, err := todDecodedJSONDocuments(bytes.NewReader([]byte(tt.input)))
+			require.NoError(t, err)
 
-			outputScanner := bufio.NewScanner(bytes.NewReader(buf))
-			var outputLines []string
-			for outputScanner.Scan() {
-				outputLines = append(outputLines, outputScanner.Text())
-			}
+			outputDocuments, err := todDecodedJSONDocuments(bytes.NewReader(buf))
+			require.NoError(t, err)
 
-			assert.Len(t, len(inputLines), len(outputLines))
-			for i, line := range inputLines {
-				assert.JSONEq(t, line, outputLines[i])
+			assert.Len(t, len(inputDocuments), len(outputDocuments))
+			for i, line := range inputDocuments {
+				assert.Equal(t, line, outputDocuments[i])
 			}
 		})
 	}
@@ -116,7 +116,7 @@ func TestPrettyLogProcessor(t *testing.T) {
 			Mode: JSONEncodingModeBodyWithInlineAttributes,
 		},
 	}
-	lp, err := j.logProcessor(sampleLog())
+	lp, err := j.MarshalLogs(sampleLog())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.JSONEq(t, `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`, string(lp))

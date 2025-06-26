@@ -13,8 +13,7 @@ const (
 	JSONEncodingModeBodyWithInlineAttributes JSONEncodingMode = "body_with_inline_attributes"
 	JSONEncodingModeBody                     JSONEncodingMode = "body"
 	ArrayMode                                ProcessingMode   = "array"
-	SingleMode                               ProcessingMode   = "single"
-	NDJsonMode                               ProcessingMode   = "ndjson"
+	JSONMode                                 ProcessingMode   = "json"
 )
 
 type Config struct {
@@ -36,7 +35,7 @@ func (c *Config) Validate() error {
 
 	// validate unmarshaling mode
 	switch c.ProcessingMode {
-	case ArrayMode, SingleMode, NDJsonMode:
+	case ArrayMode, JSONMode:
 		return nil
 	default:
 		return fmt.Errorf("invalid decoding mode %q", c.ProcessingMode)

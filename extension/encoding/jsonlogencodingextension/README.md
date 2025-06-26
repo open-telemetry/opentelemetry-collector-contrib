@@ -13,10 +13,10 @@
 
 ## Configuration
 
-| Name            | Description                                                                                   | Default |
-|-----------------|-----------------------------------------------------------------------------------------------|---------|
-| mode            | What mode of the JSON encoding extension you want                                             | body    |
-| processing_mode | Format of JSON payloads processed by the extension. Select from `array`, `single` or `ndjson` | array   |
+| Name            | Description                                                                       | Default |
+|-----------------|-----------------------------------------------------------------------------------|---------|
+| mode            | What mode of the JSON encoding extension you want                                 | body    |
+| processing_mode | Format of JSON payloads processed by the extension. Select from `array` or `json` | array   |
 
 ### Mode
 
@@ -59,11 +59,12 @@ Configuration allows to define the format of JSON payload this extension is expe
   
    > [{"key": "value"}, {"key": "value"}]
 
-- `single` : This mode expect input to contain a single JSON payload
+- `json` : This mode supports a verity of JSON payload. This includes single document or even a concatenated JSON payload
 
+  Single payload
   > {"key": "value"}
-  
-- `ndjson` : This mode allows to handle new delimited JSON payloads
 
+  New line delimited JSON payload
   > {"key": "value"}\
   > {"key": "value"}
+  
