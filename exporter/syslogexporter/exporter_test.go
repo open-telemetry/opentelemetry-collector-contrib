@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -264,6 +265,10 @@ func prepareUnixSocketExporterTest(t *testing.T, cfg *Config, invalidExporter bo
 }
 
 func TestUnixSocketExporterSuccess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows (functionality Unix specific)")
+	}
+
 	test := prepareUnixSocketExporterTest(t, createUnixSocketTestConfig(t), false)
 	require.NotNil(t, test.exp)
 	defer test.srv.Close()
@@ -282,6 +287,10 @@ func TestUnixSocketExporterSuccess(t *testing.T) {
 }
 
 func TestUnixSocketExporterFail(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows (functionality Unix specific)")
+	}
+
 	test := prepareUnixSocketExporterTest(t, createUnixSocketTestConfig(t), true)
 	defer test.srv.Close()
 
