@@ -5,12 +5,18 @@ package jsonlogencodingextension
 
 import (
 	"bytes"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
+
+var testDataDir = "testdata"
 
 func TestMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
@@ -20,18 +26,21 @@ func TestMarshalUnmarshal(t *testing.T) {
 		decodingMode ProcessingMode
 		input        string
 		wantLogs     int
+		logsPath     string
 	}{
 		{
 			name:         "Array mode - single log",
 			decodingMode: ArrayMode,
 			input:        `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}]`,
 			wantLogs:     1,
+			logsPath:     filepath.Join(testDataDir, "array_mode_single_log.yml"),
 		},
 		{
 			name:         "Array mode - multiple logs",
 			decodingMode: ArrayMode,
 			input:        `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}, {"key": "value"}]`,
 			wantLogs:     2,
+			logsPath:     filepath.Join(testDataDir, "array_mode_multi_log.yml"),
 		},
 		{
 			name:         "JSON mode - single log pretty print",
@@ -42,12 +51,14 @@ func TestMarshalUnmarshal(t *testing.T) {
 					  "key-boolean": true
 					}`,
 			wantLogs: 1,
+			logsPath: filepath.Join(testDataDir, "json_mode_single_log.yml"),
 		},
 		{
 			name:         "JSON mode - new line delimited logs",
 			decodingMode: JSONMode,
 			input:        "{\"key-string\": \"value\",\"key-int\": 123456789,\"key-boolean\": true}\n{\"key-string\": \"value\",\"key-int\": 987654321,\"key-boolean\": false}",
 			wantLogs:     2,
+			logsPath:     filepath.Join(testDataDir, "json_mode_ndjson_log.yml"),
 		},
 	}
 
@@ -60,11 +71,15 @@ func TestMarshalUnmarshal(t *testing.T) {
 				},
 			}
 
-			ld, err := e.UnmarshalLogs([]byte(tt.input))
+			logs, err := e.UnmarshalLogs([]byte(tt.input))
 			assert.NoError(t, err)
-			assert.Equal(t, tt.wantLogs, ld.LogRecordCount())
+			assert.Equal(t, tt.wantLogs, logs.LogRecordCount())
 
-			buf, err := e.MarshalLogs(ld)
+			expected, err := golden.ReadLogs(tt.logsPath)
+			assert.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expected, logs))
+
+			buf, err := e.MarshalLogs(logs)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, buf)
 
@@ -79,8 +94,6 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 			outputDocuments, err := todDecodedJSONDocuments(bytes.NewReader(buf))
 			require.NoError(t, err)
-
-			assert.Len(t, len(inputDocuments), len(outputDocuments))
 			for i, line := range inputDocuments {
 				assert.Equal(t, line, outputDocuments[i])
 			}
