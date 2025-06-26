@@ -25,9 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
 )
 
-// jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
-const jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
-
 var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
@@ -65,7 +62,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	javaConfig, err := jmx.buildJMXMetricGathererConfig()
+	javaConfig, err := jmx.buildJMXConfig()
 	if err != nil {
 		return err
 	}
@@ -87,7 +84,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 	jmx.configFile = tmpFile.Name()
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           append(jmx.config.parseProperties(jmx.logger), jmxMainClass, "-config", jmx.configFile),
+		Args:           append(jmx.config.parseProperties(jmx.logger), jmx.config.jarMainClass(), "-config", jmx.configFile),
 		EnvironmentVariables: map[string]string{
 			"CLASSPATH": jmx.config.parseClasspath(),
 			// Overwrite these environment variables to reduce attack surface
@@ -187,7 +184,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	return factory.CreateMetrics(context.Background(), params, config, jmx.nextConsumer)
 }
 
-func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
+func (jmx *jmxMetricReceiver) buildJMXConfig() (string, error) {
 	config := map[string]string{}
 	failedToParse := `failed to parse Endpoint "%s": %w`
 	parsed, err := url.Parse(jmx.config.Endpoint)
@@ -208,7 +205,8 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	}
 
 	config["otel.jmx.service.url"] = jmx.config.Endpoint
-	config["otel.jmx.interval.milliseconds"] = strconv.FormatInt(jmx.config.CollectionInterval.Milliseconds(), 10)
+	samplingKey, samplingValue := jmx.config.jarJMXSamplingConfig()
+	config[samplingKey] = samplingValue
 	config["otel.jmx.target.system"] = jmx.config.TargetSystem
 
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint

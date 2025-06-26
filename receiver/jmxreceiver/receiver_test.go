@@ -36,7 +36,10 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, receiver.Shutdown(context.Background()))
 }
 
-func TestBuildJMXMetricGathererConfig(t *testing.T) {
+func TestBuildJMXConfig(t *testing.T) {
+	// mock JMX Gatherer JAR
+	MetricsGathererHash = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
+	initSupportedJars()
 	tests := []struct {
 		name           string
 		config         *Config
@@ -44,8 +47,9 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 		expectedError  string
 	}{
 		{
-			"handles all relevant input appropriately",
+			"handles all JMX Metric Gatherer relevant input appropriately",
 			&Config{
+				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myhost:12345",
 				TargetSystem:       "mytargetsystem",
 				CollectionInterval: 123 * time.Second,
@@ -148,7 +152,7 @@ otel.resource.attributes = abc=123,one=two`,
 		t.Run(test.name, func(*testing.T) {
 			params := receivertest.NewNopSettings(metadata.Type)
 			receiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
-			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
+			jmxConfig, err := receiver.buildJMXConfig()
 			if test.expectedError == "" {
 				require.NoError(t, err)
 			} else {

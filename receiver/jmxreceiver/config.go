@@ -11,55 +11,86 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	jmxMetricGatherer = iota
+	jmxScraper
+)
+
+// jmxGathererMainClass the class containing the main function for the JMX Metric Gatherer JAR
+var jmxGathererMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
+
+// jmxScraperMainClass the class containing the main function for the JMX Scraper JAR
+var jmxScraperMainClass = "io.opentelemetry.contrib.jmxscraper.JmxScraper"
+
 type Config struct {
-	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
+	// The path for the JMX Metric Gatherer or JMX Scraper JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	JARPath string `mapstructure:"jar_path"`
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	Endpoint string `mapstructure:"endpoint"`
 	// The target system for the metric gatherer whose built in groovy script to run.
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	TargetSystem string `mapstructure:"target_system"`
 	// The duration in between groovy script invocations and metric exports (10 seconds by default).
 	// Will be converted to milliseconds.
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// The exporter settings for
+	// The OTLP exporter settings
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	OTLPExporterConfig otlpExporterConfig `mapstructure:"otlp"`
 	// The JMX username
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	Username string `mapstructure:"username"`
 	// The JMX password
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	Password configopaque.String `mapstructure:"password"`
 	// The keystore path for SSL
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	KeystorePassword configopaque.String `mapstructure:"keystore_password"`
 	// The keystore type for SSL
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	KeystoreType string `mapstructure:"keystore_type"`
 	// The truststore path for SSL
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	TruststorePassword configopaque.String `mapstructure:"truststore_password"`
 	// The truststore type for SSL
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	RemoteProfile string `mapstructure:"remote_profile"`
 	// The SASL/DIGEST-MD5 realm
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	Realm string `mapstructure:"realm"`
 	// Array of additional JARs to be added to the class path when launching the JMX Metric Gatherer JAR
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	AdditionalJars []string `mapstructure:"additional_jars"`
 	// Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes
+	// Supported by: jmx-scraper and jmx-metric-gatherer
 	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
 	// Log level used by the JMX metric gatherer. Should be one of:
 	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
+	// Supported by: jmx-metric-gatherer
 	LogLevel string `mapstructure:"log_level"`
 }
 
@@ -92,19 +123,23 @@ func (oec otlpExporterConfig) headersToString() string {
 }
 
 func (c *Config) parseProperties(logger *zap.Logger) []string {
-	parsed := make([]string, 0, 1)
+	// slf4j.simpleLogger only available in JMX Metrics Gatherer jar
+	if err := c.validateJar(jmxMetricsGathererVersions, c.JARPath); err == nil {
+		parsed := make([]string, 0, 1)
 
-	logLevel := "info"
-	if len(c.LogLevel) > 0 {
-		logLevel = strings.ToLower(c.LogLevel)
-	} else if logger != nil {
-		logLevel = getZapLoggerLevelEquivalent(logger)
+		logLevel := "info"
+		if len(c.LogLevel) > 0 {
+			logLevel = strings.ToLower(c.LogLevel)
+		} else if logger != nil {
+			logLevel = getZapLoggerLevelEquivalent(logger)
+		}
+
+		parsed = append(parsed, "-Dorg.slf4j.simpleLogger.defaultLogLevel="+logLevel)
+		// Sorted for testing and reproducibility
+		sort.Strings(parsed)
+		return parsed
 	}
-
-	parsed = append(parsed, "-Dorg.slf4j.simpleLogger.defaultLogLevel="+logLevel)
-	// Sorted for testing and reproducibility
-	sort.Strings(parsed)
-	return parsed
+	return nil
 }
 
 var logLevelTranslator = map[zapcore.Level]string{
@@ -162,6 +197,24 @@ func (c *Config) parseClasspath() string {
 	return strings.Join(classPathElems, ":")
 }
 
+func (c *Config) jarMainClass() string {
+	if err := c.validateJar(jmxMetricsGathererVersions, c.JARPath); err == nil {
+		return jmxGathererMainClass
+	} else if err := c.validateJar(jmxScraperVersions, c.JARPath); err == nil {
+		return jmxScraperMainClass
+	}
+	return ""
+}
+
+func (c *Config) jarJMXSamplingConfig() (string, string) {
+	if err := c.validateJar(jmxMetricsGathererVersions, c.JARPath); err == nil {
+		return "otel.jmx.interval.milliseconds", strconv.FormatInt(c.CollectionInterval.Milliseconds(), 10)
+	} else if err := c.validateJar(jmxScraperVersions, c.JARPath); err == nil {
+		return "otel.metric.export.interval", c.CollectionInterval.String()
+	}
+	return "", ""
+}
+
 func hashFile(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -197,7 +250,8 @@ func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar st
 }
 
 var (
-	validLogLevels     = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+	validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+	// feature parity between jmx-gatherer and jmx-scraper
 	validTargetSystems = map[string]struct{}{
 		"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
 		"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {},
@@ -234,9 +288,9 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("missing required field(s): %v", strings.Join(missingFields, ", "))
 	}
 
-	err := c.validateJar(jmxMetricsGathererVersions, c.JARPath)
-	if err != nil {
-		return fmt.Errorf("invalid `jar_path`: %w", err)
+	errs := multierr.Errors(multierr.Combine(c.validateJar(jmxScraperVersions, c.JARPath), c.validateJar(jmxMetricsGathererVersions, c.JARPath)))
+	if len(errs) == 2 {
+		return fmt.Errorf("invalid `jar_path`: %w", errs[0])
 	}
 
 	for _, additionalJar := range c.AdditionalJars {
@@ -256,6 +310,9 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogLevel) > 0 {
+		if err := c.validateJar(jmxScraperVersions, c.JARPath); err == nil {
+			return fmt.Errorf("`log_level` can only be used with a JMX Metrics Gatherer JAR")
+		}
 		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
 			return fmt.Errorf("`log_level` must be one of %s", listKeys(validLogLevels))
 		}
