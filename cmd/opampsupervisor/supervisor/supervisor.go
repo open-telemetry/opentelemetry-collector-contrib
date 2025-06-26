@@ -781,7 +781,9 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 		s.lastHealthFromClient.Store(message.Health)
 		if !s.agentStarted.Load() {
 			s.agentStarted.Store(true)
+			s.agentStartedLock.Lock()
 			close(s.agentStartedChan)
+			s.agentStartedLock.Unlock()
 		}
 		err := s.opampClient.SetHealth(message.Health)
 		if err != nil {
