@@ -228,7 +228,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -275,7 +275,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -427,7 +427,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -439,7 +439,7 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{things}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -495,7 +495,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -562,7 +562,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -719,7 +719,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -783,7 +783,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -987,7 +987,7 @@ func TestScrape(t *testing.T) {
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -999,7 +999,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description1",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1076,7 +1076,7 @@ func TestScrape(t *testing.T) {
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1093,7 +1093,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description1",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1178,7 +1178,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1265,7 +1265,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1349,7 +1349,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1418,7 +1418,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1496,7 +1496,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1574,7 +1574,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1652,7 +1652,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1729,7 +1729,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1742,7 +1742,7 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{units}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "double",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1818,7 +1818,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1898,7 +1898,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1975,7 +1975,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -1988,7 +1988,7 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{units}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "double",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2073,7 +2073,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2086,7 +2086,7 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{units}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "double",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2162,7 +2162,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2245,7 +2245,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2327,7 +2327,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2409,7 +2409,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2478,7 +2478,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2583,7 +2583,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2667,7 +2667,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2743,7 +2743,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
@@ -2807,7 +2807,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -2874,7 +2874,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -2938,7 +2938,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -2951,7 +2951,7 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
@@ -3043,7 +3043,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{

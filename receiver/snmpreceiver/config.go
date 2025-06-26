@@ -181,7 +181,7 @@ type metricConfig struct {
 	// Unit is required
 	Unit string `mapstructure:"unit"`
 	// Either Gauge or Sum config is required
-	Gauge *GaugeMetric `mapstructure:"gauge"`
+	Gauge *gaugeMetric `mapstructure:"gauge"`
 	Sum   *SumMetric   `mapstructure:"sum"`
 	// Either ScalarOIDs or ColumnOIDs is required.
 	// ScalarOIDs is used if one or more scalar OID values is used for this metric.
@@ -191,8 +191,8 @@ type metricConfig struct {
 	ColumnOIDs []ColumnOID `mapstructure:"column_oids"`
 }
 
-// GaugeMetric contains info about the value of the gauge metric
-type GaugeMetric struct {
+// gaugeMetric contains info about the value of the gauge metric
+type gaugeMetric struct {
 	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
 
@@ -544,8 +544,8 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 	return combinedErr
 }
 
-// validateGauge validates a GaugeMetric
-func validateGauge(metricName string, gauge *GaugeMetric) error {
+// validateGauge validates a gaugeMetric
+func validateGauge(metricName string, gauge *gaugeMetric) error {
 	// Ensure valid values for ValueType
 	upperValType := strings.ToUpper(gauge.ValueType)
 	if upperValType != "INT" && upperValType != "DOUBLE" {

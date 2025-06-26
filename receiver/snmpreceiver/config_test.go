@@ -33,7 +33,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	metrics := map[string]*metricConfig{
 		"m3": {
 			Unit: "By",
-			Gauge: &GaugeMetric{
+			Gauge: &gaugeMetric{
 				ValueType: "double",
 			},
 			ScalarOIDs: []ScalarOID{
@@ -274,7 +274,7 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
 	}
 
 	if gauge {
-		metricCfg["m3"].Gauge = &GaugeMetric{
+		metricCfg["m3"].Gauge = &gaugeMetric{
 			ValueType: "double",
 		}
 	} else {
@@ -530,7 +530,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m2"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
 		ColumnOIDs: []ColumnOID{
@@ -622,7 +622,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m7"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
 		ColumnOIDs: []ColumnOID{
@@ -636,7 +636,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m8"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
 		ColumnOIDs: []ColumnOID{
@@ -650,7 +650,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m9"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
 		ColumnOIDs: []ColumnOID{
@@ -665,7 +665,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m10"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
 		ColumnOIDs: []ColumnOID{
@@ -1027,7 +1027,7 @@ func TestValidate(t *testing.T) {
 				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
@@ -1048,7 +1048,7 @@ func TestValidate(t *testing.T) {
 				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
@@ -1070,7 +1070,7 @@ func TestValidate(t *testing.T) {
 				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
@@ -1094,7 +1094,7 @@ func TestValidate(t *testing.T) {
 				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
@@ -1120,7 +1120,7 @@ func TestValidate(t *testing.T) {
 				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{

@@ -188,7 +188,7 @@ func TestCreateMetric(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "int",
 					},
 				}
@@ -210,7 +210,7 @@ func TestCreateMetric(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "int",
 					},
 				}
@@ -274,7 +274,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "int",
 					},
 				}
@@ -301,7 +301,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "int",
 					},
 				}
@@ -332,7 +332,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "int",
 					},
 				}
@@ -408,7 +408,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "int",
 					},
 				}
@@ -444,7 +444,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Gauge: &GaugeMetric{
+					Gauge: &gaugeMetric{
 						ValueType: "double",
 					},
 				}
