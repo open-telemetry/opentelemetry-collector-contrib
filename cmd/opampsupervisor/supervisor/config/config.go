@@ -187,7 +187,7 @@ type Agent struct {
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
-	UseHUPRestart           bool              `mapstructure:"use_hup_restart"`
+	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`

@@ -1371,8 +1371,8 @@ func (s *Supervisor) runAgentProcess() {
 			s.telemetrySettings.Logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 
-			if s.config.Agent.UseHUPRestart {
-				err := s.hupRestartAgent()
+			if s.config.Agent.UseHUPConfigReload {
+				err := s.hupReloadAgent()
 				if err != nil {
 					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
 					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1482,7 +1482,7 @@ func (s *Supervisor) waitForAgentStart() error {
 	}
 }
 
-func (s *Supervisor) hupRestartAgent() error {
+func (s *Supervisor) hupReloadAgent() error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 
@@ -1495,7 +1495,7 @@ func (s *Supervisor) hupRestartAgent() error {
 	}
 
 	if !s.commander.IsRunning() {
-		s.telemetrySettings.Logger.Debug("agent is not running, skipping hup restart")
+		s.telemetrySettings.Logger.Debug("agent is not running, skipping hup reload")
 		return nil
 	}
 
