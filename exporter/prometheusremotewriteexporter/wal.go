@@ -29,6 +29,8 @@ type prwWalTelemetry interface {
 	recordWALWritesFailures(ctx context.Context)
 	recordWALReads(ctx context.Context)
 	recordWALReadsFailures(ctx context.Context)
+	recordWALBytesWritten(ctx context.Context, bytes int)
+	recordWALBytesRead(ctx context.Context, bytes int)
 }
 
 type prwWalTelemetryOTel struct {
@@ -50,6 +52,14 @@ func (p *prwWalTelemetryOTel) recordWALReads(ctx context.Context) {
 
 func (p *prwWalTelemetryOTel) recordWALReadsFailures(ctx context.Context) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteWalReadsFailures.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALBytesWritten(ctx context.Context, bytes int) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalBytesWritten.Add(ctx, int64(bytes), metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALBytesRead(ctx context.Context, bytes int) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalBytesRead.Add(ctx, int64(bytes), metric.WithAttributes(p.otelAttrs...))
 }
 
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
@@ -355,7 +365,7 @@ func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*
 // persistToWAL is the routine that'll be hooked into the exporter's receiving side and it'll
 // write them to the Write-Ahead-Log so that shutdowns won't lose data, and that the routine that
 // reads from the WAL can then process the previously serialized requests.
-func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
+func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest, ctx context.Context) error {
 	prweWAL.mu.Lock()
 	defer prweWAL.mu.Unlock()
 
@@ -366,6 +376,7 @@ func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 		if err != nil {
 			return err
 		}
+		prweWAL.telemetry.recordWALBytesWritten(ctx, len(protoBlob))
 		wIndex := prweWAL.wWALIndex.Add(1)
 		batch.Write(wIndex, protoBlob)
 	}
@@ -401,6 +412,7 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		}
 		prweWAL.telemetry.recordWALReads(ctx)
 		protoBlob, err = prweWAL.wal.Read(index)
+		prweWAL.telemetry.recordWALBytesRead(ctx, len(protoBlob))
 		if err == nil { // The read succeeded.
 			req := new(prompb.WriteRequest)
 			if err = proto.Unmarshal(protoBlob, req); err != nil {
