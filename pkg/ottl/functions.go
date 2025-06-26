@@ -642,7 +642,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardPSliceGetter[K]{Getter: arg.Get}, nil
+		return newStandardPSliceGetter(arg), nil
 	case strings.HasPrefix(name, "DurationGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

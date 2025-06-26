@@ -275,9 +275,20 @@ type PSliceGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Slice, error)
 }
 
+// newStandardPSliceGetter creates a new StandardPSliceGetter from a Getter[K],
+// also checking if the Getter is a literalGetter.
+func newStandardPSliceGetter[K any](getter Getter[K]) StandardPSliceGetter[K] {
+	litGetter, isLiteralGetter := getter.(literalGetter)
+	return StandardPSliceGetter[K]{
+		Getter:  getter.Get,
+		literal: isLiteralGetter && litGetter.isLiteral(),
+	}
+}
+
 // StandardPSliceGetter is a basic implementation of PSliceGetter
 type StandardPSliceGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (any, error)
+	Getter  func(ctx context.Context, tCtx K) (any, error)
+	literal bool
 }
 
 // Get retrieves a pcommon.Slice value.
@@ -334,6 +345,17 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 	default:
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
 	}
+}
+
+func (g StandardPSliceGetter[K]) isLiteral() bool {
+	return g.literal
+}
+
+func (g StandardPSliceGetter[K]) getLiteral() (any, error) {
+	if !g.literal {
+		return nil, errors.New("StandardPSliceGetter value is not a literal")
+	}
+	return g.Get(context.TODO(), *new(K))
 }
 
 func newPSliceFromIntegers[T constraints.Integer](source []T) (pcommon.Slice, error) {

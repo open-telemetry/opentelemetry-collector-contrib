@@ -538,6 +538,9 @@ func Test_NewFunctionCall(t *testing.T) {
 	testMap := pcommon.NewMap()
 	testMap.PutStr("foo", "bar")
 
+	testSlice := pcommon.NewSlice()
+	testSlice.AppendEmpty().SetStr("test")
+
 	tests := []struct {
 		name string
 		inv  editor
@@ -941,6 +944,26 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "literalpslicegetter arg",
+			inv: editor{
+				Function: "testing_literalpslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: testSlice,
 		},
 		{
 			name: "literalstringgetter arg",
@@ -2234,6 +2257,14 @@ func functionWithPSliceGetter(PSliceGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type literalPSliceArguments struct {
+	LiteralGetter[any, pcommon.Slice, PSliceGetter[any]]
+}
+
+func functionWithLiteralPSliceGetter(getter LiteralGetter[any, pcommon.Slice, PSliceGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
 type literalStringGetterArguments struct {
 	LiteralGetter[any, string, StringGetter[any]]
 }
@@ -2574,6 +2605,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pslicegetter",
 			&pSliceGetterArguments{},
 			functionWithPSliceGetter,
+		),
+		createFactory[any](
+			"testing_literalpslicegetter",
+			&literalPSliceArguments{},
+			functionWithLiteralPSliceGetter,
 		),
 		createFactory[any](
 			"testing_literalstringgetter",
