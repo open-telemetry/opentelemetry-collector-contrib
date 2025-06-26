@@ -1,0 +1,13 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: example
+                    value:
+                      stringValue: example valid json to test that the unmarshaler is correctly returning a plog value
+            spanId: ""
+            traceId: ""
+        scope: {}
