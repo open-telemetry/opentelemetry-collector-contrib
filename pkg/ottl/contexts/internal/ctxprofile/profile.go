@@ -20,6 +20,7 @@ import (
 
 type ProfileContext interface {
 	GetProfile() pprofile.Profile
+	GetProfilesDictionary() pprofile.ProfilesDictionary
 }
 
 func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -66,6 +67,11 @@ func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], erro
 		return accessOriginalPayloadFormat[K](), nil
 	case "original_payload":
 		return accessOriginalPayload[K](), nil
+	case "attributes":
+		if path.Keys() == nil {
+			return accessAttributes[K](), nil
+		}
+		return accessAttributesKey(path.Keys()), nil
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
@@ -307,6 +313,46 @@ func accessOriginalPayload[K ProfileContext]() ottl.StandardGetSetter[K] {
 				tCtx.GetProfile().OriginalPayload().FromRaw(v)
 			}
 			return nil
+		},
+	}
+}
+
+func accessAttributes[K ProfileContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			return pprofile.FromAttributeIndices(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile()), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			m, err := ctxutil.GetMap(val)
+			if err != nil {
+				return err
+			}
+			tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
+			for k, v := range m.All() {
+				if err := pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), k, v); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+}
+
+func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
+			return ctxutil.GetMapValue[K](ctx, tCtx, pprofile.FromAttributeIndices(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile()), key)
+		},
+		Setter: func(ctx context.Context, tCtx K, val any) error {
+			newKey, err := ctxutil.GetMapKeyName(ctx, tCtx, key[0])
+			if err != nil {
+				return err
+			}
+			v := pcommon.NewValueEmpty()
+			if err = ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
+				return err
+			}
+			return pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), *newKey, v)
 		},
 	}
 }
