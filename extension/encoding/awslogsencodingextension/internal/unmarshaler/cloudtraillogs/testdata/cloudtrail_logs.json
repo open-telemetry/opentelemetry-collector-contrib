@@ -256,5 +256,39 @@
             },
             "sessionCredentialFromConsole": "true"
         }
+    ,
+        {
+            "eventVersion": "1.09",
+            "userIdentity": {
+                "type": "IdentityCenterUser",
+                "userId": "d-12345abcde",
+                "identityStoreArn": "arn:aws:identitystore::123456789012:identitystore/d-12345abcde",
+                "arn": "arn:aws:iam::123456789012:user/identity-center-user",
+                "accountId": "123456789012",
+                "accessKeyId": ""
+            },
+            "eventTime": "2025-06-15T14:30:00Z",
+            "eventSource": "signin.amazonaws.com",
+            "eventName": "ConsoleLogin",
+            "awsRegion": "us-east-1",
+            "sourceIPAddress": "192.0.2.1",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "requestParameters": null,
+            "responseElements": {
+                "ConsoleLogin": "Success"
+            },
+            "requestID": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+            "eventID": "a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
+            "readOnly": true,
+            "eventType": "AwsConsoleSignIn",
+            "managementEvent": true,
+            "recipientAccountId": "123456789012",
+            "eventCategory": "Management",
+            "tlsDetails": {
+                "tlsVersion": "TLSv1.3",
+                "cipherSuite": "TLS_AES_256_GCM_SHA384",
+                "clientProvidedHostHeader": "signin.aws.amazon.com"
+            }
+        }
     ]
 }

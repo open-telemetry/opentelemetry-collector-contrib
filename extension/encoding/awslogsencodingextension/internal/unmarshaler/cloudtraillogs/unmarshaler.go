@@ -163,14 +163,23 @@ func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record C
 	}
 
 	if record.UserIdentity != nil {
-		if principalID, ok := record.UserIdentity["principalId"].(string); ok {
-			attrs.PutStr("principal.id", principalID)
+		// Support for new IAM Identity Center fields (added as replacements for principalId and userName)
+		if userId, ok := record.UserIdentity["userId"].(string); ok {
+			attrs.PutStr(string(conventions.UserIDKey), userId)
 		}
-		if userName, ok := record.UserIdentity["userName"].(string); ok {
-			attrs.PutStr("principal.name", userName)
+
+		// Store the Identity Store ARN and others as custom attributes
+		// since there are no standard conventions for them
+		if identityStoreArn, ok := record.UserIdentity["identityStoreArn"].(string); ok {
+			attrs.PutStr("aws.identity_store.arn", identityStoreArn)
 		}
+
 		if arn, ok := record.UserIdentity["arn"].(string); ok {
-			attrs.PutStr("principal.arn", arn)
+			attrs.PutStr("aws.principal.arn", arn)
+		}
+
+		if identityType, ok := record.UserIdentity["type"].(string); ok {
+			attrs.PutStr("aws.principal.type", identityType)
 		}
 	}
 
