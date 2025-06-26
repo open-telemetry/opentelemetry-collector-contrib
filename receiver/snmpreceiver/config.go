@@ -137,16 +137,16 @@ type Config struct {
 type resourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
-	// OID is required only if ScalarOID or IndexedValuePrefix is not set.
+	// OID is required only if scalarOID or IndexedValuePrefix is not set.
 	// This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values
 	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
 	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
-	// ScalarOID is required only if OID or IndexedValuePrefix is not set.
+	// scalarOID is required only if OID or IndexedValuePrefix is not set.
 	// This is the scalar OID which will provide a value to be used for this resource attribute.
 	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
 	ScalarOID string `mapstructure:"scalar_oid"`
-	// IndexedValuePrefix is required only if OID or ScalarOID is not set.
+	// IndexedValuePrefix is required only if OID or scalarOID is not set.
 	// This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with
 	// specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource"
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
@@ -187,7 +187,7 @@ type metricConfig struct {
 	// ScalarOIDs is used if one or more scalar OID values is used for this metric.
 	// ColumnOIDs is used if one or more column OID indexed set of values is used
 	// for this metric.
-	ScalarOIDs []ScalarOID `mapstructure:"scalar_oids"`
+	ScalarOIDs []scalarOID `mapstructure:"scalar_oids"`
 	ColumnOIDs []columnOID `mapstructure:"column_oids"`
 }
 
@@ -213,9 +213,9 @@ type sumMetric struct {
 	_ struct{}
 }
 
-// ScalarOID holds OID info for a scalar metric as well as any {resource} attributes
+// scalarOID holds OID info for a scalar metric as well as any {resource} attributes
 // that are attached to it
-type ScalarOID struct {
+type scalarOID struct {
 	// OID is required and is the scalar OID that is associated with a metric
 	OID string `mapstructure:"oid"`
 	// ResourceAttributes is optional and may contain only scalar OID values to associate this metric with
@@ -489,8 +489,8 @@ func validateColumnOID(metricName string, columnOID columnOID, cfg *Config) erro
 	return combinedErr
 }
 
-// validateScalarOID validates a ScalarOID
-func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) error {
+// validateScalarOID validates a scalarOID
+func validateScalarOID(metricName string, scalarOID scalarOID, cfg *Config) error {
 	var combinedErr error
 
 	// Ensure that it contains an OID
@@ -507,7 +507,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 		}
 
 		// Scalar OID metrics should only have Scalar OID resource attributes
-		// resourceAttributeConfig validation ensures that (only) one of ScalarOID, OID, or IndexedValuePrefix is set before reaching this
+		// resourceAttributeConfig validation ensures that (only) one of scalarOID, OID, or IndexedValuePrefix is set before reaching this
 		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarMetricHasIndexedResourceAttribute, metricName, name))
 			continue

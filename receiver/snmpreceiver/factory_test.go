@@ -59,7 +59,7 @@ func TestNewFactory(t *testing.T) {
 					"m1": {
 						Unit:  "1",
 						Gauge: &gaugeMetric{ValueType: "int"},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -97,7 +97,7 @@ func TestNewFactory(t *testing.T) {
 					"m1": {
 						Unit:  "1",
 						Gauge: &gaugeMetric{ValueType: "int"},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -123,7 +123,7 @@ func TestNewFactory(t *testing.T) {
 					"m1": {
 						Unit:  "1",
 						Gauge: &gaugeMetric{ValueType: "int"},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -149,7 +149,7 @@ func TestNewFactory(t *testing.T) {
 					"m1": {
 						Unit:  "1",
 						Gauge: &gaugeMetric{ValueType: "int"},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -173,7 +173,7 @@ func TestNewFactory(t *testing.T) {
 				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Gauge: &gaugeMetric{},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -197,7 +197,7 @@ func TestNewFactory(t *testing.T) {
 				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Sum: &sumMetric{},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -221,7 +221,7 @@ func TestNewFactory(t *testing.T) {
 				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Sum: &sumMetric{},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},
@@ -245,7 +245,7 @@ func TestNewFactory(t *testing.T) {
 				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Gauge: &gaugeMetric{ValueType: "int"},
-						ScalarOIDs: []ScalarOID{{
+						ScalarOIDs: []scalarOID{{
 							OID: ".1",
 						}},
 					},

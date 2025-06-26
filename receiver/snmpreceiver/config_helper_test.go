@@ -40,7 +40,7 @@ func TestGetMetricScalarOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -50,7 +50,7 @@ func TestGetMetricScalarOIDs(t *testing.T) {
 							},
 						},
 						"m2": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".3",
 								},
@@ -81,7 +81,7 @@ func TestGetMetricColumnOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -141,7 +141,7 @@ func TestGetAttributeColumnOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -199,7 +199,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -267,7 +267,7 @@ func TestGetMetricName(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -286,7 +286,7 @@ func TestGetMetricName(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -337,7 +337,7 @@ func TestGetMetricConfig(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -354,7 +354,7 @@ func TestGetMetricConfig(t *testing.T) {
 			desc: "Returns metric config",
 			testFunc: func(t *testing.T) {
 				m1 := &metricConfig{
-					ScalarOIDs: []ScalarOID{
+					ScalarOIDs: []scalarOID{
 						{
 							OID: ".1",
 						},
@@ -388,7 +388,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -412,7 +412,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -436,7 +436,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -472,7 +472,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -496,7 +496,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -520,7 +520,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -556,7 +556,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -580,7 +580,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -604,7 +604,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -640,7 +640,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -664,7 +664,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -688,7 +688,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -724,7 +724,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -748,7 +748,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -772,7 +772,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -808,7 +808,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 									Attributes: []attribute{
@@ -837,7 +837,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID: ".1",
 								},
@@ -871,7 +871,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 				cfg := Config{
 					Metrics: map[string]*metricConfig{
 						"m1": {
-							ScalarOIDs: []ScalarOID{
+							ScalarOIDs: []scalarOID{
 								{
 									OID:        ".1",
 									Attributes: attributes,

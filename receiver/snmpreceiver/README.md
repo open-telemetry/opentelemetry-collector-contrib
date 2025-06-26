@@ -104,7 +104,7 @@ attribute configurations are used to define what resource attributes will be use
 | `gauge`       | Required if no `sum`. Details that this metric is of the gauge type | gaugeMetric              |         |
 | `sum`         | Required if no `gauge`. Details that this metric is of the sum type | sumMetric                |         |
 | `column_oids` | Required if no `scalar_oids`. Details that this metric is made from one or more columns in an SNMP table. The returned indexed SNMP data for these OIDs might either be datapoints on a single metrics, or datapoints across multiple metrics attached to different resources depending on the column OID configurations | columnOID[] |        |
-| `scalar_oids` | Required if no `column_oids`. Details that this metric is made from one or more scalard SNMP values (multiple scalar OIDs would represent multiple datapoints within the same metric) | ScalarOID[]       |       |
+| `scalar_oids` | Required if no `column_oids`. Details that this metric is made from one or more scalard SNMP values (multiple scalar OIDs would represent multiple datapoints within the same metric) | scalarOID[]       |       |
 | `description` | Definition of what the metric represents                       | string                      |         |
 
 #### gaugeMetric Configuration
@@ -121,7 +121,7 @@ attribute configurations are used to define what resource attributes will be use
 | `monotonic` | Whether this is a monotonic sum or not                         | bool                        | false   |
 | `aggregation` | The aggregation type of this metric's data. Can be either `cumulative` or `delta` | string | cumulative |
 
-#### ScalarOID Configuration
+#### scalarOID Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |

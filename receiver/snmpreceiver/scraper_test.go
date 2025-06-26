@@ -157,7 +157,7 @@ func TestScrape(t *testing.T) {
 					cfg: &Config{
 						Metrics: map[string]*metricConfig{
 							"metric1": {
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: "1",
 									},
@@ -193,7 +193,7 @@ func TestScrape(t *testing.T) {
 					cfg: &Config{
 						Metrics: map[string]*metricConfig{
 							"metric1": {
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: "1",
 									},
@@ -231,7 +231,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -278,7 +278,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: "1",
 									},
@@ -327,7 +327,7 @@ func TestScrape(t *testing.T) {
 									Monotonic:   true,
 									ValueType:   "double",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -377,7 +377,7 @@ func TestScrape(t *testing.T) {
 									Monotonic:   false,
 									ValueType:   "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -430,7 +430,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -442,7 +442,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".2",
 									},
@@ -498,7 +498,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 										Attributes: []attribute{
@@ -565,7 +565,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 										Attributes: []attribute{
@@ -990,7 +990,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".0",
 									},
@@ -2194,7 +2194,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) resource attribute creates metric (19)",
+			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) resource attribute creates metric (19)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2276,7 +2276,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (int) resource attribute attached to columnOID metric alongside a columnOID (int) resource attribute creates metric (20)",
+			desc: "scalarOID (int) resource attribute attached to columnOID metric alongside a columnOID (int) resource attribute creates metric (20)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2358,7 +2358,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (float) resource attribute attached to columnOID metric alongside a columnOID (float) resource attribute creates metric (21)",
+			desc: "scalarOID (float) resource attribute attached to columnOID metric alongside a columnOID (float) resource attribute creates metric (21)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2440,7 +2440,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
+			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2509,7 +2509,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple ScalarOID (string) resource attributes attached to columnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
+			desc: "Multiple scalarOID (string) resource attributes attached to columnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
@@ -2614,7 +2614,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) attribute creates metric (24)",
+			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) attribute creates metric (24)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2703,7 +2703,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
+			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2779,7 +2779,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to ScalarOID metric creates metric (26)",
+			desc: "scalarOID (string) resource attribute attached to scalarOID metric creates metric (26)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2787,7 +2787,7 @@ func TestScrape(t *testing.T) {
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarOID := snmpData{
+				scalarOIDInt := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
@@ -2795,7 +2795,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
-				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOID}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOIDInt}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*resourceAttributeConfig{
@@ -2810,7 +2810,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1"},
@@ -2838,7 +2838,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
+			desc: "Multiple scalarOID (string) resource attributes attached to scalarOID metric creates single resource for metric (27)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
@@ -2851,7 +2851,7 @@ func TestScrape(t *testing.T) {
 					value:     "also scalar",
 					valueType: stringVal,
 				}
-				scalarOID := snmpData{
+				scalarOIDInt := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
@@ -2859,7 +2859,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", []string{".5.0", ".7.0"}, mock.Anything).Return([]snmpData{scalarRA1, scalarRA2}).Once()
-				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOID}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOIDInt}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
 						ResourceAttributes: map[string]*resourceAttributeConfig{
@@ -2877,7 +2877,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2941,7 +2941,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1"},
@@ -2954,7 +2954,7 @@ func TestScrape(t *testing.T) {
 								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".7.0",
 										ResourceAttributes: []string{"rattr1"},

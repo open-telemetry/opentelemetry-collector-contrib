@@ -36,7 +36,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 			Gauge: &gaugeMetric{
 				ValueType: "double",
 			},
-			ScalarOIDs: []ScalarOID{
+			ScalarOIDs: []scalarOID{
 				{
 					OID: "1",
 				},
@@ -286,7 +286,7 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
 	}
 
 	if scalar {
-		metricCfg["m3"].ScalarOIDs = []ScalarOID{
+		metricCfg["m3"].ScalarOIDs = []scalarOID{
 			{
 				OID: "1",
 			},
@@ -567,7 +567,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			Monotonic:   true,
 			ValueType:   "int",
 		},
-		ScalarOIDs: []ScalarOID{
+		ScalarOIDs: []scalarOID{
 			{
 				OID: "1",
 			},
@@ -580,7 +580,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			Monotonic:   false,
 			ValueType:   "int",
 		},
-		ScalarOIDs: []ScalarOID{
+		ScalarOIDs: []scalarOID{
 			{
 				OID: "1",
 				Attributes: []attribute{
@@ -599,7 +599,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			Monotonic:   true,
 			ValueType:   "int",
 		},
-		ScalarOIDs: []ScalarOID{
+		ScalarOIDs: []scalarOID{
 			{
 				OID: "1",
 				Attributes: []attribute{
@@ -1030,7 +1030,7 @@ func TestValidate(t *testing.T) {
 						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1051,7 +1051,7 @@ func TestValidate(t *testing.T) {
 						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1073,7 +1073,7 @@ func TestValidate(t *testing.T) {
 						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1097,7 +1097,7 @@ func TestValidate(t *testing.T) {
 						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1123,7 +1123,7 @@ func TestValidate(t *testing.T) {
 						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
