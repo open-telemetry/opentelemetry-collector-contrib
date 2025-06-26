@@ -18,4 +18,4 @@ jobs:
       - name: Install Lychee
         uses: lycheeverse/lychee-action@v1
         with:
-          args: --config .github/lychee.toml --dry-run .github/lychee.toml
+          args: --config .github/lychee.toml --dump
