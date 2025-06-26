@@ -237,7 +237,7 @@ func TestCreateMetric(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Sum: &SumMetric{
+					Sum: &sumMetric{
 						Aggregation: "delta",
 						Monotonic:   false,
 						ValueType:   "double",
@@ -370,7 +370,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
-					Sum: &SumMetric{
+					Sum: &sumMetric{
 						Aggregation: "cumulative",
 						Monotonic:   true,
 						ValueType:   "double",

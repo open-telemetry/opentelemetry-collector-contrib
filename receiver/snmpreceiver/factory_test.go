@@ -196,7 +196,7 @@ func TestNewFactory(t *testing.T) {
 				snmpCfg := cfg.(*Config)
 				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
-						Sum: &SumMetric{},
+						Sum: &sumMetric{},
 						ScalarOIDs: []ScalarOID{{
 							OID: ".1",
 						}},
@@ -220,7 +220,7 @@ func TestNewFactory(t *testing.T) {
 				snmpCfg := cfg.(*Config)
 				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
-						Sum: &SumMetric{},
+						Sum: &sumMetric{},
 						ScalarOIDs: []ScalarOID{{
 							OID: ".1",
 						}},

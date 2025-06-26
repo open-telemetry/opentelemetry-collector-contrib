@@ -182,7 +182,7 @@ type metricConfig struct {
 	Unit string `mapstructure:"unit"`
 	// Either Gauge or Sum config is required
 	Gauge *gaugeMetric `mapstructure:"gauge"`
-	Sum   *SumMetric   `mapstructure:"sum"`
+	Sum   *sumMetric   `mapstructure:"sum"`
 	// Either ScalarOIDs or ColumnOIDs is required.
 	// ScalarOIDs is used if one or more scalar OID values is used for this metric.
 	// ColumnOIDs is used if one or more column OID indexed set of values is used
@@ -200,8 +200,8 @@ type gaugeMetric struct {
 	_ struct{}
 }
 
-// SumMetric contains info about the value of the sum metric
-type SumMetric struct {
+// sumMetric contains info about the value of the sum metric
+type sumMetric struct {
 	// Aggregation is required and can be cumulative or delta
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
@@ -555,8 +555,8 @@ func validateGauge(metricName string, gauge *gaugeMetric) error {
 	return nil
 }
 
-// validateSum validates a SumMetric
-func validateSum(metricName string, sum *SumMetric) error {
+// validateSum validates a sumMetric
+func validateSum(metricName string, sum *sumMetric) error {
 	var combinedErr error
 
 	// Ensure valid values for ValueType

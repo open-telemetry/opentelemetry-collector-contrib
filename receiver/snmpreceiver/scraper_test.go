@@ -322,7 +322,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "cumulative",
 									Monotonic:   true,
 									ValueType:   "double",
@@ -372,7 +372,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "delta",
 									Monotonic:   false,
 									ValueType:   "int",
@@ -847,7 +847,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "cumulative",
 									Monotonic:   true,
 									ValueType:   "double",
@@ -914,7 +914,7 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "delta",
 									Monotonic:   false,
 									ValueType:   "int",

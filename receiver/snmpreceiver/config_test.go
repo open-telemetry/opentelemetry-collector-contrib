@@ -278,7 +278,7 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
 			ValueType: "double",
 		}
 	} else {
-		metricCfg["m3"].Sum = &SumMetric{
+		metricCfg["m3"].Sum = &sumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   true,
 			ValueType:   "double",
@@ -512,7 +512,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m1"] = &metricConfig{
 		Unit: "1",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Monotonic:   true,
 			Aggregation: "cumulative",
 			ValueType:   "int",
@@ -562,7 +562,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m4"] = &metricConfig{
 		Unit: "{things}",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   true,
 			ValueType:   "int",
@@ -575,7 +575,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m5"] = &metricConfig{
 		Unit: "{things}",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   false,
 			ValueType:   "int",
@@ -594,7 +594,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 	expectedConfigComplexGood.Metrics["m6"] = &metricConfig{
 		Unit: "1",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Aggregation: "delta",
 			Monotonic:   true,
 			ValueType:   "int",
