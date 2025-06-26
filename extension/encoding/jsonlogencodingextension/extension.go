@@ -4,10 +4,11 @@
 package jsonlogencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
 
 import (
-	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
@@ -27,20 +28,40 @@ type jsonLogExtension struct {
 }
 
 func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
-	if e.config.Mode == JSONEncodingModeBodyWithInlineAttributes {
-		return e.logProcessor(ld)
-	}
-	logs := make([]map[string]any, 0, ld.LogRecordCount())
+	var logs []map[string]any
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
+		resourceAttrs := rl.Resource().Attributes().AsRaw()
 		sls := rl.ScopeLogs()
 		for j := 0; j < sls.Len(); j++ {
 			sl := sls.At(j)
 			logSlice := sl.LogRecords()
 			for k := 0; k < logSlice.Len(); k++ {
 				log := logSlice.At(k)
+				if e.config.Mode == JSONEncodingModeBodyWithInlineAttributes {
+					// special handling for inline attributes Mode
+					entry := make(map[string]any)
+
+					body := log.Body().AsRaw()
+					if body != nil {
+						entry["body"] = body
+					}
+
+					if len(resourceAttrs) != 0 {
+						entry["resourceAttributes"] = resourceAttrs
+					}
+
+					logAttribs := log.Attributes().AsRaw()
+					if len(logAttribs) != 0 {
+						entry["logAttributes"] = logAttribs
+					}
+
+					logs = append(logs, entry)
+					continue
+				}
+
 				switch log.Body().Type() {
 				case pcommon.ValueTypeMap:
 					logs = append(logs, log.Body().Map().AsRaw())
@@ -52,14 +73,8 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	}
 
 	// check for processing mode so we can return the best format
-	switch e.config.ProcessingMode {
-	case SingleMode:
-		if len(logs) == 1 {
-			return json.Marshal(logs[0])
-		}
-	case NDJsonMode:
+	if e.config.ProcessingMode == JSONMode {
 		var buf bytes.Buffer
-
 		for i, log := range logs {
 			m, err := json.Marshal(log)
 			if err != nil {
@@ -68,6 +83,7 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 
 			buf.Write(m)
 			if i < len(logs)-1 {
+				// if multiple logs, then consider exporting as ndjson
 				buf.WriteByte('\n')
 			}
 		}
@@ -84,31 +100,16 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	// get json logs from the buffer
 	var jsonLogs []map[string]any
-	switch e.config.ProcessingMode {
-	case ArrayMode:
-		if err := json.Unmarshal(buf, &jsonLogs); err != nil {
+	var err error
+
+	if e.config.ProcessingMode == JSONMode {
+		jsonLogs, err = todDecodedJSONDocuments(bytes.NewReader(buf))
+		if err != nil {
 			return p, err
 		}
-	case SingleMode:
-		var doc map[string]any
-		if err := json.Unmarshal(buf, &doc); err != nil {
-			return p, err
-		}
-		jsonLogs = append(jsonLogs, doc)
-	case NDJsonMode:
-		sc := bufio.NewScanner(bytes.NewReader(buf))
-		for sc.Scan() {
-			var line map[string]any
-			err := json.Unmarshal(sc.Bytes(), &line)
-			if err != nil {
-				return p, err
-			}
-
-			jsonLogs = append(jsonLogs, line)
-		}
-
-		if err := sc.Err(); err != nil {
-			// consider this as an error
+	} else {
+		// Default mode to handle arrays having backward compatibility
+		if err = json.Unmarshal(buf, &jsonLogs); err != nil {
 			return p, err
 		}
 	}
@@ -131,35 +132,23 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
-	logs := make([]logBody, 0, ld.LogRecordCount())
+// todDecodedJSONDocuments is a generic helper to derive json records decoded from a reader.
+func todDecodedJSONDocuments(reader io.Reader) ([]map[string]any, error) {
+	decoder := json.NewDecoder(reader)
+	jsonDocuments := make([]map[string]any, 0)
 
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
-		resourceAttrs := rl.Resource().Attributes().AsRaw()
-
-		sls := rl.ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
-			sl := sls.At(j)
-			logSlice := sl.LogRecords()
-			for k := 0; k < logSlice.Len(); k++ {
-				log := logSlice.At(k)
-				logEvent := logBody{
-					Body:               log.Body().AsRaw(),
-					ResourceAttributes: resourceAttrs,
-					LogAttributes:      log.Attributes().AsRaw(),
-				}
-				logs = append(logs, logEvent)
+	for {
+		var doc map[string]any
+		err := decoder.Decode(&doc)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
 			}
+			return nil, err
 		}
+
+		jsonDocuments = append(jsonDocuments, doc)
 	}
 
-	return json.Marshal(logs)
-}
-
-type logBody struct {
-	Body               any            `json:"body,omitempty"`
-	LogAttributes      map[string]any `json:"logAttributes,omitempty"`
-	ResourceAttributes map[string]any `json:"resourceAttributes,omitempty"`
+	return jsonDocuments, nil
 }
