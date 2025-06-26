@@ -16,11 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 func init() {
@@ -486,4 +487,86 @@ func TestNewSaramaConsumerGroup_GroupInstanceID_InvalidProtocolVersion(t *testin
 			}
 		})
 	}
+}
+
+func TestSetSaramaProducerConfig_Compression(t *testing.T) {
+	tests := map[string]struct {
+		codec  string
+		params configcompression.CompressionParams
+
+		expectedCodec sarama.CompressionCodec
+		expectedLevel int
+	}{
+		"none": {
+			codec:         "none",
+			expectedCodec: sarama.CompressionNone,
+			expectedLevel: sarama.CompressionLevelDefault,
+		},
+		"gzip": {
+			codec:         "gzip",
+			expectedCodec: sarama.CompressionGZIP,
+			expectedLevel: sarama.CompressionLevelDefault,
+		},
+		"gzip_params": {
+			codec:         "gzip",
+			params:        configcompression.CompressionParams{Level: 5},
+			expectedCodec: sarama.CompressionGZIP,
+			expectedLevel: 5,
+		},
+		"snappy": {
+			codec:         "snappy",
+			expectedCodec: sarama.CompressionSnappy,
+			expectedLevel: sarama.CompressionLevelDefault,
+		},
+		"lz4": {
+			codec:         "lz4",
+			expectedCodec: sarama.CompressionLZ4,
+			expectedLevel: sarama.CompressionLevelDefault,
+		},
+		"zstd": {
+			codec:         "zstd",
+			expectedCodec: sarama.CompressionZSTD,
+			expectedLevel: sarama.CompressionLevelDefault,
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			config := configkafka.NewDefaultProducerConfig()
+			config.Compression = testcase.codec
+			config.CompressionParams = testcase.params
+
+			saramaConfig := sarama.NewConfig()
+			setSaramaProducerConfig(saramaConfig, config, time.Millisecond)
+			assert.Equal(t, testcase.expectedCodec, saramaConfig.Producer.Compression)
+			assert.Equal(t, testcase.expectedLevel, saramaConfig.Producer.CompressionLevel)
+		})
+	}
+}
+
+func TestNewSaramaClientConfigWithAWSMSKIAM(t *testing.T) {
+	// Test case for AWS_MSK_IAM_OAUTHBEARER mechanism
+	clientConfig := configkafka.ClientConfig{
+		Brokers: []string{"localhost:9092"},
+		Authentication: configkafka.AuthenticationConfig{
+			SASL: &configkafka.SASLConfig{
+				Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
+				AWSMSK: configkafka.AWSMSKConfig{
+					Region: "us-west-2",
+				},
+			},
+		},
+	}
+
+	saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+	assert.NoError(t, err)
+
+	// Verify that TLS is enabled, not just SASL
+	assert.True(t, saramaConfig.Net.TLS.Enable, "TLS should be enabled for AWS_MSK_IAM_OAUTHBEARER")
+	assert.NotNil(t, saramaConfig.Net.TLS.Config, "TLS config should not be nil for AWS_MSK_IAM_OAUTHBEARER")
+
+	// Also verify that SASL is enabled and properly configured
+	assert.True(t, saramaConfig.Net.SASL.Enable, "SASL should be enabled for AWS_MSK_IAM_OAUTHBEARER")
+	assert.Equal(t, sarama.SASLMechanism(sarama.SASLTypeOAuth), saramaConfig.Net.SASL.Mechanism)
+	assert.NotNil(t, saramaConfig.Net.SASL.TokenProvider, "TokenProvider should not be nil for AWS_MSK_IAM_OAUTHBEARER")
 }

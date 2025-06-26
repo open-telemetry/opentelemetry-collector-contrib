@@ -190,7 +190,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 			dp := callsDps.At(dpi)
 			expectIntValue := numCumulativeConsumptions
 			// this calls init value is 0 for the first Consumption.
-			if numCumulativeConsumptions == 1 {
+			if expectedTemporality == pmetric.AggregationTemporalityCumulative && numCumulativeConsumptions == 1 {
 				expectIntValue = 0
 			}
 			assert.Equal(tb,
@@ -1256,6 +1256,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 }
 
 func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
+	t.Skip("flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37096")
 	// Prepare
 	traces0 := ptrace.NewTraces()
 

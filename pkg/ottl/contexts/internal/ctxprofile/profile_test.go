@@ -14,7 +14,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestPathGetSetter(t *testing.T) {
@@ -22,6 +24,7 @@ func TestPathGetSetter(t *testing.T) {
 	tests := []struct {
 		path     string
 		val      any
+		keys     []ottl.Key[*profileContext]
 		setFails bool
 	}{
 		{
@@ -33,14 +36,6 @@ func TestPathGetSetter(t *testing.T) {
 			val:  createSampleSlice(),
 		},
 		{
-			path: "mapping_table",
-			val:  createMappingSlice(),
-		},
-		{
-			path: "location_table",
-			val:  createLocationSlice(),
-		},
-		{
 			path: "location_indices",
 			val:  []int64{5},
 		},
@@ -48,26 +43,6 @@ func TestPathGetSetter(t *testing.T) {
 			path:     "location_indices error",
 			val:      []string{"x"},
 			setFails: true,
-		},
-		{
-			path: "function_table",
-			val:  createFunctionSlice(),
-		},
-		{
-			path: "attribute_table",
-			val:  createAttributeTableSlice(),
-		},
-		{
-			path: "attribute_units",
-			val:  createAttributeUnitSlice(),
-		},
-		{
-			path: "link_table",
-			val:  createLinkSlice(),
-		},
-		{
-			path: "string_table",
-			val:  []string{"", "string"},
 		},
 		{
 			path: "time_unix_nano",
@@ -98,7 +73,7 @@ func TestPathGetSetter(t *testing.T) {
 			val:  []int64{345},
 		},
 		{
-			path: "default_sample_type_string_index",
+			path: "default_sample_type_index",
 			val:  int64(456),
 		},
 		{
@@ -138,29 +113,78 @@ func TestPathGetSetter(t *testing.T) {
 			path: "original_payload",
 			val:  []byte{1, 2, 3},
 		},
+		{
+			path: "attributes",
+			val: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("akey", "val")
+				return m
+			}(),
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("akey"),
+				},
+			},
+			val: "val",
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("akey"),
+				},
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("bkey"),
+				},
+			},
+			val: "val",
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					G: &ottl.StandardGetSetter[*profileContext]{
+						Getter: func(context.Context, *profileContext) (any, error) {
+							return "", nil
+						},
+						Setter: func(context.Context, *profileContext, any) error {
+							return nil
+						},
+					},
+				},
+			},
+			val: "val",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			pathParts := strings.Split(tt.path, " ")
 			path := &pathtest.Path[*profileContext]{N: pathParts[0]}
+			if tt.keys != nil {
+				path.KeySlice = tt.keys
+			}
 			if len(pathParts) > 1 {
 				path.NextPath = &pathtest.Path[*profileContext]{N: pathParts[1]}
 			}
 
 			profile := pprofile.NewProfile()
+			dictionary := pprofile.NewProfilesDictionary()
 
-			accessor, err := PathGetSetter[*profileContext](path)
+			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(context.Background(), newProfileContext(profile), tt.val)
+			err = accessor.Set(context.Background(), newProfileContext(profile, dictionary), tt.val)
 			if tt.setFails {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), newProfileContext(profile))
+			got, err := accessor.Get(context.Background(), newProfileContext(profile, dictionary))
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
@@ -169,15 +193,20 @@ func TestPathGetSetter(t *testing.T) {
 }
 
 type profileContext struct {
-	profile pprofile.Profile
+	profile    pprofile.Profile
+	dictionary pprofile.ProfilesDictionary
+}
+
+func (p *profileContext) GetProfilesDictionary() pprofile.ProfilesDictionary {
+	return p.dictionary
 }
 
 func (p *profileContext) GetProfile() pprofile.Profile {
 	return p.profile
 }
 
-func newProfileContext(profile pprofile.Profile) *profileContext {
-	return &profileContext{profile: profile}
+func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDictionary) *profileContext {
+	return &profileContext{profile: profile, dictionary: dictionary}
 }
 
 func createValueTypeSlice() pprofile.ValueTypeSlice {
@@ -200,99 +229,6 @@ func createSampleSlice() pprofile.SampleSlice {
 	sample := sl.AppendEmpty()
 	sample.CopyTo(createSample())
 	return sl
-}
-
-func createMappingSlice() pprofile.MappingSlice {
-	sl := pprofile.NewMappingSlice()
-	mapping := sl.AppendEmpty()
-	mapping.CopyTo(createMapping())
-	return sl
-}
-
-func createMapping() pprofile.Mapping {
-	mapping := pprofile.NewMapping()
-	mapping.SetFilenameStrindex(2)
-	mapping.SetFileOffset(1)
-	mapping.SetHasFilenames(true)
-	mapping.SetHasFunctions(true)
-	mapping.SetHasInlineFrames(true)
-	mapping.SetHasLineNumbers(true)
-	mapping.SetMemoryLimit(3)
-	mapping.SetMemoryStart(4)
-	return mapping
-}
-
-func createLocationSlice() pprofile.LocationSlice {
-	sl := pprofile.NewLocationSlice()
-	location := sl.AppendEmpty()
-	location.CopyTo(createLocation())
-	return sl
-}
-
-func createLocation() pprofile.Location {
-	location := pprofile.NewLocation()
-	location.SetAddress(1)
-	location.SetIsFolded(true)
-	location.SetMappingIndex(2)
-	return location
-}
-
-func createFunctionSlice() pprofile.FunctionSlice {
-	sl := pprofile.NewFunctionSlice()
-	function := sl.AppendEmpty()
-	function.CopyTo(createFunction())
-	return sl
-}
-
-func createFunction() pprofile.Function {
-	function := pprofile.NewFunction()
-	function.SetFilenameStrindex(1)
-	function.SetNameStrindex(2)
-	function.SetStartLine(3)
-	function.SetSystemNameStrindex(4)
-	return function
-}
-
-func createAttributeTableSlice() pprofile.AttributeTableSlice {
-	sl := pprofile.NewAttributeTableSlice()
-	attribute := sl.AppendEmpty()
-	attribute.CopyTo(createAttributeTable())
-	return sl
-}
-
-func createAttributeTable() pprofile.Attribute {
-	attribute := pprofile.NewAttribute()
-	attribute.SetKey("key")
-	attribute.Value().SetStr("value")
-	return attribute
-}
-
-func createAttributeUnitSlice() pprofile.AttributeUnitSlice {
-	sl := pprofile.NewAttributeUnitSlice()
-	attributeUnit := sl.AppendEmpty()
-	attributeUnit.CopyTo(createAttributeUnit())
-	return sl
-}
-
-func createAttributeUnit() pprofile.AttributeUnit {
-	attributeUnit := pprofile.NewAttributeUnit()
-	attributeUnit.SetUnitStrindex(1)
-	attributeUnit.SetAttributeKeyStrindex(2)
-	return attributeUnit
-}
-
-func createLinkSlice() pprofile.LinkSlice {
-	sl := pprofile.NewLinkSlice()
-	link := sl.AppendEmpty()
-	link.CopyTo(createLink())
-	return sl
-}
-
-func createLink() pprofile.Link {
-	link := pprofile.NewLink()
-	link.SetSpanID(pcommon.SpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	link.SetTraceID(pcommon.TraceID([]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}))
-	return link
 }
 
 func createProfileID() pprofile.ProfileID {
