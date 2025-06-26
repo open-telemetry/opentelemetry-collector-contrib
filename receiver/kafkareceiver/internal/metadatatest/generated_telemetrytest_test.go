@@ -20,7 +20,13 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.KafkaBrokerClosed.Add(context.Background(), 1)
+	tb.KafkaBrokerConnects.Add(context.Background(), 1)
+	tb.KafkaBrokerThrottlingDuration.Record(context.Background(), 1)
+	tb.KafkaReceiverBytes.Add(context.Background(), 1)
+	tb.KafkaReceiverBytesUncompressed.Add(context.Background(), 1)
 	tb.KafkaReceiverCurrentOffset.Record(context.Background(), 1)
+	tb.KafkaReceiverLatency.Record(context.Background(), 1)
 	tb.KafkaReceiverMessages.Add(context.Background(), 1)
 	tb.KafkaReceiverOffsetLag.Record(context.Background(), 1)
 	tb.KafkaReceiverPartitionClose.Add(context.Background(), 1)
@@ -28,8 +34,26 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaReceiverUnmarshalFailedLogRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedMetricPoints.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedSpans.Add(context.Background(), 1)
+	AssertEqualKafkaBrokerClosed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaBrokerConnects(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaBrokerThrottlingDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverBytes(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverBytesUncompressed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverCurrentOffset(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverMessages(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
