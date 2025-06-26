@@ -113,8 +113,6 @@ type Supervisor struct {
 	// Commander that starts/stops the Agent process.
 	commander *commander.Commander
 
-	startedAt time.Time
-
 	// Supervisor's own config.
 	config config.Supervisor
 
@@ -163,10 +161,6 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
-	// agentHasStarted is true if the agent has started.
-	agentHasStarted bool
-	// agentStartHealthCheckAttempts is the number of health check attempts made by the agent since it started.
-	agentStartHealthCheckAttempts int
 	// agentRestarting is true if the agent is restarting.
 	agentRestarting atomic.Bool
 
@@ -1321,10 +1315,6 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		}
 		return "", startErr
 	}
-
-	s.agentHasStarted = false
-	s.agentStartHealthCheckAttempts = 0
-	s.startedAt = time.Now()
 
 	return agentStarting, nil
 }
