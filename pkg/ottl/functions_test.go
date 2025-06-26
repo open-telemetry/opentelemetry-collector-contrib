@@ -542,9 +542,10 @@ func Test_NewFunctionCall(t *testing.T) {
 	testSlice.AppendEmpty().SetStr("test")
 
 	tests := []struct {
-		name string
-		inv  editor
-		want any
+		name      string
+		inv       editor
+		want      any
+		wantError string
 	}{
 		{
 			name: "no arguments",
@@ -966,6 +967,34 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: testSlice,
 		},
 		{
+			name: "literalpslicegetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalpslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{
+													{
+														Name: "name",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardPSliceGetter value is not a literal",
+		},
+		{
 			name: "literalstringgetter arg",
 			inv: editor{
 				Function: "testing_literalstringgetter",
@@ -978,6 +1007,28 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: "test",
+		},
+		{
+			name: "literalstringgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalstringgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardStringGetter value is not a literal",
 		},
 		{
 			name: "literalintgetter arg",
@@ -996,6 +1047,28 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: int64(1),
 		},
 		{
+			name: "literalintgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalintgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardIntGetter value is not a literal",
+		},
+		{
 			name: "literalfloatgetter arg",
 			inv: editor{
 				Function: "testing_literalfloatgetter",
@@ -1012,6 +1085,28 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: float64(1),
 		},
 		{
+			name: "literalfloatgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalfloatgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardFloatGetter value is not a literal",
+		},
+		{
 			name: "literalboolgetter arg",
 			inv: editor{
 				Function: "testing_literalboolgetter",
@@ -1024,6 +1119,28 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: true,
+		},
+		{
+			name: "literalboolgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalboolgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardBoolGetter value is not a literal",
 		},
 		{
 			name: "literalpmapgetter arg",
@@ -1045,6 +1162,37 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: testMap,
+		},
+		{
+			name: "literalpmapgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalpmapgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Map: &mapValue{
+								Values: []mapItem{
+									{
+										Key: ottltest.Strp("foo"),
+										Value: &value{
+											Literal: &mathExprLiteral{
+												Path: &path{
+													Fields: []field{
+														{
+															Name: "name",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardPMapGetter value is not a literal",
 		},
 		{
 			name: "pslicegetter slice arg",
@@ -1839,9 +1987,11 @@ func Test_NewFunctionCall(t *testing.T) {
 			fn, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
+			result, err := fn.Eval(context.Background(), nil)
 			if tt.want != nil {
-				result, _ := fn.Eval(context.Background(), nil)
 				assert.Equal(t, tt.want, result)
+			} else if tt.wantError != "" {
+				assert.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
