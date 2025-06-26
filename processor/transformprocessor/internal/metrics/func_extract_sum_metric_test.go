@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
@@ -96,7 +95,6 @@ type histogramTestCase struct {
 	name         string
 	input        pmetric.Metric
 	monotonicity bool
-	suffix       ottl.Optional[string]
 	want         func(pmetric.MetricSlice)
 	wantErr      error
 }
@@ -272,27 +270,6 @@ func Test_extractSumMetric(t *testing.T) {
 			},
 		},
 		{
-			name:         "histogram custom suffix",
-			input:        getTestHistogramMetric(),
-			monotonicity: false,
-			suffix:       ottl.NewTestingOptional("_custom_suf"),
-			want: func(metrics pmetric.MetricSlice) {
-				histogramMetric := getTestHistogramMetric()
-				histogramMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
-				sumMetric.Sum().SetIsMonotonic(false)
-
-				sumMetric.SetName(histogramMetric.Name() + "_custom_suf")
-				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleValue(histogramMetric.Histogram().DataPoints().At(0).Sum())
-
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
-			},
-		},
-		{
 			name:         "gauge (error)",
 			input:        getTestGaugeMetric(),
 			monotonicity: false,
@@ -304,7 +281,7 @@ func Test_extractSumMetric(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := extractSumMetric(tt.monotonicity, tt.suffix)
+			evaluate, err := extractSumMetric(tt.monotonicity)
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))

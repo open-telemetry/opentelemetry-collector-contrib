@@ -13,10 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-const (
-	conntrackMetricsLen = 2
-)
-
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSE",

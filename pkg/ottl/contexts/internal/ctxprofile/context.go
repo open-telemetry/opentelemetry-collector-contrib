@@ -13,5 +13,4 @@ const (
 
 type Context interface {
 	GetProfile() pprofile.Profile
-	GetProfilesDictionary() pprofile.ProfilesDictionary
 }

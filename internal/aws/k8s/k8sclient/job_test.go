@@ -42,7 +42,7 @@ var jobArray = []runtime.Object{
 func TestJobClient_JobToCronJob(t *testing.T) {
 	setOption := jobSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	fakeClientSet := fake.NewClientset(jobArray...)
+	fakeClientSet := fake.NewSimpleClientset(jobArray...)
 	client, _ := newJobClient(fakeClientSet, zap.NewNop(), setOption)
 	jobs := make([]any, len(jobArray))
 	for i := range jobArray {

@@ -1191,8 +1191,7 @@ func (f plogMarshalerFuncExtension) Shutdown(context.Context) error {
 }
 
 func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafkaExporter[ptrace.Traces], *mocks.SyncProducer) {
-	set := exportertest.NewNopSettings(metadata.Type)
-	exp := newTracesExporter(cfg, set)
+	exp := newTracesExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
 	// Fake starting the exporter.
 	messenger, err := exp.newMessenger(host)
@@ -1201,13 +1200,7 @@ func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafk
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	require.NoError(t, err)
-	exp.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
-		cfg.IncludeMetadataKeys,
-	)
+	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
 		assert.NoError(t, exp.Close(context.Background()))
@@ -1216,8 +1209,7 @@ func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafk
 }
 
 func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaExporter[pmetric.Metrics], *mocks.SyncProducer) {
-	set := exportertest.NewNopSettings(metadata.Type)
-	exp := newMetricsExporter(cfg, set)
+	exp := newMetricsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
 	// Fake starting the exporter.
 	messenger, err := exp.newMessenger(host)
@@ -1226,13 +1218,7 @@ func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kaf
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	require.NoError(t, err)
-	exp.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
-		cfg.IncludeMetadataKeys,
-	)
+	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
 		assert.NoError(t, exp.Close(context.Background()))
@@ -1241,8 +1227,7 @@ func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kaf
 }
 
 func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaExporter[plog.Logs], *mocks.SyncProducer) {
-	set := exportertest.NewNopSettings(metadata.Type)
-	exp := newLogsExporter(cfg, set)
+	exp := newLogsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
 	// Fake starting the exporter.
 	messenger, err := exp.newMessenger(host)
@@ -1251,13 +1236,7 @@ func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaE
 
 	// Create a mock producer.
 	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
-	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	require.NoError(t, err)
-	exp.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
-		cfg.IncludeMetadataKeys,
-	)
+	exp.producer = kafkaclient.NewSaramaSyncProducer(producer, cfg.IncludeMetadataKeys)
 
 	t.Cleanup(func() {
 		assert.NoError(t, exp.Close(context.Background()))

@@ -396,10 +396,6 @@ func (s *azureBatchScraper) storeMetricsDefinitionByType(subscriptionID string, 
 
 func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscriptionID, resourceType string) {
 	resType := *s.resourceTypes[subscriptionID][resourceType]
-	maxPerBatch := defaultMaximumResourcesPerBatch
-	if s.cfg.MaximumResourcesPerBatch > 0 {
-		maxPerBatch = s.cfg.MaximumResourcesPerBatch
-	}
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
 		now := time.Now().UTC()
@@ -423,7 +419,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 				startResources := 0
 				for startResources < len(resType.resourceIDs) {
-					endResources := startResources + maxPerBatch
+					endResources := startResources + 50 // getBatch API is limited to 50 resources max
 					if endResources > len(resType.resourceIDs) {
 						endResources = len(resType.resourceIDs)
 					}

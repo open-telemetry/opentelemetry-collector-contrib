@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httputil"
 	"strings"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
@@ -19,7 +18,6 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
@@ -27,16 +25,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 type datadogReceiver struct {
-	address            string
-	config             *Config
-	params             receiver.Settings
-	intakeReverseProxy *httputil.ReverseProxy
+	address string
+	config  *Config
+	params  receiver.Settings
 
 	nextTracesConsumer  consumer.Traces
 	nextMetricsConsumer consumer.Metrics
@@ -122,12 +118,6 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 				Handler: ddr.handleIntake,
 			},
 			{
-				// the datadog agent is configured to use a trailing slash in some places:
-				// https://github.com/DataDog/datadog-agent/blob/7.64.3/comp/forwarder/defaultforwarder/endpoints/endpoints.go#L18
-				Pattern: "/intake/",
-				Handler: ddr.handleIntake,
-			},
-			{
 				Pattern: "/api/v1/distribution_points",
 				Handler: ddr.handleDistributionPoints,
 			},
@@ -148,7 +138,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	return endpoints
 }
 
-func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Settings) (component.Component, error) {
+func newDataDogReceiver(config *Config, params receiver.Settings) (component.Component, error) {
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
@@ -164,32 +154,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		}
 	}
 
-	var intakeReverseProxy *httputil.ReverseProxy
-	if config.Intake.Behavior == configIntakeBehaviorProxy {
-		datadogSite := config.Intake.Proxy.API.Site
-		if datadogSite == "" {
-			datadogSite = defaultConfigIntakeProxyAPISite
-		}
-		intakeReverseProxy = &httputil.ReverseProxy{
-			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)),
-		}
-		if config.Intake.Proxy.API.FailOnInvalidKey {
-			apiClient := clientutil.CreateAPIClient(
-				params.BuildInfo,
-				fmt.Sprintf("https://api.%s", datadogSite),
-				confighttp.NewDefaultClientConfig(),
-			)
-			err := clientutil.ValidateAPIKey(ctx, string(config.Intake.Proxy.API.Key), params.Logger, apiClient)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	return &datadogReceiver{
-		params:             params,
-		config:             config,
-		intakeReverseProxy: intakeReverseProxy,
+		params: params,
+		config: config,
 		server: &http.Server{
 			ReadTimeout: config.ReadTimeout,
 		},
@@ -467,11 +434,16 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 
 // handleIntake handles operational calls made by the agent to submit host tags and other metadata to the backend.
 func (ddr *datadogReceiver) handleIntake(w http.ResponseWriter, req *http.Request) {
-	if ddr.intakeReverseProxy == nil {
-		http.Error(w, "intake endpoint not enabled", http.StatusMethodNotAllowed)
-	} else {
-		ddr.intakeReverseProxy.ServeHTTP(w, req)
-	}
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	var metricsCount int
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	err = errors.New("intake endpoint not implemented")
+	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
+	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
 }
 
 // handleDistributionPoints handles the distribution points endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-distribution-points
@@ -524,22 +496,4 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	}
 
 	_, _ = w.Write([]byte("OK"))
-}
-
-func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
-	host := fmt.Sprintf("api.%s", site)
-	query := fmt.Sprintf("api_key=%s", key)
-	return func(req *http.Request) {
-		req.URL.Scheme = "https"
-		req.URL.Host = host
-		// we want to use our own API key for all calls
-		req.Header.Set("Dd-Api-Key", key)
-		// intake puts the API key in the query string as well
-		req.URL.RawQuery = query
-		// Technically, the JSON body of the `/intake` request contains the API key as well
-		// (it's the top-level `apiKey` field of the payload JSON object),
-		// but it appears as though the value of that field does not matter,
-		// at least when it comes to matching the actual `DD-API-KEY` we set in the header above.
-		// So, to avoid a bunch of extra expensive work in the collector, we don't touch the body.
-	}
 }

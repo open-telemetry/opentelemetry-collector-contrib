@@ -7,7 +7,6 @@ import (
 	"context"
 	"iter"
 
-	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -21,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -65,8 +63,6 @@ type messenger[T any] interface {
 
 type kafkaExporter[T any] struct {
 	cfg          Config
-	set          exporter.Settings
-	tb           *metadata.TelemetryBuilder
 	logger       *zap.Logger
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
@@ -80,31 +76,19 @@ func newKafkaExporter[T any](
 ) *kafkaExporter[T] {
 	return &kafkaExporter[T]{
 		cfg:          config,
-		set:          set,
 		logger:       set.Logger,
 		newMessenger: newMessenger,
 	}
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
-	tb, err := metadata.NewTelemetryBuilder(e.set.TelemetrySettings)
-	if err != nil {
-		return err
-	}
-	e.tb = tb
-
 	if e.messenger, err = e.newMessenger(host); err != nil {
 		return err
 	}
 
 	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(
-			ctx,
-			e.cfg.ClientConfig,
-			e.cfg.Producer,
-			e.cfg.TimeoutSettings.Timeout,
-			e.logger,
-			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
+		producer, ferr := kafka.NewFranzSyncProducer(ctx, e.cfg.ClientConfig,
+			e.cfg.Producer, e.cfg.TimeoutSettings.Timeout, e.logger,
 		)
 		if ferr != nil {
 			return err
@@ -120,9 +104,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	if err != nil {
 		return err
 	}
-	e.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
+	e.producer = kafkaclient.NewSaramaSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 	)
 	return nil
@@ -134,10 +116,6 @@ func (e *kafkaExporter[T]) Close(context.Context) (err error) {
 	}
 	err = e.producer.Close()
 	e.producer = nil
-	if e.tb != nil {
-		e.tb.Shutdown()
-		e.tb = nil
-	}
 	return err
 }
 

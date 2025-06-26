@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [schmikei, StefanKurek, ishleenk17]
+    active: [schmikei, StefanKurek]
     seeking_new: true
 
 resource_attributes:

@@ -25,7 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-const transport = "kafka"
+const (
+	transport = "kafka"
+	// TODO: update the following attributes to reflect semconv
+	attrInstanceName = "name"
+	attrTopic        = "topic"
+	attrPartition    = "partition"
+)
 
 type consumeMessageFunc func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error
 
@@ -73,6 +79,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
+				[]metric.AddOption{metric.WithAttributeSet(attrs)},
 				&logsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -97,6 +104,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
+				[]metric.AddOption{metric.WithAttributeSet(attrs)},
 				&metricsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -121,6 +129,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		}
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
+				[]metric.AddOption{metric.WithAttributeSet(attrs)},
 				&tracesHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -134,14 +143,10 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 	return newReceiver(config, set, []string{config.Traces.Topic}, consumeFn)
 }
 
-func newReceiver(
-	config *Config,
-	set receiver.Settings,
-	topics []string,
-	consumeFn func(host component.Host,
-		obsrecv *receiverhelper.ObsReport,
-		telBldr *metadata.TelemetryBuilder,
-	) (consumeMessageFunc, error),
+func newReceiver(config *Config, set receiver.Settings, topics []string, consumeFn func(host component.Host,
+	obsrecv *receiverhelper.ObsReport,
+	telBldr *metadata.TelemetryBuilder,
+) (consumeMessageFunc, error),
 ) (component.Component, error) {
 	if franzGoConsumerFeatureGate.IsEnabled() {
 		return newFranzKafkaConsumer(config, set, topics, consumeFn)
@@ -279,6 +284,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 	config *Config,
 	logger *zap.Logger,
 	telBldr *metadata.TelemetryBuilder,
+	metricAddOpts []metric.AddOption,
 	handler messageHandler[T],
 	attrs attribute.Set,
 ) error {
@@ -290,12 +296,16 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 		zap.Int64("offset", message.offset()),
 	)
 
+	// Update telemetry metrics
+	telBldr.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
+	telBldr.KafkaReceiverCurrentOffset.Record(ctx, message.offset(), metric.WithAttributeSet(attrs))
+
 	ctx = contextWithHeaders(ctx, message.headers())
 
 	obsCtx := handler.startObsReport(ctx)
 	data, n, err := handler.unmarshalData(message.value())
 	if err != nil {
-		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metric.WithAttributeSet(attrs))
+		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metricAddOpts...)
 		logger.Error("failed to unmarshal message", zap.Error(err))
 		handler.endObsReport(obsCtx, n, err)
 		return err

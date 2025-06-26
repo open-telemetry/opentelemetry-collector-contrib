@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17]
+    active: [antonblock]
     seeking_new: true
     emeritus: [djaglowski]
 

@@ -28,7 +28,6 @@ type Input struct {
 	bookmark                 Bookmark
 	buffer                   *Buffer
 	channel                  string
-	ignoreChannelErrors      bool
 	query                    *string
 	maxReads                 int
 	currentMaxReads          int
@@ -132,39 +131,28 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.publisherCache = newPublisherCache()
 
-	subscriptionError := false
 	subscription := NewLocalSubscription()
 	if i.isRemote() {
 		subscription = NewRemoteSubscription(i.remote.Server)
 	}
 
 	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
-		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				errorString = fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
-			} else {
-				errorString = "failed to open local subscription"
+				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
 			}
-			if !i.ignoreChannelErrors {
-				return fmt.Errorf("%s, error: %w", errorString, err)
-			}
-			subscriptionError = true
-			i.Logger().Warn(errorString, zap.Error(err))
+			return fmt.Errorf("failed to open local subscription: %w", err)
+		}
+		if i.isRemote() {
+			i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
 		} else {
-			if i.isRemote() {
-				i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
-			} else {
-				i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
-			}
+			i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
 		}
 	}
 
-	if !subscriptionError {
-		i.subscription = subscription
-		i.wg.Add(1)
-		go i.readOnInterval(ctx)
-	}
+	i.subscription = subscription
+	i.wg.Add(1)
+	go i.readOnInterval(ctx)
 
 	return nil
 }

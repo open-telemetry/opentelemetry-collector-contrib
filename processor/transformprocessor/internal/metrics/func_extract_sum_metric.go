@@ -19,7 +19,6 @@ const sumFuncName = "extract_sum_metric"
 
 type extractSumMetricArguments struct {
 	Monotonic bool
-	Suffix    ottl.Optional[string]
 }
 
 func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -33,7 +32,7 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("extractSumMetricFactory args must be of type *extractSumMetricArguments")
 	}
 
-	return extractSumMetric(args.Monotonic, args.Suffix)
+	return extractSumMetric(args.Monotonic)
 }
 
 // SumCountDataPoint interface helps unify the logic for extracting data from different histogram types
@@ -46,11 +45,7 @@ type SumCountDataPoint interface {
 	Timestamp() pcommon.Timestamp
 }
 
-func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	metricNameSuffix := "_sum"
-	if !suffix.IsEmpty() {
-		metricNameSuffix = suffix.Get()
-	}
+func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		aggTemp := getAggregationTemporality(metric)
@@ -60,7 +55,7 @@ func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 
 		sumMetric := pmetric.NewMetric()
 		sumMetric.SetDescription(metric.Description())
-		sumMetric.SetName(metric.Name() + metricNameSuffix)
+		sumMetric.SetName(metric.Name() + "_sum")
 		sumMetric.SetUnit(metric.Unit())
 		sumMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		sumMetric.Sum().SetIsMonotonic(monotonic)
