@@ -10,7 +10,7 @@ component: filterprocessor
 note: Create `With*Functions` factory options to provide custom OTTL functions for logs, metrics or traces to the resulting filter processor.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [39698]
+issues: [40948]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
