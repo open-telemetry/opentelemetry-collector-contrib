@@ -1,0 +1,21 @@
+name: Lychee Config Check
+
+on:
+  pull_request:
+    paths:
+      - '.github/lychee.toml'
+  push:
+    paths:
+      - '.github/lychee.toml'
+
+jobs:
+  check-lychee-config:
+    runs-on: ubuntu-latest
+    name: Validate Lychee Config
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Lychee
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --config .github/lychee.toml --dry-run .github/lychee.toml
