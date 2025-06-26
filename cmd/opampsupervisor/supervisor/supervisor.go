@@ -161,6 +161,15 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
+	// agentStarted is true if the agent has started.
+	agentStarted atomic.Bool
+	// agentStartedChan is a channel that can be used to wait for the agent to
+	// start in case [agentStarted] is false.
+	agentStartedChan chan struct{}
+	// agentStartedLock is a mutex to protect [agentStartedChan]. This is
+	// required because we need a new channel every time the agent restarts.
+	agentStartedLock *sync.Mutex
+
 	// agentRestarting is true if the agent is restarting.
 	agentRestarting atomic.Bool
 
@@ -186,6 +195,9 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
 		featureGates:                 map[string]struct{}{},
+		agentStarted:                 atomic.Bool{},
+		agentStartedChan:             make(chan struct{}),
+		agentStartedLock:             &sync.Mutex{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -767,6 +779,10 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	if message.Health != nil {
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient.Store(message.Health)
+		if !s.agentStarted.Load() {
+			s.agentStarted.Store(true)
+			close(s.agentStartedChan)
+		}
 		err := s.opampClient.SetHealth(message.Health)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
@@ -1290,6 +1306,10 @@ func (s *Supervisor) handleRestartCommand() error {
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
+	s.agentStarted.Store(false)
+	s.agentStartedLock.Lock()
+	s.agentStartedChan = make(chan struct{})
+	s.agentStartedLock.Unlock()
 	return err
 }
 
@@ -1339,7 +1359,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			previousHealth := s.lastHealthFromClient.Swap(nil)
+			s.lastHealthFromClient.Store(nil)
 			if !configApplyTimeoutTimer.Stop() {
 				select {
 				case <-configApplyTimeoutTimer.C: // Try to drain the channel
@@ -1352,7 +1372,7 @@ func (s *Supervisor) runAgentProcess() {
 			restartTimer.Stop()
 
 			if s.config.Agent.UseHUPRestart {
-				err := s.hupRestartAgent(previousHealth)
+				err := s.hupRestartAgent()
 				if err != nil {
 					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
 					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
@@ -1439,40 +1459,54 @@ func (s *Supervisor) runAgentProcess() {
 	}
 }
 
-func (s *Supervisor) hupRestartAgent(previousHealth *protobufs.ComponentHealth) error {
-	err := s.writeAgentConfig()
-	if err != nil {
-		s.telemetrySettings.Logger.Error("failed to write agent new config", zap.Error(err))
-		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+// waitForAgentStart waits for the agent to start. The agent is considered to be
+// started when its first health report is received by the opamp server.
+func (s *Supervisor) waitForAgentStart() error {
+	if s.agentStarted.Load() {
+		return nil
+	}
+
+	bootstrapTimer := time.NewTimer(s.config.Agent.BootstrapTimeout)
+	defer bootstrapTimer.Stop()
+
+	s.agentStartedLock.Lock()
+	defer s.agentStartedLock.Unlock()
+
+	for {
+		select {
+		case <-s.agentStartedChan:
+			return nil
+		case <-bootstrapTimer.C:
+			return fmt.Errorf("agent has not started after %s", s.config.Agent.BootstrapTimeout)
+		}
+	}
+}
+
+func (s *Supervisor) hupRestartAgent() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
+
+	if err := s.waitForAgentStart(); err != nil {
 		return err
 	}
 
-	if s.commander.IsRunning() {
-		if previousHealth == nil {
-			s.telemetrySettings.Logger.Debug("Agent is running, but no health reported yet, delaying reload")
-			// If a remote configuration arrives before the agent has reported health, reloading the config
-			// with SIGHUP might cause the agent to crash. So we wait for health to be reported, which
-			// should mean all the internal components of the agent have been initialized.
-			bootstrapDeadline := time.Now().Add(s.config.Agent.BootstrapTimeout)
-			gotHealth := false
-			for time.Now().Before(bootstrapDeadline) {
-				if currentHealth := s.lastHealthFromClient.Load(); currentHealth != nil {
-					gotHealth = true
-					break
-				}
-				time.Sleep(100 * time.Millisecond)
-			}
-			if !gotHealth {
-				return errors.New("agent is running, but no health reported yet, can't reload config")
-			}
-		}
+	if err := s.writeAgentConfig(); err != nil {
+		return fmt.Errorf("failed to write agent new config: %w", err)
+	}
 
-		s.telemetrySettings.Logger.Debug("agent is running, reloading config")
-		err = s.reloadAgentConfig()
-		if err != nil {
-			s.telemetrySettings.Logger.Error("reloading agent config failed", zap.Error(err))
-			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
-		}
+	if !s.commander.IsRunning() {
+		s.telemetrySettings.Logger.Debug("agent is not running, skipping hup restart")
+		return nil
+	}
+
+	s.agentStarted.Store(false)
+	s.agentStartedLock.Lock()
+	s.agentStartedChan = make(chan struct{})
+	s.agentStartedLock.Unlock()
+
+	s.telemetrySettings.Logger.Debug("agent is running, reloading config")
+	if err := s.reloadAgentConfig(); err != nil {
+		return err
 	}
 
 	return nil
