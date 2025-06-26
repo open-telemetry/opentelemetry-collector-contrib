@@ -34,9 +34,11 @@ var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 type Criteria struct {
-	Include []string `mapstructure:"include,omitempty"`
-	Exclude []string `mapstructure:"exclude,omitempty"`
-
+	Include                   []string `mapstructure:"include,omitempty"`
+	Exclude                   []string `mapstructure:"exclude,omitempty"`
+	CapturePathSubstringRegex string   `mapstructure:"capture_path_substring_regex,omitempty"`
+	CapturedPathIncludeRegex  []string `mapstructure:"captured_path_include_regex,omitempty"`
+	CapturedPathExcludeRegex  []string `mapstructure:"captured_path_exclude_regex,omitempty"`
 	// ExcludeOlderThan allows excluding files whose modification time is older
 	// than the specified age.
 	ExcludeOlderThan time.Duration    `mapstructure:"exclude_older_than"`
@@ -68,7 +70,6 @@ func New(c Criteria) (*Matcher, error) {
 	if len(c.Include) == 0 {
 		return nil, fmt.Errorf("'include' must be specified")
 	}
-
 	if err := finder.Validate(c.Include); err != nil {
 		return nil, fmt.Errorf("include: %w", err)
 	}
@@ -89,6 +90,10 @@ func New(c Criteria) (*Matcher, error) {
 
 	if c.ExcludeOlderThan != 0 {
 		m.filterOpts = append(m.filterOpts, filter.ExcludeOlderThan(c.ExcludeOlderThan))
+	}
+
+	if c.CapturePathSubstringRegex != "" && (len(c.CapturedPathIncludeRegex) != 0 || len(c.CapturedPathExcludeRegex) != 0) {
+		m.filterOpts = append(m.filterOpts, filter.FilterRegex(c.CapturePathSubstringRegex, c.CapturedPathIncludeRegex, c.CapturedPathExcludeRegex))
 	}
 
 	if len(c.OrderingCriteria.SortBy) == 0 {
@@ -219,6 +224,7 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	if len(files) == 0 {
 		return files, errors.Join(fmt.Errorf("no files match the configured criteria"), errs)
 	}
+
 	if len(m.filterOpts) == 0 {
 		return files, errs
 	}
@@ -233,7 +239,11 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		return files, errors.Join(err, errs)
 	}
 
-	files = files[:m.topN]
+	//topN will be 0 in case of orderingCriteria.sortBy is not provided.
+	//This means filteropts has only filtering and no sorting. In this case we should not filter topN files.
+	if m.topN > 0 {
+		files = files[:m.topN]
+	}
 
 	m.cache.update(files)
 

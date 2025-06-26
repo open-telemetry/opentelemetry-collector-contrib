@@ -5,9 +5,8 @@ package filter // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
-	"regexp"
-
 	"go.uber.org/multierr"
+	"regexp"
 )
 
 type Option interface {
