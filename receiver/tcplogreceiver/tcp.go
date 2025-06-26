@@ -46,6 +46,9 @@ func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 type TCPLogConfig struct {
 	InputConfig        tcp.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator

@@ -78,6 +78,13 @@ func defaultConnectingHandler(connectionCallbacks types.ConnectionCallbacks) fun
 	}
 }
 
+func getAgentLogs(t *testing.T, storageDir string) string {
+	agentLogFile := filepath.Join(storageDir, "agent.log")
+	agentLog, err := os.ReadFile(agentLogFile)
+	require.NoError(t, err)
+	return string(agentLog)
+}
+
 // onConnectingFuncFactory is a function that will be given to types.ConnectionCallbacks as
 // OnConnectingFunc. This allows changing the ConnectionCallbacks both from the newOpAMPServer
 // caller and inside of newOpAMP Server, and for custom implementations of the value for `Accept`
@@ -274,6 +281,53 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
+func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
+	connected := atomic.Bool{}
+	server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(_ context.Context, _ types.Connection) {
+			connected.Store(true)
+		},
+	})
+
+	cfg, _, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	collectorConfigDir := t.TempDir()
+	cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
+	t.Cleanup(func() { cfgFile.Close() })
+	require.NoError(t, err)
+
+	_, err = cfgFile.Write(cfg.Bytes())
+	require.NoError(t, err)
+
+	storageDir := t.TempDir()
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":          server.addr,
+		"storage_dir":  storageDir,
+		"local_config": cfgFile.Name(),
+	})
+	t.Cleanup(s.Shutdown)
+	require.NoError(t, s.Start())
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	require.EventuallyWithTf(t, func(c *assert.CollectT) {
+		require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+}
+
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
 	storageDir := t.TempDir()
 	t.Log("Storage dir:", storageDir)
@@ -414,7 +468,6 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 						agentConfig.Store(string(config.Body))
 					}
 				}
-
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -1208,6 +1261,13 @@ func TestSupervisorRestartCommand(t *testing.T) {
 		},
 	})
 
+	// Here we will wait for the supervisor connection to go away and come back.
+	// This helps us check that the restart logic is actually restarting the agent.
+	// Note: this also helps the data race detector confirm that access to the
+	// [Supervisor.lastHealthFromClient] has to be synchronized to prevent races.
+	waitForSupervisorConnection(server.supervisorConnected, false)
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
 	})
@@ -1294,6 +1354,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	tempDir := t.TempDir()
 
 	var agentConfig atomic.Value
+	var initialRemoteConfigStatus atomic.Value
 	initialServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -1305,6 +1366,9 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 						agentConfig.Store(string(config.Body))
 					}
 				}
+				if message.RemoteConfigStatus != nil {
+					initialRemoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -1315,16 +1379,16 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
 
-	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+	simplePipelineCFG, simplePipelineHash, _, _ := createSimplePipelineCollectorConf(t)
 
 	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
 		RemoteConfig: &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
 				ConfigMap: map[string]*protobufs.AgentConfigFile{
-					"": {Body: cfg.Bytes()},
+					"": {Body: simplePipelineCFG.Bytes()},
 				},
 			},
-			ConfigHash: hash,
+			ConfigHash: simplePipelineHash,
 		},
 	})
 
@@ -1334,10 +1398,17 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 		return err == nil
 	}, 5*time.Second, 250*time.Millisecond, "Config file was not written to persistent storage directory")
 
+	// wait for remote config status to be applied
+	require.Eventually(t, func() bool {
+		status := initialRemoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return status != nil && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, simplePipelineHash)
+	}, 20*time.Second, 500*time.Millisecond, "Initial remote config never became applied")
+
 	agentConfig.Store("")
 	s.Shutdown()
 	initialServer.shutdown()
 
+	var remoteConfigStatus atomic.Value
 	newServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -1348,6 +1419,9 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 					if config != nil {
 						agentConfig.Store(string(config.Body))
 					}
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
 				}
 				return &protobufs.ServerToAgent{}
 			},
@@ -1364,6 +1438,12 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	newServer.sendToSupervisor(&protobufs.ServerToAgent{
 		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
 	})
+
+	// verify that the supervisor reports the existing remote config status
+	require.Eventually(t, func() bool {
+		status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return status != nil && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, simplePipelineHash)
+	}, 20*time.Second, 500*time.Millisecond, "Remote config status never became applied")
 
 	// Check that the new Supervisor instance starts with the configuration from the last received remote config
 	require.Eventually(t, func() bool {
@@ -1565,6 +1645,8 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 
 func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	agentCfgChan := make(chan string, 1)
+	var healthReport atomic.Value
+	var remoteConfigStatus atomic.Value
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -1579,7 +1661,12 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 						}
 					}
 				}
-
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteConfigStatus.Store(message.RemoteConfigStatus)
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -1652,6 +1739,18 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 		} else {
 			assert.ErrorContains(tt, err, "No connection could be made")
 		}
+	}, 3*time.Second, 250*time.Millisecond)
+
+	// Verify we have a healthy status (if it was ran with the empty config it would be healthy)
+	require.Eventually(t, func() bool {
+		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+		return ok && health.Healthy
+	}, 3*time.Second, 250*time.Millisecond)
+
+	// Verify the status is set to APPLIED (if it was ran with the empty config it would be APPLIED)
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
 	}, 3*time.Second, 250*time.Millisecond)
 }
 

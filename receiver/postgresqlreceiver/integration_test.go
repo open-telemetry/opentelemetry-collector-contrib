@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 const postgresqlPort = "5432"
@@ -185,6 +186,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		TopQueryCollection: TopQueryCollection{
 			Enabled: true,
 		},
+		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
@@ -192,7 +194,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.Must(zap.NewProduction()),
 		},
-	}, &cfg, clientFactory, newCache(1))
+	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
 	plogs, err := ns.scrapeQuerySamples(context.Background(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
@@ -213,7 +215,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	}
 	assert.True(t, found, "Expected to find a log record with the query text")
 
-	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30)
+	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
 	assert.NoError(t, err)
 	logRecords = firstTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false
@@ -232,6 +234,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		calls, ok := attributes["postgresql.calls"]
 		assert.True(t, ok)
 		assert.Equal(t, int64(1), calls.(int64))
+		assert.NotEmpty(t, attributes["postgresql.query_plan"])
 		found = true
 	}
 	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
@@ -239,7 +242,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	_, err = db.Query("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
-	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30)
+	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
 	assert.NoError(t, err)
 	logRecords = secondTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false

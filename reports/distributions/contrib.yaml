@@ -34,6 +34,7 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -71,6 +72,7 @@ components:
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
@@ -147,6 +149,7 @@ components:
         - elasticsearch
         - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
@@ -207,6 +210,7 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
         - tcpcheck
         - tcplog
@@ -227,6 +231,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes
