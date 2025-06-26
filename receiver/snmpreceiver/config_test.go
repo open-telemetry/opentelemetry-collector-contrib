@@ -409,7 +409,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	expectedConfigNoScalarOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigNoScalarOIDAttrName.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigNoScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Value: "val1",
 		},
@@ -418,7 +418,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadScalarOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadScalarOIDAttrName.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigBadScalarOIDAttrName.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a1",
 			Value: "val1",
@@ -428,7 +428,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadScalarOIDAttr := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadScalarOIDAttr.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigBadScalarOIDAttr.Attributes = getBaseAttrConfig("oid")
-	expectedConfigBadScalarOIDAttr.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttr.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val1",
@@ -438,7 +438,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadScalarOIDAttrValue := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadScalarOIDAttrValue.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigBadScalarOIDAttrValue.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadScalarOIDAttrValue.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttrValue.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val3",
@@ -451,12 +451,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	expectedConfigNoColumnOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigNoColumnOIDAttrName.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigNoColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{{}}
+	expectedConfigNoColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{{}}
 
 	expectedConfigBadColumnOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadColumnOIDAttrName.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigBadColumnOIDAttrName.Attributes = getBaseAttrConfig("oid")
-	expectedConfigBadColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigBadColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name: "a1",
 		},
@@ -465,7 +465,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadColumnOIDAttrValue := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadColumnOIDAttrValue.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigBadColumnOIDAttrValue.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadColumnOIDAttrValue.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigBadColumnOIDAttrValue.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val3",
@@ -480,7 +480,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute := factory.CreateDefaultConfig().(*Config)
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Attributes = getBaseAttrConfig("enum")
-	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val1",
@@ -504,7 +504,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigComplexGood.Attributes["a3"] = &AttributeConfig{IndexedValuePrefix: "p"}
 	expectedConfigComplexGood.Attributes["a4"] = &AttributeConfig{OID: "1"}
 	expectedConfigComplexGood.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigComplexGood.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigComplexGood.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a1",
 			Value: "val1",
@@ -520,7 +520,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		ColumnOIDs: []ColumnOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name: "a4",
 					},
@@ -536,7 +536,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		ColumnOIDs: []ColumnOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name: "a3",
 					},
@@ -548,7 +548,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 			{
 				OID: "2",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name: "a3",
 					},
@@ -583,7 +583,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		ScalarOIDs: []ScalarOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a1",
 						Value: "val1",
@@ -602,7 +602,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		ScalarOIDs: []ScalarOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a2",
 						Value: "val1",
@@ -611,7 +611,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 			{
 				OID: "2",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a2",
 						Value: "val2",
@@ -675,7 +675,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 					"ra1",
 					"ra2",
 				},
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a1",
 						Value: "val1",
@@ -695,7 +695,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Attributes = getBaseAttrConfig("oid")
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name: "a2",
 		},
@@ -706,7 +706,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Attributes = getBaseAttrConfig("prefix")
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name: "a2",
 		},

@@ -222,7 +222,7 @@ type ScalarOID struct {
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is optional and may contain names and values associated with enum
 	// AttributeConfigs to associate with the value of the scalar OID
-	Attributes []Attribute `mapstructure:"attributes"`
+	Attributes []attribute `mapstructure:"attributes"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -240,11 +240,11 @@ type ColumnOID struct {
 	// Attributes is required only if there are no ResourceAttributes associated defined here.
 	// Valid values are non enum AttributeConfig names that will be used to differentiate the
 	// indexed values for the column OID
-	Attributes []Attribute `mapstructure:"attributes"`
+	Attributes []attribute `mapstructure:"attributes"`
 }
 
-// Attribute is a connection between a metric configuration and an AttributeConfig
-type Attribute struct {
+// attribute is a connection between a metric configuration and an AttributeConfig
+type attribute struct {
 	// Name is required and should match the key for an AttributeConfig
 	Name string `mapstructure:"name"`
 	// Value is optional and is only needed for a matched AttributeConfig's with enum value.
@@ -386,7 +386,7 @@ func validatePrivacy(cfg *Config) error {
 func validateMetricConfigs(cfg *Config) error {
 	var combinedErr error
 
-	// Validate the Attribute and ResourceAttribute configs up front
+	// Validate the attribute and ResourceAttribute configs up front
 	combinedErr = errors.Join(combinedErr, validateAttributeConfigs(cfg))
 	combinedErr = errors.Join(combinedErr, validateResourceAttributeConfigs(cfg))
 
@@ -583,7 +583,7 @@ func validateAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Attribute has either an OID, Enum, or IndexedValuePrefix
+	// Make sure each attribute has either an OID, Enum, or IndexedValuePrefix
 	for attrName, attrCfg := range attributes {
 		if len(attrCfg.Enum) == 0 && attrCfg.OID == "" && attrCfg.IndexedValuePrefix == "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgAttributeConfigNoEnumOIDOrPrefix, attrName))
@@ -602,7 +602,7 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Resource Attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit
+	// Make sure each Resource attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit
 	for attrName, attrCfg := range resourceAttributes {
 		hasOID := attrCfg.OID != ""
 		hasScalarOID := attrCfg.ScalarOID != ""

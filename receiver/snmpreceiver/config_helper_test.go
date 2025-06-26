@@ -811,7 +811,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 							ScalarOIDs: []ScalarOID{
 								{
 									OID: ".1",
-									Attributes: []Attribute{
+									Attributes: []attribute{
 										{
 											Name: "a1",
 										},
@@ -828,7 +828,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getMetricConfigAttributes(".2")
-				require.ElementsMatch(t, []Attribute{}, actual)
+				require.ElementsMatch(t, []attribute{}, actual)
 			},
 		},
 		{
@@ -852,13 +852,13 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getMetricConfigAttributes(".1")
-				require.ElementsMatch(t, []Attribute{}, actual)
+				require.ElementsMatch(t, []attribute{}, actual)
 			},
 		},
 		{
 			desc: "Returns metric config attributes",
 			testFunc: func(t *testing.T) {
-				attributes := []Attribute{
+				attributes := []attribute{
 					{
 						Name:  "a2",
 						Value: "v2",
@@ -932,7 +932,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getResourceAttributeNames(".2")
-				require.ElementsMatch(t, []Attribute{}, actual)
+				require.ElementsMatch(t, []attribute{}, actual)
 			},
 		},
 		{
@@ -956,7 +956,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getResourceAttributeNames(".1")
-				require.ElementsMatch(t, []Attribute{}, actual)
+				require.ElementsMatch(t, []attribute{}, actual)
 			},
 		},
 		{

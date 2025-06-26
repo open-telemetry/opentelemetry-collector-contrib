@@ -17,7 +17,7 @@ type configHelper struct {
 	resourceAttributeScalarOIDs []string
 	resourceAttributeColumnOIDs []string
 	metricNamesByOID            map[string]string
-	metricAttributesByOID       map[string][]Attribute
+	metricAttributesByOID       map[string][]attribute
 	resourceAttributesByOID     map[string][]string
 }
 
@@ -31,7 +31,7 @@ func newConfigHelper(cfg *Config) *configHelper {
 		resourceAttributeScalarOIDs: []string{},
 		resourceAttributeColumnOIDs: []string{},
 		metricNamesByOID:            map[string]string{},
-		metricAttributesByOID:       map[string][]Attribute{},
+		metricAttributesByOID:       map[string][]attribute{},
 		resourceAttributesByOID:     map[string][]string{},
 	}
 
@@ -210,7 +210,7 @@ func (h configHelper) getResourceAttributeConfigScalarOID(name string) string {
 }
 
 // getMetricConfigAttributes returns the metric config attributes for a given OID
-func (h configHelper) getMetricConfigAttributes(oid string) []Attribute {
+func (h configHelper) getMetricConfigAttributes(oid string) []attribute {
 	return h.metricAttributesByOID[oid]
 }
 

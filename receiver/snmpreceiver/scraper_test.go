@@ -501,7 +501,7 @@ func TestScrape(t *testing.T) {
 								ScalarOIDs: []ScalarOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name:  "attr1",
 												Value: "val1",
@@ -568,7 +568,7 @@ func TestScrape(t *testing.T) {
 								ScalarOIDs: []ScalarOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name:  "attr1",
 												Value: "val1",
@@ -577,7 +577,7 @@ func TestScrape(t *testing.T) {
 									},
 									{
 										OID: ".2",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name:  "attr1",
 												Value: "val2",
@@ -725,7 +725,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -789,7 +789,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: "1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -855,7 +855,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -922,7 +922,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1005,7 +1005,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1082,7 +1082,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".0",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1099,7 +1099,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1184,7 +1184,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1271,7 +1271,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1355,7 +1355,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1424,7 +1424,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1502,7 +1502,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: "1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1580,7 +1580,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1658,7 +1658,7 @@ func TestScrape(t *testing.T) {
 								ColumnOIDs: []ColumnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -2674,7 +2674,7 @@ func TestScrape(t *testing.T) {
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -2750,7 +2750,7 @@ func TestScrape(t *testing.T) {
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -3050,7 +3050,7 @@ func TestScrape(t *testing.T) {
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
