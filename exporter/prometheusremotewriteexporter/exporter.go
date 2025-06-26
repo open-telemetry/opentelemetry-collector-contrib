@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
@@ -291,7 +292,10 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
 	prwe.wal.telemetry.recordWALWrites(ctx)
+	start := time.Now()
 	err = prwe.wal.persistToWAL(requests)
+	duration := time.Since(start)
+	prwe.wal.telemetry.recordWALWriteLatency(ctx, duration.Milliseconds())
 	if err != nil {
 		prwe.wal.telemetry.recordWALWritesFailures(ctx)
 		return consumererror.NewPermanent(err)
