@@ -27,10 +27,10 @@ The SQL Query Receiver uses custom SQL queries to generate metrics from a databa
 
 **Option 1: Individual connection parameters** (cannot be used when `datasource` is set):
 
-- `host` (optional): The hostname or IP address of the database server.
+- `host` (required): The hostname or IP address of the database server.
   - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
-- `port` (optional for `sqlserver`, otherwise required): The port number of the database server.
-- `database` (optional): The name of the database to connect to.
+- `port` (required, except optional for `sqlserver`): The port number of the database server.
+- `database` (required): The name of the database to connect to.
 - `username` (optional): The username for database authentication.
   - The `username` will be properly escaped and securely handled when building the connection string. Special characters (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
   - For `mysql`: No URL encoding is applied
@@ -41,7 +41,7 @@ The SQL Query Receiver uses custom SQL queries to generate metrics from a databa
 
 **Option 2: Datasource string:**
 
-- `datasource`(optional): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value is used instead of the individual connection parameters listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
+- `datasource` (required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value is used instead of the individual connection parameters listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
 
   - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
