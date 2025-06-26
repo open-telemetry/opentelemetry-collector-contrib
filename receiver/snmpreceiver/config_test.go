@@ -302,22 +302,22 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
 	return metricCfg
 }
 
-func getBaseAttrConfig(attrType string) map[string]*AttributeConfig {
+func getBaseAttrConfig(attrType string) map[string]*attributeConfig {
 	switch attrType {
 	case "oid":
-		return map[string]*AttributeConfig{
+		return map[string]*attributeConfig{
 			"a2": {
 				OID: "1",
 			},
 		}
 	case "prefix":
-		return map[string]*AttributeConfig{
+		return map[string]*attributeConfig{
 			"a2": {
 				IndexedValuePrefix: "p",
 			},
 		}
 	default:
-		return map[string]*AttributeConfig{
+		return map[string]*attributeConfig{
 			"a2": {
 				Enum: []string{"val1", "val2"},
 			},
@@ -497,12 +497,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigComplexGood.ResourceAttributes = getBaseResourceAttrConfig("prefix")
 	expectedConfigComplexGood.ResourceAttributes["ra2"] = &resourceAttributeConfig{OID: "1"}
 	expectedConfigComplexGood.Attributes = getBaseAttrConfig("enum")
-	expectedConfigComplexGood.Attributes["a1"] = &AttributeConfig{
+	expectedConfigComplexGood.Attributes["a1"] = &attributeConfig{
 		Value: "v",
 		Enum:  []string{"val1"},
 	}
-	expectedConfigComplexGood.Attributes["a3"] = &AttributeConfig{IndexedValuePrefix: "p"}
-	expectedConfigComplexGood.Attributes["a4"] = &AttributeConfig{OID: "1"}
+	expectedConfigComplexGood.Attributes["a3"] = &attributeConfig{IndexedValuePrefix: "p"}
+	expectedConfigComplexGood.Attributes["a4"] = &attributeConfig{OID: "1"}
 	expectedConfigComplexGood.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigComplexGood.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{

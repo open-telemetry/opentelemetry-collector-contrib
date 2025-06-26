@@ -126,7 +126,7 @@ type Config struct {
 
 	// Attributes defines what attributes will be used on metrics for this receiver and is composed of
 	// attribute names along with their attribute configurations
-	Attributes map[string]*AttributeConfig `mapstructure:"attributes"`
+	Attributes map[string]*attributeConfig `mapstructure:"attributes"`
 
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
@@ -157,8 +157,8 @@ type resourceAttributeConfig struct {
 	_ struct{}
 }
 
-// AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
-type AttributeConfig struct {
+// attributeConfig contains config info about all of the metric attributes that will be used by this receiver.
+type attributeConfig struct {
 	// Value is optional, and will allow for a different attribute key other than the attribute name
 	Value string `mapstructure:"value"`
 	// Description is optional and describes what the attribute represents
@@ -238,17 +238,17 @@ type columnOID struct {
 	// be used to differentiate the indexed values for the column OID
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is required only if there are no ResourceAttributes associated defined here.
-	// Valid values are non enum AttributeConfig names that will be used to differentiate the
+	// Valid values are non enum attributeConfig names that will be used to differentiate the
 	// indexed values for the column OID
 	Attributes []attribute `mapstructure:"attributes"`
 }
 
-// attribute is a connection between a metric configuration and an AttributeConfig
+// attribute is a connection between a metric configuration and an attributeConfig
 type attribute struct {
-	// Name is required and should match the key for an AttributeConfig
+	// Name is required and should match the key for an attributeConfig
 	Name string `mapstructure:"name"`
-	// Value is optional and is only needed for a matched AttributeConfig's with enum value.
-	// Value should match one of the AttributeConfig's enum values in this case
+	// Value is optional and is only needed for a matched attributeConfig's with enum value.
+	// Value should match one of the attributeConfig's enum values in this case
 	Value string `mapstructure:"value"`
 }
 

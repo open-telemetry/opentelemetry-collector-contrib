@@ -167,7 +167,7 @@ func TestGetAttributeColumnOIDs(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -206,7 +206,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -230,7 +230,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -395,7 +395,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							Value: "a1v",
 						},
@@ -419,7 +419,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -443,7 +443,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							Value: "a1v",
 						},
@@ -479,7 +479,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -503,7 +503,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -527,7 +527,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -563,7 +563,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -587,7 +587,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -611,7 +611,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							OID: ".2",
 						},
@@ -820,7 +820,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -844,7 +844,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -879,7 +879,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 							},
 						},
 					},
-					Attributes: map[string]*AttributeConfig{
+					Attributes: map[string]*attributeConfig{
 						"a1": {
 							IndexedValuePrefix: "prefix",
 						},
