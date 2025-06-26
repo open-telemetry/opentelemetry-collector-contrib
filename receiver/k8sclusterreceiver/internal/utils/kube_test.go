@@ -58,7 +58,7 @@ func TestGetObjectFromStore_ObjectInClusterWideStore(t *testing.T) {
 		Cache: map[string]any{},
 	}
 
-	ms.Setup(gvk.Job, "", store)
+	ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
 	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
 
 	obj, err := GetObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))

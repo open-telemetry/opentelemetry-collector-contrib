@@ -8,6 +8,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const ClusterWideInformerKey = "<cluster-wide-informer-key>"
+
 // Store keeps track of required caches exposed by informers.
 // This store is used while collecting metadata about Pods to be able
 // to correlate other Kubernetes objects with a Pod.

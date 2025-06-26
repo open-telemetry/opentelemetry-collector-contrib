@@ -230,7 +230,7 @@ func TestSetupInformerForKind(t *testing.T) {
 
 	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
 	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, map[string]informers.SharedInformerFactory{
-		"": factory,
+		"<cluster-wide-informer-key>": factory,
 	})
 
 	assert.Equal(t, 1, logs.Len())
@@ -396,7 +396,7 @@ func TestObjMetadata(t *testing.T) {
 			name: "Pod with Service metadata",
 			metadataStore: func() *metadata.Store {
 				ms := metadata.NewStore()
-				ms.Setup(gvk.Service, "", &testutils.MockStore{
+				ms.Setup(gvk.Service, metadata.ClusterWideInformerKey, &testutils.MockStore{
 					Cache: map[string]any{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{

@@ -46,8 +46,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
-const clusterWideInformerKey = ""
-
 type sharedInformer interface {
 	Start(<-chan struct{})
 	WaitForCacheSync(<-chan struct{}) map[reflect.Type]bool
@@ -152,7 +150,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 
 	if rw.osQuotaClient != nil {
 		quotaFactory := quotainformersv1.NewSharedInformerFactory(rw.osQuotaClient, 0)
-		rw.setupInformer(gvk.ClusterResourceQuota, clusterWideInformerKey, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
+		rw.setupInformer(gvk.ClusterResourceQuota, metadata.ClusterWideInformerKey, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
 		rw.informerFactories = append(rw.informerFactories, quotaFactory)
 	}
 	for _, factory := range factories {
@@ -188,8 +186,8 @@ func (rw *resourceWatcher) getInformerFactories() map[string]informers.SharedInf
 		)
 	default:
 		// if no namespace is provided, the informer observes the whole cluster, and is stored under
-		// the key ""
-		factories[clusterWideInformerKey] = informers.NewSharedInformerFactoryWithOptions(
+		// the key "<cluster-wide-informer-key>"
+		factories[metadata.ClusterWideInformerKey] = informers.NewSharedInformerFactoryWithOptions(
 			rw.client,
 			rw.config.MetadataCollectionInterval,
 		)
@@ -228,15 +226,15 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.Node:
 		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
 			// if no namespace is provided, the cluster wide informer factory, which is stored under the key "" is used to create the informer
-			if factory, ok := factories[clusterWideInformerKey]; ok {
-				rw.setupInformer(kind, clusterWideInformerKey, factory.Core().V1().Nodes().Informer())
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().Nodes().Informer())
 			}
 		}
 	case gvk.Namespace:
 		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
 			// if no namespace is provided, the cluster wide informer factory, which is stored under the key "" is used to create the informer
-			if factory, ok := factories[clusterWideInformerKey]; ok {
-				rw.setupInformer(kind, clusterWideInformerKey, factory.Core().V1().Namespaces().Informer())
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().Namespaces().Informer())
 			}
 		}
 	case gvk.ReplicationController:

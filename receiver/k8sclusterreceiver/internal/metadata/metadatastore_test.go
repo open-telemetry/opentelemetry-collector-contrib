@@ -23,7 +23,7 @@ func TestStore_GetFromEmptyStore(t *testing.T) {
 func TestStore_SetupAndGet(t *testing.T) {
 	store := NewStore()
 
-	store.Setup(gvk.Job, "", mockStore{
+	store.Setup(gvk.Job, ClusterWideInformerKey, mockStore{
 		testObjs: []any{"obj-1", "obj-2"},
 	})
 	store.Setup(gvk.Job, "namespace-1", mockStore{
@@ -34,7 +34,7 @@ func TestStore_SetupAndGet(t *testing.T) {
 	require.NotNil(t, get)
 
 	require.Len(t, get, 2)
-	generalStore := get[""]
+	generalStore := get[ClusterWideInformerKey]
 	require.NotNil(t, generalStore)
 
 	namespacedStore := get["namespace-1"]

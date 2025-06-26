@@ -29,7 +29,7 @@ func GetPodServiceTags(pod *corev1.Pod, services map[string]cache.Store) map[str
 	properties := map[string]string{}
 
 	serviceFound := false
-	if servicesStore, ok := services[""]; ok {
+	if servicesStore, ok := services[metadata.ClusterWideInformerKey]; ok {
 		for _, ser := range servicesStore.List() {
 			serObj := ser.(*corev1.Service)
 			if serObj.Namespace == pod.Namespace &&

@@ -6,6 +6,7 @@ package utils // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"regexp"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +58,7 @@ func GetObjectFromStore(namespace, objName string, stores map[string]cache.Store
 	exists := false
 	var err error
 	// first, check if there is a store for all namespaces
-	if store, ok := stores[""]; ok {
+	if store, ok := stores[metadata.ClusterWideInformerKey]; ok {
 		obj, exists, err = store.GetByKey(GetIDForCache(namespace, objName))
 		if err != nil {
 			return nil, err
