@@ -122,7 +122,7 @@ type Config struct {
 
 	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
 	// of resource attribute names along with their resource attribute configurations
-	ResourceAttributes map[string]*ResourceAttributeConfig `mapstructure:"resource_attributes"`
+	ResourceAttributes map[string]*resourceAttributeConfig `mapstructure:"resource_attributes"`
 
 	// Attributes defines what attributes will be used on metrics for this receiver and is composed of
 	// attribute names along with their attribute configurations
@@ -133,8 +133,8 @@ type Config struct {
 	Metrics map[string]*metricConfig `mapstructure:"metrics"`
 }
 
-// ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
-type ResourceAttributeConfig struct {
+// resourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
+type resourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
 	// OID is required only if ScalarOID or IndexedValuePrefix is not set.
@@ -234,7 +234,7 @@ type ColumnOID struct {
 	// OID is required and is the column OID that is associated with a metric
 	OID string `mapstructure:"oid"`
 	// ResourceAttributes is required only if there are no Attributes associated with non enum
-	// AttributeConfigs defined here. Valid values are ResourceAttributeConfig names that will
+	// AttributeConfigs defined here. Valid values are resourceAttributeConfig names that will
 	// be used to differentiate the indexed values for the column OID
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is required only if there are no ResourceAttributes associated defined here.
@@ -507,7 +507,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 		}
 
 		// Scalar OID metrics should only have Scalar OID resource attributes
-		// ResourceAttributeConfig validation ensures that (only) one of ScalarOID, OID, or IndexedValuePrefix is set before reaching this
+		// resourceAttributeConfig validation ensures that (only) one of ScalarOID, OID, or IndexedValuePrefix is set before reaching this
 		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarMetricHasIndexedResourceAttribute, metricName, name))
 			continue

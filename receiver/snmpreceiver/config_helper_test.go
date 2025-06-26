@@ -235,7 +235,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 							OID: ".2",
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							OID: ".3",
 						},
@@ -647,7 +647,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -671,7 +671,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							OID: ".2",
 						},
@@ -695,7 +695,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -731,7 +731,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							OID: ".2",
 						},
@@ -755,7 +755,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -779,7 +779,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							OID: ".2",
 						},
@@ -924,7 +924,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -948,7 +948,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							IndexedValuePrefix: "prefix",
 						},
@@ -974,7 +974,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 							},
 						},
 					},
-					ResourceAttributes: map[string]*ResourceAttributeConfig{
+					ResourceAttributes: map[string]*resourceAttributeConfig{
 						"ra1": {
 							IndexedValuePrefix: "prefix",
 						},
