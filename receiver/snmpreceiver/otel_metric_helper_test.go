@@ -185,7 +185,7 @@ func TestCreateMetric(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{
@@ -207,7 +207,7 @@ func TestCreateMetric(t *testing.T) {
 				resource.Resource().Attributes().PutStr("key1", "val1")
 				helper.resourcesByKey["r1"] = &resource
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{
@@ -234,7 +234,7 @@ func TestCreateMetric(t *testing.T) {
 				resource.Resource().Attributes().PutStr("key1", "val1")
 				helper.resourcesByKey["r1"] = &resource
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Sum: &SumMetric{
@@ -271,7 +271,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				settings := receiver.Settings{}
 				helper := newOTELMetricHelper(settings, pcommon.NewTimestampFromTime(time.Now()))
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{
@@ -298,7 +298,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				resource.Resource().Attributes().PutStr("key1", "val1")
 				helper.resourcesByKey["r1"] = &resource
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{
@@ -329,7 +329,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metric.SetEmptyGauge()
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
 				helper.metricsByResource["r1"]["m1"] = &metric
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{
@@ -367,7 +367,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metric.Sum().SetIsMonotonic(true)
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
 				helper.metricsByResource["r1"]["m1"] = &metric
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Sum: &SumMetric{
@@ -405,7 +405,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metric.SetEmptyGauge()
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
 				helper.metricsByResource["r1"]["m1"] = &metric
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{
@@ -441,7 +441,7 @@ func TestAddMetricDataPoint(t *testing.T) {
 				metric.SetEmptyGauge()
 				helper.metricsByResource["r1"] = map[string]*pmetric.Metric{}
 				helper.metricsByResource["r1"]["m1"] = &metric
-				metricCfg := MetricConfig{
+				metricCfg := metricConfig{
 					Description: "description",
 					Unit:        "1",
 					Gauge: &GaugeMetric{

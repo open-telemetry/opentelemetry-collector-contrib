@@ -30,7 +30,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 		expectedErr string
 	}
 
-	metrics := map[string]*MetricConfig{
+	metrics := map[string]*metricConfig{
 		"m3": {
 			Unit: "By",
 			Gauge: &GaugeMetric{
@@ -266,8 +266,8 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	}
 }
 
-func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
-	metricCfg := map[string]*MetricConfig{
+func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
+	metricCfg := map[string]*metricConfig{
 		"m3": {
 			Unit: "By",
 		},
@@ -510,7 +510,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			Value: "val1",
 		},
 	}
-	expectedConfigComplexGood.Metrics["m1"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m1"] = &metricConfig{
 		Unit: "1",
 		Sum: &SumMetric{
 			Monotonic:   true,
@@ -528,7 +528,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m2"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m2"] = &metricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -560,7 +560,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m4"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m4"] = &metricConfig{
 		Unit: "{things}",
 		Sum: &SumMetric{
 			Aggregation: "cumulative",
@@ -573,7 +573,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m5"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m5"] = &metricConfig{
 		Unit: "{things}",
 		Sum: &SumMetric{
 			Aggregation: "cumulative",
@@ -592,7 +592,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m6"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m6"] = &metricConfig{
 		Unit: "1",
 		Sum: &SumMetric{
 			Aggregation: "delta",
@@ -620,7 +620,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m7"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m7"] = &metricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -634,7 +634,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m8"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m8"] = &metricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -648,7 +648,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m9"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m9"] = &metricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -663,7 +663,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m10"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m10"] = &metricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -1024,7 +1024,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Version:   "v2c",
 				Community: "public",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
@@ -1045,7 +1045,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Endpoint:  "udp://localhost:161",
 				Community: "public",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
@@ -1067,7 +1067,7 @@ func TestValidate(t *testing.T) {
 				Endpoint: "udp://localhost:161",
 				Version:  "v3",
 				User:     "u",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
@@ -1091,7 +1091,7 @@ func TestValidate(t *testing.T) {
 				SecurityLevel: "auth_no_priv",
 				User:          "u",
 				AuthPassword:  "p",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
@@ -1117,7 +1117,7 @@ func TestValidate(t *testing.T) {
 				AuthType:        "md5",
 				AuthPassword:    "p",
 				PrivacyPassword: "pp",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{

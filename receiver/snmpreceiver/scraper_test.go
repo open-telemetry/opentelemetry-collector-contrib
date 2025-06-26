@@ -155,7 +155,7 @@ func TestScrape(t *testing.T) {
 
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								ScalarOIDs: []ScalarOID{
 									{
@@ -191,7 +191,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								ScalarOIDs: []ScalarOID{
 									{
@@ -224,7 +224,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -271,7 +271,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -318,7 +318,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -368,7 +368,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -423,7 +423,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -491,7 +491,7 @@ func TestScrape(t *testing.T) {
 								Enum:  []string{"val1", "val2"},
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -558,7 +558,7 @@ func TestScrape(t *testing.T) {
 								Enum: []string{"val1", "val2"},
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -622,7 +622,7 @@ func TestScrape(t *testing.T) {
 				).Return([]snmpData{})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								ColumnOIDs: []ColumnOID{
 									{
@@ -670,7 +670,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								ColumnOIDs: []ColumnOID{
 									{
@@ -715,7 +715,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -779,7 +779,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -843,7 +843,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -910,7 +910,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -983,7 +983,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
@@ -1072,7 +1072,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
@@ -1174,7 +1174,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1261,7 +1261,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1345,7 +1345,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1414,7 +1414,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1492,7 +1492,7 @@ func TestScrape(t *testing.T) {
 								OID: "0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1570,7 +1570,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1648,7 +1648,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1725,7 +1725,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "thing",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1814,7 +1814,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1894,7 +1894,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -1971,7 +1971,7 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2069,7 +2069,7 @@ func TestScrape(t *testing.T) {
 								OID: "0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2158,7 +2158,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "object",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2241,7 +2241,7 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2323,7 +2323,7 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2405,7 +2405,7 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2474,7 +2474,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "p",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2579,7 +2579,7 @@ func TestScrape(t *testing.T) {
 								OID: ".2",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2663,7 +2663,7 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2739,7 +2739,7 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "prefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2803,7 +2803,7 @@ func TestScrape(t *testing.T) {
 								ScalarOID: ".5.0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2870,7 +2870,7 @@ func TestScrape(t *testing.T) {
 								ScalarOID: ".7.0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -2934,7 +2934,7 @@ func TestScrape(t *testing.T) {
 								ScalarOID: ".5.0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
@@ -3039,7 +3039,7 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",

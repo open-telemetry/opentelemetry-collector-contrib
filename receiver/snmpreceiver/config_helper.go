@@ -145,7 +145,7 @@ func (h configHelper) getMetricName(oid string) string {
 }
 
 // getMetricConfig returns a metric config based on a given name
-func (h configHelper) getMetricConfig(name string) *MetricConfig {
+func (h configHelper) getMetricConfig(name string) *metricConfig {
 	return h.cfg.Metrics[name]
 }
 

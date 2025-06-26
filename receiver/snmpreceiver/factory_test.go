@@ -55,7 +55,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -93,7 +93,7 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
 				snmpCfg.Endpoint = "localhost:161"
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -119,7 +119,7 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
 				snmpCfg.Endpoint = "udp://localhost"
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -145,7 +145,7 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
 				snmpCfg.Endpoint = "udp://localhost:"
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -170,7 +170,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Gauge: &GaugeMetric{},
 						ScalarOIDs: []ScalarOID{{
@@ -194,7 +194,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Sum: &SumMetric{},
 						ScalarOIDs: []ScalarOID{{
@@ -218,7 +218,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Sum: &SumMetric{},
 						ScalarOIDs: []ScalarOID{{
@@ -242,7 +242,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.Metrics = map[string]*metricConfig{
 					"m1": {
 						Gauge: &GaugeMetric{ValueType: "int"},
 						ScalarOIDs: []ScalarOID{{

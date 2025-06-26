@@ -130,7 +130,7 @@ type Config struct {
 
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
-	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+	Metrics map[string]*metricConfig `mapstructure:"metrics"`
 }
 
 // ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
@@ -174,8 +174,8 @@ type AttributeConfig struct {
 	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"`
 }
 
-// MetricConfig contains config info about a given metric
-type MetricConfig struct {
+// metricConfig contains config info about a given metric
+type metricConfig struct {
 	// Description is optional and describes what this metric represents
 	Description string `mapstructure:"description"`
 	// Unit is required
@@ -390,13 +390,13 @@ func validateMetricConfigs(cfg *Config) error {
 	combinedErr = errors.Join(combinedErr, validateAttributeConfigs(cfg))
 	combinedErr = errors.Join(combinedErr, validateResourceAttributeConfigs(cfg))
 
-	// Ensure there is at least one MetricConfig
+	// Ensure there is at least one metricConfig
 	metrics := cfg.Metrics
 	if len(metrics) == 0 {
 		return errors.Join(combinedErr, errMetricRequired)
 	}
 
-	// Make sure each MetricConfig has valid info
+	// Make sure each metricConfig has valid info
 	for metricName, metricCfg := range metrics {
 		if metricCfg.Unit == "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMetricNoUnit, metricName))

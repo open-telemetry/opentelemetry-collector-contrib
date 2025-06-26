@@ -19,7 +19,7 @@ func TestGetMetricScalarOIDs(t *testing.T) {
 			desc: "Returns empty slice when no scalar OIDs",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -38,7 +38,7 @@ func TestGetMetricScalarOIDs(t *testing.T) {
 			desc: "Returns all scalar OIDs",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -79,7 +79,7 @@ func TestGetMetricColumnOIDs(t *testing.T) {
 			desc: "Returns empty slice when no column OIDs",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -98,7 +98,7 @@ func TestGetMetricColumnOIDs(t *testing.T) {
 			desc: "Returns all column OIDs",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -139,7 +139,7 @@ func TestGetAttributeColumnOIDs(t *testing.T) {
 			desc: "Returns empty slice when no attributes",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -158,7 +158,7 @@ func TestGetAttributeColumnOIDs(t *testing.T) {
 			desc: "Returns all column OIDs",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -197,7 +197,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 			desc: "Returns empty slice when no resource attributes",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -221,7 +221,7 @@ func TestGetResourceAttributeColumnOIDs(t *testing.T) {
 			desc: "Returns all column OIDs",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -265,7 +265,7 @@ func TestGetMetricName(t *testing.T) {
 			desc: "Returns empty string when no metric matches OID",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -284,7 +284,7 @@ func TestGetMetricName(t *testing.T) {
 			desc: "Returns metric name it exists by matching scalar OID",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -303,7 +303,7 @@ func TestGetMetricName(t *testing.T) {
 			desc: "Returns metric name it exists by matching column OID",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -333,9 +333,9 @@ func TestGetMetricConfig(t *testing.T) {
 		{
 			desc: "Returns nil when no metric config exists",
 			testFunc: func(t *testing.T) {
-				var m1 *MetricConfig
+				var m1 *metricConfig
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -353,7 +353,7 @@ func TestGetMetricConfig(t *testing.T) {
 		{
 			desc: "Returns metric config",
 			testFunc: func(t *testing.T) {
-				m1 := &MetricConfig{
+				m1 := &metricConfig{
 					ScalarOIDs: []ScalarOID{
 						{
 							OID: ".1",
@@ -361,7 +361,7 @@ func TestGetMetricConfig(t *testing.T) {
 					},
 				}
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": m1,
 					},
 				}
@@ -386,7 +386,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 			desc: "Returns empty string when no attribute config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -410,7 +410,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 			desc: "Returns empty string when attribute config does not have value",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -434,7 +434,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 			desc: "Returns value for attribute config",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -470,7 +470,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 			desc: "Returns empty string when no attribute config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -494,7 +494,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 			desc: "Returns empty string when attribute config does not have indexed value prefix",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -518,7 +518,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 			desc: "Returns indexed value prefix for attribute config",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -554,7 +554,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 			desc: "Returns empty string when no attribute config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -578,7 +578,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 			desc: "Returns empty string when attribute config does not have OID",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -602,7 +602,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 			desc: "Returns indexed value prefix for attribute config",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -638,7 +638,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 			desc: "Returns empty string when no resource attribute config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -662,7 +662,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 			desc: "Returns empty string when resource attribute config does not have indexed value prefix",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -686,7 +686,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 			desc: "Returns indexed value prefix for resource attribute config",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -722,7 +722,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 			desc: "Returns empty string when no resource attribute config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -746,7 +746,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 			desc: "Returns empty string when resource attribute config does not have OID",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -770,7 +770,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 			desc: "Returns indexed value prefix for resource attribute config",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -806,7 +806,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 			desc: "Returns empty slice when no metric config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -835,7 +835,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 			desc: "Returns empty slice when metric config has no attributes",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -869,7 +869,7 @@ func TestGetMetricConfigAttributes(t *testing.T) {
 					},
 				}
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ScalarOIDs: []ScalarOID{
 								{
@@ -912,7 +912,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 			desc: "Returns empty slice when no metric config exists",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -939,7 +939,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 			desc: "Returns empty slice when metric config has no resource attributes",
 			testFunc: func(t *testing.T) {
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
@@ -964,7 +964,7 @@ func TestGetResourceAttributeNames(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				attributes := []string{"ra2", "ra3"}
 				cfg := Config{
-					Metrics: map[string]*MetricConfig{
+					Metrics: map[string]*metricConfig{
 						"m1": {
 							ColumnOIDs: []ColumnOID{
 								{
