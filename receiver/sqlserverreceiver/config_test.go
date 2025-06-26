@@ -166,7 +166,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		}
 		expected.LogsBuilderConfig = metadata.LogsBuilderConfig{
-			Events: metadata.DefaultEventsConfig(),
+			Events: metadata.EventsConfig{
+				DbServerQuerySample: metadata.EventConfig{
+					Enabled: true,
+				},
+				DbServerTopQuery: metadata.EventConfig{
+					Enabled: true,
+				},
+			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
 				HostName: metadata.ResourceAttributeConfig{
 					Enabled: true,

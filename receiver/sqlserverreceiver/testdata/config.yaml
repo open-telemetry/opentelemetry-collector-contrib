@@ -21,3 +21,8 @@ sqlserver/named:
     collection_interval: 80s
   query_sample_collection:
     max_rows_per_query: 1450
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
