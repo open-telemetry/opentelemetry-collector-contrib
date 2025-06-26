@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -72,80 +71,7 @@ func (cfg *PromConfig) ContainsScrapeConfigs() bool {
 	return cfg != nil && (len(cfg.ScrapeConfigs) > 0 || len(cfg.ScrapeConfigFiles) > 0)
 }
 
-func (cfg *PromConfig) ContainsSecrets() bool {
-	if cfg == nil {
-		return false
-	}
-
-	return findSecretsRecursive(reflect.ValueOf(cfg))
-}
-
-// findSecretsRecursive recursively traverses the fields of a reflect.Value v.
-// It returns true if a non-empty commonconfig.Secret is found.
-func findSecretsRecursive(v reflect.Value) bool {
-	// 1. Handle pointers and interfaces: get the actual underlying value.
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		if v.IsNil() {
-			return false
-		}
-		v = v.Elem()
-	}
-
-	// 2. Handle slices and arrays: iterate over elements and recurse.
-	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-		for i := 0; i < v.Len(); i++ {
-			if findSecretsRecursive(v.Index(i)) {
-				return true
-			}
-		}
-		return false
-	}
-
-	// 3. We only care about structs for field iteration from this point.
-	if v.Kind() != reflect.Struct {
-		return false
-	}
-
-	// 4. Iterate over the fields of the struct.
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-
-		if !field.CanInterface() { // Skip unexported fields
-			continue
-		}
-
-		// 5. Check if the field itself is of type commonconfig.Secret.
-		if field.Type() == reflect.TypeOf(commonconfig.Secret("")) {
-			// Get the actual value of the Secret field.
-			if secretValue, ok := field.Interface().(commonconfig.Secret); ok {
-				// Convert commonconfig.Secret to string and check if it's non-empty.
-				if string(secretValue) != "" {
-					return true // Found a field of the correct type AND it's non-empty.
-				}
-				// If it's an empty string, we don't return true here.
-				// The function will continue to check other fields.
-			}
-		}
-
-		// 6. Recurse for nested elements.
-		if findSecretsRecursive(field) {
-			return true // Non-empty secret found in a nested field.
-		}
-	}
-
-	return false // No field of type commonconfig.Secret with a non-empty string was found.
-}
-
 func (cfg *PromConfig) Reload() error {
-	if cfg.ContainsSecrets() {
-		return nil
-	}
-
-	// Only reload if there are no secrets in the scrape configs, implying that there is
-	// either a target_allocator or a simpleprometheusreceiver creating the config.
-	// Reloading existing scrape configs corrupts authentication configurations.
-	// TODO: undo when https://github.com/prometheus/prometheus/issues/16756
-	// is solved.
 	return reloadPromConfig(cfg, cfg)
 }
 
