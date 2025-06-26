@@ -2194,7 +2194,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) resource attribute creates metric (19)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) resource attribute creates metric (19)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2276,7 +2276,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (int) resource attribute attached to columnOID metric alongside a columnOID (int) resource attribute creates metric (20)",
+			desc: "ScalarOID (int) resource attribute attached to columnOID metric alongside a columnOID (int) resource attribute creates metric (20)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2358,7 +2358,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (float) resource attribute attached to columnOID metric alongside a columnOID (float) resource attribute creates metric (21)",
+			desc: "ScalarOID (float) resource attribute attached to columnOID metric alongside a columnOID (float) resource attribute creates metric (21)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2440,7 +2440,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2614,7 +2614,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) attribute creates metric (24)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) attribute creates metric (24)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2703,7 +2703,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (string) resource attribute attached to columnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2779,7 +2779,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "scalarOID (string) resource attribute attached to scalarOID metric creates metric (26)",
+			desc: "ScalarOID (string) resource attribute attached to scalarOID metric creates metric (26)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{

@@ -137,16 +137,16 @@ type Config struct {
 type resourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
-	// OID is required only if scalarOID or IndexedValuePrefix is not set.
+	// OID is required only if ScalarOID or IndexedValuePrefix is not set.
 	// This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values
 	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
 	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
-	// scalarOID is required only if OID or IndexedValuePrefix is not set.
+	// ScalarOID is required only if OID or IndexedValuePrefix is not set.
 	// This is the scalar OID which will provide a value to be used for this resource attribute.
 	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
 	ScalarOID string `mapstructure:"scalar_oid"`
-	// IndexedValuePrefix is required only if OID or scalarOID is not set.
+	// IndexedValuePrefix is required only if OID or ScalarOID is not set.
 	// This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with
 	// specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource"
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
@@ -221,7 +221,7 @@ type scalarOID struct {
 	// ResourceAttributes is optional and may contain only scalar OID values to associate this metric with
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is optional and may contain names and values associated with enum
-	// AttributeConfigs to associate with the value of the scalar OID
+	// attributeConfigs to associate with the value of the scalar OID
 	Attributes []attribute `mapstructure:"attributes"`
 
 	// prevent unkeyed literal initialization
@@ -382,7 +382,7 @@ func validatePrivacy(cfg *Config) error {
 	return combinedErr
 }
 
-// validateMetricConfigs validates all MetricConfigs, AttributeConfigs, and ResourceAttributeConfigs
+// validateMetricConfigs validates all metricConfigs, attributeConfigs, and resourceAttributeConfigs
 func validateMetricConfigs(cfg *Config) error {
 	var combinedErr error
 
