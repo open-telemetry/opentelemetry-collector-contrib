@@ -295,8 +295,6 @@ func TestWALWrite_Telemetry(t *testing.T) {
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_write_latency")
 	require.NoError(t, err)
-	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_read_latency")
-	require.NoError(t, err)
 }
 
 func TestWALRead_Telemetry(t *testing.T) {
@@ -371,5 +369,8 @@ func TestWALRead_Telemetry(t *testing.T) {
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_reads_failures")
 
 	// verify that the metric exists, so it's incremented
+	require.NoError(t, err)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_read_latency")
 	require.NoError(t, err)
 }
