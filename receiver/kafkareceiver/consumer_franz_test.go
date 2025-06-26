@@ -252,20 +252,20 @@ func TestLost(t *testing.T) {
 	settings, _, _ := mustNewSettings(t)
 
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(ctx context.Context, _ kafkaMessage, _ attribute.Set) error {
+		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
 			return nil
 		}, nil
 	}
 	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, consumeFn)
 	require.NoError(t, err)
 	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { c.Shutdown(context.Background()) })
+	defer func() { require.NoError(t, c.Shutdown(context.Background())) }()
 
 	// Call lost couple of times for same partition
-	lostM := map[string][]int32{"test": []int32{0}}
+	lostM := map[string][]int32{"test": {0}}
 	c.lost(context.Background(), nil, lostM, false)
 	c.lost(context.Background(), nil, lostM, false)
 
 	// Call lost for a topic and partition that was not assigned
-	c.lost(context.Background(), nil, map[string][]int32{"404": []int32{0}}, true)
+	c.lost(context.Background(), nil, map[string][]int32{"404": {0}}, true)
 }
