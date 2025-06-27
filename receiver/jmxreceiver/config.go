@@ -22,11 +22,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const (
-	jmxMetricGatherer = iota
-	jmxScraper
-)
-
 // jmxGathererMainClass the class containing the main function for the JMX Metric Gatherer JAR
 var jmxGathererMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
 
@@ -197,19 +192,28 @@ func (c *Config) parseClasspath() string {
 	return strings.Join(classPathElems, ":")
 }
 
+func isSupportedJAR(supportedJarDetails map[string]supportedJar, jar string) bool {
+	hash, err := hashFile(jar)
+	if err != nil {
+		return false
+	}
+	_, ok := supportedJarDetails[hash]
+	return ok
+}
+
 func (c *Config) jarMainClass() string {
-	if err := c.validateJar(jmxMetricsGathererVersions, c.JARPath); err == nil {
+	if isSupportedJAR(jmxMetricsGathererVersions, c.JARPath) {
 		return jmxGathererMainClass
-	} else if err := c.validateJar(jmxScraperVersions, c.JARPath); err == nil {
+	} else if isSupportedJAR(jmxScraperVersions, c.JARPath) {
 		return jmxScraperMainClass
 	}
 	return ""
 }
 
 func (c *Config) jarJMXSamplingConfig() (string, string) {
-	if err := c.validateJar(jmxMetricsGathererVersions, c.JARPath); err == nil {
+	if isSupportedJAR(jmxMetricsGathererVersions, c.JARPath) {
 		return "otel.jmx.interval.milliseconds", strconv.FormatInt(c.CollectionInterval.Milliseconds(), 10)
-	} else if err := c.validateJar(jmxScraperVersions, c.JARPath); err == nil {
+	} else if isSupportedJAR(jmxScraperVersions, c.JARPath) {
 		return "otel.metric.export.interval", c.CollectionInterval.String()
 	}
 	return "", ""
@@ -310,7 +314,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogLevel) > 0 {
-		if err := c.validateJar(jmxScraperVersions, c.JARPath); err == nil {
+		if isSupportedJAR(jmxScraperVersions, c.JARPath) {
 			return fmt.Errorf("`log_level` can only be used with a JMX Metrics Gatherer JAR")
 		}
 		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
