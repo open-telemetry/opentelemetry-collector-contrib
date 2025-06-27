@@ -10,19 +10,18 @@ import (
 )
 
 func (dp *dnsLookupProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Logs, error) {
-	rl := ls.ResourceLogs()
-	for i := 0; i < rl.Len(); i++ {
+	for _, resourceLogs := range ls.ResourceLogs().All() {
 		for _, pp := range dp.processPairs {
 			switch pp.ContextID {
 			case resource:
-				err := pp.ProcessFn(ctx, rl.At(i).Resource().Attributes())
+				err := pp.ProcessFn(ctx, resourceLogs.Resource().Attributes())
 				if err != nil {
 					return ls, err
 				}
 			case record:
-				for j := 0; j < rl.At(i).ScopeLogs().Len(); j++ {
-					for k := 0; k < rl.At(i).ScopeLogs().At(j).LogRecords().Len(); k++ {
-						err := pp.ProcessFn(ctx, rl.At(i).ScopeLogs().At(j).LogRecords().At(k).Attributes())
+				for _, scopeLogs := range resourceLogs.ScopeLogs().All() {
+					for _, logRecords := range scopeLogs.LogRecords().All() {
+						err := pp.ProcessFn(ctx, logRecords.Attributes())
 						if err != nil {
 							return ls, err
 						}
@@ -33,5 +32,6 @@ func (dp *dnsLookupProcessor) processLogs(ctx context.Context, ls plog.Logs) (pl
 			}
 		}
 	}
+
 	return ls, nil
 }
