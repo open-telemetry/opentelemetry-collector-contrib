@@ -68,6 +68,11 @@ prometheus --config.file=prom.yaml
 ```shell
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
+- `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
+```
 - `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
   the collector start time as the metric start time if the
   process_start_time_seconds metric yields no result (for example if targets
@@ -83,12 +88,6 @@ prometheus --config.file=prom.yaml
 
 ```shell
 "--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
-```
-
-- `receiver.prometheusreceiver.RemoveLegacyResourceAttributes`: Remove `net.host.name`, `net.host.port`, and `http.scheme` resource attributes, which are redundant with the new `server.address`, `server.port`, and `url.scheme` attributes.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
 ```
 
 - `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.

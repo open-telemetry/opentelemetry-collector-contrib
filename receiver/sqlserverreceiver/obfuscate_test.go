@@ -25,6 +25,20 @@ func TestObfuscateSQL(t *testing.T) {
 	assert.Equal(t, expectedSQL, result)
 }
 
+func TestObfuscateInvalidSQL(t *testing.T) {
+	sql := "SELECT cpu_time AS [CPU Usage (time)"
+	result, err := obfuscateSQL(sql)
+
+	assert.Error(t, err)
+	assert.Empty(t, result)
+
+	sql = "SELECT cpu_time AS [CPU Usage Time]"
+	expected := "SELECT cpu_time"
+	result, err = obfuscateSQL(sql)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
+}
+
 func TestObfuscateQueryPlan(t *testing.T) {
 	expected, err := os.ReadFile(filepath.Join("testdata", "expectedQueryPlan.xml"))
 	assert.NoError(t, err)
@@ -54,10 +68,10 @@ func TestInvalidQueryPlans(t *testing.T) {
 	assert.Empty(t, result)
 	assert.Error(t, err)
 
-	// obfuscate failure, but no error
+	// obfuscate failure, return empty string
 	plan = `<ShowPlanXML StatementText="[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]/(10000)*(3600)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(10000)/(100)*(60)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(100)"></ShowPlanXML>`
 	result, err = obfuscateXMLPlan(plan)
-	assert.Equal(t, plan, result)
+	assert.Empty(t, result)
 	assert.NoError(t, err)
 }
 

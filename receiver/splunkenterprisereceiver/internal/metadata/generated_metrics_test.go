@@ -175,10 +175,19 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+
+			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+
+			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -194,6 +203,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -1033,6 +1045,27 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+				case "splunk.server.searchartifacts.adhoc.size":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc.size")
+					validatedMetrics["splunk.server.searchartifacts.adhoc.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.server.searchartifacts.completed":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
 					validatedMetrics["splunk.server.searchartifacts.completed"] = true
@@ -1054,12 +1087,54 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+				case "splunk.server.searchartifacts.completed.size":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed.size")
+					validatedMetrics["splunk.server.searchartifacts.completed.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.server.searchartifacts.incomplete":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
 					validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+				case "splunk.server.searchartifacts.incomplete.size":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete.size")
+					validatedMetrics["splunk.server.searchartifacts.incomplete.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
 					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1168,6 +1243,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+				case "splunk.server.searchartifacts.scheduled.size":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled.size")
+					validatedMetrics["splunk.server.searchartifacts.scheduled.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
 					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
