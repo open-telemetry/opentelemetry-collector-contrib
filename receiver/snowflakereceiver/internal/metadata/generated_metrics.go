@@ -1867,14 +1867,14 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSnowflakeStorageFailsafeBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSnowflakeStorageFailsafeBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1916,14 +1916,14 @@ func (m *metricSnowflakeStorageStageBytesTotal) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSnowflakeStorageStageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSnowflakeStorageStageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1965,14 +1965,14 @@ func (m *metricSnowflakeStorageStorageBytesTotal) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSnowflakeStorageStorageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSnowflakeStorageStorageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2462,17 +2462,17 @@ func (mb *MetricsBuilder) RecordSnowflakeSessionIDCountDataPoint(ts pcommon.Time
 }
 
 // RecordSnowflakeStorageFailsafeBytesTotalDataPoint adds a data point to snowflake.storage.failsafe_bytes.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSnowflakeStorageFailsafeBytesTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSnowflakeStorageStageBytesTotalDataPoint adds a data point to snowflake.storage.stage_bytes.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeStorageStageBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSnowflakeStorageStageBytesTotalDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSnowflakeStorageStageBytesTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSnowflakeStorageStorageBytesTotalDataPoint adds a data point to snowflake.storage.storage_bytes.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeStorageStorageBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSnowflakeStorageStorageBytesTotalDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSnowflakeStorageStorageBytesTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
