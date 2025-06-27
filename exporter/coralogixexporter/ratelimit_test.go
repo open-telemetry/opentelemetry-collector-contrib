@@ -8,24 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRateError_ErrorCountReset(t *testing.T) {
-	re := &rateError{
-		threshold: 5,
-		enabled:   true,
-	}
-	assert.Equal(t, int32(0), re.errorCount.Load())
-
-	for i := 0; i < 5; i++ {
-		re.enableRateLimit(nil)
-	}
-	assert.Equal(t, int32(5), re.errorCount.Load())
-
-	re.rateLimited.Store(false)
-	re.isRateLimited()
-
-	assert.Equal(t, int32(0), re.errorCount.Load())
-}
-
 func TestRateError_ErrorCountNotResetWhenRateLimited(t *testing.T) {
 	re := &rateError{
 		threshold: 1,
@@ -33,7 +15,7 @@ func TestRateError_ErrorCountNotResetWhenRateLimited(t *testing.T) {
 	}
 
 	for i := 0; i < re.threshold; i++ {
-		re.enableRateLimit(nil)
+		re.enableRateLimit()
 	}
 
 	initialCount := re.errorCount.Load()
