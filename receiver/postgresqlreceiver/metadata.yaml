@@ -28,6 +28,10 @@ resource_attributes:
     description: The name of the index on a table.
     enabled: true
     type: string
+  postgresql.function.name:
+    description: The name of the function.
+    enabled: true
+    type: string
 
 attributes:
   bg_buffer_source:
@@ -486,6 +490,14 @@ metrics:
     enabled: false
     description: Number of disk blocks read in this database.
     unit: "{blks_read}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.function.calls:
+    enabled: false
+    description: The number of calls made to a function.
+    unit: "{calls}"
     sum:
       value_type: int
       monotonic: true

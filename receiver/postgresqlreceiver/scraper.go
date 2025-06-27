@@ -161,6 +161,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
+		p.collectFunctions(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -486,6 +487,30 @@ func (p *postgreSQLScraper) collectIndexes(
 			rb.SetPostgresqlTableName(stat.table)
 		}
 		rb.SetPostgresqlIndexName(stat.index)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
+func (p *postgreSQLScraper) collectFunctions(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	funcStats, err := client.getFunctionStats(ctx, database)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+
+	for _, stat := range funcStats {
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(database)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(stat.schema)
+		}
+		rb.SetPostgresqlFunctionName(stat.function)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

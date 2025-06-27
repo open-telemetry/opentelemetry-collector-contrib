@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -147,6 +146,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["postgresql.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.PostgresqlFunctionName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["postgresql.function.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlFunctionName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.PostgresqlFunctionName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["postgresql.function.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlFunctionName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["postgresql.index.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude)

@@ -306,6 +306,9 @@ var MetricsInfo = metricsInfo{
 	PostgresqlDeadlocks: metricInfo{
 		Name: "postgresql.deadlocks",
 	},
+	PostgresqlFunctionCalls: metricInfo{
+		Name: "postgresql.function.calls",
+	},
 	PostgresqlIndexScans: metricInfo{
 		Name: "postgresql.index.scans",
 	},
@@ -381,6 +384,7 @@ type metricsInfo struct {
 	PostgresqlDatabaseLocks            metricInfo
 	PostgresqlDbSize                   metricInfo
 	PostgresqlDeadlocks                metricInfo
+	PostgresqlFunctionCalls            metricInfo
 	PostgresqlIndexScans               metricInfo
 	PostgresqlIndexSize                metricInfo
 	PostgresqlOperations               metricInfo
@@ -1172,6 +1176,57 @@ func (m *metricPostgresqlDeadlocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlDeadlocks(cfg MetricConfig) metricPostgresqlDeadlocks {
 	m := metricPostgresqlDeadlocks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlFunctionCalls struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.function.calls metric with initial data.
+func (m *metricPostgresqlFunctionCalls) init() {
+	m.data.SetName("postgresql.function.calls")
+	m.data.SetDescription("The number of calls made to a function.")
+	m.data.SetUnit("{calls}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlFunctionCalls) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlFunctionCalls) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlFunctionCalls(cfg MetricConfig) metricPostgresqlFunctionCalls {
+	m := metricPostgresqlFunctionCalls{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2175,6 +2230,7 @@ type MetricsBuilder struct {
 	metricPostgresqlDatabaseLocks            metricPostgresqlDatabaseLocks
 	metricPostgresqlDbSize                   metricPostgresqlDbSize
 	metricPostgresqlDeadlocks                metricPostgresqlDeadlocks
+	metricPostgresqlFunctionCalls            metricPostgresqlFunctionCalls
 	metricPostgresqlIndexScans               metricPostgresqlIndexScans
 	metricPostgresqlIndexSize                metricPostgresqlIndexSize
 	metricPostgresqlOperations               metricPostgresqlOperations
@@ -2234,6 +2290,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlDatabaseLocks:            newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
 		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
 		metricPostgresqlDeadlocks:                newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
+		metricPostgresqlFunctionCalls:            newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
 		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
 		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
 		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
@@ -2261,6 +2318,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["postgresql.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlFunctionName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["postgresql.function.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlFunctionName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlFunctionName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["postgresql.function.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlFunctionName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.PostgresqlIndexName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["postgresql.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlIndexName.MetricsInclude)
@@ -2364,6 +2427,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlDatabaseLocks.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
 	mb.metricPostgresqlDeadlocks.emit(ils.Metrics())
+	mb.metricPostgresqlFunctionCalls.emit(ils.Metrics())
 	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
@@ -2487,6 +2551,11 @@ func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, 
 // RecordPostgresqlDeadlocksDataPoint adds a data point to postgresql.deadlocks metric.
 func (mb *MetricsBuilder) RecordPostgresqlDeadlocksDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlDeadlocks.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlFunctionCallsDataPoint adds a data point to postgresql.function.calls metric.
+func (mb *MetricsBuilder) RecordPostgresqlFunctionCallsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlFunctionCalls.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlIndexScansDataPoint adds a data point to postgresql.index.scans metric.

@@ -124,6 +124,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordPostgresqlDeadlocksDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordPostgresqlFunctionCallsDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlIndexScansDataPoint(ts, 1)
@@ -194,6 +197,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
@@ -439,6 +443,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of deadlocks.", ms.At(i).Description())
 					assert.Equal(t, "{deadlock}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.function.calls":
+					assert.False(t, validatedMetrics["postgresql.function.calls"], "Found a duplicate in the metrics slice: postgresql.function.calls")
+					validatedMetrics["postgresql.function.calls"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of calls made to a function.", ms.At(i).Description())
+					assert.Equal(t, "{calls}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

@@ -43,6 +43,7 @@ type MetricsConfig struct {
 	PostgresqlDatabaseLocks            MetricConfig `mapstructure:"postgresql.database.locks"`
 	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
 	PostgresqlDeadlocks                MetricConfig `mapstructure:"postgresql.deadlocks"`
+	PostgresqlFunctionCalls            MetricConfig `mapstructure:"postgresql.function.calls"`
 	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`
 	PostgresqlIndexSize                MetricConfig `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               MetricConfig `mapstructure:"postgresql.operations"`
@@ -109,6 +110,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		PostgresqlDeadlocks: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlFunctionCalls: MetricConfig{
 			Enabled: false,
 		},
 		PostgresqlIndexScans: MetricConfig{
@@ -243,6 +247,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for postgresql resource attributes.
 type ResourceAttributesConfig struct {
 	PostgresqlDatabaseName ResourceAttributeConfig `mapstructure:"postgresql.database.name"`
+	PostgresqlFunctionName ResourceAttributeConfig `mapstructure:"postgresql.function.name"`
 	PostgresqlIndexName    ResourceAttributeConfig `mapstructure:"postgresql.index.name"`
 	PostgresqlSchemaName   ResourceAttributeConfig `mapstructure:"postgresql.schema.name"`
 	PostgresqlTableName    ResourceAttributeConfig `mapstructure:"postgresql.table.name"`
@@ -251,6 +256,9 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		PostgresqlDatabaseName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		PostgresqlFunctionName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		PostgresqlIndexName: ResourceAttributeConfig{

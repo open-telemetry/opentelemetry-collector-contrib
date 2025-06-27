@@ -45,6 +45,9 @@ type tableIdentifier string
 // indexIdentifier is a unique string that identifies a particular index and is separated by the "|" character
 type indexIdentifer string
 
+// functionIdentifier is a unique string that identifies a particular function and is separated by the "|" character
+type functionIdentifer string
+
 // errNoLastArchive is an error that occurs when there is no previous wal archive, so there is no way to compute the
 // last archived point
 var errNoLastArchive = errors.New("no last archive found, not able to calculate oldest WAL age")
@@ -62,6 +65,7 @@ type client interface {
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
+	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
@@ -488,6 +492,60 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 	return stats, multierr.Combine(errs...)
 }
 
+type functionStat struct {
+	function string
+	schema   string
+	database string
+	calls    int64
+}
+
+func (c *postgreSQLClient) getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error) {
+	query := `WITH overloaded_funcs AS (
+ SELECT funcname
+   FROM pg_stat_user_functions s
+  GROUP BY s.funcname
+ HAVING COUNT(*) > 1
+)
+SELECT s.schemaname,
+       CASE WHEN o.funcname IS NULL OR p.proargnames IS NULL THEN p.proname
+            ELSE p.proname || '_' || array_to_string(p.proargnames, '_')
+        END funcname,
+        s.calls
+  FROM pg_proc p
+  JOIN pg_stat_user_functions s
+    ON p.oid = s.funcid
+  LEFT JOIN overloaded_funcs o
+    ON o.funcname = s.funcname;`
+
+	stats := map[functionIdentifer]functionStat{}
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs []error
+	for rows.Next() {
+		var (
+			schema, function string
+			calls            int64
+		)
+		err := rows.Scan(&schema, &function, &calls)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		stats[functionKey(database, schema, function)] = functionStat{
+			function: function,
+			schema:   schema,
+			database: database,
+			calls:    calls,
+		}
+	}
+	return stats, multierr.Combine(errs...)
+}
+
 type bgStat struct {
 	checkpointsReq       int64
 	checkpointsScheduled int64
@@ -784,6 +842,10 @@ func tableKey(database, schema, table string) tableIdentifier {
 
 func indexKey(database, schema, table, index string) indexIdentifer {
 	return indexIdentifer(fmt.Sprintf("%s|%s|%s|%s", database, schema, table, index))
+}
+
+func functionKey(database, schema, function string) functionIdentifer {
+	return functionIdentifer(fmt.Sprintf("%s|%s|%s", database, schema, function))
 }
 
 //go:embed templates/querySampleTemplate.tmpl
