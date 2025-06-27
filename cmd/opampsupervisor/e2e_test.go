@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-
 package main
 
 import (
@@ -221,16 +219,16 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPReload",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -255,8 +253,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 				})
 
 			extraConfigData := map[string]string{"url": server.addr, "storage_dir": storageDir}
-			if mode.useHUPRestart {
-				extraConfigData["hupRestart"] = "true"
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "basic", extraConfigData)
@@ -307,16 +305,16 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -346,7 +344,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 				"storage_dir":  storageDir,
 				"local_config": cfgFile.Name(),
 			}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
@@ -377,16 +375,16 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -414,7 +412,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 				"storage_dir":  storageDir,
 				"local_config": filepath.Join("testdata", "collector", "healthcheck_config.yaml"),
 			}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
@@ -450,16 +448,16 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -494,7 +492,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 				"url":         server.addr,
 				"storage_dir": storageDir,
 			}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
@@ -706,16 +704,16 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -743,7 +741,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				})
 
 			extraConfigData := map[string]string{"url": server.addr}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
@@ -1309,16 +1307,16 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 
 func TestSupervisorRestartCommand(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -1350,7 +1348,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 				"url":         server.addr,
 				"storage_dir": storageDir,
 			}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
@@ -1494,16 +1492,16 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -1533,7 +1531,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 				})
 
 			extraConfigData := map[string]string{"url": initialServer.addr, "storage_dir": tempDir}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
@@ -1991,16 +1989,16 @@ func TestSupervisorLogging(t *testing.T) {
 
 func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	modes := []struct {
-		name          string
-		useHUPRestart bool
+		name               string
+		UseHUPConfigReload bool
 	}{
 		{
-			name:          "ProcessRestart",
-			useHUPRestart: false,
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
 		},
 		{
-			name:          "HUPRestart",
-			useHUPRestart: true,
+			name:               "HUPRestart",
+			UseHUPConfigReload: true,
 		},
 	}
 
@@ -2035,7 +2033,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				"url":                  server.addr,
 				"config_apply_timeout": "3s",
 			}
-			if mode.useHUPRestart {
+			if mode.UseHUPConfigReload {
 				extraConfigData["hupRestart"] = "true"
 			}
 
