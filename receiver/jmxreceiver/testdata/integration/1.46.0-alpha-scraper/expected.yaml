@@ -28,40 +28,205 @@ resourceMetrics:
                   attributes:
                     - key: processorType
                       value:
-                        stringValue: BatchLogRecordProcessor
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                        stringValue: BatchSpanProcessor
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
             name: queueSize
             unit: "1"
         scope:
-          name: io.opentelemetry.sdk.logs
+          name: io.opentelemetry.sdk.trace
       - metrics:
+          - description: Maximum token range read request latency
+            gauge:
+              dataPoints:
+                - asDouble: 8409.007
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+            name: cassandra.client.request.range_slice.latency.max
+            unit: us
           - description: Number of hints attempting to be sent currently
             name: cassandra.storage.total_hints.in_progress.count
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
             unit: '{hint}'
+          - description: Estimated number of compactions remaining to perform
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+            name: cassandra.compaction.tasks.pending
+            unit: '{task}'
+          - description: Number of request errors by operation
+            name: cassandra.client.request.error.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: RangeSlice
+                    - key: status
+                      value:
+                        stringValue: Unavailable
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Write
+                    - key: status
+                      value:
+                        stringValue: Failure
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: RangeSlice
+                    - key: status
+                      value:
+                        stringValue: Timeout
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Write
+                    - key: status
+                      value:
+                        stringValue: Unavailable
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Read
+                    - key: status
+                      value:
+                        stringValue: Timeout
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Write
+                    - key: status
+                      value:
+                        stringValue: Timeout
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Read
+                    - key: status
+                      value:
+                        stringValue: Failure
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: RangeSlice
+                    - key: status
+                      value:
+                        stringValue: Failure
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Read
+                    - key: status
+                      value:
+                        stringValue: Unavailable
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+              isMonotonic: true
+            unit: '{error}'
+          - description: Maximum regular write request latency
+            gauge:
+              dataPoints:
+                - asDouble: 2346.799
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+            name: cassandra.client.request.write.latency.max
+            unit: us
+          - description: Maximum standard read request latency
+            gauge:
+              dataPoints:
+                - asDouble: 8409.007
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+            name: cassandra.client.request.read.latency.max
+            unit: us
           - description: Size of the on disk data size this node manages
             name: cassandra.storage.load.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "67204"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                - asInt: "72590"
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
             unit: By
+          - description: Token range read request latency - 99th percentile
+            gauge:
+              dataPoints:
+                - asDouble: 8409.007
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+            name: cassandra.client.request.range_slice.latency.99p
+            unit: us
+          - description: Number of requests by operation
+            name: cassandra.client.request.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: RangeSlice
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "2"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Read
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: Write
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
+              isMonotonic: true
+            unit: '{request}'
           - description: Number of hint messages written to this node since [re]start
             name: cassandra.storage.total_hints.count
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
               isMonotonic: true
             unit: '{hint}'
         scope:
@@ -74,10 +239,10 @@ resourceMetrics:
                   attributes:
                     - key: processorType
                       value:
-                        stringValue: BatchSpanProcessor
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                        stringValue: BatchLogRecordProcessor
+                  startTimeUnixNano: "1751027960082000000"
+                  timeUnixNano: "1751028017090000000"
             name: queueSize
             unit: "1"
         scope:
-          name: io.opentelemetry.sdk.trace
+          name: io.opentelemetry.sdk.logs
