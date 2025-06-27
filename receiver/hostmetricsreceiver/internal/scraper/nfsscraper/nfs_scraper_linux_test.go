@@ -36,7 +36,7 @@ wdeleg_getattr 901
 `
 )
 
-func expectedNfsStats() (*NfsStats, error) {
+func mockGetOSNfsStats() (*NfsStats, error) {
 	nfsNetStats := &NfsNetStats{
 		NetCount:           8,
 		UDPCount:           843,
@@ -153,8 +153,7 @@ func expectedNfsStats() (*NfsStats, error) {
 	}, nil
 }
 
-// for testing purposes. It initializes all nested structs and slices with sample values.
-func mockGetNfsdStats() (*NfsdStats, error) {
+func mockGetOSNfsdStats() (*NfsdStats, error) {
 	// Populate NfsdRepcacheStats with sample data
 	repcacheStats := &NfsdRepcacheStats{
 		Hits:    795,
@@ -221,7 +220,7 @@ func mockGetNfsdStats() (*NfsdStats, error) {
 	}
 
 
-	nfsdV3ProcedureStats := &[]CallStats{
+	nfsdV4ProcedureStats := &[]CallStats{
 		{NFSVersion: 4, NFSCallName: "NULL", NFSCallCount: 512},
 		{NFSVersion: 4, NFSCallName: "COMPOUND", NFSCallCount: 878},
 	}
@@ -343,8 +342,8 @@ func TestScrape(t *testing.T) {
 				config: &Config{
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				},
-				getNfsStats:  mockGetNfsStats,
-				getNfsdStats: mockGetNfsdStats,
+				getNfsStats:  mockGetOSNfsStats,
+				getNfsdStats: mockGetOSNfsdStats,
 			}
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
