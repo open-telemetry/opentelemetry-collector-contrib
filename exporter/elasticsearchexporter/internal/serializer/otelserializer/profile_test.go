@@ -86,6 +86,9 @@ func TestSerializeProfile(t *testing.T) {
 				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("host.id")
 				a.Value().SetStr("localhost")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.name")
+				a.Value().SetStr("libc.so.6")
 
 				m := dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(0)
@@ -110,6 +113,7 @@ func TestSerializeProfile(t *testing.T) {
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
 				sample.SetLocationsLength(1)
+				sample.AttributeIndices().Append(3)
 			},
 			wantErr: false,
 			expected: []map[string]any{
@@ -119,12 +123,13 @@ func TestSerializeProfile(t *testing.T) {
 					"ecs.version":            "1.12.0",
 				},
 				{
-					"@timestamp":          "1970-01-01T00:00:00Z",
-					"Stacktrace.count":    json.Number("1"),
-					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
-					"ecs.version":         "1.12.0",
-					"host.id":             "localhost",
-					"process.thread.name": "",
+					"@timestamp":              "1970-01-01T00:00:00Z",
+					"Stacktrace.count":        json.Number("1"),
+					"Stacktrace.id":           "02VzuClbpt_P3xxwox83Ng",
+					"ecs.version":             "1.12.0",
+					"host.id":                 "localhost",
+					"process.executable.name": "libc.so.6",
+					"process.thread.name":     "",
 				},
 				{
 					"script": map[string]any{
