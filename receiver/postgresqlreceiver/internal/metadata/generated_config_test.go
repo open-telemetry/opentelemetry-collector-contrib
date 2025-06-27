@@ -137,6 +137,16 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	return cfg
 }
 
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
 func TestResourceAttributesConfig(t *testing.T) {
 	tests := []struct {
 		name string

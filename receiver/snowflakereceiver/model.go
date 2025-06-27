@@ -86,12 +86,12 @@ type sessionMetric struct {
 type snowpipeMetric struct {
 	pipeName      sql.NullString
 	creditsUsed   float64
-	bytesInserted int64
+	bytesInserted float64
 	filesInserted int64
 }
 
 type storageMetric struct {
-	storageBytes  int64
-	stageBytes    int64
-	failsafeBytes int64
+	storageBytes  float64
+	stageBytes    float64
+	failsafeBytes float64
 }
