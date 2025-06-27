@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cloudtraillogs
+package cloudtraillog
 
 import (
 	"bytes"
@@ -20,9 +20,9 @@ import (
 
 const filesDirectory = "testdata"
 
-func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
+func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := readLogFile(t, filesDirectory, "cloudtrail_log.json")
 	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.NoError(t, err)
@@ -40,26 +40,26 @@ func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
 }
 
-func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
+func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{"Records": []}`))
 	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.NoError(t, err)
 	require.Equal(t, 0, logs.ResourceLogs().Len())
 }
 
-func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
+func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.ErrorContains(t, err, "failed to unmarshal CloudTrail logs")
 }
 
-func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
+func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{
 		"Records": [{
 			"eventTime": "invalid-timestamp",
@@ -71,9 +71,9 @@ func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.
 	require.ErrorContains(t, err, "failed to parse timestamp of log")
 }
 
-func TestCloudTrailLogsUnmarshaler_UnmarshalAWSLogs_ReadError(t *testing.T) {
+func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_ReadError(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogsUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := &errorReader{err: errors.New("read failed")}
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.ErrorContains(t, err, "failed to read CloudTrail logs")

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cloudtraillogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillogs"
+package cloudtraillog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 
 import (
 	"fmt"
@@ -18,11 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
-type CloudTrailLogsUnmarshaler struct {
+type CloudTrailLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
 
-var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogsUnmarshaler)(nil)
+var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
 
 // CloudTrailRecord represents a CloudTrail log record
 // There is no builtin CloudTrailRecord we can leverage like in S3
@@ -54,31 +54,31 @@ type CloudTrailRecord struct {
 	SharedEventID                string         `json:"sharedEventID"`
 }
 
-type CloudTrailLogs struct {
+type CloudTrailLog struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
 
-func NewCloudTrailLogsUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogsUnmarshaler {
-	return &CloudTrailLogsUnmarshaler{
+func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUnmarshaler {
+	return &CloudTrailLogUnmarshaler{
 		buildInfo: buildInfo,
 	}
 }
 
-func (u *CloudTrailLogsUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	decompressedBuf, err := io.ReadAll(reader)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to read CloudTrail logs: %w", err)
 	}
 
-	var cloudTrailLogs CloudTrailLogs
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLogs); err != nil {
+	var cloudTrailLog CloudTrailLog
+	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLog); err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail logs: %w", err)
 	}
 
-	return u.processRecords(cloudTrailLogs.Records)
+	return u.processRecords(cloudTrailLog.Records)
 }
 
-func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {
+func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	if len(records) == 0 {
@@ -105,13 +105,13 @@ func (u *CloudTrailLogsUnmarshaler) processRecords(records []CloudTrailRecord) (
 	return logs, nil
 }
 
-func (u *CloudTrailLogsUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+func (u *CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attrs.PutStr(string(conventions.CloudRegionKey), record.AwsRegion)
 	attrs.PutStr(string(conventions.CloudAccountIDKey), record.RecipientAccountID)
 }
 
-func (u *CloudTrailLogsUnmarshaler) setLogRecord(logRecord plog.LogRecord, record CloudTrailRecord) error {
+func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record CloudTrailRecord) error {
 	t, err := time.Parse(time.RFC3339, record.EventTime)
 	if err != nil {
 		return fmt.Errorf("failed to parse timestamp of log: %w", err)
@@ -121,7 +121,7 @@ func (u *CloudTrailLogsUnmarshaler) setLogRecord(logRecord plog.LogRecord, recor
 	return nil
 }
 
-func (u *CloudTrailLogsUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)

@@ -17,7 +17,7 @@ const (
 	formatVPCFlowLog                       = "vpc_flow_log"
 	formatS3AccessLog                      = "s3_access_log"
 	formatWAFLog                           = "waf_log"
-	formatCloudTrailLogs                   = "cloudtrail_log"
+	formatCloudTrailLog                    = "cloudtrail_log"
 
 	fileFormatPlainText = "plain-text"
 	fileFormatParquet   = "parquet"
@@ -72,7 +72,7 @@ func (cfg *Config) Validate() error {
 	case formatVPCFlowLog: // valid
 	case formatS3AccessLog: // valid
 	case formatWAFLog: // valid
-	case formatCloudTrailLogs: // valid
+	case formatCloudTrailLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}

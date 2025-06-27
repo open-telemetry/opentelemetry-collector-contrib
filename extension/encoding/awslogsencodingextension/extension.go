@@ -17,7 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
-	cloudtraillogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillogs"
+	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
@@ -70,10 +70,10 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      formatWAFLog,
 		}, nil
-	case formatCloudTrailLogs:
+	case formatCloudTrailLog:
 		return &encodingExtension{
-			unmarshaler: cloudtraillogs.NewCloudTrailLogsUnmarshaler(settings.BuildInfo),
-			format:      formatCloudTrailLogs,
+			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
+			format:      formatCloudTrailLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -110,7 +110,7 @@ func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLogs:
+	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLog:
 		reader, err := e.getGzipReader(buf)
 		return gzipEncoding, reader, err
 	case formatS3AccessLog:

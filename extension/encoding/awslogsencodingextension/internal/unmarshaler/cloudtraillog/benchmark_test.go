@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cloudtraillogs
+package cloudtraillog
 
 import (
 	"bytes"
@@ -22,13 +22,13 @@ func createCloudTrailLogContent(b *testing.B, nLogs int) []byte {
 	require.NoError(b, err)
 
 	// Parse the sample log to get the records
-	var sampleLog CloudTrailLogs
+	var sampleLog CloudTrailLog
 	err = gojson.Unmarshal(data, &sampleLog)
 	require.NoError(b, err)
 	require.NotEmpty(b, sampleLog.Records, "sample log should contain at least one record")
 
 	// Create a new log with duplicated records
-	benchmarkLog := CloudTrailLogs{
+	benchmarkLog := CloudTrailLog{
 		Records: make([]CloudTrailRecord, 0, nLogs),
 	}
 
@@ -75,7 +75,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := NewCloudTrailLogsUnmarshaler(component.BuildInfo{})
+	u := NewCloudTrailLogUnmarshaler(component.BuildInfo{})
 	for name, benchmark := range benchmarks {
 		// Generate the log content with the specified number of records
 		logContent := createCloudTrailLogContent(b, benchmark.nLogs)
