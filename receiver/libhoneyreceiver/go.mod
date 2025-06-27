@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.130.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
+	go.opentelemetry.io/collector/client v1.36.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/component v1.36.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/component/componenttest v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/config/confighttp v0.130.1-0.20250715222903-0a7598ec1e19
@@ -66,7 +67,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	go.opentelemetry.io/collector/client v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.130.1-0.20250715222903-0a7598ec1e19
 	go.opentelemetry.io/collector/config/configauth v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.36.1-0.20250715222903-0a7598ec1e19 // indirect

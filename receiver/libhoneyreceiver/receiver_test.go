@@ -370,7 +370,7 @@ func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
 			customConsumer := &testConsumer{
 				logsConsumer:   &consumertest.LogsSink{},
 				tracesConsumer: &consumertest.TracesSink{},
-				captureContext: func(ctx context.Context, logs plog.Logs, traces ptrace.Traces) {
+				captureContext: func(ctx context.Context, _ plog.Logs, _ ptrace.Traces) {
 					capturedContext = ctx
 				},
 			}
