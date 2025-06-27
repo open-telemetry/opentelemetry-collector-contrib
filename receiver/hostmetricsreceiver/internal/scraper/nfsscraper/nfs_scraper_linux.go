@@ -43,6 +43,7 @@ var nfsV3Procedures = []string{
 }
 
 // from linux/fs/nfs/nfs4xdr.c:nfs4_procedures v6.12
+// note that these are technically NFSv4 operations, part of a COMPOUND RPC procedure
 var nfsV4Procedures = []string{
 	"READ",
 	"WRITE",
