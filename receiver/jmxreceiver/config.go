@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -34,9 +36,17 @@ type Config struct {
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
 	// Supported by: jmx-scraper and jmx-metric-gatherer
 	Endpoint string `mapstructure:"endpoint"`
-	// The target system for the metric gatherer whose built in groovy script to run.
+	// Comma-separated list of systems to monitor
 	// Supported by: jmx-scraper and jmx-metric-gatherer
 	TargetSystem string `mapstructure:"target_system"`
+	// The target source of metric definitions to use for the target system.
+	// Supported values are: auto, instrumentation and legacy.
+	// Supported by: jmx-scraper
+	TargetSource string `mapstructure:"target_source"`
+	// Comma-separated list of paths to custom YAML metrics definition,
+	// mandatory when TargetSystem is not set.
+	// Supported by: jmx-scraper
+	JmxConfigs string `mapstructure:"jmx_configs"`
 	// The duration in between groovy script invocations and metric exports (10 seconds by default).
 	// Will be converted to milliseconds.
 	// Supported by: jmx-scraper and jmx-metric-gatherer
@@ -285,7 +295,12 @@ func (c *Config) Validate() error {
 		missingFields = append(missingFields, "`endpoint`")
 	}
 	if c.TargetSystem == "" {
-		missingFields = append(missingFields, "`target_system`")
+		// jmx-scraper can specify jmx_configs instead
+		if c.validateJar(jmxScraperVersions, c.JARPath) == nil && c.JmxConfigs == "" {
+			missingFields = append(missingFields, "`target_system`", "`jmx_configs`")
+		} else {
+			missingFields = append(missingFields, "`target_system`")
+		}
 	}
 	if missingFields != nil {
 		return fmt.Errorf("missing required field(s): %v", strings.Join(missingFields, ", "))
@@ -338,4 +353,124 @@ func listKeys(presenceMap map[string]struct{}) string {
 	}
 	sort.Strings(list)
 	return strings.Join(list, ", ")
+}
+
+func (jmx *Config) buildJMXConfig() (string, error) {
+	config := map[string]string{}
+	failedToParse := `failed to parse Endpoint "%s": %w`
+	parsed, err := url.Parse(jmx.Endpoint)
+	if err != nil {
+		return "", fmt.Errorf(failedToParse, jmx.Endpoint, err)
+	}
+
+	if parsed.Scheme != "service" || !strings.HasPrefix(parsed.Opaque, "jmx:") {
+		host, portStr, err := net.SplitHostPort(jmx.Endpoint)
+		if err != nil {
+			return "", fmt.Errorf(failedToParse, jmx.Endpoint, err)
+		}
+		port, err := strconv.ParseInt(portStr, 10, 0)
+		if err != nil {
+			return "", fmt.Errorf(failedToParse, jmx.Endpoint, err)
+		}
+		jmx.Endpoint = fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:%d/jmxrmi", host, port)
+	}
+
+	config["otel.jmx.service.url"] = jmx.Endpoint
+	samplingKey, samplingValue := jmx.jarJMXSamplingConfig()
+	config[samplingKey] = samplingValue
+	config["otel.jmx.target.system"] = jmx.TargetSystem
+
+	endpoint := jmx.OTLPExporterConfig.Endpoint
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = "http://" + endpoint
+	}
+
+	config["otel.metrics.exporter"] = "otlp"
+	config["otel.exporter.otlp.endpoint"] = endpoint
+	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(jmx.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds(), 10)
+
+	if len(jmx.OTLPExporterConfig.Headers) > 0 {
+		config["otel.exporter.otlp.headers"] = jmx.OTLPExporterConfig.headersToString()
+	}
+
+	if jmx.Username != "" {
+		config["otel.jmx.username"] = jmx.Username
+	}
+
+	if jmx.Password != "" {
+		config["otel.jmx.password"] = string(jmx.Password)
+	}
+
+	if jmx.RemoteProfile != "" {
+		config["otel.jmx.remote.profile"] = jmx.RemoteProfile
+	}
+
+	if jmx.Realm != "" {
+		config["otel.jmx.realm"] = jmx.Realm
+	}
+
+	if jmx.KeystorePath != "" {
+		config["javax.net.ssl.keyStore"] = jmx.KeystorePath
+	}
+	if jmx.KeystorePassword != "" {
+		config["javax.net.ssl.keyStorePassword"] = string(jmx.KeystorePassword)
+	}
+	if jmx.KeystoreType != "" {
+		config["javax.net.ssl.keyStoreType"] = jmx.KeystoreType
+	}
+	if jmx.TruststorePath != "" {
+		config["javax.net.ssl.trustStore"] = jmx.TruststorePath
+	}
+	if jmx.TruststorePassword != "" {
+		config["javax.net.ssl.trustStorePassword"] = string(jmx.TruststorePassword)
+	}
+	if jmx.TruststoreType != "" {
+		config["javax.net.ssl.trustStoreType"] = jmx.TruststoreType
+	}
+
+	if len(jmx.ResourceAttributes) > 0 {
+		attributes := make([]string, 0, len(jmx.ResourceAttributes))
+		for k, v := range jmx.ResourceAttributes {
+			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
+		}
+		sort.Strings(attributes)
+		config["otel.resource.attributes"] = strings.Join(attributes, ",")
+	}
+
+	// set jmx-scraper specific config options
+	if isSupportedJAR(jmxScraperVersions, jmx.JARPath) {
+		// jmx-scraper default target source: https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper#configuration-reference
+		if len(jmx.TargetSource) > 0 {
+			config["otel.jmx.target.source"] = jmx.TargetSource
+		} else {
+			config["otel.jmx.target.source"] = "auto"
+		}
+		if jmx.JmxConfigs != "" {
+			config["otel.jmx.config"] = jmx.JmxConfigs
+		}
+	}
+
+	content := make([]string, 0, len(config))
+	for k, v := range config {
+		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
+
+		// Keys are receiver-defined so this escape should be unnecessary but in case that assumption
+		// breaks in the future this will ensure keys are properly escaped
+		safeKey := strings.ReplaceAll(k, "=", "\\=")
+		safeKey = strings.ReplaceAll(safeKey, ":", "\\:")
+		// Any whitespace must be removed from keys
+		safeKey = strings.ReplaceAll(safeKey, " ", "")
+		safeKey = strings.ReplaceAll(safeKey, "\t", "")
+		safeKey = strings.ReplaceAll(safeKey, "\n", "")
+
+		// Unneeded escape tokens will be removed by the properties file loader, so it should be pre-escaped to ensure
+		// the values provided reach the metrics gatherer as provided. Also in case a user attempts to provide multiline
+		// values for one of the available fields, we need to escape the newlines
+		safeValue := strings.ReplaceAll(v, "\\", "\\\\")
+		safeValue = strings.ReplaceAll(safeValue, "\n", "\\n")
+		content = append(content, fmt.Sprintf("%s = %s", safeKey, safeValue))
+	}
+	sort.Strings(content)
+
+	return strings.Join(content, "\n"), nil
 }

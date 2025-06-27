@@ -41,6 +41,8 @@ func TestLoadConfig(t *testing.T) {
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:12345",
 				TargetSystem:       "jvm",
+				TargetSource:       "",
+				JmxConfigs:         "",
 				CollectionInterval: 15 * time.Second,
 				Username:           "myusername",
 				Password:           "mypassword",
@@ -90,6 +92,21 @@ func TestLoadConfig(t *testing.T) {
 			expectedErr: "missing required field(s): `target_system`",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
+				CollectionInterval: 10 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "0.0.0.0:0",
+					TimeoutSettings: exporterhelper.TimeoutConfig{
+						Timeout: 5 * time.Second,
+					},
+				},
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "missingtargetandjmxconfig"),
+			expectedErr: "missing required field(s): `target_system`, `jmx_configs`",
+			expected: &Config{
+				JARPath:            "testdata/fake_jmx_scraper.jar",
 				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{

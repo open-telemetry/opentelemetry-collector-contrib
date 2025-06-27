@@ -152,6 +152,7 @@ otel.jmx.password = mypass \nword
 otel.jmx.realm = myrealm
 otel.jmx.remote.profile = myprofile
 otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
+otel.jmx.target.source = auto
 otel.jmx.target.system = mytargetsystem
 otel.jmx.username = myuser\nname
 otel.metric.export.interval = 2m3s
@@ -220,7 +221,7 @@ otel.resource.attributes = abc=123,one=two`,
 			initSupportedJars()
 			params := receivertest.NewNopSettings(metadata.Type)
 			receiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
-			jmxConfig, err := receiver.buildJMXConfig()
+			jmxConfig, err := receiver.config.buildJMXConfig()
 			if test.expectedError == "" {
 				require.NoError(t, err)
 			} else {

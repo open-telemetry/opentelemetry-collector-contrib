@@ -7,11 +7,8 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
-	"sort"
 	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -62,7 +59,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	javaConfig, err := jmx.buildJMXConfig()
+	javaConfig, err := jmx.config.buildJMXConfig()
 	if err != nil {
 		return err
 	}
@@ -182,111 +179,4 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 		BuildInfo:         jmx.params.BuildInfo,
 	}
 	return factory.CreateMetrics(context.Background(), params, config, jmx.nextConsumer)
-}
-
-func (jmx *jmxMetricReceiver) buildJMXConfig() (string, error) {
-	config := map[string]string{}
-	failedToParse := `failed to parse Endpoint "%s": %w`
-	parsed, err := url.Parse(jmx.config.Endpoint)
-	if err != nil {
-		return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
-	}
-
-	if parsed.Scheme != "service" || !strings.HasPrefix(parsed.Opaque, "jmx:") {
-		host, portStr, err := net.SplitHostPort(jmx.config.Endpoint)
-		if err != nil {
-			return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
-		}
-		port, err := strconv.ParseInt(portStr, 10, 0)
-		if err != nil {
-			return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
-		}
-		jmx.config.Endpoint = fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:%d/jmxrmi", host, port)
-	}
-
-	config["otel.jmx.service.url"] = jmx.config.Endpoint
-	samplingKey, samplingValue := jmx.config.jarJMXSamplingConfig()
-	config[samplingKey] = samplingValue
-	config["otel.jmx.target.system"] = jmx.config.TargetSystem
-
-	endpoint := jmx.config.OTLPExporterConfig.Endpoint
-	if !strings.HasPrefix(endpoint, "http") {
-		endpoint = "http://" + endpoint
-	}
-
-	config["otel.metrics.exporter"] = "otlp"
-	config["otel.exporter.otlp.endpoint"] = endpoint
-	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(jmx.config.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds(), 10)
-
-	if len(jmx.config.OTLPExporterConfig.Headers) > 0 {
-		config["otel.exporter.otlp.headers"] = jmx.config.OTLPExporterConfig.headersToString()
-	}
-
-	if jmx.config.Username != "" {
-		config["otel.jmx.username"] = jmx.config.Username
-	}
-
-	if jmx.config.Password != "" {
-		config["otel.jmx.password"] = string(jmx.config.Password)
-	}
-
-	if jmx.config.RemoteProfile != "" {
-		config["otel.jmx.remote.profile"] = jmx.config.RemoteProfile
-	}
-
-	if jmx.config.Realm != "" {
-		config["otel.jmx.realm"] = jmx.config.Realm
-	}
-
-	if jmx.config.KeystorePath != "" {
-		config["javax.net.ssl.keyStore"] = jmx.config.KeystorePath
-	}
-	if jmx.config.KeystorePassword != "" {
-		config["javax.net.ssl.keyStorePassword"] = string(jmx.config.KeystorePassword)
-	}
-	if jmx.config.KeystoreType != "" {
-		config["javax.net.ssl.keyStoreType"] = jmx.config.KeystoreType
-	}
-	if jmx.config.TruststorePath != "" {
-		config["javax.net.ssl.trustStore"] = jmx.config.TruststorePath
-	}
-	if jmx.config.TruststorePassword != "" {
-		config["javax.net.ssl.trustStorePassword"] = string(jmx.config.TruststorePassword)
-	}
-	if jmx.config.TruststoreType != "" {
-		config["javax.net.ssl.trustStoreType"] = jmx.config.TruststoreType
-	}
-
-	if len(jmx.config.ResourceAttributes) > 0 {
-		attributes := make([]string, 0, len(jmx.config.ResourceAttributes))
-		for k, v := range jmx.config.ResourceAttributes {
-			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
-		}
-		sort.Strings(attributes)
-		config["otel.resource.attributes"] = strings.Join(attributes, ",")
-	}
-
-	content := make([]string, 0, len(config))
-	for k, v := range config {
-		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
-
-		// Keys are receiver-defined so this escape should be unnecessary but in case that assumption
-		// breaks in the future this will ensure keys are properly escaped
-		safeKey := strings.ReplaceAll(k, "=", "\\=")
-		safeKey = strings.ReplaceAll(safeKey, ":", "\\:")
-		// Any whitespace must be removed from keys
-		safeKey = strings.ReplaceAll(safeKey, " ", "")
-		safeKey = strings.ReplaceAll(safeKey, "\t", "")
-		safeKey = strings.ReplaceAll(safeKey, "\n", "")
-
-		// Unneeded escape tokens will be removed by the properties file loader, so it should be pre-escaped to ensure
-		// the values provided reach the metrics gatherer as provided. Also in case a user attempts to provide multiline
-		// values for one of the available fields, we need to escape the newlines
-		safeValue := strings.ReplaceAll(v, "\\", "\\\\")
-		safeValue = strings.ReplaceAll(safeValue, "\n", "\\n")
-		content = append(content, fmt.Sprintf("%s = %s", safeKey, safeValue))
-	}
-	sort.Strings(content)
-
-	return strings.Join(content, "\n"), nil
 }
