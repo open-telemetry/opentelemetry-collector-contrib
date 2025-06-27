@@ -3,16 +3,17 @@
 package metadata
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type eventsTestDataSet int
@@ -109,6 +110,13 @@ func TestLogsBuilder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			timestamp := pcommon.Timestamp(1_000_001_000)
+			traceID := [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			spanID := [8]byte{0, 1, 2, 3, 4, 5, 6, 7}
+			ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID(traceID),
+				SpanID:     trace.SpanID(spanID),
+				TraceFlags: trace.FlagsSampled,
+			}))
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
@@ -122,10 +130,10 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "client.address-val", "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", "oracledb.object_name-val", "oracledb.object_type-val", "oracledb.osuser-val", 21.100000)
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "client.address-val", "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", "oracledb.object_name-val", "oracledb.object_type-val", "oracledb.osuser-val", 21.100000)
 
 			allEventsCount++
-			lb.RecordDbServerTopQueryEvent(timestamp, "db.system.name-val", "db.server.name-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", 30.100000, 20, 26.100000, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000)
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", 30.100000, 20, 26.100000, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000)
 
 			rb := lb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
@@ -133,7 +141,7 @@ func TestLogsBuilder(t *testing.T) {
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
-			if tt.expectEmpty {
+			if tt.expectEmpty || ((tt.name == "default" || tt.name == "filter_set_include") && defaultEventsCount == 0) {
 				assert.Equal(t, 0, logs.ResourceLogs().Len())
 				return
 			}
@@ -157,6 +165,8 @@ func TestLogsBuilder(t *testing.T) {
 					validatedEvents["db.server.query_sample"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
 					attrVal, ok := lr.Attributes().Get("db.query.text")
 					assert.True(t, ok)
 					assert.Equal(t, "db.query.text-val", attrVal.Str())
@@ -225,6 +235,8 @@ func TestLogsBuilder(t *testing.T) {
 					validatedEvents["db.server.top_query"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
 					attrVal, ok := lr.Attributes().Get("db.system.name")
 					assert.True(t, ok)
 					assert.Equal(t, "db.system.name-val", attrVal.Str())
