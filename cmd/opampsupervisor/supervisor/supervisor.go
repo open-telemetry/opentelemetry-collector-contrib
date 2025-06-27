@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -77,6 +78,7 @@ var (
 const (
 	persistentStateFileName     = "persistent_state.yaml"
 	agentConfigFileName         = "effective.yaml"
+	agentLogFileName            = "agent.log"
 	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
 )
 
@@ -330,7 +332,7 @@ func (s *Supervisor) Start() error {
 
 	s.commander, err = commander.NewCommander(
 		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
+		s.agentLogFilePath(),
 		s.config.Agent,
 		"--config", s.agentConfigFilePath(),
 	)
@@ -356,7 +358,7 @@ func (s *Supervisor) Start() error {
 func (s *Supervisor) getFeatureGates() error {
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
+		s.agentLogFilePath(),
 		s.config.Agent,
 		"featuregate",
 	)
@@ -530,7 +532,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
+		s.agentLogFilePath(),
 		s.config.Agent,
 		flags...,
 	)
@@ -1390,19 +1392,7 @@ func (s *Supervisor) runAgentProcess() {
 			if s.agentRestarting.Load() {
 				continue
 			}
-
-			s.telemetrySettings.Logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
-			errMsg := fmt.Sprintf(
-				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
-				s.commander.Pid(), s.commander.ExitCode(),
-			)
-			err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg})
-			if err != nil {
-				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
-			}
-
-			// TODO: decide why the agent stopped. If it was due to bad config, report it to server.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
+			s.handleAgentExit()
 
 			// Wait 5 seconds before starting again.
 			if !restartTimer.Stop() {
@@ -1698,6 +1688,10 @@ func (s *Supervisor) agentConfigFilePath() string {
 	return filepath.Join(s.config.Storage.Directory, agentConfigFileName)
 }
 
+func (s *Supervisor) agentLogFilePath() string {
+	return filepath.Join(s.config.Storage.Directory, agentLogFileName)
+}
+
 func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 	if s.config.Agent.OpAMPServerPort != 0 {
 		return s.config.Agent.OpAMPServerPort, nil
@@ -1777,4 +1771,132 @@ func configMergeFunc(src, dest map[string]any) error {
 	}
 
 	return nil
+}
+
+func (s *Supervisor) handleAgentExit() {
+	logFields := []zap.Field{
+		zap.Int("pid", s.commander.Pid()),
+		zap.Int("exit_code", s.commander.ExitCode()),
+	}
+
+	errMsg := fmt.Sprintf(
+		"Agent process PID=%d exited unexpectedly, exit code=%d. ",
+		s.commander.Pid(), s.commander.ExitCode(),
+	)
+
+	exitReason := s.analyzeExitReason()
+	if exitReason == "" {
+		logFields = append(logFields, zap.String("exit_reason", "unknown"))
+	} else {
+		logFields = append(logFields, zap.String("exit_reason", exitReason))
+		errMsg += exitReason + ". "
+	}
+	errMsg += "Will restart in a bit..."
+
+	s.telemetrySettings.Logger.Debug(
+		"Agent process exited unexpectedly. Will restart in a bit...",
+		logFields...,
+	)
+
+	err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg})
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
+	}
+}
+
+func (s *Supervisor) analyzeExitReason() string {
+	exitCode := s.commander.ExitCode()
+	exitReason := ""
+	checkAgentLog := false
+
+	if runtime.GOOS == "windows" {
+		switch exitCode {
+		case 0:
+			exitReason = "Success"
+		case 1:
+			exitReason = "General error or incorrect function"
+			checkAgentLog = true
+		case 2:
+			exitReason = "File not found"
+		case 3:
+			exitReason = "Path not found"
+		case 4:
+			exitReason = "Too many open files"
+		case 5:
+			exitReason = "Access denied"
+		}
+	} else {
+		switch exitCode {
+		case 0:
+			exitReason = "Success"
+		case 1:
+			exitReason = "General or unspecified error"
+			checkAgentLog = true
+		case 2:
+			exitReason = "Misuse of shell built-ins"
+		case 126:
+			exitReason = "Command invoked cannot execute"
+		case 127:
+			exitReason = "Command not found"
+		case 128:
+			exitReason = "Invalid argument to exit"
+		case 130:
+			exitReason = "Terminated by Control-C (SIGINT)"
+		case 137:
+			exitReason = "Terminated by SIGKILL (128+9)"
+		case 139:
+			exitReason = "Segmentation fault (SIGSEGV)"
+		case 143:
+			exitReason = "Terminated by SIGTERM (128+15)"
+		default:
+			exitReason = ""
+		}
+	}
+
+	if checkAgentLog {
+		if s.config.Agent.PassthroughLogs {
+			logs := s.commander.GetLastLogs()
+			if len(logs) > 0 {
+				content := []byte(strings.Join(logs, "\n"))
+				logReason := getExitReasonFromAgentLog(content)
+				if logReason != "" {
+					exitReason = logReason
+				}
+			}
+		} else {
+			agentLog := s.agentLogFilePath()
+			if _, err := os.Stat(agentLog); err == nil {
+				content, err := os.ReadFile(agentLog)
+				if err != nil {
+					s.telemetrySettings.Logger.Debug("Could not read agent log", zap.Error(err))
+					return exitReason
+				}
+				logReason := getExitReasonFromAgentLog(content)
+				if logReason != "" {
+					exitReason = logReason
+				}
+			}
+		}
+	}
+
+	return exitReason
+}
+
+func getExitReasonFromAgentLog(content []byte) string {
+	fileContent := string(content)
+
+	errors := map[string]string{
+		"invalid configuration":          "Invalid configuration",
+		"address already in use":         "Address already in use",
+		"failed to load TLS credentials": "Failed to load TLS credentials",
+		"failed to verify certificate":   "Failed to verify certificate",
+	}
+
+	for error, reason := range errors {
+		if strings.Contains(fileContent, error) {
+			return reason
+		}
+	}
+
+	return ""
 }

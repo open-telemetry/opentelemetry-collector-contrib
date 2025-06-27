@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -24,27 +24,38 @@ import (
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
-	logger  *zap.Logger
-	cfg     config.Agent
-	logsDir string
-	args    []string
-	cmd     *exec.Cmd
-	doneCh  chan struct{}
-	exitCh  chan struct{}
-	running *atomic.Int64
+	logger           *zap.Logger
+	cfg              config.Agent
+	agentLogFilePath string
+	args             []string
+	cmd              *exec.Cmd
+	doneCh           chan struct{}
+	exitCh           chan struct{}
+	running          *atomic.Int64
+	// Store the last few lines of logs when passthrough_logs is true
+	lastLogs      []string
+	lastLogsMutex sync.Mutex
 }
 
-func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
+func NewCommander(logger *zap.Logger, agentLogFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
-		logger:  logger,
-		logsDir: logsDir,
-		cfg:     cfg,
-		args:    args,
-		running: &atomic.Int64{},
+		logger:           logger,
+		agentLogFilePath: agentLogFilePath,
+		cfg:              cfg,
+		args:             args,
+		running:          &atomic.Int64{},
 		// Buffer channels so we can send messages without blocking on listeners.
-		doneCh: make(chan struct{}, 1),
-		exitCh: make(chan struct{}, 1),
+		doneCh:   make(chan struct{}, 1),
+		exitCh:   make(chan struct{}, 1),
+		lastLogs: make([]string, 0, 100), // Store up to 100 lines
 	}, nil
+}
+
+// GetLastLogs returns the last few lines of logs when passthrough_logs is true
+func (c *Commander) GetLastLogs() []string {
+	c.lastLogsMutex.Lock()
+	defer c.lastLogsMutex.Unlock()
+	return c.lastLogs
 }
 
 // Start the Agent and begin watching the process.
@@ -96,10 +107,9 @@ func (c *Commander) Restart(ctx context.Context) error {
 }
 
 func (c *Commander) startNormal() error {
-	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	stdoutFile, err := os.Create(logFilePath)
+	stdoutFile, err := os.Create(c.agentLogFilePath)
 	if err != nil {
-		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
+		return fmt.Errorf("cannot create %s: %w", c.agentLogFilePath, err)
 	}
 
 	// Capture standard output and standard error.
@@ -148,9 +158,17 @@ func (c *Commander) startWithPassthroughLogging() error {
 		for scanner.Scan() {
 			line := scanner.Text()
 			colLogger.Info(line)
+			// Store the line in memory
+			c.lastLogsMutex.Lock()
+			if len(c.lastLogs) >= 100 {
+				// Remove oldest line if we're at capacity
+				c.lastLogs = c.lastLogs[1:]
+			}
+			c.lastLogs = append(c.lastLogs, line)
+			c.lastLogsMutex.Unlock()
 		}
 		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
+			c.logger.Error("Error reading agent stdout", zap.Error(err))
 		}
 	}()
 	go func() {
@@ -158,9 +176,17 @@ func (c *Commander) startWithPassthroughLogging() error {
 		for scanner.Scan() {
 			line := scanner.Text()
 			colLogger.Error(line)
+			// Store the line in memory
+			c.lastLogsMutex.Lock()
+			if len(c.lastLogs) >= 100 {
+				// Remove oldest line if we're at capacity
+				c.lastLogs = c.lastLogs[1:]
+			}
+			c.lastLogs = append(c.lastLogs, line)
+			c.lastLogsMutex.Unlock()
 		}
 		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
+			c.logger.Error("Error reading agent stderr", zap.Error(err))
 		}
 	}()
 
