@@ -128,6 +128,7 @@ type oracleScraper struct {
 	logsBuilderConfig          metadata.LogsBuilderConfig
 	metricCache                *lru.Cache[string, map[string]int64]
 	topQueryCollectCfg         TopQueryCollection
+	querySampleCfg             QuerySample
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, hostName string) (scraper.Metrics, error) {
@@ -146,7 +147,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 
 func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadata.LogsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig,
 	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, metricCache *lru.Cache[string, map[string]int64],
-	topQueryCollectCfg TopQueryCollection, hostName string,
+	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, hostName string,
 ) (scraper.Logs, error) {
 	s := &oracleScraper{
 		lb:                 logsBuilder,
@@ -158,6 +159,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		instanceName:       instanceName,
 		metricCache:        metricCache,
 		topQueryCollectCfg: topQueryCollectCfg,
+		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
@@ -562,7 +564,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, err
 	dbClients := s.samplesQueryClient
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	rows, err := dbClients.metricRows(ctx)
+	rows, err := dbClients.metricRows(ctx, s.querySampleCfg.MaxRowsPerQuery)
 	if err != nil {
 		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
 	}
