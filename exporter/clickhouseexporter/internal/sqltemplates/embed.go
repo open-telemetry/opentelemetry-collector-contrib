@@ -12,10 +12,19 @@ var LogsCreateTable string
 //go:embed logs_insert.sql
 var LogsInsert string
 
+//go:embed logs_json_table.sql
+var LogsJSONCreateTable string
+
+//go:embed logs_json_insert.sql
+var LogsJSONInsert string
+
 // TRACES
 
 //go:embed traces_table.sql
 var TracesCreateTable string
+
+//go:embed traces_json_table.sql
+var TracesJSONCreateTable string
 
 //go:embed traces_id_ts_lookup_table.sql
 var TracesCreateTsTable string
@@ -25,6 +34,9 @@ var TracesCreateTsView string
 
 //go:embed traces_insert.sql
 var TracesInsert string
+
+//go:embed traces_json_insert.sql
+var TracesJSONInsert string
 
 // METRICS
 
