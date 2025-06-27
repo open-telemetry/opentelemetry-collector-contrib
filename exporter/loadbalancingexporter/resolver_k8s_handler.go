@@ -43,7 +43,6 @@ func (h handler) OnAdd(obj any, _ bool) {
 			h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", obj))
 			h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 			return
-
 		}
 	case *corev1.Endpoints:
 		ok, endpoints = convertToEndpoints(h.returnNames, object)
@@ -52,7 +51,6 @@ func (h handler) OnAdd(obj any, _ bool) {
 			h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 			return
 		}
-
 	default: // unsupported
 		h.logger.Warn("Got an unexpected Kubernetes data type during the inclusion of a new pods for the service", zap.Any("obj", obj))
 		h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
@@ -71,6 +69,8 @@ func (h handler) OnAdd(obj any, _ bool) {
 
 func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
+	case *discoveryv1.EndpointSlice:
+		// TODO
 	case *corev1.Endpoints:
 		newEps, ok := newObj.(*corev1.Endpoints)
 		if !ok {
@@ -125,6 +125,8 @@ func (h handler) OnDelete(obj any) {
 	case *cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return
+	case *discoveryv1.EndpointSlice:
+		// TODO
 	case *corev1.Endpoints:
 		if object != nil {
 			ok, endpoints = convertToEndpoints(h.returnNames, object)

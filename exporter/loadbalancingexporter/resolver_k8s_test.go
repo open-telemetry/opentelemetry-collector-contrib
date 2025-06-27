@@ -131,7 +131,7 @@ func TestK8sResolve(t *testing.T) {
 					Update(context.TODO(), updated, metav1.UpdateOptions{})
 				return err
 			},
-			verifyFn: func(ctx *suiteContext, args args) error {
+			verifyFn: func(ctx *suiteContext, _ args) error {
 				// Force resolver to re-resolve
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
 					return err
