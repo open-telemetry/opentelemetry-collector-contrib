@@ -355,6 +355,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 				// Histograms that comes with samples are considered as classic histograms and are not supported.
 				if len(ts.Samples) == 0 {
+					sum := metric.SetEmptySum()
+					sum.SetIsMonotonic(true)
+					sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 					metric.SetEmptyExponentialHistogram()
 				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
