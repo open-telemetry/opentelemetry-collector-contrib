@@ -23,13 +23,13 @@ var (
 type dnsLookupProcessor struct {
 	config       *Config
 	resolver     resolver.Resolver
-	processPairs []ProcessPair
+	processPairs []processPair
 	logger       *zap.Logger
 }
 
-// ProcessPair holds a context ID and a function to process DNS lookups
-type ProcessPair struct {
-	ContextID ContextID
+// processPair holds a context ID and a function to process DNS lookups
+type processPair struct {
+	ContextID contextID
 	ProcessFn func(ctx context.Context, pMap pcommon.Map) error
 }
 
@@ -67,11 +67,11 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	return resolver.NewNoOpResolver(), nil
 }
 
-// createProcessPairs creates a list of ProcessPair based on the configuration.
-func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
+// createProcessPairs creates a list of processPair based on the configuration.
+func (dp *dnsLookupProcessor) createProcessPairs() []processPair {
 	if dp.config.Resolve.Enabled && dp.config.Reverse.Enabled &&
 		(dp.config.Resolve.Context == dp.config.Reverse.Context) {
-		return []ProcessPair{
+		return []processPair{
 			{
 				ContextID: dp.config.Resolve.Context,
 				ProcessFn: dp.processResolveReverseLookup,
@@ -79,17 +79,17 @@ func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
 		}
 	}
 
-	var processPairs []ProcessPair
+	var processPairs []processPair
 
 	if dp.config.Resolve.Enabled {
-		processPairs = append(processPairs, ProcessPair{
+		processPairs = append(processPairs, processPair{
 			ContextID: dp.config.Resolve.Context,
 			ProcessFn: dp.processResolveLookup,
 		})
 	}
 
 	if dp.config.Reverse.Enabled {
-		processPairs = append(processPairs, ProcessPair{
+		processPairs = append(processPairs, processPair{
 			ContextID: dp.config.Reverse.Context,
 			ProcessFn: dp.processReverseLookup,
 		})

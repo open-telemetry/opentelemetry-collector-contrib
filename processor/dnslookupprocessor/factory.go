@@ -15,8 +15,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/metadata"
 )
 
-// SourceIPKey semconv does not define a Key for source IP. When semconv defines it, this should be removed.
-const SourceIPKey = "source.ip"
+// sourceIPKey semconv does not define a Key for source IP. When semconv defines it, this should be removed.
+const sourceIPKey = "source.ip"
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
@@ -36,12 +36,12 @@ func createDefaultConfig() component.Config {
 			Enabled:          true,
 			Context:          resource,
 			SourceAttributes: []string{string(semconv.SourceAddressKey)},
-			TargetAttribute:  SourceIPKey,
+			TargetAttribute:  sourceIPKey,
 		},
 		Reverse: LookupConfig{
 			Enabled:          false,
 			Context:          resource,
-			SourceAttributes: []string{SourceIPKey},
+			SourceAttributes: []string{sourceIPKey},
 			TargetAttribute:  string(semconv.SourceAddressKey),
 		},
 	}

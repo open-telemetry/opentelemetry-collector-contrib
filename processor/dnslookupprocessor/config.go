@@ -10,15 +10,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type ContextID string
+type contextID string
 
 const (
-	resource ContextID = "resource"
-	record   ContextID = "record"
+	resource contextID = "resource"
+	record   contextID = "record"
 )
 
-func (c *ContextID) UnmarshalText(text []byte) error {
-	str := ContextID(strings.ToLower(string(text)))
+func (c *contextID) UnmarshalText(text []byte) error {
+	str := contextID(strings.ToLower(string(text)))
 	switch str {
 	case resource, record:
 		*c = str
@@ -45,7 +45,7 @@ type LookupConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	// Context specifies where to look for attributes (resource or record).
-	Context ContextID `mapstructure:"context"`
+	Context contextID `mapstructure:"context"`
 
 	// SourceAttributes is a list of attributes to check for hostnames/IP. The first valid hostname/IP is used.
 	SourceAttributes []string `mapstructure:"source_attributes"`
@@ -74,11 +74,11 @@ func (cfg *Config) Validate() error {
 	}
 
 	if err := validateLookupConfig(cfg.Resolve); err != nil {
-		return fmt.Errorf("resolve configuration: %w", err)
+		return fmt.Errorf("invalid resolve configuration: %w", err)
 	}
 
 	if err := validateLookupConfig(cfg.Reverse); err != nil {
-		return fmt.Errorf("reverse configuration: %w", err)
+		return fmt.Errorf("invalid reverse configuration: %w", err)
 	}
 
 	return nil

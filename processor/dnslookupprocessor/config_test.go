@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:     component.NewIDWithName(metadata.Type, "invalid_attributes"),
-			errMsg: "resolve configuration: at least one source_attributes must be specified for DNS resolution",
+			errMsg: "invalid resolve configuration: at least one source_attributes must be specified for DNS resolution",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "custom_attributes"),
@@ -106,7 +106,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Resolve.SourceAttributes = []string{}
 			},
 			expectError: true,
-			errorMsg:    "resolve configuration: at least one source_attributes must be specified for DNS resolution",
+			errorMsg:    "invalid resolve configuration: at least one source_attributes must be specified for DNS resolution",
 		},
 		{
 			name: "Empty reverse attribute list",
@@ -124,7 +124,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Resolve.TargetAttribute = ""
 			},
 			expectError: true,
-			errorMsg:    "resolve configuration: target_attribute must be specified for DNS resolution",
+			errorMsg:    "invalid resolve configuration: target_attribute must be specified for DNS resolution",
 		},
 		{
 			name: "Missing reverse target_attribute",

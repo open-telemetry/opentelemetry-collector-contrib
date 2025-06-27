@@ -31,12 +31,12 @@ func TestCreateProcessor(t *testing.T) {
 			Enabled:          true,
 			Context:          resource,
 			SourceAttributes: []string{string(semconv.SourceAddressKey)},
-			TargetAttribute:  SourceIPKey,
+			TargetAttribute:  sourceIPKey,
 		},
 		Reverse: LookupConfig{
 			Enabled:          false,
 			Context:          resource,
-			SourceAttributes: []string{SourceIPKey},
+			SourceAttributes: []string{sourceIPKey},
 			TargetAttribute:  string(semconv.SourceAddressKey),
 		},
 	}
