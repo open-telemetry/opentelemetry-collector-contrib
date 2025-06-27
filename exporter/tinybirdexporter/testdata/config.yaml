@@ -1,0 +1,29 @@
+tinybird:
+  endpoint: "https://api.tinybird.co"
+  token: "test-token"
+
+tinybird/full:
+  endpoint: "https://api.tinybird.co"
+  token: "test-token"
+  metrics::datasource: "metrics"
+  traces::datasource: "traces"
+  logs::datasource: "logs"
+
+tinybird/invalid_datasource:
+  endpoint: "https://api.tinybird.co"
+  token: "test-token"
+  metrics::datasource: "metrics-with-dashes"
+  traces::datasource: "traces-with-dashes"
+  logs::datasource: "logs-with-dashes"
+
+tinybird/missing_token:
+  endpoint: "https://api.tinybird.co"
+  metrics::datasource: "metrics"
+  traces::datasource: "traces"
+  logs::datasource: "logs"
+
+tinybird/missing_endpoint:
+  token: "test-token"
+  metrics::datasource: "metrics"
+  traces::datasource: "traces"
+  logs::datasource: "logs"
