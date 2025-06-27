@@ -147,7 +147,7 @@ func TestEventsScraper(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Eventually(t, func() bool {
 					return queryCount.Load() > currentQueriesCount*3
-				}, 10*time.Second, 100*time.Millisecond, "Query did not execute enough times")
+				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
 				actualLog, err := scraper.ScrapeLogs(context.Background())
 				assert.NotNil(t, actualLog)
 				assert.NoError(t, err)
