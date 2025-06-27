@@ -60,10 +60,10 @@ type prometheusRemoteWriteReceiver struct {
 	obsrecv *receiverhelper.ObsReport
 }
 
-// MetricIdentity contains all the components that uniquely identify a metric
+// metricIdentity contains all the components that uniquely identify a metric
 // according to the OpenTelemetry Protocol data model.
 // The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
-type MetricIdentity struct {
+type metricIdentity struct {
 	ResourceID   string
 	ScopeName    string
 	ScopeVersion string
@@ -72,9 +72,9 @@ type MetricIdentity struct {
 	Type         writev2.Metadata_MetricType
 }
 
-// createMetricIdentity creates a MetricIdentity struct from the required components
-func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) MetricIdentity {
-	return MetricIdentity{
+// createMetricIdentity creates a metricIdentity struct from the required components
+func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) metricIdentity {
+	return metricIdentity{
 		ResourceID:   resourceID,
 		ScopeName:    scopeName,
 		ScopeVersion: scopeVersion,
@@ -85,7 +85,7 @@ func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit 
 }
 
 // Hash generates a unique hash for the metric identity
-func (mi MetricIdentity) Hash() uint64 {
+func (mi metricIdentity) Hash() uint64 {
 	const separator = "\xff"
 
 	combined := strings.Join([]string{
