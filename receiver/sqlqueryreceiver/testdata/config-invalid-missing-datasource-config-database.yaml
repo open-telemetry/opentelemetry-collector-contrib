@@ -1,7 +1,8 @@
 sqlquery:
   collection_interval: 10s
   driver: postgres
-  datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"
+  host: localhost
+  port: 5432
   queries:
     - sql: "select count(*) as count, type from mytable group by type"
       metrics:
@@ -11,4 +12,4 @@ sqlquery:
           data_type: gauge
           value_type: int
           monotonic: false
-          aggregation: xyzcumulative
+          aggregation: cumulative
