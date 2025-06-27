@@ -1,0 +1,14 @@
+type: externalauth
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [bogdan-at-adobe]
+    emeritus: []
+    seeking_new: true
+
+tests:
+  config: 
