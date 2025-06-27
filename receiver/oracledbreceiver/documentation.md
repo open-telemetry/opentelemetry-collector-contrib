@@ -373,4 +373,5 @@ Number of SELECT statements executed in parallel
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| host.name | The host name of Oracle Server | Any Str | true |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |
