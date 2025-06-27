@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -235,16 +236,32 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
+	// Create context with metadata if include_metadata is enabled
+	var ctx context.Context
+	if r.cfg.HTTP.IncludeMetadata {
+		// Convert HTTP headers to metadata
+		metadata := make(map[string][]string)
+		for key, values := range req.Header {
+			// Convert header names to lowercase for consistency
+			metadata[strings.ToLower(key)] = values
+		}
+		ctx = client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(metadata),
+		})
+	} else {
+		ctx = context.Background()
+	}
+
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
-		ctx := r.obsreport.StartLogsOp(context.Background())
+		ctx = r.obsreport.StartLogsOp(ctx)
 		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
 		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
 	}
 
 	numTraces := otlpTraces.SpanCount()
 	if numTraces > 0 {
-		ctx := r.obsreport.StartTracesOp(context.Background())
+		ctx = r.obsreport.StartTracesOp(ctx)
 		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
 		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
 	}
