@@ -126,6 +126,8 @@ go.opentelemetry.io/collector/processor v1.34.1-0.20250624152751-a33fdf3cb754 h1
 go.opentelemetry.io/collector/processor v1.34.1-0.20250624152751-a33fdf3cb754/go.mod h1:dZx/ifYF8Dp+D87E9733AlBQWyYxVY2CHH3qE65YBss=
 go.opentelemetry.io/collector/processor/processorhelper v0.128.1-0.20250624152751-a33fdf3cb754 h1:XgZ3MdYKsXKK2NkCITlU5tsrDqjFYCLEycjl++R2mlo=
 go.opentelemetry.io/collector/processor/processorhelper v0.128.1-0.20250624152751-a33fdf3cb754/go.mod h1:YrsE5m2X9TvqdVQYkGnRIKc1IHdUlrjSNlW6L4Cjrhk=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.128.1-0.20250624152751-a33fdf3cb754 h1:RuwuEq7TId4d2Wp2q4Ig4W+IjDWuhlr7AfywnBl/8wE=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.128.1-0.20250624152751-a33fdf3cb754/go.mod h1:oBtId4ZWBdFAMrLd5X9Wpnuy1+TkPZzRS9o1oYWtNH4=
 go.opentelemetry.io/collector/processor/processortest v0.128.1-0.20250624152751-a33fdf3cb754 h1:rYL7eotsAP05NxIFhR0nq8eXP14jTZ1ePXWLc6suBT0=
 go.opentelemetry.io/collector/processor/processortest v0.128.1-0.20250624152751-a33fdf3cb754/go.mod h1:6xGBJ+5Cy/tlY8U7FGs+FjeHa9dP/j7FfhsbcBcLbzM=
 go.opentelemetry.io/collector/processor/xprocessor v0.128.1-0.20250624152751-a33fdf3cb754 h1:usUgqrnVVg6z9BZANCL7ziwt2297zcdYTDOJi/rXgEQ=

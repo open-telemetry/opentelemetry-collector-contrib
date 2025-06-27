@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -41,9 +42,10 @@ type Config struct {
 	// The default value is `propagate`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
-	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
-	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
-	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
+	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
+	MetricStatements  []common.ContextStatements `mapstructure:"metric_statements"`
+	LogStatements     []common.ContextStatements `mapstructure:"log_statements"`
+	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
@@ -53,6 +55,7 @@ type Config struct {
 	metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
 	spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]
 	spanFunctions      map[string]ottl.Factory[ottlspan.TransformContext]
+	profileFunctions   map[string]ottl.Factory[ottlprofile.TransformContext]
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -80,9 +83,10 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	contextStatementsFields := map[string]*[]common.ContextStatements{
-		"trace_statements":  &c.TraceStatements,
-		"metric_statements": &c.MetricStatements,
-		"log_statements":    &c.LogStatements,
+		"trace_statements":   &c.TraceStatements,
+		"metric_statements":  &c.MetricStatements,
+		"log_statements":     &c.LogStatements,
+		"profile_statements": &c.ProfileStatements,
 	}
 
 	contextStatementsPatch := map[string]any{}
@@ -172,6 +176,19 @@ func (c *Config) Validate() error {
 			return err
 		}
 		for _, cs := range c.LogStatements {
+			_, err = pc.ParseContextStatements(cs)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			}
+		}
+	}
+
+	if len(c.ProfileStatements) > 0 {
+		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
+		if err != nil {
+			return err
+		}
+		for _, cs := range c.ProfileStatements {
 			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
 				errors = multierr.Append(errors, err)
