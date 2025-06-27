@@ -172,3 +172,78 @@ func TestConfig_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestContextID_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    contextID
+		wantErr bool
+	}{
+		{
+			name:    "valid resource lowercase",
+			input:   "resource",
+			want:    resource,
+			wantErr: false,
+		},
+		{
+			name:    "valid record lowercase",
+			input:   "record",
+			want:    record,
+			wantErr: false,
+		},
+		{
+			name:    "valid resource mixed case",
+			input:   "Resource",
+			want:    resource,
+			wantErr: false,
+		},
+		{
+			name:    "valid record mixed case",
+			input:   "Record",
+			want:    record,
+			wantErr: false,
+		},
+		{
+			name:    "invalid empty string",
+			input:   "",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:    "invalid unknown value",
+			input:   "unknown",
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:    "invalid whitespace",
+			input:   " resource ",
+			want:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var c contextID
+			err := c.UnmarshalText([]byte(tt.input))
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("UnmarshalText() expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("UnmarshalText() unexpected error: %v", err)
+				return
+			}
+
+			if c != tt.want {
+				t.Errorf("UnmarshalText() got %v, want %v", c, tt.want)
+			}
+		})
+	}
+}
