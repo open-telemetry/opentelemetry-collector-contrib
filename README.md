@@ -67,47 +67,7 @@ Even though the OpenTelemetry Collector Contrib maintainers are ultimately respo
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
-
-- [Benedikt Bongartz](https://github.com/frzifus), Red Hat
-- [Florian Bacher](https://github.com/bacherfl), Dynatrace
-- [Israel Blancas](https://github.com/iblancasa), Coralogix
-- [James Moessis](https://github.com/jamesmoessis), Atlassian
-- [Jared Tan](https://github.com/JaredTan95), DaoCloud
-- [Murphy Chen](https://github.com/Frapschen), DaoCloud
-- [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
-- [Vihas Makwana](https://github.com/VihasMakwana), Elastic
-- Actively seeking contributors to triage issues
-
-Emeritus Triagers:
-
-- [Alolita Sharma](https://github.com/alolita)
-- [Gabriel Aszalos](https://github.com/gbbr)
-- [Goutham Veeramachaneni](https://github.com/gouthamve)
-- [Punya Biswal](https://github.com/punya)
-- [Steve Flanders](https://github.com/flands)
-
-Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
-
-- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Braydon Kains](https://github.com/braydonk), Google
-- [Christos Markou](https://github.com/ChrsMark), Elastic
-- [Curtis Robert](https://github.com/crobert-1), Splunk
-- [David Ashpole](https://github.com/dashpole), Google (on leave)
-- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
-- [Matt Wear](https://github.com/mwear), Lightstep
-- [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
-- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
-
-Emeritus Approvers:
-
-- [Anthony Mirabella](https://github.com/Aneurysm9)
-- [Bryan Aguilar](https://github.com/bryan-aguilar)
-- [Przemek Maciolek](https://github.com/pmm-sumo)
-- [Ruslan Kovalov](https://github.com/kovrus)
-
-Maintainers ([@open-telemetry/collector-contrib-maintainers](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainers)):
+### Maintainers
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
@@ -120,13 +80,64 @@ Maintainers ([@open-telemetry/collector-contrib-maintainers](https://github.com/
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 - [Yang Song](https://github.com/songy23), DataDog
 
-Emeritus Maintainers
+For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).
+
+### Approvers
+
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
+- [Braydon Kains](https://github.com/braydonk), Google
+- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Curtis Robert](https://github.com/crobert-1), Splunk
+- [David Ashpole](https://github.com/dashpole), Google
+- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
+- [Matt Wear](https://github.com/mwear), Lightstep
+- [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
+- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
+
+For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).
+
+### Triagers
+
+- [Andrew Wilkins](https://github.com/axw), Elastic
+- [Benedikt Bongartz](https://github.com/frzifus), Red Hat
+- [Florian Bacher](https://github.com/bacherfl), Dynatrace
+- [Israel Blancas](https://github.com/iblancasa), Coralogix
+- [James Moessis](https://github.com/jamesmoessis), Atlassian
+- [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Vihas Makwana](https://github.com/VihasMakwana), Elastic
+- Actively seeking contributors to triage issues
+
+For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#triagers).
+
+### Emeritus Maintainers
 
 - [Daniel Jaglowski](https://github.com/djaglowski), Bindplane
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).
+For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
+
+### Emeritus Approvers
+
+- [Anthony Mirabella](https://github.com/Aneurysm9)
+- [Bryan Aguilar](https://github.com/bryan-aguilar)
+- [Przemek Maciolek](https://github.com/pmm-sumo)
+- [Ruslan Kovalov](https://github.com/kovrus)
+
+For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
+
+### Emeritus Triagers
+
+- [Alolita Sharma](https://github.com/alolita)
+- [Gabriel Aszalos](https://github.com/gbbr)
+- [Goutham Veeramachaneni](https://github.com/gouthamve)
+- [Punya Biswal](https://github.com/punya)
+- [Steve Flanders](https://github.com/flands)
+
+For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
 ### No Over-Representation
 

@@ -25,13 +25,21 @@ import (
 )
 
 type prwWalTelemetry interface {
+	recordWALWriteLatency(ctx context.Context, durationMs int64)
 	recordWALWrites(ctx context.Context)
 	recordWALWritesFailures(ctx context.Context)
+	recordWALReadLatency(ctx context.Context, durationMs int64)
+	recordWALReads(ctx context.Context)
+	recordWALReadsFailures(ctx context.Context)
 }
 
 type prwWalTelemetryOTel struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 	otelAttrs        []attribute.KeyValue
+}
+
+func (p *prwWalTelemetryOTel) recordWALWriteLatency(ctx context.Context, durationMs int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalWriteLatency.Record(ctx, durationMs, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwWalTelemetryOTel) recordWALWrites(ctx context.Context) {
@@ -40,6 +48,18 @@ func (p *prwWalTelemetryOTel) recordWALWrites(ctx context.Context) {
 
 func (p *prwWalTelemetryOTel) recordWALWritesFailures(ctx context.Context) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteWalWritesFailures.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALReadLatency(ctx context.Context, durationMs int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalReadLatency.Record(ctx, durationMs, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALReads(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalReads.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALReadsFailures(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalReadsFailures.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
@@ -389,7 +409,11 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		if prweWAL.wal == nil {
 			return nil, errors.New("attempt to read from closed WAL")
 		}
+		prweWAL.telemetry.recordWALReads(ctx)
+		start := time.Now()
 		protoBlob, err = prweWAL.wal.Read(index)
+		duration := time.Since(start)
+		prweWAL.telemetry.recordWALReadLatency(ctx, duration.Milliseconds())
 		if err == nil { // The read succeeded.
 			req := new(prompb.WriteRequest)
 			if err = proto.Unmarshal(protoBlob, req); err != nil {
@@ -403,7 +427,6 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 			return req, nil
 		}
 		prweWAL.mu.Unlock()
-
 		// If WAL was empty, let's wait for a notification from
 		// the writer go routine.
 		if errors.Is(err, wal.ErrNotFound) {
@@ -417,6 +440,8 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		}
 
 		if !errors.Is(err, wal.ErrNotFound) {
+			// record all failures apart ErrNotFound
+			prweWAL.telemetry.recordWALReadsFailures(ctx)
 			return nil, err
 		}
 	}
