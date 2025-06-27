@@ -586,7 +586,7 @@ func TestTranslateV2(t *testing.T) {
 								Schema:         -4,
 								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
-								PositiveDeltas: []int64{100, 244, -221},
+								PositiveDeltas: []int64{100, 244, 221},
 								NegativeDeltas: []int64{1, 2},
 							},
 						},
@@ -626,11 +626,78 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.Positive().SetOffset(0)
-				dp.Positive().BucketCounts().FromRaw([]uint64{100, 344, 0, 0, 0, 123})
+				dp.Positive().BucketCounts().FromRaw([]uint64{100, 344, 0, 0, 0, 565})
 				dp.Negative().BucketCounts().FromRaw([]uint64{1})
 				dp.Negative().SetOffset(-1)
 				dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 3})
 				dp.Attributes().PutStr("attr1", "attr1")
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - integer with negative counts",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 20,
+								},
+								Sum:           30,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountInt{
+									ZeroCountInt: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
+								PositiveDeltas: []int64{100, 244, -221},
+								NegativeDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				m.SetEmptyExponentialHistogram()
 				return metrics
 			}(),
 		},

@@ -487,7 +487,6 @@ func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDa
 }
 
 // hasNegativeCounts checks if a histogram has any negative counts
-// For now just checking float histograms.
 func hasNegativeCounts(histogram writev2.Histogram) bool {
 	if histogram.IsFloatHistogram() {
 		// Check overall count
@@ -510,6 +509,19 @@ func hasNegativeCounts(histogram writev2.Histogram) bool {
 		// Check negative bucket counts
 		for _, count := range histogram.NegativeCounts {
 			if count < 0 {
+				return true
+			}
+		}
+	} else {
+		// Integer histograms
+		for _, delta := range histogram.NegativeDeltas {
+			if delta < 0 {
+				return true
+			}
+		}
+
+		for _, delta := range histogram.PositiveDeltas {
+			if delta < 0 {
 				return true
 			}
 		}
