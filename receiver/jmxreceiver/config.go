@@ -355,82 +355,82 @@ func listKeys(presenceMap map[string]struct{}) string {
 	return strings.Join(list, ", ")
 }
 
-func (jmx *Config) buildJMXConfig() (string, error) {
+func (c *Config) buildJMXConfig() (string, error) {
 	config := map[string]string{}
 	failedToParse := `failed to parse Endpoint "%s": %w`
-	parsed, err := url.Parse(jmx.Endpoint)
+	parsed, err := url.Parse(c.Endpoint)
 	if err != nil {
-		return "", fmt.Errorf(failedToParse, jmx.Endpoint, err)
+		return "", fmt.Errorf(failedToParse, c.Endpoint, err)
 	}
 
 	if parsed.Scheme != "service" || !strings.HasPrefix(parsed.Opaque, "jmx:") {
-		host, portStr, err := net.SplitHostPort(jmx.Endpoint)
+		host, portStr, err := net.SplitHostPort(c.Endpoint)
 		if err != nil {
-			return "", fmt.Errorf(failedToParse, jmx.Endpoint, err)
+			return "", fmt.Errorf(failedToParse, c.Endpoint, err)
 		}
 		port, err := strconv.ParseInt(portStr, 10, 0)
 		if err != nil {
-			return "", fmt.Errorf(failedToParse, jmx.Endpoint, err)
+			return "", fmt.Errorf(failedToParse, c.Endpoint, err)
 		}
-		jmx.Endpoint = fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:%d/jmxrmi", host, port)
+		c.Endpoint = fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:%d/jmxrmi", host, port)
 	}
 
-	config["otel.jmx.service.url"] = jmx.Endpoint
-	samplingKey, samplingValue := jmx.jarJMXSamplingConfig()
+	config["otel.jmx.service.url"] = c.Endpoint
+	samplingKey, samplingValue := c.jarJMXSamplingConfig()
 	config[samplingKey] = samplingValue
-	config["otel.jmx.target.system"] = jmx.TargetSystem
+	config["otel.jmx.target.system"] = c.TargetSystem
 
-	endpoint := jmx.OTLPExporterConfig.Endpoint
+	endpoint := c.OTLPExporterConfig.Endpoint
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = "http://" + endpoint
 	}
 
 	config["otel.metrics.exporter"] = "otlp"
 	config["otel.exporter.otlp.endpoint"] = endpoint
-	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(jmx.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds(), 10)
+	config["otel.exporter.otlp.timeout"] = strconv.FormatInt(c.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds(), 10)
 
-	if len(jmx.OTLPExporterConfig.Headers) > 0 {
-		config["otel.exporter.otlp.headers"] = jmx.OTLPExporterConfig.headersToString()
-	}
-
-	if jmx.Username != "" {
-		config["otel.jmx.username"] = jmx.Username
+	if len(c.OTLPExporterConfig.Headers) > 0 {
+		config["otel.exporter.otlp.headers"] = c.OTLPExporterConfig.headersToString()
 	}
 
-	if jmx.Password != "" {
-		config["otel.jmx.password"] = string(jmx.Password)
+	if c.Username != "" {
+		config["otel.jmx.username"] = c.Username
 	}
 
-	if jmx.RemoteProfile != "" {
-		config["otel.jmx.remote.profile"] = jmx.RemoteProfile
+	if c.Password != "" {
+		config["otel.jmx.password"] = string(c.Password)
 	}
 
-	if jmx.Realm != "" {
-		config["otel.jmx.realm"] = jmx.Realm
+	if c.RemoteProfile != "" {
+		config["otel.jmx.remote.profile"] = c.RemoteProfile
 	}
 
-	if jmx.KeystorePath != "" {
-		config["javax.net.ssl.keyStore"] = jmx.KeystorePath
-	}
-	if jmx.KeystorePassword != "" {
-		config["javax.net.ssl.keyStorePassword"] = string(jmx.KeystorePassword)
-	}
-	if jmx.KeystoreType != "" {
-		config["javax.net.ssl.keyStoreType"] = jmx.KeystoreType
-	}
-	if jmx.TruststorePath != "" {
-		config["javax.net.ssl.trustStore"] = jmx.TruststorePath
-	}
-	if jmx.TruststorePassword != "" {
-		config["javax.net.ssl.trustStorePassword"] = string(jmx.TruststorePassword)
-	}
-	if jmx.TruststoreType != "" {
-		config["javax.net.ssl.trustStoreType"] = jmx.TruststoreType
+	if c.Realm != "" {
+		config["otel.jmx.realm"] = c.Realm
 	}
 
-	if len(jmx.ResourceAttributes) > 0 {
-		attributes := make([]string, 0, len(jmx.ResourceAttributes))
-		for k, v := range jmx.ResourceAttributes {
+	if c.KeystorePath != "" {
+		config["javax.net.ssl.keyStore"] = c.KeystorePath
+	}
+	if c.KeystorePassword != "" {
+		config["javax.net.ssl.keyStorePassword"] = string(c.KeystorePassword)
+	}
+	if c.KeystoreType != "" {
+		config["javax.net.ssl.keyStoreType"] = c.KeystoreType
+	}
+	if c.TruststorePath != "" {
+		config["javax.net.ssl.trustStore"] = c.TruststorePath
+	}
+	if c.TruststorePassword != "" {
+		config["javax.net.ssl.trustStorePassword"] = string(c.TruststorePassword)
+	}
+	if c.TruststoreType != "" {
+		config["javax.net.ssl.trustStoreType"] = c.TruststoreType
+	}
+
+	if len(c.ResourceAttributes) > 0 {
+		attributes := make([]string, 0, len(c.ResourceAttributes))
+		for k, v := range c.ResourceAttributes {
 			attributes = append(attributes, fmt.Sprintf("%s=%s", k, v))
 		}
 		sort.Strings(attributes)
@@ -438,15 +438,15 @@ func (jmx *Config) buildJMXConfig() (string, error) {
 	}
 
 	// set jmx-scraper specific config options
-	if isSupportedJAR(jmxScraperVersions, jmx.JARPath) {
+	if isSupportedJAR(jmxScraperVersions, c.JARPath) {
 		// jmx-scraper default target source: https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper#configuration-reference
-		if len(jmx.TargetSource) > 0 {
-			config["otel.jmx.target.source"] = jmx.TargetSource
+		if len(c.TargetSource) > 0 {
+			config["otel.jmx.target.source"] = c.TargetSource
 		} else {
 			config["otel.jmx.target.source"] = "auto"
 		}
-		if jmx.JmxConfigs != "" {
-			config["otel.jmx.config"] = jmx.JmxConfigs
+		if c.JmxConfigs != "" {
+			config["otel.jmx.config"] = c.JmxConfigs
 		}
 	}
 
