@@ -46,7 +46,7 @@ func TestScraperLoop(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectionInterval = 100 * time.Millisecond
 
-	client := make(mockClient)
+	client := make(mockPodmanClient)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -74,13 +74,13 @@ func TestScraperLoop(t *testing.T) {
 	assertStatsEqualToMetrics(t, genContainerStats(), md)
 }
 
-type mockClient chan containerStatsReport
+type mockPodmanClient chan containerStatsReport
 
-func (c mockClient) factory(_ *zap.Logger, _ *Config) (PodmanClient, error) {
+func (c mockPodmanClient) factory(_ *zap.Logger, _ *Config) (PodmanClient, error) {
 	return c, nil
 }
 
-func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error) {
+func (c mockPodmanClient) stats(context.Context, url.Values) ([]containerStats, error) {
 	report := <-c
 	if report.Error.Message != "" {
 		return nil, errors.New(report.Error.Message)
@@ -88,14 +88,14 @@ func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error)
 	return report.Stats, nil
 }
 
-func (c mockClient) ping(context.Context) error {
+func (c mockPodmanClient) ping(context.Context) error {
 	return nil
 }
 
-func (c mockClient) list(context.Context, url.Values) ([]container, error) {
+func (c mockPodmanClient) list(context.Context, url.Values) ([]container, error) {
 	return []container{{ID: "c1", Image: "localimage"}}, nil
 }
 
-func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
+func (c mockPodmanClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
 	return nil, nil
 }

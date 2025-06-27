@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type ConnectionVars struct {
+type connectionVars struct {
 	InstrumentationKey string
 	IngestionURL       string
 }
@@ -25,7 +25,7 @@ const (
 	ConnectionStringMaxLength           = 4096
 )
 
-func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
+func parseConnectionString(exporterConfig *Config) (*connectionVars, error) {
 	// First, try to get the connection string from the environment variable
 	connectionString := os.Getenv(ApplicationInsightsConnectionString)
 
@@ -35,7 +35,7 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 	}
 
 	instrumentationKey := string(exporterConfig.InstrumentationKey)
-	connectionVars := &ConnectionVars{}
+	connectionVars := &connectionVars{}
 
 	if connectionString == "" && instrumentationKey == "" {
 		return nil, errors.New("ConnectionString and InstrumentationKey cannot be empty")
