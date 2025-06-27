@@ -73,7 +73,7 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	}
 
 	// check for processing mode so we can return the best format
-	if e.config.ProcessingMode == JSONMode {
+	if !e.config.ArrayMode {
 		var buf bytes.Buffer
 		for i, log := range logs {
 			m, err := json.Marshal(log)
@@ -102,14 +102,14 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	var jsonLogs []map[string]any
 	var err error
 
-	if e.config.ProcessingMode == JSONMode {
-		jsonLogs, err = todDecodedJSONDocuments(bytes.NewReader(buf))
-		if err != nil {
+	if e.config.ArrayMode {
+		// Default mode to handle arrays having backward compatibility
+		if err = json.Unmarshal(buf, &jsonLogs); err != nil {
 			return p, err
 		}
 	} else {
-		// Default mode to handle arrays having backward compatibility
-		if err = json.Unmarshal(buf, &jsonLogs); err != nil {
+		jsonLogs, err = todDecodedJSONDocuments(bytes.NewReader(buf))
+		if err != nil {
 			return p, err
 		}
 	}
