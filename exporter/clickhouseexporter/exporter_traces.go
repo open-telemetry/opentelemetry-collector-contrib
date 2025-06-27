@@ -5,125 +5,157 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
-	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type tracesExporter struct {
-	client    *sql.DB
+	db        driver.Conn
 	insertSQL string
 
 	logger *zap.Logger
 	cfg    *Config
 }
 
-func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	client, err := newClickhouseClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 	return &tracesExporter{
-		client:    client,
 		insertSQL: renderInsertTracesSQL(cfg),
 		logger:    logger,
 		cfg:       cfg,
-	}, nil
+	}
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
-	if !e.cfg.shouldCreateSchema() {
-		return nil
-	}
-
-	if err := createDatabase(ctx, e.cfg); err != nil {
+	dsn, err := e.cfg.buildDSN()
+	if err != nil {
 		return err
 	}
 
-	return createTracesTable(ctx, e.cfg, e.client)
+	e.db, err = internal.NewClickhouseClient(dsn)
+	if err != nil {
+		return err
+	}
+
+	if e.cfg.shouldCreateSchema() {
+		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
+			return err
+		}
+
+		if err := createTraceTables(ctx, e.cfg, e.db); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-// shutdown will shut down the exporter.
 func (e *tracesExporter) shutdown(_ context.Context) error {
-	if e.client != nil {
-		return e.client.Close()
+	if e.db != nil {
+		return e.db.Close()
 	}
+
 	return nil
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	start := time.Now()
-	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, e.insertSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareContext:%w", err)
+	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
+	if err != nil {
+		return err
+	}
+	defer func(batch driver.Batch) {
+		if closeErr := batch.Close(); closeErr != nil {
+			e.logger.Warn("failed to close traces batch", zap.Error(closeErr))
 		}
-		defer func() {
-			_ = statement.Close()
-		}()
-		for i := 0; i < td.ResourceSpans().Len(); i++ {
-			spans := td.ResourceSpans().At(i)
-			res := spans.Resource()
-			resAttr := internal.AttributesToMap(res.Attributes())
-			serviceName := internal.GetServiceName(res.Attributes())
+	}(batch)
 
-			for j := 0; j < spans.ScopeSpans().Len(); j++ {
-				rs := spans.ScopeSpans().At(j).Spans()
-				scopeName := spans.ScopeSpans().At(j).Scope().Name()
-				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
-				for k := 0; k < rs.Len(); k++ {
-					r := rs.At(k)
-					spanAttr := internal.AttributesToMap(r.Attributes())
-					status := r.Status()
-					eventTimes, eventNames, eventAttrs := convertEvents(r.Events())
-					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())
-					_, err = statement.ExecContext(ctx,
-						r.StartTimestamp().AsTime(),
-						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-						traceutil.SpanIDToHexOrEmptyString(r.ParentSpanID()),
-						r.TraceState().AsRaw(),
-						r.Name(),
-						r.Kind().String(),
-						serviceName,
-						resAttr,
-						scopeName,
-						scopeVersion,
-						spanAttr,
-						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
-						status.Code().String(),
-						status.Message(),
-						eventTimes,
-						eventNames,
-						eventAttrs,
-						linksTraceIDs,
-						linksSpanIDs,
-						linksTraceStates,
-						linksAttrs,
-					)
-					if err != nil {
-						return fmt.Errorf("ExecContext:%w", err)
-					}
+	processStart := time.Now()
+
+	var spanCount int
+	rsSpans := td.ResourceSpans()
+	rsLen := rsSpans.Len()
+	for i := 0; i < rsLen; i++ {
+		spans := rsSpans.At(i)
+		res := spans.Resource()
+		resAttr := res.Attributes()
+		serviceName := internal.GetServiceName(resAttr)
+		resAttrMap := internal.AttributesToMap(res.Attributes())
+
+		ssRootLen := spans.ScopeSpans().Len()
+		for j := 0; j < ssRootLen; j++ {
+			scopeSpanRoot := spans.ScopeSpans().At(j)
+			scopeSpanScope := scopeSpanRoot.Scope()
+			scopeName := scopeSpanScope.Name()
+			scopeVersion := scopeSpanScope.Version()
+			scopeSpans := scopeSpanRoot.Spans()
+
+			ssLen := scopeSpans.Len()
+			for k := 0; k < ssLen; k++ {
+				span := scopeSpans.At(k)
+				spanStatus := span.Status()
+				spanDurationNanos := span.EndTimestamp() - span.StartTimestamp()
+				spanAttrMap := internal.AttributesToMap(span.Attributes())
+
+				eventTimes, eventNames, eventAttrs := convertEvents(span.Events())
+				linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(span.Links())
+
+				appendErr := batch.Append(
+					span.StartTimestamp().AsTime(),
+					traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
+					traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
+					traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
+					span.TraceState().AsRaw(),
+					span.Name(),
+					span.Kind().String(),
+					serviceName,
+					resAttrMap,
+					scopeName,
+					scopeVersion,
+					spanAttrMap,
+					spanDurationNanos,
+					spanStatus.Code().String(),
+					spanStatus.Message(),
+					eventTimes,
+					eventNames,
+					eventAttrs,
+					linksTraceIDs,
+					linksSpanIDs,
+					linksTraceStates,
+					linksAttrs,
+				)
+				if appendErr != nil {
+					return fmt.Errorf("failed to append trace row: %w", appendErr)
 				}
+
+				spanCount++
 			}
 		}
-		return nil
-	})
-	duration := time.Since(start)
-	e.logger.Debug("insert traces", zap.Int("records", td.SpanCount()),
-		zap.String("cost", duration.String()))
-	return err
+	}
+
+	processDuration := time.Since(processStart)
+	networkStart := time.Now()
+	if sendErr := batch.Send(); sendErr != nil {
+		return fmt.Errorf("traces insert failed: %w", sendErr)
+	}
+
+	networkDuration := time.Since(networkStart)
+	totalDuration := time.Since(processStart)
+	e.logger.Debug("insert traces",
+		zap.Int("records", spanCount),
+		zap.String("process_cost", processDuration.String()),
+		zap.String("network_cost", networkDuration.String()),
+		zap.String("total_cost", totalDuration.String()))
+
+	return nil
 }
 
 func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []column.IterableOrderedMap) {
@@ -133,6 +165,7 @@ func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []str
 		names = append(names, event.Name())
 		attrs = append(attrs, internal.AttributesToMap(event.Attributes()))
 	}
+
 	return
 }
 
@@ -144,156 +177,51 @@ func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []stri
 		states = append(states, link.TraceState().AsRaw())
 		attrs = append(attrs, internal.AttributesToMap(link.Attributes()))
 	}
+
 	return
 }
 
-const (
-	// language=ClickHouse SQL
-	createTracesTableSQL = `
-CREATE TABLE IF NOT EXISTS %s %s (
-	Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
-	TraceId String CODEC(ZSTD(1)),
-	SpanId String CODEC(ZSTD(1)),
-	ParentSpanId String CODEC(ZSTD(1)),
-	TraceState String CODEC(ZSTD(1)),
-	SpanName LowCardinality(String) CODEC(ZSTD(1)),
-	SpanKind LowCardinality(String) CODEC(ZSTD(1)),
-	ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-	ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-	ScopeName String CODEC(ZSTD(1)),
-	ScopeVersion String CODEC(ZSTD(1)),
-	SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-	Duration UInt64 CODEC(ZSTD(1)),
-	StatusCode LowCardinality(String) CODEC(ZSTD(1)),
-	StatusMessage String CODEC(ZSTD(1)),
-	Events Nested (
-		Timestamp DateTime64(9),
-		Name LowCardinality(String),
-		Attributes Map(LowCardinality(String), String)
-	) CODEC(ZSTD(1)),
-	Links Nested (
-		TraceId String,
-		SpanId String,
-		TraceState String,
-		Attributes Map(LowCardinality(String), String)
-	) CODEC(ZSTD(1)),
-	INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
-	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	INDEX idx_duration Duration TYPE minmax GRANULARITY 1
-) ENGINE = %s
-PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SpanName, toDateTime(Timestamp))
-%s
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
-`
-	// language=ClickHouse SQL
-	insertTracesSQLTemplate = `INSERT INTO %s (
-                        Timestamp,
-                        TraceId,
-                        SpanId,
-                        ParentSpanId,
-                        TraceState,
-                        SpanName,
-                        SpanKind,
-                        ServiceName,
-					    ResourceAttributes,
-						ScopeName,
-						ScopeVersion,
-                        SpanAttributes,
-                        Duration,
-                        StatusCode,
-                        StatusMessage,
-                        Events.Timestamp,
-                        Events.Name,
-                        Events.Attributes,
-                        Links.TraceId,
-                        Links.SpanId,
-                        Links.TraceState,
-                        Links.Attributes
-                        ) VALUES (
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?
-                                  )`
-)
-
-const (
-	createTraceIDTsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_trace_id_ts %s (
-     TraceId String CODEC(ZSTD(1)),
-     Start DateTime CODEC(Delta, ZSTD(1)),
-     End DateTime CODEC(Delta, ZSTD(1)),
-     INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE = %s
-PARTITION BY toDate(Start)
-ORDER BY (TraceId, Start)
-%s
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
-`
-	createTraceIDTsMaterializedViewSQL = `
-CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv %s
-TO %s.%s_trace_id_ts
-AS SELECT
-	TraceId,
-	min(Timestamp) as Start,
-	max(Timestamp) as End
-FROM
-%s.%s
-WHERE TraceId != ''
-GROUP BY TraceId;
-`
-)
-
-func createTracesTable(ctx context.Context, cfg *Config, db *sql.DB) error {
-	if _, err := db.ExecContext(ctx, renderCreateTracesTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traces table sql: %w", err)
-	}
-	if _, err := db.ExecContext(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traceID timestamp table sql: %w", err)
-	}
-	if _, err := db.ExecContext(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traceID timestamp view sql: %w", err)
-	}
-	return nil
-}
-
 func renderInsertTracesSQL(cfg *Config) string {
-	return fmt.Sprintf(strings.ReplaceAll(insertTracesSQLTemplate, "'", "`"), cfg.TracesTableName)
+	return fmt.Sprintf(sqltemplates.TracesInsert, cfg.database(), cfg.TracesTableName)
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
+	return fmt.Sprintf(sqltemplates.TracesCreateTable,
+		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.tableEngineString(),
+		ttlExpr,
+	)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "toDateTime(Start)")
-	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
+	return fmt.Sprintf(sqltemplates.TracesCreateTsTable,
+		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.tableEngineString(),
+		ttlExpr,
+	)
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
-	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
-		cfg.clusterString(), cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
+	database := cfg.database()
+	return fmt.Sprintf(sqltemplates.TracesCreateTsView,
+		database, cfg.TracesTableName, cfg.clusterString(),
+		database, cfg.TracesTableName,
+		database, cfg.TracesTableName,
+	)
+}
+
+func createTraceTables(ctx context.Context, cfg *Config, db driver.Conn) error {
+	if err := db.Exec(ctx, renderCreateTracesTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create traces table sql: %w", err)
+	}
+	if err := db.Exec(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create traceID timestamp table sql: %w", err)
+	}
+	if err := db.Exec(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create traceID timestamp view sql: %w", err)
+	}
+
+	return nil
 }
