@@ -378,17 +378,25 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
 			tp := topicPartition{topic: topic, partition: partition}
-			pc := c.assignments[tp]
-			delete(c.assignments, tp)
-			pc.cancel(errors.New(
-				"stopping processing: partition reassigned or lost",
-			))
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				pc.wg.Wait()
-			}()
-			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
+			// In some cases, it is possible for the `lost` to be called with
+			// no assignments. So, check if assignments exists first.
+			//
+			// - OnPartitionLost can be called without the group ever joining
+			// and getting assigned.
+			// - OnPartitionRevoked can be called multiple times for cooperative
+			// balancer on topic lost/deleted.
+			if pc, ok := c.assignments[tp]; ok {
+				delete(c.assignments, tp)
+				pc.cancel(errors.New(
+					"stopping processing: partition reassigned or lost",
+				))
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					pc.wg.Wait()
+				}()
+				c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
+			}
 		}
 	}
 	if fatal {
