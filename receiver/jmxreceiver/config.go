@@ -17,7 +17,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -292,9 +291,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("missing required field(s): %v", strings.Join(missingFields, ", "))
 	}
 
-	errs := multierr.Errors(multierr.Combine(c.validateJar(jmxScraperVersions, c.JARPath), c.validateJar(jmxMetricsGathererVersions, c.JARPath)))
-	if len(errs) == 2 {
-		return fmt.Errorf("invalid `jar_path`: %w", errs[0])
+	jmxScraperErr := c.validateJar(jmxScraperVersions, c.JARPath)
+	jmxGathererErr := c.validateJar(jmxMetricsGathererVersions, c.JARPath)
+	if jmxScraperErr != nil && jmxGathererErr != nil {
+		return fmt.Errorf("invalid `jar_path`: %w", jmxScraperErr)
 	}
 
 	for _, additionalJar := range c.AdditionalJars {
