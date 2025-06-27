@@ -6,7 +6,7 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [] # Add your GitHub username here
+    active: [sandy2008]
 
 tests:
   config:
