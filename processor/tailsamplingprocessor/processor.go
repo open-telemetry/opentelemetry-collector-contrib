@@ -10,6 +10,7 @@ import (
 	"math"
 	"runtime"
 	"slices"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -68,6 +69,9 @@ type tailSamplingSpanProcessor struct {
 
 	// OTEP 235 TraceState management for consistent probability sampling
 	traceStateManager *internalsampling.TraceStateManager
+
+	// Bottom-K reservoir sampling with time-aligned buckets
+	bucketManager *bucketManager
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -130,6 +134,13 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		deleteChan:         make(chan pcommon.TraceID, cfg.NumTraces),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		traceStateManager:  internalsampling.NewTraceStateManager(),
+		bucketManager: newBucketManager(
+			telemetrySettings.Logger,
+			cfg.BucketCount,
+			cfg.DecisionWait,
+			cfg.NumTraces,
+			cfg.TracesPerBucketFactor,
+		),
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -349,6 +360,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	metrics := policyMetrics{}
 	startTime := time.Now()
 
+	// Process regular time-based batches
 	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
 
@@ -378,6 +390,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			tsp.releaseNotSampledTrace(id)
 		}
 	}
+
+	// Process expired buckets from Bottom-K sampling
+	tsp.processBucketExpiration(&metrics, startTime)
 
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
 	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
@@ -420,10 +435,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 			continue
 		}
 
+		// Count traces and spans per policy evaluation
 		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToMetricAttribute(decision))
 
-		// Span-level metrics enabled by default (feature gate finalized)
-		tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
+		// Count spans for telemetry (Bottom-K mode always enabled)
+		if metrics != nil {
+			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
+		}
 
 		// Collect all policy decisions for OTEP 250 threshold combination
 		policyDecisions = append(policyDecisions, decision)
@@ -616,10 +634,13 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			}
 
 			tsp.traceStateManager.InitializeTraceData(tsp.ctx, id, td)
-
 			if d, loaded = tsp.idToTrace.LoadOrStore(id, td); !loaded {
 				newTraceIDs++
 				tsp.decisionBatcher.AddToCurrentBatch(id)
+
+				// Add trace to bucket manager for Bottom-K sampling
+				tsp.bucketManager.addTrace(id, td, td.ArrivalTime)
+
 				tsp.numTracesOnMap.Add(1)
 				postDeletion := false
 				for !postDeletion {
@@ -698,8 +719,166 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
 }
 
-// shouldIncludeSpanBasedOnThreshold evaluates if a span should be included
-// based on the final threshold decision for the trace
+// bucketTraceWithDecision combines a bucket trace with its policy decision
+type bucketTraceWithDecision struct {
+	bucketTrace *bucketTrace
+	trace       *internalsampling.TraceData
+	decision    internalsampling.Decision
+}
+
+// processBucketExpiration checks for expired buckets and processes them for decision making
+func (tsp *tailSamplingSpanProcessor) processBucketExpiration(metrics *policyMetrics, tickTime time.Time) {
+	expiredBucket := tsp.bucketManager.getExpiredBucket(tickTime)
+	if expiredBucket == nil {
+		return
+	}
+
+	ctx := context.Background()
+	bucketTraces := expiredBucket.getAllTraces()
+
+	tsp.logger.Debug("Processing expired bucket",
+		zap.Time("bucket_start", expiredBucket.startTime),
+		zap.Time("bucket_end", expiredBucket.endTime),
+		zap.Int("trace_count", len(bucketTraces)),
+	)
+
+	// First pass: evaluate all policies normally
+	tracesWithDecisions := make([]*bucketTraceWithDecision, 0, len(bucketTraces))
+
+	for _, bucketTrace := range bucketTraces {
+		// Check if trace still exists in main map
+		d, ok := tsp.idToTrace.Load(bucketTrace.traceID)
+		if !ok {
+			metrics.idNotFoundOnMapCount++
+			continue
+		}
+
+		trace := d.(*internalsampling.TraceData)
+
+		// Make decision using existing policy evaluation
+		decision := tsp.makeDecision(bucketTrace.traceID, trace, metrics)
+
+		tracesWithDecisions = append(tracesWithDecisions, &bucketTraceWithDecision{
+			bucketTrace: bucketTrace,
+			trace:       trace,
+			decision:    decision,
+		})
+	}
+
+	// Second pass: apply rate limiting using Bottom-K if any rate limiting policies were involved
+	tsp.applyRateLimitingBottomK(tracesWithDecisions, metrics)
+
+	// Final pass: release traces based on final decisions
+	for _, twd := range tracesWithDecisions {
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToMetricAttribute(twd.decision))
+
+		// Process the decision
+		twd.trace.Lock()
+		allSpans := twd.trace.ReceivedBatches
+		twd.trace.FinalDecision = twd.decision
+		twd.trace.ReceivedBatches = ptrace.NewTraces()
+		twd.trace.Unlock()
+
+		switch {
+		case twd.decision.IsSampled():
+			tsp.releaseSampledTrace(ctx, twd.bucketTrace.traceID, allSpans)
+		default:
+			tsp.releaseNotSampledTrace(twd.bucketTrace.traceID)
+		}
+	}
+}
+
+// applyRateLimitingBottomK applies rate limiting using Bottom-K algorithm to traces with rate limiting policies
+func (tsp *tailSamplingSpanProcessor) applyRateLimitingBottomK(tracesWithDecisions []*bucketTraceWithDecision, metrics *policyMetrics) {
+	// Find traces that were accepted by rate limiting policies
+	rateLimitedTraces := make([]*bucketTraceWithDecision, 0)
+	var rateLimitSpansPerSecond int64
+
+	for _, twd := range tracesWithDecisions {
+		// Check if this trace was accepted by a rate limiting policy
+		if twd.decision.IsSampled() && twd.decision.Attributes != nil {
+			if isRateLimit, ok := twd.decision.Attributes["rate_limiting_policy"].(bool); ok && isRateLimit {
+				rateLimitedTraces = append(rateLimitedTraces, twd)
+				// Extract the rate limit from the first rate limiting policy
+				if spansPerSec, exists := twd.decision.Attributes["spans_per_second"].(int64); exists && rateLimitSpansPerSecond == 0 {
+					rateLimitSpansPerSecond = spansPerSec
+				}
+			}
+		}
+	}
+
+	if len(rateLimitedTraces) == 0 || rateLimitSpansPerSecond == 0 {
+		return // No rate limiting to apply
+	}
+
+	// Calculate total spans in rate limited traces
+	var totalSpans int64
+	for _, twd := range rateLimitedTraces {
+		totalSpans += twd.trace.SpanCount.Load()
+	}
+
+	// If within rate limit, keep all traces
+	if totalSpans <= rateLimitSpansPerSecond {
+		tsp.logger.Debug("Rate limit not exceeded, keeping all traces",
+			zap.Int64("total_spans", totalSpans),
+			zap.Int64("rate_limit", rateLimitSpansPerSecond),
+		)
+		return
+	}
+
+	// Apply Bottom-K algorithm: sort by randomness value and keep highest values
+	sort.Slice(rateLimitedTraces, func(i, j int) bool {
+		return rateLimitedTraces[i].bucketTrace.randomnessValue < rateLimitedTraces[j].bucketTrace.randomnessValue
+	})
+
+	// Calculate how many traces to keep to stay within rate limit
+	var keptSpans int64
+	keepCount := 0
+
+	// Keep traces with highest randomness until we hit the rate limit
+	for i := len(rateLimitedTraces) - 1; i >= 0; i-- {
+		traceSpans := rateLimitedTraces[i].trace.SpanCount.Load()
+		if keptSpans+traceSpans <= rateLimitSpansPerSecond {
+			keptSpans += traceSpans
+			keepCount++
+		} else {
+			break
+		}
+	}
+	// Update decisions for traces that exceed the rate limit
+	droppedCount := len(rateLimitedTraces) - keepCount
+	if droppedCount > 0 {
+		// Mark dropped traces as NotSampled
+		for i := 0; i < len(rateLimitedTraces)-keepCount; i++ {
+			rateLimitedTraces[i].decision = internalsampling.NotSampled
+		}
+
+		// Store Bottom-K metadata for kept traces (for deferred threshold calculation)
+		if keepCount > 0 {
+			// Find minimum randomness among kept traces
+			keptTraces := rateLimitedTraces[len(rateLimitedTraces)-keepCount:]
+			minRandomness := keptTraces[0].bucketTrace.randomnessValue
+
+			// Mark all kept traces with Bottom-K metadata for deferred threshold calculation
+			for _, twd := range keptTraces {
+				twd.trace.BottomKMetadata = &internalsampling.BottomKDeferredData{
+					IsRateLimited:         true,
+					MinRandomnessInBucket: minRandomness,
+					TracesInBucket:        uint64(keepCount),
+				}
+			}
+		}
+
+		tsp.logger.Debug("Applied Bottom-K rate limiting",
+			zap.Int("total_traces", len(rateLimitedTraces)),
+			zap.Int("kept_traces", keepCount),
+			zap.Int("dropped_traces", droppedCount),
+			zap.Int64("kept_spans", keptSpans),
+			zap.Int64("rate_limit", rateLimitSpansPerSecond),
+		)
+	}
+}
+
 func (tsp *tailSamplingSpanProcessor) shouldIncludeSpanBasedOnThreshold(span *ptrace.Span, finalThreshold sampling.Threshold) bool {
 	// Extract current threshold from span's TraceState (if present)
 	traceState := span.TraceState()
@@ -743,6 +922,26 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	finalThreshold := sampling.AlwaysSampleThreshold // Default for backward compatibility
 	if d, ok := tsp.idToTrace.Load(id); ok {
 		trace := d.(*internalsampling.TraceData)
+
+		// Apply deferred Bottom-K threshold calculation if metadata is present
+		if trace.BottomKMetadata != nil && trace.BottomKMetadata.IsRateLimited {
+			bottomKThreshold := tsp.bucketManager.calculateBottomKThreshold(
+				trace.BottomKMetadata.MinRandomnessInBucket,
+				trace.BottomKMetadata.TracesInBucket,
+			)
+
+			// Apply threshold only if it's more restrictive (OTEP 235 compliance)
+			if trace.FinalThreshold == nil || sampling.ThresholdLessThan(*trace.FinalThreshold, bottomKThreshold) {
+				trace.FinalThreshold = &bottomKThreshold
+				tsp.logger.Debug("Applied deferred Bottom-K threshold at output time",
+					zap.Stringer("traceID", id),
+					zap.String("threshold", bottomKThreshold.TValue()),
+					zap.Uint64("min_randomness", trace.BottomKMetadata.MinRandomnessInBucket),
+					zap.Uint64("k_value", trace.BottomKMetadata.TracesInBucket),
+				)
+			}
+		}
+
 		if trace.FinalThreshold != nil {
 			finalThreshold = *trace.FinalThreshold
 		}

@@ -5,7 +5,6 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -15,10 +14,8 @@ import (
 )
 
 type rateLimiting struct {
-	currentSecond        int64
-	spansInCurrentSecond int64
-	spansPerSecond       int64
-	logger               *zap.Logger
+	spansPerSecond int64
+	logger         *zap.Logger
 }
 
 var _ PolicyEvaluator = (*rateLimiting)(nil)
@@ -32,45 +29,22 @@ func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64)
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-// This implementation maintains OTEP 235 consistency by updating trace thresholds
-// when applying rate limiting decisions.
+// For Bottom-K compliance, rate limiting policies return AlwaysSample with policy metadata
+// and the actual rate enforcement is handled by the bucket manager's second pass.
 func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	r.logger.Debug("Evaluating trace in rate-limiting filter using OTEP 235 threshold consistency")
+	r.logger.Debug("Evaluating trace in rate-limiting filter for Bottom-K processing")
 
-	currSecond := time.Now().Unix()
-	if r.currentSecond != currSecond {
-		r.currentSecond = currSecond
-		r.spansInCurrentSecond = 0
+	// In Bottom-K approach, rate limiting policies always return AlwaysSample
+	// with policy identification. The actual rate limiting is enforced by
+	// the bucket manager's reservoir sampling in a second pass.
+	decision := Decision{
+		Threshold: sampling.AlwaysSampleThreshold,
+		Attributes: map[string]any{
+			"rate_limiting_policy": true,
+			"spans_per_second":     r.spansPerSecond,
+			"policy_type":          "rate_limiting",
+		},
 	}
 
-	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount.Load()
-	if spansInSecondIfSampled < r.spansPerSecond {
-		r.spansInCurrentSecond = spansInSecondIfSampled
-
-		// For OTEP 235 consistency, we need to ensure the trace threshold reflects
-		// that this trace was sampled. Since rate limiting accepts all traces within
-		// the limit, we use AlwaysSampleThreshold to indicate 100% sampling.
-		r.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
-
-		return Sampled, nil
-	}
-
-	// Rate limit exceeded - reject the trace
-	// Note: We don't update the threshold here since the trace is not sampled
-	return NotSampled, nil
-}
-
-// updateTraceThreshold updates the trace's final threshold using OR logic (minimum threshold).
-// Since the tail sampler uses OR logic (any policy can trigger sampling),
-// we use the least restrictive (minimum) threshold per OTEP 250 AnyOf semantics.
-func (r *rateLimiting) updateTraceThreshold(trace *TraceData, policyThreshold sampling.Threshold) {
-	if trace.FinalThreshold == nil {
-		// First policy to set a threshold
-		trace.FinalThreshold = &policyThreshold
-	} else {
-		// Use the less restrictive (lower) threshold for OR logic
-		if sampling.ThresholdGreater(*trace.FinalThreshold, policyThreshold) {
-			trace.FinalThreshold = &policyThreshold
-		}
-	}
+	return decision, nil
 }

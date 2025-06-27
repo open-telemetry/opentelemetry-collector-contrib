@@ -266,4 +266,12 @@ type Config struct {
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
+
+	// Bottom-K reservoir sampling configuration
+	// BucketCount sets the number of time-aligned buckets to divide decision_wait into.
+	// Default is 10, meaning decision_wait will be divided into 10 equal time slices.
+	BucketCount uint64 `mapstructure:"bucket_count"`
+	// TracesPerBucketFactor controls the size limit per bucket as a factor of NumTraces.
+	// Default is 1.1, meaning each bucket can hold 10% more than its fair share before compaction.
+	TracesPerBucketFactor float64 `mapstructure:"traces_per_bucket_factor"`
 }

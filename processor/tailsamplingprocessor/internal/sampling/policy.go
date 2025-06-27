@@ -15,6 +15,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
+// BottomKDeferredData contains metadata needed for deferred Bottom-K threshold calculation
+type BottomKDeferredData struct {
+	// IsRateLimited indicates this trace needs Bottom-K rate limiting threshold calculation
+	IsRateLimited bool
+	// MinRandomnessInBucket is the minimum randomness value among all rate-limited traces in the bucket
+	MinRandomnessInBucket uint64
+	// TracesInBucket is the count of rate-limited traces in the bucket (K value for Bottom-K)
+	TracesInBucket uint64
+}
+
 // TraceData stores the sampling related trace data.
 type TraceData struct {
 	sync.Mutex
@@ -36,6 +46,10 @@ type TraceData struct {
 	FinalThreshold *sampling.Threshold
 	// TraceStatePresent indicates if any spans have TraceState for optimization
 	TraceStatePresent bool
+
+	// Bottom-K deferred threshold calculation fields
+	// BottomKMetadata contains information needed for deferred threshold calculation
+	BottomKMetadata *BottomKDeferredData
 
 	// TODO: For improved consistency, we should validate that all spans in a trace
 	// have the same randomness value (derived from TraceID or explicit rv in TraceState).

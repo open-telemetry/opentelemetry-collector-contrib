@@ -6,6 +6,7 @@ package tailsamplingprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -336,7 +337,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	syncBatcher := b.(*syncIDBatcher)
 
 	cfg := Config{
-		DecisionWait: 1,
+		DecisionWait: time.Second, // Use 1 second for proper bucket timing with Bottom-K approach
 		NumTraces:    100,
 		PolicyCfgs: []PolicyCfg{
 			{
@@ -373,6 +374,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	// verify
 	var md metricdata.ResourceMetrics
 	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	// Bottom-K implementation with legacy mode eliminated generates all metrics
 	require.Equal(t, 9, s.len(md))
 
 	m := metricdata.Metrics{
