@@ -617,7 +617,10 @@ func TestTranslateV2(t *testing.T) {
 				m.SetUnit("")
 				m.SetDescription("")
 
-				dp := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetScale(-4)
@@ -697,7 +700,9 @@ func TestTranslateV2(t *testing.T) {
 				m.SetUnit("")
 				m.SetDescription("")
 
-				m.SetEmptyExponentialHistogram()
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
 				return metrics
 			}(),
 		},
@@ -757,7 +762,10 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("test_metric")
 				m.SetUnit("")
 
-				dp := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetScale(-4)
@@ -843,7 +851,8 @@ func TestTranslateV2(t *testing.T) {
 				m.SetName("test_metric")
 				m.SetUnit("")
 
-				m.SetEmptyExponentialHistogram()
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 				return metrics
 			}(),
@@ -908,7 +917,8 @@ func TestTranslateV2(t *testing.T) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("test_metric")
 
-				m.SetEmptyExponentialHistogram()
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 				return metrics
 			}(),
