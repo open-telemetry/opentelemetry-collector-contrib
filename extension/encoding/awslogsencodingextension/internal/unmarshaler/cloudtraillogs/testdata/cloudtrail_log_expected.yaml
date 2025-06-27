@@ -52,7 +52,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
-
+              - key: aws.principal.id
+                value:
+                  stringValue: EXAMPLE6E4XEGITWATV6R
+              - key: user.name
+                value:
+                  stringValue: Mateo
               - key: aws.principal.arn
                 value:
                   stringValue: arn:aws:iam::123456789012:user/Mateo
@@ -196,7 +201,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
-
+              - key: aws.principal.id
+                value:
+                  stringValue: AIDA6ON6E4XEGITEXAMPLE
+              - key: user.name
+                value:
+                  stringValue: Mary
               - key: aws.principal.arn
                 value:
                   stringValue: arn:aws:iam::123456789012:user/Mary
@@ -280,6 +290,9 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: AssumedRole
+              - key: aws.principal.id
+                value:
+                  stringValue: EX_PRINCIPAL_ID
               - key: aws.principal.arn
                 value:
                   stringValue: arn:aws:iam::123456789012:user/Bob
@@ -435,7 +448,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
-
+              - key: aws.principal.id
+                value:
+                  stringValue: AIDA6ON6E4XEGIEXAMPLE
+              - key: user.name
+                value:
+                  stringValue: Terry
               - key: aws.principal.arn
                 value:
                   stringValue: arn:aws:iam::111122223333:user/Terry
