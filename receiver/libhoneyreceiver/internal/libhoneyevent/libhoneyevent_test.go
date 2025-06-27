@@ -383,6 +383,27 @@ func TestToPTraceSpan(t *testing.T) {
 				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(50 * time.Millisecond)))
 			},
 		},
+		{
+			name: "sub-1-millisecond duration",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":           "fast-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    0.5, // 500 microseconds
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("fast-span")
+				s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(500 * time.Microsecond)))
+			},
+		},
 	}
 
 	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms", "status.code", "status.message", "kind"}

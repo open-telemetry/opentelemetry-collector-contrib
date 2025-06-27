@@ -295,7 +295,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			break
 		}
 	}
-	endTimestamp := timeNs + (int64(durationMs) * 1000000)
+	endTimestamp := timeNs + int64(durationMs*1000000)
 
 	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
 		tid := strings.ReplaceAll(tid.(string), "-", "")
