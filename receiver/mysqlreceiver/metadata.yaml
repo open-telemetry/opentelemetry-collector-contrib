@@ -4,6 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [antonblock, ishleenk17]
@@ -173,6 +174,73 @@ attributes:
     description: The table size types.
     type: string
     enum: [data, index]
+  db.system.name:
+    description: The name of the database system.
+    type: string
+    enum: [mysql]
+  mysql.threads.thread_id:
+    description: The unique identifier for the thread executing the statement.
+    type: int
+  user.name:
+    description: The user associated with a foreground thread, empty for a background thread (originally processlist_user).
+    type: string
+  db.namespace:
+    description: The default database for the thread, or empty if none has been selected (originally processlist_db).
+    type: string
+  mysql.threads.processlist_command:
+    description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
+    type: string
+  mysql.threads.processlist_state:
+    description: An action, event, or state that indicates what the thread is doing.
+    type: string
+  db.query.text:
+    description: The SQL statement text for the event.
+    type: string
+  mysql.events_statements_current.digest:
+    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
+    type: string
+  mysql.event_id:
+    description: The thread associated with the event and the thread current event number when the event starts.
+    type: int
+  mysql.wait_type:
+    description: The name of the instrument that produced the event.
+    type: string
+  mysql.events_waits_current.timer_wait:
+    description: Timing information for the event, indicating elapsed time the event waited in seconds.
+    type: double
+  client.address:
+    description: Hostname or address of the client.
+    type: string
+  client.port:
+    description: TCP port used by the client.
+    type: int
+  network.peer.address:
+    description: IP address of the peer client.
+    type: string
+  network.peer.port:
+    description: TCP port used by the peer client.
+    type: int
+
+events:
+  db.server.query_sample:
+    enabled: true
+    description: query sample event
+    attributes:
+      - db.system.name
+      - mysql.threads.thread_id
+      - user.name
+      - db.namespace
+      - mysql.threads.processlist_command
+      - mysql.threads.processlist_state
+      - db.query.text
+      - mysql.events_statements_current.digest
+      - mysql.event_id
+      - mysql.wait_type
+      - mysql.events_waits_current.timer_wait
+      - client.address
+      - client.port
+      - network.peer.address
+      - network.peer.port
 
 metrics:
   mysql.buffer_pool.pages:
