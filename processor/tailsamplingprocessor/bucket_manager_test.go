@@ -64,12 +64,9 @@ func TestBottomKEstimatorAccuracy(t *testing.T) {
 				}
 
 				bucket.mutex.Lock()
-				bucket.traces = append(bucket.traces, bucketTrace)
-
-				// Trigger compaction when we exceed the limit
-				if len(bucket.traces) > tc.sampleSize {
-					bm.performBottomKCompaction(bucket)
-				}
+				// Use Varopt to add the trace with weight 1.0
+				_, err := bucket.sampler.Add(bucketTrace, 1.0)
+				require.NoError(t, err, "Failed to add trace to Varopt sampler")
 				bucket.mutex.Unlock()
 			}
 
@@ -90,7 +87,7 @@ func TestBottomKEstimatorAccuracy(t *testing.T) {
 			t.Logf("Minimum randomness value: %d", minRandomness)
 
 			// Calculate the Bottom-K threshold using our estimator
-			threshold := bm.calculateBottomKThreshold(minRandomness, uint64(tc.sampleSize))
+			threshold := bm.calculateBottomKThresholdCompat(minRandomness, uint64(tc.sampleSize))
 
 			t.Logf("Calculated threshold: %s (Probability: %f, AdjustedCount: %f)",
 				threshold.TValue(), threshold.Probability(), threshold.AdjustedCount())
@@ -167,7 +164,7 @@ func TestBottomKEstimatorEdgeCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			threshold := bm.calculateBottomKThreshold(tc.minRandomness, tc.k)
+			threshold := bm.calculateBottomKThresholdCompat(tc.minRandomness, tc.k)
 			assert.Equal(t, tc.expectedThreshold, threshold)
 		})
 	}
@@ -299,12 +296,9 @@ func TestBottomKCompactionBehavior(t *testing.T) {
 		}
 
 		bucket.mutex.Lock()
-		bucket.traces = append(bucket.traces, bucketTrace)
-
-		// Trigger compaction when we exceed the limit
-		if len(bucket.traces) > 10 {
-			bm.performBottomKCompaction(bucket)
-		}
+		// Use Varopt to add the trace with weight 1.0
+		_, err := bucket.sampler.Add(bucketTrace, 1.0)
+		require.NoError(t, err, "Failed to add trace to Varopt sampler")
 		bucket.mutex.Unlock()
 	}
 

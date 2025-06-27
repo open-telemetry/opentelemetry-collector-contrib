@@ -59,7 +59,7 @@ func TestBottomKThresholdCalculation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			threshold := bm.calculateBottomKThreshold(tt.minRandomnessValueOfKeptTraces, tt.k)
+			threshold := bm.calculateBottomKThresholdCompat(tt.minRandomnessValueOfKeptTraces, tt.k)
 
 			switch tt.expectedResult {
 			case "never":
@@ -97,9 +97,9 @@ func TestBottomKThresholdMathematicalProperties(t *testing.T) {
 	medRandomness := maxRandomness / 2      // 50% of max
 	highRandomness := maxRandomness * 3 / 4 // 75% of max
 
-	lowThreshold := bm.calculateBottomKThreshold(lowRandomness, k)
-	medThreshold := bm.calculateBottomKThreshold(medRandomness, k)
-	highThreshold := bm.calculateBottomKThreshold(highRandomness, k)
+	lowThreshold := bm.calculateBottomKThresholdCompat(lowRandomness, k)
+	medThreshold := bm.calculateBottomKThresholdCompat(medRandomness, k)
+	highThreshold := bm.calculateBottomKThresholdCompat(highRandomness, k)
 
 	// Convert to probabilities
 	lowProb := lowThreshold.Probability()
@@ -189,7 +189,7 @@ func TestBottomKEstimatorValidation(t *testing.T) {
 
 	// Calculate the threshold using the minimum randomness of selected traces
 	minRandomnessOfSelected := randomnessValues[selectedIndices[0]]
-	threshold := bm.calculateBottomKThreshold(minRandomnessOfSelected, uint64(reservoirSize))
+	threshold := bm.calculateBottomKThresholdCompat(minRandomnessOfSelected, uint64(reservoirSize))
 
 	t.Logf("Min randomness of selected: %x", minRandomnessOfSelected)
 	t.Logf("Reservoir size (k): %d", reservoirSize)

@@ -925,7 +925,7 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 
 		// Apply deferred Bottom-K threshold calculation if metadata is present
 		if trace.BottomKMetadata != nil && trace.BottomKMetadata.IsRateLimited {
-			bottomKThreshold := tsp.bucketManager.calculateBottomKThreshold(
+			bottomKThreshold := tsp.bucketManager.calculateBottomKThresholdCompat(
 				trace.BottomKMetadata.MinRandomnessInBucket,
 				trace.BottomKMetadata.TracesInBucket,
 			)

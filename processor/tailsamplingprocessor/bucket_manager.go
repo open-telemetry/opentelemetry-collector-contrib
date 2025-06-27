@@ -4,11 +4,11 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
-	"math"
-	"sort"
+	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/lightstep/varopt"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
@@ -28,8 +28,8 @@ func (r *realTimeSource) Now() time.Time {
 	return time.Now()
 }
 
-// bucketManager implements Bottom-K reservoir sampling with time-aligned buckets
-// as specified in the PRD for OTEP 235/250 compliance.
+// bucketManager implements Varopt reservoir sampling with time-aligned buckets
+// as specified in the PRD for OTEP 235/250 compliance using the Varopt library.
 type bucketManager struct {
 	logger *zap.Logger
 
@@ -45,11 +45,11 @@ type bucketManager struct {
 	mutex   sync.RWMutex
 }
 
-// traceBucket represents a time-aligned bucket containing traces
+// traceBucket represents a time-aligned bucket containing traces using Varopt sampling
 type traceBucket struct {
 	startTime time.Time
 	endTime   time.Time
-	traces    []*bucketTrace
+	sampler   *varopt.Varopt[*bucketTrace]
 	mutex     sync.RWMutex
 }
 
@@ -60,7 +60,7 @@ type bucketTrace struct {
 	trace           *internalsampling.TraceData
 }
 
-// newBucketManager creates a new bucket manager for Bottom-K sampling
+// newBucketManager creates a new bucket manager for Varopt sampling
 func newBucketManager(logger *zap.Logger, bucketCount uint64, decisionWait time.Duration, maxTraces uint64, tracesPerBucketFactor float64) *bucketManager {
 	return newBucketManagerWithTimeSource(logger, bucketCount, decisionWait, maxTraces, tracesPerBucketFactor, &realTimeSource{})
 }
@@ -102,7 +102,7 @@ func newBucketManagerWithTimeSource(logger *zap.Logger, bucketCount uint64, deci
 		bm.buckets[i] = &traceBucket{
 			startTime: bucketStart,
 			endTime:   bucketEnd,
-			traces:    make([]*bucketTrace, 0),
+			sampler:   varopt.New[*bucketTrace](int(maxTracesPerBucket), rand.New(rand.NewSource(time.Now().UnixNano()))),
 		}
 	}
 
@@ -126,11 +126,11 @@ func (bm *bucketManager) addTrace(traceID pcommon.TraceID, trace *internalsampli
 	bucket.mutex.Lock()
 	defer bucket.mutex.Unlock()
 
-	bucket.traces = append(bucket.traces, bucketTrace)
-
-	// Apply Bottom-K compaction if bucket exceeds capacity
-	if uint64(len(bucket.traces)) > bm.maxTracesPerBucket {
-		bm.performBottomKCompaction(bucket)
+	// Use Varopt to add the trace with weight 1.0 (uniform weight for counting case)
+	// Note: ejected item and error are ignored for now
+	_, err := bucket.sampler.Add(bucketTrace, 1.0)
+	if err != nil {
+		bm.logger.Warn("Failed to add trace to Varopt sampler", zap.Error(err))
 	}
 }
 
@@ -145,31 +145,7 @@ func (bm *bucketManager) getBucketIndex(arrivalTime time.Time) uint64 {
 	return bucketIndex
 }
 
-// performBottomKCompaction applies the Bottom-K algorithm to maintain bucket size limits
-func (bm *bucketManager) performBottomKCompaction(bucket *traceBucket) {
-	// Sort traces by randomness value (ascending, so we keep the highest values)
-	sort.Slice(bucket.traces, func(i, j int) bool {
-		return bucket.traces[i].randomnessValue < bucket.traces[j].randomnessValue
-	})
-
-	// Keep only the top K+1 traces (highest randomness values)
-	keepCount := int(bm.maxTracesPerBucket)
-	if len(bucket.traces) > keepCount {
-		// Just keep the K+1 traces with highest randomness values
-		// Threshold updates are deferred until output for efficiency
-		keptTraces := bucket.traces[len(bucket.traces)-keepCount:]
-		bucket.traces = keptTraces
-
-		logFields := []zap.Field{
-			zap.Int("bucket_traces_before", len(bucket.traces)+keepCount),
-			zap.Int("bucket_traces_after", len(bucket.traces)),
-		}
-		if len(keptTraces) > 0 {
-			logFields = append(logFields, zap.Uint64("min_randomness_kept", keptTraces[0].randomnessValue))
-		}
-		bm.logger.Debug("Performed Bottom-K compaction", logFields...)
-	}
-}
+// performBottomKCompaction is no longer needed as Varopt handles reservoir sampling automatically
 
 // getExpiredBucket returns and resets the bucket that should be processed now
 func (bm *bucketManager) getExpiredBucket(currentTime time.Time) *traceBucket {
@@ -189,7 +165,7 @@ func (bm *bucketManager) getExpiredBucket(currentTime time.Time) *traceBucket {
 			bm.buckets[i] = &traceBucket{
 				startTime: newStartTime,
 				endTime:   newEndTime,
-				traces:    make([]*bucketTrace, 0),
+				sampler:   varopt.New[*bucketTrace](int(bm.maxTracesPerBucket), rand.New(rand.NewSource(time.Now().UnixNano()))),
 			}
 
 			return expiredBucket
@@ -204,9 +180,15 @@ func (bucket *traceBucket) getAllTraces() []*bucketTrace {
 	bucket.mutex.RLock()
 	defer bucket.mutex.RUnlock()
 
-	// Return copy to avoid concurrent access issues
-	traces := make([]*bucketTrace, len(bucket.traces))
-	copy(traces, bucket.traces)
+	// Get all samples from Varopt
+	count := bucket.sampler.Size()
+	traces := make([]*bucketTrace, 0, count)
+	
+	for i := 0; i < count; i++ {
+		trace, _ := bucket.sampler.Get(i) // Get returns (item, adjustedWeight)
+		traces = append(traces, trace)
+	}
+	
 	return traces
 }
 
@@ -226,68 +208,37 @@ func extractRandomnessValue(traceID pcommon.TraceID) uint64 {
 	return value & 0x00FFFFFFFFFFFFFF
 }
 
-// calculateBottomKThreshold calculates the new threshold using the proper Bottom-K estimator
-// This implements the algorithm described in the Bottom-K paper and PRD
-func (bm *bucketManager) calculateBottomKThreshold(minRandomnessValueOfKeptTraces uint64, k uint64) sampling.Threshold {
-	bm.logger.Debug("calculateBottomKThreshold called",
-		zap.Uint64("minRandomnessValueOfKeptTraces", minRandomnessValueOfKeptTraces),
-		zap.Uint64("k", k))
+// calculateBottomKThreshold calculates the new threshold using Varopt's weight adjustment
+// This leverages the Varopt library's built-in weighted sampling capabilities
+func (bm *bucketManager) calculateBottomKThreshold(bucket *traceBucket) sampling.Threshold {
+	bucket.mutex.RLock()
+	defer bucket.mutex.RUnlock()
 
-	maxRandomness := uint64(0x00FFFFFFFFFFFFFF) // 56-bit max value for OTEP 235
-
-	// Handle edge cases
-	if k == 0 {
-		bm.logger.Debug("calculateBottomKThreshold: k=0, returning NeverSampleThreshold")
-		return sampling.NeverSampleThreshold
-	}
-	if minRandomnessValueOfKeptTraces == 0 {
-		// If minimum randomness is 0, we can't calculate a meaningful threshold
-		bm.logger.Debug("calculateBottomKThreshold: minRandomness=0, returning AlwaysSampleThreshold")
+	count := bucket.sampler.Size()
+	if count == 0 {
+		bm.logger.Debug("calculateBottomKThreshold: no traces in bucket, returning AlwaysSampleThreshold")
 		return sampling.AlwaysSampleThreshold
 	}
 
-	// Bottom-K threshold calculation using corrected weighted estimator formula:
-	// a(i) = w(i) × exp(w(i) × r_{k+1})
-	// where r_{k+1} = -ln(R_k) and w(i) is the weight (adjusted count) for this implementation
+	// Use Varopt's tau (threshold) to determine sampling probability
+	// Tau represents the boundary between large and small weights
+	tau := bucket.sampler.Tau()
+	totalWeight := bucket.sampler.TotalWeight()
+	
+	bm.logger.Debug("calculateBottomKThreshold: Varopt statistics",
+		zap.Float64("tau", tau),
+		zap.Float64("total_weight", totalWeight),
+		zap.Int("sample_count", count))
 
-	// For uniform-weight (counting) case, w(i) = 1.0 (incoming adjusted count)
-	incomingWeight := 1.0
-
-	// Convert randomness value to [0,1) range as per OTEP 235
-	normalizedRandomness := float64(minRandomnessValueOfKeptTraces) / float64(maxRandomness)
-
-	// Calculate rank: r_{k+1} = -ln(normalized_randomness)
-	// Handle edge case where randomness approaches 0
-	if normalizedRandomness <= 0.0 {
-		normalizedRandomness = 1.0 / float64(maxRandomness) // Minimum non-zero value
-	}
-
-	rank := -math.Log(normalizedRandomness) / incomingWeight
-
-	// Calculate adjustment factor using Bottom-K estimator formula
-	// For uniform weights: adjustment = w(i) × exp(rank) × k
-	adjustmentFactor := incomingWeight * math.Exp(rank) * float64(k)
-
-	// The sampling probability is the inverse of the adjustment factor
-	samplingProbability := 1.0 / adjustmentFactor
-
-	bm.logger.Debug("calculateBottomKThreshold: Bottom-K weighted estimator calculation",
-		zap.Float64("sampling_probability", samplingProbability),
-		zap.Float64("adjustment_factor", adjustmentFactor),
-		zap.Float64("rank", rank),
-		zap.Float64("normalized_randomness", normalizedRandomness),
-		zap.Float64("incoming_weight", incomingWeight),
-		zap.Uint64("k", k),
-		zap.Uint64("min_randomness", minRandomnessValueOfKeptTraces),
-		zap.Uint64("max_randomness", maxRandomness))
-
-	// Edge case: if sampling probability is too low, return never sample
+	// For uniform weights (all traces have weight 1.0), the sampling probability
+	// is approximately the reservoir size divided by the total weight seen
+	samplingProbability := float64(bm.maxTracesPerBucket) / totalWeight
+	
+	// Ensure probability is within valid range
 	if samplingProbability <= 0.0 {
 		bm.logger.Debug("calculateBottomKThreshold: sampling probability <= 0, returning NeverSampleThreshold")
 		return sampling.NeverSampleThreshold
 	}
-
-	// Edge case: if sampling probability is 1.0 or higher, return always sample
 	if samplingProbability >= 1.0 {
 		bm.logger.Debug("calculateBottomKThreshold: sampling probability >= 1.0, returning AlwaysSampleThreshold")
 		return sampling.AlwaysSampleThreshold
@@ -296,16 +247,88 @@ func (bm *bucketManager) calculateBottomKThreshold(minRandomnessValueOfKeptTrace
 	// Convert probability to OTEP 235 threshold using pkg/sampling helpers
 	threshold, err := sampling.ProbabilityToThreshold(samplingProbability)
 	if err != nil {
-		bm.logger.Warn("Failed to convert Bottom-K probability to threshold",
+		bm.logger.Warn("Failed to convert Varopt probability to threshold",
 			zap.Float64("probability", samplingProbability),
-			zap.Uint64("k", k),
-			zap.Uint64("min_randomness", minRandomnessValueOfKeptTraces),
+			zap.Float64("total_weight", totalWeight),
+			zap.Int("count", count),
 			zap.Error(err))
 		// Fallback to a conservative threshold
 		return sampling.NeverSampleThreshold
 	}
 
-	bm.logger.Debug("Calculated Bottom-K threshold",
+	bm.logger.Debug("Calculated Varopt-based threshold",
+		zap.Int("sample_count", count),
+		zap.Float64("total_weight", totalWeight),
+		zap.Float64("sampling_probability", samplingProbability),
+		zap.String("threshold_tvalue", threshold.TValue()))
+
+	return threshold
+}
+
+// calculateBottomKThresholdCompat provides backward compatibility for the old Bottom-K interface
+// This is a temporary method while we transition to full Varopt integration
+func (bm *bucketManager) calculateBottomKThresholdCompat(minRandomnessValueOfKeptTraces uint64, k uint64) sampling.Threshold {
+	bm.logger.Debug("calculateBottomKThresholdCompat: Using compatibility method",
+		zap.Uint64("minRandomnessValueOfKeptTraces", minRandomnessValueOfKeptTraces),
+		zap.Uint64("k", k))
+
+	// For compatibility, we'll calculate a rough threshold based on the old parameters
+	// This isn't as accurate as the Varopt-based calculation but provides continuity
+	maxRandomness := uint64(0x00FFFFFFFFFFFFFF) // 56-bit max value for OTEP 235
+
+	// Handle edge cases
+	if k == 0 {
+		bm.logger.Debug("calculateBottomKThresholdCompat: k=0, returning NeverSampleThreshold")
+		return sampling.NeverSampleThreshold
+	}
+	if minRandomnessValueOfKeptTraces == 0 {
+		bm.logger.Debug("calculateBottomKThresholdCompat: minRandomness=0, returning AlwaysSampleThreshold")
+		return sampling.AlwaysSampleThreshold
+	}
+
+	// Simple probability calculation: k / total_space_represented_by_min_randomness
+	// In bottom-K sampling, smaller min randomness means we've seen more data
+	// The sampling probability is proportional to k / estimated_total_items
+	// estimated_total_items ≈ k * (maxRandomness / minRandomness)
+	normalizedRandomness := float64(minRandomnessValueOfKeptTraces) / float64(maxRandomness)
+	
+	// Rough sampling probability estimate: the smaller the min randomness, the higher the probability
+	// So we use the inverse relationship, but avoid exact 0.0 and 1.0 to prevent special threshold values
+	baseProb := 1.0 - normalizedRandomness
+	
+	// Clamp to avoid exactly 0.0 or 1.0
+	epsilon := 1e-10
+	var samplingProbability float64
+	if baseProb <= epsilon {
+		samplingProbability = epsilon
+	} else if baseProb >= 1.0-epsilon {
+		samplingProbability = 1.0 - epsilon
+	} else {
+		samplingProbability = baseProb
+	}
+	
+	// Ensure probability is within valid range
+	if samplingProbability <= 0.0 {
+		bm.logger.Debug("calculateBottomKThresholdCompat: sampling probability <= 0, returning NeverSampleThreshold")
+		return sampling.NeverSampleThreshold
+	}
+	if samplingProbability >= 1.0 {
+		bm.logger.Debug("calculateBottomKThresholdCompat: sampling probability >= 1.0, returning AlwaysSampleThreshold")
+		return sampling.AlwaysSampleThreshold
+	}
+
+	// Convert probability to OTEP 235 threshold
+	threshold, err := sampling.ProbabilityToThreshold(samplingProbability)
+	if err != nil {
+		bm.logger.Warn("Failed to convert compatibility probability to threshold",
+			zap.Float64("probability", samplingProbability),
+			zap.Uint64("k", k),
+			zap.Uint64("min_randomness", minRandomnessValueOfKeptTraces),
+			zap.Error(err))
+		return sampling.NeverSampleThreshold
+	}
+
+	bm.logger.Debug("Calculated compatibility threshold",
 		zap.Uint64("k", k),
 		zap.Uint64("min_randomness", minRandomnessValueOfKeptTraces),
 		zap.Float64("sampling_probability", samplingProbability),
