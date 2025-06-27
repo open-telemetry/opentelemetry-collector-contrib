@@ -315,7 +315,7 @@ func (c *Config) Validate() error {
 
 	if len(c.LogLevel) > 0 {
 		if isSupportedJAR(jmxScraperVersions, c.JARPath) {
-			return fmt.Errorf("`log_level` can only be used with a JMX Metrics Gatherer JAR")
+			return errors.New("`log_level` can only be used with a JMX Metrics Gatherer JAR")
 		}
 		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
 			return fmt.Errorf("`log_level` must be one of %s", listKeys(validLogLevels))
