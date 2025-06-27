@@ -33,8 +33,9 @@ import (
 const jmxPort = "7199"
 
 var jmxJarReleases = map[string]string{
-	"1.26.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.26.0-alpha/opentelemetry-jmx-metrics-1.26.0-alpha.jar",
-	"1.10.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
+	"1.26.0-alpha":         "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.26.0-alpha/opentelemetry-jmx-metrics-1.26.0-alpha.jar",
+	"1.10.0-alpha":         "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
+	"1.46.0-alpha-scraper": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/1.46.0-alpha/opentelemetry-jmx-scraper-1.46.0-alpha.jar",
 }
 
 type jmxIntegrationSuite struct {
@@ -51,7 +52,7 @@ func TestJMXIntegration(t *testing.T) {
 func (suite *jmxIntegrationSuite) SetupSuite() {
 	suite.VersionToJar = make(map[string]string)
 	for version, url := range jmxJarReleases {
-		jarPath, err := downloadJMXMetricGathererJAR(suite.T(), url)
+		jarPath, err := downloadJMXJAR(suite.T(), url)
 		suite.VersionToJar[version] = jarPath
 		suite.Require().NoError(err)
 	}
@@ -63,7 +64,7 @@ func (suite *jmxIntegrationSuite) TearDownSuite() {
 	}
 }
 
-func downloadJMXMetricGathererJAR(t *testing.T, url string) (string, error) {
+func downloadJMXJAR(t *testing.T, url string) (string, error) {
 	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return "", err
