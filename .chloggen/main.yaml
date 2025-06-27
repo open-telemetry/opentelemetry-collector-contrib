@@ -7,7 +7,7 @@ change_type: enhancement
 component: zipkinexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "The Zipkin exporter currently ignores the scope attributes on OTLP payloads which leads to missing information. This PR adds scope attributes as tags to avoid any info getting corrupted/missing."
+note: "Include instrumentation scope attributes"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39206]
