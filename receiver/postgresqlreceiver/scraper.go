@@ -505,6 +505,7 @@ func (p *postgreSQLScraper) collectFunctions(
 	}
 
 	for _, stat := range funcStats {
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls)
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(database)
 		if p.separateSchemaAttr {
