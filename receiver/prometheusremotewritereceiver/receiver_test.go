@@ -666,7 +666,7 @@ func TestTranslateV2(t *testing.T) {
 								Schema:         -4,
 								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
-								PositiveDeltas: []int64{100, 244, -221},
+								PositiveDeltas: []int64{100, 244, -500},
 								NegativeDeltas: []int64{1, 2},
 							},
 						},

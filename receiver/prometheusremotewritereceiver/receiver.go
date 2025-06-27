@@ -517,14 +517,18 @@ func hasNegativeCounts(histogram writev2.Histogram) bool {
 		}
 	} else {
 		// Integer histograms
+		var absolute int64
 		for _, delta := range histogram.NegativeDeltas {
-			if delta < 0 {
+			absolute += delta
+			if absolute < 0 {
 				return true
 			}
 		}
 
+		absolute = 0
 		for _, delta := range histogram.PositiveDeltas {
-			if delta < 0 {
+			absolute += delta
+			if absolute < 0 {
 				return true
 			}
 		}
