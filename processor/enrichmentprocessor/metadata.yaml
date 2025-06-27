@@ -6,7 +6,7 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [sandy2008]
+    active: [sandy2008, sokoide]
 
 tests:
   config:
