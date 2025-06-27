@@ -38,6 +38,14 @@ Number of Prometheus time series that were translated from OTel metrics
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_exporter_prometheusremotewrite_wal_read_latency
+
+Response latency in ms for the WAL reads.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
+
 ### otelcol_exporter_prometheusremotewrite_wal_reads
 
 Number of WAL reads
@@ -53,6 +61,14 @@ Number of WAL reads that failed
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_write_latency
+
+Response latency in ms for the WAL writes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
 
 ### otelcol_exporter_prometheusremotewrite_wal_writes
 

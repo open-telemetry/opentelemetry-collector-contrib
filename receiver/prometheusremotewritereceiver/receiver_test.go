@@ -578,14 +578,14 @@ func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-type MockConsumer struct {
+type mockConsumer struct {
 	nonMutatingConsumer
 	mu         sync.Mutex
 	metrics    []pmetric.Metrics
 	dataPoints int
 }
 
-func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.metrics = append(m.metrics, md)
@@ -705,7 +705,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockConsumer := new(MockConsumer)
+			mockConsumer := new(mockConsumer)
 			prwReceiver := setupMetricsReceiver(t)
 			prwReceiver.nextConsumer = mockConsumer
 
@@ -905,7 +905,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		return metrics
 	}()
 
-	mockConsumer := new(MockConsumer)
+	mockConsumer := new(mockConsumer)
 	prwReceiver.nextConsumer = mockConsumer
 
 	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))

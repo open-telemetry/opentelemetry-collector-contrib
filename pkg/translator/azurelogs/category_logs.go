@@ -299,7 +299,7 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	if err := putInt(string(conventions.HTTPRequestSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.ResponseBytes, record); err != nil {
 		return err
 	}
 	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
@@ -356,11 +356,109 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	return nil
 }
 
+// See https://learn.microsoft.com/en-us/azure/frontdoor/monitor-front-door?pivots=front-door-standard-premium#access-log.
+type frontDoorAccessLog struct {
+	TrackingReference string `json:"trackingReference"`
+	HTTPMethod        string `json:"httpMethod"`
+	HTTPVersion       string `json:"httpVersion"`
+	RequestURI        string `json:"requestUri"`
+	SNI               string `json:"sni"`
+	RequestBytes      string `json:"requestBytes"`
+	ResponseBytes     string `json:"responseBytes"`
+	UserAgent         string `json:"userAgent"`
+	ClientIP          string `json:"clientIp"`
+	ClientPort        string `json:"clientPort"`
+	SocketIP          string `json:"socketIp"`
+	TimeToFirstByte   string `json:"timeToFirstByte"`
+	TimeTaken         string `json:"timeTaken"`
+	RequestProtocol   string `json:"requestProtocol"`
+	SecurityProtocol  string `json:"securityProtocol"`
+	HTTPStatusCode    string `json:"httpStatusCode"`
+	Pop               string `json:"pop"`
+	CacheStatus       string `json:"cacheStatus"`
+	ErrorInfo         string `json:"errorInfo"`
+	ErrorInfo1        string `json:"ErrorInfo"`
+	Result            string `json:"result"`
+	Endpoint          string `json:"endpoint"`
+	HostName          string `json:"hostName"`
+	SecurityCipher    string `json:"securityCipher"`
+	SecurityCurves    string `json:"securityCurves"`
+	OriginIP          string `json:"originIp"`
+}
+
 // addFrontDoorAccessLogProperties parses the Front Door access log, and adds
 // the relevant attributes to the record
-func addFrontDoorAccessLogProperties(_ []byte, _ plog.LogRecord) error {
-	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
-	return errStillToImplement
+func addFrontDoorAccessLogProperties(data []byte, record plog.LogRecord) error {
+	var properties frontDoorAccessLog
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse FrontDoorAccessLog properties: %w", err)
+	}
+
+	if err := putInt(string(conventions.HTTPRequestSizeKey), properties.RequestBytes, record); err != nil {
+		return err
+	}
+	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.ResponseBytes, record); err != nil {
+		return err
+	}
+	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
+		return err
+	}
+	if err := putInt(string(conventions.HTTPResponseStatusCodeKey), properties.HTTPStatusCode, record); err != nil {
+		return err
+	}
+
+	if err := handleTime(attributeTimeToFirstByte, properties.TimeToFirstByte, record); err != nil {
+		return err
+	}
+	if err := handleTime(attributeDuration, properties.TimeTaken, record); err != nil {
+		return err
+	}
+
+	if err := addRequestURIProperties(properties.RequestURI, record); err != nil {
+		return fmt.Errorf(`failed to handle "requestUri" field: %w`, err)
+	}
+	if err := addSecurityProtocolProperties(properties.SecurityProtocol, record); err != nil {
+		return err
+	}
+	if err := handleDestination(properties.HostName, properties.Endpoint, record); err != nil {
+		return err
+	}
+
+	if properties.ErrorInfo != properties.ErrorInfo1 && properties.ErrorInfo != "" && properties.ErrorInfo1 != "" {
+		return errors.New(`unexpected: "errorInfo" and "ErrorInfo" JSON fields have different values`)
+	}
+	if properties.ErrorInfo1 != "" {
+		addErrorInfoProperties(properties.ErrorInfo1, record)
+	} else if properties.ErrorInfo != "" {
+		addErrorInfoProperties(properties.ErrorInfo, record)
+	}
+
+	if properties.OriginIP != "" && properties.OriginIP != "N/A" {
+		address, port, _ := strings.Cut(properties.OriginIP, ":")
+		putStr(string(conventions.ServerAddressKey), address, record)
+		if port != "" {
+			if err := putInt(string(conventions.ServerPortKey), port, record); err != nil {
+				return err
+			}
+		}
+	}
+
+	putStr(attributeAzureRef, properties.TrackingReference, record)
+	putStr(string(conventions.HTTPRequestMethodKey), properties.HTTPMethod, record)
+	putStr(string(conventions.NetworkProtocolVersionKey), properties.HTTPVersion, record)
+	putStr(string(conventions.NetworkProtocolNameKey), properties.RequestProtocol, record)
+	putStr(attributeTLSServerName, properties.SNI, record)
+	putStr(string(conventions.UserAgentOriginalKey), properties.UserAgent, record)
+	putStr(string(conventions.ClientAddressKey), properties.ClientIP, record)
+	putStr(string(conventions.SourceAddressKey), properties.SocketIP, record)
+
+	putStr(attributeAzurePop, properties.Pop, record)
+	putStr(attributeCacheStatus, properties.CacheStatus, record)
+
+	putStr(string(conventions.TLSCurveKey), properties.SecurityCurves, record)
+	putStr(string(conventions.TLSCipherKey), properties.SecurityCipher, record)
+
+	return nil
 }
 
 // addFrontDoorHealthProbeLogProperties parses the Front Door access log, and adds

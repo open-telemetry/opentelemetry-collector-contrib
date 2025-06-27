@@ -102,7 +102,7 @@ func newMockClientOptionsResolver(
 	resources map[string][]armresources.ClientListResponse,
 	metricsDefinitions map[string][]armmonitor.MetricDefinitionsClientListResponse,
 	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
-	metricsQueryResponses []QueryResourcesResponseMock,
+	metricsQueryResponses []queryResourcesResponseMock,
 ) ClientOptionsResolver {
 	// Init resources client options from resources mock data
 	armResourcesClientOptions := make(map[string]*arm.ClientOptions)

@@ -145,6 +145,16 @@ func TestMetricsExporter_PushMetrics(t *testing.T) {
 	resource := rm.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
+	// Add a metric
+	scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	metric.SetName("test-metric")
+	metric.SetUnit("1")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1.0)
+
 	err = exp.pushMetrics(context.Background(), metrics)
 	assert.Error(t, err)
 }
@@ -189,9 +199,9 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			rateLimitErr := errors.New("rate limit exceeded")
-			exp.EnableRateLimit(rateLimitErr)
-			exp.EnableRateLimit(rateLimitErr)
+			// Add two rate limit errors
+			exp.EnableRateLimit()
+			exp.EnableRateLimit()
 
 			metrics := pmetric.NewMetrics()
 			resourceMetrics := metrics.ResourceMetrics()
@@ -349,13 +359,18 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 	resource := rm.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
+	// Add a metric
 	scopeMetrics := rm.ScopeMetrics().AppendEmpty()
-	scopeMetrics.Scope().SetName("test-scope")
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	metric.SetName("test-metric")
+	metric.SetUnit("1")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1.0)
 
-	metric1 := scopeMetrics.Metrics().AppendEmpty()
-	metric1.SetName("metric1")
-	metric2 := scopeMetrics.Metrics().AppendEmpty()
-	metric2.SetName("metric2")
+	scopeMetrics.Metrics().AppendEmpty()
+	scopeMetrics.Metrics().AppendEmpty()
 
 	partialSuccess := pmetricotlp.NewExportPartialSuccess()
 	partialSuccess.SetErrorMessage("some metrics were rejected")
@@ -387,8 +402,7 @@ func TestMetricsExporter_PushMetrics_PartialSuccess(t *testing.T) {
 					}
 				}
 			}
-			assert.Contains(t, names, "metric1")
-			assert.Contains(t, names, "metric2")
+			assert.Contains(t, names, "test-metric")
 			found = true
 		}
 	}
@@ -455,9 +469,8 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		rateLimitErr := errors.New("rate limit exceeded")
 		for i := 0; i < 5; i++ {
-			exp.EnableRateLimit(rateLimitErr)
+			exp.EnableRateLimit()
 		}
 
 		metrics := pmetric.NewMetrics()
@@ -488,7 +501,27 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 
 	t.Run("Rate limit reset", func(t *testing.T) {
 		mockSrv.recvCount = 0
-		time.Sleep(2 * time.Second)
+
+		require.Eventually(t, func() bool {
+			testMetrics := pmetric.NewMetrics()
+			testRm := testMetrics.ResourceMetrics().AppendEmpty()
+			testRm.Resource().Attributes().PutStr("service.name", "test-service")
+			testSm := testRm.ScopeMetrics().AppendEmpty()
+			testMetric := testSm.Metrics().AppendEmpty()
+			testMetric.SetName("test-metric")
+			testMetric.SetUnit("1")
+			testMetric.SetEmptyGauge()
+			testDp := testMetric.Gauge().DataPoints().AppendEmpty()
+			testDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			testDp.SetDoubleValue(1.0)
+
+			errPush := exp.pushMetrics(context.Background(), testMetrics)
+			return errPush == nil
+		}, 3*time.Second, 100*time.Millisecond, "Rate limit should reset within 3 seconds")
+
+		// It's 1 because the last push is successful
+		require.Equal(t, 1, mockSrv.recvCount)
+		mockSrv.recvCount = 0
 
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
@@ -513,5 +546,145 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, metricCount, mockSrv.recvCount, "Expected to receive exactly %d metrics after rate limit reset", metricCount)
 		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
+	})
+}
+
+func TestMetricsExporter_RateLimitErrorCountReset(t *testing.T) {
+	endpoint, stop, srv := startMockOtlpMetricsServer(t)
+	defer stop()
+
+	cfg := &Config{
+		Metrics: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	for i := 0; i < 5; i++ {
+		exp.EnableRateLimit()
+	}
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+
+	metrics := pmetric.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics()
+	rm := resourceMetrics.AppendEmpty()
+	resource := rm.Resource()
+	resource.Attributes().PutStr("service.name", "test-service")
+
+	scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	metric.SetName("test-metric")
+	metric.SetUnit("1")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1.0)
+
+	err = exp.pushMetrics(context.Background(), metrics)
+	assert.Error(t, err)
+	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
+	assert.Equal(t, 0, srv.recvCount)
+
+	require.Eventually(t, func() bool {
+		err = exp.pushMetrics(context.Background(), metrics)
+		return err == nil &&
+			exp.rateError.errorCount.Load() == 0 &&
+			srv.recvCount > 0
+	}, 3*time.Second, 100*time.Millisecond)
+}
+
+func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
+	endpoint, stopFn, srv := startMockOtlpMetricsServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Metrics: configgrpc.ClientConfig{
+			Endpoint: endpoint,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 5,
+			Duration:  time.Second,
+		},
+	}
+
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	createTestMetrics := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		resource := resourceMetrics.Resource()
+		resource.Attributes().PutStr("service.name", "test-service")
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName("test-metric")
+		metric.SetUnit("1")
+		metric.SetEmptyGauge()
+		dp := metric.Gauge().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dp.SetDoubleValue(1.0)
+		return metrics
+	}
+
+	t.Run("Initial successful push", func(t *testing.T) {
+		metrics := createTestMetrics()
+		err = exp.pushMetrics(context.Background(), metrics)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 1, srv.recvCount)
+	})
+
+	t.Run("Trigger errors below threshold", func(t *testing.T) {
+		for i := 0; i < 4; i++ {
+			exp.EnableRateLimit()
+		}
+		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
+		assert.False(t, exp.rateError.isRateLimited(), "Should not be rate limited yet")
+	})
+
+	t.Run("Successful push after errors", func(t *testing.T) {
+		metrics := createTestMetrics()
+		err = exp.pushMetrics(context.Background(), metrics)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 2, srv.recvCount)
+	})
+
+	t.Run("Verify error count stays at 0", func(t *testing.T) {
+		metrics := createTestMetrics()
+		err = exp.pushMetrics(context.Background(), metrics)
+		require.NoError(t, err)
+		assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+		assert.Equal(t, 3, srv.recvCount)
 	})
 }

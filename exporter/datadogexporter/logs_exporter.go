@@ -188,7 +188,7 @@ func newLogsAgentExporter(
 		agentcomponents.WithLogLevel(params.TelemetrySettings),
 		agentcomponents.WithLogsConfig(cfg),
 		agentcomponents.WithLogsDefaults(),
-		agentcomponents.WithProxyFromEnv(),
+		agentcomponents.WithProxy(cfg),
 	)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,

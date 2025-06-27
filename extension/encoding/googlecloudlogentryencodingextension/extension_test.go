@@ -31,12 +31,12 @@ func TestUnmarshalLogs(t *testing.T) {
 	tests := []struct {
 		scenario string
 		input    string
-		want     Log
+		want     log
 	}{
 		{
 			"RealLog",
 			"{\"httpRequest\":{\"latency\":\"0.001901s\",\"protocol\":\"H2C\",\"referer\":\"https://console.cloud.google.com/\",\"remoteIp\":\"1802:2a14:1188:9898:34ab:b5c5:86eb:a142\",\"requestMethod\":\"GET\",\"requestSize\":\"1220\",\"requestUrl\":\"https://example.a.run.app/\",\"responseSize\":\"963\",\"serverIp\":\"2024:6048:3248:42::42\",\"status\":503,\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"},\"insertId\":\"663760330006df7c63521728\",\"labels\":{\"instanceId\":\"00f46b9285fdad63aa1a6951b9b01126bd635517f264c8f231a40248b473fcdf266eed0fdfebd05fb338203c0e3e5bf6422f0b480445cacc4ec75bd4ebc86a72\"},\"logName\":\"projects/gcp-project/logs/run.googleapis.com%2Frequests\",\"receiveTimestamp\":\"2024-05-05T10:32:19.45570687Z\",\"resource\":{\"labels\":{\"configuration_name\":\"otelcol\",\"location\":\"europe-west1\",\"project_id\":\"gcp-project\",\"revision_name\":\"example-00007-sun\",\"service_name\":\"otelcol\"},\"type\":\"cloud_run_revision\"},\"severity\":\"ERROR\",\"spanId\":\"3e3a5741b18f0710\",\"timestamp\":\"2024-05-05T10:32:19.440152Z\",\"trace\":\"projects/gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e09\",\"traceSampled\":true}",
-			Log{
+			log{
 				Timestamp:         "2024-05-05T10:32:19.440152Z",
 				ObservedTimestamp: "",
 				Body:              nil,
@@ -76,7 +76,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"InvalidSpan",
 			"{\"httpRequest\":{\"latency\":\"0.001901s\",\"protocol\":\"H2C\",\"referer\":\"https://console.cloud.google.com/\",\"remoteIp\":\"1802:2a14:1188:9898:34ab:b5c5:86eb:a142\",\"requestMethod\":\"GET\",\"requestSize\":\"1220\",\"requestUrl\":\"https://example.a.run.app/\",\"responseSize\":\"963\",\"serverIp\":\"2024:6048:3248:42::42\",\"status\":503,\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"},\"insertId\":\"663760330006df7c63521728\",\"labels\":{\"instanceId\":\"00f46b9285fdad63aa1a6951b9b01126bd635517f264c8f231a40248b473fcdf266eed0fdfebd05fb338203c0e3e5bf6422f0b480445cacc4ec75bd4ebc86a72\"},\"logName\":\"projects/gcp-project/logs/run.googleapis.com%2Frequests\",\"receiveTimestamp\":\"2024-05-05T10:32:19.45570687Z\",\"resource\":{\"labels\":{\"configuration_name\":\"otelcol\",\"location\":\"europe-west1\",\"project_id\":\"gcp-project\",\"revision_name\":\"example-00007-sun\",\"service_name\":\"otelcol\"},\"type\":\"cloud_run_revision\"},\"severity\":\"ERROR\",\"spanId\":\"13210305202245662348\",\"timestamp\":\"2024-05-05T10:32:19.440152Z\",\"trace\":\"projects/gcp-project/traces/1dbe317eb73eb6e3bbb51a2bc3a41e09\",\"traceSampled\":true}",
-			Log{
+			log{
 				Timestamp:         "2024-05-05T10:32:19.440152Z",
 				ObservedTimestamp: "",
 				Body:              nil,
@@ -118,14 +118,14 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"TextPayload",
 			"{\"textPayload\":\"Hello World\"}",
-			Log{
+			log{
 				Body: "Hello World",
 			},
 		},
 		{
 			"JsonPayloadParse",
 			"{\"jsonPayload\":{\"foo\":\"bar\"}}",
-			Log{
+			log{
 				Body: map[string]any{"foo": "bar"},
 			},
 		},
@@ -133,7 +133,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberDebug",
 			"{\"severity\":\"DEBUG\"}",
-			Log{
+			log{
 				SeverityText:   "DEBUG",
 				SeverityNumber: plog.SeverityNumberDebug,
 			},
@@ -141,7 +141,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberInfo",
 			"{\"severity\":\"INFO\"}",
-			Log{
+			log{
 				SeverityText:   "INFO",
 				SeverityNumber: plog.SeverityNumberInfo,
 			},
@@ -149,7 +149,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberInfo2",
 			"{\"severity\":\"NOTICE\"}",
-			Log{
+			log{
 				SeverityText:   "NOTICE",
 				SeverityNumber: plog.SeverityNumberInfo2,
 			},
@@ -157,7 +157,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberWarn",
 			"{\"severity\":\"WARNING\"}",
-			Log{
+			log{
 				SeverityText:   "WARNING",
 				SeverityNumber: plog.SeverityNumberWarn,
 			},
@@ -165,7 +165,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberError",
 			"{\"severity\":\"ERROR\"}",
-			Log{
+			log{
 				SeverityText:   "ERROR",
 				SeverityNumber: plog.SeverityNumberError,
 			},
@@ -173,7 +173,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberFatal",
 			"{\"severity\":\"CRITICAL\"}",
-			Log{
+			log{
 				SeverityText:   "CRITICAL",
 				SeverityNumber: plog.SeverityNumberFatal,
 			},
@@ -181,7 +181,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberFatal2",
 			"{\"severity\":\"ALERT\"}",
-			Log{
+			log{
 				SeverityText:   "ALERT",
 				SeverityNumber: plog.SeverityNumberFatal2,
 			},
@@ -189,7 +189,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			"SeverityNumberFatal4",
 			"{\"severity\":\"EMERGENCY\"}",
-			Log{
+			log{
 				SeverityText:   "EMERGENCY",
 				SeverityNumber: plog.SeverityNumberFatal4,
 			},

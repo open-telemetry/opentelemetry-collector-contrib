@@ -192,25 +192,17 @@ func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
 
 // getLogKey creates a unique hash for the log record to use as a map key.
 // If dedupFields is non-empty, it is used to determine the fields whose values are hashed.
+// If no dedupFields are found in the log record, all fields are hashed.
 func getLogKey(logRecord plog.LogRecord, dedupFields []string) uint64 {
 	if len(dedupFields) > 0 {
 		var opts []pdatautil.HashOption
 
 		for _, field := range dedupFields {
 			parts := splitField(field)
-			var m pcommon.Map
-			switch parts[0] {
-			case bodyField:
-				if logRecord.Body().Type() == pcommon.ValueTypeMap {
-					m = logRecord.Body().Map()
+			if m, ok := getMap(logRecord, parts[0]); ok {
+				if value, ok := getKeyValue(m, parts[1:]); ok {
+					opts = append(opts, pdatautil.WithString(value.AsString()))
 				}
-			case attributeField:
-				m = logRecord.Attributes()
-			}
-
-			value, ok := getKeyValue(m, parts[1:])
-			if ok {
-				opts = append(opts, pdatautil.WithString(value.AsString()))
 			}
 		}
 
@@ -225,6 +217,20 @@ func getLogKey(logRecord plog.LogRecord, dedupFields []string) uint64 {
 		pdatautil.WithString(logRecord.SeverityNumber().String()),
 		pdatautil.WithString(logRecord.SeverityText()),
 	)
+}
+
+func getMap(logRecord plog.LogRecord, leadingPart string) (pcommon.Map, bool) {
+	switch leadingPart {
+	case bodyField:
+		if logRecord.Body().Type() == pcommon.ValueTypeMap {
+			return logRecord.Body().Map(), true
+		}
+	case attributeField:
+		return logRecord.Attributes(), true
+	}
+
+	var m pcommon.Map
+	return m, false
 }
 
 func getKeyValue(valueMap pcommon.Map, keyParts []string) (pcommon.Value, bool) {

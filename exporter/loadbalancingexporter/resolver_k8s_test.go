@@ -63,7 +63,7 @@ func TestK8sResolve(t *testing.T) {
 			}
 		}
 
-		cl := fake.NewSimpleClientset(endpoint)
+		cl := fake.NewClientset(endpoint)
 		_, tb := getTelemetryAssets(t)
 		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, returnHostnames, tb)
 		require.NoError(t, err)
@@ -327,7 +327,7 @@ func Test_newK8sResolver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, tb := getTelemetryAssets(t)
-			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, false, tb)
+			got, err := newK8sResolver(fake.NewClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, false, tb)
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
 			} else {

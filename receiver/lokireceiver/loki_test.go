@@ -162,7 +162,7 @@ func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -208,7 +208,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -231,7 +231,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "snappy",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -254,7 +254,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "gzip",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -277,7 +277,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "deflate",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -341,7 +341,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -438,13 +438,13 @@ func TestExpectedStatus(t *testing.T) {
 	}
 }
 
-type Log struct {
+type logRecord struct {
 	Timestamp  int64
 	Body       pcommon.Value
 	Attributes map[string]any
 }
 
-func generateLogs(logs []Log) plog.Logs {
+func generateLogs(logs []logRecord) plog.Logs {
 	ld := plog.NewLogs()
 	logSlice := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 

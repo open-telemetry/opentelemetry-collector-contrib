@@ -5,7 +5,6 @@ package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +19,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 const (
@@ -34,9 +34,7 @@ type s3AccessLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
 
-var _ plog.Unmarshaler = (*s3AccessLogUnmarshaler)(nil)
-
-func NewS3AccessLogUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
+func NewS3AccessLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
 	return &s3AccessLogUnmarshaler{
 		buildInfo: buildInfo,
 	}
@@ -47,8 +45,8 @@ type resourceAttributes struct {
 	bucketName  string
 }
 
-func (s *s3AccessLogUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(buf))
+func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	scanner := bufio.NewScanner(reader)
 
 	logs, resourceLogs, scopeLogs := s.createLogs()
 	resourceAttr := &resourceAttributes{}

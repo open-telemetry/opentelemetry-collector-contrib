@@ -367,6 +367,64 @@ This metric requires WAL to be enabled with at least one replica.
 | operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` |
 | replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+### db.server.query_sample
+
+query sample
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` |
+| db.namespace | The namespace or schema of the database where the query is executed. | Any Str |
+| db.query.text | The text of the database query being executed. | Any Str |
+| user.name | Name of the user logged into this backend. | Any Str |
+| postgresql.state | Current overall state of this backend | Any Str |
+| postgresql.pid | Process ID of this backend. | Any Int |
+| postgresql.application_name | Name of the application that is connected to this backend. | Any Str |
+| network.peer.address | IP address of the client connected to this backend. | Any Str |
+| network.peer.port | TCP port number that the client is using for communication with this backend. | Any Int |
+| postgresql.client_hostname | Host name of the connected client, as reported by a reverse DNS lookup of client_addr. | Any Str |
+| postgresql.query_start | Time when the currently active query was started, or if state is not active, when the last query was started. | Any Str |
+| postgresql.wait_event | Wait event name if backend is currently waiting, otherwise NULL. | Any Str |
+| postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str |
+| postgresql.query_id | Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed. | Any Str |
+
+### db.server.top_query
+
+top query
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` |
+| db.namespace | The namespace or schema of the database where the query is executed. | Any Str |
+| db.query.text | The text of the database query being executed. | Any Str |
+| postgresql.calls | Number of times the statement was executed, reported in delta value. | Any Int |
+| postgresql.rows | Total number of rows retrieved or affected by the statement, reported in delta value. | Any Int |
+| postgresql.shared_blks_dirtied | Total number of shared blocks dirtied by the statement, reported in delta value. | Any Int |
+| postgresql.shared_blks_hit | Total number of shared block cache hits by the statement, reported in delta value. | Any Int |
+| postgresql.shared_blks_read | Total number of shared blocks read by the statement, reported in delta value. | Any Int |
+| postgresql.shared_blks_written | Total number of shared blocks written by the statement, reported in delta value. | Any Int |
+| postgresql.temp_blks_read | Total number of temp blocks read by the statement, reported in delta value. | Any Int |
+| postgresql.temp_blks_written | Total number of temp blocks written by the statement, reported in delta value. | Any Int |
+| postgresql.queryid | Hash code to identify identical normalized queries. | Any Str |
+| postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str |
+| postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double |
+| postgresql.total_plan_time | Total time spent planning the statement, in delta milliseconds. | Any Double |
+| postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

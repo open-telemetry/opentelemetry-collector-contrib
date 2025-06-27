@@ -7,7 +7,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
-	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	normalizeutil "github.com/DataDog/datadog-agent/pkg/trace/traceutil/normalize"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/proto"
 )
@@ -60,7 +60,7 @@ func (st *StatsTranslator) TranslateStats(clientStats *pb.ClientStatsPayload, la
 }
 
 func (st *StatsTranslator) processStats(in *pb.ClientStatsPayload, lang, tracerVersion string) *pb.ClientStatsPayload {
-	in.Env = traceutil.NormalizeTag(in.Env)
+	in.Env = normalizeutil.NormalizeTag(in.Env)
 	if in.TracerVersion == "" {
 		in.TracerVersion = tracerVersion
 	}
@@ -84,8 +84,8 @@ func (st *StatsTranslator) processStats(in *pb.ClientStatsPayload, lang, tracerV
 }
 
 func (st *StatsTranslator) normalizeStatsGroup(b *pb.ClientGroupedStats, lang string) {
-	b.Name, _ = traceutil.NormalizeName(b.Name)
-	b.Service, _ = traceutil.NormalizeService(b.Service, lang)
+	b.Name, _ = normalizeutil.NormalizeName(b.Name)
+	b.Service, _ = normalizeutil.NormalizeService(b.Service, lang)
 	if b.Resource == "" {
 		b.Resource = b.Name
 	}
@@ -110,7 +110,7 @@ func (st *StatsTranslator) obfuscateStatsGroup(b *pb.ClientGroupedStats) {
 // truncateResource truncates a span's resource to the maximum allowed length.
 // It returns true if the input was below the max size.
 func truncateResource(r string) (string, bool) {
-	return traceutil.TruncateUTF8(r, maxResourceLen), len(r) <= maxResourceLen
+	return normalizeutil.TruncateUTF8(r, maxResourceLen), len(r) <= maxResourceLen
 }
 
 func mergeDuplicates(s *pb.ClientStatsBucket) {

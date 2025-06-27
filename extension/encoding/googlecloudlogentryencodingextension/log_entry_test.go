@@ -17,7 +17,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-type Log struct {
+type log struct {
 	Timestamp          string
 	ObservedTimestamp  string
 	Body               any
@@ -29,7 +29,7 @@ type Log struct {
 	TraceID            string
 }
 
-func generateLog(t *testing.T, log Log) (pcommon.Resource, plog.LogRecord, error) {
+func generateLog(t *testing.T, log log) (pcommon.Resource, plog.LogRecord, error) {
 	res := pcommon.NewResource()
 	assert.NoError(t, res.Attributes().FromRaw(log.ResourceAttributes))
 
@@ -194,7 +194,7 @@ func TestJsonPayload(t *testing.T) {
 		scenario string
 		input    string
 		config   Config
-		expected Log
+		expected log
 	}{
 		{
 			"AsJSON",
@@ -203,7 +203,7 @@ func TestJsonPayload(t *testing.T) {
 				HandleJSONPayloadAs:  HandleAsJSON,
 				HandleProtoPayloadAs: HandleAsJSON,
 			},
-			Log{
+			log{
 				Body: map[string]any{
 					"foo":   string("bar"),
 					"other": float64(42),
@@ -217,13 +217,13 @@ func TestJsonPayload(t *testing.T) {
 				HandleJSONPayloadAs:  HandleAsText,
 				HandleProtoPayloadAs: HandleAsJSON,
 			},
-			Log{
+			log{
 				Body: "{ \"foo\": \"bar\", \"other\": 42}",
 			},
 		},
 	}
 	for _, tt := range tests {
-		fn := func(t *testing.T, cfg *Config, want Log) {
+		fn := func(t *testing.T, cfg *Config, want log) {
 			extension := newConfiguredExtension(t, cfg)
 			defer assert.NoError(t, extension.Shutdown(context.Background()))
 

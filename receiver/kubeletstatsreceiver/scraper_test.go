@@ -121,7 +121,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	// A catch-all watch reactor that allows us to inject the watcherStarted channel.
 	client.PrependWatchReactor("*", func(action clienttesting.Action) (handled bool, ret watch.Interface, err error) {
 		gvr := action.GetResource()
@@ -201,7 +201,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	// A catch-all watch reactor that allows us to inject the watcherStarted channel.
 	client.PrependWatchReactor("*", func(action clienttesting.Action) (handled bool, ret watch.Interface, err error) {
 		gvr := action.GetResource()
@@ -631,7 +631,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 	}{
 		{
 			name:         "successful",
-			k8sAPIClient: fake.NewSimpleClientset(getValidMockedObjects()...),
+			k8sAPIClient: fake.NewClientset(getValidMockedObjects()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
 					name: "storage-provisioner-token-qzlx6",
@@ -664,7 +664,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		},
 		{
 			name:         "nonexistent_pvc",
-			k8sAPIClient: fake.NewSimpleClientset(),
+			k8sAPIClient: fake.NewClientset(),
 			dataLen:      numVolumes - 3,
 			volumeClaimsToMiss: map[string]bool{
 				"volume_claim_1": true,
@@ -675,7 +675,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		},
 		{
 			name:         "empty_volume_name_in_pvc",
-			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithEmptyVolumeName()...),
+			k8sAPIClient: fake.NewClientset(getMockedObjectsWithEmptyVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
 					name: "storage-provisioner-token-qzlx6",
@@ -706,7 +706,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		},
 		{
 			name:         "non_existent_volume_in_pvc",
-			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithNonExistentVolumeName()...),
+			k8sAPIClient: fake.NewClientset(getMockedObjectsWithNonExistentVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
 					name: "storage-provisioner-token-qzlx6",

@@ -294,6 +294,38 @@ func Test_getLogKey(t *testing.T) {
 				require.Equal(t, expectedMulti, getLogKey(logRecord, []string{"body.dedup_key", "attributes.dedup_key"}))
 			},
 		},
+		{
+			desc: "getLogKey hashes full message if dedup key is body-based and no body was provided",
+			testFunc: func(t *testing.T) {
+				logRecord := plog.NewLogRecord()
+				logRecord.Attributes().PutStr("str", "attr str")
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithMap(logRecord.Attributes()),
+					pdatautil.WithValue(logRecord.Body()),
+					pdatautil.WithString(logRecord.SeverityNumber().String()),
+					pdatautil.WithString(logRecord.SeverityText()),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
+			},
+		},
+		{
+			desc: "getLogKey hashes full message if dedup key is body-based and body is not map type",
+			testFunc: func(t *testing.T) {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("hello, this is a message body string")
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithMap(logRecord.Attributes()),
+					pdatautil.WithValue(logRecord.Body()),
+					pdatautil.WithString(logRecord.SeverityNumber().String()),
+					pdatautil.WithString(logRecord.SeverityText()),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
+			},
+		},
 	}
 
 	for _, tc := range testCases {

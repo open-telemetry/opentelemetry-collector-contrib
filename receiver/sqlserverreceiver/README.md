@@ -111,6 +111,17 @@ Top query collection enabled:
           max_rows_per_query: 1450
           
 ```
+
+## Feature Gate
+
+A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port` 
+resource attributes, as they are not identified as resources attributes in the semantic conventions.
+To enable it, pass the following argument to the Collector:
+
+```
+--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)

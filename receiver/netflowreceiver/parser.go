@@ -252,6 +252,7 @@ func addMessageAttributes(m producer.ProducerMessage, r *plog.LogRecord) error {
 	r.Attributes().PutInt("flow.end", int64(pm.TimeFlowEndNs))
 	r.Attributes().PutInt("flow.sampling_rate", int64(pm.SamplingRate))
 	r.Attributes().PutStr("flow.sampler_address", samplerAddr.String())
+	r.Attributes().PutInt("flow.tcp_flags", int64(pm.TcpFlags))
 
 	return nil
 }
