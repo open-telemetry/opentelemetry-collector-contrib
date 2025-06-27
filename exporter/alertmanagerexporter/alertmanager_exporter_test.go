@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
@@ -64,7 +65,7 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	return traces, span
 }
 
-func TestAlertManagerExporterExtractEvents(t *testing.T) {
+func TestAlertManagerExporterExtractSpanEvents(t *testing.T) {
 	tests := []struct {
 		name   string
 		events int
@@ -101,13 +102,13 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 			}
 
 			// test - events
-			got := am.extractEvents(traces)
+			got := am.extractSpanEvents(traces)
 			assert.Len(t, got, tt.events)
 		})
 	}
 }
 
-func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
+func TestAlertManagerExporterSpanEventNameAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
@@ -131,7 +132,7 @@ func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	attrs.PutDouble("attr3", 5.14)
 
 	// test - 1 event
-	got := am.extractEvents(traces)
+	got := am.extractSpanEvents(traces)
 
 	// test - result length
 	assert.Len(t, got, 1)
@@ -184,8 +185,8 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	attrs.PutStr("bar", "debug")
 
 	// test - 0 event
-	got := am.extractEvents(traces)
-	alerts := am.convertEventsToAlertPayload(got)
+	got := am.extractSpanEvents(traces)
+	alerts := am.convertSpanEventsToAlertPayload(got)
 
 	ls := model.LabelSet{"event_name": "unittest-event", "severity": "debug"}
 	assert.Equal(t, ls, alerts[0].Labels)
@@ -217,8 +218,8 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	attrs.PutStr("attr2", "debug")
 
 	// test - 0 event
-	got := am.extractEvents(traces)
-	alerts := am.convertEventsToAlertPayload(got)
+	got := am.extractSpanEvents(traces)
+	alerts := am.convertSpanEventsToAlertPayload(got)
 
 	ls := model.LabelSet{"event_name": "unittest-event", "severity": "info"}
 	assert.Equal(t, ls, alerts[0].Labels)
@@ -257,7 +258,7 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 		spanID:    "00000002",
 	})
 
-	got := am.convertEventsToAlertPayload(events)
+	got := am.convertSpanEventsToAlertPayload(events)
 
 	// test - count of attributes
 	expect := model.Alert{
@@ -279,7 +280,7 @@ func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAlertManagerExporterEventLabels(t *testing.T) {
+func TestAlertManagerExporterSpanEventLabels(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
@@ -310,7 +311,7 @@ func TestAlertManagerExporterEventLabels(t *testing.T) {
 		spanID:    "00000002",
 	})
 
-	got := am.convertEventsToAlertPayload(events)
+	got := am.convertSpanEventsToAlertPayload(events)
 
 	// test - count of attributes
 	expect := model.Alert{
@@ -464,4 +465,244 @@ func TestClientConfig(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestConvertSpanEventSliceToArray(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.DefaultSeverity = "info"
+	cfg.SeverityAttribute = "severity"
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	spanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+
+	eventSlice := ptrace.NewSpanEventSlice()
+	event := eventSlice.AppendEmpty()
+	event.SetName("test-event")
+	event.Attributes().PutStr("severity", "debug")
+	event.Attributes().PutStr("key", "value")
+
+	events := am.convertSpanEventSliceToArray(eventSlice, traceID, spanID)
+	require.Len(t, events, 1)
+	assert.Equal(t, "test-event", events[0].spanEvent.Name())
+	assert.Equal(t, "debug", events[0].severity)
+	assert.Equal(t, traceID.String(), events[0].traceID)
+	assert.Equal(t, spanID.String(), events[0].spanID)
+}
+
+// Logs Testing
+
+// It checks the handling of TraceID, SpanID, and severity attributes.
+// It also verifies the default severity is applied correctly when not specified.
+func TestConvertLogRecordSliceToArray(t *testing.T) {
+	// Setup
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.DefaultSeverity = "info"
+	cfg.SeverityAttribute = "severity"
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
+
+	// Create Logs with multiple log records
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+
+	// 1. Log with TraceID, SpanID, and Severity
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	logRecord.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	logRecord.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	logRecord.Attributes().PutStr("severity", "error")
+	logRecord.Body().SetStr("Log 1")
+
+	// 2. Log without TraceID, SpanID, and with severity
+	logRecord2 := scopeLogs.LogRecords().AppendEmpty()
+	logRecord2.SetTraceID(pcommon.TraceID([16]byte{})) // empty TraceID
+	logRecord2.SetSpanID(pcommon.SpanID([8]byte{}))    // empty SpanID
+	logRecord2.Attributes().PutStr("severity", "warning")
+	logRecord2.Body().SetStr("Log 2")
+
+	// 3. Log without TraceID, SpanID, and without severity (default should be used)
+	logRecord3 := scopeLogs.LogRecords().AppendEmpty()
+	logRecord3.SetTraceID(pcommon.TraceID([16]byte{})) // empty TraceID
+	logRecord3.SetSpanID(pcommon.SpanID([8]byte{}))    // empty SpanID
+	logRecord3.Body().SetStr("Log 3")
+
+	// Run the method
+	events := am.convertLogRecordSliceToArray(scopeLogs.LogRecords())
+
+	// Assertions
+	require.Len(t, events, 3)
+
+	// Check the first event (log 1)
+	event1 := events[0]
+	assert.Equal(t, "0102030405060708090a0b0c0d0e0f10", event1.traceID)
+	assert.Equal(t, "0102030405060708", event1.spanID)
+	assert.Equal(t, "error", event1.severity)
+	assert.Equal(t, "Log 1", event1.LogRecord.Body().Str())
+
+	// Check the second event (log 2)
+	event2 := events[1]
+	assert.Empty(t, event2.traceID, "TraceID should be empty")
+	assert.Empty(t, event2.spanID, "SpanID should be empty")
+	assert.Equal(t, "warning", event2.severity)
+	assert.Equal(t, "Log 2", event2.LogRecord.Body().Str())
+
+	// Check the third event (log 3)
+	event3 := events[2]
+	assert.Empty(t, event3.traceID, "TraceID should be empty")
+	assert.Empty(t, event3.spanID, "SpanID should be empty")
+	assert.Equal(t, "info", event3.severity) // Default severity
+	assert.Equal(t, "Log 3", event3.LogRecord.Body().Str())
+}
+
+func TestExtractLogEvents(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.DefaultSeverity = "info"
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
+
+	// Construct Logs with two ResourceLogs
+	logs := plog.NewLogs()
+
+	// Valid ResourceLogs
+	validRL := logs.ResourceLogs().AppendEmpty()
+	validRL.Resource().Attributes().PutStr("resource_key", "resource_value")
+	validSL := validRL.ScopeLogs().AppendEmpty()
+	logRecord := validSL.LogRecords().AppendEmpty()
+	logRecord.Attributes().PutStr("env", "prod")
+	logRecord.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	logRecord.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	logRecord.Body().SetStr("Test log")
+
+	// Run extractor
+	events := am.extractLogEvents(logs)
+
+	// Assertions
+	require.Len(t, events, 1)
+	event := events[0]
+	assert.Equal(t, "0102030405060708090a0b0c0d0e0f10", event.traceID)
+	assert.Equal(t, "0102030405060708", event.spanID)
+	assert.Equal(t, "info", event.severity)
+	attr, ok := event.LogRecord.Attributes().Get("env")
+	require.True(t, ok)
+	assert.Equal(t, "prod", attr.Str())
+}
+
+func TestCreateLogAnnotations(t *testing.T) {
+	// Setup
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.DefaultSeverity = "info"
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
+
+	// Create a log record with TraceID, SpanID, Body, and Timestamp
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+
+	// 1. Log with TraceID, SpanID, Body and Timestamp
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	logRecord.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	logRecord.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	logRecord.Body().SetStr("Test log body")
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	// Create the alertmanagerLogEvent
+	event := &alertmanagerLogEvent{
+		LogRecord: logRecord,
+		traceID:   logRecord.TraceID().String(),
+		spanID:    logRecord.SpanID().String(),
+		severity:  "info",
+	}
+
+	// Run the real function
+	labelSet := createLogAnnotations(event)
+
+	// Assertions
+	// Check if the LabelSet has TraceID, SpanID, Body and Timestamp
+	assert.Equal(t, "0102030405060708090a0b0c0d0e0f10", string(labelSet["TraceID"]))
+	assert.Equal(t, "0102030405060708", string(labelSet["SpanID"]))
+	assert.Equal(t, "Test log body", string(labelSet["Body"]))
+
+	// 2. Log without TraceID and SpanID
+	logRecord2 := scopeLogs.LogRecords().AppendEmpty()
+	logRecord2.SetTraceID(pcommon.TraceID([16]byte{})) // empty TraceID
+	logRecord2.SetSpanID(pcommon.SpanID([8]byte{}))    // empty SpanID
+	logRecord2.Body().SetStr("Log without Trace and Span")
+	event2 := &alertmanagerLogEvent{
+		LogRecord: logRecord2,
+		traceID:   logRecord2.TraceID().String(),
+		spanID:    logRecord2.SpanID().String(),
+		severity:  "info",
+	}
+
+	// Run the real function for event2
+	labelSet2 := createLogAnnotations(event2)
+
+	// Assertions for log without TraceID and SpanID
+	assert.NotContains(t, labelSet2, "TraceID", "TraceID should not be present")
+	assert.NotContains(t, labelSet2, "SpanID", "SpanID should not be present")
+	assert.Equal(t, "Log without Trace and Span", string(labelSet2["Body"]))
+}
+
+func TestCreateLogLabels(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.EventLabels = []string{"env", "service"} // only include these
+	cfg.DefaultSeverity = "info"
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	exporter := newAlertManagerExporter(cfg, set.TelemetrySettings)
+
+	// Create a log record
+	logRecord := plog.NewLogRecord()
+	logRecord.Attributes().PutStr("env", "prod")
+	logRecord.Attributes().PutStr("service", "auth-service")
+	logRecord.Attributes().PutStr("ignored", "should-not-appear")
+	logRecord.Attributes().PutStr("event_name", "ERROR")
+
+	event := &alertmanagerLogEvent{
+		LogRecord: logRecord,
+		severity:  "error",
+		traceID:   "",
+		spanID:    "",
+	}
+
+	labels := exporter.createLogLabels(event)
+
+	// Check included labels
+	assert.Equal(t, model.LabelValue("prod"), labels["env"])
+	assert.Equal(t, model.LabelValue("auth-service"), labels["service"])
+	assert.Equal(t, model.LabelValue("error"), labels["severity"])
+	assert.Equal(t, model.LabelValue("ERROR"), labels["event_name"])
+
+	// Ensure excluded label is not present
+	_, exists := labels["ignored"]
+	assert.False(t, exists, "Label 'ignored' should not be included")
+}
+
+func TestNewLogsExporter(t *testing.T) {
+	// Create default config
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DefaultSeverity = "info"
+	cfg.SeverityAttribute = "severity"
+
+	// Dummy exporter settings
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	// Create the exporter
+	exp, err := newLogsExporter(context.Background(), cfg, set)
+
+	// Assertions
+	require.NoError(t, err, "expected no error creating exporter")
+	require.NotNil(t, exp, "exporter should not be nil")
 }
