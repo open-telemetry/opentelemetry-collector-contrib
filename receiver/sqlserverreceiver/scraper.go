@@ -966,7 +966,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.TopQueryCount),
+		sql.Named("top", s.config.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
