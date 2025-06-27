@@ -34,6 +34,7 @@ type processPair struct {
 }
 
 func newDNSLookupProcessor(config *Config, logger *zap.Logger) (*dnsLookupProcessor, error) {
+	// TODO: share the cache/chain resolver across signals for each component.ID
 	dnsResolver, err := createResolverChain(config, logger)
 	if err != nil {
 		return nil, err
