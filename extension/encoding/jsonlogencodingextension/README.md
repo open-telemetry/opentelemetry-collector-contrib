@@ -13,10 +13,10 @@
 
 ## Configuration
 
-| Name            | Description                                                                       | Default |
-|-----------------|-----------------------------------------------------------------------------------|---------|
-| mode            | What mode of the JSON encoding extension you want                                 | body    |
-| processing_mode | Format of JSON payloads processed by the extension. Select from `array` or `json` | array   |
+| Name       | Description                                                                           | Default |
+|------------|---------------------------------------------------------------------------------------|---------|
+| mode       | What mode of the JSON encoding extension you want                                     | body    |
+| array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean. | true    |
 
 ### Mode
 
@@ -51,15 +51,15 @@ The `body_with_inline_attributes` mode within the JSON encoding extension grabs 
 ]
 ```
 
-### processing_mode
+### array_mode
 
-Configuration allows to define the format of JSON payload this extension is expected to process.
+Configuration accepts a boolean.
 
-- `array` : This is the default mode to preserve backward compatibility. JSON input is expected as an array
+- `array_mode: true` : This is the default mode to preserve backward compatibility. JSON input is expected as an array
   
    > [{"key": "value"}, {"key": "value"}]
 
-- `json` : This mode supports a verity of JSON payload. This includes single document or even a concatenated JSON payload
+- `array_mode: false` : Disable legacy mode and allow to accept a verity of JSON payloads. This includes single document or even a concatenated JSON payload
 
   Single payload
   > {"key": "value"}

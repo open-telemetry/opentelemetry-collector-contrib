@@ -29,7 +29,7 @@ func createExtension(_ context.Context, _ extension.Settings, config component.C
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Mode:           JSONEncodingModeBody,
-		ProcessingMode: ArrayMode,
+		Mode:      JSONEncodingModeBody,
+		ArrayMode: true,
 	}
 }

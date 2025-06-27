@@ -22,29 +22,29 @@ func TestMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		decodingMode ProcessingMode
-		input        string
-		wantLogs     int
-		logsPath     string
+		name      string
+		arrayMode bool
+		input     string
+		wantLogs  int
+		logsPath  string
 	}{
 		{
-			name:         "Array mode - single log",
-			decodingMode: ArrayMode,
-			input:        `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}]`,
-			wantLogs:     1,
-			logsPath:     filepath.Join(testDataDir, "array_mode_single_log.yml"),
+			name:      "Array mode - single log",
+			arrayMode: true,
+			input:     `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}]`,
+			wantLogs:  1,
+			logsPath:  filepath.Join(testDataDir, "array_mode_single_log.yml"),
 		},
 		{
-			name:         "Array mode - multiple logs",
-			decodingMode: ArrayMode,
-			input:        `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}, {"key": "value"}]`,
-			wantLogs:     2,
-			logsPath:     filepath.Join(testDataDir, "array_mode_multi_log.yml"),
+			name:      "Array mode - multiple logs",
+			arrayMode: true,
+			input:     `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}, {"key": "value"}]`,
+			wantLogs:  2,
+			logsPath:  filepath.Join(testDataDir, "array_mode_multi_log.yml"),
 		},
 		{
-			name:         "JSON mode - single log pretty print",
-			decodingMode: JSONMode,
+			name:      "JSON mode - single log pretty print",
+			arrayMode: false,
 			input: `{
 					  "key-string": "value",
 					  "key-int": 123456789,
@@ -54,11 +54,11 @@ func TestMarshalUnmarshal(t *testing.T) {
 			logsPath: filepath.Join(testDataDir, "json_mode_single_log.yml"),
 		},
 		{
-			name:         "JSON mode - new line delimited logs",
-			decodingMode: JSONMode,
-			input:        "{\"key-string\": \"value\",\"key-int\": 123456789,\"key-boolean\": true}\n{\"key-string\": \"value\",\"key-int\": 987654321,\"key-boolean\": false}",
-			wantLogs:     2,
-			logsPath:     filepath.Join(testDataDir, "json_mode_ndjson_log.yml"),
+			name:      "JSON mode - new line delimited logs",
+			arrayMode: false,
+			input:     "{\"key-string\": \"value\",\"key-int\": 123456789,\"key-boolean\": true}\n{\"key-string\": \"value\",\"key-int\": 987654321,\"key-boolean\": false}",
+			wantLogs:  2,
+			logsPath:  filepath.Join(testDataDir, "json_mode_ndjson_log.yml"),
 		},
 	}
 
@@ -66,8 +66,8 @@ func TestMarshalUnmarshal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &jsonLogExtension{
 				config: &Config{
-					Mode:           JSONEncodingModeBody,
-					ProcessingMode: tt.decodingMode,
+					Mode:      JSONEncodingModeBody,
+					ArrayMode: tt.arrayMode,
 				},
 			}
 
@@ -83,12 +83,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotEmpty(t, buf)
 
-			if tt.decodingMode == ArrayMode {
+			if tt.arrayMode {
 				assert.JSONEq(t, tt.input, string(buf))
 				return
 			}
 
-			// special comparison for JSON. Compared in decoded format.
+			// special comparison for non array JSON. Compared in decoded format.
 			inputDocuments, err := todDecodedJSONDocuments(bytes.NewReader([]byte(tt.input)))
 			require.NoError(t, err)
 
@@ -116,7 +116,8 @@ func TestInvalidMarshal(t *testing.T) {
 func TestInvalidUnmarshal(t *testing.T) {
 	e := &jsonLogExtension{
 		config: &Config{
-			Mode: JSONEncodingModeBody,
+			Mode:      JSONEncodingModeBody,
+			ArrayMode: true,
 		},
 	}
 	_, err := e.UnmarshalLogs([]byte("NOT A JSON"))
@@ -126,7 +127,8 @@ func TestInvalidUnmarshal(t *testing.T) {
 func TestPrettyLogProcessor(t *testing.T) {
 	j := &jsonLogExtension{
 		config: &Config{
-			Mode: JSONEncodingModeBodyWithInlineAttributes,
+			Mode:      JSONEncodingModeBodyWithInlineAttributes,
+			ArrayMode: true,
 		},
 	}
 	lp, err := j.MarshalLogs(sampleLog())
