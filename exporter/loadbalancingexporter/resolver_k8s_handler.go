@@ -5,11 +5,13 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -27,6 +29,7 @@ type handler struct {
 	logger      *zap.Logger
 	telemetry   *metadata.TelemetryBuilder
 	returnNames bool
+	ports       []int32
 }
 
 func (h handler) OnAdd(obj any, _ bool) {
@@ -34,6 +37,14 @@ func (h handler) OnAdd(obj any, _ bool) {
 	var ok bool
 
 	switch object := obj.(type) {
+	case *discoveryv1.EndpointSlice:
+		ok, endpoints = convertEndpointSlices(object, h.ports)
+		if !ok {
+			h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", obj))
+			h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
+			return
+
+		}
 	case *corev1.Endpoints:
 		ok, endpoints = convertToEndpoints(h.returnNames, object)
 		if !ok {
@@ -152,5 +163,24 @@ func convertToEndpoints(retNames bool, eps ...*corev1.Endpoints) (bool, map[stri
 			}
 		}
 	}
+	return true, res
+}
+
+func convertEndpointSlices(slice *discoveryv1.EndpointSlice, ports []int32) (bool, map[string]bool) {
+	res := map[string]bool{}
+
+	for _, port := range slice.Ports {
+		if slices.Contains(ports, *port.Port) {
+			for _, ep := range slice.Endpoints {
+				for _, addr := range ep.Addresses {
+					// TODO: support FQDN and IPv6?
+					if slice.AddressType == discoveryv1.AddressTypeIPv4 {
+						res[addr] = true
+					}
+				}
+			}
+		}
+	}
+
 	return true, res
 }
