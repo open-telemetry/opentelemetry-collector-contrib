@@ -81,151 +81,143 @@ func setupContainer() (testcontainers.Container, error) {
 }
 
 func TestEventsScraper(t *testing.T) {
-	ci, err := setupContainer()
+	ci, initErr := setupContainer()
 
-	assert.NoError(t, err)
+	assert.NoError(t, initErr)
 
-	err = ci.Start(context.Background())
-	assert.NoError(t, err)
+	initErr = ci.Start(context.Background())
+	assert.NoError(t, initErr)
 	defer testcontainers.CleanupContainer(t, ci)
-	p, err := ci.MappedPort(context.Background(), "1433")
-	assert.NoError(t, err)
+	p, initErr := ci.MappedPort(context.Background(), "1433")
+	assert.NoError(t, initErr)
 
-	connStr := fmt.Sprintf("Server=localhost,%s;Database=mydb;User Id=myuser;Password=UserStrongPass1;", p.Port())
-	db, err := sql.Open("sqlserver", connStr)
-	assert.NoError(t, err)
+	cases := []struct {
+		name             string
+		clientQuery      string
+		configModifyFunc func(cfg *Config) *Config
+		validateFunc     func(t *testing.T, scraper *sqlServerScraperHelper, queryCount *atomic.Int32, finished *atomic.Bool)
+	}{
+		{
+			name:        "QuerySample",
+			clientQuery: "WAITFOR DELAY '00:00:20' SELECT * FROM dbo.test_table",
+			configModifyFunc: func(cfg *Config) *Config {
+				cfg.Events.DbServerQuerySample.Enabled = true
+				return cfg
+			},
 
-	queryContext, cancel := context.WithCancel(context.Background())
-	finished := atomic.Bool{}
-	finished.Store(false)
+			validateFunc: func(t *testing.T, scraper *sqlServerScraperHelper, queryCount *atomic.Int32, finished *atomic.Bool) {
+				assert.Eventually(t, func() bool {
+					return queryCount.Load() > 0
+				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
 
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				// Simulate a long-running query
-				_, queryErr := db.Query("WAITFOR DELAY '00:00:20' SELECT * FROM dbo.test_table")
-				if !finished.Load() {
-					// only check this condition if the test is not finished
-					assert.NoError(t, queryErr)
+				actualLog, err := scraper.ScrapeLogs(context.Background())
+				assert.NoError(t, err)
+				assert.NotNil(t, actualLog)
+				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+				assert.Equal(t, 2, logRecords.Len())
+				found := false
+				for i := 0; i < logRecords.Len(); i++ {
+					attributes := logRecords.At(i).Attributes().AsRaw()
+					if attributes["db.namespace"] == "master" {
+						continue
+					}
+					found = true
+					query := attributes["db.query.text"].(string)
+					// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
+					assert.True(t, strings.HasPrefix(query, "WAITFOR"))
 				}
-			}
-		}
-	}(queryContext)
+				assert.True(t, found)
+				finished.Store(true)
+			},
+		},
+		{
+			name:        "TopQuery",
+			clientQuery: "SELECT * FROM dbo.test_table",
+			configModifyFunc: func(cfg *Config) *Config {
+				cfg.Events.DbServerTopQuery.Enabled = true
+				return cfg
+			},
+			validateFunc: func(t *testing.T, scraper *sqlServerScraperHelper, queryCount *atomic.Int32, finished *atomic.Bool) {
+				assert.Eventually(t, func() bool {
+					return queryCount.Load() > 1
+				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
+				_, err := scraper.ScrapeLogs(context.Background())
+				currentQueriesCount := queryCount.Load()
+				assert.NoError(t, err)
+				assert.Eventually(t, func() bool {
+					return queryCount.Load() > currentQueriesCount*3
+				}, 10*time.Second, 100*time.Millisecond, "Query did not execute enough times")
+				actualLog, err := scraper.ScrapeLogs(context.Background())
+				assert.NotNil(t, actualLog)
+				assert.NoError(t, err)
+				found := false
+				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+				for i := 0; i < logRecords.Len(); i++ {
+					attributes := logRecords.At(i).Attributes().AsRaw()
 
-	defer func() {
-		db.Close()
-		cancel()
-	}()
-	portNumber, err := strconv.Atoi(p.Port())
-	assert.NoError(t, err)
-
-	cfg := basicConfig(uint(portNumber))
-	cfg.Events.DbServerQuerySample.Enabled = true
-	settings := receiver.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.Must(zap.NewProduction()),
+					query := attributes["db.query.text"].(string)
+					if query == "SELECT * FROM dbo.test_table" {
+						found = true
+					}
+				}
+				assert.True(t, found)
+				finished.Store(true)
+			},
 		},
 	}
-	scrapers := setupSQLServerLogsScrapers(settings, cfg)
-	assert.Len(t, scrapers, 1)
-	scraper := scrapers[0]
-	defer scraper.Shutdown(context.Background()) //nolint:errcheck
 
-	assert.NoError(t, scraper.Start(context.Background(), componenttest.NewNopHost()))
-	time.Sleep(5 * time.Second) // Wait for the query to execute
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// this connection is trying to simulate a client that is running queries against the SQL Server
+			connStr := fmt.Sprintf("Server=localhost,%s;Database=mydb;User Id=myuser;Password=UserStrongPass1;", p.Port())
+			db, err := sql.Open("sqlserver", connStr)
+			assert.NoError(t, err)
 
-	actualLog, err := scraper.ScrapeLogs(context.Background())
-	assert.NoError(t, err)
-	assert.NotNil(t, actualLog)
-	logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			queryContext, cancel := context.WithCancel(context.Background())
+			defer func() {
+				db.Close()
+				cancel()
+			}()
+			finished := atomic.Bool{}
+			queriesCount := atomic.Int32{}
+			queriesCount.Store(0)
+			finished.Store(false)
 
-	assert.Equal(t, 2, logRecords.Len())
-	found := false
-	for i := 0; i < logRecords.Len(); i++ {
-		attributes := logRecords.At(i).Attributes().AsRaw()
-		if attributes["db.namespace"] == "master" {
-			continue
-		}
-		found = true
-		query := attributes["db.query.text"].(string)
-		// as the query is not a standard query, only the `WITFOR` part can be returned from db.
-		assert.True(t, strings.HasPrefix(query, "WAITFOR"))
-	}
-	assert.True(t, found)
-	finished.Store(true)
-}
-
-func TestTopQueryScraper(t *testing.T) {
-	ci, err := setupContainer()
-
-	assert.NoError(t, err)
-
-	err = ci.Start(context.Background())
-	assert.NoError(t, err)
-	defer testcontainers.CleanupContainer(t, ci)
-	p, err := ci.MappedPort(context.Background(), "1433")
-	assert.NoError(t, err)
-
-	connStr := fmt.Sprintf("Server=localhost,%s;Database=mydb;User Id=myuser;Password=UserStrongPass1;", p.Port())
-	db, err := sql.Open("sqlserver", connStr)
-	assert.NoError(t, err)
-
-	queryContext, cancel := context.WithCancel(context.Background())
-	finished := atomic.Bool{}
-	finished.Store(false)
-
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				_, queryErr := db.Query("SELECT * FROM dbo.test_table")
-				if !finished.Load() {
-					assert.NoError(t, queryErr)
+			go func(ctx context.Context) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						queriesCount.Add(1)
+						// Simulate a long-running query
+						_, queryErr := db.Query(tc.clientQuery)
+						if !finished.Load() {
+							// only check this condition if the test is not finished
+							assert.NoError(t, queryErr)
+						}
+					}
 				}
+			}(queryContext)
+
+			portNumber, err := strconv.Atoi(p.Port())
+			assert.NoError(t, err)
+
+			cfg := basicConfig(uint(portNumber))
+			cfg = tc.configModifyFunc(cfg)
+			settings := receiver.Settings{
+				TelemetrySettings: component.TelemetrySettings{
+					Logger: zap.Must(zap.NewProduction()),
+				},
 			}
-		}
-	}(queryContext)
+			scrapers := setupSQLServerLogsScrapers(settings, cfg)
+			assert.Len(t, scrapers, 1)
+			scraper := scrapers[0]
+			assert.NoError(t, scraper.Start(context.Background(), componenttest.NewNopHost()))
+			defer scraper.Shutdown(context.Background()) //nolint:errcheck
 
-	defer func() {
-		db.Close()
-		cancel()
-	}()
-	portNumber, err := strconv.Atoi(p.Port())
-	assert.NoError(t, err)
-	cfg := basicConfig(uint(portNumber))
-	cfg.Events.DbServerTopQuery.Enabled = true
-	settings := receiver.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.Must(zap.NewProduction()),
-		},
+			tc.validateFunc(t, scraper, &queriesCount, &finished)
+		})
 	}
-	scrapers := setupSQLServerLogsScrapers(settings, cfg)
-	assert.Len(t, scrapers, 1)
-	scraper := scrapers[0]
-	defer scraper.Shutdown(context.Background()) //nolint:errcheck
-	assert.NoError(t, scraper.Start(context.Background(), componenttest.NewNopHost()))
-	time.Sleep(5 * time.Second)
-	_, err = scraper.ScrapeLogs(context.Background())
-	assert.NoError(t, err)
-	time.Sleep(5 * time.Second)
-	actualLog, err := scraper.ScrapeLogs(context.Background())
-	assert.NotNil(t, actualLog)
-	assert.NoError(t, err)
-	found := false
-	logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := 0; i < logRecords.Len(); i++ {
-		attributes := logRecords.At(i).Attributes().AsRaw()
-
-		query := attributes["db.query.text"].(string)
-		if query == "SELECT * FROM dbo.test_table" {
-			found = true
-		}
-	}
-	assert.True(t, found)
-	finished.Store(true)
 }

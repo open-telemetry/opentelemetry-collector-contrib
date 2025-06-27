@@ -3,21 +3,24 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-set -euo pipefail
+TIMEOUT=60
 
-# Wait for SQL Server to start up
-echo "Waiting for SQL Server to start..."
-sleep 20
-
-# Define credentials and parameters
 SQLCMD="/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U SA -P $MSSQL_SA_PASSWORD"
 
-# Create the database
-echo "Creating database 'mydb'..."
+
+for ((i=0; i<TIMEOUT; i++)); do
+    $SQLCMD -Q "SELECT 1" -b -l 1 >/dev/null 2>&1
+    if [[ $? -eq 0 ]]; then
+        break
+    fi
+    sleep 1
+done
+
+set -euo pipefail
+
+
 $SQLCMD -Q "IF DB_ID('mydb') IS NULL CREATE DATABASE mydb;"
 
-# Create login and user, grant access
-echo "Creating login, user, and granting access..."
 $SQLCMD -d mydb -Q "
 IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'myuser')
     BEGIN
@@ -31,8 +34,6 @@ IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'myuser')
 "
 
 
-# Create table and insert data
-echo "Creating table and inserting data..."
 $SQLCMD -d mydb -Q "
 IF OBJECT_ID('dbo.test_table', 'U') IS NULL
 BEGIN
@@ -44,7 +45,6 @@ END;
 INSERT INTO dbo.test_table (name) VALUES (N'Hello World'), (N'Test Entry');
 "
 
-echo "Creating otel collector user"
 $SQLCMD -Q "
 CREATE LOGIN otelcollectoruser WITH PASSWORD = 'otel-password123';
 CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
