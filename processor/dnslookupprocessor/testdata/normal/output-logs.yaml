@@ -1,0 +1,38 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: source.address
+          value:
+            stringValue: ninja.a.co
+        - key: source.ip
+          value:
+            arrayValue:
+              values:
+                - stringValue: 192.168.1.40
+                - stringValue: 192.168.1.50
+        - key: custom.ip
+          value:
+            stringValue: 192.168.1.50
+        - key: custom.address
+          value:
+            arrayValue:
+              values:
+                - stringValue: ninja.a.co
+                - stringValue: ninja.c.co
+        - key: ip
+          value:
+            stringValue: 1.2.2.1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: host.name
+                value:
+                  stringValue: HOST.ONE
+              - key: log.file.name
+                value:
+                  stringValue: one.log
+            body:
+              stringValue: hello one
+            spanId: ""
+            traceId: ""
+        scope: {}
