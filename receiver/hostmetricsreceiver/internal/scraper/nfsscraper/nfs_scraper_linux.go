@@ -18,7 +18,9 @@ const (
 )
 
 // from linux/fs/nfs/nfs3xdr.c:nfs3_procedures v6.12
+// note that this array starts at element 1, with a NULL at element 0
 var nfsV3Procedures = []string{
+	"NULL",
 	"GETATTR",
 	"SETATTR",
 	"LOOKUP",
@@ -44,7 +46,9 @@ var nfsV3Procedures = []string{
 
 // from linux/fs/nfs/nfs4xdr.c:nfs4_procedures v6.12
 // note that these are technically NFSv4 operations, part of a COMPOUND RPC procedure
+// note that this array starts at element 1, with a NULL at element 0
 var nfsV4Procedures = []string{
+	"NULL",
 	"READ",
 	"WRITE",
 	"COMMIT",
