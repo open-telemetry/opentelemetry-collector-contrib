@@ -295,7 +295,7 @@ The number of deadlocks.
 
 ### postgresql.function.calls
 
-The number of calls made to a function.
+The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

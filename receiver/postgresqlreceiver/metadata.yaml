@@ -496,7 +496,7 @@ metrics:
       aggregation_temporality: cumulative
   postgresql.function.calls:
     enabled: false
-    description: The number of calls made to a function.
+    description: The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
     unit: "{calls}"
     sum:
       value_type: int
