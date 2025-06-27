@@ -1,0 +1,14 @@
+type: enrichment
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [] # Add your GitHub username here
+
+tests:
+  config:
+    validate:
+      error: []

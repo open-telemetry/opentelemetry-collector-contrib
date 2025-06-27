@@ -1,0 +1,120 @@
+processors:
+  enrichment:
+    data_sources:
+      - name: "service_inventory"
+        type: "http"
+        http:
+          url: "https://api.example.com/services"
+          headers:
+            Authorization: "Bearer token123"
+            Content-Type: "application/json"
+          timeout: 30s
+          refresh_interval: 5m
+          json_path: "$.services"
+      
+      - name: "host_metadata"
+        type: "file"
+        file:
+          path: "/etc/collector/hosts.json"
+          format: "json"
+          refresh_interval: 1m
+      
+      - name: "asset_database"
+        type: "file"
+        file:
+          path: "/etc/collector/assets.csv"
+          format: "csv"
+          refresh_interval: 5m
+    
+    cache:
+      enabled: true
+      ttl: 5m
+      max_size: 1000
+    
+    enrichment_rules:
+      # Enrich database metrics with owner and environment information
+      - name: "enrich_database_metrics"
+        data_source: "service_inventory"
+        lookup_key: "service.name"
+        lookup_field: "service_name"
+        conditions:
+          - attribute: "service.type"
+            operator: "equals"
+            value: "database"
+        mappings:
+          - source_field: "owner_team"
+            target_attribute: "team.name"
+          - source_field: "owner_org"
+            target_attribute: "org.id"
+          - source_field: "environment"
+            target_attribute: "deployment.environment"
+          - source_field: "db_version"
+            target_attribute: "db.version"
+            transform: "lower"
+          - source_field: "location"
+            target_attribute: "geo.location"
+      
+      # Enrich message queue metrics
+      - name: "enrich_mq_metrics"
+        data_source: "service_inventory"
+        lookup_key: "mq.queue_name"
+        lookup_field: "queue_name"
+        conditions:
+          - attribute: "service.type"
+            operator: "equals"
+            value: "messagequeue"
+        mappings:
+          - source_field: "max_depth"
+            target_attribute: "mq.max_depth"
+          - source_field: "owner_org"
+            target_attribute: "org.id"
+          - source_field: "qmgr_name"
+            target_attribute: "mq.manager"
+          - source_field: "mq_type"
+            target_attribute: "mq.type"
+            transform: "upper"
+          - source_field: "environment"
+            target_attribute: "deployment.environment"
+      
+      # Enrich host metrics with system information
+      - name: "enrich_host_metrics"
+        data_source: "host_metadata"
+        lookup_key: "host.name"
+        lookup_field: "hostname"
+        mappings:
+          - source_field: "system_id"
+            target_attribute: "host.system_id"
+          - source_field: "location"
+            target_attribute: "geo.location"
+          - source_field: "environment"
+            target_attribute: "deployment.environment"
+          - source_field: "build_info"
+            target_attribute: "host.build"
+          - source_field: "os_version"
+            target_attribute: "os.version"
+          - source_field: "manufacturer"
+            target_attribute: "host.manufacturer"
+            transform: "upper"
+      
+      # Enrich application metrics with version and ownership
+      - name: "enrich_app_metrics"
+        data_source: "service_inventory"
+        lookup_key: "service.name"
+        lookup_field: "service_name"
+        conditions:
+          - attribute: "service.type"
+            operator: "not_equals"
+            value: "database"
+          - attribute: "service.type"
+            operator: "not_equals"
+            value: "messagequeue"
+        mappings:
+          - source_field: "version"
+            target_attribute: "service.version"
+          - source_field: "owner_team"
+            target_attribute: "team.name"
+          - source_field: "platform"
+            target_attribute: "service.platform"
+            transform: "lower"
+          - source_field: "environment"
+            target_attribute: "deployment.environment"
