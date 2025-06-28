@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fkafka) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_kafka&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -19,9 +20,15 @@ processors for higher throughput and resiliency. Message payload encoding is con
 
 ## Configuration settings
 
+> [!NOTE]
+> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> `exporter.kafkaexporter.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+
 There are no required settings.
 
 The following settings can be optionally configured:
+
 - `brokers` (default = localhost:9092): The list of kafka brokers.
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
@@ -29,12 +36,15 @@ The following settings can be optionally configured:
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `metrics`
   - `topic` (default = otlp\_metrics): The name of the Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for metrics. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `traces`
   - `topic` (default = otlp\_spans): The name of the Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
+  - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `topic` (Deprecated in v0.124.0: use `logs::topic`, `metrics::topic`, and `traces::topic`) If specified, this is used as the default topic, but will be overridden by signal-specific configuration. See [Destination Topic](#destination-topic) below for more details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details. 
 - `encoding` (Deprecated in v0.124.0: use `logs::encoding`, `metrics::encoding`, and `traces::encoding`) If specified, this is used as the default encoding, but will be overridden by signal-specific configuration. See [Supported encodings](#supported-encodings) below for more details.
@@ -50,10 +60,9 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
-    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
+    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
@@ -88,6 +97,22 @@ The following settings can be optionally configured:
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
   - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type
+  - `compression_params`
+    - `level` (default = -1) the compression level used when producing messages to kafka.
+    - The following are valid combinations of `compression` and `level`
+      - `gzip`
+        - BestSpeed: `1`
+        - BestCompression: `9`
+        - DefaultCompression: `-1`
+      - `zstd`
+        - SpeedFastest: `1`
+        - SpeedDefault: `3`
+        - SpeedBetterCompression: `6`
+        - SpeedBestCompression: `11`
+      - `lz4`
+        Only supports fast level
+      - `snappy`
+        No compression levels supported yet
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
 
 ### Supported encodings
@@ -122,6 +147,7 @@ exporters:
 
 The destination topic can be defined in a few different ways and takes priority in the following order:
 
-1. When `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
-2. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
-3. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic. If this is not explicitly configured, the `topic` configuration (deprecated in v0.124.0) is used as a fallback for all signals.
+1. When `<signal>.topic_from_metadata_key` is set to use a key from the request metadata, the value of this key is used as the signal specific topic.
+2. Otherwise, if `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
+3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
+4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic. If this is not explicitly configured, the `topic` configuration (deprecated in v0.124.0) is used as a fallback for all signals.

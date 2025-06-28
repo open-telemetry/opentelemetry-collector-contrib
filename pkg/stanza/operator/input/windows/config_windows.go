@@ -24,8 +24,12 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, err
 	}
 
-	if c.Channel == "" {
-		return nil, errors.New("missing required `channel` field")
+	if c.Channel == "" && c.Query == nil {
+		return nil, errors.New("either `channel` or `query` must be set")
+	}
+
+	if c.Channel != "" && c.Query != nil {
+		return nil, errors.New("either `channel` or `query` must be set, but not both")
 	}
 
 	if c.MaxReads < 1 {
@@ -42,16 +46,19 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 
 	input := &Input{
-		InputOperator:    inputOperator,
-		buffer:           NewBuffer(),
-		channel:          c.Channel,
-		maxReads:         c.MaxReads,
-		currentMaxReads:  c.MaxReads,
-		startAt:          c.StartAt,
-		pollInterval:     c.PollInterval,
-		raw:              c.Raw,
-		excludeProviders: excludeProvidersSet(c.ExcludeProviders),
-		remote:           c.Remote,
+		InputOperator:            inputOperator,
+		buffer:                   NewBuffer(),
+		channel:                  c.Channel,
+		ignoreChannelErrors:      c.IgnoreChannelErrors,
+		maxReads:                 c.MaxReads,
+		currentMaxReads:          c.MaxReads,
+		startAt:                  c.StartAt,
+		pollInterval:             c.PollInterval,
+		raw:                      c.Raw,
+		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
+		excludeProviders:         excludeProvidersSet(c.ExcludeProviders),
+		remote:                   c.Remote,
+		query:                    c.Query,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
 

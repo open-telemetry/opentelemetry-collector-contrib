@@ -57,15 +57,29 @@ resourceSpans:
     scopeSpans:
       - scope: {}
         spans:
-          - endTimeUnixNano: "1744837823000000000"
+          - endTimeUnixNano: "1744837825000000000"
             kind: 2
             name: test (1.23)
             parentSpanId: aba151af7cfbcf0f
             spanId: e68a36b3514c8634
-            startTimeUnixNano: "1744837742000000000"
+            startTimeUnixNano: "1744837738000000000"
             status:
               code: 1
               message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.run.queue.duration
+                value:
+                  doubleValue: 5e+09
+            endTimeUnixNano: "1744837743000000000"
+            kind: 2
+            name: queue-test (1.23)
+            parentSpanId: e68a36b3514c8634
+            spanId: d328504edfc4f5dc
+            startTimeUnixNano: "1744837738000000000"
+            status: {}
             traceId: 731ec8a47fd7450f753a812a4a8aa5a0
       - scope: {}
         spans:
@@ -79,7 +93,7 @@ resourceSpans:
             endTimeUnixNano: "1744837744000000000"
             kind: 2
             name: Set up job
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: 103b52e85d34ae1c
             startTimeUnixNano: "1744837742000000000"
             status:
@@ -98,7 +112,7 @@ resourceSpans:
             endTimeUnixNano: "1744837745000000000"
             kind: 2
             name: Run actions/checkout@v4
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: b0a2cdd89199b9a5
             startTimeUnixNano: "1744837744000000000"
             status:
@@ -117,7 +131,7 @@ resourceSpans:
             endTimeUnixNano: "1744837745000000000"
             kind: 2
             name: Set up Go
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: c04460ffd6bf3917
             startTimeUnixNano: "1744837745000000000"
             status:
@@ -136,7 +150,7 @@ resourceSpans:
             endTimeUnixNano: "1744837820000000000"
             kind: 2
             name: Make test-all
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: 1684627ec86a096c
             startTimeUnixNano: "1744837746000000000"
             status:
@@ -155,7 +169,7 @@ resourceSpans:
             endTimeUnixNano: "1744837823000000000"
             kind: 2
             name: Upload coverage to Codecov
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: 25aeeca484f9f7e5
             startTimeUnixNano: "1744837820000000000"
             status:
@@ -174,7 +188,7 @@ resourceSpans:
             endTimeUnixNano: "1744837823000000000"
             kind: 2
             name: Post Set up Go
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: 0715a13bb338e46e
             startTimeUnixNano: "1744837823000000000"
             status:
@@ -193,7 +207,7 @@ resourceSpans:
             endTimeUnixNano: "1744837825000000000"
             kind: 2
             name: Post Run actions/checkout@v4
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: e231dce10420723b
             startTimeUnixNano: "1744837825000000000"
             status:
@@ -212,7 +226,7 @@ resourceSpans:
             endTimeUnixNano: "1744837823000000000"
             kind: 2
             name: Complete job
-            parentSpanId: e68a36b3514c8634
+            parentSpanId: d328504edfc4f5dc
             spanId: bb94c07ba3717632
             startTimeUnixNano: "1744837823000000000"
             status:

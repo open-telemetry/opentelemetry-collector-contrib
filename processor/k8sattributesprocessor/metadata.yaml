@@ -111,6 +111,22 @@ resource_attributes:
     description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  service.namespace:
+    description: The namespace of the service.
+    type: string
+    enabled: false
+  service.name:
+    description: The name of the service.
+    type: string
+    enabled: false
+  service.version:
+    description: The version of the service.
+    type: string
+    enabled: false
+  service.instance.id:
+    description: The instance ID of the service.
+    type: string
+    enabled: false
 
 tests:
   config:
@@ -192,6 +208,27 @@ telemetry:
     otelsvc_k8s_node_deleted:
       enabled: true
       description: Number of node delete events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_deployment_updated:
+      enabled: false
+      description: Number of deployment update events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_deployment_added:
+      enabled: false
+      description: Number of deployment add events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_deployment_deleted:
+      enabled: false
+      description: Number of deployment delete events received
       unit: "1"
       sum:
         value_type: int

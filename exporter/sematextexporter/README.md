@@ -5,6 +5,7 @@
 | Stability     | [development]: metrics, logs   |
 | Distributions | [] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsematext%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsematext) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsematext%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsematext) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_sematext)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_sematext&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@AkhigbeEromo](https://www.github.com/AkhigbeEromo) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -31,6 +32,7 @@ The following configuration options are supported:
 * `metrics.app_token` specifies the token of the Sematext Monitoring App to which metrics data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `2046e37c-4fac-45f6-831d-922d43fde759`.
 * `metrics.payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
 * `metrics.payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
+* `logs.app_token` specifies the token of the Sematext Logs App to which logs data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `6272eba4-b878-4606-aaef-6b11b9fa5810`.
 
 The full list of settings exposed for this exporter are documented in [config.go](config.go).
 
@@ -51,4 +53,6 @@ metrics:
   app_token: 2064e37c-4fac-45f6-831d-922d43fde759
   payload_max_lines: 100
   payload_max_bytes: 1000
+logs:
+  app_token: 6272eba4-b878-4606-aaef-6b11b9fa5810
 ```

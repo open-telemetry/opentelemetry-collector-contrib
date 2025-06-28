@@ -26,7 +26,7 @@ func TestWriteMetrics(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.yaml")
-	require.NoError(t, writeMetrics(actualFile, metrics))
+	require.NoError(t, WriteMetricsToFile(actualFile, metrics))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestWriteMetrics_SkipTimestampNormalization(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.yaml")
-	require.NoError(t, writeMetrics(actualFile, metrics, SkipMetricTimestampNormalization()))
+	require.NoError(t, WriteMetricsToFile(actualFile, metrics, SkipMetricTimestampNormalization()))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -83,7 +83,7 @@ func TestRoundTrip(t *testing.T) {
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.yaml")
-	require.NoError(t, writeMetrics(tempDir, expectedMetrics))
+	require.NoError(t, WriteMetricsToFile(tempDir, expectedMetrics))
 
 	actualMetrics, err := ReadMetrics(tempDir)
 	require.NoError(t, err)
@@ -186,7 +186,7 @@ func TestWriteLogs(t *testing.T) {
 	logs := CreateTestLogs()
 
 	actualFile := filepath.Join(t.TempDir(), "logs.yaml")
-	require.NoError(t, writeLogs(actualFile, logs))
+	require.NoError(t, WriteLogsToFile(actualFile, logs))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -207,7 +207,7 @@ func TestLogsRoundTrip(t *testing.T) {
 	expectedLogs := CreateTestLogs()
 
 	tempDir := filepath.Join(t.TempDir(), "logs.yaml")
-	require.NoError(t, writeLogs(tempDir, expectedLogs))
+	require.NoError(t, WriteLogsToFile(tempDir, expectedLogs))
 
 	actualLogs, err := ReadLogs(tempDir)
 	require.NoError(t, err)
@@ -251,7 +251,7 @@ func TestWriteTraces(t *testing.T) {
 	traces := CreateTestTraces()
 
 	actualFile := filepath.Join("./testdata/traces-roundtrip", "traces.yaml")
-	require.NoError(t, writeTraces(actualFile, traces))
+	require.NoError(t, WriteTracesToFile(actualFile, traces))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -338,7 +338,7 @@ func TestWriteProfiles(t *testing.T) {
 	profiles := CreateTestProfiles()
 
 	actualFile := filepath.Join(t.TempDir(), "profiles.yaml")
-	require.NoError(t, writeProfiles(actualFile, profiles))
+	require.NoError(t, WriteProfilesToFile(actualFile, profiles))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -359,7 +359,7 @@ func TestProfilesRoundTrip(t *testing.T) {
 	expectedProfiles := CreateTestProfiles()
 
 	tempDir := filepath.Join(t.TempDir(), "profiles.yaml")
-	require.NoError(t, writeProfiles(tempDir, expectedProfiles))
+	require.NoError(t, WriteProfilesToFile(tempDir, expectedProfiles))
 
 	actualProfiles, err := ReadProfiles(tempDir)
 	require.NoError(t, err)
@@ -368,11 +368,12 @@ func TestProfilesRoundTrip(t *testing.T) {
 
 func CreateTestProfiles() pprofile.Profiles {
 	profiles := pprofile.NewProfiles()
+	dic := profiles.ProfilesDictionary()
 	resource := profiles.ResourceProfiles().AppendEmpty()
 	scope := resource.ScopeProfiles().AppendEmpty()
 	profile := scope.Profiles().AppendEmpty()
 
-	profile.StringTable().Append("samples", "count", "cpu", "nanoseconds")
+	dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
 	st := profile.SampleType().AppendEmpty()
 	st.SetTypeStrindex(0)
 	st.SetUnitStrindex(1)
@@ -380,13 +381,13 @@ func CreateTestProfiles() pprofile.Profiles {
 	pt.SetTypeStrindex(2)
 	pt.SetUnitStrindex(3)
 
-	a := profile.AttributeTable().AppendEmpty()
+	a := dic.AttributeTable().AppendEmpty()
 	a.SetKey("process.executable.build_id.htlhash")
 	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
-	a = profile.AttributeTable().AppendEmpty()
+	a = dic.AttributeTable().AppendEmpty()
 	a.SetKey("profile.frame.type")
 	a.Value().SetStr("native")
-	a = profile.AttributeTable().AppendEmpty()
+	a = dic.AttributeTable().AppendEmpty()
 	a.SetKey("host.id")
 	a.Value().SetStr("localhost")
 
@@ -396,10 +397,10 @@ func CreateTestProfiles() pprofile.Profiles {
 	sample.TimestampsUnixNano().Append(0)
 	sample.SetLocationsLength(1)
 
-	m := profile.MappingTable().AppendEmpty()
+	m := dic.MappingTable().AppendEmpty()
 	m.AttributeIndices().Append(0)
 
-	l := profile.LocationTable().AppendEmpty()
+	l := dic.LocationTable().AppendEmpty()
 	l.SetMappingIndex(0)
 	l.SetAddress(111)
 	l.AttributeIndices().Append(1)

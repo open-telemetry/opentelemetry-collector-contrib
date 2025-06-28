@@ -187,7 +187,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "willfail",
 					},
@@ -692,7 +692,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	cfg.GRPC.Auth = &configauth.Authentication{
+	cfg.GRPC.Auth = &configauth.Config{
 		AuthenticatorID: authID,
 	}
 	id := component.NewID(componentmetadata.Type)

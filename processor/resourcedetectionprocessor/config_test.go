@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	openshiftConfig.OpenShiftConfig = openshift.Config{
 		Address: "127.0.0.1:4444",
 		Token:   "some_token",
-		TLSSettings: configtls.ClientConfig{
+		TLSs: configtls.ClientConfig{
 			Insecure: true,
 		},
 		ResourceAttributes: openshift.CreateDefaultConfig().ResourceAttributes,

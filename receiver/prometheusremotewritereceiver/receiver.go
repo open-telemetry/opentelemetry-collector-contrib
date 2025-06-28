@@ -14,6 +14,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
+	lru "github.com/hashicorp/golang-lru/v2"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -24,12 +25,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
+	}
+
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -37,6 +44,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
+		rmCache: cache,
 	}, nil
 }
 
@@ -47,12 +55,15 @@ type prometheusRemoteWriteReceiver struct {
 	config *Config
 	server *http.Server
 	wg     sync.WaitGroup
+
+	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
+	obsrecv *receiverhelper.ObsReport
 }
 
-// MetricIdentity contains all the components that uniquely identify a metric
+// metricIdentity contains all the components that uniquely identify a metric
 // according to the OpenTelemetry Protocol data model.
 // The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
-type MetricIdentity struct {
+type metricIdentity struct {
 	ResourceID   string
 	ScopeName    string
 	ScopeVersion string
@@ -61,9 +72,9 @@ type MetricIdentity struct {
 	Type         writev2.Metadata_MetricType
 }
 
-// createMetricIdentity creates a MetricIdentity struct from the required components
-func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) MetricIdentity {
-	return MetricIdentity{
+// createMetricIdentity creates a metricIdentity struct from the required components
+func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) metricIdentity {
+	return metricIdentity{
 		ResourceID:   resourceID,
 		ScopeName:    scopeName,
 		ScopeVersion: scopeVersion,
@@ -74,7 +85,7 @@ func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit 
 }
 
 // Hash generates a unique hash for the metric identity
-func (mi MetricIdentity) Hash() uint64 {
+func (mi metricIdentity) Hash() uint64 {
 	const separator = "\xff"
 
 	combined := strings.Join([]string{
@@ -93,6 +104,14 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
 	var err error
+	prw.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             prw.settings.ID,
+		ReceiverCreateSettings: prw.settings,
+		Transport:              "http",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create obsreport: %w", err)
+	}
 
 	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux)
 	if err != nil {
@@ -163,7 +182,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	_, stats, err := prw.translateV2(req.Context(), &prw2Req)
+	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
 	stats.SetHeaders(w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
@@ -171,6 +190,13 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+	if err != nil {
+		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+	}
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -205,19 +231,17 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-//
-//nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
 		otelMetrics      = pmetric.NewMetrics()
 		labelsBuilder    = labels.NewScratchBuilder(0)
-		stats            = promremote.WriteResponseStats{}
-		// Prometheus Remote-Write can send multiple time series with the same labels in the same request.
-		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
-		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
-		// between requests based on the metric "target_info".
-		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+		// More about stats: https://github.com/prometheus/docs/blob/main/docs/specs/prw/remote_write_spec_2_0.md#required-written-response-headers
+		// TODO: add histograms and exemplars to the stats. Histograms can be added after this PR be merged. Ref #39864
+		// Exemplars should be implemented to add them to the stats.
+		stats = promremote.WriteResponseStats{
+			Confirmed: true,
+		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
@@ -232,16 +256,41 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
+		// If the metric name is equal to target_info, we use its labels as attributes of the resource
+		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
+		if ls.Get(labels.MetricName) == "target_info" {
+			var rm pmetric.ResourceMetrics
+			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+
+			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+				rm = existingRM
+			} else {
+				rm = otelMetrics.ResourceMetrics().AppendEmpty()
+			}
+
+			attrs := rm.Resource().Attributes()
+			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
+
+			// Add the remaining labels as resource attributes
+			for _, l := range ls {
+				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
+					attrs.PutStr(l.Name, l.Value)
+				}
+			}
+			prw.rmCache.Add(hashedLabels, rm)
+			continue
+		}
+
+		// For metrics other than target_info, we need to follow the standard process of creating a metric.
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		intraCacheEntry, ok := intraRequestCache[hashedLabels]
+		existingRM, ok := prw.rmCache.Get(hashedLabels)
 		if ok {
-			// We found the same time series in the same request, so we should append to the same OTLP metric.
-			rm = intraCacheEntry
+			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			intraRequestCache[hashedLabels] = rm
+			prw.rmCache.Add(hashedLabels, rm)
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
@@ -304,7 +353,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-				metric.SetEmptyHistogram()
+				// Histograms that comes with samples are considered as classic histograms and are not supported.
+				if len(ts.Samples) == 0 {
+					hist := metric.SetEmptyExponentialHistogram()
+					hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				metric.SetEmptySummary()
 			}
@@ -321,11 +374,14 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
+			// Histograms that comes with samples are considered as classic histograms and are not supported.
+			if len(ts.Samples) == 0 {
+				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts, &stats)
+			}
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
@@ -354,7 +410,7 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 }
 
 // addNumberDatapoints adds the labels to the datapoints attributes.
-func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
@@ -364,23 +420,183 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 		dp.SetDoubleValue(sample.Value)
 
 		attributes := dp.Attributes()
-		for _, l := range ls {
-			if l.Name == "instance" || l.Name == "job" || // Become resource attributes
-				l.Name == labels.MetricName || // Becomes metric name
-				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
-				continue
-			}
-			attributes.PutStr(l.Name, l.Value)
-		}
+		extractAttributes(ls).CopyTo(attributes)
 	}
+	stats.Samples += len(ts.Samples)
 }
 
 func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
+	for _, histogram := range ts.Histograms {
+		// Drop histograms with RESET_HINT_GAUGE or negative counts.
+		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE || hasNegativeCounts(histogram) {
+			continue
+		}
+
+		// If we reach here, the histogram passed validation - proceed with conversion
+		dp := datapoints.AppendEmpty()
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
+		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
+
+		// The difference between float and integer histograms is that float histograms are stored as absolute counts
+		// while integer histograms are stored as deltas.
+		if histogram.IsFloatHistogram() {
+			// Float histograms
+			if len(histogram.PositiveSpans) > 0 {
+				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
+			}
+			if len(histogram.NegativeSpans) > 0 {
+				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
+			}
+
+			dp.SetScale(histogram.Schema)
+			dp.SetZeroThreshold(histogram.ZeroThreshold)
+			zeroCountFloat := histogram.GetZeroCountFloat()
+			dp.SetZeroCount(uint64(zeroCountFloat))
+			dp.SetSum(histogram.Sum)
+			countFloat := histogram.GetCountFloat()
+			dp.SetCount(uint64(countFloat))
+		} else {
+			// Integer histograms
+			if len(histogram.PositiveSpans) > 0 {
+				dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts())
+			}
+			if len(histogram.NegativeSpans) > 0 {
+				dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts())
+			}
+
+			dp.SetScale(histogram.Schema)
+			dp.SetZeroThreshold(histogram.ZeroThreshold)
+			zeroCountInt := histogram.GetZeroCountInt()
+			dp.SetZeroCount(zeroCountInt)
+			dp.SetSum(histogram.Sum)
+			countInt := histogram.GetCountInt()
+			dp.SetCount(countInt)
+		}
+
+		attributes := dp.Attributes()
+		stats.Histograms++
+		extractAttributes(ls).CopyTo(attributes)
+	}
+}
+
+// hasNegativeCounts checks if a histogram has any negative counts
+func hasNegativeCounts(histogram writev2.Histogram) bool {
+	if histogram.IsFloatHistogram() {
+		// Check overall count
+		if histogram.GetCountFloat() < 0 {
+			return true
+		}
+
+		// Check zero count
+		if histogram.GetZeroCountFloat() < 0 {
+			return true
+		}
+
+		// Check positive bucket counts
+		for _, count := range histogram.PositiveCounts {
+			if count < 0 {
+				return true
+			}
+		}
+
+		// Check negative bucket counts
+		for _, count := range histogram.NegativeCounts {
+			if count < 0 {
+				return true
+			}
+		}
+	} else {
+		// Integer histograms
+		var absolute int64
+		for _, delta := range histogram.NegativeDeltas {
+			absolute += delta
+			if absolute < 0 {
+				return true
+			}
+		}
+
+		absolute = 0
+		for _, delta := range histogram.PositiveDeltas {
+			absolute += delta
+			if absolute < 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
+// For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
+	// The total capacity is the sum of the deltas and the offsets of the spans.
+	totalCapacity := len(deltas)
+	for _, span := range spans {
+		totalCapacity += int(span.Offset)
+	}
+	buckets.EnsureCapacity(totalCapacity)
+
+	bucketIdx := 0
+	bucketCount := int64(0)
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			bucketCount += deltas[bucketIdx]
+			bucketIdx++
+			buckets.Append(uint64(bucketCount))
+		}
+	}
+}
+
+// convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
+// For float buckets, the values are absolute counts, and must be 0 or positive.
+func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
+	// The total capacity is the sum of the counts and the offsets of the spans.
+	totalCapacity := len(counts)
+	for _, span := range spans {
+		totalCapacity += int(span.Offset)
+	}
+	buckets.EnsureCapacity(totalCapacity)
+
+	bucketIdx := 0
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			buckets.Append(uint64(counts[bucketIdx]))
+			bucketIdx++
+		}
+	}
+}
+
+// extractAttributes return all attributes different from job, instance, metric name and scope name/version
+func extractAttributes(ls labels.Labels) pcommon.Map {
+	attrs := pcommon.NewMap()
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" || // Become resource attributes
+			l.Name == labels.MetricName || // Becomes metric name
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+			continue
+		}
+		attrs.PutStr(l.Name, l.Value)
+	}
+	return attrs
 }
 
 // extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,

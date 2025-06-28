@@ -14,10 +14,11 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 )
@@ -104,6 +105,12 @@ func TestNilBatch(t *testing.T) {
 	m.assertBatchesLen(1)
 }
 
+func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key string, expected string) {
+	v, ok := attr.Get(key)
+	require.True(t, ok)
+	require.Equal(t, expected, v.AsString())
+}
+
 func TestBasicTranslation(t *testing.T) {
 	tests := []struct {
 		name                          string
@@ -134,8 +141,8 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:     ptrace.SpanKindServer,
 							Attributes: map[string]any{
-								"operation.name":                "test-operation",
-								semconv.AttributeHTTPStatusCode: 200,
+								"operation.name":                  "test-operation",
+								string(semconv.HTTPStatusCodeKey): 200,
 							},
 						},
 					},
@@ -143,35 +150,27 @@ func TestBasicTranslation(t *testing.T) {
 			},
 			fn: func(out *ptrace.Traces) {
 				rs := out.ResourceSpans().At(0)
-				res := rs.Resource()
-				span := rs.ScopeSpans().At(0).Spans().At(0)
-				ddservice, _ := span.Attributes().Get("datadog.service")
-				require.Equal(t, "test-service", ddservice.AsString())
-				ddname, _ := span.Attributes().Get("datadog.name")
-				require.Equal(t, "test-operation", ddname.AsString())
-				ddresource, _ := span.Attributes().Get("datadog.resource")
-				require.Equal(t, "test-resource", ddresource.AsString())
-				ddType, _ := span.Attributes().Get("datadog.type")
-				require.Equal(t, "web", ddType.AsString())
-				ddSpanKind, _ := span.Attributes().Get("datadog.span.kind")
-				require.Equal(t, "server", ddSpanKind.AsString())
-				env, _ := span.Attributes().Get("datadog.env")
-				require.Equal(t, "spanenv2", env.AsString())
-				version, _ := span.Attributes().Get("datadog.version")
-				require.Equal(t, "v2", version.AsString())
-				statusCode, _ := span.Attributes().Get("datadog.http_status_code")
-				require.Equal(t, "200", statusCode.AsString())
-				ddError, _ := span.Attributes().Get("datadog.error")
-				require.Equal(t, int64(0), ddError.Int())
-				_, ok := span.Attributes().Get("datadog.error.msg")
-				require.False(t, ok)
-				_, ok = span.Attributes().Get("datadog.error.type")
-				require.False(t, ok)
-				_, ok = span.Attributes().Get("datadog.error.stack")
-				require.False(t, ok)
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "test-service")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "spanenv2")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "v2")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "test-host-name")
 
-				ddHost, _ := res.Attributes().Get("datadog.host.name")
-				require.Equal(t, "test-host-name", ddHost.AsString())
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.name", "test-operation")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "test-resource")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "web")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "server")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "200")
+				ddError, _ := sattr.Get("datadog.error")
+				require.Equal(t, int64(0), ddError.Int())
+				_, ok := sattr.Get("datadog.error.msg")
+				require.False(t, ok)
+				_, ok = sattr.Get("datadog.error.type")
+				require.False(t, ok)
+				_, ok = sattr.Get("datadog.error.stack")
+				require.False(t, ok)
 			},
 		},
 		{
@@ -186,7 +185,9 @@ func TestBasicTranslation(t *testing.T) {
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
 						"host.name":                   "overridden-host-name",
-						"datadog.host.name":           "",
+						"datadog.host.name":           "specified-host-name",
+						"datadog.version":             "specified-version",
+						"service.version":             "overridden-version",
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
@@ -195,9 +196,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										semconv.AttributeExceptionMessage:    "overridden-msg",
-										semconv.AttributeExceptionType:       "overridden-type",
-										semconv.AttributeExceptionStacktrace: "overridden-stack",
+										string(semconv.ExceptionMessageKey):    "overridden-msg",
+										string(semconv.ExceptionTypeKey):       "overridden-type",
+										string(semconv.ExceptionStacktraceKey): "overridden-stack",
 									},
 									Dropped: 4,
 								},
@@ -209,21 +210,20 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:       ptrace.SpanKindServer,
 							Attributes: map[string]any{
-								"datadog.service":               "specified-service",
-								"datadog.resource":              "specified-resource",
-								"datadog.name":                  "specified-operation",
-								"datadog.type":                  "specified-type",
-								"datadog.host.name":             "specified-hostname",
-								"datadog.span.kind":             "specified-span-kind",
-								"datadog.env":                   "specified-env",
-								"datadog.version":               "specified-version",
-								"datadog.http_status_code":      "500",
-								"datadog.error":                 1,
-								"datadog.error.msg":             "specified-error-msg",
-								"datadog.error.type":            "specified-error-type",
-								"datadog.error.stack":           "specified-error-stack",
-								"operation.name":                "test-operation",
-								semconv.AttributeHTTPStatusCode: 200,
+								"datadog.service":                 "specified-service",
+								"datadog.resource":                "specified-resource",
+								"datadog.name":                    "specified-operation",
+								"datadog.type":                    "specified-type",
+								"datadog.host.name":               "specified-hostname",
+								"datadog.span.kind":               "specified-span-kind",
+								"datadog.env":                     "specified-env",
+								"datadog.http_status_code":        "500",
+								"datadog.error":                   1,
+								"datadog.error.msg":               "specified-error-msg",
+								"datadog.error.type":              "specified-error-type",
+								"datadog.error.stack":             "specified-error-stack",
+								"operation.name":                  "test-operation",
+								string(semconv.HTTPStatusCodeKey): 200,
 							},
 						},
 					},
@@ -231,30 +231,102 @@ func TestBasicTranslation(t *testing.T) {
 			},
 			fn: func(out *ptrace.Traces) {
 				rs := out.ResourceSpans().At(0)
-				span := rs.ScopeSpans().At(0).Spans().At(0)
-				ddservice, _ := span.Attributes().Get("datadog.service")
-				require.Equal(t, "test-service", ddservice.AsString())
-				ddname, _ := span.Attributes().Get("datadog.name")
-				require.Equal(t, "test-operation", ddname.AsString())
-				ddresource, _ := span.Attributes().Get("datadog.resource")
-				require.Equal(t, "test-resource", ddresource.AsString())
-				ddType, _ := span.Attributes().Get("datadog.type")
-				require.Equal(t, "web", ddType.AsString())
-				env, _ := span.Attributes().Get("datadog.env")
-				require.Equal(t, "spanenv2", env.AsString())
-				statusCode, _ := span.Attributes().Get("datadog.http_status_code")
-				require.Equal(t, "200", statusCode.AsString())
-				ddError, _ := span.Attributes().Get("datadog.error")
-				require.Equal(t, int64(1), ddError.Int())
-				ddErrorMsg, _ := span.Attributes().Get("datadog.error.msg")
-				require.Equal(t, "overridden-msg", ddErrorMsg.AsString())
-				ddErrorType, _ := span.Attributes().Get("datadog.error.type")
-				require.Equal(t, "overridden-type", ddErrorType.AsString())
-				ddErrorStack, _ := span.Attributes().Get("datadog.error.stack")
-				require.Equal(t, "overridden-stack", ddErrorStack.AsString())
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "test-service")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "spanenv2")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "overridden-version")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "overridden-host-name")
 
-				ddHost, _ := rs.Resource().Attributes().Get("datadog.host.name")
-				require.Equal(t, "overridden-host-name", ddHost.AsString())
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.name", "test-operation")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "test-resource")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "web")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "server")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "200")
+				ddError, _ := sattr.Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.msg", "overridden-msg")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.type", "overridden-type")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "overridden-stack")
+			},
+		},
+		{
+			name:                          "overrideIncomingDatadogFields even if override would be empty",
+			overrideIncomingDatadogFields: true,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "",
+						"resource.name":               "",
+						"deployment.environment.name": "",
+						"host.name":                   "",
+						"service.version":             "",
+						"datadog.env":                 "specified-host-name",
+						"datadog.host.name":           "specified-host-name",
+						"datadog.version":             "specified-version",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							Events: []testutil.OTLPSpanEvent{
+								{
+									Timestamp: 66,
+									Name:      "exception",
+									Attributes: map[string]any{
+										string(semconv.ExceptionMessageKey):    "",
+										string(semconv.ExceptionTypeKey):       "",
+										string(semconv.ExceptionStacktraceKey): "",
+									},
+									Dropped: 4,
+								},
+							},
+							StatusCode: ptrace.StatusCodeError,
+							StatusMsg:  "overridden-error-msg",
+							TraceID:    [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:       ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"datadog.service":                 "specified-service",
+								"datadog.resource":                "specified-resource",
+								"datadog.name":                    "specified-operation",
+								"datadog.type":                    "specified-type",
+								"datadog.host.name":               "specified-hostname",
+								"datadog.span.kind":               "specified-span-kind",
+								"datadog.env":                     "specified-env",
+								"datadog.http_status_code":        "500",
+								"datadog.error":                   1,
+								"datadog.error.msg":               "specified-error-msg",
+								"datadog.error.type":              "specified-error-type",
+								"datadog.error.stack":             "specified-error-stack",
+								string(semconv.HTTPStatusCodeKey): 200,
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "otlpresourcenoservicename")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "default")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "")
+
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.name", "server.request")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "web")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "server")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "200")
+				ddError, _ := sattr.Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.msg", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.type", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "")
 			},
 		},
 		{
@@ -265,6 +337,9 @@ func TestBasicTranslation(t *testing.T) {
 					LibName:    "libname",
 					LibVersion: "1.2",
 					Attributes: map[string]any{
+						"datadog.service":             "specified-service",
+						"datadog.env":                 "specified-env",
+						"datadog.version":             "specified-version",
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
@@ -278,9 +353,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										semconv.AttributeExceptionMessage:    "overridden-msg",
-										semconv.AttributeExceptionType:       "overridden-type",
-										semconv.AttributeExceptionStacktrace: "overridden-stack",
+										string(semconv.ExceptionMessageKey):    "overridden-msg",
+										string(semconv.ExceptionTypeKey):       "overridden-type",
+										string(semconv.ExceptionStacktraceKey): "overridden-stack",
 									},
 									Dropped: 4,
 								},
@@ -292,20 +367,17 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:       ptrace.SpanKindServer,
 							Attributes: map[string]any{
-								"datadog.service":               "specified-service",
-								"datadog.resource":              "specified-resource",
-								"datadog.name":                  "specified-operation",
-								"datadog.type":                  "specified-type",
-								"datadog.span.kind":             "specified-span-kind",
-								"datadog.env":                   "specified-env",
-								"datadog.version":               "specified-version",
-								"datadog.http_status_code":      "500",
-								"datadog.error":                 1,
-								"datadog.error.msg":             "specified-error-msg",
-								"datadog.error.type":            "specified-error-type",
-								"datadog.error.stack":           "specified-error-stack",
-								"operation.name":                "test-operation",
-								semconv.AttributeHTTPStatusCode: 200,
+								"datadog.resource":                "specified-resource",
+								"datadog.name":                    "specified-operation",
+								"datadog.type":                    "specified-type",
+								"datadog.span.kind":               "specified-span-kind",
+								"datadog.http_status_code":        "500",
+								"datadog.error":                   1,
+								"datadog.error.msg":               "specified-error-msg",
+								"datadog.error.type":              "specified-error-type",
+								"datadog.error.stack":             "specified-error-stack",
+								"operation.name":                  "test-operation",
+								string(semconv.HTTPStatusCodeKey): 200,
 							},
 						},
 					},
@@ -313,30 +385,24 @@ func TestBasicTranslation(t *testing.T) {
 			},
 			fn: func(out *ptrace.Traces) {
 				rs := out.ResourceSpans().At(0)
-				span := rs.ScopeSpans().At(0).Spans().At(0)
-				ddservice, _ := span.Attributes().Get("datadog.service")
-				require.Equal(t, "specified-service", ddservice.AsString())
-				ddname, _ := span.Attributes().Get("datadog.name")
-				require.Equal(t, "specified-operation", ddname.AsString())
-				ddresource, _ := span.Attributes().Get("datadog.resource")
-				require.Equal(t, "specified-resource", ddresource.AsString())
-				ddType, _ := span.Attributes().Get("datadog.type")
-				require.Equal(t, "specified-type", ddType.AsString())
-				env, _ := span.Attributes().Get("datadog.env")
-				require.Equal(t, "specified-env", env.AsString())
-				statusCode, _ := span.Attributes().Get("datadog.http_status_code")
-				require.Equal(t, "500", statusCode.AsString())
-				ddError, _ := span.Attributes().Get("datadog.error")
-				require.Equal(t, int64(1), ddError.Int())
-				ddErrorMsg, _ := span.Attributes().Get("datadog.error.msg")
-				require.Equal(t, "specified-error-msg", ddErrorMsg.AsString())
-				ddErrorType, _ := span.Attributes().Get("datadog.error.type")
-				require.Equal(t, "specified-error-type", ddErrorType.AsString())
-				ddErrorStack, _ := span.Attributes().Get("datadog.error.stack")
-				require.Equal(t, "specified-error-stack", ddErrorStack.AsString())
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "specified-service")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "specified-env")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "specified-version")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "")
 
-				ddHost, _ := rs.Resource().Attributes().Get("datadog.host.name")
-				require.Empty(t, ddHost.AsString())
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.name", "specified-operation")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "specified-resource")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "specified-type")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "specified-span-kind")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "500")
+				ddError, _ := sattr.Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.msg", "specified-error-msg")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.type", "specified-error-type")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "specified-error-stack")
 			},
 		},
 	}

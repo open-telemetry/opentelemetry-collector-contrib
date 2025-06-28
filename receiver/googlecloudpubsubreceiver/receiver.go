@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
@@ -181,8 +183,10 @@ func (receiver *pubsubReceiver) setMarshallerFromEncodingID(encodingID buildInEn
 		case otlpProtoLog:
 			receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
 		case rawTextLog:
+			receiver.settings.Logger.Warn("build-in raw_text encoding is deprecated and will be removed in v0.132.0, use the text encoding extension instead")
 			receiver.logsUnmarshaler = unmarshalLogStrings{}
 		case cloudLogging:
+			receiver.settings.Logger.Warn("build-in cloud_logging encoding is deprecated and will be removed in v0.132.0, use the googlecloudlogentry encoding extension instead")
 			receiver.logsUnmarshaler = unmarshalCloudLoggingLogEntry{}
 		default:
 			return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for logs", receiver.config.Encoding)
@@ -279,10 +283,14 @@ func (receiver *pubsubReceiver) handleTrace(ctx context.Context, payload []byte,
 		return err
 	}
 	otlpData, err := receiver.tracesUnmarshaler.UnmarshalTraces(payload)
-	count := otlpData.SpanCount()
 	if err != nil {
+		receiver.increaseEncodingErrorMetric(ctx, "traces")
+		if receiver.config.IgnoreEncodingError {
+			return nil
+		}
 		return err
 	}
+	count := otlpData.SpanCount()
 	ctx = receiver.obsrecv.StartTracesOp(ctx)
 	err = receiver.tracesConsumer.ConsumeTraces(ctx, otlpData)
 	receiver.obsrecv.EndTracesOp(ctx, reportFormatProtobuf, count, err)
@@ -295,10 +303,14 @@ func (receiver *pubsubReceiver) handleMetric(ctx context.Context, payload []byte
 		return err
 	}
 	otlpData, err := receiver.metricsUnmarshaler.UnmarshalMetrics(payload)
-	count := otlpData.MetricCount()
 	if err != nil {
+		receiver.increaseEncodingErrorMetric(ctx, "metrics")
+		if receiver.config.IgnoreEncodingError {
+			return nil
+		}
 		return err
 	}
+	count := otlpData.MetricCount()
 	ctx = receiver.obsrecv.StartMetricsOp(ctx)
 	err = receiver.metricsConsumer.ConsumeMetrics(ctx, otlpData)
 	receiver.obsrecv.EndMetricsOp(ctx, reportFormatProtobuf, count, err)
@@ -311,14 +323,27 @@ func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, c
 		return err
 	}
 	otlpData, err := receiver.logsUnmarshaler.UnmarshalLogs(payload)
-	count := otlpData.LogRecordCount()
 	if err != nil {
+		receiver.increaseEncodingErrorMetric(ctx, "logs")
+		if receiver.config.IgnoreEncodingError {
+			return nil
+		}
 		return err
 	}
+	count := otlpData.LogRecordCount()
 	ctx = receiver.obsrecv.StartLogsOp(ctx)
 	err = receiver.logsConsumer.ConsumeLogs(ctx, otlpData)
 	receiver.obsrecv.EndLogsOp(ctx, reportFormatProtobuf, count, err)
 	return nil
+}
+
+func (receiver *pubsubReceiver) increaseEncodingErrorMetric(ctx context.Context, signal string) {
+	receiver.telemetryBuilder.ReceiverGooglecloudpubsubEncodingError.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("otelcol.component.kind", "receiver"),
+			attribute.String("otelcol.component.id", receiver.settings.ID.String()),
+			attribute.String("otelcol.signal", signal),
+		))
 }
 
 func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (otlpEncoding buildInEncoding, otlpCompression buildInCompression) {

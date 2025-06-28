@@ -1,0 +1,83 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Profiles as exponential histogram with duration
+            exponentialHistogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - count: "3"
+                  max: 0
+                  min: 0
+                  negative: {}
+                  positive: {}
+                  sum: 0
+                  timeUnixNano: "1000000"
+                  zeroCount: "3"
+            name: total.profiles.exphistogram
+          - description: Count total number of profiles as per profiles.foo attribute as exponential histogram with duration
+            exponentialHistogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: profile.foo
+                      value:
+                        stringValue: foo
+                  count: "1"
+                  max: 0
+                  min: 0
+                  negative: {}
+                  positive: {}
+                  sum: 0
+                  timeUnixNano: "1000000"
+                  zeroCount: "1"
+            name: profiles.foo.exphistogram
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Profiles with resource attribute foo as exponential histogram with duration
+            exponentialHistogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - count: "3"
+                  max: 0
+                  min: 0
+                  negative: {}
+                  positive: {}
+                  sum: 0
+                  timeUnixNano: "1000000"
+                  zeroCount: "3"
+            name: total.profiles.resource.foo.exphistogram
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

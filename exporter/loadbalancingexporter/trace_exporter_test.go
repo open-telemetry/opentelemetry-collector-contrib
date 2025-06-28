@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -831,15 +831,15 @@ func simpleTracesWithServiceName() ptrace.Traces {
 	traces.ResourceSpans().EnsureCapacity(1)
 
 	rspans := traces.ResourceSpans().AppendEmpty()
-	rspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
+	rspans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "service-name-1")
 	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 
 	bspans := traces.ResourceSpans().AppendEmpty()
-	bspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-2")
+	bspans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "service-name-2")
 	bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 
 	aspans := traces.ResourceSpans().AppendEmpty()
-	aspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-3")
+	aspans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "service-name-3")
 	aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 5})
 
 	return traces
@@ -849,10 +849,10 @@ func twoServicesWithSameTraceID() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(2)
 	rs1 := traces.ResourceSpans().AppendEmpty()
-	rs1.Resource().Attributes().PutStr(conventions.AttributeServiceName, "ad-service-1")
+	rs1.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "ad-service-1")
 	appendSimpleTraceWithID(rs1, [16]byte{1, 2, 3, 4})
 	rs2 := traces.ResourceSpans().AppendEmpty()
-	rs2.Resource().Attributes().PutStr(conventions.AttributeServiceName, "get-recommendations-7")
+	rs2.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "get-recommendations-7")
 	appendSimpleTraceWithID(rs2, [16]byte{1, 2, 3, 4})
 	return traces
 }

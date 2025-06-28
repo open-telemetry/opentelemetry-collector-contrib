@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
 
 var MetricsInfo = metricsInfo{
@@ -2580,6 +2580,24 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sHpaName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.apiversion"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.apiversion"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.kind"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.kind"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sHpaUID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.MetricsInclude)

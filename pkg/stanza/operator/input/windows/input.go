@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
@@ -24,24 +25,27 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark            Bookmark
-	buffer              *Buffer
-	channel             string
-	maxReads            int
-	currentMaxReads     int
-	startAt             string
-	raw                 bool
-	excludeProviders    map[string]struct{}
-	pollInterval        time.Duration
-	persister           operator.Persister
-	publisherCache      publisherCache
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	subscription        Subscription
-	remote              RemoteConfig
-	remoteSessionHandle windows.Handle
-	startRemoteSession  func() error
-	processEvent        func(context.Context, Event) error
+	bookmark                 Bookmark
+	buffer                   *Buffer
+	channel                  string
+	ignoreChannelErrors      bool
+	query                    *string
+	maxReads                 int
+	currentMaxReads          int
+	startAt                  string
+	raw                      bool
+	includeLogRecordOriginal bool
+	excludeProviders         map[string]struct{}
+	pollInterval             time.Duration
+	persister                operator.Persister
+	publisherCache           publisherCache
+	cancel                   context.CancelFunc
+	wg                       sync.WaitGroup
+	subscription             Subscription
+	remote                   RemoteConfig
+	remoteSessionHandle      windows.Handle
+	startRemoteSession       func() error
+	processEvent             func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -117,7 +121,7 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
 	if err != nil {
-		_ = i.persister.Delete(ctx, i.channel)
+		_ = i.persister.Delete(ctx, i.getPersistKey())
 	}
 
 	if offsetXML != "" {
@@ -128,28 +132,39 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.publisherCache = newPublisherCache()
 
+	subscriptionError := false
 	subscription := NewLocalSubscription()
 	if i.isRemote() {
 		subscription = NewRemoteSubscription(i.remote.Server)
 	}
 
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
+				errorString = fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
+			} else {
+				errorString = "failed to open local subscription"
 			}
-			return fmt.Errorf("failed to open local subscription: %w", err)
-		}
-		if i.isRemote() {
-			i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+			if !i.ignoreChannelErrors {
+				return fmt.Errorf("%s, error: %w", errorString, err)
+			}
+			subscriptionError = true
+			i.Logger().Warn(errorString, zap.Error(err))
 		} else {
-			i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
+			if i.isRemote() {
+				i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+			} else {
+				i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
+			}
 		}
 	}
 
-	i.subscription = subscription
-	i.wg.Add(1)
-	go i.readOnInterval(ctx)
+	if !subscriptionError {
+		i.subscription = subscription
+		i.wg.Add(1)
+		go i.readOnInterval(ctx)
+	}
 
 	return nil
 }
@@ -225,7 +240,7 @@ func (i *Input) read(ctx context.Context) {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 				return
 			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 				return
 			}
@@ -326,7 +341,11 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
 
 	if i.remote.Server != "" {
-		e.Attributes["server.address"] = i.remote.Server
+		e.AddAttribute("server.address", i.remote.Server)
+	}
+
+	if i.includeLogRecordOriginal {
+		e.AddAttribute(string(semconv.LogRecordOriginalKey), eventXML.Original)
 	}
 
 	return i.Write(ctx, e)
@@ -334,7 +353,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
 func (i *Input) getBookmarkOffset(ctx context.Context) (string, error) {
-	bytes, err := i.persister.Get(ctx, i.channel)
+	bytes, err := i.persister.Get(ctx, i.getPersistKey())
 	return string(bytes), err
 }
 
@@ -351,8 +370,16 @@ func (i *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 		return
 	}
 
-	if err := i.persister.Set(ctx, i.channel, []byte(bookmarkXML)); err != nil {
+	if err := i.persister.Set(ctx, i.getPersistKey(), []byte(bookmarkXML)); err != nil {
 		i.Logger().Error("failed to set offsets", zap.Error(err))
 		return
 	}
+}
+
+func (i *Input) getPersistKey() string {
+	if i.query != nil {
+		return *i.query
+	}
+
+	return i.channel
 }

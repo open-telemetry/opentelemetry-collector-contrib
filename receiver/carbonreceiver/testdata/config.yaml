@@ -48,7 +48,11 @@ carbon/regex:
           # type is used to select the metric type to be set, the default is
           # "gauge", the other alternative is "cumulative".
           type: cumulative
-        # The second rule for this "regex" parser.
+        # The second rule matches metric with or without a prefix.
+        - regexp: "(optional_prefix\\.)?(?P<key_just>test)\\.(?P<key_match>.*)"
+        # The third rule parses an optional dimension with key "experiment".
+        - regexp: "(experiment(?P<key_experiment>[0-9]+)\\.)?(?P<key_just>test)\\.(?P<key_match>.*)"
+        # The forth rule for this "regex" parser.
         - regexp: "(?P<key_just>test)\\.(?P<key_match>.*)"
       # Name separator is used when concatenating named regular expression
       # captures prefixed with "name_"

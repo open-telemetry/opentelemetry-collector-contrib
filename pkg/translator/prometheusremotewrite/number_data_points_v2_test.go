@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
@@ -47,6 +49,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
 						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
+						},
 					},
 				}
 			},
@@ -72,6 +79,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.5},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
 						},
 					},
 				}
@@ -99,6 +111,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: math.Float64frombits(value.StaleNaN)},
 						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
+						},
 					},
 				}
 			},
@@ -115,7 +132,12 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				SendMetadata:      false,
 			}
 			converter := newPrometheusConverterV2()
-			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name())
+			m := metadata{
+				Type: otelMetricTypeToPromMetricTypeV2(metric),
+				Help: metric.Description(),
+				Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+			}
+			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name(), m)
 			w := tt.want()
 
 			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
@@ -136,23 +158,27 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		pcommon.NewMap(),
 		2, ts,
 	)
-
-	want := map[uint64]*writev2.TimeSeries{
-		labels.Labels{
+	want := func() map[uint64]*writev2.TimeSeries {
+		labels := labels.Labels{
 			labels.Label{
 				Name:  labels.MetricName,
 				Value: "test",
 			},
-		}.Hash(): {
-			LabelsRefs: []uint32{1, 2},
-			Samples: []writev2.Sample{{
-				Timestamp: convertTimeStamp(pcommon.Timestamp(ts)),
-				Value:     1,
-			}, {
-				Timestamp: convertTimeStamp(pcommon.Timestamp(ts)),
-				Value:     2,
-			}},
-		},
+		}
+		return map[uint64]*writev2.TimeSeries{
+			labels.Hash(): {
+				LabelsRefs: []uint32{1, 2},
+				Samples: []writev2.Sample{
+					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 2},
+				},
+				Metadata: writev2.Metadata{
+					Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+					HelpRef: 3,
+					UnitRef: 4,
+				},
+			},
+		}
 	}
 
 	settings := Settings{
@@ -163,8 +189,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	}
 
 	converter := newPrometheusConverterV2()
-	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name())
-	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name())
+	m1 := metadata{
+		Type: otelMetricTypeToPromMetricTypeV2(metric1),
+		Help: metric1.Description(),
+		Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric1.Unit()),
+	}
+	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name(), m1)
 
-	assert.Equal(t, want, converter.unique)
+	m2 := metadata{
+		Type: otelMetricTypeToPromMetricTypeV2(metric2),
+		Help: metric2.Description(),
+		Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric2.Unit()),
+	}
+	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name(), m2)
+
+	assert.Equal(t, want(), converter.unique)
 }

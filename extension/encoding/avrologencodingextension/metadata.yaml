@@ -1,6 +1,7 @@
 type: avro_log_encoding
 
 status:
+  disable_codecov_badge: true
   class: extension
   stability:
     development: [extension]

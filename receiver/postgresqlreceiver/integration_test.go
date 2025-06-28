@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 const postgresqlPort = "5432"
@@ -76,8 +77,8 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 					"POSTGRES_DB":       "otel",
 				},
 				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
@@ -130,12 +131,23 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					"POSTGRES_PASSWORD": "otel",
 					"POSTGRES_DB":       "otel",
 				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
-					FileMode:          700,
-				}},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					},
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "02-create-extension.sh"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/02-create-extension.sh",
+						FileMode:          700,
+					},
+				},
 				ExposedPorts: []string{postgresqlPort},
+				Cmd: []string{
+					"-c",
+					"shared_preload_libraries=pg_stat_statements",
+				},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
 			},
@@ -153,7 +165,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 
 	_, err = db.Query("Select * from test2 where id = 67")
 	assert.NoError(t, err)
-	db.Close()
+	defer db.Close()
 
 	cfg := Config{
 		Databases: []string{"postgres"},
@@ -171,6 +183,10 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		QuerySampleCollection: QuerySampleCollection{
 			Enabled: true,
 		},
+		TopQueryCollection: TopQueryCollection{
+			Enabled: true,
+		},
+		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
@@ -178,7 +194,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.Must(zap.NewProduction()),
 		},
-	}, &cfg, clientFactory)
+	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
 	plogs, err := ns.scrapeQuerySamples(context.Background(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
@@ -198,4 +214,54 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found, "Expected to find a log record with the query text")
+
+	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
+	assert.NoError(t, err)
+	logRecords = firstTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	found = false
+	for _, record := range logRecords.All() {
+		attributes := record.Attributes().AsRaw()
+		queryAttribute, ok := attributes["db.query.text"]
+		query := strings.ToLower(queryAttribute.(string))
+		assert.True(t, ok)
+		if !strings.HasPrefix(query, "select * from test2 where") {
+			continue
+		}
+		assert.Equal(t, "select * from test2 where id = ?", query)
+		databaseAttribute, ok := attributes["db.namespace"]
+		assert.True(t, ok)
+		assert.Equal(t, "otel2", databaseAttribute.(string))
+		calls, ok := attributes["postgresql.calls"]
+		assert.True(t, ok)
+		assert.Equal(t, int64(1), calls.(int64))
+		assert.NotEmpty(t, attributes["postgresql.query_plan"])
+		found = true
+	}
+	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
+
+	_, err = db.Query("Select * from test2 where id = 67")
+	assert.NoError(t, err)
+
+	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
+	assert.NoError(t, err)
+	logRecords = secondTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	found = false
+	for _, record := range logRecords.All() {
+		attributes := record.Attributes().AsRaw()
+		queryAttribute, ok := attributes["db.query.text"]
+		query := strings.ToLower(queryAttribute.(string))
+		assert.True(t, ok)
+		if !strings.HasPrefix(query, "select * from test2 where") {
+			continue
+		}
+		assert.Equal(t, "select * from test2 where id = ?", query)
+		databaseAttribute, ok := attributes["db.namespace"]
+		assert.True(t, ok)
+		assert.Equal(t, "otel2", databaseAttribute.(string))
+		calls, ok := attributes["postgresql.calls"]
+		assert.True(t, ok)
+		assert.Equal(t, int64(2), calls.(int64))
+		found = true
+	}
+	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
 }

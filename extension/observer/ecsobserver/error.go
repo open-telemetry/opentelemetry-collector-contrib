@@ -6,9 +6,8 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -40,19 +39,17 @@ func hasCriticalError(logger *zap.Logger, err error) error {
 		merr = []error{err} // fake a multi error
 	}
 	for _, err := range merr {
-		var awsErr awserr.Error
-		if errors.As(err, &awsErr) {
-			// NOTE: we don't use zap.Error because the stack trace is quite useless here
-			// We print the error after entire fetch and match loop is done, and source
-			// of these error are from user config, wrong IAM, typo in cluster name etc.
-			switch awsErr.Code() {
-			case ecs.ErrCodeAccessDeniedException:
-				logger.Error("AccessDenied", zap.String("ErrMessage", awsErr.Message()))
-				return awsErr
-			case ecs.ErrCodeClusterNotFoundException:
-				logger.Error("Cluster NotFound", zap.String("ErrMessage", awsErr.Message()))
-				return awsErr
-			}
+		var (
+			ad  *types.AccessDeniedException
+			cnf *types.ClusterNotFoundException
+		)
+		switch {
+		case errors.As(err, &ad):
+			logger.Error("AccessDenied", zap.String("ErrMessage", ad.ErrorMessage()))
+			return ad
+		case errors.As(err, &cnf):
+			logger.Error("Cluster NotFound", zap.String("ErrMessage", cnf.ErrorMessage()))
+			return cnf
 		}
 	}
 	return nil
@@ -92,7 +89,7 @@ func extractErrorFields(err error) ([]zap.Field, string) {
 		// Rename ok to tok because linter says it shadows outer ok.
 		// Though the linter seems to allow the similar block to shadow...
 		if task, tok := v.(*taskAnnotated); tok {
-			fields = append(fields, zap.String("TaskArn", aws.StringValue(task.Task.TaskArn)))
+			fields = append(fields, zap.String("TaskArn", aws.ToString(task.Task.TaskArn)))
 			scope = "taskAnnotated"
 		}
 	}

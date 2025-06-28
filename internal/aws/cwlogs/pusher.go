@@ -4,13 +4,15 @@
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +35,7 @@ var maxEventPayloadBytes = defaultMaxEventPayloadBytes
 
 // Event struct to present a log event.
 type Event struct {
-	InputLogEvent *cloudwatchlogs.InputLogEvent
+	InputLogEvent types.InputLogEvent
 	// The time which log generated.
 	GeneratedTime time.Time
 	// Identify what is the stream of destination of this event
@@ -44,7 +46,7 @@ type Event struct {
 // logType will be propagated to LogEventBatch and used by logPusher to determine which client to call PutLogEvent
 func NewEvent(timestampMs int64, message string) *Event {
 	event := &Event{
-		InputLogEvent: &cloudwatchlogs.InputLogEvent{
+		InputLogEvent: types.InputLogEvent{
 			Timestamp: aws.Int64(timestampMs),
 			Message:   aws.String(message),
 		},
@@ -114,12 +116,12 @@ func newEventBatch(key StreamKey) *eventBatch {
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  aws.String(key.LogGroupName),
 			LogStreamName: aws.String(key.LogStreamName),
-			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount),
+			LogEvents:     make([]types.InputLogEvent, 0, maxRequestEventCount),
 		},
 	}
 }
 
-func (batch eventBatch) exceedsLimit(nextByteTotal int) bool {
+func (batch *eventBatch) exceedsLimit(nextByteTotal int) bool {
 	return len(batch.putLogEventsInput.LogEvents) == cap(batch.putLogEventsInput.LogEvents) ||
 		batch.byteTotal+nextByteTotal > maxEventPayloadBytes
 }
@@ -158,7 +160,7 @@ func (batch *eventBatch) sortLogEvents() {
 	sort.Stable(ByTimestamp(inputLogEvents))
 }
 
-type ByTimestamp []*cloudwatchlogs.InputLogEvent
+type ByTimestamp []types.InputLogEvent
 
 func (inputLogEvents ByTimestamp) Len() int {
 	return len(inputLogEvents)
@@ -174,8 +176,8 @@ func (inputLogEvents ByTimestamp) Less(i, j int) bool {
 
 // Pusher is created by log group and log stream
 type Pusher interface {
-	AddLogEntry(logEvent *Event) error
-	ForceFlush() error
+	AddLogEntry(ctx context.Context, logEvent *Event) error
+	ForceFlush(ctx context.Context) error
 }
 
 // Struct of logPusher implemented Pusher interface.
@@ -227,7 +229,7 @@ func newLogPusher(streamKey StreamKey,
 // Need to pay attention to the below 2 limits:
 // Event size 256 KB (maximum). This limit cannot be changed.
 // Batch size 1 MB (maximum). This limit cannot be changed.
-func (p *logPusher) AddLogEntry(logEvent *Event) error {
+func (p *logPusher) AddLogEntry(ctx context.Context, logEvent *Event) error {
 	var err error
 	if logEvent != nil {
 		err = logEvent.Validate(p.logger)
@@ -236,21 +238,21 @@ func (p *logPusher) AddLogEntry(logEvent *Event) error {
 		}
 		prevBatch := p.addLogEvent(logEvent)
 		if prevBatch != nil {
-			err = p.pushEventBatch(prevBatch)
+			err = p.pushEventBatch(ctx, prevBatch)
 		}
 	}
 	return err
 }
 
-func (p *logPusher) ForceFlush() error {
+func (p *logPusher) ForceFlush(ctx context.Context) error {
 	prevBatch := p.renewEventBatch()
 	if prevBatch != nil {
-		return p.pushEventBatch(prevBatch)
+		return p.pushEventBatch(ctx, prevBatch)
 	}
 	return nil
 }
 
-func (p *logPusher) pushEventBatch(req any) error {
+func (p *logPusher) pushEventBatch(ctx context.Context, req any) error {
 	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
 	// The log events in the batch must be in chronological ordered by their
 	// timestamp (the time the event occurred, expressed as the number of milliseconds
@@ -261,7 +263,7 @@ func (p *logPusher) pushEventBatch(req any) error {
 
 	startTime := time.Now()
 
-	err := p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
+	err := p.svcStructuredLog.PutLogEvents(ctx, putLogEventsInput, p.retryCnt)
 	if err != nil {
 		return err
 	}
@@ -324,8 +326,8 @@ func newMultiStreamPusher(logStreamManager LogStreamManager, client Client, logg
 	}
 }
 
-func (m *multiStreamPusher) AddLogEntry(event *Event) error {
-	if err := m.logStreamManager.InitStream(event.StreamKey); err != nil {
+func (m *multiStreamPusher) AddLogEntry(ctx context.Context, event *Event) error {
+	if err := m.logStreamManager.InitStream(ctx, event.StreamKey); err != nil {
 		return err
 	}
 
@@ -337,14 +339,14 @@ func (m *multiStreamPusher) AddLogEntry(event *Event) error {
 		m.pusherMap[event.StreamKey] = pusher
 	}
 
-	return pusher.AddLogEntry(event)
+	return pusher.AddLogEntry(ctx, event)
 }
 
-func (m *multiStreamPusher) ForceFlush() error {
+func (m *multiStreamPusher) ForceFlush(ctx context.Context) error {
 	var errs []error
 
 	for _, val := range m.pusherMap {
-		err := val.ForceFlush()
+		err := val.ForceFlush(ctx)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -387,7 +389,7 @@ type LogStreamManager interface {
 	// Initialize a stream so that it can receive logs
 	// This will make sure that the stream exists and if it does not exist,
 	// It will create one. Implementations of this method MUST be safe for concurrent use.
-	InitStream(streamKey StreamKey) error
+	InitStream(ctx context.Context, streamKey StreamKey) error
 }
 
 type logStreamManager struct {
@@ -403,13 +405,13 @@ func NewLogStreamManager(svcStructuredLog Client) LogStreamManager {
 	}
 }
 
-func (lsm *logStreamManager) InitStream(streamKey StreamKey) error {
+func (lsm *logStreamManager) InitStream(ctx context.Context, streamKey StreamKey) error {
 	if _, ok := lsm.streams[streamKey]; !ok {
 		lsm.logStreamMutex.Lock()
 		defer lsm.logStreamMutex.Unlock()
 
 		if _, ok := lsm.streams[streamKey]; !ok {
-			err := lsm.client.CreateStream(&streamKey.LogGroupName, &streamKey.LogStreamName)
+			err := lsm.client.CreateStream(ctx, &streamKey.LogGroupName, &streamKey.LogStreamName)
 			lsm.streams[streamKey] = true
 			return err
 		}

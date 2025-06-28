@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
@@ -19,6 +20,14 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"snappy": sarama.CompressionSnappy,
 	"lz4":    sarama.CompressionLZ4,
 	"zstd":   sarama.CompressionZSTD,
+}
+
+func convertToSaramaCompressionLevel(level configcompression.Level) int {
+	switch level {
+	case 0, configcompression.DefaultCompressionLevel:
+		return sarama.CompressionLevelDefault
+	}
+	return int(level)
 }
 
 var saramaInitialOffsets = map[string]int64{
@@ -59,9 +68,18 @@ func NewSaramaConsumerGroup(
 	saramaConfig.Consumer.Fetch.Min = consumerConfig.MinFetchSize
 	saramaConfig.Consumer.Fetch.Default = consumerConfig.DefaultFetchSize
 	saramaConfig.Consumer.Fetch.Max = consumerConfig.MaxFetchSize
+	saramaConfig.Consumer.MaxWaitTime = consumerConfig.MaxFetchWait
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
 	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	// Set the rebalance strategy
+	rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
+	if rebalanceStrategy != nil {
+		saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
+	}
+	if len(consumerConfig.GroupInstanceID) > 0 {
+		saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+	}
 	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
 }
 
@@ -80,14 +98,23 @@ func NewSaramaSyncProducer(
 	if err != nil {
 		return nil, err
 	}
-	saramaConfig.Producer.Return.Successes = true // required for SyncProducer
-	saramaConfig.Producer.Return.Errors = true    // required for SyncProducer
-	saramaConfig.Producer.MaxMessageBytes = producerConfig.MaxMessageBytes
-	saramaConfig.Producer.Flush.MaxMessages = producerConfig.FlushMaxMessages
-	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
-	saramaConfig.Producer.Timeout = producerTimeout
-	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	setSaramaProducerConfig(saramaConfig, producerConfig, producerTimeout)
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
+}
+
+func setSaramaProducerConfig(
+	out *sarama.Config,
+	producerConfig configkafka.ProducerConfig,
+	producerTimeout time.Duration,
+) {
+	out.Producer.Return.Successes = true // required for SyncProducer
+	out.Producer.Return.Errors = true    // required for SyncProducer
+	out.Producer.MaxMessageBytes = producerConfig.MaxMessageBytes
+	out.Producer.Flush.MaxMessages = producerConfig.FlushMaxMessages
+	out.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
+	out.Producer.Timeout = producerTimeout
+	out.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	out.Producer.CompressionLevel = convertToSaramaCompressionLevel(producerConfig.CompressionParams.Level)
 }
 
 // newSaramaClientConfig returns a Sarama client config, based on the given config.
@@ -120,8 +147,21 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 		}
 	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == "AWS_MSK_IAM_OAUTHBEARER" {
 		saramaConfig.Net.TLS.Config = &tls.Config{}
-		saramaConfig.Net.SASL.Enable = true
+		saramaConfig.Net.TLS.Enable = true
 	}
 	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil
+}
+
+func rebalanceStrategy(strategy string) sarama.BalanceStrategy {
+	switch strategy {
+	case sarama.RangeBalanceStrategyName:
+		return sarama.NewBalanceStrategyRange()
+	case sarama.StickyBalanceStrategyName:
+		return sarama.NewBalanceStrategySticky()
+	case sarama.RoundRobinBalanceStrategyName:
+		return sarama.NewBalanceStrategyRoundRobin()
+	default:
+		return nil
+	}
 }

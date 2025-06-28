@@ -6,6 +6,8 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/component"
@@ -17,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
@@ -34,6 +37,9 @@ var defaultHistogramBuckets = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
+// Regex for [key] selector after ExtractGrokPatterns
+var grokPatternKey = regexp.MustCompile(`ExtractGrokPatterns\([^)]*\)\s*\[[^\]]+\]`)
+
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config for the connector. Each configuration field describes the metrics
@@ -42,12 +48,13 @@ type Config struct {
 	Spans      []MetricInfo `mapstructure:"spans"`
 	Datapoints []MetricInfo `mapstructure:"datapoints"`
 	Logs       []MetricInfo `mapstructure:"logs"`
+	Profiles   []MetricInfo `mapstructure:"profiles"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (c *Config) Validate() error {
-	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 {
+	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 && len(c.Profiles) == 0 {
 		return errors.New("no configuration provided, at least one should be specified")
 	}
 	var multiError error // collect all errors at once
@@ -93,6 +100,20 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+	if len(c.Profiles) > 0 {
+		parser, err := ottlprofile.NewParser(
+			customottl.ProfileFuncs(),
+			component.TelemetrySettings{Logger: zap.NewNop()},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser for OTTL profiles: %w", err)
+		}
+		for _, profile := range c.Profiles {
+			if err := validateMetricInfo(profile, parser); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: %w", err))
+			}
+		}
+	}
 	return multiError
 }
 
@@ -117,6 +138,10 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 	for i, info := range c.Logs {
 		info.ensureDefaults()
 		c.Logs[i] = info
+	}
+	for i, info := range c.Profiles {
+		info.ensureDefaults()
+		c.Profiles[i] = info
 	}
 	return nil
 }
@@ -143,6 +168,10 @@ type Sum struct {
 	Value string `mapstructure:"value"`
 }
 
+type Gauge struct {
+	Value string `mapstructure:"value"`
+}
+
 // MetricInfo defines the structure of the metric produced by the connector.
 type MetricInfo struct {
 	Name        string `mapstructure:"name"`
@@ -161,6 +190,7 @@ type MetricInfo struct {
 	Histogram            *Histogram            `mapstructure:"histogram"`
 	ExponentialHistogram *ExponentialHistogram `mapstructure:"exponential_histogram"`
 	Sum                  *Sum                  `mapstructure:"sum"`
+	Gauge                *Gauge                `mapstructure:"gauge"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -231,6 +261,15 @@ func (mi *MetricInfo) validateSum() error {
 	return nil
 }
 
+func (mi *MetricInfo) validateGauge() error {
+	if mi.Gauge != nil {
+		if mi.Gauge.Value == "" {
+			return errors.New("value must be defined for gauge metrics")
+		}
+	}
+	return nil
+}
+
 // validateMetricInfo is an utility method validate all supported metric
 // types defined for the metric info including any ottl expressions.
 func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
@@ -245,6 +284,9 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 	}
 	if err := mi.validateSum(); err != nil {
 		return fmt.Errorf("sum validation failed: %w", err)
+	}
+	if err := mi.validateGauge(); err != nil {
+		return fmt.Errorf("gauge validation failed: %w", err)
 	}
 
 	// Exactly one metric should be defined. Also, validate OTTL expressions,
@@ -277,6 +319,19 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		metricsDefinedCount++
 		if _, err := parser.ParseValueExpression(mi.Sum.Value); err != nil {
 			return fmt.Errorf("failed to parse value OTTL expression for summary: %w", err)
+		}
+	}
+	if mi.Gauge != nil {
+		metricsDefinedCount++
+		if _, err := parser.ParseValueExpression(mi.Gauge.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
+		}
+		// if ExtractGrokPatterns is used, validate the key selector
+		if strings.Contains(mi.Gauge.Value, "ExtractGrokPatterns") {
+			// Ensure a [key] selector is present after ExtractGrokPatterns
+			if !grokPatternKey.MatchString(mi.Gauge.Value) {
+				return errors.New("ExtractGrokPatterns: a single key selector[key] is required for signal to gauge")
+			}
 		}
 	}
 	if metricsDefinedCount != 1 {

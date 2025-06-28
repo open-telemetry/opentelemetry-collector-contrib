@@ -296,6 +296,7 @@ func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
 		"metric",
 		"spanevent",
 		"span",
+		"profile",
 		"scope",
 		"instrumentation_scope",
 		"resource",
@@ -316,6 +317,7 @@ func Test_NewPriorityContextInferrer_InferStatements_DefaultContextsOrder(t *tes
 		"datapoint":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
 		"span":                  newDummyPriorityContextInferrerCandidate(true, true, []string{"spanevent", "scope", "instrumentation_scope", "resource"}),
 		"spanevent":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"profile":               newDummyPriorityContextInferrerCandidate(true, true, []string{"profile", "scope", "instrumentation_scope", "resource"}),
 		"scope":                 newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
 		"instrumentation_scope": newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
 		"resource":              newDummyPriorityContextInferrerCandidate(true, true, []string{}),
@@ -387,6 +389,16 @@ func Test_NewPriorityContextInferrer_InferStatements_DefaultContextsOrder(t *tes
 			expected:  "spanevent",
 		},
 		{
+			name:      "profile,instrumentation_scope,resource",
+			statement: `set(profile.name, "foo") where profile.name != nil and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "profile",
+		},
+		{
+			name:      "profile,scope,resource",
+			statement: `set(profile.name, "foo") where profile.name != nil and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "profile",
+		},
+		{
 			name:      "resource",
 			statement: `set(resource.attributes["bar"], "foo") where dummy.attributes["foo"] != nil`,
 			expected:  "resource",
@@ -409,6 +421,7 @@ func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *tes
 		"datapoint":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
 		"span":                  newDummyPriorityContextInferrerCandidate(true, true, []string{"spanevent", "scope", "instrumentation_scope", "resource"}),
 		"spanevent":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"profile":               newDummyPriorityContextInferrerCandidate(true, true, []string{"profile", "scope", "instrumentation_scope", "resource"}),
 		"scope":                 newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
 		"instrumentation_scope": newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
 		"resource":              newDummyPriorityContextInferrerCandidate(true, true, []string{}),
@@ -480,6 +493,16 @@ func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *tes
 			expected:  "spanevent",
 		},
 		{
+			name:      "profile,instrumentation_scope,resource",
+			condition: `profile.name != nil and profile.name != nil and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "profile",
+		},
+		{
+			name:      "profile,scope,resource",
+			condition: `profile.name != nil and profile.name != nil and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "profile",
+		},
+		{
 			name:      "resource",
 			condition: `resource.attributes["bar"] != nil and dummy.attributes["foo"] != nil`,
 			expected:  "resource",
@@ -497,11 +520,12 @@ func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *tes
 
 func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 	tests := []struct {
-		name       string
-		candidates map[string]*priorityContextInferrerCandidate
-		statements []string
-		conditions []string
-		expected   string
+		name        string
+		candidates  map[string]*priorityContextInferrerCandidate
+		statements  []string
+		conditions  []string
+		expressions []string
+		expected    string
 	}{
 		{
 			name: "with statements",
@@ -525,12 +549,40 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			expected: "metric",
 		},
 		{
+			name: "with expressions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{
+				`resource.attributes["foo"]`,
+				`metric.name`,
+			},
+			expected: "metric",
+		},
+		{
 			name: "with statements and conditions",
 			candidates: map[string]*priorityContextInferrerCandidate{
 				"metric":   defaultDummyPriorityContextInferrerCandidate,
 				"resource": defaultDummyPriorityContextInferrerCandidate,
 			},
 			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			conditions: []string{
+				`IsMatch(metric.name, "^bar.*")`,
+				`IsMatch(metric.name, "^foo.*")`,
+			},
+			expected: "metric",
+		},
+		{
+			name: "with statements, conditions, and value expressions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			expressions: []string{
+				`resource.attributes["foo"]`,
+			},
 			conditions: []string{
 				`IsMatch(metric.name, "^bar.*")`,
 				`IsMatch(metric.name, "^foo.*")`,
@@ -545,7 +597,7 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 				componenttest.NewNopTelemetrySettings(),
 				tt.candidates,
 			)
-			inferredContext, err := inferrer.infer(tt.statements, tt.conditions)
+			inferredContext, err := inferrer.infer(tt.statements, tt.conditions, tt.expressions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})

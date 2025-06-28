@@ -74,9 +74,24 @@ type Config struct {
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 
-	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
+
+	// IncludeSourceOnError configures whether the bulk index responses include
+	// a part of the source document on error.
+	// Defaults to nil.
+	//
+	// This setting requires Elasticsearch 8.18+. Using it in prior versions
+	// have no effect.
+	//
+	// NOTE: The default behavior if this configuration is not set, is to
+	// discard the error reason entirely, i.e. only the error type is returned.
+	//
+	// WARNING: If set to true, the exporter may log error responses containing
+	// request payload, causing potential sensitive data to be exposed in logs.
+	// Users are expected to sanitize the responses themselves.
+	IncludeSourceOnError *bool `mapstructure:"include_source_on_error"`
 
 	// Batcher holds configuration for batching requests based on timeout
 	// and size-based thresholds.
@@ -114,12 +129,18 @@ type TelemetrySettings struct {
 
 	LogFailedDocsInput          bool          `mapstructure:"log_failed_docs_input"`
 	LogFailedDocsInputRateLimit time.Duration `mapstructure:"log_failed_docs_input_rate_limit"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type LogstashFormatSettings struct {
 	Enabled         bool   `mapstructure:"enabled"`
 	PrefixSeparator string `mapstructure:"prefix_separator"`
 	DateFormat      string `mapstructure:"date_format"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DynamicIndexSetting struct {
@@ -127,14 +148,23 @@ type DynamicIndexSetting struct {
 	//
 	// Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DynamicPipelineSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AuthenticationSettings defines user authentication related settings.
@@ -149,6 +179,9 @@ type AuthenticationSettings struct {
 	//
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
 	APIKey configopaque.String `mapstructure:"api_key"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // DiscoverySettings defines Elasticsearch node discovery related settings.
@@ -168,6 +201,9 @@ type DiscoverySettings struct {
 	// Interval instructs the exporter to renew the list of Elasticsearch URLs
 	// with the given interval. URLs will not be updated if Interval is <=0.
 	Interval time.Duration `mapstructure:"interval"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // FlushSettings defines settings for configuring the write buffer flushing
@@ -179,6 +215,9 @@ type FlushSettings struct {
 
 	// Interval configures the max age of a document in the send buffer.
 	Interval time.Duration `mapstructure:"interval"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // RetrySettings defines settings for the HTTP request retries in the Elasticsearch exporter.
@@ -207,8 +246,12 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the default document mapping mode.
 	//
-	// The mode may be overridden by the client metadata key
-	// X-Elastic-Mapping-Mode, if specified.
+	// The mode may be overridden in two ways:
+	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
+	//  - by the scope attribute elastic.mapping.mode, if specified
+	//
+	// The order of precedence is:
+	//   scope attribute > client metadata > default mode.
 	Mode string `mapstructure:"mode"`
 
 	// AllowedModes controls the allowed document mapping modes
@@ -216,6 +259,9 @@ type MappingsSettings struct {
 	//
 	// If unspecified, all mapping modes are allowed.
 	AllowedModes []string `mapstructure:"allowed_modes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type MappingMode int
