@@ -32,10 +32,25 @@ import (
 
 const jmxPort = "7199"
 
-var jmxJarReleases = map[string]string{
-	"1.26.0-alpha":         "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.26.0-alpha/opentelemetry-jmx-metrics-1.26.0-alpha.jar",
-	"1.10.0-alpha":         "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
-	"1.46.0-alpha-scraper": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/1.46.0-alpha/opentelemetry-jmx-scraper-1.46.0-alpha.jar",
+type integrationConfig struct {
+	downloadURL string
+	jmxConfig   string
+}
+
+var jmxJarReleases = map[string]integrationConfig{
+	"1.26.0-alpha": {
+		downloadURL: "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.26.0-alpha/opentelemetry-jmx-metrics-1.26.0-alpha.jar",
+	},
+	"1.10.0-alpha": {
+		downloadURL: "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
+	},
+	"1.46.0-alpha-scraper": {
+		downloadURL: "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/1.46.0-alpha/opentelemetry-jmx-scraper-1.46.0-alpha.jar",
+	},
+	"1.46.0-alpha-scraper-custom-jmxconfig": {
+		downloadURL: "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/1.46.0-alpha/opentelemetry-jmx-scraper-1.46.0-alpha.jar",
+		jmxConfig:   filepath.Join("testdata", "integration", "1.46.0-alpha-scraper-custom-jmxconfig", "simple-cassandra.yaml"),
+	},
 }
 
 type jmxIntegrationSuite struct {
@@ -51,8 +66,8 @@ func TestJMXIntegration(t *testing.T) {
 
 func (suite *jmxIntegrationSuite) SetupSuite() {
 	suite.VersionToJar = make(map[string]string)
-	for version, url := range jmxJarReleases {
-		jarPath, err := downloadJMXJAR(suite.T(), url)
+	for version, config := range jmxJarReleases {
+		jarPath, err := downloadJMXJAR(suite.T(), config.downloadURL)
 		suite.VersionToJar[version] = jarPath
 		suite.Require().NoError(err)
 	}
@@ -83,11 +98,11 @@ func downloadJMXJAR(t *testing.T, url string) (string, error) {
 
 func (suite *jmxIntegrationSuite) TestJMXReceiverHappyPath() {
 	for version, jar := range suite.VersionToJar {
-		suite.T().Run(version, integrationTest(version, jar))
+		suite.T().Run(version, integrationTest(version, jar, jmxJarReleases[version].jmxConfig))
 	}
 }
 
-func integrationTest(version string, jar string) func(*testing.T) {
+func integrationTest(version string, jar string, jmxConfig string) func(*testing.T) {
 	return scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -112,7 +127,11 @@ func integrationTest(version string, jar string) func(*testing.T) {
 				rCfg.CollectionInterval = 3 * time.Second
 				rCfg.JARPath = jar
 				rCfg.Endpoint = fmt.Sprintf("%v:%s", ci.Host(t), ci.MappedPort(t, jmxPort))
-				rCfg.TargetSystem = "cassandra"
+				if jmxConfig != "" {
+					rCfg.JmxConfigs = jmxConfig
+				} else {
+					rCfg.TargetSystem = "cassandra"
+				}
 				rCfg.Username = "cassandra"
 				rCfg.Password = "cassandra"
 				rCfg.ResourceAttributes = map[string]string{
@@ -130,6 +149,7 @@ func integrationTest(version string, jar string) func(*testing.T) {
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreDatapointAttributesOrder(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricsOrder(),
