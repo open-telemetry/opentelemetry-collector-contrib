@@ -38,7 +38,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -935,6 +934,63 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	return nil
 }
 
+func (s *Supervisor) addSpecialConfigFiles() {
+	// - If no config file are provided, we add the special config files matching the
+	//   standard order of configuration merging.
+	if len(s.config.Agent.ConfigFiles) == 0 {
+		for _, file := range config.SpecialConfigFiles {
+			s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(file))
+		}
+		return
+	}
+
+	missingSpecialConfigFiles := make(map[config.SpecialConfigFile]struct{}, len(config.SpecialConfigFiles))
+	for _, file := range config.SpecialConfigFiles {
+		missingSpecialConfigFiles[file] = struct{}{}
+	}
+	for _, file := range s.config.Agent.ConfigFiles {
+		if strings.HasPrefix(file, "$") {
+			delete(missingSpecialConfigFiles, config.SpecialConfigFile(file))
+		}
+	}
+
+	// If there are config files AND none of them are the special ones, we
+	// add the special config files to the user provided ones.
+	if len(missingSpecialConfigFiles) == len(config.SpecialConfigFiles) {
+		newConfigFiles := []string{
+			string(config.SpecialConfigFileOwnMetrics),
+			string(config.SpecialConfigFileBuiltin),
+		}
+		newConfigFiles = append(newConfigFiles, s.config.Agent.ConfigFiles...)
+		newConfigFiles = append(newConfigFiles,
+			string(config.SpecialConfigFileOpAMPExtension),
+			string(config.SpecialConfigFileRemoteConfig),
+		)
+		s.config.Agent.ConfigFiles = newConfigFiles
+		return
+	}
+
+	// if missing ownmetrics, add it to the beginning
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOwnMetrics]; ok {
+		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 0, string(config.SpecialConfigFileOwnMetrics))
+	}
+
+	// if missing builtin, add it to the beginning
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileBuiltin]; ok {
+		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 1, string(config.SpecialConfigFileBuiltin))
+	}
+
+	// if missing opamp extension, add it to the end
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOpAMPExtension]; ok {
+		s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(config.SpecialConfigFileOpAMPExtension))
+	}
+
+	// if missing remote config, add it to the end
+	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileRemoteConfig]; ok {
+		s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(config.SpecialConfigFileRemoteConfig))
+	}
+}
+
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
 
@@ -946,6 +1002,41 @@ func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	}
 
 	return cfg.Bytes(), nil
+}
+
+func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.AgentRemoteConfig) []configComposer {
+	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
+	remoteConfigComposers := []configComposer{}
+	if hasIncomingConfigMap {
+		c := incomingConfig.GetConfig()
+
+		// Sort to make sure the order of merging is stable.
+		var names []string
+		for name := range c.ConfigMap {
+			if name == "" {
+				// skip instance config
+				continue
+			}
+			names = append(names, name)
+		}
+
+		sort.Strings(names)
+
+		// Append instance config as the last item.
+		names = append(names, "")
+
+		// Merge received configs.
+		for _, name := range names {
+			item := c.ConfigMap[name]
+			if item == nil {
+				continue
+			}
+			remoteConfigComposers = append(remoteConfigComposers, func() []byte {
+				return item.Body
+			})
+		}
+	}
+	return remoteConfigComposers
 }
 
 func (s *Supervisor) composeNoopConfig() ([]byte, error) {
@@ -963,6 +1054,14 @@ func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 	}
 
 	return k.Marshal(yaml.Parser())
+}
+
+func (s *Supervisor) composeOwnMetricsConfig() []byte {
+	ownMetricsCfg, ok := s.agentConfigOwnMetricsSection.Load().(string)
+	if !ok {
+		return nil
+	}
+	return []byte(ownMetricsCfg)
 }
 
 func (s *Supervisor) composeExtraLocalConfig() []byte {
@@ -1017,34 +1116,55 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	return cfg.Bytes()
 }
 
-func (s *Supervisor) composeAgentConfigFiles() []byte {
-	conf := confmap.New()
+type configComposer func() []byte
+
+func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig) ([]byte, error) {
+	konf := koanf.New("::")
+
+	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
+		config.SpecialConfigFileOwnMetrics:     {s.composeOwnMetricsConfig},
+		config.SpecialConfigFileBuiltin:        {s.composeExtraLocalConfig},
+		config.SpecialConfigFileOpAMPExtension: {s.composeOpAMPExtensionConfig},
+		config.SpecialConfigFileRemoteConfig:   s.createRemoteConfigComposers(incomingConfig),
+	}
 
 	for _, file := range s.config.Agent.ConfigFiles {
+		// The special config files should always be valid yaml.
+		// If they are not we need a hard crash.
+		// Important: this applies ONLY to special config files.
+		// Normal config files with invalid yaml should be just ignored.
+		if strings.HasPrefix(file, "$") {
+			cfgProviders := specialConfigComposers[config.SpecialConfigFile(file)]
+			for _, cfgProvider := range cfgProviders {
+				cfgBytes := cfgProvider()
+				err := konf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+				if err != nil {
+					s.telemetrySettings.Logger.Error("Could not merge special config file", zap.String("specialConfig", file), zap.Error(err))
+					return nil, err
+				}
+			}
+			continue
+		}
+
 		cfgBytes, err := os.ReadFile(file)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not read local config file", zap.Error(err))
 			continue
 		}
 
-		cfgMap, err := yaml.Parser().Unmarshal(cfgBytes)
-		if err != nil {
-			s.telemetrySettings.Logger.Error("Could not unmarshal local config file", zap.Error(err))
-			continue
-		}
-		err = conf.Merge(confmap.NewFromStringMap(cfgMap))
+		err = konf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not merge local config file: "+file, zap.Error(err))
 			continue
 		}
 	}
 
-	b, err := yaml.Parser().Marshal(conf.ToStringMap())
+	b, err := konf.Marshal(yaml.Parser())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
-		return []byte("")
+		return []byte(""), err
 	}
-	return b
+	return b, nil
 }
 
 // loadAndWriteInitialMergedConfig loads and writes the initial config by
@@ -1194,43 +1314,10 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
+	s.addSpecialConfigFiles()
+
 	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
-
-	if hasIncomingConfigMap {
-		c := incomingConfig.GetConfig()
-
-		// Sort to make sure the order of merging is stable.
-		var names []string
-		for name := range c.ConfigMap {
-			if name == "" {
-				// skip instance config
-				continue
-			}
-			names = append(names, name)
-		}
-
-		sort.Strings(names)
-
-		// Append instance config as the last item.
-		names = append(names, "")
-
-		// Merge received configs.
-		for _, name := range names {
-			item := c.ConfigMap[name]
-			if item == nil {
-				continue
-			}
-			k2 := koanf.New("::")
-			err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
-			if err != nil {
-				return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
-			}
-			err = k.Merge(k2)
-			if err != nil {
-				return false, fmt.Errorf("cannot merge config named %s: %w", name, err)
-			}
-		}
-	} else {
+	if !hasIncomingConfigMap {
 		// Add noop pipeline
 		var noopConfig []byte
 		noopConfig, err = s.composeNoopPipeline()
@@ -1243,24 +1330,12 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 		}
 	}
 
-	// Merge own metrics config.
-	ownMetricsCfg, ok := s.agentConfigOwnMetricsSection.Load().(string)
-	if ok {
-		if err = k.Load(rawbytes.Provider([]byte(ownMetricsCfg)), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-			return false, err
-		}
-	}
-
-	// Merge local config last since it has the highest precedence.
-	if err = k.Load(rawbytes.Provider(s.composeExtraLocalConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	agentConfigBytes, err := s.composeAgentConfigFiles(incomingConfig)
+	if err != nil {
 		return false, err
 	}
 
-	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-		return false, err
-	}
-
-	if err = k.Load(rawbytes.Provider(s.composeAgentConfigFiles()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	if err = k.Load(rawbytes.Provider(agentConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return false, err
 	}
 
