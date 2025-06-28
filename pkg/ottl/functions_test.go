@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -534,10 +535,17 @@ func Test_NewFunctionCall(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	testMap := pcommon.NewMap()
+	testMap.PutStr("foo", "bar")
+
+	testSlice := pcommon.NewSlice()
+	testSlice.AppendEmpty().SetStr("test")
+
 	tests := []struct {
-		name string
-		inv  editor
-		want any
+		name      string
+		inv       editor
+		want      any
+		wantError string
 	}{
 		{
 			name: "no arguments",
@@ -937,6 +945,254 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "literalpslicegetter arg",
+			inv: editor{
+				Function: "testing_literalpslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("test"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: testSlice,
+		},
+		{
+			name: "literalpslicegetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalpslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{
+													{
+														Name: "name",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardPSliceGetter value is not a literal",
+		},
+		{
+			name: "literalstringgetter arg",
+			inv: editor{
+				Function: "testing_literalstringgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("test"),
+						},
+					},
+				},
+			},
+			want: "test",
+		},
+		{
+			name: "literalstringgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalstringgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardStringGetter value is not a literal",
+		},
+		{
+			name: "literalintgetter arg",
+			inv: editor{
+				Function: "testing_literalintgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Int: ottltest.Intp(1),
+							},
+						},
+					},
+				},
+			},
+			want: int64(1),
+		},
+		{
+			name: "literalintgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalintgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardIntGetter value is not a literal",
+		},
+		{
+			name: "literalfloatgetter arg",
+			inv: editor{
+				Function: "testing_literalfloatgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(1),
+							},
+						},
+					},
+				},
+			},
+			want: float64(1),
+		},
+		{
+			name: "literalfloatgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalfloatgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardFloatGetter value is not a literal",
+		},
+		{
+			name: "literalboolgetter arg",
+			inv: editor{
+				Function: "testing_literalboolgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Bool: (*boolean)(ottltest.Boolp(true)),
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "literalboolgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalboolgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardBoolGetter value is not a literal",
+		},
+		{
+			name: "literalpmapgetter arg",
+			inv: editor{
+				Function: "testing_literalpmapgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Map: &mapValue{
+								Values: []mapItem{
+									{
+										Key:   ottltest.Strp("foo"),
+										Value: &value{String: ottltest.Strp("bar")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: testMap,
+		},
+		{
+			name: "literalpmapgetter arg with invalid value (path)",
+			inv: editor{
+				Function: "testing_literalpmapgetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Map: &mapValue{
+								Values: []mapItem{
+									{
+										Key: ottltest.Strp("foo"),
+										Value: &value{
+											Literal: &mathExprLiteral{
+												Path: &path{
+													Fields: []field{
+														{
+															Name: "name",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: "StandardPMapGetter value is not a literal",
 		},
 		{
 			name: "pslicegetter slice arg",
@@ -1731,9 +1987,11 @@ func Test_NewFunctionCall(t *testing.T) {
 			fn, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
+			result, err := fn.Eval(context.Background(), nil)
 			if tt.want != nil {
-				result, _ := fn.Eval(context.Background(), nil)
 				assert.Equal(t, tt.want, result)
+			} else if tt.wantError != "" {
+				assert.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
@@ -2149,6 +2407,54 @@ func functionWithPSliceGetter(PSliceGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type literalPSliceArguments struct {
+	LiteralGetter[any, pcommon.Slice, PSliceGetter[any]]
+}
+
+func functionWithLiteralPSliceGetter(getter LiteralGetter[any, pcommon.Slice, PSliceGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalStringGetterArguments struct {
+	LiteralGetter[any, string, StringGetter[any]]
+}
+
+func functionWithLiteralStringGetter(getter LiteralGetter[any, string, StringGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalIntGetterArguments struct {
+	LiteralGetter[any, int64, IntGetter[any]]
+}
+
+func functionWithLiteralIntGetter(getter LiteralGetter[any, int64, IntGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalFloatGetterArguments struct {
+	LiteralGetter[any, float64, FloatGetter[any]]
+}
+
+func functionWithLiteralFloatGetter(getter LiteralGetter[any, float64, FloatGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalBoolGetterArguments struct {
+	LiteralGetter[any, bool, BoolGetter[any]]
+}
+
+func functionWithLiteralBoolGetter(getter LiteralGetter[any, bool, BoolGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
+type literalPMapGetterArguments struct {
+	LiteralGetter[any, pcommon.Map, PMapGetter[any]]
+}
+
+func functionWithLiteralPMapGetter(getter LiteralGetter[any, pcommon.Map, PMapGetter[any]]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
+}
+
 type stringArguments struct {
 	StringArg string
 }
@@ -2449,6 +2755,36 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pslicegetter",
 			&pSliceGetterArguments{},
 			functionWithPSliceGetter,
+		),
+		createFactory[any](
+			"testing_literalpslicegetter",
+			&literalPSliceArguments{},
+			functionWithLiteralPSliceGetter,
+		),
+		createFactory[any](
+			"testing_literalstringgetter",
+			&literalStringGetterArguments{},
+			functionWithLiteralStringGetter,
+		),
+		createFactory[any](
+			"testing_literalintgetter",
+			&literalIntGetterArguments{},
+			functionWithLiteralIntGetter,
+		),
+		createFactory[any](
+			"testing_literalfloatgetter",
+			&literalFloatGetterArguments{},
+			functionWithLiteralFloatGetter,
+		),
+		createFactory[any](
+			"testing_literalboolgetter",
+			&literalBoolGetterArguments{},
+			functionWithLiteralBoolGetter,
+		),
+		createFactory[any](
+			"testing_literalpmapgetter",
+			&literalPMapGetterArguments{},
+			functionWithLiteralPMapGetter,
 		),
 		createFactory[any](
 			"testing_string",

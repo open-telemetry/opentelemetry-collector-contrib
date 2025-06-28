@@ -111,17 +111,19 @@ func basicSliceByte() (ExprFunc[any], error) {
 
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
-		name string
-		val  value
-		ctx  any
-		want any
+		name        string
+		val         value
+		ctx         any
+		want        any
+		wantLiteral bool
 	}{
 		{
 			name: "string literal",
 			val: value{
 				String: ottltest.Strp("str"),
 			},
-			want: "str",
+			want:        "str",
+			wantLiteral: true,
 		},
 		{
 			name: "float literal",
@@ -130,7 +132,8 @@ func Test_newGetter(t *testing.T) {
 					Float: ottltest.Floatp(1.2),
 				},
 			},
-			want: 1.2,
+			want:        1.2,
+			wantLiteral: true,
 		},
 		{
 			name: "int literal",
@@ -139,28 +142,32 @@ func Test_newGetter(t *testing.T) {
 					Int: ottltest.Intp(12),
 				},
 			},
-			want: int64(12),
+			want:        int64(12),
+			wantLiteral: true,
 		},
 		{
 			name: "bytes literal",
 			val: value{
 				Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			},
-			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
+			want:        []byte{1, 2, 3, 4, 5, 6, 7, 8},
+			wantLiteral: true,
 		},
 		{
 			name: "nil literal",
 			val: value{
 				IsNil: (*isNil)(ottltest.Boolp(true)),
 			},
-			want: nil,
+			want:        nil,
+			wantLiteral: true,
 		},
 		{
 			name: "bool literal",
 			val: value{
 				Bool: (*boolean)(ottltest.Boolp(true)),
 			},
-			want: true,
+			want:        true,
+			wantLiteral: true,
 		},
 		{
 			name: "path expression",
@@ -396,7 +403,8 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{},
 				},
 			},
-			want: []any{},
+			want:        []any{},
+			wantLiteral: false,
 		},
 		{
 			name: "string list",
@@ -412,7 +420,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{"test0", "test1"},
+			want:        []any{"test0", "test1"},
+			wantLiteral: true,
 		},
 		{
 			name: "int list",
@@ -432,7 +441,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{int64(1), int64(2)},
+			want:        []any{int64(1), int64(2)},
+			wantLiteral: true,
 		},
 		{
 			name: "float list",
@@ -452,7 +462,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{1.2, 2.4},
+			want:        []any{1.2, 2.4},
+			wantLiteral: true,
 		},
 		{
 			name: "bool list",
@@ -468,7 +479,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{true, false},
+			want:        []any{true, false},
+			wantLiteral: true,
 		},
 		{
 			name: "byte slice list",
@@ -484,7 +496,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{[]byte{1, 2, 3, 4, 5, 6, 7, 8}, []byte{9, 8, 7, 6, 5, 4, 3, 2}},
+			want:        []any{[]byte{1, 2, 3, 4, 5, 6, 7, 8}, []byte{9, 8, 7, 6, 5, 4, 3, 2}},
+			wantLiteral: true,
 		},
 		{
 			name: "path expression",
@@ -539,7 +552,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{nil, nil},
+			want:        []any{nil, nil},
+			wantLiteral: true,
 		},
 		{
 			name: "heterogeneous slice",
@@ -557,7 +571,8 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: []any{"test0", int64(1)},
+			want:        []any{"test0", int64(1)},
+			wantLiteral: true,
 		},
 		{
 			name: "map",
@@ -722,6 +737,15 @@ func Test_newGetter(t *testing.T) {
 				assert.EqualValues(t, tt.want, v.AsRaw())
 			default:
 				assert.Equal(t, tt.want, v)
+			}
+
+			litGetter, _ := reader.(literalGetter)
+
+			if tt.wantLiteral {
+				assert.True(t, litGetter.isLiteral())
+				litValue, err := litGetter.getLiteral()
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, litValue)
 			}
 		})
 	}
