@@ -147,9 +147,9 @@ func integrationTest(version string, jar string, jmxConfig string) func(*testing
 			}),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", version, "expected.yaml")),
 		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreScopeMetricsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreDatapointAttributesOrder(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricsOrder(),
