@@ -618,12 +618,6 @@ func TestStackTraceEvent(t *testing.T) {
 				dic.StringTable().Append(stacktraceIDBase64)
 
 				a := dic.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.K8SPodNameKey))
-				a.Value().SetStr("my_pod")
-				a = dic.AttributeTable().AppendEmpty()
-				a.SetKey(string(semconv.ContainerNameKey))
-				a.Value().SetStr("my_container")
-				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey(string(semconv.ThreadNameKey))
 				a.Value().SetStr("my_thread")
 				a = dic.AttributeTable().AppendEmpty()
@@ -634,22 +628,31 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
+				_ = rp.Resource().Attributes().FromRaw(map[string]any{
+					string(semconv.K8SPodNameKey):       "my_pod",
+					string(semconv.ContainerNameKey):    "my_container",
+					string(semconv.ContainerIDKey):      "my_container_id",
+					string(semconv.K8SNamespaceNameKey): "my_k8s_namespace_name",
+				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
 				s := p.Sample().AppendEmpty()
-				s.AttributeIndices().Append(0, 1, 2, 3)
+				s.AttributeIndices().Append(0, 1)
 
 				return rp
 			},
 
 			wantEvent: StackTraceEvent{
-				EcsVersion:    EcsVersion{V: EcsVersionString},
-				PodName:       "my_pod",
-				ContainerName: "my_container",
-				ThreadName:    "my_thread",
-				StackTraceID:  stacktraceIDBase64,
-				Count:         1,
+				EcsVersion:       EcsVersion{V: EcsVersionString},
+				PodName:          "my_pod",
+				K8sNamespaceName: "my_k8s_namespace_name",
+				ContainerName:    "my_container",
+				ContainerID:      "my_container_id",
+				ThreadName:       "my_thread",
+				ServiceName:      "my_service",
+				StackTraceID:     stacktraceIDBase64,
+				Count:            1,
 			},
 		},
 	} {
@@ -659,7 +662,8 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Sample().At(0)
 
-			event := stackTraceEvent(dic, stacktraceIDBase64, s, map[string]string{})
+			hostMetadata := newHostMetadata(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			event := stackTraceEvent(dic, stacktraceIDBase64, s, hostMetadata)
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)

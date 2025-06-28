@@ -211,13 +211,17 @@ func isFrameSymbolized(frame StackFrame) bool {
 
 func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, hostMetadata map[string]string) StackTraceEvent {
 	event := StackTraceEvent{
-		EcsVersion:   EcsVersion{V: EcsVersionString},
-		HostID:       hostMetadata[string(semconv.HostIDKey)],
-		StackTraceID: traceID,
-		Count:        1, // TODO: Check whether count can be dropped with nanosecond timestamps
+		EcsVersion:       EcsVersion{V: EcsVersionString},
+		HostID:           hostMetadata[string(semconv.HostIDKey)],
+		StackTraceID:     traceID,
+		ContainerID:      hostMetadata[string(semconv.ContainerIDKey)],
+		ContainerName:    hostMetadata[string(semconv.ContainerNameKey)],
+		PodName:          hostMetadata[string(semconv.K8SPodNameKey)],
+		K8sNamespaceName: hostMetadata[string(semconv.K8SNamespaceNameKey)],
+		Count:            1, // TODO: Check whether count can be dropped with nanosecond timestamps
 	}
 
-	// Store event-specific attributes.
+	// Fetch event-specific attributes.
 	for i := 0; i < sample.AttributeIndices().Len(); i++ {
 		if dic.AttributeTable().Len() < i {
 			continue
@@ -225,16 +229,10 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		attr := dic.AttributeTable().At(i)
 
 		switch attribute.Key(attr.Key()) {
-		case semconv.HostIDKey:
-			event.HostID = attr.Value().AsString()
-		case semconv.ContainerIDKey:
-			event.ContainerID = attr.Value().AsString()
-		case semconv.K8SPodNameKey:
-			event.PodName = attr.Value().AsString()
-		case semconv.ContainerNameKey:
-			event.ContainerName = attr.Value().AsString()
 		case semconv.ThreadNameKey:
 			event.ThreadName = attr.Value().AsString()
+		case semconv.ServiceNameKey:
+			event.ServiceName = attr.Value().AsString()
 		}
 	}
 
