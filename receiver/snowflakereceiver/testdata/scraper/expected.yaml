@@ -327,7 +327,7 @@ resourceMetrics:
           - description: Number of bytes of stage storage used by files in all internal stages (named, table, user).
             gauge:
               dataPoints:
-                - asInt: "2"
+                - asDouble: "2.0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: snowflake.storage.stage_bytes.total
@@ -335,7 +335,7 @@ resourceMetrics:
           - description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
             gauge:
               dataPoints:
-                - asInt: "1"
+                - asDouble: "1.4"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: snowflake.storage.storage_bytes.total
