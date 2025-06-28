@@ -6,6 +6,7 @@ package sqlserverreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -165,7 +166,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		}
 		expected.LogsBuilderConfig = metadata.LogsBuilderConfig{
-			Events: metadata.DefaultEventsConfig(),
+			Events: metadata.EventsConfig{
+				DbServerQuerySample: metadata.EventConfig{
+					Enabled: true,
+				},
+				DbServerTopQuery: metadata.EventConfig{
+					Enabled: true,
+				},
+			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
 				HostName: metadata.ResourceAttributeConfig{
 					Enabled: true,
@@ -192,6 +200,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.LookbackTime = 60
 		expected.TopQueryCount = 200
 		expected.MaxQuerySampleCount = 1000
+		expected.TopQueryCollection.CollectionInterval = 80 * time.Second
 
 		expected.QuerySample = QuerySample{
 			MaxRowsPerQuery: 1450,
