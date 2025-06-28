@@ -12,7 +12,7 @@ New functions must update the appropriate registry.  For common functions, updat
 
 Unit tests must be added for all new functions.  Unit test files must start with `func_` and end in `_test`.  Unit tests must be placed in the same directory as the function.  Functions that are not specific to a pipeline should be tested independently of any specific pipeline. Functions that are specific to a pipeline should be tests against that pipeline.
 
-All new functions should have integration tests added to any usable pipeline's `processing_test.go` tests.  The purpose of these tests is not to test the function's logic, but its ability to be used within a specific pipeline.  
+All new functions should have integration tests added to any usable pipeline's `processor_tests.go` tests.  The purpose of these tests is not to test the function's logic, but its ability to be used within a specific pipeline.  
 
 ## New Values
 
