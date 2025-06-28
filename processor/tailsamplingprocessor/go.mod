@@ -10,12 +10,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.128.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.128.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.34.1-0.20250626234257-6aa2b812b7c6
-	go.opentelemetry.io/collector/confmap v1.34.1-0.20250626234257-6aa2b812b7c6
-	go.opentelemetry.io/collector/consumer v1.34.1-0.20250626234257-6aa2b812b7c6
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250626234257-6aa2b812b7c6
-	go.opentelemetry.io/collector/pdata v1.34.1-0.20250626234257-6aa2b812b7c6
-	go.opentelemetry.io/collector/processor v1.34.1-0.20250626234257-6aa2b812b7c6
+	go.opentelemetry.io/collector/component v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/confmap v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/consumer v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/pdata v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/processor v1.34.1-0.20250628171447-c6cd1aeb58b7
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/metric v1.36.0
 	go.opentelemetry.io/otel/sdk/metric v1.36.0
