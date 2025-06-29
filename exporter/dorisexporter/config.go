@@ -128,18 +128,31 @@ const (
 	properties = `
 PROPERTIES (
 "replication_num" = "%d",
-"compaction_policy" = "time_series",
+"compaction_policy" = "%s",
 "dynamic_partition.enable" = "true",
 "dynamic_partition.create_history_partition" = "true",
 "dynamic_partition.time_unit" = "DAY",
 "dynamic_partition.start" = "%d",
 "dynamic_partition.history_partition_num" = "%d",
 "dynamic_partition.end" = "1",
-"dynamic_partition.prefix" = "p"
+"dynamic_partition.prefix" = "p",
+"compression" = "zstd",
+"inverted_index_storage_format" = "V2"
 )
 `
 )
 
+const (
+	compactionPolicySizeBased  = "size_based"
+	compactionPolicyTimeSeries = "time_series"
+)
+
+// // propertiesStr returns the properties string for non-unique key tables.
 func (cfg *Config) propertiesStr() string {
-	return fmt.Sprintf(properties, cfg.ReplicationNum, cfg.startHistoryDays(), cfg.CreateHistoryDays)
+	return fmt.Sprintf(properties, cfg.ReplicationNum, compactionPolicyTimeSeries, cfg.startHistoryDays(), cfg.CreateHistoryDays)
+}
+
+// // propertiesStrForUniqueKey returns the properties string for unique key tables.
+func (cfg *Config) propertiesStrForUniqueKey() string {
+	return fmt.Sprintf(properties, cfg.ReplicationNum, compactionPolicySizeBased, cfg.startHistoryDays(), cfg.CreateHistoryDays)
 }
