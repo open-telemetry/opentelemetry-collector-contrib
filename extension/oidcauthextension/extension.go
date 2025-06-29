@@ -7,6 +7,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -22,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -30,14 +33,19 @@ var (
 	_ extensionauth.Server = (*oidcExtension)(nil)
 )
 
+type ProviderContainer struct {
+	providerCfg ProviderCfg
+	provider    *oidc.Provider
+	verifier    *oidc.IDTokenVerifier
+	client      *http.Client
+	transport   *http.Transport
+}
+
 type oidcExtension struct {
 	cfg *Config
 
-	provider  *oidc.Provider
-	verifier  *oidc.IDTokenVerifier
-	client    *http.Client
-	logger    *zap.Logger
-	transport *http.Transport
+	providerContainers map[string]*ProviderContainer
+	logger             *zap.Logger
 }
 
 var (
@@ -57,29 +65,32 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 	}
 
 	return &oidcExtension{
-		cfg:    cfg,
-		logger: logger,
+		cfg:                cfg,
+		logger:             logger,
+		providerContainers: make(map[string]*ProviderContainer),
 	}
 }
 
 func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
-	err := e.setProviderConfig(ctx, e.cfg)
-	if err != nil {
-		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
+	var errs error
+	for _, providerCfg := range e.cfg.getProviderConfigs() {
+		errs = multierr.Append(errs, e.processProviderConfig(ctx, providerCfg))
 	}
-	e.verifier = e.provider.Verifier(&oidc.Config{
-		ClientID:          e.cfg.Audience,
-		SkipClientIDCheck: e.cfg.IgnoreAudience,
-	})
+	if errs != nil {
+		return fmt.Errorf("failed to get configuration from the auth server: %w", errs)
+	}
+
 	return nil
 }
 
 func (e *oidcExtension) Shutdown(context.Context) error {
-	if e.client != nil {
-		e.client.CloseIdleConnections()
-	}
-	if e.transport != nil {
-		e.transport.CloseIdleConnections()
+	for _, p := range e.providerContainers {
+		if p.client != nil {
+			p.client.CloseIdleConnections()
+		}
+		if p.transport != nil {
+			p.transport.CloseIdleConnections()
+		}
 	}
 
 	return nil
@@ -105,7 +116,16 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	}
 
 	raw := parts[1]
-	idToken, err := e.verifier.Verify(ctx, raw)
+	unsafeIssuer, err := getUnsafeIssuer(raw)
+	if err != nil {
+		return ctx, fmt.Errorf("failed to parse the token: %w", err)
+	}
+	providerContainer, ok := e.providerContainers[unsafeIssuer]
+	if !ok {
+		return ctx, fmt.Errorf("no OIDC provider configured for the issuer %q", unsafeIssuer)
+	}
+
+	idToken, err := providerContainer.verifier.Verify(ctx, raw)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
@@ -121,11 +141,11 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errFailedToObtainClaimsFromToken
 	}
 
-	subject, err := getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
+	subject, err := getSubjectFromClaims(claims, providerContainer.providerCfg.UsernameClaim, idToken.Subject)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
-	membership, err := getGroupsFromClaims(claims, e.cfg.GroupsClaim)
+	membership, err := getGroupsFromClaims(claims, providerContainer.providerCfg.GroupsClaim)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
@@ -139,8 +159,12 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	return client.NewContext(ctx, cl), nil
 }
 
-func (e *oidcExtension) setProviderConfig(ctx context.Context, config *Config) error {
-	e.transport = &http.Transport{
+func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg) error {
+	providerContainer := ProviderContainer{
+		providerCfg: p,
+	}
+
+	providerContainer.transport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   5 * time.Second,
@@ -154,27 +178,38 @@ func (e *oidcExtension) setProviderConfig(ctx context.Context, config *Config) e
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	cert, err := getIssuerCACertFromPath(config.IssuerCAPath)
+	cert, err := getIssuerCACertFromPath(p.IssuerCAPath)
 	if err != nil {
+		providerContainer.transport.CloseIdleConnections()
 		return err // the errors from this path have enough context already
 	}
 
 	if cert != nil {
-		e.transport.TLSClientConfig = &tls.Config{
+		providerContainer.transport.TLSClientConfig = &tls.Config{
 			RootCAs: x509.NewCertPool(),
 		}
-		e.transport.TLSClientConfig.RootCAs.AddCert(cert)
+		providerContainer.transport.TLSClientConfig.RootCAs.AddCert(cert)
 	}
 
-	e.client = &http.Client{
+	providerContainer.client = &http.Client{
 		Timeout:   5 * time.Second,
-		Transport: e.transport,
+		Transport: providerContainer.transport,
 	}
-	oidcContext := oidc.ClientContext(ctx, e.client)
-	provider, err := oidc.NewProvider(oidcContext, config.IssuerURL)
-	e.provider = provider
+	oidcContext := oidc.ClientContext(ctx, providerContainer.client)
+	providerContainer.provider, err = oidc.NewProvider(oidcContext, p.IssuerURL)
+	if err != nil {
+		providerContainer.transport.CloseIdleConnections()
+		providerContainer.client.CloseIdleConnections()
+		return fmt.Errorf("failed to create OIDC provider for %q: %w", p.IssuerURL, err)
+	}
+	providerContainer.verifier = providerContainer.provider.Verifier(&oidc.Config{
+		ClientID:          p.Audience,
+		SkipClientIDCheck: p.IgnoreAudience,
+	})
 
-	return err
+	e.providerContainers[p.IssuerURL] = &providerContainer
+
+	return nil
 }
 
 func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback string) (string, error) {
@@ -240,4 +275,37 @@ func getIssuerCACertFromPath(path string) (*x509.Certificate, error) {
 	}
 
 	return x509.ParseCertificate(block.Bytes)
+}
+
+type idToken struct {
+	Issuer string `json:"iss"`
+}
+
+// Get the issuer from the raw ID token.
+// This function is unsafe because it does not verify the token's signature.
+// It should only be used to determine which verifier to use for the token.
+func getUnsafeIssuer(rawIDToken string) (string, error) {
+	// TODO: it would be nice if we didn't have to parse the JWT here and then again in the verifier...
+	payload, err := parseJWT(rawIDToken)
+	if err != nil {
+		return "", fmt.Errorf("oidc: malformed jwt: %w", err)
+	}
+	var token idToken
+	if err := json.Unmarshal(payload, &token); err != nil {
+		return "", fmt.Errorf("oidc: failed to unmarshal claims: %w", err)
+	}
+	return token.Issuer, nil
+}
+
+// https://github.com/coreos/go-oidc/blob/a7c457eacb849c163a496b29274242474a8f44ab/oidc/verify.go#L148
+func parseJWT(p string) ([]byte, error) {
+	parts := strings.Split(p, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("oidc: malformed jwt, expected 3 parts got %d", len(parts))
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("oidc: malformed jwt payload: %w", err)
+	}
+	return payload, nil
 }
