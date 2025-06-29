@@ -42,7 +42,7 @@ awscloudwatch/named-prefix-with-streams:
           names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
 
 awscloudwatch/named-prefix:
-  profile: "my-profile"
+  profile: 'my-profile'
   region: us-west-1
   logs:
     poll_interval: 5m
