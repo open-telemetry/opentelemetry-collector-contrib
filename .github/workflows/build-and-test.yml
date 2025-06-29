@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -85,7 +85,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -154,7 +154,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -178,7 +178,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -394,7 +394,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -427,7 +427,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -471,7 +471,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -498,7 +498,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -570,7 +570,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
@@ -620,7 +620,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Mkdir bin and dist
         run: |
@@ -764,7 +764,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
           cache: false
       - name: Cache Go
         id: go-cache
