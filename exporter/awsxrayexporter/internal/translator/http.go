@@ -59,7 +59,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case string(conventionsv112.HTTPTargetKey), string(conventions.URLQueryKey):
+		case string(conventionsv112.HTTPTargetKey):
 			urlParts[string(conventionsv112.HTTPTargetKey)] = value.Str()
 			hasHTTP = true
 		case string(conventionsv112.HTTPServerNameKey):
@@ -108,6 +108,9 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 				info.Request.ClientIP = awsxray.String(value.Str())
 			}
 		case string(conventions.URLPathKey):
+			urlParts[key] = value.Str()
+			hasHTTP = true
+		case string(conventions.URLQueryKey):
 			urlParts[key] = value.Str()
 			hasHTTP = true
 		case string(conventions.ServerAddressKey):
@@ -205,7 +208,12 @@ func constructClientURL(urlParts map[string]string) string {
 	if ok {
 		url += target
 	} else {
-		url += "/"
+		path, ok := urlParts[string(conventions.URLPathKey)]
+		if ok {
+			url += path
+		} else {
+			url += "/"
+		}
 	}
 	return url
 }
