@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -226,6 +227,81 @@ func TestShutdownWhileCollecting(t *testing.T) {
 
 	close(doneChan)
 	require.NoError(t, alertRcvr.Shutdown(context.Background()))
+}
+
+func TestAutodiscoverPattern(t *testing.T) {
+	mc := &mockClient{}
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			if input.LogGroupNamePattern != nil && strings.Contains(testLogGroupName, *input.LogGroupNamePattern) {
+				return true
+			}
+
+			return false
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{
+					LogGroupName: &testLogGroupName,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			fmt.Printf("The log group name pattern %s", *input.LogGroupNamePattern)
+			if input.LogGroupNamePattern == nil || !strings.Contains(testLogGroupName, *input.LogGroupNamePattern) {
+				return true
+			}
+
+			return false
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{},
+			NextToken: nil,
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:   1,
+			Pattern: testLogGroupName[2:5],
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	alertRcvr.client = mc
+
+	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, 1)
+
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:   1,
+			Pattern: testLogGroupName[5:] + "-no-matches",
+		},
+	}
+
+	grs, err = alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Empty(t, grs)
 }
 
 func TestAutodiscoverLimit(t *testing.T) {

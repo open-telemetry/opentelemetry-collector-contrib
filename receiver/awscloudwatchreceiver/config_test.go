@@ -94,6 +94,24 @@ func TestValidate(t *testing.T) {
 			expectedErr: errInvalidAutodiscoverLimit,
 		},
 		{
+			name: "Invalid Log Group Prefix And Pattern",
+			config: Config{
+				Region: "us-east-1",
+				Logs: &LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit:   defaultLogGroupLimit,
+							Prefix:  "/aws/eks",
+							Pattern: "eks",
+						},
+					},
+				},
+			},
+			expectedErr: errPrefixAndPatternConfigured,
+		},
+		{
 			name: "Invalid IMDS Endpoint",
 			config: Config{
 				Region:       "us-east-1",
@@ -177,6 +195,22 @@ func TestLoadConfig(t *testing.T) {
 						AutodiscoverConfig: &AutodiscoverConfig{
 							Limit:  100,
 							Prefix: "/aws/eks/",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "name-pattern-log-group-autodiscover",
+			expectedConfig: &Config{
+				Region: "us-west-1",
+				Logs: &LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit:   100,
+							Pattern: "eks",
 						},
 					},
 				},
