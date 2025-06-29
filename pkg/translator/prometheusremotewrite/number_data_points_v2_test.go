@@ -146,8 +146,6 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 	}
 }
 
-// Right now we are not handling duplicates, the second one will just overwrite the first one as this test case shows
-// In follow-up PRs we plan to start handling conflicts and this test will be updated to reflect the new behavior.
 func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	metric1 := getIntGaugeMetric(
@@ -171,6 +169,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 			labels.Hash(): {
 				LabelsRefs: []uint32{1, 2},
 				Samples: []writev2.Sample{
+					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 2},
 				},
 				Metadata: writev2.Metadata{
