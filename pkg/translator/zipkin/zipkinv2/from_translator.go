@@ -84,11 +84,16 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 }
 
 func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) {
+	attrs := il.Attributes()
+	for k, v := range attrs.All() {
+		zTags[k] = v.AsString()
+	}
+
 	if ilName := il.Name(); ilName != "" {
-		zTags[string(conventions.OtelLibraryNameKey)] = ilName
+		zTags[string(conventions.OtelScopeNameKey)] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[string(conventions.OtelLibraryVersionKey)] = ilVer
+		zTags[string(conventions.OtelScopeVersionKey)] = ilVer
 	}
 }
 
