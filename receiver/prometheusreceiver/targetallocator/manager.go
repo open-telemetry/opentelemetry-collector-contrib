@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	commonconfig "github.com/prometheus/common/config"
@@ -212,9 +213,44 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 		return nil, err
 	}
 
-	resp, err := httpClient.Get(scrapeConfigsURL)
-	if err != nil {
-		return nil, err
+	var resp *http.Response
+	var lastErr error
+
+	// Retry configuration: retry for up to 1 minute with exponential backoff
+	maxRetryDuration := time.Minute
+	initialBackoff := 100 * time.Millisecond
+	maxBackoff := 5 * time.Second
+	backoffMultiplier := 2.0
+
+	startTime := time.Now()
+	backoff := initialBackoff
+
+	for {
+		resp, err = httpClient.Get(scrapeConfigsURL)
+		if err == nil {
+			break // Success, exit retry loop
+		}
+
+		lastErr = err
+
+		// Check if this is a connection error that we should retry
+		if !isRetriableError(err) {
+			return nil, err
+		}
+
+		// Check if we've exceeded the max retry duration
+		if time.Since(startTime) >= maxRetryDuration {
+			return nil, fmt.Errorf("failed to connect to target allocator after %v, last error: %w", maxRetryDuration, lastErr)
+		}
+
+		// Wait before retrying
+		time.Sleep(backoff)
+
+		// Increase backoff for next iteration, with a maximum
+		backoff = time.Duration(float64(backoff) * backoffMultiplier)
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -233,6 +269,17 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 		return nil, err
 	}
 	return jobToScrapeConfig, nil
+}
+
+// isRetriableError determines if an error is a connection error that should be retried
+func isRetriableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	//Check for specific connection error strings
+	errStr := err.Error()
+	return strings.Contains(errStr, "connection refused")
 }
 
 // instantiateShard inserts the SHARD environment variable in the returned configuration
