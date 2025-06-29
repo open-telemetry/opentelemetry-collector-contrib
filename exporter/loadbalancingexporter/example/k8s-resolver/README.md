@@ -3,11 +3,13 @@
 ## How to run
 
 1. Pre-requirements:
+
 ```shell
 kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
 ```
 
 2. Once the opentelemetry-operator is deployed, create the OpenTelemetry Collector (otelcol) instances, ServiceAccount and other necessary resources, run:
+
 ```shell
 kubectl apply -f - <<EOF
 apiVersion: v1
@@ -50,7 +52,7 @@ subjects:
   name: loadbalancer
   namespace: observability
 ---
-apiVersion: opentelemetry.io/v1alpha1
+apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
   name: loadbalancer
@@ -58,11 +60,11 @@ metadata:
 spec:
   image: docker.io/otel/opentelemetry-collector-contrib:latest
   serviceAccount: loadbalancer
-  config: |
+  config:
     receivers:
       otlp:
         protocols:
-          grpc:
+          grpc: {}
 
     processors:
 
@@ -85,23 +87,23 @@ spec:
           exporters:
             - loadbalancing
 ---
-apiVersion: opentelemetry.io/v1alpha1
+apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
   name: backends
   namespace: observability
 spec:
   replicas: 5
-  config: |
+  config:
     receivers:
       otlp:
         protocols:
-          grpc:
+          grpc: {}
 
     processors:
 
     exporters:
-      debug:
+      debug: {}
 
     service:
       pipelines:
@@ -115,6 +117,7 @@ EOF
 ```
 
 ## How does it work
+
 - The `loadbalancer` and `backends` OpenTelemetryCollector are recognised by the opentelemetry-operator, which then creates the appropriate deployment resources.
 - The `loadbalancer` ServiceAccount is used to assign to the pods corresponding to the deployment loadbalancer and backends.
 - The `loadbalancer-role` Role grants `get`, `list`, and `watch` permissions on endpoint resources in its namespace. Having these permissions is essential for a kubernetes service resolver to work properly.
