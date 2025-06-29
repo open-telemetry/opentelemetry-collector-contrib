@@ -530,6 +530,14 @@ The time since the pod started
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
 
+### k8s.pod.volume.usage
+
+The number of used bytes in the pod volume.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
