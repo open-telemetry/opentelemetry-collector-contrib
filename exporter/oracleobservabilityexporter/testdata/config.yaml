@@ -1,0 +1,6 @@
+oracleobservability/1:
+  auth_type: "config_file"
+  namespace: "example-namespace"
+  log_group_id: "example-loggroup-id"
+  oci_config_file_path: "path/to/config/file"
+  config_profile: "default-profile"
