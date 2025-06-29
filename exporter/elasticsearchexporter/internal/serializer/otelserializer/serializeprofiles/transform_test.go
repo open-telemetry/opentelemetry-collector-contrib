@@ -503,7 +503,15 @@ func TestStackPayloads(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
-						Count:        2,
+						Count:        1,
+					},
+				},
+				{
+					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
+						TimeStamp:    1000000000,
+						StackTraceID: wantedTraceID,
+						Count:        1,
 					},
 				},
 			},
