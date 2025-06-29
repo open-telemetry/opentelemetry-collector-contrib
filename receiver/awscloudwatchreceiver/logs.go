@@ -380,6 +380,10 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			req.NextToken = nextToken
 		}
 
+		if auto.Pattern != "" {
+			req.LogGroupNamePattern = &auto.Pattern
+		}
+
 		if auto.Prefix != "" {
 			req.LogGroupNamePrefix = &auto.Prefix
 		}
