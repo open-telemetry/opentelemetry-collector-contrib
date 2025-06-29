@@ -144,9 +144,9 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 }
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
-	ts, isNew := c.getOrCreateTimeSeries(lbls, metadata, sample)
+	ts, isNewMetric := c.getOrCreateTimeSeries(lbls, metadata, sample)
 	// If the time series is not new, we can just append the sample to the existing time series.
-	if !isNew {
+	if !isNewMetric {
 		ts.Samples = append(ts.Samples, *sample)
 	}
 }
@@ -165,7 +165,7 @@ func isSameMetricV2(ts1, ts2 *writev2.TimeSeries) bool {
 	return true
 }
 
-// getOrCreateTimeSeries returns the time series corresponding to the label set, and a boolean indicating if the time series is new or not.
+// getOrCreateTimeSeries returns the time series corresponding to the label set, and a boolean indicating if the metric is new or not.
 func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls []prompb.Label, metadata metadata, sample *writev2.Sample) (*writev2.TimeSeries, bool) {
 	signature := timeSeriesSignature(lbls)
 	ts := c.unique[signature]
