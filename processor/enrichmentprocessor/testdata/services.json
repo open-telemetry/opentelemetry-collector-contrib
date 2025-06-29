@@ -1,0 +1,52 @@
+[
+  {
+    "service_name": "user-service",
+    "service_type": "web",
+    "owner_team": "platform",
+    "owner_org": "engineering",
+    "environment": "production",
+    "version": "1.2.3",
+    "platform": "kubernetes",
+    "location": "us-east-1"
+  },
+  {
+    "service_name": "payment-service",
+    "service_type": "web",
+    "owner_team": "payments",
+    "owner_org": "business",
+    "environment": "production",
+    "version": "2.1.0",
+    "platform": "kubernetes",
+    "location": "us-west-2"
+  },
+  {
+    "service_name": "user-db",
+    "service_type": "database",
+    "owner_team": "platform",
+    "owner_org": "engineering",
+    "environment": "production",
+    "db_version": "PostgreSQL 13.7",
+    "location": "us-east-1",
+    "max_connections": "200"
+  },
+  {
+    "service_name": "payment-db",
+    "service_type": "database",
+    "owner_team": "payments",
+    "owner_org": "business",
+    "environment": "production",
+    "db_version": "MySQL 8.0.28",
+    "location": "us-west-2",
+    "max_connections": "500"
+  },
+  {
+    "queue_name": "order-queue",
+    "service_type": "messagequeue",
+    "owner_org": "business",
+    "environment": "production",
+    "max_depth": "10000",
+    "qmgr_name": "OrderQueueManager",
+    "mq_type": "rabbitmq",
+    "location": "us-east-1"
+  }
+]
