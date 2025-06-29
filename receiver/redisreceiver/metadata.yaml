@@ -50,6 +50,9 @@ attributes:
     enum:
       - replica
       - primary
+      - master
+      - slave
+      - sentinel
   cmd:
     description: Redis command name
     type: string
@@ -73,10 +76,8 @@ metrics:
     enabled: false
     description: Redis node's role
     unit: "{role}"
-    sum:
+    gauge:
       value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
     attributes: [role]
 
   redis.cmd.calls:
@@ -130,10 +131,8 @@ metrics:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
     unit: "{client}"
-    sum:
+    gauge:
       value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
 
   redis.clients.max_input_buffer:
     enabled: true
@@ -153,10 +152,8 @@ metrics:
     enabled: true
     description: Number of clients pending on a blocking call
     unit: "{client}"
-    sum:
+    gauge:
       value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
 
   redis.keys.expired:
     enabled: true
@@ -234,10 +231,8 @@ metrics:
     enabled: true
     description: Number of changes since the last dump
     unit: "{change}"
-    sum:
+    gauge:
       value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
 
   redis.commands:
     enabled: true
@@ -302,22 +297,20 @@ metrics:
     enabled: true
     description: Number of connected replicas
     unit: "{replica}"
-    sum:
+    gauge:
       value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
 
   redis.replication.backlog_first_byte_offset:
     enabled: true
     description: The master offset of the replication backlog buffer
-    unit: "By"
+    unit: "1"
     gauge:
       value_type: int
 
   redis.replication.offset:
     enabled: true
     description: The server's current replication offset
-    unit: "By"
+    unit: "1"
     gauge:
       value_type: int
 
@@ -348,7 +341,7 @@ metrics:
   redis.replication.replica_offset:
     enabled: false
     description: "Offset for redis replica"
-    unit: "By"
+    unit: "1"
     gauge:
       value_type: int
 

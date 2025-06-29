@@ -16,17 +16,17 @@ metrics:
 
 Number of clients pending on a blocking call
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {client} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {client} | Gauge | Int |
 
 ### redis.clients.connected
 
 Number of client connections (excluding connections from replicas)
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {client} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {client} | Gauge | Int |
 
 ### redis.clients.max_input_buffer
 
@@ -232,9 +232,9 @@ The total number of bytes written to the network
 
 Number of changes since the last dump
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {change} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {change} | Gauge | Int |
 
 ### redis.replication.backlog_first_byte_offset
 
@@ -242,7 +242,7 @@ The master offset of the replication backlog buffer
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| 1 | Gauge | Int |
 
 ### redis.replication.offset
 
@@ -250,15 +250,15 @@ The server's current replication offset
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| 1 | Gauge | Int |
 
 ### redis.slaves.connected
 
 Number of connected replicas
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {replica} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {replica} | Gauge | Int |
 
 ### redis.uptime
 
@@ -335,21 +335,21 @@ Offset for redis replica
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| 1 | Gauge | Int |
 
 ### redis.role
 
 Redis node's role
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {role} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {role} | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| role | Redis node's role | Str: ``replica``, ``primary`` |
+| role | Redis node's role | Str: ``replica``, ``primary``, ``master``, ``slave``, ``sentinel`` |
 
 ## Resource Attributes
 
