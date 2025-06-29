@@ -155,9 +155,9 @@ func TestScrape(t *testing.T) {
 
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: "1",
 									},
@@ -191,9 +191,9 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: "1",
 									},
@@ -224,14 +224,14 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -271,14 +271,14 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: "1",
 									},
@@ -318,16 +318,16 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "cumulative",
 									Monotonic:   true,
 									ValueType:   "double",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -368,16 +368,16 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "delta",
 									Monotonic:   false,
 									ValueType:   "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -423,14 +423,14 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
 									},
@@ -439,10 +439,10 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{things}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".2",
 									},
@@ -482,7 +482,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{clientSNMPData})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								Enum: []string{"val1", "val2"},
 							},
@@ -491,17 +491,17 @@ func TestScrape(t *testing.T) {
 								Enum:  []string{"val1", "val2"},
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name:  "attr1",
 												Value: "val1",
@@ -553,22 +553,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								Enum: []string{"val1", "val2"},
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name:  "attr1",
 												Value: "val1",
@@ -577,7 +577,7 @@ func TestScrape(t *testing.T) {
 									},
 									{
 										OID: ".2",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name:  "attr1",
 												Value: "val2",
@@ -622,9 +622,9 @@ func TestScrape(t *testing.T) {
 				).Return([]snmpData{})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: "1",
 									},
@@ -645,34 +645,34 @@ func TestScrape(t *testing.T) {
 			desc: "Indexed metric scrape returns string data does not create metric",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
-				columnOID := ".1"
+				columnOIDValue := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
 				snmpData1 := snmpData{
-					columnOID: columnOID,
+					columnOID: columnOIDValue,
 					oid:       oid1,
 					value:     "test1",
 					valueType: stringVal,
 				}
 				snmpData2 := snmpData{
-					columnOID: columnOID,
+					columnOID: columnOIDValue,
 					oid:       oid2,
 					value:     "test2",
 					valueType: stringVal,
 				}
 				innerError1 := fmt.Errorf(errMsgBadValueType, oid1)
-				expectedScrapeErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOID, innerError1)
+				expectedScrapeErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOIDValue, innerError1)
 				innerError2 := fmt.Errorf(errMsgBadValueType, oid2)
-				expectedScrapeErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOID, innerError2)
+				expectedScrapeErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOIDValue, innerError2)
 				expectedScrapeErrMsg := expectedScrapeErr1.Error() + "; " + expectedScrapeErr2.Error()
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
 									},
@@ -710,22 +710,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -774,22 +774,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: "1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -838,24 +838,24 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "cumulative",
 									Monotonic:   true,
 									ValueType:   "double",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -905,24 +905,24 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Sum: &SumMetric{
+								Sum: &sumMetric{
 									Aggregation: "delta",
 									Monotonic:   false,
 									ValueType:   "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -978,19 +978,19 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData1, snmpData2})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID: ".0",
 									},
@@ -999,13 +999,13 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description1",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1067,22 +1067,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1, snmpData2, snmpData3})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric0": {
 								Description: "test description0",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".0",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1093,13 +1093,13 @@ func TestScrape(t *testing.T) {
 							"metric1": {
 								Description: "test description1",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1162,7 +1162,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "attrPrefix",
 							},
@@ -1174,17 +1174,17 @@ func TestScrape(t *testing.T) {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1225,17 +1225,17 @@ func TestScrape(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
-				columnOID := ".1"
+				columnOIDValue := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
 				snmpData0 := snmpData{
-					columnOID: columnOID,
+					columnOID: columnOIDValue,
 					oid:       oid1,
 					value:     int64(1),
 					valueType: integerVal,
 				}
 				snmpData1 := snmpData{
-					columnOID: columnOID,
+					columnOID: columnOIDValue,
 					oid:       oid2,
 					value:     int64(2),
 					valueType: integerVal,
@@ -1251,27 +1251,27 @@ func TestScrape(t *testing.T) {
 				metricName := "metric1"
 				innerInnerErr := errors.New(errMsgAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDAttributeEmptyValue, metricName, innerInnerErr)
-				expectedErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOID, innerErr)
-				expectedErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOID, innerErr)
+				expectedErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOIDValue, innerErr)
+				expectedErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOIDValue, innerErr)
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1340,22 +1340,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1409,22 +1409,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1487,22 +1487,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: "0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: "1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1565,22 +1565,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1643,22 +1643,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID: ".1",
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -1720,19 +1720,19 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData0, snmpData1, snmpData2, snmpData3})
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								IndexedValuePrefix: "thing",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".1",
 										ResourceAttributes: []string{"rattr1"},
@@ -1742,10 +1742,10 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{units}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "double",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
@@ -1778,18 +1778,18 @@ func TestScrape(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				clientErr := errors.New("problem getting data")
-				columnOID := ".1"
+				columnOIDValue := ".1"
 				oid1 := ".1.1"
 				oid2 := ".1.2"
 				metricName := "metric1"
 				snmpData0 := snmpData{
-					columnOID: columnOID,
+					columnOID: columnOIDValue,
 					oid:       oid1,
 					value:     int64(1),
 					valueType: integerVal,
 				}
 				snmpData1 := snmpData{
-					columnOID: columnOID,
+					columnOID: columnOIDValue,
 					oid:       oid2,
 					value:     int64(2),
 					valueType: integerVal,
@@ -1804,24 +1804,24 @@ func TestScrape(t *testing.T) {
 				).Return([]snmpData{}).Once()
 				innerInnerErr := errors.New(errMsgResourceAttributeEmptyValue)
 				innerErr := fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, innerInnerErr)
-				expectedErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOID, innerErr)
-				expectedErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOID, innerErr)
+				expectedErr1 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid1, columnOIDValue, innerErr)
+				expectedErr2 := fmt.Errorf(errMsgIndexedMetricOIDProcessing, oid2, columnOIDValue, innerErr)
 				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData0, snmpData1}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".1",
 										ResourceAttributes: []string{"rattr1"},
@@ -1889,19 +1889,19 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".1",
 										ResourceAttributes: []string{"rattr1"},
@@ -1966,19 +1966,19 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3, snmpData4, snmpData5}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".1",
 										ResourceAttributes: []string{"rattr1"},
@@ -1988,10 +1988,10 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{units}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "double",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
@@ -2064,19 +2064,19 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", mock.Anything, mock.Anything).Return([]snmpData{snmpData2, snmpData3, snmpData4, snmpData5}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								OID: "0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                "1",
 										ResourceAttributes: []string{"rattr1"},
@@ -2086,10 +2086,10 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description2",
 								Unit:        "{units}",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "double",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                "2",
 										ResourceAttributes: []string{"rattr1"},
@@ -2150,7 +2150,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]snmpData{snmpData2, snmpData3}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								OID: ".0",
 							},
@@ -2158,14 +2158,14 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "object",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".1",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2194,7 +2194,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) resource attribute creates metric (19)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) resource attribute creates metric (19)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2233,7 +2233,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".0",
 							},
@@ -2241,14 +2241,14 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2276,7 +2276,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (int) resource attribute attached to ColumnOID metric alongside a ColumnOID (int) resource attribute creates metric (20)",
+			desc: "ScalarOID (int) resource attribute attached to columnOID metric alongside a columnOID (int) resource attribute creates metric (20)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2315,7 +2315,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".0",
 							},
@@ -2323,14 +2323,14 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2358,7 +2358,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (float) resource attribute attached to ColumnOID metric alongside a ColumnOID (float) resource attribute creates metric (21)",
+			desc: "ScalarOID (float) resource attribute attached to columnOID metric alongside a columnOID (float) resource attribute creates metric (21)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2397,7 +2397,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".0",
 							},
@@ -2405,14 +2405,14 @@ func TestScrape(t *testing.T) {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2440,7 +2440,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside an IndexedValuePrefix resource attribute creates metric (22)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2466,7 +2466,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".0",
 							},
@@ -2474,14 +2474,14 @@ func TestScrape(t *testing.T) {
 								IndexedValuePrefix: "p",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2509,7 +2509,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple ScalarOID (string) resource attributes attached to ColumnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
+			desc: "Multiple scalarOID (string) resource attributes attached to columnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
@@ -2565,7 +2565,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".3"}, mock.Anything).Return([]snmpData{coid31, coid32}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".5.0",
 							},
@@ -2579,14 +2579,14 @@ func TestScrape(t *testing.T) {
 								OID: ".2",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".3",
 										ResourceAttributes: []string{"rattr1", "rattr2", "rattr3", "rattr4"},
@@ -2614,7 +2614,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) attribute creates metric (24)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside a columnOID (string) attribute creates metric (24)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2653,28 +2653,28 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".0",
 							},
 						},
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -2703,7 +2703,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
+			desc: "ScalarOID (string) resource attribute attached to columnOID metric alongside an Indexed Value Prefix attribute creates metric (25)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2729,28 +2729,28 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".0",
 							},
 						},
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								IndexedValuePrefix: "prefix",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
@@ -2779,7 +2779,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "ScalarOID (string) resource attribute attached to ScalarOID metric creates metric (26)",
+			desc: "ScalarOID (string) resource attribute attached to scalarOID metric creates metric (26)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA := snmpData{
@@ -2787,7 +2787,7 @@ func TestScrape(t *testing.T) {
 					value:     "scalar",
 					valueType: stringVal,
 				}
-				scalarOID := snmpData{
+				scalarOIDInt := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
@@ -2795,22 +2795,22 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]snmpData{scalarRA}).Once()
-				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOID}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOIDInt}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".5.0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1"},
@@ -2838,7 +2838,7 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
+			desc: "Multiple scalarOID (string) resource attributes attached to scalarOID metric creates single resource for metric (27)",
 			testFunc: func(t *testing.T) {
 				mockClient := new(mockClient)
 				scalarRA1 := snmpData{
@@ -2851,7 +2851,7 @@ func TestScrape(t *testing.T) {
 					value:     "also scalar",
 					valueType: stringVal,
 				}
-				scalarOID := snmpData{
+				scalarOIDInt := snmpData{
 					oid:       ".6.0",
 					value:     int64(6),
 					valueType: integerVal,
@@ -2859,10 +2859,10 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Connect").Return(nil)
 				mockClient.On("Close").Return(nil)
 				mockClient.On("GetScalarData", []string{".5.0", ".7.0"}, mock.Anything).Return([]snmpData{scalarRA1, scalarRA2}).Once()
-				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOID}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]snmpData{scalarOIDInt}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".5.0",
 							},
@@ -2870,14 +2870,14 @@ func TestScrape(t *testing.T) {
 								ScalarOID: ".7.0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
@@ -2929,19 +2929,19 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetScalarData", []string{".6.0", ".7.0"}, mock.Anything).Return([]snmpData{scalarOID1, scalarOID2}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".5.0",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1"},
@@ -2951,10 +2951,10 @@ func TestScrape(t *testing.T) {
 							"metric2": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ScalarOIDs: []ScalarOID{
+								ScalarOIDs: []scalarOID{
 									{
 										OID:                ".7.0",
 										ResourceAttributes: []string{"rattr1"},
@@ -3026,7 +3026,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]snmpData{coid21, coid22}).Once()
 				scraper := &snmpScraper{
 					cfg: &Config{
-						ResourceAttributes: map[string]*ResourceAttributeConfig{
+						ResourceAttributes: map[string]*resourceAttributeConfig{
 							"rattr1": {
 								ScalarOID: ".5.0",
 							},
@@ -3034,23 +3034,23 @@ func TestScrape(t *testing.T) {
 								ScalarOID: ".6.0",
 							},
 						},
-						Attributes: map[string]*AttributeConfig{
+						Attributes: map[string]*attributeConfig{
 							"attr1": {
 								OID: ".1",
 							},
 						},
-						Metrics: map[string]*MetricConfig{
+						Metrics: map[string]*metricConfig{
 							"metric1": {
 								Description: "test description",
 								Unit:        "By",
-								Gauge: &GaugeMetric{
+								Gauge: &gaugeMetric{
 									ValueType: "int",
 								},
-								ColumnOIDs: []ColumnOID{
+								ColumnOIDs: []columnOID{
 									{
 										OID:                ".2",
 										ResourceAttributes: []string{"rattr1"},
-										Attributes: []Attribute{
+										Attributes: []attribute{
 											{
 												Name: "attr1",
 											},
