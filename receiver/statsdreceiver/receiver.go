@@ -108,12 +108,18 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	r.server = server
 	transferChan := make(chan transport.Metric, 10)
 	ticker := time.NewTicker(r.config.AggregationInterval)
+	metricTypeAttribute := r.config.MetricTypeAttribute
+
+	if !r.config.EnableMetricType {
+		metricTypeAttribute = ""
+	}
+
 	err = r.parser.Initialize(
-		r.config.EnableMetricType,
 		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
 		r.config.EnableIPOnlyAggregation,
 		r.config.TimerHistogramMapping,
+		metricTypeAttribute,
 	)
 	if err != nil {
 		return err
