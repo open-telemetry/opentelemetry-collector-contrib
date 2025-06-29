@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetPostgresqlDatabaseName(val string) {
 	}
 }
 
+// SetPostgresqlFunctionName sets provided value as "postgresql.function.name" attribute.
+func (rb *ResourceBuilder) SetPostgresqlFunctionName(val string) {
+	if rb.config.PostgresqlFunctionName.Enabled {
+		rb.res.Attributes().PutStr("postgresql.function.name", val)
+	}
+}
+
 // SetPostgresqlIndexName sets provided value as "postgresql.index.name" attribute.
 func (rb *ResourceBuilder) SetPostgresqlIndexName(val string) {
 	if rb.config.PostgresqlIndexName.Enabled {

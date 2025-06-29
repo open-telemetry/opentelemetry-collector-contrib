@@ -14,6 +14,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
@@ -23,9 +24,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -37,6 +38,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "postgresql.database.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("postgresql.function.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "postgresql.function.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("postgresql.index.name")
 			assert.True(t, ok)

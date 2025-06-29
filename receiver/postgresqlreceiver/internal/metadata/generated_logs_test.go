@@ -32,6 +32,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	rb := lb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+	rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 	rb.SetPostgresqlIndexName("postgresql.index.name-val")
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 	rb.SetPostgresqlTableName("postgresql.table.name-val")
@@ -139,6 +140,7 @@ func TestLogsBuilder(t *testing.T) {
 
 			rb := lb.NewResourceBuilder()
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")

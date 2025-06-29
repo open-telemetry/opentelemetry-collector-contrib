@@ -31,6 +31,8 @@ all_set:
       enabled: true
     postgresql.deadlocks:
       enabled: true
+    postgresql.function.calls:
+      enabled: true
     postgresql.index.scans:
       enabled: true
     postgresql.index.size:
@@ -76,6 +78,8 @@ all_set:
       enabled: true
   resource_attributes:
     postgresql.database.name:
+      enabled: true
+    postgresql.function.name:
       enabled: true
     postgresql.index.name:
       enabled: true
@@ -115,6 +119,8 @@ none_set:
       enabled: false
     postgresql.deadlocks:
       enabled: false
+    postgresql.function.calls:
+      enabled: false
     postgresql.index.scans:
       enabled: false
     postgresql.index.size:
@@ -161,6 +167,8 @@ none_set:
   resource_attributes:
     postgresql.database.name:
       enabled: false
+    postgresql.function.name:
+      enabled: false
     postgresql.index.name:
       enabled: false
     postgresql.schema.name:
@@ -170,6 +178,12 @@ none_set:
 filter_set_include:
   resource_attributes:
     postgresql.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    postgresql.function.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -201,6 +215,12 @@ filter_set_exclude:
         - strict: "postgresql.database.name-val"
       events_exclude:
         - strict: "postgresql.database.name-val"
+    postgresql.function.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "postgresql.function.name-val"
+      events_exclude:
+        - strict: "postgresql.function.name-val"
     postgresql.index.name:
       enabled: true
       metrics_exclude:
