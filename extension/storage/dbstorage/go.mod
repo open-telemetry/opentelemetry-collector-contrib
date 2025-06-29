@@ -9,12 +9,12 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
-	go.opentelemetry.io/collector/component v1.34.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/confmap v1.34.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/extension v1.34.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/extension/extensiontest v0.128.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/extension/xextension v0.128.1-0.20250624152751-a33fdf3cb754
+	go.opentelemetry.io/collector/component v1.34.1-0.20250626234257-6aa2b812b7c6
+	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250626234257-6aa2b812b7c6
+	go.opentelemetry.io/collector/confmap v1.34.1-0.20250626234257-6aa2b812b7c6
+	go.opentelemetry.io/collector/extension v1.34.1-0.20250626234257-6aa2b812b7c6
+	go.opentelemetry.io/collector/extension/extensiontest v0.128.1-0.20250626234257-6aa2b812b7c6
+	go.opentelemetry.io/collector/extension/xextension v0.128.1-0.20250626234257-6aa2b812b7c6
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	modernc.org/sqlite v1.38.0
@@ -76,9 +76,9 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
-	go.opentelemetry.io/collector/pdata v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
+	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250626234257-6aa2b812b7c6 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250626234257-6aa2b812b7c6 // indirect
+	go.opentelemetry.io/collector/pdata v1.34.1-0.20250626234257-6aa2b812b7c6 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect

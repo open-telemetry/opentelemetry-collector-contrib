@@ -254,7 +254,7 @@ Number of bytes of stage storage used by files in all internal stages (named, ta
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| By | Gauge | Double |
 
 ### snowflake.storage.storage_bytes.total
 
@@ -262,7 +262,7 @@ Number of bytes of table storage used, including bytes for data currently in Tim
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| By | Gauge | Double |
 
 ### snowflake.total_elapsed_time.avg
 
@@ -608,7 +608,7 @@ Number of bytes of data in Fail-safe.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| By | Gauge | Double |
 
 ## Resource Attributes
 
