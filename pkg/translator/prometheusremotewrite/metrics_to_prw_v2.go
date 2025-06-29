@@ -6,7 +6,6 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 
 	"github.com/prometheus/prometheus/prompb"
@@ -145,42 +144,10 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 }
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
-	// TODO consider how to accommodate metadata in the symbol table when allocating the buffer, given not all metrics might have metadata.
-	buf := make([]uint32, 0, len(lbls)*2)
-
-	// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
-	sort.Slice(lbls, func(i, j int) bool {
-		return lbls[i].Name < lbls[j].Name
-	})
-
-	var off uint32
-	for _, l := range lbls {
-		off = c.symbolTable.Symbolize(l.Name)
-		buf = append(buf, off)
-		off = c.symbolTable.Symbolize(l.Value)
-		buf = append(buf, off)
-	}
-
-	sig := timeSeriesSignature(lbls)
-	ts := &writev2.TimeSeries{
-		LabelsRefs: buf,
-		Samples:    []writev2.Sample{*sample},
-		Metadata: writev2.Metadata{
-			Type:    metadata.Type,
-			HelpRef: c.symbolTable.Symbolize(metadata.Help),
-			UnitRef: c.symbolTable.Symbolize(metadata.Unit),
-		},
-	}
-
-	if existingTS := c.unique[sig]; existingTS != nil {
-		if !isSameMetricV2(existingTS, ts) {
-			c.conflicts[sig] = append(c.conflicts[sig], ts)
-			c.conflictCount++
-		} else {
-			existingTS.Samples = append(existingTS.Samples, *sample)
-		}
-	} else {
-		c.unique[sig] = ts
+	ts, isNew := c.getOrCreateTimeSeries(lbls, metadata, sample)
+	// If the time series is not new, we can just append the sample to the existing time series.
+	if !isNew {
+		ts.Samples = append(ts.Samples, *sample)
 	}
 }
 
@@ -196,4 +163,52 @@ func isSameMetricV2(ts1, ts2 *writev2.TimeSeries) bool {
 		}
 	}
 	return true
+}
+
+// getOrCreateTimeSeries returns the time series corresponding to the label set, and a boolean indicating if the time series is new or not.
+func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls []prompb.Label, metadata metadata, sample *writev2.Sample) (*writev2.TimeSeries, bool) {
+	signature := timeSeriesSignature(lbls)
+	ts := c.unique[signature]
+	buf := make([]uint32, 0, len(lbls)*2)
+
+	for _, l := range lbls {
+		off := c.symbolTable.Symbolize(l.Name)
+		buf = append(buf, off)
+		off = c.symbolTable.Symbolize(l.Value)
+		buf = append(buf, off)
+	}
+
+	ts2 := &writev2.TimeSeries{
+		LabelsRefs: buf,
+		Samples:    []writev2.Sample{*sample},
+		Metadata: writev2.Metadata{
+			Type:    metadata.Type,
+			HelpRef: c.symbolTable.Symbolize(metadata.Help),
+			UnitRef: c.symbolTable.Symbolize(metadata.Unit),
+		},
+	}
+
+	if ts != nil {
+		if isSameMetricV2(ts, ts2) {
+			// We already have this metric
+			return ts, false
+		}
+
+		// Look for a matching conflict
+		for _, cTS := range c.conflicts[signature] {
+			if isSameMetricV2(cTS, ts2) {
+				// We already have this metric
+				return cTS, false
+			}
+		}
+
+		// New conflict
+		c.conflicts[signature] = append(c.conflicts[signature], ts2)
+		c.conflictCount++
+		return ts2, true
+	}
+
+	// This metric is new
+	c.unique[signature] = ts2
+	return ts2, true
 }
