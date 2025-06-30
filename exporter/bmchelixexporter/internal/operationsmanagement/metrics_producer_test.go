@@ -149,5 +149,3 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 
 	return metrics
 }
-
-
