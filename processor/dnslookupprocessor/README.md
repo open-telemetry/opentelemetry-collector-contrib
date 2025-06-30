@@ -36,13 +36,14 @@ Some notable settings include:
   - `source.ip` is the default for forward resolution.
   - [`source.address`](https://github.com/open-telemetry/semantic-conventions/blob/v1.32.0/docs/general/attributes.md#source) is the default for reverse resolution.
 
+### Sample configuration
+
+Forward and reverse DNS resolution:
 ```yaml
 processors:
   dnslookup:
     # Forward DNS resolution configuration (hostname to IP)
-    # Default: enabled
     resolve:
-      enabled: true
       # Context for attributes: "resource" or "record".
       context: "record"
       # List of attributes to check for hostnames. The first valid hostname is used.
@@ -51,9 +52,7 @@ processors:
       target_attribute: "source.ip"
 
     # Reverse DNS resolution configuration (IP to hostname)
-    # Default: disabled
     reverse:
-      enabled: false
       # Context for attributes: "resource" or "record".
       context: "record"
       # List of attributes to check for IPs. The first valid IP is used.
@@ -65,6 +64,26 @@ processors:
     hostfiles: 
       - "/path/to/hosts/file"
       - "/path/to/other/hosts"
+```
+
+Forward resolution:
+```yaml
+processors:
+  dnslookup:
+    resolve:
+      context: "record"
+      source_attributes: ["source.address"]
+      target_attribute: "source.ip"
+```
+
+Reverse resolution:
+```yaml
+processors:
+  dnslookup:
+    reverse:
+      context: "record"
+      source_attributes: ["source.ip"]
+      target_attribute: "source.address"
 ```
 
 ### Hostfiles
