@@ -20,22 +20,22 @@ require (
 	github.com/twmb/franz-go v1.18.1
 	github.com/twmb/franz-go/pkg/kadm v1.16.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
-	go.opentelemetry.io/collector/client v1.34.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/component v1.34.1-0.20250630084015-32278ed2ed08
+	go.opentelemetry.io/collector/client v1.35.0
+	go.opentelemetry.io/collector/component v1.35.0
 	go.opentelemetry.io/collector/component/componentstatus v0.128.1-0.20250630084015-32278ed2ed08
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/config/configretry v1.34.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/config/configtls v1.34.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/confmap v1.34.1-0.20250630084015-32278ed2ed08
+	go.opentelemetry.io/collector/config/configretry v1.35.0
+	go.opentelemetry.io/collector/config/configtls v1.35.0
+	go.opentelemetry.io/collector/confmap v1.35.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.128.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/consumer v1.34.1-0.20250630084015-32278ed2ed08
+	go.opentelemetry.io/collector/consumer v1.35.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.128.1-0.20250630084015-32278ed2ed08
 	go.opentelemetry.io/collector/consumer/consumertest v0.128.1-0.20250630084015-32278ed2ed08
 	go.opentelemetry.io/collector/exporter v0.128.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/pdata v1.34.1-0.20250630084015-32278ed2ed08
+	go.opentelemetry.io/collector/featuregate v1.35.0
+	go.opentelemetry.io/collector/pdata v1.35.0
 	go.opentelemetry.io/collector/pdata/testdata v0.128.1-0.20250630084015-32278ed2ed08
-	go.opentelemetry.io/collector/receiver v1.34.1-0.20250630084015-32278ed2ed08
+	go.opentelemetry.io/collector/receiver v1.35.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.128.1-0.20250630084015-32278ed2ed08
 	go.opentelemetry.io/collector/receiver/receivertest v0.128.1-0.20250630084015-32278ed2ed08
 	go.opentelemetry.io/otel v1.36.0
@@ -108,10 +108,10 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.34.1-0.20250630084015-32278ed2ed08 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.34.1-0.20250630084015-32278ed2ed08 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.35.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.35.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.128.1-0.20250630084015-32278ed2ed08 // indirect
-	go.opentelemetry.io/collector/extension v1.34.1-0.20250630084015-32278ed2ed08 // indirect
+	go.opentelemetry.io/collector/extension v1.35.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.128.1-0.20250630084015-32278ed2ed08 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250630084015-32278ed2ed08 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250630084015-32278ed2ed08 // indirect
