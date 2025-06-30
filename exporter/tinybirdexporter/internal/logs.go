@@ -12,10 +12,10 @@ import (
 )
 
 type logSignal struct {
-	ResourceSchemaUrl  string            `json:"resource_schema_url"`
+	ResourceSchemaURL  string            `json:"resource_schema_url"`
 	ResourceAttributes map[string]string `json:"resource_attributes"`
 	ServiceName        string            `json:"service_name"`
-	ScopeSchemaUrl     string            `json:"scope_schema_url"`
+	ScopeSchemaURL     string            `json:"scope_schema_url"`
 	ScopeAttributes    map[string]string `json:"scope_attributes"`
 	ScopeName          string            `json:"scope_name"`
 	ScopeVersion       string            `json:"scope_version"`
@@ -32,27 +32,27 @@ type logSignal struct {
 func ConvertLogs(ld plog.Logs, encoder Encoder) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rl := ld.ResourceLogs().At(i)
-		resourceSchemaUrl := rl.SchemaUrl()
+		resourceSchemaURL := rl.SchemaUrl()
 		resource := rl.Resource()
 		resourceAttributesMap := resource.Attributes()
 		resourceAttributes := convertAttributes(resourceAttributesMap)
 		serviceName := getServiceName(resource.Attributes())
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
 			sl := rl.ScopeLogs().At(j)
-			scopeSchemaUrl := sl.SchemaUrl()
+			scopeSchemaURL := sl.SchemaUrl()
 			scope := sl.Scope()
 			scopeName := scope.Name()
 			scopeVersion := scope.Version()
 			scopeAttributes := convertAttributes(scope.Attributes())
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				log := sl.LogRecords().At(k)
-				logSignal := logSignal{
-					ResourceSchemaUrl:  resourceSchemaUrl,
+				logEntry := logSignal{
+					ResourceSchemaURL:  resourceSchemaURL,
 					ResourceAttributes: resourceAttributes,
 					ServiceName:        serviceName,
 					ScopeName:          scopeName,
 					ScopeVersion:       scopeVersion,
-					ScopeSchemaUrl:     scopeSchemaUrl,
+					ScopeSchemaURL:     scopeSchemaURL,
 					ScopeAttributes:    scopeAttributes,
 					Timestamp:          log.Timestamp().AsTime().Format(time.RFC3339Nano),
 					SeverityText:       log.SeverityText(),
@@ -64,7 +64,7 @@ func ConvertLogs(ld plog.Logs, encoder Encoder) error {
 					Flags:              uint32(log.Flags()),
 				}
 
-				err := encoder.Encode(logSignal)
+				err := encoder.Encode(logEntry)
 				if err != nil {
 					return err
 				}

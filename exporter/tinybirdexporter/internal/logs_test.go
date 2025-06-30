@@ -64,10 +64,10 @@ func TestConvertLogs(t *testing.T) {
 			},
 			want: []logSignal{
 				{
-					ResourceSchemaUrl:  "https://opentelemetry.io/schemas/1.20.0",
+					ResourceSchemaURL:  "https://opentelemetry.io/schemas/1.20.0",
 					ResourceAttributes: map[string]string{},
 					ServiceName:        "",
-					ScopeSchemaUrl:     "https://opentelemetry.io/schemas/1.20.0",
+					ScopeSchemaURL:     "https://opentelemetry.io/schemas/1.20.0",
 					ScopeAttributes:    map[string]string{},
 					ScopeName:          "test-scope",
 					ScopeVersion:       "1.0.0",
@@ -113,13 +113,13 @@ func TestConvertLogs(t *testing.T) {
 			},
 			want: []logSignal{
 				{
-					ResourceSchemaUrl: "https://opentelemetry.io/schemas/1.20.0",
+					ResourceSchemaURL: "https://opentelemetry.io/schemas/1.20.0",
 					ResourceAttributes: map[string]string{
 						"service.name": "test-service",
 						"environment":  "production",
 					},
 					ServiceName:    "test-service",
-					ScopeSchemaUrl: "https://opentelemetry.io/schemas/1.20.0",
+					ScopeSchemaURL: "https://opentelemetry.io/schemas/1.20.0",
 					ScopeAttributes: map[string]string{
 						"telemetry.sdk.name": "opentelemetry",
 					},
