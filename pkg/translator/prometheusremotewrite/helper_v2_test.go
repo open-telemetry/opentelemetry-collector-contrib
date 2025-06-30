@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func TestAddResourceTargetInfoV2(t *testing.T) {
@@ -257,10 +257,11 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverterV2()
 
+			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
 				Type: otelMetricTypeToPromMetricTypeV2(metric),
 				Help: metric.Description(),
-				Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+				Unit: unitNamer.Build(metric.Unit()),
 			}
 
 			converter.addSummaryDataPoints(
@@ -379,10 +380,11 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverterV2()
+			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
 				Type: otelMetricTypeToPromMetricTypeV2(metric),
 				Help: metric.Description(),
-				Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+				Unit: unitNamer.Build(metric.Unit()),
 			}
 			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
