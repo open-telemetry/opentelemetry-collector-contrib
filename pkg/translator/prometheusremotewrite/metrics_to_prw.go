@@ -9,12 +9,11 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
@@ -53,6 +52,7 @@ func newPrometheusConverter() *prometheusConverter {
 
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
+	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace}
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -74,7 +74,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := metricNamer.Build(translatorMetricFromOtelMetric(metric))
 
 				// handle individual metrics based on type
 				//exhaustive:enforce
