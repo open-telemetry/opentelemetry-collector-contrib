@@ -11,6 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
+	github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.0
 	go.opentelemetry.io/collector/component/componenttest v0.129.0
@@ -160,7 +161,6 @@ require (
 	github.com/prometheus/alertmanager v0.28.1 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.14.0 // indirect
-	github.com/prometheus/otlptranslator v0.0.0-20250320144820-d800c8b0eb07 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/prometheus v0.304.1 // indirect
 	github.com/prometheus/sigv4 v0.1.2 // indirect

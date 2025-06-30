@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.129.0
 	github.com/prometheus/common v0.65.0
+	github.com/prometheus/otlptranslator v0.0.0-20250620074007-94f535e0c588
 	github.com/prometheus/prometheus v0.304.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.35.0
@@ -38,8 +39,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../prometheus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
