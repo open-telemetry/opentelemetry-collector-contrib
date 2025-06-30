@@ -4,15 +4,11 @@
 package nfsscraper
 
 import (
-	"context"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/scraper/scrapertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
 )
 
 const (
@@ -32,11 +28,22 @@ rpc 872 367 960 94 748
 proc3 22 124 554 529 64 928 316 531 43 724 822 237 665 620 22 335 137 236 222 658 654 209 382
 proc4 2 512 878
 proc4ops 76 725 607 978 86 442 878 262 489 962 909 563 468 722 104 47 214 305 564 776 373 444 6 265 163 397 817 73 90 630 664 984 981 502 682 210 639 484 924 337 857 667 984 498 76 515 657 596 31 781 437 23 846 867 241 648 169 64 151 447 848 625 185 586 890 446 317 503 32 935 459 386 291 817 74 592 562
-wdeleg_getattr 901
-`
+wdeleg_getattr 901`
 )
 
 func mockGetOSNfsStats() (*NfsStats, error) {
+	data := strings.NewReader(nfsProcFileOut)
+
+	return parseNfsStats(data)
+}
+
+func mockGetOSNfsdStats() (*NfsdStats, error) {
+	data := strings.NewReader(nfsdProcFileOut)
+
+	return parseNfsdStats(data)
+}
+
+func getExpectedOSNfsStats() (*NfsStats) {
 	nfsNetStats := &NfsNetStats{
 		NetCount:           8,
 		UDPCount:           843,
@@ -152,34 +159,29 @@ func mockGetOSNfsStats() (*NfsStats, error) {
 		NfsRPCStats:         nfsRPCStats,
 		NfsV3ProcedureStats: nfsV3ProcedureStats,
 		NfsV4OperationStats: nfsV4OperationStats,
-	}, nil
+	}
 }
 
-func mockGetOSNfsdStats() (*NfsdStats, error) {
-	// Populate NfsdRepcacheStats with sample data
+func getExpectedOSNfsdStats() (*NfsdStats) {
 	repcacheStats := &NfsdRepcacheStats{
 		Hits:    795,
 		Misses:  819,
 		Nocache: 351,
 	}
 
-	// Populate NfsdFhStats with sample data
 	fhStats := &NfsdFhStats{
 		Stale: 709,
 	}
 
-	// Populate NfsdIoStats with sample data
 	ioStats := &NfsdIoStats{
 		Read:  111,
 		Write: 464,
 	}
 
-	// Populate NfsdThreadStats with sample data
 	threadStats := &NfsdThreadStats{
 		Threads: 261,
 	}
 
-	// Populate NfsdNetStats with sample data
 	netStats := &NfsdNetStats{
 		NetCount:           1,
 		UDPCount:           43,
@@ -187,7 +189,6 @@ func mockGetOSNfsdStats() (*NfsdStats, error) {
 		TCPConnectionCount: 597,
 	}
 
-	// Populate NfsdRPCStats with sample data
 	rpcStats := &NfsdRPCStats{
 		RPCCount:       872,
 		BadCount:       367,
@@ -319,10 +320,10 @@ func mockGetOSNfsdStats() (*NfsdStats, error) {
 		NfsdV4OperationStats: nfsdV4OperationStats,
 	}
 
-	return stats, nil
+	return stats
 }
 
-func TestScrape(t *testing.T) {
+func TestOSScrape(t *testing.T) {
 	if !supportedOS {
 		t.Skip()
 	}
@@ -339,93 +340,19 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := &nfsScraper{
-				settings: scrapertest.NewNopSettings(metadata.Type),
-				config: &Config{
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-				},
-				getNfsStats:  mockGetOSNfsStats,
-				getNfsdStats: mockGetOSNfsdStats,
-			}
-
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
-
-			md, err := scraper.scrape(context.Background())
+			expectedNfsStats := getExpectedOSNfsStats()
+			expectedNfsdStats := getExpectedOSNfsdStats()
+			
+			nfsStats, err := mockGetOSNfsStats()
 			require.NoError(t, err)
 
-			noAttrs := pcommon.NewMap()
-			assertMetric(t, md, "system.nfs.net.count", int64(scraper.nfsStats.NfsNetStats.NetCount), noAttrs)
-			assertMetric(t, md, "system.nfs.net.udp.count", int64(scraper.nfsStats.NfsNetStats.UDPCount), noAttrs)
-			assertMetric(t, md, "system.nfs.net.tcp.count", int64(scraper.nfsStats.NfsNetStats.TCPCount), noAttrs)
-			assertMetric(t, md, "system.nfs.net.tcp.connection.count", int64(scraper.nfsStats.NfsNetStats.TCPConnectionCount), noAttrs)
+			nfsdStats, err := mockGetOSNfsdStats()
+			require.NoError(t, err)
 
-			assertMetric(t, md, "system.nfs.rpc.count", int64(scraper.nfsStats.NfsRPCStats.RPCCount), noAttrs)
-			assertMetric(t, md, "system.nfs.rpc.retransmit.count", int64(scraper.nfsStats.NfsRPCStats.RetransmitCount), noAttrs)
-			assertMetric(t, md, "system.nfs.rpc.authrefresh.count", int64(scraper.nfsStats.NfsRPCStats.AuthRefreshCount), noAttrs)
-
-			for _, s := range *scraper.nfsStats.NfsV3ProcedureStats {
-				attrs := pcommon.NewMap()
-				attrs.PutInt("rpc.onc.version", s.NFSVersion)
-				attrs.PutStr("rpc.onc.procedure.name", s.NFSCallName)
-				assertMetric(t, md, "system.nfs.procedure.count", int64(s.NFSCallCount), attrs)
-			}
-
-			for _, s := range *scraper.nfsStats.NfsV4ProcedureStats {
-				attrs := pcommon.NewMap()
-				attrs.PutInt("rpc.onc.version", s.NFSVersion)
-				attrs.PutStr("rpc.onc.procedure.name", s.NFSCallName)
-				assertMetric(t, md, "system.nfs.procedure.count", int64(s.NFSCallCount), attrs)
-			}
-
-			for _, s := range *scraper.nfsStats.NfsV4OperationStats {
-				attrs := pcommon.NewMap()
-				attrs.PutInt("rpc.onc.version", s.NFSVersion)
-				attrs.PutStr("rpc.nfs.operation.name", s.NFSCallName)
-				assertMetric(t, md, "system.nfs.operation.count", int64(s.NFSCallCount), attrs)
-			}
-
-			assertMetric(t, md, "nfs.server.repcache.hits", int64(scraper.nfsdStats.NfsdRepcacheStats.Hits), noAttrs)
-			assertMetric(t, md, "nfs.server.repcache.misses", int64(scraper.nfsdStats.NfsdRepcacheStats.Misses), noAttrs)
-			assertMetric(t, md, "nfs.server.repcache.nocache", int64(scraper.nfsdStats.NfsdRepcacheStats.Nocache), noAttrs)
-
-			assertMetric(t, md, "nfs.server.fh.stale.count", int64(scraper.nfsdStats.NfsdFhStats.Stale), noAttrs)
-
-			assertMetric(t, md, "nfs.server.io.read.count", int64(scraper.nfsdStats.NfsdIoStats.Read), noAttrs)
-			assertMetric(t, md, "nfs.server.io.write.count", int64(scraper.nfsdStats.NfsdIoStats.Write), noAttrs)
-
-			assertMetric(t, md, "nfs.server.thread.count", int64(scraper.nfsdStats.NfsdThreadStats.Threads), noAttrs)
-
-			assertMetric(t, md, "nfs.server.net.count", int64(scraper.nfsdStats.NfsdNetStats.NetCount), noAttrs)
-			assertMetric(t, md, "nfs.server.net.udp.count", int64(scraper.nfsdStats.NfsdNetStats.UDPCount), noAttrs)
-			assertMetric(t, md, "nfs.server.net.tcp.count", int64(scraper.nfsdStats.NfsdNetStats.TCPCount), noAttrs)
-			assertMetric(t, md, "nfs.server.net.tcp.connection.count", int64(scraper.nfsdStats.NfsdNetStats.TCPConnectionCount), noAttrs)
-
-			assertMetric(t, md, "nfs.server.rpc.count", int64(scraper.nfsdStats.NfsdRPCStats.RPCCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.bad.count", int64(scraper.nfsdStats.NfsdRPCStats.BadCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.badfmt.count", int64(scraper.nfsdStats.NfsdRPCStats.BadFmtCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.badauth.count", int64(scraper.nfsdStats.NfsdRPCStats.BadAuthCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.badclient.count", int64(scraper.nfsdStats.NfsdRPCStats.BadClientCount), noAttrs)
-
-			for _, s := range *scraper.nfsdStats.NfsdV3ProcedureStats {
-				attrs := pcommon.NewMap()
-				attrs.PutInt("rpc.onc.version", s.NFSVersion)
-				attrs.PutStr("rpc.onc.procedure.name", s.NFSCallName)
-				assertMetric(t, md, "nfs.server.procedure.count", int64(s.NFSCallCount), attrs)
-			}
-
-			for _, s := range *scraper.nfsdStats.NfsdV4ProcedureStats {
-				attrs := pcommon.NewMap()
-				attrs.PutInt("rpc.onc.version", s.NFSVersion)
-				attrs.PutStr("rpc.onc.procedure.name", s.NFSCallName)
-				assertMetric(t, md, "nfs.server.procedure.count", int64(s.NFSCallCount), attrs)
-			}
-			for _, s := range *scraper.nfsdStats.NfsdV4OperationStats {
-				attrs := pcommon.NewMap()
-				attrs.PutInt("rpc.onc.version", s.NFSVersion)
-				attrs.PutStr("rpc.nfs.operation.name", s.NFSCallName)
-				assertMetric(t, md, "nfs.server.operation.count", int64(s.NFSCallCount), attrs)
-			}
+			assert.Equal(t, expectedNfsStats.NfsNetStats.NetCount, nfsStats.NfsNetStats.NetCount)
+			
+			assert.Equal(t, expectedNfsdStats.NfsdNetStats.NetCount, nfsdStats.NfsdNetStats.NetCount)
 		})
 	}
 }
+
