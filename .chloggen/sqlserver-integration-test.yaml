@@ -7,7 +7,8 @@ change_type: bug_fix
 component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: fix query sample collection used wrong config
+note: |
+  Fix incorrect configuration used in query sample collection. It was intended to retrieve the maximum number of rows per query from config.MaxRowsPerQuery, but it was mistakenly using config.TopQueryCount instead.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40943]

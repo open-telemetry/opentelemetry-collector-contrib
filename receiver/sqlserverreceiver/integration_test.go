@@ -146,7 +146,10 @@ func TestEventsScraper(t *testing.T) {
 				currentQueriesCount := queryCount.Load()
 				assert.NoError(t, err)
 				assert.Eventually(t, func() bool {
-					return queryCount.Load() > currentQueriesCount*3
+					// wait for the query to be executed at least once.
+					// otherwise, the scraper will ignore this query as during the
+					// collection interval it will not be considered as a top query.
+					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
 				actualLog, err := scraper.ScrapeLogs(context.Background())
 				assert.NotNil(t, actualLog)
@@ -215,7 +218,9 @@ func TestEventsScraper(t *testing.T) {
 			assert.Len(t, scrapers, 1)
 			scraper := scrapers[0]
 			assert.NoError(t, scraper.Start(context.Background(), componenttest.NewNopHost()))
-			defer scraper.Shutdown(context.Background()) //nolint:errcheck
+			defer func() {
+				assert.NoError(t, scraper.Shutdown(context.Background()))
+			}()
 
 			tc.validateFunc(t, scraper, &queriesCount, &finished)
 		})

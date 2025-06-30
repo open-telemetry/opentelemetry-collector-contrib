@@ -7,7 +7,6 @@ TIMEOUT=60
 
 SQLCMD="/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U SA -P $MSSQL_SA_PASSWORD"
 
-
 for ((i=0; i<TIMEOUT; i++)); do
     $SQLCMD -Q "SELECT 1" -b -l 1 >/dev/null 2>&1
     if [[ $? -eq 0 ]]; then
@@ -17,7 +16,6 @@ for ((i=0; i<TIMEOUT; i++)); do
 done
 
 set -euo pipefail
-
 
 $SQLCMD -Q "IF DB_ID('mydb') IS NULL CREATE DATABASE mydb;"
 
@@ -33,7 +31,6 @@ IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'myuser')
     END;
 "
 
-
 $SQLCMD -d mydb -Q "
 IF OBJECT_ID('dbo.test_table', 'U') IS NULL
 BEGIN
@@ -48,13 +45,7 @@ INSERT INTO dbo.test_table (name) VALUES (N'Hello World'), (N'Test Entry');
 $SQLCMD -Q "
 CREATE LOGIN otelcollectoruser WITH PASSWORD = 'otel-password123';
 CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
-GRANT CONNECT ANY DATABASE to otelcollectoruser;
-GRANT VIEW SERVER STATE to otelcollectoruser;
-GRANT VIEW ANY DEFINITION to otelcollectoruser;
-
-USE msdb;
-CREATE USER otelcollectoruser FOR LOGIN otelcollectoruser;
-GRANT SELECT to otelcollectoruser;
+GRANT VIEW SERVER PERFORMANCE STATE to otelcollectoruser;
 "
 
 echo "Initialization complete."
