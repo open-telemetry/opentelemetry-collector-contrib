@@ -1,13 +1,32 @@
-dnslookup/invalid_attributes:
+dnslookup/invalid_context:
+  reverse:
+    context: "invalid_context"
+dnslookup/invalid_source_attributes:
   resolve:
     source_attributes: []
     target_attribute: "custom.ip"
+dnslookup/invalid_empty_target_attribute:
+  resolve:
+    source_attributes: ["custom.address"]
+    target_attribute: ""
+dnslookup/valid_empty:
+  resolve:
+  reverse:
+dnslookup/valid_no_target_attribute:
+  resolve:
+    source_attributes: ["custom.address"]
+dnslookup/valid_no_source_attributes:
+  reverse:
+    context: "record"
+    target_attribute: "custom.ip"
+dnslookup/valid_no_context:
+  reverse:
+    source_attributes: ["custom.address"]
+    target_attribute: "custom.ip"
 dnslookup/custom_attributes:
   resolve:
-    enabled: true
     source_attributes: ["custom.address", "proxy.address"]
     target_attribute: "custom.ip"
   reverse:
-    enabled: true
     source_attributes: ["custom.address", "proxy.address"]
     target_attribute: "custom.ip"

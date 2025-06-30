@@ -15,10 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/resolver"
 )
 
-var (
-	errUnknownContextID     = errors.New("unknown attribute context")
-	errHostnameOrIPNotFound = errors.New("hostname/ip not found in attributes")
-)
+var errHostnameOrIPNotFound = errors.New("hostname/ip not found in attributes")
 
 type dnsLookupProcessor struct {
 	config       *Config
@@ -70,8 +67,7 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 
 // createProcessPairs creates a list of processPair based on the configuration.
 func (dp *dnsLookupProcessor) createProcessPairs() []processPair {
-	if dp.config.Resolve.Enabled && dp.config.Reverse.Enabled &&
-		(dp.config.Resolve.Context == dp.config.Reverse.Context) {
+	if dp.config.Resolve.Context == dp.config.Reverse.Context {
 		return []processPair{
 			{
 				ContextID: dp.config.Resolve.Context,
@@ -82,14 +78,14 @@ func (dp *dnsLookupProcessor) createProcessPairs() []processPair {
 
 	var processPairs []processPair
 
-	if dp.config.Resolve.Enabled {
+	if dp.config.Resolve.Context != "" {
 		processPairs = append(processPairs, processPair{
 			ContextID: dp.config.Resolve.Context,
 			ProcessFn: dp.processResolveLookup,
 		})
 	}
 
-	if dp.config.Reverse.Enabled {
+	if dp.config.Reverse.Context != "" {
 		processPairs = append(processPairs, processPair{
 			ContextID: dp.config.Reverse.Context,
 			ProcessFn: dp.processReverseLookup,

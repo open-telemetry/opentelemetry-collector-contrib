@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	semconv "go.opentelemetry.io/otel/semconv/v1.31.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/metadata"
 )
@@ -25,20 +26,71 @@ func TestLoadConfig(t *testing.T) {
 		errMsg   string
 	}{
 		{
-			id:     component.NewIDWithName(metadata.Type, "invalid_attributes"),
-			errMsg: "invalid resolve configuration: at least one source_attributes must be specified for DNS resolution",
+			id:     component.NewIDWithName(metadata.Type, "invalid_context"),
+			errMsg: "unknown context invalid_context",
+		},
+		{
+			id:     component.NewIDWithName(metadata.Type, "invalid_source_attributes"),
+			errMsg: "at least one source_attributes must be specified for DNS resolution",
+		},
+		{
+			id:     component.NewIDWithName(metadata.Type, "invalid_empty_target_attribute"),
+			errMsg: "target_attribute must be specified for DNS resolution",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_empty"),
+			expected: &Config{
+				Resolve: LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{string(semconv.SourceAddressKey)},
+					TargetAttribute:  sourceIPKey,
+				},
+				Reverse: LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{sourceIPKey},
+					TargetAttribute:  string(semconv.SourceAddressKey),
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_no_target_attribute"),
+			expected: &Config{
+				Resolve: LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{"custom.address"},
+					TargetAttribute:  sourceIPKey,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_no_source_attributes"),
+			expected: &Config{
+				Reverse: LookupConfig{
+					Context:          record,
+					SourceAttributes: []string{string(semconv.SourceAddressKey)},
+					TargetAttribute:  sourceIPKey,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_no_context"),
+			expected: &Config{
+				Reverse: LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{string(semconv.SourceAddressKey)},
+					TargetAttribute:  sourceIPKey,
+				},
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "custom_attributes"),
 			expected: &Config{
 				Resolve: LookupConfig{
-					Enabled:          true,
 					Context:          resource,
 					SourceAttributes: []string{"custom.address", "proxy.address"},
 					TargetAttribute:  "custom.ip",
 				},
 				Reverse: LookupConfig{
-					Enabled:          true,
 					Context:          resource,
 					SourceAttributes: []string{"custom.address", "proxy.address"},
 					TargetAttribute:  "custom.ip",
@@ -58,14 +110,21 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 
-			require.NoError(t, sub.Unmarshal(cfg))
-
-			if tt.errMsg != "" {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errMsg)
+			errUnmarshal := sub.Unmarshal(cfg)
+			if errUnmarshal != nil {
+				assert.ErrorContains(t, errUnmarshal, tt.errMsg)
 				return
 			}
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			errValidate := xconfmap.Validate(cfg)
+			if errValidate != nil {
+				assert.ErrorContains(t, errValidate, tt.errMsg)
+				return
+			}
+
+			assert.NoError(t, errUnmarshal)
+			assert.NoError(t, errValidate)
+			assert.Empty(t, tt.errMsg)
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -75,13 +134,11 @@ func TestConfig_Validate(t *testing.T) {
 	createValidConfig := func() Config {
 		return Config{
 			Resolve: LookupConfig{
-				Enabled:          true,
 				Context:          resource,
 				SourceAttributes: []string{"host.name"},
 				TargetAttribute:  "host.ip",
 			},
 			Reverse: LookupConfig{
-				Enabled:          false,
 				Context:          resource,
 				SourceAttributes: []string{"client.ip"},
 				TargetAttribute:  "client.name",
@@ -96,7 +153,7 @@ func TestConfig_Validate(t *testing.T) {
 		errorMsg         string
 	}{
 		{
-			name:             "Valid default configuration",
+			name:             "Valid configuration",
 			mutateConfigFunc: func(_ *Config) {},
 			expectError:      false,
 		},
@@ -111,9 +168,16 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Empty reverse attribute list",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.Enabled = false
-				cfg.Reverse.Enabled = true
-				cfg.Reverse.SourceAttributes = []string{}
+				cfg.Resolve = LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{"source.address"},
+					TargetAttribute:  "source.ip",
+				}
+				cfg.Reverse = LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{},
+					TargetAttribute:  "source.address",
+				}
 			},
 			expectError: true,
 			errorMsg:    "reverse configuration: at least one source_attributes must be specified for DNS resolution",
@@ -129,9 +193,15 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Missing reverse target_attribute",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.Enabled = false
-				cfg.Reverse.Enabled = true
-				cfg.Reverse.TargetAttribute = ""
+				cfg.Resolve = LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{"source.address"},
+					TargetAttribute:  "source.ip",
+				}
+				cfg.Reverse = LookupConfig{
+					Context:          resource,
+					SourceAttributes: []string{"source.ip"},
+				}
 			},
 			expectError: true,
 			errorMsg:    "reverse configuration: target_attribute must be specified for DNS resolution",
@@ -147,9 +217,11 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Invalid reverse context",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.Enabled = false
-				cfg.Reverse.Enabled = true
-				cfg.Reverse.Context = "invalid"
+				cfg.Reverse = LookupConfig{
+					Context:          "invalid",
+					SourceAttributes: []string{"source.ip"},
+					TargetAttribute:  "source.address",
+				}
 			},
 			expectError: true,
 			errorMsg:    "reverse configuration: context must be either 'resource' or 'record'",

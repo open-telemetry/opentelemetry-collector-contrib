@@ -48,13 +48,11 @@ func TestProcessor(t *testing.T) {
 			name:      "take the first valid attribute",
 			goldenDir: "multiple_attrs",
 			resolve: LookupConfig{
-				Enabled:          true,
 				Context:          resource,
 				SourceAttributes: []string{"bad.address", "good.address"},
 				TargetAttribute:  "resolved.ip",
 			},
 			reverse: LookupConfig{
-				Enabled:          true,
 				Context:          resource,
 				SourceAttributes: []string{"bad.ip", "good.ip"},
 				TargetAttribute:  "resolved.address",
@@ -70,19 +68,17 @@ func TestProcessor(t *testing.T) {
 			name:      "custom resolve attributes",
 			goldenDir: "custom_resolve_attr",
 			resolve: LookupConfig{
-				Enabled:          true,
 				Context:          record,
 				SourceAttributes: []string{"custom.address", "custom.another.address"},
 				TargetAttribute:  "custom.ip",
 			},
-			reverse: defaultReverse(),
+			reverse: LookupConfig{},
 		},
 		{
 			name:      "custom reverse attributes",
 			goldenDir: "custom_reverse_attr",
 			resolve:   defaultResolve(),
 			reverse: LookupConfig{
-				Enabled:          true,
 				Context:          record,
 				SourceAttributes: []string{"custom.ip", "custom.another.ip"},
 				TargetAttribute:  "custom.address",
@@ -100,25 +96,14 @@ func TestProcessor(t *testing.T) {
 
 func defaultResolve() LookupConfig {
 	return LookupConfig{
-		Enabled:          true,
 		Context:          resource,
 		SourceAttributes: []string{"source.address"},
 		TargetAttribute:  "source.ip",
 	}
 }
 
-func defaultReverse() LookupConfig {
-	return LookupConfig{
-		Enabled:          false,
-		Context:          resource,
-		SourceAttributes: []string{"source.ip"},
-		TargetAttribute:  "source.address",
-	}
-}
-
 func customReverse() LookupConfig {
 	return LookupConfig{
-		Enabled:          true,
 		Context:          resource,
 		SourceAttributes: []string{"custom.ip", "custom.another.ip"},
 		TargetAttribute:  "custom.address",

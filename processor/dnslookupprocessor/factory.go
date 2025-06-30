@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/metadata"
 )
@@ -27,24 +26,6 @@ func NewFactory() processor.Factory {
 		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
 		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
-}
-
-// createDefaultConfig returns a default configuration for the processor.
-func createDefaultConfig() component.Config {
-	return &Config{
-		Resolve: LookupConfig{
-			Enabled:          true,
-			Context:          resource,
-			SourceAttributes: []string{string(semconv.SourceAddressKey)},
-			TargetAttribute:  sourceIPKey,
-		},
-		Reverse: LookupConfig{
-			Enabled:          false,
-			Context:          resource,
-			SourceAttributes: []string{sourceIPKey},
-			TargetAttribute:  string(semconv.SourceAddressKey),
-		},
-	}
 }
 
 func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {

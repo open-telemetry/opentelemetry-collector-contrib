@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	semconv "go.opentelemetry.io/otel/semconv/v1.31.0"
 )
 
 type contextID string
@@ -42,8 +44,6 @@ type Config struct {
 
 // LookupConfig defines the configuration for forward/reverse DNS resolution.
 type LookupConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
 	// Context specifies where to look for attributes (resource or record).
 	Context contextID `mapstructure:"context"`
 
@@ -58,9 +58,6 @@ var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
 	validateLookupConfig := func(lc LookupConfig) error {
-		if !lc.Enabled {
-			return nil
-		}
 		if len(lc.SourceAttributes) == 0 {
 			return errors.New("at least one source_attributes must be specified for DNS resolution")
 		}
@@ -82,4 +79,49 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	if !componentParser.IsSet("resolve") && !componentParser.IsSet("reverse") {
+		return errors.New("at least one of 'resolve' or 'reverse' must be configured")
+	}
+
+	if componentParser.IsSet("resolve") {
+		if !componentParser.IsSet("resolve::context") {
+			cfg.Resolve.Context = resource
+		}
+		if !componentParser.IsSet("resolve::source_attributes") {
+			cfg.Resolve.SourceAttributes = []string{string(semconv.SourceAddressKey)}
+		}
+		if !componentParser.IsSet("resolve::target_attribute") {
+			cfg.Resolve.TargetAttribute = sourceIPKey
+		}
+	}
+
+	if componentParser.IsSet("reverse") {
+		if !componentParser.IsSet("reverse::context") {
+			cfg.Reverse.Context = resource
+		}
+		if !componentParser.IsSet("reverse::source_attributes") {
+			cfg.Reverse.SourceAttributes = []string{sourceIPKey}
+		}
+		if !componentParser.IsSet("reverse::target_attribute") {
+			cfg.Reverse.TargetAttribute = string(semconv.SourceAddressKey)
+		}
+	}
+
+	return nil
+}
+
+// createDefaultConfig returns a default configuration for the processor.
+func createDefaultConfig() component.Config {
+	return &Config{}
 }

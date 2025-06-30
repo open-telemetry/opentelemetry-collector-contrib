@@ -28,7 +28,8 @@ func (dp *dnsLookupProcessor) processLogs(ctx context.Context, ls plog.Logs) (pl
 					}
 				}
 			default:
-				return ls, errUnknownContextID
+				// This should never happen, as config validation should ensure the context is valid.
+				return ls, nil
 			}
 		}
 	}

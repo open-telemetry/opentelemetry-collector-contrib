@@ -28,13 +28,11 @@ func TestCreateProcessor(t *testing.T) {
 
 	cfg := &Config{
 		Resolve: LookupConfig{
-			Enabled:          true,
 			Context:          resource,
 			SourceAttributes: []string{string(semconv.SourceAddressKey)},
 			TargetAttribute:  sourceIPKey,
 		},
 		Reverse: LookupConfig{
-			Enabled:          false,
 			Context:          resource,
 			SourceAttributes: []string{sourceIPKey},
 			TargetAttribute:  string(semconv.SourceAddressKey),
