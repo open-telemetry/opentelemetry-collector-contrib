@@ -580,7 +580,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, err
 
 		obfuscatedSQL, err := ObfuscateSQL(row[sqlText])
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("oracleScraper failed updating this metric row: %s", err))
+			s.logger.Error(fmt.Sprintf("oracleScraper failed updating this log record: %s", err))
 			continue
 		}
 
