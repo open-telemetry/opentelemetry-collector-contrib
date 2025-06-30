@@ -113,12 +113,12 @@ func addExpectedHistogramCount(metrics pmetric.MetricSlice) {
 	dataPoint := metric.Gauge().DataPoints().AppendEmpty()
 	dataPoint.Attributes().PutStr("container", "dolor")
 	dataPoint.SetTimestamp(timestamp1)
-	dataPoint.SetIntValue(45)
+	dataPoint.SetDoubleValue(45)
 
 	dataPoint = metric.Gauge().DataPoints().AppendEmpty()
 	dataPoint.Attributes().PutStr("container", "sit")
 	dataPoint.SetTimestamp(timestamp2)
-	dataPoint.SetIntValue(22)
+	dataPoint.SetDoubleValue(22)
 }
 
 func addExpectedHistogramBuckets(metrics pmetric.MetricSlice) {
@@ -150,7 +150,7 @@ func addExpectedHistogramBuckets(metrics pmetric.MetricSlice) {
 		}
 
 		dataPoint.SetTimestamp(timestamp1)
-		dataPoint.SetIntValue(bucketCount)
+		dataPoint.SetDoubleValue(float64(bucketCount))
 	}
 
 	histogramBuckets = []struct {
@@ -176,6 +176,6 @@ func addExpectedHistogramBuckets(metrics pmetric.MetricSlice) {
 		}
 
 		dataPoint.SetTimestamp(timestamp2)
-		dataPoint.SetIntValue(bucketCount)
+		dataPoint.SetDoubleValue(float64(bucketCount))
 	}
 }
