@@ -249,13 +249,13 @@ require (
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.23.1 // indirect
-	go.opentelemetry.io/collector/component v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
-	go.opentelemetry.io/collector/confmap v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
+	go.opentelemetry.io/collector/component v1.34.1-0.20250630084015-32278ed2ed08 // indirect
+	go.opentelemetry.io/collector/confmap v1.34.1-0.20250630084015-32278ed2ed08 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.34.1-0.20250630084015-32278ed2ed08 // indirect
+	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250630084015-32278ed2ed08 // indirect
 	go.opentelemetry.io/collector/filter v0.128.1-0.20250628171447-c6cd1aeb58b7 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250628171447-c6cd1aeb58b7 // indirect
-	go.opentelemetry.io/collector/pdata v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
+	go.opentelemetry.io/collector/pdata v1.34.1-0.20250630084015-32278ed2ed08 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
