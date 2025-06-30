@@ -277,7 +277,7 @@ func isRetriableError(err error) bool {
 		return false
 	}
 
-	//Check for specific connection error strings
+	// Check for specific connection error strings
 	errStr := err.Error()
 	return strings.Contains(errStr, "connection refused")
 }
