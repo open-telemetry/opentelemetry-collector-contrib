@@ -22,9 +22,9 @@ The number of page faults.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of fault. | Str: ``major``, ``minor`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | Type of fault. | Str: ``major``, ``minor`` | false |
 
 ### system.paging.operations
 
@@ -36,10 +36,10 @@ The number of paging operations.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | Page In or Page Out. | Str: ``page_in``, ``page_out`` |
-| type | Type of fault. | Str: ``major``, ``minor`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | Page In or Page Out. | Str: ``page_in``, ``page_out`` | false |
+| type | Type of fault. | Str: ``major``, ``minor`` | false |
 
 ### system.paging.usage
 
@@ -51,10 +51,10 @@ Swap (unix) or pagefile (windows) usage.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the page file. | Any Str |
-| state | Breakdown of paging usage by type. | Str: ``cached``, ``free``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device | Name of the page file. | Any Str | false |
+| state | Breakdown of paging usage by type. | Str: ``cached``, ``free``, ``used`` | false |
 
 ## Optional Metrics
 
@@ -76,7 +76,7 @@ Swap (unix) or pagefile (windows) utilization.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the page file. | Any Str |
-| state | Breakdown of paging usage by type. | Str: ``cached``, ``free``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device | Name of the page file. | Any Str | false |
+| state | Breakdown of paging usage by type. | Str: ``cached``, ``free``, ``used`` | false |

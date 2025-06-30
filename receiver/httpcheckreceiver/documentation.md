@@ -22,9 +22,9 @@ Measures the duration of the HTTP check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| http.url | Full HTTP request URL. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
 
 ### httpcheck.error
 
@@ -36,10 +36,10 @@ Records errors occurring during HTTP check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| http.url | Full HTTP request URL. | Any Str |
-| error.message | Error message recorded during check | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| error.message | Error message recorded during check | Any Str | false |
 
 ### httpcheck.status
 
@@ -51,9 +51,9 @@ Records errors occurring during HTTP check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| http.url | Full HTTP request URL. | Any Str |
-| http.status_code | HTTP response status code | Any Int |
-| http.method | HTTP request method | Any Str |
-| http.status_class | HTTP response status class | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| http.status_code | HTTP response status code | Any Int | false |
+| http.method | HTTP request method | Any Str | false |
+| http.status_class | HTTP response status class | Any Str | false |

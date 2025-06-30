@@ -38,9 +38,9 @@ The number of database operations.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The operation type. | Str: ``writes``, ``reads`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The operation type. | Str: ``writes``, ``reads`` | false |
 
 ### couchdb.file_descriptor.open
 
@@ -68,9 +68,9 @@ The number of HTTP requests by method.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` | false |
 
 ### couchdb.httpd.responses
 
@@ -82,9 +82,9 @@ The number of each HTTP status code.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| http.status_code | An HTTP status code. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.status_code | An HTTP status code. | Any Str | false |
 
 ### couchdb.httpd.views
 
@@ -96,9 +96,9 @@ The number of views read.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` | false |
 
 ## Resource Attributes
 

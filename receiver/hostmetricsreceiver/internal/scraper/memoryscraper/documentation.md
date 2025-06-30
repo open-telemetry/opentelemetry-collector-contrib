@@ -22,9 +22,9 @@ Bytes of memory in use.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | false |
 
 ## Optional Metrics
 
@@ -78,6 +78,6 @@ Percentage of memory bytes in use.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | false |
