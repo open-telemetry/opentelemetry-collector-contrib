@@ -432,7 +432,6 @@ scrape_configs:
 				// The critical check: ensure the password is not "<secret>"
 				require.NotNil(t, scrapeConfig.HTTPClientConfig.BasicAuth, "basic auth should be configured")
 				password := string(scrapeConfig.HTTPClientConfig.BasicAuth.Password)
-				assert.NotEqual(t, "<secret>", password, "password should not be marshaled as '<secret>'")
 				assert.Equal(t, "mysecretpassword", password, "password should preserve original value")
 				assert.Equal(t, "testuser", scrapeConfig.HTTPClientConfig.BasicAuth.Username)
 			},
@@ -456,7 +455,6 @@ scrape_configs:
 				// Check that bearer token is preserved
 				require.NotNil(t, scrapeConfig.HTTPClientConfig.Authorization, "authorization should be configured")
 				credentials := string(scrapeConfig.HTTPClientConfig.Authorization.Credentials)
-				assert.NotEqual(t, "<secret>", credentials, "credentials should not be marshaled as '<secret>'")
 				assert.Equal(t, "mySecretBearerToken123", credentials, "credentials should preserve original value")
 				assert.Equal(t, "Bearer", scrapeConfig.HTTPClientConfig.Authorization.Type)
 			},
