@@ -72,7 +72,6 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 				for _, m := range newMetrics {
 					helixMetrics = appendMetricWithParentEntity(helixMetrics, m, containerParentEntities)
 				}
-
 			}
 		}
 	}
