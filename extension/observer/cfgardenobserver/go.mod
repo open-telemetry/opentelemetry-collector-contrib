@@ -7,12 +7,12 @@ require (
 	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.128.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.34.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/confmap v1.34.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/confmap/xconfmap v0.128.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/extension v1.34.1-0.20250624152751-a33fdf3cb754
-	go.opentelemetry.io/collector/extension/extensiontest v0.128.1-0.20250624152751-a33fdf3cb754
+	go.opentelemetry.io/collector/component v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/confmap v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/confmap/xconfmap v0.128.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/extension v1.34.1-0.20250628171447-c6cd1aeb58b7
+	go.opentelemetry.io/collector/extension/extensiontest v0.128.1-0.20250628171447-c6cd1aeb58b7
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -26,7 +26,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-martini/martini v0.0.0-20170121215854-22fa46961aab // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/pprof v0.0.0-20241023014458-598669927662 // indirect
@@ -45,9 +45,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tedsuo/rata v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250624152751-a33fdf3cb754 // indirect
-	go.opentelemetry.io/collector/pdata v1.34.1-0.20250624152751-a33fdf3cb754 // indirect
+	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.128.1-0.20250628171447-c6cd1aeb58b7 // indirect
+	go.opentelemetry.io/collector/pdata v1.34.1-0.20250628171447-c6cd1aeb58b7 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
