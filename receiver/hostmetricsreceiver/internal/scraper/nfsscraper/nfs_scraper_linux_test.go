@@ -43,7 +43,7 @@ func mockGetOSNfsdStats() (*NfsdStats, error) {
 	return parseNfsdStats(data)
 }
 
-func getExpectedOSNfsStats() (*NfsStats) {
+func getExpectedOSNfsStats() *NfsStats {
 	nfsNetStats := &NfsNetStats{
 		NetCount:           8,
 		UDPCount:           843,
@@ -162,7 +162,7 @@ func getExpectedOSNfsStats() (*NfsStats) {
 	}
 }
 
-func getExpectedOSNfsdStats() (*NfsdStats) {
+func getExpectedOSNfsdStats() *NfsdStats {
 	repcacheStats := &NfsdRepcacheStats{
 		Hits:    795,
 		Misses:  819,
@@ -222,12 +222,10 @@ func getExpectedOSNfsdStats() (*NfsdStats) {
 		{NFSVersion: 3, NFSCallName: "COMMIT", NFSCallCount: 382},
 	}
 
-
 	nfsdV4ProcedureStats := &[]CallStats{
 		{NFSVersion: 4, NFSCallName: "NULL", NFSCallCount: 512},
 		{NFSVersion: 4, NFSCallName: "COMPOUND", NFSCallCount: 878},
 	}
-
 
 	nfsdV4OperationStats := &[]CallStats{
 		{NFSVersion: 4, NFSCallName: "UNUSED0", NFSCallCount: 725},
@@ -342,7 +340,7 @@ func TestOSScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			expectedNfsStats := getExpectedOSNfsStats()
 			expectedNfsdStats := getExpectedOSNfsdStats()
-			
+
 			nfsStats, err := mockGetOSNfsStats()
 			require.NoError(t, err)
 
@@ -350,9 +348,8 @@ func TestOSScrape(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, expectedNfsStats.NfsNetStats.NetCount, nfsStats.NfsNetStats.NetCount)
-			
+
 			assert.Equal(t, expectedNfsdStats.NfsdNetStats.NetCount, nfsdStats.NfsdNetStats.NetCount)
 		})
 	}
 }
-
