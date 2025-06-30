@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/docker/docker v28.1.1+incompatible
+	github.com/docker/docker v28.3.0+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/stretchr/testify v1.10.0
@@ -25,6 +25,8 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
