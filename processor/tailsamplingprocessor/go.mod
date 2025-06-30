@@ -25,6 +25,7 @@ require (
 )
 
 require (
+	github.com/lightstep/varopt v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.128.0
 	go.opentelemetry.io/collector/component/componenttest v0.128.1-0.20250610090210-188191247685
 	go.opentelemetry.io/collector/consumer/consumertest v0.128.1-0.20250610090210-188191247685
@@ -51,7 +52,6 @@ require (
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.2.0 // indirect
-	github.com/lightstep/varopt v1.4.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

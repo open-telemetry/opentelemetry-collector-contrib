@@ -51,30 +51,28 @@ type TraceData struct {
 	// BottomKMetadata contains information needed for deferred threshold calculation
 	BottomKMetadata *BottomKDeferredData
 
-	// TODO: For improved consistency, we should validate that all spans in a trace
-	// have the same randomness value (derived from TraceID or explicit rv in TraceState).
-	// Inconsistent randomness values could indicate upstream sampling inconsistencies.
+	// Varopt tail sampling multiplier for OTEP 235 compliant rate limiting
+	// This represents the adjustment factor from Varopt rate limiting
+	TailSamplingMultiplier *float64
 }
 
 // AttributeInserter represents a function that can insert attributes into trace data
-// when a sampling decision is applied. This supports OTEP 250's deferred attribute pattern.
+// when a sampling decision is applied.
 type AttributeInserter func(*TraceData)
 
-// Decision represents a sampling intent with threshold and metadata (OTEP 250 Sampling Intent pattern).
-// This structure replaces the previous enum while maintaining backward compatibility.
+// Decision represents a sampling intent with threshold and metadata.
 type Decision struct {
 	// Threshold represents the sampling intent as a threshold value
 	Threshold sampling.Threshold
-	// Attributes contains additional decision metadata (for backward compatibility)
+	// Attributes contains additional decision metadata
 	Attributes map[string]any
 	// Error contains error information if decision failed
 	Error error
 	// AttributeInserters contains functions to insert attributes when sampling decision is applied
-	// This implements OTEP 250's deferred attribute pattern for tail sampling
 	AttributeInserters []AttributeInserter
 }
 
-// Legacy compatibility constants that return Decision structs
+// Decision constants for common sampling decisions
 var (
 	// Unspecified indicates that the status of the decision was not set yet.
 	Unspecified = Decision{Threshold: sampling.NeverSampleThreshold}
@@ -93,7 +91,7 @@ var (
 	InvertNotSampled = NewInvertedDecision(sampling.AlwaysSampleThreshold)
 )
 
-// InvertThreshold mathematically inverts a threshold for OTEP 250 compliance.
+// InvertThreshold mathematically inverts a threshold.
 // Inverted threshold = MaxAdjustedCount - threshold
 func InvertThreshold(t sampling.Threshold) sampling.Threshold {
 	inverted, err := sampling.UnsignedToThreshold(sampling.MaxAdjustedCount - t.Unsigned())
@@ -105,7 +103,6 @@ func InvertThreshold(t sampling.Threshold) sampling.Threshold {
 }
 
 // NewInvertedDecision creates a Decision with mathematically inverted threshold.
-// This implements proper OTEP 250 threshold inversion rather than boolean flags.
 func NewInvertedDecision(originalThreshold sampling.Threshold) Decision {
 	return Decision{
 		Threshold:  InvertThreshold(originalThreshold),
@@ -140,7 +137,6 @@ func NewDecisionWithAttributeInserters(threshold sampling.Threshold, inserters .
 }
 
 // NewSampledDecisionWithAttributes creates a Sampled decision with additional attribute inserters.
-// This preserves the {"sampled": true} attribute for backward compatibility.
 func NewSampledDecisionWithAttributes(inserters ...AttributeInserter) Decision {
 	return Decision{
 		Threshold:          sampling.AlwaysSampleThreshold,
@@ -153,21 +149,17 @@ func NewSampledDecisionWithAttributes(inserters ...AttributeInserter) Decision {
 func NewNotSampledDecisionWithAttributes(inserters ...AttributeInserter) Decision {
 	return Decision{
 		Threshold:          sampling.NeverSampleThreshold,
-		Attributes:         nil, // NotSampled has nil attributes for backward compatibility
+		Attributes:         nil, // NotSampled has nil attributes
 		AttributeInserters: inserters,
 	}
 }
 
 // isZeroValue returns true if this is the zero value Decision{}.
-// Zero-value should be treated as unspecified, not as AlwaysSampleThreshold.
 func (d Decision) isZeroValue() bool {
 	return d.Threshold == (sampling.Threshold{}) && d.Attributes == nil && d.Error == nil
 }
 
 // IsSampled returns true if this decision represents a sampling intent.
-// This provides backward compatibility for boolean decision logic.
-// NOTE: This method is deprecated in favor of ShouldSample(randomness) which implements
-// proper OTEP 235 threshold comparison: (randomness >= threshold) = sampled
 func (d Decision) IsSampled() bool {
 	// Zero-value Decision{} should be treated as unspecified, not sampled
 	if d.isZeroValue() {
@@ -179,8 +171,7 @@ func (d Decision) IsSampled() bool {
 		return false
 	}
 
-	// For backward compatibility only: assume AlwaysSampleThreshold means "sample"
-	// In the new threshold paradigm, use ShouldSample(randomness) instead
+	// Assume AlwaysSampleThreshold means "sample"
 	return d.Threshold == sampling.AlwaysSampleThreshold
 }
 

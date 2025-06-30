@@ -137,7 +137,7 @@ type PolicyCfg struct {
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
 // evaluator
 type LatencyCfg struct {
-	// Lower bound in milliseconds. Retaining original name for compatibility
+	// Lower bound in milliseconds
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
 	// Upper bound in milliseconds.
 	UpperThresholdmsMs int64 `mapstructure:"upper_threshold_ms"`

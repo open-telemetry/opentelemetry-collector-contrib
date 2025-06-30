@@ -8,13 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"runtime"
 	"slices"
-	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/lightstep/varopt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -67,10 +68,10 @@ type tailSamplingSpanProcessor struct {
 	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
 
-	// OTEP 235 TraceState management for consistent probability sampling
+	// TraceState management for consistent probability sampling
 	traceStateManager *internalsampling.TraceStateManager
 
-	// Bottom-K reservoir sampling with time-aligned buckets
+	// Varopt reservoir sampling with time-aligned buckets
 	bucketManager *bucketManager
 }
 
@@ -313,8 +314,6 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	// Dropped decision takes precedence over all others, therefore we evaluate them first.
 	tsp.policies = slices.Concat(dropPolicies, policies)
 
-	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
-
 	return nil
 }
 
@@ -443,7 +442,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToMetricAttribute(decision))
 		}
 
-		// Collect all policy decisions for OTEP 250 threshold combination
+		// Collect all policy decisions for threshold combination
 		policyDecisions = append(policyDecisions, decision)
 
 		// Track policies for metrics and debugging (first occurrence only)
@@ -463,7 +462,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		}
 	}
 
-	// OTEP 250 Decision Logic with precedence for backward compatibility
+	// Decision Logic with precedence
 	switch {
 	case droppedPolicy != nil:
 		// Dropped takes precedence over all other decisions
@@ -482,7 +481,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 				trace.FinalThreshold = &finalThreshold
 			}
 		} else {
-			// Standard threshold-based decision logic (OTEP 250)
+			// Standard threshold-based decision logic
 			// Find the minimum (most restrictive) threshold from all policies
 			minThreshold := sampling.NeverSampleThreshold
 			hasExplicitNotSampled := false
@@ -523,7 +522,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		}
 	}
 
-	// OTEP 235 Phase 5: Update TraceState if threshold changed and TraceState is present
+	// Update TraceState if threshold changed and TraceState is present
 	if trace.TraceStatePresent && trace.FinalThreshold != nil {
 		if err := tsp.traceStateManager.UpdateTraceState(trace, *trace.FinalThreshold); err != nil {
 			tsp.logger.Warn("Failed to update TraceState with final threshold",
@@ -531,13 +530,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		}
 	}
 
-	// Policy recording enabled by default (feature gate finalized)
+	// Policy recording enabled by default
 	if sampledPolicy != nil {
 		internalsampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
 
-	// OTEP 250: Apply deferred attribute inserters from the final decision
-	// This implements the deferred attribute pattern for rule-based sampling outcomes
+	// Apply deferred attribute inserters from the final decision
 	if finalDecision.IsSampled() {
 		finalDecision.ApplyAttributeInserters(trace)
 	}
@@ -587,9 +585,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	for id, spans := range idToSpansAndScope {
 		// If the trace ID is in the sampled cache, apply threshold-based evaluation
 		if finalThreshold, ok := tsp.sampledIDCache.Get(id); ok {
-			tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", id))
-
-			// For OTEP 235 correctness, evaluate each span against the cached final threshold
+			// Evaluate each span against the cached final threshold
 			traceTd := ptrace.NewTraces()
 			sampledSpans := []spanAndScope{}
 			for _, spanAndScope := range spans {
@@ -613,8 +609,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 		// If the trace ID is in the non-sampled cache, short circuit the decision
 		if notSampled, ok := tsp.nonSampledIDCache.Get(id); ok && !notSampled {
-			tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", id))
-
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
 			continue
@@ -712,7 +706,6 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		tsp.numTracesOnMap.Add(^uint64(0))
 	}
 	if trace == nil {
-		tsp.logger.Debug("Attempt to delete trace ID not on table", zap.Stringer("id", traceID))
 		return
 	}
 
@@ -734,13 +727,7 @@ func (tsp *tailSamplingSpanProcessor) processBucketExpiration(metrics *policyMet
 	}
 
 	ctx := context.Background()
-	bucketTraces := expiredBucket.getAllTraces()
-
-	tsp.logger.Debug("Processing expired bucket",
-		zap.Time("bucket_start", expiredBucket.startTime),
-		zap.Time("bucket_end", expiredBucket.endTime),
-		zap.Int("trace_count", len(bucketTraces)),
-	)
+	bucketTraces := expiredBucket.getTracesWithTailAdjustments()
 
 	// First pass: evaluate all policies normally
 	tracesWithDecisions := make([]*bucketTraceWithDecision, 0, len(bucketTraces))
@@ -766,7 +753,7 @@ func (tsp *tailSamplingSpanProcessor) processBucketExpiration(metrics *policyMet
 	}
 
 	// Second pass: apply rate limiting using Bottom-K if any rate limiting policies were involved
-	tsp.applyRateLimitingBottomK(tracesWithDecisions, metrics)
+	tsp.applyRateLimitingVaropt(tracesWithDecisions, metrics)
 
 	// Final pass: release traces based on final decisions
 	for _, twd := range tracesWithDecisions {
@@ -781,34 +768,48 @@ func (tsp *tailSamplingSpanProcessor) processBucketExpiration(metrics *policyMet
 
 		switch {
 		case twd.decision.IsSampled():
-			tsp.releaseSampledTrace(ctx, twd.bucketTrace.traceID, allSpans)
+			// Calculate tail sampling adjustment from Varopt weight ratios
+			tailAdjustment := twd.bucketTrace.getTailSamplingAdjustment()
+			tsp.releaseSampledTraceWithTailAdjustment(ctx, twd.bucketTrace.traceID, allSpans, tailAdjustment)
 		default:
 			tsp.releaseNotSampledTrace(twd.bucketTrace.traceID)
 		}
 	}
 }
 
-// applyRateLimitingBottomK applies rate limiting using Bottom-K algorithm to traces with rate limiting policies
-func (tsp *tailSamplingSpanProcessor) applyRateLimitingBottomK(tracesWithDecisions []*bucketTraceWithDecision, metrics *policyMetrics) {
-	// Find traces that were accepted by rate limiting policies
-	rateLimitedTraces := make([]*bucketTraceWithDecision, 0)
-	var rateLimitSpansPerSecond int64
+// applyRateLimitingVaropt applies rate limiting using Varopt sampling
+func (tsp *tailSamplingSpanProcessor) applyRateLimitingVaropt(tracesWithDecisions []*bucketTraceWithDecision, metrics *policyMetrics) {
+	// Group traces by rate limiting policy to handle multiple rate limits
+	rateLimitGroups := make(map[int64][]*bucketTraceWithDecision)
 
 	for _, twd := range tracesWithDecisions {
 		// Check if this trace was accepted by a rate limiting policy
 		if twd.decision.IsSampled() && twd.decision.Attributes != nil {
 			if isRateLimit, ok := twd.decision.Attributes["rate_limiting_policy"].(bool); ok && isRateLimit {
-				rateLimitedTraces = append(rateLimitedTraces, twd)
-				// Extract the rate limit from the first rate limiting policy
-				if spansPerSec, exists := twd.decision.Attributes["spans_per_second"].(int64); exists && rateLimitSpansPerSecond == 0 {
-					rateLimitSpansPerSecond = spansPerSec
+				if spansPerSec, exists := twd.decision.Attributes["spans_per_second"].(int64); exists {
+					if rateLimitGroups[spansPerSec] == nil {
+						rateLimitGroups[spansPerSec] = make([]*bucketTraceWithDecision, 0)
+					}
+					rateLimitGroups[spansPerSec] = append(rateLimitGroups[spansPerSec], twd)
 				}
 			}
 		}
 	}
 
-	if len(rateLimitedTraces) == 0 || rateLimitSpansPerSecond == 0 {
+	if len(rateLimitGroups) == 0 {
 		return // No rate limiting to apply
+	}
+
+	// Process each rate limit group independently
+	for rateLimitSpansPerSecond, rateLimitedTraces := range rateLimitGroups {
+		tsp.applyVaropRateLimitToGroup(rateLimitedTraces, rateLimitSpansPerSecond, metrics)
+	}
+}
+
+// applyVaropRateLimitToGroup applies Varopt-based rate limiting to a specific group of traces
+func (tsp *tailSamplingSpanProcessor) applyVaropRateLimitToGroup(rateLimitedTraces []*bucketTraceWithDecision, rateLimitSpansPerSecond int64, metrics *policyMetrics) {
+	if len(rateLimitedTraces) == 0 || rateLimitSpansPerSecond == 0 {
+		return
 	}
 
 	// Calculate total spans in rate limited traces
@@ -817,80 +818,103 @@ func (tsp *tailSamplingSpanProcessor) applyRateLimitingBottomK(tracesWithDecisio
 		totalSpans += twd.trace.SpanCount.Load()
 	}
 
-	// If within rate limit, keep all traces
+	// If within rate limit, keep all traces without additional processing
 	if totalSpans <= rateLimitSpansPerSecond {
-		tsp.logger.Debug("Rate limit not exceeded, keeping all traces",
-			zap.Int64("total_spans", totalSpans),
-			zap.Int64("rate_limit", rateLimitSpansPerSecond),
-		)
 		return
 	}
 
-	// Apply Bottom-K algorithm: sort by randomness value and keep highest values
-	sort.Slice(rateLimitedTraces, func(i, j int) bool {
-		return rateLimitedTraces[i].bucketTrace.randomnessValue < rateLimitedTraces[j].bucketTrace.randomnessValue
-	})
+	// Create a new Varopt sampler with the prorated quota amount
+	// The capacity is the target number of spans we want to keep
+	capacity := int(rateLimitSpansPerSecond)
+	if capacity <= 0 {
+		capacity = 1 // Ensure minimum capacity
+	}
 
-	// Calculate how many traces to keep to stay within rate limit
-	var keptSpans int64
-	keepCount := 0
+	varopSampler := varopt.New[*bucketTraceWithDecision](capacity, rand.New(rand.NewSource(time.Now().UnixNano())))
 
-	// Keep traces with highest randomness until we hit the rate limit
-	for i := len(rateLimitedTraces) - 1; i >= 0; i-- {
-		traceSpans := rateLimitedTraces[i].trace.SpanCount.Load()
-		if keptSpans+traceSpans <= rateLimitSpansPerSecond {
-			keptSpans += traceSpans
-			keepCount++
-		} else {
-			break
+	// Feed all rate-limited traces through the new Varopt sampler
+	// Use span count as the weight since we're rate limiting by spans per second
+	for _, twd := range rateLimitedTraces {
+		spanCount := float64(twd.trace.SpanCount.Load())
+		_, err := varopSampler.Add(twd, spanCount)
+		if err != nil {
+			tsp.logger.Warn("Failed to add trace to rate limiting Varopt sampler",
+				zap.Stringer("traceID", twd.bucketTrace.traceID),
+				zap.Float64("span_count", spanCount),
+				zap.Error(err))
 		}
 	}
-	// Update decisions for traces that exceed the rate limit
-	droppedCount := len(rateLimitedTraces) - keepCount
-	if droppedCount > 0 {
-		// Mark dropped traces as NotSampled
-		for i := 0; i < len(rateLimitedTraces)-keepCount; i++ {
-			rateLimitedTraces[i].decision = internalsampling.NotSampled
+
+	// Extract the selected traces from Varopt and compute new tail sampling multipliers
+	keptTraces := make(map[*bucketTraceWithDecision]*varopRateLimitResult)
+	var totalKeptSpans int64
+
+	for i := 0; i < varopSampler.Size(); i++ {
+		twd, varopOutputWeight := varopSampler.Get(i)
+		inputWeight := float64(twd.trace.SpanCount.Load())
+
+		// Calculate the tail sampling multiplier from Varopt weight ratios
+		// This represents how much this trace should be weighted in the final output
+		tailSamplingMultiplier := varopOutputWeight / inputWeight
+
+		keptTraces[twd] = &varopRateLimitResult{
+			tailSamplingMultiplier: tailSamplingMultiplier,
+			varopOutputWeight:      varopOutputWeight,
 		}
 
-		// Store Bottom-K metadata for kept traces (for deferred threshold calculation)
-		if keepCount > 0 {
-			// Find minimum randomness among kept traces
-			keptTraces := rateLimitedTraces[len(rateLimitedTraces)-keepCount:]
-			minRandomness := keptTraces[0].bucketTrace.randomnessValue
+		totalKeptSpans += twd.trace.SpanCount.Load()
+	}
 
-			// Mark all kept traces with Bottom-K metadata for deferred threshold calculation
-			for _, twd := range keptTraces {
-				twd.trace.BottomKMetadata = &internalsampling.BottomKDeferredData{
-					IsRateLimited:         true,
-					MinRandomnessInBucket: minRandomness,
-					TracesInBucket:        uint64(keepCount),
-				}
+	// Update decisions: mark non-selected traces as NotSampled
+	droppedCount := 0
+	for _, twd := range rateLimitedTraces {
+		if result, kept := keptTraces[twd]; kept {
+			// Keep the trace and store the tail sampling multiplier for span attribution
+			twd.trace.TailSamplingMultiplier = &result.tailSamplingMultiplier
+		} else {
+			// Drop the trace
+			twd.decision = internalsampling.NotSampled
+			droppedCount++
+		}
+	}
+}
+
+// addTailSamplingAttributes adds tail sampling adjustment attributes to spans
+func (tsp *tailSamplingSpanProcessor) addTailSamplingAttributes(td ptrace.Traces, tailSamplingMultiplier float64) {
+	// Add the tail sampling adjusted count attribute to all spans in the trace
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+
+				// Add the tail sampling adjusted count as a span attribute
+				// This represents how much this span should be weighted in metrics calculations
+				span.Attributes().PutDouble("sampling.tail.adjusted_count", tailSamplingMultiplier)
 			}
 		}
-
-		tsp.logger.Debug("Applied Bottom-K rate limiting",
-			zap.Int("total_traces", len(rateLimitedTraces)),
-			zap.Int("kept_traces", keepCount),
-			zap.Int("dropped_traces", droppedCount),
-			zap.Int64("kept_spans", keptSpans),
-			zap.Int64("rate_limit", rateLimitSpansPerSecond),
-		)
 	}
+}
+
+// varopRateLimitResult holds the results of Varopt rate limiting for a trace
+type varopRateLimitResult struct {
+	tailSamplingMultiplier float64 // The multiplier to apply for tail sampling adjustment
+	varopOutputWeight      float64 // The output weight from Varopt sampler
 }
 
 func (tsp *tailSamplingSpanProcessor) shouldIncludeSpanBasedOnThreshold(span *ptrace.Span, finalThreshold sampling.Threshold) bool {
 	// Extract current threshold from span's TraceState (if present)
 	traceState := span.TraceState()
 	if traceState.AsRaw() == "" {
-		// If no TraceState, include the span (backward compatibility)
+		// If no TraceState, include the span
 		return true
 	}
 
 	// Parse the W3C TraceState to extract threshold
 	w3cTS, err := sampling.NewW3CTraceState(traceState.AsRaw())
 	if err != nil {
-		// If parsing fails, include the span (backward compatibility)
+		// If parsing fails, include the span
 		return true
 	}
 
@@ -902,7 +926,7 @@ func (tsp *tailSamplingSpanProcessor) shouldIncludeSpanBasedOnThreshold(span *pt
 
 	spanThreshold, err := tsp.traceStateManager.ExtractThreshold(otelTS)
 	if err != nil {
-		// If no threshold in TraceState, include the span (backward compatibility)
+		// If no threshold in TraceState, include the span
 		return true
 	}
 
@@ -913,33 +937,18 @@ func (tsp *tailSamplingSpanProcessor) shouldIncludeSpanBasedOnThreshold(span *pt
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
-	// OTEP 235 Phase 5: Ensure TraceState is properly propagated in outgoing spans
-	// This is particularly important for span batches that might not have gone through
-	// the full policy evaluation pipeline (e.g., cached decisions)
+	// Ensure TraceState is properly propagated in outgoing spans
 	tsp.propagateTraceStateIfNeeded(ctx, id, td)
 
-	// Store the final threshold in cache for OTEP 235 correctness
-	finalThreshold := sampling.AlwaysSampleThreshold // Default for backward compatibility
+	// Store the final threshold in cache
+	finalThreshold := sampling.AlwaysSampleThreshold // Default
 	if d, ok := tsp.idToTrace.Load(id); ok {
 		trace := d.(*internalsampling.TraceData)
 
-		// Apply deferred Bottom-K threshold calculation if metadata is present
-		if trace.BottomKMetadata != nil && trace.BottomKMetadata.IsRateLimited {
-			bottomKThreshold := tsp.bucketManager.calculateBottomKThresholdCompat(
-				trace.BottomKMetadata.MinRandomnessInBucket,
-				trace.BottomKMetadata.TracesInBucket,
-			)
-
-			// Apply threshold only if it's more restrictive (OTEP 235 compliance)
-			if trace.FinalThreshold == nil || sampling.ThresholdLessThan(*trace.FinalThreshold, bottomKThreshold) {
-				trace.FinalThreshold = &bottomKThreshold
-				tsp.logger.Debug("Applied deferred Bottom-K threshold at output time",
-					zap.Stringer("traceID", id),
-					zap.String("threshold", bottomKThreshold.TValue()),
-					zap.Uint64("min_randomness", trace.BottomKMetadata.MinRandomnessInBucket),
-					zap.Uint64("k_value", trace.BottomKMetadata.TracesInBucket),
-				)
-			}
+		// Apply Varopt tail sampling adjustments if present
+		if trace.TailSamplingMultiplier != nil {
+			// Add tail sampling adjustment attributes to spans
+			tsp.addTailSamplingAttributes(td, *trace.TailSamplingMultiplier)
 		}
 
 		if trace.FinalThreshold != nil {
@@ -955,6 +964,41 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	}
 	if _, ok := tsp.sampledIDCache.Get(id); ok {
 		tsp.dropTrace(id, time.Now())
+	}
+}
+
+// releaseSampledTraceWithTailAdjustment releases a sampled trace with tail sampling adjustment
+// This adds the sampling.tail.adjusted_count attribute to preserve representivity
+func (tsp *tailSamplingSpanProcessor) releaseSampledTraceWithTailAdjustment(ctx context.Context, id pcommon.TraceID, td ptrace.Traces, tailAdjustment float64) {
+	// Add tail sampling adjustment as span attributes before releasing
+	tsp.addTailSamplingAdjustmentAttributes(td, tailAdjustment)
+
+	// Use the regular release flow for everything else
+	tsp.releaseSampledTrace(ctx, id, td)
+}
+
+// addTailSamplingAdjustmentAttributes adds the tail sampling adjustment as span attributes
+func (tsp *tailSamplingSpanProcessor) addTailSamplingAdjustmentAttributes(td ptrace.Traces, tailAdjustment float64) {
+	resourceSpans := td.ResourceSpans()
+	for i := 0; i < resourceSpans.Len(); i++ {
+		scopeSpans := resourceSpans.At(i).ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			spans := scopeSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				// Check if attribute already exists and multiply if so
+				existingValue, exists := span.Attributes().Get("sampling.tail.adjusted_count")
+				if exists {
+					if existingValue.Type() == pcommon.ValueTypeDouble {
+						span.Attributes().PutDouble("sampling.tail.adjusted_count", existingValue.Double()*tailAdjustment)
+					} else {
+						span.Attributes().PutDouble("sampling.tail.adjusted_count", tailAdjustment)
+					}
+				} else {
+					span.Attributes().PutDouble("sampling.tail.adjusted_count", tailAdjustment)
+				}
+			}
+		}
 	}
 }
 
