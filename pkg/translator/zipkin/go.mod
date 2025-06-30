@@ -12,8 +12,8 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.35.1-0.20250630174123-18b3b578b0b3
-	go.opentelemetry.io/otel v1.36.0
-	go.opentelemetry.io/otel/trace v1.36.0
+	go.opentelemetry.io/otel v1.37.0
+	go.opentelemetry.io/otel/trace v1.37.0
 	go.uber.org/goleak v1.3.0
 )
 
