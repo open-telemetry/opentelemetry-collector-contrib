@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [nslaughter, celian-garcia]
+    active: [nslaughter, celian-garcia, ishleenk17]
 
 resource_attributes:
   azuremonitor.tenant_id:
