@@ -91,7 +91,7 @@ type snowpipeMetric struct {
 }
 
 type storageMetric struct {
-	storageBytes  int64
-	stageBytes    int64
-	failsafeBytes int64
+	storageBytes  float64
+	stageBytes    float64
+	failsafeBytes float64
 }
