@@ -1,4 +1,0 @@
-change_type: enhancement
-component: googlecloudmonitoringreceiver
-note: Add support for converting Google Cloud monitoring delta distribution metrics to OpenTelemetry histograms.
-issues: [39600]

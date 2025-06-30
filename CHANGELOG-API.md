@@ -7,6 +7,44 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `azuremonitorexporter`: Unexport MessagingAttributes,ExceptionAttributes,DatabaseAttributes,RPCAttributes,HTTPAttributes,ConnectionVars,NetworkAttributes (#40648)
+- `sentryexporter`: unexport structs and methods which should be private (#40651)
+- `datadogreceiver`: Unexport `Endpoint` struct (#40663)
+- `azureeventhubreceiver`: Unexport AzureResourceLogsEventUnmarshaler (#40661)
+- `kineticaexporter`: unexport structs (#40680)
+  ｜ unexport SumScopeAttribute,ExponentialHistogramResourceAttribute,ExponentialHistogramDataPointAttribute, SummaryResourceAttribute,SummaryDataPointAttribute,Summary,HistogramScopeAttribute,HistogramDatapointExplicitBound, Histogram,GaugeScopeAttribute,ExponentialHistogramDataPointExemplarAttribute,ValueTypePair,HistogramDatapointExemplar, GaugeDataPointExemplarAttribute,HistogramDatapointBucketCount,HistogramDataPointAttribute,GaugeDatapointAttribute, ExponentialHistogramDatapoint,ExponentialHistogram,SumResourceAttribute,SumDatapoint,SummaryDatapointQuantileValues, Sum,KiWriter,HistogramResourceAttribute,HistogramDatapoint,GaugeResourceAttribute,GaugeDatapointExemplar, ExponentialHistogramBucketNegativeCount,SumDataPointExemplarAttribute,GaugeDatapoint,Gauge,ExponentialHistogramScopeAttribute, ExponentialHistogramBucketPositiveCount,AttributeValue,SummaryScopeAttribute,SumDatapointExemplar,SumDataPointAttribute, HistogramDataPointExemplarAttribute,ExponentialHistogramDatapointExemplar,SummaryDatapoint
+- `mysqlreceiver`: Unexport TableStats,TableIoWaitsStats,StatementEventStats,ReplicaStatusStats,IoWaitsStats,IndexIoWaitsStats,MySQLTestConfig structs from mysqlreceiver (#40671)
+- `sumologicextension`: Unexport ErrorAPI (#40655)
+- `prometheusremotewritereceiver`: Unexport MockConsumer,MetricIdentity structs (#40673)
+- `snmpreceiver`: Unexport SNMPData (#40543)
+- `azuredataexplorerexporter`: Unexport Status, Link, AdxTrace, AdxLog, Event, AdxMetric (#40647)
+- `bearertokenauthextension`: Unexport BearerAuthRoundTripper,PerRPCAuth,BearerTokenAuth (#40652)
+- `podmanreceiver`: Unexport ContainerScraper (#40672)
+- `alibabacloudlogserviceexporter`: Unexport KeyValues,KeyValue structs (#40644)
+- `libhoneyreceiver`: remove unused EnvironmentInfo,AuthInfo,TeamInfo (#40669)
+
+### 💡 Enhancements 💡
+
+- `hostmetricsreceiver`: Skeleton nfsscraper -- adds Linux nfs and nfsd metrics from /proc (#39978)
+- `sqlserverreceiver`: do not export Item struct (#40676)
+- `transformprocessor`: Create `With*Functions` factory options to provide custom OTTL functions for logs, metrics or traces to the resulting transform processor. (#39698)
+- `pkg/datadog`: Exposes 'SerializerWithForwarder' interface to allow for direct interaction with the underlying forwarder's lifecycle methods. (#40637)
+- `pkg/datadog`: Creates `agentcomponents` package to be used in Datadog components that rely on external dependencies. (#40532, #40556, #40560)
+  Deprecates `datadog.Zaplogger` in favor of `agentcomponents.ZapLogger`.
+- `pkg/ottl`: Add context inference support for OTTL value expressions (#39158)
+- `pkg/ottl`: Add new ContainsValue converter to check whether a value is present in a slice. (#30420)
+  Add `ottl.PSliceGetter`, a typed getter for `pcommon.Slice`
+  
+- `postgresqlreceiver`: Adopt mdatagen events for postgresqlreceiver. (#40549)
+- `sqlqueryreceiver`: Add SQL connection fields `host`, `port`, `database`, `username`, `password`, and `additional_params`. (#39760)
+  These options can be used instead of the existing `datasource` configuration option.
+
+<!-- previous-version -->
+
 ## v0.128.0
 
 ### 🛑 Breaking changes 🛑

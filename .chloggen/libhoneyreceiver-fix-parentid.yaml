@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: libhoneyreceiver
-note: Fix parent id handling in libhoneyreceiver
-issues: [40934]
-change_logs: [user]
