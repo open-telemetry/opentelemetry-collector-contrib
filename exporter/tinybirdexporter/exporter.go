@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"time"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -24,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal"
 )
@@ -41,7 +40,7 @@ type tinybirdExporter struct {
 	userAgent string
 }
 
-func newExporter(cfg component.Config, set exporter.Settings) (*tinybirdExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings) *tinybirdExporter {
 	oCfg := cfg.(*Config)
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
@@ -52,7 +51,7 @@ func newExporter(cfg component.Config, set exporter.Settings) (*tinybirdExporter
 		logger:    set.Logger,
 		userAgent: userAgent,
 		settings:  set.TelemetrySettings,
-	}, nil
+	}
 }
 
 func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error {
@@ -112,7 +111,7 @@ func (e *tinybirdExporter) export(ctx context.Context, dataSource string, buffer
 	}
 	defer func() {
 		// Drain the response body to avoid leaking resources.
-		io.Copy(io.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}()
 

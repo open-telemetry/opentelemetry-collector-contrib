@@ -12,21 +12,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal/metadata"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal/metadata"
 )
 
 func TestNewExporter(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
+		name   string
+		config *Config
 	}{
 		{
 			name: "build exporter",
@@ -40,20 +38,13 @@ func TestNewExporter(t *testing.T) {
 				Logs:    SignalConfig{Datasource: "logs_test"},
 				Wait:    true,
 			},
-			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exp, err := newExporter(tt.config, exportertest.NewNopSettings(metadata.Type))
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, exp)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, exp)
-			}
+			exp := newExporter(tt.config, exportertest.NewNopSettings(metadata.Type))
+			assert.NotNil(t, exp)
 		})
 	}
 }
@@ -153,7 +144,7 @@ func TestExportLogs(t *testing.T) {
 				assert.Equal(t, "application/x-ndjson", r.Header.Get("Content-Type"))
 				assert.Equal(t, "Bearer "+string(tt.args.config.Token), r.Header.Get("Authorization"))
 				gotBody, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				assert.JSONEq(t, tt.want.requestBody, string(gotBody))
 
 				w.WriteHeader(tt.want.responseStatus)
@@ -162,11 +153,10 @@ func TestExportLogs(t *testing.T) {
 
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
-			exp, err := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
-			require.NoError(t, err)
+			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
-			err = exp.pushLogs(context.Background(), tt.args.logs)
+			err := exp.pushLogs(context.Background(), tt.args.logs)
 			if tt.want.err != nil {
 				assert.Error(t, err)
 			} else {
@@ -210,13 +200,14 @@ func TestExportErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				for k, v := range tt.headers {
 					w.Header().Set(k, v)
 				}
 				w.WriteHeader(tt.responseStatus)
 				if tt.responseBody != "" {
-					w.Write([]byte(tt.responseBody))
+					_, err := w.Write([]byte(tt.responseBody))
+					assert.NoError(t, err)
 				}
 			}))
 			defer server.Close()
@@ -231,8 +222,7 @@ func TestExportErrorHandling(t *testing.T) {
 				Logs:    SignalConfig{Datasource: "logs_test"},
 			}
 
-			exp, err := newExporter(config, exportertest.NewNopSettings(metadata.Type))
-			require.NoError(t, err)
+			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
 			logs := plog.NewLogs()
@@ -240,7 +230,7 @@ func TestExportErrorHandling(t *testing.T) {
 			sl := rl.ScopeLogs().AppendEmpty()
 			lr := sl.LogRecords().AppendEmpty()
 			lr.Body().SetStr("test-log")
-			err = exp.pushLogs(context.Background(), logs)
+			err := exp.pushLogs(context.Background(), logs)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

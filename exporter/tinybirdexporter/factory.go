@@ -61,10 +61,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	exp, err := newExporter(oCfg, set)
-	if err != nil {
-		return nil, err
-	}
+	exp := newExporter(oCfg, set)
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
@@ -86,10 +83,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	exp, err := newExporter(oCfg, set)
-	if err != nil {
-		return nil, err
-	}
+	exp := newExporter(oCfg, set)
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
@@ -111,10 +105,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	oCfg := cfg.(*Config)
 
-	exp, err := newExporter(oCfg, set)
-	if err != nil {
-		return nil, err
-	}
+	exp := newExporter(oCfg, set)
 	return exporterhelper.NewLogs(
 		ctx,
 		set,

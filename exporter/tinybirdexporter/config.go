@@ -4,6 +4,7 @@
 package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -25,7 +26,7 @@ type SignalConfig struct {
 
 func (cfg SignalConfig) Validate() error {
 	if cfg.Datasource == "" {
-		return fmt.Errorf("datasource cannot be empty")
+		return errors.New("datasource cannot be empty")
 	}
 	if !datasourceRegex.MatchString(cfg.Datasource) {
 		return fmt.Errorf("invalid datasource %q: only letters, numbers, and underscores are allowed", cfg.Datasource)
