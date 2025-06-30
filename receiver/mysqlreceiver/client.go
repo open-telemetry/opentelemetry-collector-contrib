@@ -4,10 +4,13 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"strings"
+	"text/template"
 	"time"
 
 	// registers the mysql driver
@@ -26,6 +29,7 @@ type client interface {
 	getStatementEventsStats() ([]statementEventStats, error)
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
 	getReplicaStatusStats() ([]replicaStatusStats, error)
+	getQuerySamples(uint64) ([]querySample, error)
 	Close() error
 }
 
@@ -188,6 +192,20 @@ type replicaStatusStats struct {
 	parallelMode                string
 	replicateDoDomainIDs        string
 	replicateIgnoreDomainIDs    string
+}
+
+type querySample struct {
+	threadID           int64
+	processlistUser    string
+	processlistHost    string
+	processlistDB      string
+	processlistCommand string
+	processlistState   string
+	sqlText            string
+	digest             string
+	eventID            int64
+	waitEvent          string
+	waitTime           float64
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -669,6 +687,52 @@ func (c *mySQLClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
 	}
 
 	return stats, nil
+}
+
+//go:embed templates/querySample.tmpl
+var querySampleTemplate string
+
+func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
+	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit": limit,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	rows, err := c.client.Query(buf.String())
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var samples []querySample
+	for rows.Next() {
+		var s querySample
+		err := rows.Scan(
+			&s.threadID,
+			&s.processlistUser,
+			&s.processlistHost,
+			&s.processlistDB,
+			&s.processlistCommand,
+			&s.processlistState,
+			&s.sqlText,
+			&s.digest,
+			&s.eventID,
+			&s.waitEvent,
+			&s.waitTime,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		samples = append(samples, s)
+	}
+
+	return samples, nil
 }
 
 func query(c mySQLClient, query string) (map[string]string, error) {
