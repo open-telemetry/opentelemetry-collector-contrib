@@ -61,13 +61,18 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 				metric := metrics.At(k)
 
 				// Create the payload for each metric
-				newHelixMetric, err := mp.createHelixMetric(metric, resourceAttrs)
+				newMetrics, err := mp.createHelixMetrics(metric, resourceAttrs)
 				if err != nil {
-					mp.logger.Warn("Failed to create Helix metric", zap.Error(err))
+					mp.logger.Warn("Failed to create Helix metrics", zap.Error(err))
 					continue
 				}
 
-				helixMetrics = appendMetricWithParentEntity(helixMetrics, *newHelixMetric, containerParentEntities)
+				// Loop through the newly created metrics and append them to the helixMetrics slice
+				// while also creating parent entities for container metrics
+				for _, m := range newMetrics {
+					helixMetrics = appendMetricWithParentEntity(helixMetrics, m, containerParentEntities)
+				}
+
 			}
 		}
 	}
@@ -106,12 +111,44 @@ func appendMetricWithParentEntity(helixMetrics []BMCHelixOMMetric, helixMetric B
 	return append(helixMetrics, helixMetric)
 }
 
-// createHelixMetric converts a single OpenTelemetry metric into a BMCHelixOMMetric payload
-func (mp *MetricsProducer) createHelixMetric(metric pmetric.Metric, resourceAttrs map[string]string) (*BMCHelixOMMetric, error) {
+// createHelixMetrics converts each OpenTelemetry datapoint into an individual BMCHelixOMMetric
+func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAttrs map[string]string) ([]BMCHelixOMMetric, error) {
+	var helixMetrics []BMCHelixOMMetric
+
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+			metricPayload, err := mp.createSingleDatapointMetric(dp, metric, resourceAttrs)
+			if err != nil {
+				mp.logger.Warn("Failed to create Helix metric from datapoint", zap.Error(err))
+				continue
+			}
+			helixMetrics = append(helixMetrics, *metricPayload)
+		}
+	case pmetric.MetricTypeGauge:
+		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
+			dp := metric.Gauge().DataPoints().At(i)
+			metricPayload, err := mp.createSingleDatapointMetric(dp, metric, resourceAttrs)
+			if err != nil {
+				mp.logger.Warn("Failed to create Helix metric from datapoint", zap.Error(err))
+				continue
+			}
+			helixMetrics = append(helixMetrics, *metricPayload)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported metric type %s", metric.Type())
+	}
+
+	return helixMetrics, nil
+}
+
+// createSingleDatapointMetric creates a single BMCHelixOMMetric from a single OpenTelemetry datapoint
+func (mp *MetricsProducer) createSingleDatapointMetric(dp pmetric.NumberDataPoint, metric pmetric.Metric, resourceAttrs map[string]string) (*BMCHelixOMMetric, error) {
 	labels := make(map[string]string)
 	labels["source"] = "OTEL"
 
-	// Add resource attributes as labels
+	// Add resource attributes
 	for k, v := range resourceAttrs {
 		labels[k] = v
 	}
@@ -128,56 +165,18 @@ func (mp *MetricsProducer) createHelixMetric(metric pmetric.Metric, resourceAttr
 	// Update the metric name for the BMC Helix Operations Management payload
 	labels["metricName"] = metric.Name()
 
-	// Samples to hold the metric values
-	samples := []BMCHelixOMSample{}
-
-	// Handle different types of metrics (sum and gauge)
-	// BMC Helix Operations Management only supports simple metrics (sum, gauge, etc.) and not histograms or summaries
-	switch metric.Type() {
-	case pmetric.MetricTypeSum:
-		dataPoints := metric.Sum().DataPoints()
-		for i := 0; i < dataPoints.Len(); i++ {
-			samples = mp.processDatapoint(samples, dataPoints.At(i), labels, metric, resourceAttrs)
-		}
-	case pmetric.MetricTypeGauge:
-		dataPoints := metric.Gauge().DataPoints()
-		for i := 0; i < dataPoints.Len(); i++ {
-			samples = mp.processDatapoint(samples, dataPoints.At(i), labels, metric, resourceAttrs)
-		}
-	default:
-		return nil, fmt.Errorf("unsupported metric type %s", metric.Type())
+	// Update the entity information
+	err := mp.updateEntityInformation(labels, metric.Name(), resourceAttrs, dp.Attributes().AsRaw())
+	if err != nil {
+		return nil, err
 	}
 
-	// Check if the hostname is set
-	if labels["hostname"] == "" {
-		return nil, fmt.Errorf("hostname is required for the BMC Helix Operations Management payload but not set for metric %s", metric.Name())
-	}
-
-	// Check if the entityTypeId is set
-	if labels["entityTypeId"] == "" {
-		return nil, fmt.Errorf("entityTypeId is required for the BMC Helix Operations Management payload but not set for metric %s", metric.Name())
-	}
-
-	// Check if the entityName is set
-	if labels["entityName"] == "" {
-		return nil, fmt.Errorf("entityName is required for the BMC Helix Operations Management payload but not set for metric %s", metric.Name())
-	}
+	sample := newSample(dp)
 
 	return &BMCHelixOMMetric{
 		Labels:  labels,
-		Samples: samples,
+		Samples: []BMCHelixOMSample{sample},
 	}, nil
-}
-
-// Updates the metric information for the BMC Helix Operations Management payload and returns the updated samples
-func (mp *MetricsProducer) processDatapoint(samples []BMCHelixOMSample, dp pmetric.NumberDataPoint, labels map[string]string, metric pmetric.Metric, resourceAttrs map[string]string) []BMCHelixOMSample {
-	// Update the entity information for the BMC Helix Operations Management payload
-	err := mp.updateEntityInformation(labels, metric.Name(), resourceAttrs, dp.Attributes().AsRaw())
-	if err != nil {
-		mp.logger.Warn("Failed to update entity information", zap.Error(err))
-	}
-
-	return append(samples, newSample(dp))
 }
 
 // Update the entity information for the BMC Helix Operations Management payload
