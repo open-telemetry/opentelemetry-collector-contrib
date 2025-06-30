@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -43,10 +44,11 @@ type metricFamily struct {
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
+	namer := otlptranslator.LabelNamer{}
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		namespace:         namer.Build(config.Namespace),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
@@ -63,11 +65,11 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 		exemplarLabels := make(prometheus.Labels, 0)
 
 		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels[prometheustranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
+			exemplarLabels[otlptranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
 		}
 
 		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels[prometheustranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
+			exemplarLabels[otlptranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
 		}
 
 		var value float64
@@ -116,7 +118,9 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
+	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: c.addMetricSuffixes, Namespace: c.namespace}
+	labelNamer := otlptranslator.LabelNamer{}
+	name := metricNamer.Build(translatorMetricFromOtelMetric(metric))
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -126,12 +130,12 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 
 	for k, v := range attributes.All() {
-		keys = append(keys, prometheustranslator.NormalizeLabel(k))
+		keys = append(keys, labelNamer.Build(k))
 		values = append(values, v.AsString())
 	}
 
 	for k, v := range scopeAttributes.All() {
-		keys = append(keys, prometheustranslator.NormalizeLabel("otel_scope_"+k))
+		keys = append(keys, labelNamer.Build("otel_scope_"+k))
 		values = append(values, v.AsString())
 	}
 
@@ -326,6 +330,7 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
 	var lastErr error
+	labelNamer := otlptranslator.LabelNamer{}
 
 	// deduplicate resourceAttrs by job and instance
 	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
@@ -361,7 +366,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		})
 
 		for k, v := range attributes.All() {
-			finalKey := prometheustranslator.NormalizeLabel(k)
+			finalKey := labelNamer.Build(k)
 			if existingVal, ok := labels[finalKey]; ok {
 				labels[finalKey] = existingVal + ";" + v.AsString()
 			} else {
@@ -416,7 +421,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", prometheustranslator.TargetInfoMetricName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, err.Error()))
 	}
 	for _, m := range targetMetrics {
 		ch <- m
@@ -482,4 +487,29 @@ func (c *collector) cleanupMetricFamilies() {
 		}
 		return true
 	})
+}
+
+func translatorMetricFromOtelMetric(metric pmetric.Metric) otlptranslator.Metric {
+	m := otlptranslator.Metric{
+		Name: metric.Name(),
+		Unit: metric.Unit(),
+		Type: otlptranslator.MetricTypeUnknown,
+	}
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		m.Type = otlptranslator.MetricTypeGauge
+	case pmetric.MetricTypeSum:
+		if metric.Sum().IsMonotonic() {
+			m.Type = otlptranslator.MetricTypeMonotonicCounter
+		} else {
+			m.Type = otlptranslator.MetricTypeNonMonotonicCounter
+		}
+	case pmetric.MetricTypeSummary:
+		m.Type = otlptranslator.MetricTypeSummary
+	case pmetric.MetricTypeHistogram:
+		m.Type = otlptranslator.MetricTypeHistogram
+	case pmetric.MetricTypeExponentialHistogram:
+		m.Type = otlptranslator.MetricTypeExponentialHistogram
+	}
+	return m
 }

@@ -9,13 +9,12 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type expectedBucketLayout struct {
@@ -739,11 +738,12 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 			metric := tt.metric()
 
 			converter := newPrometheusConverter()
+			metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
-				prometheustranslator.BuildCompliantName(metric, "", true),
+				metricNamer.Build(translatorMetricFromOtelMetric(metric)),
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)

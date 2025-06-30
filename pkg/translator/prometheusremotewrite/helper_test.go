@@ -11,6 +11,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -21,7 +22,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func Test_isValidAggregationTemporality(t *testing.T) {
@@ -472,7 +472,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
 				},
 			},
 		},
@@ -494,7 +494,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     float64(intVal2),
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
 				},
 			},
 		},
@@ -526,7 +526,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1)},
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1)},
 				},
 			},
 		},

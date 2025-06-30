@@ -8,10 +8,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
+	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
@@ -56,8 +55,9 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	cfg.MetricConfig.InstrumentationLibraryLabels = false
 	cfg.MetricConfig.ServiceResourceLabels = false
 	// Update metric naming to match GMP conventions
+	namer := otlptranslator.MetricNamer{WithMetricSuffixes: c.MetricConfig.Config.AddMetricSuffixes}
 	cfg.MetricConfig.GetMetricName = func(baseName string, metric pmetric.Metric) (string, error) {
-		compliantName := prometheus.BuildCompliantName(metric, "", c.MetricConfig.Config.AddMetricSuffixes)
+		compliantName := namer.Build(translatorMetricFromOtelMetric(metric))
 		return googlemanagedprometheus.GetMetricName(baseName, compliantName, metric)
 	}
 	// Map to the prometheus_target monitored resource
@@ -80,4 +80,29 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}
 	return nil
+}
+
+func translatorMetricFromOtelMetric(metric pmetric.Metric) otlptranslator.Metric {
+	m := otlptranslator.Metric{
+		Name: metric.Name(),
+		Unit: metric.Unit(),
+		Type: otlptranslator.MetricTypeUnknown,
+	}
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		m.Type = otlptranslator.MetricTypeGauge
+	case pmetric.MetricTypeSum:
+		if metric.Sum().IsMonotonic() {
+			m.Type = otlptranslator.MetricTypeMonotonicCounter
+		} else {
+			m.Type = otlptranslator.MetricTypeNonMonotonicCounter
+		}
+	case pmetric.MetricTypeSummary:
+		m.Type = otlptranslator.MetricTypeSummary
+	case pmetric.MetricTypeHistogram:
+		m.Type = otlptranslator.MetricTypeHistogram
+	case pmetric.MetricTypeExponentialHistogram:
+		m.Type = otlptranslator.MetricTypeExponentialHistogram
+	}
+	return m
 }
