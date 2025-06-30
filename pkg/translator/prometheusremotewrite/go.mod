@@ -27,7 +27,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.34.1-0.20250630084015-32278ed2ed08 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250628171447-c6cd1aeb58b7 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.128.1-0.20250630084015-32278ed2ed08 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
