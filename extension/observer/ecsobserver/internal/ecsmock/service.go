@@ -9,11 +9,11 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/ecs"
+	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 )
 
 // PageLimit defines number of items in a single page for different APIs.
@@ -41,16 +41,16 @@ func DefaultPageLimit() PageLimit {
 
 // Cluster implements both ECS and EC2 API for a single cluster.
 type Cluster struct {
-	name                  string                         // optional
-	definitions           map[string]*ecs.TaskDefinition // key is task definition arn
-	taskMap               map[string]*ecs.Task           // key is task arn
-	taskList              []*ecs.Task
-	containerInstanceMap  map[string]*ecs.ContainerInstance // key is container instance arn
-	containerInstanceList []*ecs.ContainerInstance
-	ec2Map                map[string]*ec2.Instance // key is instance id
-	ec2List               []*ec2.Instance
-	serviceMap            map[string]*ecs.Service
-	serviceList           []*ecs.Service
+	name                  string                              // optional
+	definitions           map[string]*ecstypes.TaskDefinition // key is task definition arn
+	taskMap               map[string]ecstypes.Task            // key is task arn
+	taskList              []ecstypes.Task
+	containerInstanceMap  map[string]ecstypes.ContainerInstance // key is container instance arn
+	containerInstanceList []ecstypes.ContainerInstance
+	ec2Map                map[string]ec2types.Instance // key is instance id
+	ec2List               []ec2types.Instance
+	serviceMap            map[string]ecstypes.Service
+	serviceList           []ecstypes.Service
 	limit                 PageLimit
 	stats                 ClusterStats
 }
@@ -88,7 +88,7 @@ func (c *Cluster) Stats() ClusterStats {
 	return c.stats
 }
 
-func (c *Cluster) ListTasksWithContext(_ context.Context, input *ecs.ListTasksInput, _ ...request.Option) (*ecs.ListTasksOutput, error) {
+func (c *Cluster) ListTasks(_ context.Context, input *ecs.ListTasksInput, _ ...func(*ecs.Options)) (*ecs.ListTasksOutput, error) {
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
@@ -102,26 +102,25 @@ func (c *Cluster) ListTasksWithContext(_ context.Context, input *ecs.ListTasksIn
 	}
 	res := c.taskList[page.start:page.end]
 	return &ecs.ListTasksOutput{
-		TaskArns: getArns(res, func(i int) *string {
-			return res[i].TaskArn
+		TaskArns: getArns(res, func(i int) string {
+			return *res[i].TaskArn
 		}),
 		NextToken: page.nextToken,
 	}, nil
 }
 
-func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.DescribeTasksInput, _ ...request.Option) (*ecs.DescribeTasksOutput, error) {
+func (c *Cluster) DescribeTasks(_ context.Context, input *ecs.DescribeTasksInput, _ ...func(*ecs.Options)) (*ecs.DescribeTasksOutput, error) {
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var failures []*ecs.Failure
-	tasks := make([]*ecs.Task, 0, len(input.Tasks))
+	var failures []ecstypes.Failure
+	tasks := make([]ecstypes.Task, 0, len(input.Tasks))
 	for i, taskArn := range input.Tasks {
-		arn := aws.StringValue(taskArn)
-		task, ok := c.taskMap[arn]
+		task, ok := c.taskMap[taskArn]
 		if !ok {
-			failures = append(failures, &ecs.Failure{
-				Arn:    taskArn,
-				Detail: aws.String(fmt.Sprintf("task not found index %d arn %s total tasks %d", i, arn, len(c.taskMap))),
+			failures = append(failures, ecstypes.Failure{
+				Arn:    aws.String(taskArn),
+				Detail: aws.String(fmt.Sprintf("task not found index %d arn %s total tasks %d", i, taskArn, len(c.taskMap))),
 				Reason: aws.String("task not found"),
 			})
 			continue
@@ -131,9 +130,9 @@ func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.Describ
 	return &ecs.DescribeTasksOutput{Failures: failures, Tasks: tasks}, nil
 }
 
-func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ecs.DescribeTaskDefinitionInput, _ ...request.Option) (*ecs.DescribeTaskDefinitionOutput, error) {
+func (c *Cluster) DescribeTaskDefinition(_ context.Context, input *ecs.DescribeTaskDefinitionInput, _ ...func(*ecs.Options)) (*ecs.DescribeTaskDefinitionOutput, error) {
 	c.stats.DescribeTaskDefinition.Called++
-	defArn := aws.StringValue(input.TaskDefinition)
+	defArn := *input.TaskDefinition
 	def, ok := c.definitions[defArn]
 	if !ok {
 		c.stats.DescribeTaskDefinition.Error++
@@ -142,18 +141,18 @@ func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ec
 	return &ecs.DescribeTaskDefinitionOutput{TaskDefinition: def}, nil
 }
 
-func (c *Cluster) DescribeContainerInstancesWithContext(_ context.Context, input *ecs.DescribeContainerInstancesInput, _ ...request.Option) (*ecs.DescribeContainerInstancesOutput, error) {
+func (c *Cluster) DescribeContainerInstances(_ context.Context, input *ecs.DescribeContainerInstancesInput, _ ...func(*ecs.Options)) (*ecs.DescribeContainerInstancesOutput, error) {
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var failures []*ecs.Failure
-	instances := make([]*ecs.ContainerInstance, 0, len(input.ContainerInstances))
+	var failures []ecstypes.Failure
+	instances := make([]ecstypes.ContainerInstance, 0, len(input.ContainerInstances))
 	for _, cid := range input.ContainerInstances {
-		ci, ok := c.containerInstanceMap[aws.StringValue(cid)]
+		ci, ok := c.containerInstanceMap[cid]
 		if !ok {
-			failures = append(failures, &ecs.Failure{
-				Arn:    cid,
-				Detail: aws.String(fmt.Sprintf("container instance not found %s", aws.StringValue(cid))),
+			failures = append(failures, ecstypes.Failure{
+				Arn:    aws.String(cid),
+				Detail: aws.String(fmt.Sprintf("container instance not found %s", cid)),
 				Reason: aws.String("container instance not found"),
 			})
 			continue
@@ -163,18 +162,18 @@ func (c *Cluster) DescribeContainerInstancesWithContext(_ context.Context, input
 	return &ecs.DescribeContainerInstancesOutput{ContainerInstances: instances, Failures: failures}, nil
 }
 
-// DescribeInstancesWithContext supports get all the instances and get instance by ids.
+// DescribeInstances supports get all the instances and get instance by ids.
 // It does NOT support filter. Result always has a single reservation, which is not the case in actual EC2 API.
-func (c *Cluster) DescribeInstancesWithContext(_ context.Context, input *ec2.DescribeInstancesInput, _ ...request.Option) (*ec2.DescribeInstancesOutput, error) {
+func (c *Cluster) DescribeInstances(_ context.Context, input *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
 	var (
-		instances []*ec2.Instance
+		instances []ec2types.Instance
 		nextToken *string
 	)
 	if len(input.InstanceIds) != 0 {
 		for _, id := range input.InstanceIds {
-			ins, ok := c.ec2Map[aws.StringValue(id)]
+			ins, ok := c.ec2Map[id]
 			if !ok {
-				return nil, fmt.Errorf("instance %q not found", aws.StringValue(id))
+				return nil, fmt.Errorf("instance %q not found", id)
 			}
 			instances = append(instances, ins)
 		}
@@ -191,7 +190,7 @@ func (c *Cluster) DescribeInstancesWithContext(_ context.Context, input *ec2.Des
 		nextToken = page.nextToken
 	}
 	return &ec2.DescribeInstancesOutput{
-		Reservations: []*ec2.Reservation{
+		Reservations: []ec2types.Reservation{
 			{
 				Instances: instances,
 			},
@@ -200,7 +199,7 @@ func (c *Cluster) DescribeInstancesWithContext(_ context.Context, input *ec2.Des
 	}, nil
 }
 
-func (c *Cluster) ListServicesWithContext(_ context.Context, input *ecs.ListServicesInput, _ ...request.Option) (*ecs.ListServicesOutput, error) {
+func (c *Cluster) ListServices(_ context.Context, input *ecs.ListServicesInput, _ ...func(*ecs.Options)) (*ecs.ListServicesOutput, error) {
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
@@ -214,26 +213,25 @@ func (c *Cluster) ListServicesWithContext(_ context.Context, input *ecs.ListServ
 	}
 	res := c.serviceList[page.start:page.end]
 	return &ecs.ListServicesOutput{
-		ServiceArns: getArns(res, func(i int) *string {
-			return res[i].ServiceArn
+		ServiceArns: getArns(res, func(i int) string {
+			return *res[i].ServiceArn
 		}),
 		NextToken: page.nextToken,
 	}, nil
 }
 
-func (c *Cluster) DescribeServicesWithContext(_ context.Context, input *ecs.DescribeServicesInput, _ ...request.Option) (*ecs.DescribeServicesOutput, error) {
+func (c *Cluster) DescribeServices(_ context.Context, input *ecs.DescribeServicesInput, _ ...func(*ecs.Options)) (*ecs.DescribeServicesOutput, error) {
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var failures []*ecs.Failure
-	services := make([]*ecs.Service, 0, len(input.Services))
+	var failures []ecstypes.Failure
+	services := make([]ecstypes.Service, 0, len(input.Services))
 	for i, serviceArn := range input.Services {
-		arn := aws.StringValue(serviceArn)
-		svc, ok := c.serviceMap[arn]
+		svc, ok := c.serviceMap[serviceArn]
 		if !ok {
-			failures = append(failures, &ecs.Failure{
-				Arn:    serviceArn,
-				Detail: aws.String(fmt.Sprintf("service not found index %d arn %s total services %d", i, arn, len(c.serviceMap))),
+			failures = append(failures, ecstypes.Failure{
+				Arn:    aws.String(serviceArn),
+				Detail: aws.String(fmt.Sprintf("service not found index %d arn %s total services %d", i, serviceArn, len(c.serviceMap))),
 				Reason: aws.String("service not found"),
 			})
 			continue
@@ -248,10 +246,10 @@ func (c *Cluster) DescribeServicesWithContext(_ context.Context, input *ecs.Desc
 // Hook Start
 
 // SetTasks update both list and map.
-func (c *Cluster) SetTasks(tasks []*ecs.Task) {
-	m := make(map[string]*ecs.Task, len(tasks))
+func (c *Cluster) SetTasks(tasks []ecstypes.Task) {
+	m := make(map[string]ecstypes.Task, len(tasks))
 	for _, t := range tasks {
-		m[aws.StringValue(t.TaskArn)] = t
+		m[*t.TaskArn] = t
 	}
 	c.taskMap = m
 	c.taskList = tasks
@@ -259,39 +257,39 @@ func (c *Cluster) SetTasks(tasks []*ecs.Task) {
 
 // SetTaskDefinitions updates the map.
 // NOTE: we could have both list and map, but we are not using list task def in ecsobserver.
-func (c *Cluster) SetTaskDefinitions(defs []*ecs.TaskDefinition) {
-	m := make(map[string]*ecs.TaskDefinition, len(defs))
+func (c *Cluster) SetTaskDefinitions(defs []*ecstypes.TaskDefinition) {
+	m := make(map[string]*ecstypes.TaskDefinition, len(defs))
 	for _, d := range defs {
-		m[aws.StringValue(d.TaskDefinitionArn)] = d
+		m[*d.TaskDefinitionArn] = d
 	}
 	c.definitions = m
 }
 
 // SetContainerInstances updates the list and map.
-func (c *Cluster) SetContainerInstances(instances []*ecs.ContainerInstance) {
-	m := make(map[string]*ecs.ContainerInstance, len(instances))
+func (c *Cluster) SetContainerInstances(instances []ecstypes.ContainerInstance) {
+	m := make(map[string]ecstypes.ContainerInstance, len(instances))
 	for _, ci := range instances {
-		m[aws.StringValue(ci.ContainerInstanceArn)] = ci
+		m[*ci.ContainerInstanceArn] = ci
 	}
 	c.containerInstanceMap = m
 	c.containerInstanceList = instances
 }
 
 // SetEc2Instances updates the list and map.
-func (c *Cluster) SetEc2Instances(instances []*ec2.Instance) {
-	m := make(map[string]*ec2.Instance, len(instances))
+func (c *Cluster) SetEc2Instances(instances []ec2types.Instance) {
+	m := make(map[string]ec2types.Instance, len(instances))
 	for _, i := range instances {
-		m[aws.StringValue(i.InstanceId)] = i
+		m[*i.InstanceId] = i
 	}
 	c.ec2Map = m
 	c.ec2List = instances
 }
 
 // SetServices updates the list and map.
-func (c *Cluster) SetServices(services []*ecs.Service) {
-	m := make(map[string]*ecs.Service, len(services))
+func (c *Cluster) SetServices(services []ecstypes.Service) {
+	m := make(map[string]ecstypes.Service, len(services))
 	for _, s := range services {
-		m[aws.StringValue(s.ServiceArn)] = s
+		m[*s.ServiceArn] = s
 	}
 	c.serviceMap = m
 	c.serviceList = services
@@ -302,14 +300,15 @@ func (c *Cluster) SetServices(services []*ecs.Service) {
 // Generator Start
 
 // GenTasks returns tasks with TaskArn set to arnPrefix+offset, where offset is [0, count).
-func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecs.Task)) []*ecs.Task {
-	var tasks []*ecs.Task
+func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecstypes.Task)) []ecstypes.Task {
+	var tasks []ecstypes.Task
 	for i := 0; i < count; i++ {
-		t := &ecs.Task{
+		t := ecstypes.Task{
+			Group:   aws.String(""),
 			TaskArn: aws.String(arnPrefix + strconv.Itoa(i)),
 		}
 		if modifier != nil {
-			modifier(i, t)
+			modifier(i, &t)
 		}
 		tasks = append(tasks, t)
 	}
@@ -318,11 +317,12 @@ func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecs.Task))
 
 // GenTaskDefinitions returns tasks with TaskArn set to arnPrefix+offset+version, where offset is [0, count).
 // e.g. foo0:1, foo1:1 the `:` is following the task family version syntax.
-func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(i int, def *ecs.TaskDefinition)) []*ecs.TaskDefinition {
-	var defs []*ecs.TaskDefinition
+func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(i int, def *ecstypes.TaskDefinition)) []*ecstypes.TaskDefinition {
+	var defs []*ecstypes.TaskDefinition
 	for i := 0; i < count; i++ {
-		d := &ecs.TaskDefinition{
+		d := &ecstypes.TaskDefinition{
 			TaskDefinitionArn: aws.String(fmt.Sprintf("%s%d:%d", arnPrefix, i, version)),
+			Family:            aws.String(""),
 		}
 		if modifier != nil {
 			modifier(i, d)
@@ -332,82 +332,55 @@ func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(
 	return defs
 }
 
-func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci *ecs.ContainerInstance)) []*ecs.ContainerInstance {
-	var instances []*ecs.ContainerInstance
+func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci *ecstypes.ContainerInstance)) []ecstypes.ContainerInstance {
+	var instances []ecstypes.ContainerInstance
 	for i := 0; i < count; i++ {
-		ci := &ecs.ContainerInstance{
+		ci := ecstypes.ContainerInstance{
 			ContainerInstanceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 		}
 		if modifier != nil {
-			modifier(i, ci)
+			modifier(i, &ci)
 		}
 		instances = append(instances, ci)
 	}
 	return instances
 }
 
-func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2.Instance)) []*ec2.Instance {
-	var instances []*ec2.Instance
+func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2types.Instance)) []ec2types.Instance {
+	var instances []ec2types.Instance
 	for i := 0; i < count; i++ {
-		ins := &ec2.Instance{
+		ins := ec2types.Instance{
 			InstanceId: aws.String(fmt.Sprintf("%s%d", idPrefix, i)),
 		}
 		if modifier != nil {
-			modifier(i, ins)
+			modifier(i, &ins)
 		}
 		instances = append(instances, ins)
 	}
 	return instances
 }
 
-func GenServices(arnPrefix string, count int, modifier func(i int, s *ecs.Service)) []*ecs.Service {
-	var services []*ecs.Service
+func GenServices(arnPrefix string, count int, modifier func(i int, s *ecstypes.Service)) []ecstypes.Service {
+	var services []ecstypes.Service
 	for i := 0; i < count; i++ {
-		svc := &ecs.Service{
+		svc := ecstypes.Service{
 			ServiceArn:  aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 			ServiceName: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 		}
 		if modifier != nil {
-			modifier(i, svc)
+			modifier(i, &svc)
 		}
 		services = append(services, svc)
 	}
 	return services
 }
 
-// Generator End
-
-var _ awserr.Error = (*ecsError)(nil)
-
-// ecsError implements awserr.Error interface
-type ecsError struct {
-	code    string
-	message string
-}
-
-func (e *ecsError) Code() string {
-	return e.code
-}
-
-func (e *ecsError) Message() string {
-	return e.message
-}
-
-func (e *ecsError) Error() string {
-	return "code " + e.code + " message " + e.message
-}
-
-func (e *ecsError) OrigErr() error {
-	return nil
-}
-
 func checkCluster(reqClusterName *string, mockClusterName string) error {
 	if reqClusterName == nil || mockClusterName == "" || *reqClusterName == mockClusterName {
 		return nil
 	}
-	return &ecsError{
-		code:    ecs.ErrCodeClusterNotFoundException,
-		message: fmt.Sprintf("Want cluster %s but the mock cluster is %s", *reqClusterName, mockClusterName),
+	return &ecstypes.ClusterNotFoundException{
+		Message: aws.String(fmt.Sprintf("Want cluster %s but the mock cluster is %s", *reqClusterName, mockClusterName)),
 	}
 }
 
@@ -431,7 +404,7 @@ func getPage(p pageInput) (*pageOutput, error) {
 	var err error
 	start := 0
 	if p.nextToken != nil {
-		token := aws.StringValue(p.nextToken)
+		token := *p.nextToken
 		start, err = strconv.Atoi(token)
 		if err != nil {
 			return nil, fmt.Errorf("invalid next token %q: %w", token, err)
@@ -454,9 +427,9 @@ func getPage(p pageInput) (*pageOutput, error) {
 // 'generic' Start
 
 // getArns is used by both ListTasks and ListServices
-func getArns(items any, arnGetter func(i int) *string) []*string {
+func getArns(items any, arnGetter func(i int) string) []string {
 	rv := reflect.ValueOf(items)
-	var arns []*string
+	var arns []string
 	for i := 0; i < rv.Len(); i++ {
 		arns = append(arns, arnGetter(i))
 	}

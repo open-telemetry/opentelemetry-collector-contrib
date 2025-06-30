@@ -1,3 +1,4 @@
 status:
+  disable_codecov_badge: true
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA]

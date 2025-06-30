@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdatadog) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_datadog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_datadog&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dineshg13](https://www.github.com/dineshg13), [@liustanley](https://www.github.com/liustanley), [@songy23](https://www.github.com/songy23), [@mackjmr](https://www.github.com/mackjmr), [@ankitpatel96](https://www.github.com/ankitpatel96), [@jade-guiton-dd](https://www.github.com/jade-guiton-dd), [@IbraheemA](https://www.github.com/IbraheemA) |
 | Emeritus      | [@gbbr](https://www.github.com/gbbr) |
 
@@ -84,3 +85,9 @@ processors:
         statements:
           - set(attributes["datadog.log.source"], "otel")
 ```
+
+### My Collector K8s pod is getting rebooted on startup when I don't manually set a hostname under `exporters::datadog::hostname`
+
+This is due to a bug with underlying hostname detection blocking the `health_check` extension from responding to liveness/readiness probes on startup. To fix, either set `hostname_detection_timeout` to be less than the pod/daemonset `livenessProbe: failureThreshold * periodSeconds` so that the timeout for hostname detection on startup takes less time than the control plane waits before restarting the pod, or leave `hostname_detection_timeout` at the default `25s` value and double-check the `livenessProbe` and `readinessProbe` settings and ensure that the control plane will in fact wait long enough for startup to complete before restarting the pod.
+
+Hostname detection is currently required to initialize the Datadog Exporter, unless a hostname is specified manually under `hostname`.

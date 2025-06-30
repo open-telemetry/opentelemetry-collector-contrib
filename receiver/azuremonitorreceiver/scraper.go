@@ -14,7 +14,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -100,16 +99,12 @@ func (*timeWrapper) Now() time.Time {
 
 func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
-		cfg:                      conf,
-		settings:                 settings.TelemetrySettings,
-		mb:                       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		azDefaultCredentialsFunc: azidentity.NewDefaultAzureCredential,
-		azIDCredentialsFunc:      azidentity.NewClientSecretCredential,
-		azIDWorkloadFunc:         azidentity.NewWorkloadIdentityCredential,
-		azManagedIdentityFunc:    azidentity.NewManagedIdentityCredential,
-		mutex:                    &sync.Mutex{},
-		time:                     &timeWrapper{},
-		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
+		cfg:                   conf,
+		settings:              settings.TelemetrySettings,
+		mb:                    metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		mutex:                 &sync.Mutex{},
+		time:                  &timeWrapper{},
+		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
 	}
 }
 
@@ -121,21 +116,17 @@ type azureScraper struct {
 	// resources on which we'll collect metrics. Stored by resource id and subscription id.
 	resources map[string]map[string]*azureResource
 	// subscriptions on which we'll look up resources. Stored by subscription id.
-	subscriptions            map[string]*azureSubscription
-	subscriptionsUpdated     time.Time
-	mb                       *metadata.MetricsBuilder
-	azDefaultCredentialsFunc func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
-	azIDCredentialsFunc      func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
-	azIDWorkloadFunc         func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
-	azManagedIdentityFunc    func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
+	subscriptions        map[string]*azureSubscription
+	subscriptionsUpdated time.Time
+	mb                   *metadata.MetricsBuilder
 
 	mutex                 *sync.Mutex
 	time                  timeNowIface
 	clientOptionsResolver ClientOptionsResolver
 }
 
-func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
-	if err = s.loadCredentials(); err != nil {
+func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
+	if s.cred, err = loadCredentials(s.settings.Logger, s.cfg, host); err != nil {
 		return err
 	}
 
@@ -156,36 +147,6 @@ func (s *azureScraper) loadSubscription(sub azureSubscription) {
 func (s *azureScraper) unloadSubscription(id string) {
 	delete(s.resources, id)
 	delete(s.subscriptions, id)
-}
-
-func (s *azureScraper) loadCredentials() (err error) {
-	switch s.cfg.Credentials {
-	case defaultCredentials:
-		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
-			return err
-		}
-	case servicePrincipal:
-		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
-			return err
-		}
-	case workloadIdentity:
-		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
-			return err
-		}
-	case managedIdentity:
-		var options *azidentity.ManagedIdentityCredentialOptions
-		if s.cfg.ClientID != "" {
-			options = &azidentity.ManagedIdentityCredentialOptions{
-				ID: azidentity.ClientID(s.cfg.ClientID),
-			}
-		}
-		if s.cred, err = s.azManagedIdentityFunc(options); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown credentials %v", s.cfg.Credentials)
-	}
-	return nil
 }
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {

@@ -1,0 +1,33 @@
+INSERT INTO "%s"."%s" (
+    Timestamp,
+    TraceId,
+    SpanId,
+    TraceFlags,
+    SeverityText,
+    SeverityNumber,
+    ServiceName,
+    Body,
+    ResourceSchemaUrl,
+    ResourceAttributes,
+    ScopeSchemaUrl,
+    ScopeName,
+    ScopeVersion,
+    ScopeAttributes,
+    LogAttributes
+) VALUES (
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?
+    )

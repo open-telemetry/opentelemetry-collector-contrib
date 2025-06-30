@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.30.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -168,10 +168,10 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_OK"
+		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_OK"
 	case ptrace.StatusCodeError:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_ERROR"
-		spanTags[conventions.OtelStatusDescription] = "error message"
+		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_ERROR"
+		spanTags[string(conventions.OTelStatusDescriptionKey)] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")
 	}

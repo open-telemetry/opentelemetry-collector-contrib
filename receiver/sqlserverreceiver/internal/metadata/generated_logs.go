@@ -3,18 +3,145 @@
 package metadata
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/otel/trace"
 )
+
+type eventDbServerQuerySample struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, sqlserverBlockingSessionIDAttributeValue int64, sqlserverContextInfoAttributeValue string, sqlserverCommandAttributeValue string, sqlserverCPUTimeAttributeValue float64, sqlserverDeadlockPriorityAttributeValue int64, sqlserverEstimatedCompletionTimeAttributeValue float64, sqlserverLockTimeoutAttributeValue float64, sqlserverLogicalReadsAttributeValue int64, sqlserverOpenTransactionCountAttributeValue int64, sqlserverPercentCompleteAttributeValue float64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverQueryStartAttributeValue string, sqlserverReadsAttributeValue int64, sqlserverRequestStatusAttributeValue string, sqlserverRowCountAttributeValue int64, sqlserverSessionIDAttributeValue int64, sqlserverSessionStatusAttributeValue string, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTransactionIDAttributeValue int64, sqlserverTransactionIsolationLevelAttributeValue int64, sqlserverWaitResourceAttributeValue string, sqlserverWaitTimeAttributeValue float64, sqlserverWaitTypeAttributeValue string, sqlserverWritesAttributeValue int64, userNameAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	lr := e.data.AppendEmpty()
+	lr.SetEventName("db.server.query_sample")
+	lr.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
+	lr.Attributes().PutStr("client.address", clientAddressAttributeValue)
+	lr.Attributes().PutInt("client.port", clientPortAttributeValue)
+	lr.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	lr.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
+	lr.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
+	lr.Attributes().PutInt("sqlserver.blocking_session_id", sqlserverBlockingSessionIDAttributeValue)
+	lr.Attributes().PutStr("sqlserver.context_info", sqlserverContextInfoAttributeValue)
+	lr.Attributes().PutStr("sqlserver.command", sqlserverCommandAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.cpu_time", sqlserverCPUTimeAttributeValue)
+	lr.Attributes().PutInt("sqlserver.deadlock_priority", sqlserverDeadlockPriorityAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.estimated_completion_time", sqlserverEstimatedCompletionTimeAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.lock_timeout", sqlserverLockTimeoutAttributeValue)
+	lr.Attributes().PutInt("sqlserver.logical_reads", sqlserverLogicalReadsAttributeValue)
+	lr.Attributes().PutInt("sqlserver.open_transaction_count", sqlserverOpenTransactionCountAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.percent_complete", sqlserverPercentCompleteAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_hash", sqlserverQueryHashAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_plan_hash", sqlserverQueryPlanHashAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_start", sqlserverQueryStartAttributeValue)
+	lr.Attributes().PutInt("sqlserver.reads", sqlserverReadsAttributeValue)
+	lr.Attributes().PutStr("sqlserver.request_status", sqlserverRequestStatusAttributeValue)
+	lr.Attributes().PutInt("sqlserver.row_count", sqlserverRowCountAttributeValue)
+	lr.Attributes().PutInt("sqlserver.session_id", sqlserverSessionIDAttributeValue)
+	lr.Attributes().PutStr("sqlserver.session_status", sqlserverSessionStatusAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.total_elapsed_time", sqlserverTotalElapsedTimeAttributeValue)
+	lr.Attributes().PutInt("sqlserver.transaction_id", sqlserverTransactionIDAttributeValue)
+	lr.Attributes().PutInt("sqlserver.transaction_isolation_level", sqlserverTransactionIsolationLevelAttributeValue)
+	lr.Attributes().PutStr("sqlserver.wait_resource", sqlserverWaitResourceAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.wait_time", sqlserverWaitTimeAttributeValue)
+	lr.Attributes().PutStr("sqlserver.wait_type", sqlserverWaitTypeAttributeValue)
+	lr.Attributes().PutInt("sqlserver.writes", sqlserverWritesAttributeValue)
+	lr.Attributes().PutStr("user.name", userNameAttributeValue)
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerQuerySample) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerQuerySample(cfg EventConfig) eventDbServerQuerySample {
+	e := eventDbServerQuerySample{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
+type eventDbServerTopQuery struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	lr := e.data.AppendEmpty()
+	lr.SetEventName("db.server.top_query")
+	lr.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
+	lr.Attributes().PutDouble("sqlserver.total_worker_time", sqlserverTotalWorkerTimeAttributeValue)
+	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	lr.Attributes().PutInt("sqlserver.execution_count", sqlserverExecutionCountAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_logical_reads", sqlserverTotalLogicalReadsAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_logical_writes", sqlserverTotalLogicalWritesAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_physical_reads", sqlserverTotalPhysicalReadsAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_hash", sqlserverQueryHashAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_plan", sqlserverQueryPlanAttributeValue)
+	lr.Attributes().PutStr("sqlserver.query_plan_hash", sqlserverQueryPlanHashAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_rows", sqlserverTotalRowsAttributeValue)
+	lr.Attributes().PutDouble("sqlserver.total_elapsed_time", sqlserverTotalElapsedTimeAttributeValue)
+	lr.Attributes().PutInt("sqlserver.total_grant_kb", sqlserverTotalGrantKbAttributeValue)
+	lr.Attributes().PutStr("server.address", serverAddressAttributeValue)
+	lr.Attributes().PutInt("server.port", serverPortAttributeValue)
+	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerTopQuery) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerTopQuery(cfg EventConfig) eventDbServerTopQuery {
+	e := eventDbServerTopQuery{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
 
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
-	logsBuffer       plog.Logs
-	logRecordsBuffer plog.LogRecordSlice
-	buildInfo        component.BuildInfo // contains version information.
+	config                         LogsBuilderConfig // config of the logs builder.
+	logsBuffer                     plog.Logs
+	logRecordsBuffer               plog.LogRecordSlice
+	buildInfo                      component.BuildInfo // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	eventDbServerQuerySample       eventDbServerQuerySample
+	eventDbServerTopQuery          eventDbServerTopQuery
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -22,11 +149,52 @@ type LogBuilderOption interface {
 	apply(*LogsBuilder)
 }
 
-func NewLogsBuilder(settings receiver.Settings) *LogsBuilder {
+func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
-		logsBuffer:       plog.NewLogs(),
-		logRecordsBuffer: plog.NewLogRecordSlice(),
-		buildInfo:        settings.BuildInfo,
+		config:                         lbc,
+		logsBuffer:                     plog.NewLogs(),
+		logRecordsBuffer:               plog.NewLogRecordSlice(),
+		buildInfo:                      settings.BuildInfo,
+		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
+		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerAddress.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverComputerName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverComputerName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverDatabaseName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDatabaseName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverDatabaseName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDatabaseName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverInstanceName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverInstanceName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverInstanceName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverInstanceName.EventsExclude)
 	}
 
 	return lb
@@ -34,7 +202,7 @@ func NewLogsBuilder(settings receiver.Settings) *LogsBuilder {
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted logs.
 func (lb *LogsBuilder) NewResourceBuilder() *ResourceBuilder {
-	return NewResourceBuilder(ResourceAttributesConfig{})
+	return NewResourceBuilder(lb.config.ResourceAttributes)
 }
 
 // ResourceLogsOption applies changes to provided resource logs.
@@ -67,10 +235,12 @@ func (lb *LogsBuilder) AppendLogRecord(lr plog.LogRecord) {
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceLogsOption arguments.
 func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
-	rl := lb.logsBuffer.ResourceLogs().AppendEmpty()
+	rl := plog.NewResourceLogs()
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
+	lb.eventDbServerQuerySample.emit(ils.LogRecords())
+	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
 	for _, op := range options {
 		op.apply(rl)
@@ -79,6 +249,21 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	if lb.logRecordsBuffer.Len() > 0 {
 		lb.logRecordsBuffer.MoveAndAppendTo(ils.LogRecords())
 		lb.logRecordsBuffer = plog.NewLogRecordSlice()
+	}
+
+	for attr, filter := range lb.resourceAttributeIncludeFilter {
+		if val, ok := rl.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range lb.resourceAttributeExcludeFilter {
+		if val, ok := rl.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
+	if ils.LogRecords().Len() > 0 {
+		rl.MoveTo(lb.logsBuffer.ResourceLogs().AppendEmpty())
 	}
 }
 
@@ -90,4 +275,14 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	logs := lb.logsBuffer
 	lb.logsBuffer = plog.NewLogs()
 	return logs
+}
+
+// RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, sqlserverBlockingSessionIDAttributeValue int64, sqlserverContextInfoAttributeValue string, sqlserverCommandAttributeValue string, sqlserverCPUTimeAttributeValue float64, sqlserverDeadlockPriorityAttributeValue int64, sqlserverEstimatedCompletionTimeAttributeValue float64, sqlserverLockTimeoutAttributeValue float64, sqlserverLogicalReadsAttributeValue int64, sqlserverOpenTransactionCountAttributeValue int64, sqlserverPercentCompleteAttributeValue float64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverQueryStartAttributeValue string, sqlserverReadsAttributeValue int64, sqlserverRequestStatusAttributeValue string, sqlserverRowCountAttributeValue int64, sqlserverSessionIDAttributeValue int64, sqlserverSessionStatusAttributeValue string, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTransactionIDAttributeValue int64, sqlserverTransactionIsolationLevelAttributeValue int64, sqlserverWaitResourceAttributeValue string, sqlserverWaitTimeAttributeValue float64, sqlserverWaitTypeAttributeValue string, sqlserverWritesAttributeValue int64, userNameAttributeValue string) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, clientAddressAttributeValue, clientPortAttributeValue, dbNamespaceAttributeValue, dbQueryTextAttributeValue, dbSystemNameAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue, sqlserverBlockingSessionIDAttributeValue, sqlserverContextInfoAttributeValue, sqlserverCommandAttributeValue, sqlserverCPUTimeAttributeValue, sqlserverDeadlockPriorityAttributeValue, sqlserverEstimatedCompletionTimeAttributeValue, sqlserverLockTimeoutAttributeValue, sqlserverLogicalReadsAttributeValue, sqlserverOpenTransactionCountAttributeValue, sqlserverPercentCompleteAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverQueryStartAttributeValue, sqlserverReadsAttributeValue, sqlserverRequestStatusAttributeValue, sqlserverRowCountAttributeValue, sqlserverSessionIDAttributeValue, sqlserverSessionStatusAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTransactionIDAttributeValue, sqlserverTransactionIsolationLevelAttributeValue, sqlserverWaitResourceAttributeValue, sqlserverWaitTimeAttributeValue, sqlserverWaitTypeAttributeValue, sqlserverWritesAttributeValue, userNameAttributeValue)
+}
+
+// RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbSystemNameAttributeValue)
 }

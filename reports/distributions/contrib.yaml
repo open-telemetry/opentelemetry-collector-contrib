@@ -34,6 +34,7 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -71,11 +72,13 @@ components:
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
@@ -103,6 +106,7 @@ components:
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -116,6 +120,7 @@ components:
         - transform
     provider:
         - aes
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:
@@ -144,6 +149,7 @@ components:
         - elasticsearch
         - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
@@ -204,6 +210,7 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
         - tcpcheck
         - tcplog
@@ -224,6 +231,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

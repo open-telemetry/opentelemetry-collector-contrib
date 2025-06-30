@@ -30,6 +30,12 @@ type TelemetryBuilder struct {
 	ExporterPrometheusremotewriteFailedTranslations   metric.Int64Counter
 	ExporterPrometheusremotewriteSentBatches          metric.Int64Counter
 	ExporterPrometheusremotewriteTranslatedTimeSeries metric.Int64Counter
+	ExporterPrometheusremotewriteWalReadLatency       metric.Int64Histogram
+	ExporterPrometheusremotewriteWalReads             metric.Int64Counter
+	ExporterPrometheusremotewriteWalReadsFailures     metric.Int64Counter
+	ExporterPrometheusremotewriteWalWriteLatency      metric.Int64Histogram
+	ExporterPrometheusremotewriteWalWrites            metric.Int64Counter
+	ExporterPrometheusremotewriteWalWritesFailures    metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -82,6 +88,44 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_translated_time_series",
 		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalReadLatency, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_prometheusremotewrite_wal_read_latency",
+		metric.WithDescription("Response latency in ms for the WAL reads."),
+		metric.WithUnit("ms"),
+		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalReads, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_reads",
+		metric.WithDescription("Number of WAL reads"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalReadsFailures, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_reads_failures",
+		metric.WithDescription("Number of WAL reads that failed"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalWriteLatency, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_prometheusremotewrite_wal_write_latency",
+		metric.WithDescription("Response latency in ms for the WAL writes."),
+		metric.WithUnit("ms"),
+		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalWrites, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_writes",
+		metric.WithDescription("Number of WAL writes"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalWritesFailures, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_writes_failures",
+		metric.WithDescription("Number of WAL writes that failed"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -31,43 +31,43 @@ import (
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]string{
-	semconv.AttributeServiceInstanceID:      "service.node.name",
-	semconv.AttributeDeploymentEnvironment:  "service.environment",
-	semconv.AttributeTelemetrySDKName:       "",
-	semconv.AttributeTelemetrySDKLanguage:   "",
-	semconv.AttributeTelemetrySDKVersion:    "",
-	semconv.AttributeTelemetryDistroName:    "",
-	semconv.AttributeTelemetryDistroVersion: "",
-	semconv.AttributeCloudPlatform:          "cloud.service.name",
-	semconv.AttributeContainerImageTags:     "container.image.tag",
-	semconv.AttributeHostName:               "host.hostname",
-	semconv.AttributeHostArch:               "host.architecture",
-	semconv.AttributeProcessExecutablePath:  "process.executable",
-	semconv.AttributeProcessRuntimeName:     "service.runtime.name",
-	semconv.AttributeProcessRuntimeVersion:  "service.runtime.version",
-	semconv.AttributeOSName:                 "host.os.name",
-	semconv.AttributeOSType:                 "host.os.platform",
-	semconv.AttributeOSDescription:          "host.os.full",
-	semconv.AttributeOSVersion:              "host.os.version",
-	semconv.AttributeK8SDeploymentName:      "kubernetes.deployment.name",
-	semconv.AttributeK8SNamespaceName:       "kubernetes.namespace",
-	semconv.AttributeK8SNodeName:            "kubernetes.node.name",
-	semconv.AttributeK8SPodName:             "kubernetes.pod.name",
-	semconv.AttributeK8SPodUID:              "kubernetes.pod.uid",
-	semconv.AttributeK8SJobName:             "kubernetes.job.name",
-	semconv.AttributeK8SCronJobName:         "kubernetes.cronjob.name",
-	semconv.AttributeK8SStatefulSetName:     "kubernetes.statefulset.name",
-	semconv.AttributeK8SReplicaSetName:      "kubernetes.replicaset.name",
-	semconv.AttributeK8SDaemonSetName:       "kubernetes.daemonset.name",
-	semconv.AttributeK8SContainerName:       "kubernetes.container.name",
-	semconv.AttributeK8SClusterName:         "orchestrator.cluster.name",
+	string(semconv.ServiceInstanceIDKey):      "service.node.name",
+	string(semconv.DeploymentEnvironmentKey):  "service.environment",
+	string(semconv.TelemetrySDKNameKey):       "",
+	string(semconv.TelemetrySDKLanguageKey):   "",
+	string(semconv.TelemetrySDKVersionKey):    "",
+	string(semconv.TelemetryDistroNameKey):    "",
+	string(semconv.TelemetryDistroVersionKey): "",
+	string(semconv.CloudPlatformKey):          "cloud.service.name",
+	string(semconv.ContainerImageTagsKey):     "container.image.tag",
+	string(semconv.HostNameKey):               "host.hostname",
+	string(semconv.HostArchKey):               "host.architecture",
+	string(semconv.ProcessExecutablePathKey):  "process.executable",
+	string(semconv.ProcessRuntimeNameKey):     "service.runtime.name",
+	string(semconv.ProcessRuntimeVersionKey):  "service.runtime.version",
+	string(semconv.OSNameKey):                 "host.os.name",
+	string(semconv.OSTypeKey):                 "host.os.platform",
+	string(semconv.OSDescriptionKey):          "host.os.full",
+	string(semconv.OSVersionKey):              "host.os.version",
+	string(semconv.K8SDeploymentNameKey):      "kubernetes.deployment.name",
+	string(semconv.K8SNamespaceNameKey):       "kubernetes.namespace",
+	string(semconv.K8SNodeNameKey):            "kubernetes.node.name",
+	string(semconv.K8SPodNameKey):             "kubernetes.pod.name",
+	string(semconv.K8SPodUIDKey):              "kubernetes.pod.uid",
+	string(semconv.K8SJobNameKey):             "kubernetes.job.name",
+	string(semconv.K8SCronJobNameKey):         "kubernetes.cronjob.name",
+	string(semconv.K8SStatefulSetNameKey):     "kubernetes.statefulset.name",
+	string(semconv.K8SReplicaSetNameKey):      "kubernetes.replicaset.name",
+	string(semconv.K8SDaemonSetNameKey):       "kubernetes.daemonset.name",
+	string(semconv.K8SContainerNameKey):       "kubernetes.container.name",
+	string(semconv.K8SClusterNameKey):         "orchestrator.cluster.name",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
 // This can happen when an attribute needs to be mapped to an ECS equivalent but
 // at the same time be preserved to its original form.
 var resourceAttrsToPreserve = map[string]bool{
-	semconv.AttributeHostName: true,
+	string(semconv.HostNameKey): true,
 }
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
@@ -78,7 +78,7 @@ type documentEncoder interface {
 	encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error
 	encodeMetrics(_ encodingContext, _ []datapoints.DataPoint, validationErrors *[]error, _ elasticsearch.Index, _ *bytes.Buffer) (map[string]string, error)
-	encodeProfile(_ encodingContext, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
+	encodeProfile(_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
 }
 
 type encodingContext struct {
@@ -113,11 +113,6 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 	case MappingECS:
 		return ecsModeEncoder{
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
-			nonOTelSpanEncoder: nonOTelSpanEncoder{
-				attributesPrefix: "Attributes",
-				eventsPrefix:     "Events",
-				dedot:            true,
-			},
 		}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
@@ -144,7 +139,6 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	nonOTelSpanEncoder
 	nopSpanEventEncoder
 	profilesUnsupportedEncoder
 }
@@ -205,11 +199,11 @@ func (e ecsModeEncoder) encodeLog(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
-		"event.name":                         "event.action",
-		semconv.AttributeExceptionMessage:    "error.message",
-		semconv.AttributeExceptionStacktrace: "error.stacktrace",
-		semconv.AttributeExceptionType:       "error.type",
-		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
+		"event.name":                           "event.action",
+		string(semconv.ExceptionMessageKey):    "error.message",
+		string(semconv.ExceptionStacktraceKey): "error.stacktrace",
+		string(semconv.ExceptionTypeKey):       "error.type",
+		string(semconv.ExceptionEscapedKey):    "event.error.exception.handled",
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
 	addDataStreamAttributes(&document, "", idx)
@@ -217,7 +211,7 @@ func (e ecsModeEncoder) encodeLog(
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, ec.resource)
 	encodeLogAgentVersionECSMode(&document, ec.resource)
-	encodeLogHostOsTypeECSMode(&document, ec.resource)
+	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
@@ -230,6 +224,48 @@ func (e ecsModeEncoder) encodeLog(
 	if record.Body().Type() == pcommon.ValueTypeStr {
 		document.AddAttribute("message", record.Body())
 	}
+
+	return document.Serialize(buf, true)
+}
+
+func (e ecsModeEncoder) encodeSpan(
+	ec encodingContext,
+	span ptrace.Span,
+	idx elasticsearch.Index,
+	buf *bytes.Buffer,
+) error {
+	var document objmodel.Document
+
+	// First, try to map resource-level attributes to ECS fields.
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Then, try to map scope-level attributes to ECS fields.
+	scopeAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+
+	// Finally, try to map record-level attributes to ECS fields.
+	spanAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+
+	// Handle special cases.
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, resourceAttrsToPreserve)
+	encodeHostOsTypeECSMode(&document, ec.resource)
+	addDataStreamAttributes(&document, "", idx)
+
+	document.AddTimestamp("@timestamp", span.StartTimestamp())
+	document.AddTraceID("trace.id", span.TraceID())
+	document.AddSpanID("span.id", span.SpanID())
+	document.AddString("span.name", span.Name())
+	document.AddSpanID("parent.id", span.ParentSpanID())
+	if span.Status().Code() == ptrace.StatusCodeOk {
+		document.AddString("event.outcome", "success")
+	} else if span.Status().Code() == ptrace.StatusCodeError {
+		document.AddString("event.outcome", "failure")
+	}
+	document.AddLinks("span.links", span.Links())
 
 	return document.Serialize(buf, true)
 }
@@ -291,10 +327,11 @@ func (e otelModeEncoder) encodeMetrics(
 
 func (e otelModeEncoder) encodeProfile(
 	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
 	profile pprofile.Profile,
 	pushData func(*bytes.Buffer, string, string) error,
 ) error {
-	return e.serializer.SerializeProfile(ec.resource, ec.scope, profile, pushData)
+	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func (e bodymapModeEncoder) encodeLog(
@@ -339,7 +376,7 @@ type profilesUnsupportedEncoder struct {
 }
 
 func (e profilesUnsupportedEncoder) encodeProfile(
-	_ encodingContext, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error,
+	_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error,
 ) error {
 	return fmt.Errorf("mapping mode %q (%d) does not support profiles", e.mode, int(e.mode))
 }
@@ -449,11 +486,12 @@ func durationAsMicroseconds(start, end time.Time) int64 {
 
 func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	attrs := pcommon.NewMap()
+
+	scope.Attributes().CopyTo(attrs)
+
 	attrs.PutStr("name", scope.Name())
 	attrs.PutStr("version", scope.Version())
-	for k, v := range scope.Attributes().AsRaw() {
-		attrs.PutStr(k, v.(string))
-	}
+
 	return attrs
 }
 
@@ -492,13 +530,13 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 	var telemetrySdkLanguage, telemetryDistroName string
 
 	attrs := resource.Attributes()
-	if v, exists := attrs.Get(semconv.AttributeTelemetrySDKName); exists {
+	if v, exists := attrs.Get(string(semconv.TelemetrySDKNameKey)); exists {
 		telemetrySdkName = v.Str()
 	}
-	if v, exists := attrs.Get(semconv.AttributeTelemetrySDKLanguage); exists {
+	if v, exists := attrs.Get(string(semconv.TelemetrySDKLanguageKey)); exists {
 		telemetrySdkLanguage = v.Str()
 	}
-	if v, exists := attrs.Get(semconv.AttributeTelemetryDistroName); exists {
+	if v, exists := attrs.Get(string(semconv.TelemetryDistroNameKey)); exists {
 		telemetryDistroName = v.Str()
 		if telemetrySdkLanguage == "" {
 			telemetrySdkLanguage = "unknown"
@@ -520,25 +558,25 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 
-	if telemetryDistroVersion, exists := attrs.Get(semconv.AttributeTelemetryDistroVersion); exists {
+	if telemetryDistroVersion, exists := attrs.Get(string(semconv.TelemetryDistroVersionKey)); exists {
 		document.AddString("agent.version", telemetryDistroVersion.Str())
 		return
 	}
 
-	if telemetrySdkVersion, exists := attrs.Get(semconv.AttributeTelemetrySDKVersion); exists {
+	if telemetrySdkVersion, exists := attrs.Get(string(semconv.TelemetrySDKVersionKey)); exists {
 		document.AddString("agent.version", telemetrySdkVersion.Str())
 		return
 	}
 }
 
-func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
 	//
 	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
 	// If the OS you’re dealing with is not in the list, the field should not be populated."
 
 	var ecsHostOsType string
-	if semConvOsType, exists := resource.Attributes().Get(semconv.AttributeOSType); exists {
+	if semConvOsType, exists := resource.Attributes().Get(string(semconv.OSTypeKey)); exists {
 		switch semConvOsType.Str() {
 		case "windows", "linux":
 			ecsHostOsType = semConvOsType.Str()
@@ -549,7 +587,7 @@ func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Re
 		}
 	}
 
-	if semConvOsName, exists := resource.Attributes().Get(semconv.AttributeOSName); exists {
+	if semConvOsName, exists := resource.Attributes().Get(string(semconv.OSNameKey)); exists {
 		switch semConvOsName.Str() {
 		case "Android":
 			ecsHostOsType = "android"
