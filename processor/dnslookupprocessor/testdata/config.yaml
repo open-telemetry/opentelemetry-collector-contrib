@@ -1,3 +1,5 @@
+dnslookup/missing_resolve_reverse:
+
 dnslookup/invalid_context:
   reverse:
     context: "invalid_context"

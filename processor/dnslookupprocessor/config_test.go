@@ -26,6 +26,10 @@ func TestLoadConfig(t *testing.T) {
 		errMsg   string
 	}{
 		{
+			id:     component.NewIDWithName(metadata.Type, "missing_resolve_reverse"),
+			errMsg: "at least one of 'resolve' or 'reverse' must be configured",
+		},
+		{
 			id:     component.NewIDWithName(metadata.Type, "invalid_context"),
 			errMsg: "unknown context invalid_context",
 		},
