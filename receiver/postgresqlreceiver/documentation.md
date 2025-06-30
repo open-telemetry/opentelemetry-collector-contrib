@@ -301,6 +301,12 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {calls} | Sum | Int | Cumulative | true |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| function | The name of the function. | Any Str |
+
 ### postgresql.sequential_scans
 
 The number of sequential scans.
@@ -438,7 +444,6 @@ top query
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | postgresql.database.name | The name of the database. | Any Str | true |
-| postgresql.function.name | The name of the function. | Any Str | true |
 | postgresql.index.name | The name of the index on a table. | Any Str | true |
 | postgresql.schema.name | The schema name. | Any Str | true |
 | postgresql.table.name | The table name. | Any Str | true |

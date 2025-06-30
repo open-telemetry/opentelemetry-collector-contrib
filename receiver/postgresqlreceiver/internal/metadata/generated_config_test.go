@@ -65,7 +65,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
-					PostgresqlFunctionName: ResourceAttributeConfig{Enabled: true},
 					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
 					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
 					PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
@@ -114,7 +113,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
-					PostgresqlFunctionName: ResourceAttributeConfig{Enabled: false},
 					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
 					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
 					PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
@@ -164,7 +162,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
-				PostgresqlFunctionName: ResourceAttributeConfig{Enabled: true},
 				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
 				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
 				PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
@@ -174,7 +171,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
-				PostgresqlFunctionName: ResourceAttributeConfig{Enabled: false},
 				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
 				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
 				PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},

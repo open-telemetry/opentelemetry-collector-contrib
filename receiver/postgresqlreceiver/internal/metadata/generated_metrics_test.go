@@ -125,7 +125,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlDeadlocksDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlFunctionCallsDataPoint(ts, 1)
+			mb.RecordPostgresqlFunctionCallsDataPoint(ts, 1, "function-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -197,7 +197,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
-			rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
@@ -464,6 +463,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("function")
+					assert.True(t, ok)
+					assert.Equal(t, "function-val", attrVal.Str())
 				case "postgresql.index.scans":
 					assert.False(t, validatedMetrics["postgresql.index.scans"], "Found a duplicate in the metrics slice: postgresql.index.scans")
 					validatedMetrics["postgresql.index.scans"] = true

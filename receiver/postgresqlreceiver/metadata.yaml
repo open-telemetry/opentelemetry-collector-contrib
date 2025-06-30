@@ -28,10 +28,6 @@ resource_attributes:
     description: The name of the index on a table.
     enabled: true
     type: string
-  postgresql.function.name:
-    description: The name of the function.
-    enabled: true
-    type: string
 
 attributes:
   bg_buffer_source:
@@ -57,6 +53,9 @@ attributes:
       - sync
       - write
     name_override: type
+  function:
+    description: The name of the function.
+    type: string
   lock_type:
     description: Type of the lockable object.
     type: string
@@ -502,6 +501,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [function]
 tests:
   config:
   goleak:

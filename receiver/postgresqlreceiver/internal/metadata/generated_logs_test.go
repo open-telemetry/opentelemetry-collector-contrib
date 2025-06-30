@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -32,7 +31,6 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	rb := lb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
-	rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 	rb.SetPostgresqlIndexName("postgresql.index.name-val")
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 	rb.SetPostgresqlTableName("postgresql.table.name-val")
@@ -140,7 +138,6 @@ func TestLogsBuilder(t *testing.T) {
 
 			rb := lb.NewResourceBuilder()
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
-			rb.SetPostgresqlFunctionName("postgresql.function.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")

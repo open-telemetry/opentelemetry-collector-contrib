@@ -79,8 +79,6 @@ all_set:
   resource_attributes:
     postgresql.database.name:
       enabled: true
-    postgresql.function.name:
-      enabled: true
     postgresql.index.name:
       enabled: true
     postgresql.schema.name:
@@ -167,8 +165,6 @@ none_set:
   resource_attributes:
     postgresql.database.name:
       enabled: false
-    postgresql.function.name:
-      enabled: false
     postgresql.index.name:
       enabled: false
     postgresql.schema.name:
@@ -178,12 +174,6 @@ none_set:
 filter_set_include:
   resource_attributes:
     postgresql.database.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    postgresql.function.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -215,12 +205,6 @@ filter_set_exclude:
         - strict: "postgresql.database.name-val"
       events_exclude:
         - strict: "postgresql.database.name-val"
-    postgresql.function.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "postgresql.function.name-val"
-      events_exclude:
-        - strict: "postgresql.function.name-val"
     postgresql.index.name:
       enabled: true
       metrics_exclude:

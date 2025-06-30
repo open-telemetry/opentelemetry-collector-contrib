@@ -247,7 +247,6 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for postgresql resource attributes.
 type ResourceAttributesConfig struct {
 	PostgresqlDatabaseName ResourceAttributeConfig `mapstructure:"postgresql.database.name"`
-	PostgresqlFunctionName ResourceAttributeConfig `mapstructure:"postgresql.function.name"`
 	PostgresqlIndexName    ResourceAttributeConfig `mapstructure:"postgresql.index.name"`
 	PostgresqlSchemaName   ResourceAttributeConfig `mapstructure:"postgresql.schema.name"`
 	PostgresqlTableName    ResourceAttributeConfig `mapstructure:"postgresql.table.name"`
@@ -256,9 +255,6 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		PostgresqlDatabaseName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		PostgresqlFunctionName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		PostgresqlIndexName: ResourceAttributeConfig{

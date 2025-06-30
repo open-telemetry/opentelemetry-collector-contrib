@@ -1197,9 +1197,10 @@ func (m *metricPostgresqlFunctionCalls) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, functionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1207,6 +1208,7 @@ func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("function", functionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2319,12 +2321,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["postgresql.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.PostgresqlFunctionName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["postgresql.function.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlFunctionName.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.PostgresqlFunctionName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["postgresql.function.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlFunctionName.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.PostgresqlIndexName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["postgresql.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlIndexName.MetricsInclude)
 	}
@@ -2554,8 +2550,8 @@ func (mb *MetricsBuilder) RecordPostgresqlDeadlocksDataPoint(ts pcommon.Timestam
 }
 
 // RecordPostgresqlFunctionCallsDataPoint adds a data point to postgresql.function.calls metric.
-func (mb *MetricsBuilder) RecordPostgresqlFunctionCallsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlFunctionCalls.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordPostgresqlFunctionCallsDataPoint(ts pcommon.Timestamp, val int64, functionAttributeValue string) {
+	mb.metricPostgresqlFunctionCalls.recordDataPoint(mb.startTime, ts, val, functionAttributeValue)
 }
 
 // RecordPostgresqlIndexScansDataPoint adds a data point to postgresql.index.scans metric.

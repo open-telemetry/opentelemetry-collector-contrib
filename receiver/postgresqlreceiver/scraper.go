@@ -505,13 +505,12 @@ func (p *postgreSQLScraper) collectFunctions(
 	}
 
 	for _, stat := range funcStats {
-		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls)
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function)
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(database)
 		if p.separateSchemaAttr {
 			rb.SetPostgresqlSchemaName(stat.schema)
 		}
-		rb.SetPostgresqlFunctionName(stat.function)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
