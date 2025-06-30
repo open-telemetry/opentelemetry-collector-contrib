@@ -54,6 +54,12 @@ attributes:
   splunk.search.state:
     description: The dispatch state of the search
     type: string
+  splunk.searchable.restart:
+    description: Boolean that indicates if a searchable rolling restart/upgrade in progress.t
+    type: bool
+  splunk.rollingorrestart:
+    description: Boolean that indicates if there is a rolling restart or rolling upgrade in progress.
+    type: bool
 
 metrics:
   splunk.license.index.usage:
@@ -360,6 +366,42 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.adhoc.size:
+    enabled: false
+    description: Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.scheduled.size:
+    enabled: false
+    description: Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.completed.size:
+    enabled: false
+    description: Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.incomplete.size:
+    enabled: false
+    description: Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   #`services/server/health/splunkd/details`
   splunk.health:
     enabled: true
@@ -368,6 +410,14 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]
+  # `services/cluster/manager/status`
+  splunk.indexer.rollingrestart.status:
+    enabled: false
+    description: The status of a rolling restart.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.searchable.restart, splunk.rollingorrestart, splunk.splunkd.build, splunk.splunkd.version]
 
   # Search Metrics
   splunk.search.duration:

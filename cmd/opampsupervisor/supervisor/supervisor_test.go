@@ -269,7 +269,6 @@ service:
 				hasNewConfig:                 make(chan struct{}, 1),
 				agentConfigOwnMetricsSection: &atomic.Value{},
 				cfgState:                     &atomic.Value{},
-				agentHealthCheckEndpoint:     "localhost:8000",
 			}
 			agentDesc := &atomic.Value{}
 			agentDesc.Store(&protobufs.AgentDescription{
@@ -324,7 +323,6 @@ func Test_onMessage(t *testing.T) {
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
@@ -353,7 +351,6 @@ func Test_onMessage(t *testing.T) {
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -400,7 +397,6 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    agentConnAtomic,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -442,7 +438,6 @@ func Test_onMessage(t *testing.T) {
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    agentConnAtomic,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -480,7 +475,6 @@ func Test_onMessage(t *testing.T) {
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
@@ -520,8 +514,6 @@ func Test_onMessage(t *testing.T) {
   debug:`
 
 		const expectedMergedConfig = `extensions:
-    health_check:
-        endpoint: localhost:8000
     opamp:
         capabilities:
             reports_available_components: false
@@ -537,11 +529,14 @@ receivers:
     debug: null
 service:
     extensions:
-        - health_check
         - opamp
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -593,7 +588,6 @@ service:
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
 			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -620,8 +614,6 @@ service:
   debug:`
 
 		const expectedMergedConfig = `extensions:
-    health_check:
-        endpoint: localhost:8000
     opamp:
         capabilities:
             reports_available_components: false
@@ -637,11 +629,14 @@ receivers:
     debug: null
 service:
     extensions:
-        - health_check
         - opamp
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -693,7 +688,6 @@ service:
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
 			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -761,7 +755,6 @@ service:
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
 			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -788,8 +781,6 @@ service:
   debug:`
 
 		const expectedMergedConfig = `extensions:
-    health_check:
-        endpoint: localhost:8000
     opamp:
         capabilities:
             reports_available_components: false
@@ -805,11 +796,14 @@ receivers:
     debug: null
 service:
     extensions:
-        - health_check
         - opamp
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -850,7 +844,6 @@ service:
 			opampClient:                  mc,
 			agentDescription:             &atomic.Value{},
 			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -917,7 +910,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    &atomic.Value{},
 			opampClient:                  client,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -970,7 +962,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    &atomic.Value{},
 			opampClient:                  client,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -1000,7 +991,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    &atomic.Value{},
 			opampClient:                  mc,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -1040,7 +1030,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    &atomic.Value{},
 			opampClient:                  mc,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -1080,7 +1069,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			effectiveConfig:              &atomic.Value{},
 			agentConn:                    &atomic.Value{},
 			opampClient:                  mc,
-			agentHealthCheckEndpoint:     "localhost:8000",
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 		}
@@ -1095,6 +1083,38 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		assert.Empty(t, s.effectiveConfig.Load())
 		assert.False(t, updatedClientEffectiveConfig)
+	})
+
+	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
+		healthSet := false
+		mc := &mockOpAMPClient{
+			setHealthFunc: func(_ *protobufs.ComponentHealth) {
+				healthSet = true
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		s := Supervisor{
+			telemetrySettings:            newNopTelemetrySettings(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    &atomic.Value{},
+			opampClient:                  mc,
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			Health: &protobufs.ComponentHealth{
+				Healthy: true,
+			},
+		})
+
+		assert.True(t, healthSet)
 	})
 }
 
@@ -1229,6 +1249,7 @@ type mockOpAMPClient struct {
 	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
 	updateEffectiveConfigFunc func(ctx context.Context) error
 	setRemoteConfigStatusFunc func(rcs *protobufs.RemoteConfigStatus) error
+	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
 func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
@@ -1248,7 +1269,8 @@ func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return m.agentDesc
 }
 
-func (mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error {
+func (m mockOpAMPClient) SetHealth(h *protobufs.ComponentHealth) error {
+	m.setHealthFunc(h)
 	return nil
 }
 
@@ -1464,8 +1486,6 @@ func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
 `
 
 		const expectedMergedConfig = `extensions:
-    health_check:
-        endpoint: ""
     opamp:
         capabilities:
             reports_available_components: false
@@ -1481,11 +1501,14 @@ receiver:
     debug/remote: null
 service:
     extensions:
-        - health_check
         - opamp
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
             processors:
                 - batch:
                     exporter:
@@ -1578,6 +1601,7 @@ service:
 
 		s.agentDescription = agentDesc
 
+		s.loadRemoteConfig()
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 

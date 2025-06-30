@@ -24,15 +24,7 @@ const (
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.googlecloud.OTLPDirect",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
-	featuregate.WithRegisterToVersion("v0.69.0"),
-)
-
-var customMonitoredResourcesMetricsGate = featuregate.GlobalRegistry().MustRegister(
+var customMonitoredResourcesGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.googlecloud.CustomMonitoredResources",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the googlecloudexporter"+
@@ -66,6 +58,9 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
+	if customMonitoredResourcesGate.IsEnabled() {
+		eCfg.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
+	}
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
@@ -118,11 +113,10 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	config := eCfg.Config
-	if customMonitoredResourcesMetricsGate.IsEnabled() {
-		config.MetricConfig.MapMonitoredResource = resourcemapping.CustomMonitoredResourceMapping
+	if customMonitoredResourcesGate.IsEnabled() {
+		eCfg.MetricConfig.MapMonitoredResource = resourcemapping.CustomMetricMonitoredResourceMapping
 	}
-	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, config, params, eCfg.TimeoutSettings.Timeout)
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}

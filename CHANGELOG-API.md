@@ -7,6 +7,85 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `prometheusremoteexporter`: Delete unused struct `CreatedMetric` (#40266)
+- `k8slogreceiver`: Unexport DockerConfig and CRIConfig (#40274)
+- `several`: Rename fields named `TLSSetting` to `TLS` for consistency with the core repository. (#40452)
+  This change affects the following components:
+    - exporter/datadogexporter
+    - exporter/signalfxexporter
+    - exporter/syslogexporter
+    - extension/awsproxy
+    - extension/oauth2clientauthextension
+    - extension/opampextension
+    - processor/resourcedetectionprocessor/internal/openshift
+    - receiver/awsfirehosereceiver
+    - receiver/cloudfoundryreceiver
+    - receiver/prometheusreceiver/targetallocator
+  
+- `azureblobexporter`: Delete type alias Container (#40268)
+- `headersetterextension`: Unexport Header (#40542)
+- `intervalprocessor`: Unexport Processor (#40273)
+- `splunkenterprisereceiver`: Unexport Info (#40267)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.ValueComparator` API to allow comparing values using the OTTL comparison rules (#40370)
+  This change introduces a new API (`ottl.NewValueComparator`) that allows users to 
+  compare raw values using the OTTL comparison rules. It is useful for implementing 
+  custom logic in OTTL functions where value comparison and consistency is desired.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/prometheusremotewrite`: Fix bug where metric metadata was sent with incorrect metric name if configuration includes 'namespace' (#39826)
+- `prometheusexporter`: Expose Scope Name, Version, Schema URL, and Attributes as labels. (#40004)
+  This work is done to comply with https://github.com/open-telemetry/opentelemetry-specification/issues/4223.
+
+<!-- previous-version -->
+
+## v0.127.0
+
+### 🛑 Breaking changes 🛑
+
+- `cloudfoundryreceiver`: Unexport EnvelopeStreamFactory and UAATokenProvider (#40270)
+- `fluentforwardreceiver`: Unexport all structs in fluentforward receiver. (#40108)
+- `postgresqlreceiver`: Unexport Item (#40265)
+- `netflowreceiver`: Unexport OtelLogsProducerWrapper (#40269)
+- `k8sobserver`: Unexport RunningContainer (#40228)
+- `receiver/vcenter`: unexport struct DatacenterStats (#40109)
+- `tcpcheckreceiver`: Unexport TCPConnectionState (#40271)
+- `wavefrontreceiver`: Unexport WavefrontParser struct (#40105)
+
+### 💡 Enhancements 💡
+
+- `sqlserverreceiver`: Use generated structured event functions in mdatagen (#40041)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/experimentalmetricmetadata`: Add missing otel.entity.type field to the delete events (#40279)
+
+<!-- previous-version -->
+
+## v0.126.0
+
+### 🛑 Breaking changes 🛑
+
+- `fluentforwardreceiver`: Unexport AckResponse (#39831)
+- `splunkenterprisereceiver`: Unexport InfoEntry and InfoContent (#39830)
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: Add methods to scrape raw values from Windows performance counters. (#39835)
+- `eventlogreceiver`: add raw XML query filtering option (#38517)
+- `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate and configuration to the exporter to send Prometheus remote write 2.0 version. (#33661)
+  WARNING! PRW 2.0 support for the exporter is still under development and not ready for usage.
+
+<!-- previous-version -->
+
 ## v0.125.0
 
 ### 💡 Enhancements 💡

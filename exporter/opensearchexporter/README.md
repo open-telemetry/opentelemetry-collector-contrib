@@ -6,8 +6,9 @@
 | Stability     | [unmaintained]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fopensearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fopensearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fopensearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fopensearch) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9) |
-| Emeritus      | [@MitchellGale](https://www.github.com/MitchellGale), [@MaxKsyunz](https://www.github.com/MaxKsyunz), [@YANG-DB](https://www.github.com/YANG-DB) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_opensearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_opensearch&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    |  \| Seeking more code owners! |
+| Emeritus      | [@Aneurysm9](https://www.github.com/Aneurysm9), [@MitchellGale](https://www.github.com/MitchellGale), [@MaxKsyunz](https://www.github.com/MaxKsyunz), [@YANG-DB](https://www.github.com/YANG-DB) |
 
 [unmaintained]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -18,34 +19,99 @@ OpenSearch exporter supports sending OpenTelemetry signals as documents to [Open
 The documents are sent using [observability catalog](https://github.com/opensearch-project/opensearch-catalog/tree/main/schema/observability) schema.
 
 ## Configuration options
+
 ### Indexing Options
+
 The Observability indices would follow the recommended pattern for immutable data stream ingestion using
 the [data_stream](https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream) concepts.
 Index pattern will follow the next naming template `ss4o_{type}-{dataset}-{namespace}`
+
 - `dataset` (default=`default`) a user-provided label to classify source of telemetry. It is used to construct the name of the destination index or data stream.
 - `namespace` (default=`namespace`) a user-provided label to group telemetry. It is used to construct the name of the destination index or data stream.
 
 LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
+
 - `logs_index` a user-provided label to specify name of the destination index or data stream.
 
+#### Dynamic Log Indexing
+
+The OpenSearch exporter supports dynamic log index names using placeholders in the `logs_index` config. You can use any attribute or context key as a placeholder to construct index names dynamically per log record.
+
+> Caution: In practice, OpenSearch clusters can become unstable or even break down when index counts reach a very high level. Introducing attributes with high cardinality resulting in many separate indices can significantly impact the stability of your target cluster.
+
+- Placeholder: `%{key}`
+
+  - Example: `otel-logs-%{service.name}` or `otel-logs-%{custom.label}`
+  - The value is looked up from a context map (resource attributes, log attributes, etc.).
+  - If the key is missing, the value from `logs_index_fallback` is used (or `unknown` if not set).
+  - Only one placeholder is supported in the index name.
+  - The index names generated from these placeholders should adhere to [index naming restrictions](https://docs.opensearch.org/docs/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
+
+- **Optional logs_index**: If `logs_index` is not set, the exporter will use the default naming pattern: `ss4o_{type}-{dataset}-{namespace}` (e.g., `ss4o_logs-default-namespace`). This ensures backward compatibility and a predictable index naming scheme.
+
+#### Time Suffix
+
+You can append a time-formatted suffix to the index name using the `logs_index_time_format` option.
+
+- `logs_index_time_format`: If set, appends a time suffix to the resolved index name using the specified format (default is no suffix).
+- **Valid tokens** (case-sensitive):
+  - `yyyy` (4-digit year)
+  - `yy` (2-digit year)
+  - `MM` (2-digit month)
+  - `dd` (2-digit day)
+  - `HH` (2-digit hour, 24h)
+  - `mm` (2-digit minute)
+  - `ss` (2-digit second)
+- **Allowed separators**: `-`, `.`, `_`, `+`
+- **Examples:**
+  - `yyyy.MM.dd` → `2024.06.07`
+  - `yyyy-MM` → `2024-06`
+  - `yyMMdd` → `240607`
+  - `yyyy_MM_dd+HH` → `2024_06_07+15`
+- Any other characters or tokens will result in a configuration error.
+
+##### Example Configuration
+
+```yaml
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch.example.com:9200
+    logs_index: "otel-logs-%{service.name}"
+    logs_index_fallback: "default-service" # optional, if not set default is `unknown`
+    logs_index_time_format: "yyyy.MM.dd" # optional, if set appends time suffix
+```
+
+This will create log indexes like `otel-logs-myservice-2024.06.07`. If `service.name` is missing, `otel-logs-default-service-2024.06.07` will be used.
+
+If `logs_index` is not set, the exporter will use the default pattern, e.g. `ss4o_logs-default-namespace-2024.06.07` if `logs_index_time_format` is set.
+
 ### HTTP Connection Options
+
 OpenSearch export supports standard [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
+
 - `http.endpoint` (required) `<url>:<port>` of OpenSearch node to send data to.
 
 ### TLS settings
+
 Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/Client Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#client-configuration).
 
 ### Retry Options
+
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
 ### Sending Queue Options
+
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
 ### Timeout Options
+
 - `timeout` : See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
 ### Bulk Indexer Options
-- `bulk_action` (optional): the [action](https://opensearch.org/docs/2.9/api-reference/document-apis/bulk/) for ingesting data. Only `create` and `index` are allowed here. 
+
+- `bulk_action` (optional): the [action](https://opensearch.org/docs/2.9/api-reference/document-apis/bulk/) for ingesting data. Only `create` and `index` are allowed here.
+
 ## Example
 
 ```yaml
@@ -54,7 +120,7 @@ extensions:
   client_auth:
     username: username
     password: password
-    
+
 exporters:
   opensearch/trace:
     http:

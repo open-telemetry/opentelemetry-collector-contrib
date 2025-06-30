@@ -15,13 +15,11 @@ import (
 
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -37,135 +35,11 @@ func TestNewScraper(t *testing.T) {
 	require.Empty(t, scraper.resources)
 }
 
-func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
-	return &azidentity.ClientSecretCredential{}, nil
-}
-
-func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
-	return &azidentity.WorkloadIdentityCredential{}, nil
-}
-
-func azManagedIdentityFuncMock(*azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error) {
-	return &azidentity.ManagedIdentityCredential{}, nil
-}
-
-func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error) {
-	return &azidentity.DefaultAzureCredential{}, nil
-}
-
 func createDefaultTestConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TenantID = "fake-tenant-id"
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	return cfg
-}
-
-func TestAzureScraperStart(t *testing.T) {
-	timeMock := getTimeMock()
-
-	tests := []struct {
-		name     string
-		testFunc func(*testing.T)
-	}{
-		// TODO: Add test cases.
-		{
-			name: "default",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
-			},
-		},
-		{
-			name: "service_principal",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = servicePrincipal
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
-			},
-		},
-		{
-			name: "workload_identity",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = workloadIdentity
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
-			},
-		},
-		{
-			name: "managed_identity",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = managedIdentity
-				s := &azureScraper{
-					cfg:                   cfg,
-					time:                  timeMock,
-					azIDCredentialsFunc:   azIDCredentialsFuncMock,
-					azManagedIdentityFunc: azManagedIdentityFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ManagedIdentityCredential{}, s.cred)
-			},
-		},
-		{
-			name: "default_credentials",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = defaultCredentials
-				s := &azureScraper{
-					cfg:                      cfg,
-					time:                     timeMock,
-					azIDCredentialsFunc:      azIDCredentialsFuncMock,
-					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.DefaultAzureCredential{}, s.cred)
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, tt.testFunc)
-	}
 }
 
 func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientListResponse) func(options *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {

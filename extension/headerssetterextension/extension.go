@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
 )
 
-type Header struct {
+type header struct {
 	action action.Action
 	source source.Source
 }
@@ -34,7 +34,7 @@ type headerSetterExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	headers []Header
+	headers []header
 }
 
 // PerRPCCredentials implements extensionauth.GRPCClient.
@@ -55,50 +55,50 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 		return nil, errors.New("extension configuration is not provided")
 	}
 
-	headers := make([]Header, 0, len(cfg.HeadersConfig))
-	for _, header := range cfg.HeadersConfig {
+	headers := make([]header, 0, len(cfg.HeadersConfig))
+	for _, h := range cfg.HeadersConfig {
 		var s source.Source
 		switch {
-		case header.Value != nil:
+		case h.Value != nil:
 			s = &source.StaticSource{
-				Value: *header.Value,
+				Value: *h.Value,
 			}
-		case header.FromAttribute != nil:
+		case h.FromAttribute != nil:
 			defaultValue := ""
-			if header.DefaultValue != nil {
-				defaultValue = string(*header.DefaultValue)
+			if h.DefaultValue != nil {
+				defaultValue = string(*h.DefaultValue)
 			}
 			s = &source.AttributeSource{
-				Key:          *header.FromAttribute,
+				Key:          *h.FromAttribute,
 				DefaultValue: defaultValue,
 			}
-		case header.FromContext != nil:
+		case h.FromContext != nil:
 			defaultValue := ""
-			if header.DefaultValue != nil {
-				defaultValue = string(*header.DefaultValue)
+			if h.DefaultValue != nil {
+				defaultValue = string(*h.DefaultValue)
 			}
 			s = &source.ContextSource{
-				Key:          *header.FromContext,
+				Key:          *h.FromContext,
 				DefaultValue: defaultValue,
 			}
 		}
 
 		var a action.Action
-		switch header.Action {
+		switch h.Action {
 		case INSERT:
-			a = action.Insert{Key: *header.Key}
+			a = action.Insert{Key: *h.Key}
 		case UPSERT:
-			a = action.Upsert{Key: *header.Key}
+			a = action.Upsert{Key: *h.Key}
 		case UPDATE:
-			a = action.Update{Key: *header.Key}
+			a = action.Update{Key: *h.Key}
 		case DELETE:
-			a = action.Delete{Key: *header.Key}
+			a = action.Delete{Key: *h.Key}
 		default:
-			a = action.Upsert{Key: *header.Key}
+			a = action.Upsert{Key: *h.Key}
 			logger.Warn("The action was not provided, using 'upsert'." +
 				" In future versions, we'll require this to be explicitly set")
 		}
-		headers = append(headers, Header{action: a, source: s})
+		headers = append(headers, header{action: a, source: s})
 	}
 
 	return &headerSetterExtension{headers: headers}, nil
@@ -107,7 +107,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 // headersPerRPC is a gRPC credentials.PerRPCCredentials implementation sets
 // headers with values extracted from provided sources.
 type headersPerRPC struct {
-	headers []Header
+	headers []header
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
@@ -137,7 +137,7 @@ func (h *headersPerRPC) RequireTransportSecurity() bool {
 // values extracted from configured sources.
 type headersRoundTripper struct {
 	base    http.RoundTripper
-	headers []Header
+	headers []header
 }
 
 // RoundTrip copies the original request and sets headers of the new requests

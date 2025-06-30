@@ -7,6 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsqlserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsqlserver) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sqlserver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sqlserver&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@StefanKurek](https://www.github.com/StefanKurek), [@sincejune](https://www.github.com/sincejune), [@crobert-1](https://www.github.com/crobert-1) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -46,6 +47,13 @@ Top-Query collection specific options (only useful when top-query collection are
   - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
 - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
 - `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
+- `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
+  - This value can only guarantee that the top queries are collected at most once in this interval.
+    - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `60s`.
+      - In this case, the default receiver scraper will still try to run in every 10 seconds.
+      - However, the top queries collection will only run after 60 seconds have passed since the last collection.
+    - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
+      - In this case, `top_query_collection.collection_internal` will make no effects to the collection
 - `enabled`: (optional, default = `false`): Enable collection of top queries.
   - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
@@ -103,6 +111,17 @@ Top query collection enabled:
           max_rows_per_query: 1450
           
 ```
+
+## Feature Gate
+
+A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port` 
+resource attributes, as they are not identified as resources attributes in the semantic conventions.
+To enable it, pass the following argument to the Collector:
+
+```
+--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)

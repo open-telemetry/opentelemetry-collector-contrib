@@ -18,9 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
@@ -588,9 +587,9 @@ func Test_getPromExemplarsV2(t *testing.T) {
 
 func TestAddResourceTargetInfo(t *testing.T) {
 	resourceAttrMap := map[string]any{
-		conventions.AttributeServiceName:       "service-name",
-		conventions.AttributeServiceNamespace:  "service-namespace",
-		conventions.AttributeServiceInstanceID: "service-instance-id",
+		string(conventions.ServiceNameKey):       "service-name",
+		string(conventions.ServiceNamespaceKey):  "service-namespace",
+		string(conventions.ServiceInstanceIDKey): "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	require.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
@@ -599,11 +598,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	require.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	// service.name is an identifying resource attribute.
 	resourceWithOnlyServiceName := pcommon.NewResource()
-	resourceWithOnlyServiceName.Attributes().PutStr(conventions.AttributeServiceName, "service-name")
+	resourceWithOnlyServiceName.Attributes().PutStr(string(conventions.ServiceNameKey), "service-name")
 	resourceWithOnlyServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	// service.instance.id is an identifying resource attribute.
 	resourceWithOnlyServiceID := pcommon.NewResource()
-	resourceWithOnlyServiceID.Attributes().PutStr(conventions.AttributeServiceInstanceID, "service-instance-id")
+	resourceWithOnlyServiceID.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "service-instance-id")
 	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	for _, tc := range []struct {
 		desc       string
@@ -813,49 +812,9 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "summary with exportCreatedMetricGate enabled",
-			metric: func() pmetric.Metric {
-				metric := pmetric.NewMetric()
-				metric.SetName("test_summary")
-				metric.SetEmptySummary()
-
-				dp := metric.Summary().DataPoints().AppendEmpty()
-				dp.SetTimestamp(ts)
-				dp.SetStartTimestamp(ts)
-
-				return metric
-			},
-			want: func() map[uint64]*prompb.TimeSeries {
-				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
-				}
-				sumLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
-				}
-				return map[uint64]*prompb.TimeSeries{
-					timeSeriesSignature(labels): {
-						Labels: labels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-					timeSeriesSignature(sumLabels): {
-						Labels: sumLabels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-				}
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldValue := exportCreatedMetricGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, true)
-			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
-
 			metric := tt.metric()
 			converter := newPrometheusConverter()
 
@@ -952,50 +911,9 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "histogram with exportCreatedMetricGate enabled",
-			metric: func() pmetric.Metric {
-				metric := pmetric.NewMetric()
-				metric.SetName("test_hist")
-				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				pt := metric.Histogram().DataPoints().AppendEmpty()
-				pt.SetTimestamp(ts)
-				pt.SetStartTimestamp(ts)
-
-				return metric
-			},
-			want: func() map[uint64]*prompb.TimeSeries {
-				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
-				}
-				infLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
-					{Name: model.BucketLabel, Value: "+Inf"},
-				}
-				return map[uint64]*prompb.TimeSeries{
-					timeSeriesSignature(infLabels): {
-						Labels: infLabels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-					timeSeriesSignature(labels): {
-						Labels: labels,
-						Samples: []prompb.Sample{
-							{Value: 0, Timestamp: convertTimeStamp(ts)},
-						},
-					},
-				}
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oldValue := exportCreatedMetricGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, true)
-			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
-
 			metric := tt.metric()
 			converter := newPrometheusConverter()
 

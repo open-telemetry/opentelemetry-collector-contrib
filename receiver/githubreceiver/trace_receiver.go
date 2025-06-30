@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v72/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -47,7 +47,7 @@ func newTracesReceiver(
 	}
 
 	transport := "http"
-	if config.WebHook.TLSSetting != nil {
+	if config.WebHook.TLS != nil {
 		transport = "https"
 	}
 

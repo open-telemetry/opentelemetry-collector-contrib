@@ -40,13 +40,14 @@ var searchDict = map[string]string{
 }
 
 var apiDict = map[string]string{
-	`SplunkIndexerThroughput`:   `/services/server/introspection/indexer?output_mode=json`,
-	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
-	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
-	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
-	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
-	`SplunkHealth`:              `/services/server/health/splunkd/details?output_mode=json`,
-	`SplunkInfo`:                `/services/server/info?output_mode=json`,
+	`SplunkIndexerThroughput`:           `/services/server/introspection/indexer?output_mode=json`,
+	`SplunkDataIndexesExtended`:         `/services/data/indexes-extended?output_mode=json&count=-1`,
+	`SplunkIntrospectionQueues`:         `/services/server/introspection/queues?output_mode=json&count=-1`,
+	`SplunkKVStoreStatus`:               `/services/kvstore/status?output_mode=json`,
+	`SplunkDispatchArtifacts`:           `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
+	`SplunkHealth`:                      `/services/server/health/splunkd/details?output_mode=json`,
+	`SplunkInfo`:                        `/services/server/info?output_mode=json`,
+	`SplunkIndexerClusterManagerStatus`: `/services/cluster/manager/status?output_mode=json`,
 }
 
 type searchResponse struct {
@@ -177,6 +178,10 @@ type dispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+	AdhocSize          string `json:"adhoc_size_mb"`
+	ScheduledSize      string `json:"scheduled_size_mb"`
+	CompletedSize      string `json:"completed_size_mb"`
+	IncompleteSize     string `json:"incomplete_size_mb"`
 }
 
 // '/services/server/health/splunkd/details'
@@ -194,21 +199,21 @@ type healthDetails struct {
 }
 
 // '/services/server/info'
-type Info struct {
+type info struct {
 	Host    string      `json:"origin"`
-	Entries []InfoEntry `json:"entry"`
+	Entries []infoEntry `json:"entry"`
 }
 
-type InfoEntry struct {
-	Content InfoContent `json:"content"`
+type infoEntry struct {
+	Content infoContent `json:"content"`
 }
 
-type InfoContent struct {
+type infoContent struct {
 	Build   string `json:"build"`
 	Version string `json:"version"`
 }
 
-type infoDict map[any]Info
+type infoDict map[any]info
 
 // '/services/search/jobs/{search_id}'
 type searchMetaEntries struct {
@@ -222,4 +227,21 @@ type searchMetaEntry struct {
 type searchMeta struct {
 	Duration      float64 `json:"runDuration"`
 	DispatchState string  `json:"dispatchState"`
+}
+
+// '/services/cluster/manager/status'
+type indexersClusterManagerStatus struct {
+	Entries []idxClusterManagerStatusEntry `json:"entry"`
+}
+type idxClusterManagerStatusEntry struct {
+	Name    string                         `json:"name"`
+	Content idxClusterManagerStatusContent `json:"content"`
+}
+
+type idxClusterManagerStatusContent struct {
+	RollingRestartFlag      bool   `json:"rolling_restart_flag,omitempty"`
+	RollingRestartOrUpgrade bool   `json:"rolling_restart_or_upgrade,omitempty"`
+	RollingRestartType      string `json:"rolling_restart_type,omitempty"`
+	SearchableRolling       bool   `json:"searchable_rolling,omitempty"`
+	ServiceReadyFlag        bool   `json:"service_ready_flag,omitempty"`
 }

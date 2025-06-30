@@ -160,7 +160,7 @@ tidylist: $(CROSSLINK)
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $?; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.23.0 && $(GOCMD) get toolchain@none) || exit $?; \
 	done
 
 .PHONY: remove-toolchain
@@ -337,7 +337,7 @@ run:
 docker-component: check-component
 	GOOS=linux GOARCH=$(GOARCH) $(MAKE) $(COMPONENT)
 	cp ./bin/$(COMPONENT)_linux_$(GOARCH) ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	docker build --platform linux/$(GOARCH) -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component
@@ -361,6 +361,13 @@ docker-telemetrygen:
 	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t telemetrygen:latest .
 	rm cmd/telemetrygen/telemetrygen_*
 
+.PHONY: docker-golden
+docker-golden:
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) golden
+	cp bin/golden_* cmd/golden/
+	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
+	rm cmd/golden/golden_*
+
 .PHONY: generate
 generate: install-tools
 	PATH="$(ROOT_DIR).tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
@@ -380,6 +387,10 @@ gencodecov: $(CODECOVGEN)
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
+
+.PHONY: gencodeowners
+gencodeowners: install-tools
+	$(GITHUBGEN) -skipgithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new

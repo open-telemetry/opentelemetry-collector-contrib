@@ -35,7 +35,7 @@ type snowflakeClient struct {
 }
 
 // build snowflake db connection string
-func buildDSN(cfg Config) string {
+func buildDSN(cfg Config) (string, error) {
 	conf := &sf.Config{
 		Account:   cfg.Account,
 		User:      cfg.Username,
@@ -46,16 +46,14 @@ func buildDSN(cfg Config) string {
 		Warehouse: cfg.Warehouse,
 	}
 
-	dsn, err := sf.DSN(conf)
-	if err != nil {
-		print("%v", err)
-	}
-
-	return dsn
+	return sf.DSN(conf)
 }
 
 func newDefaultClient(settings component.TelemetrySettings, c Config) (*snowflakeClient, error) {
-	dsn := buildDSN(c)
+	dsn, err := buildDSN(c)
+	if err != nil {
+		return nil, err
+	}
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
 		return nil, err
@@ -366,8 +364,8 @@ func (c snowflakeClient) FetchSnowpipeMetrics(ctx context.Context) (*[]snowpipeM
 
 	for rows.Next() {
 		var pipeName sql.NullString
-		var creditsUsed float64
-		var bytesInserted, filesInserted int64
+		var creditsUsed, bytesInserted float64
+		var filesInserted int64
 
 		err := rows.Scan(&pipeName, &creditsUsed, &bytesInserted, &filesInserted)
 		if err != nil {

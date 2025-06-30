@@ -25,6 +25,7 @@ body:
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/aesprovider
+      - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -88,6 +89,7 @@ body:
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
+      - exporter/tinybird
       - exporter/zipkin
       - extension/ack
       - extension/asapauth
@@ -136,7 +138,6 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
-      - extension/tpm
       - internal/aws
       - internal/collectd
       - internal/common
@@ -163,6 +164,7 @@ body:
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest
@@ -259,6 +261,7 @@ body:
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
+      - receiver/hostmetrics/internal/scraper/nfsscraper
       - receiver/hostmetrics/internal/scraper/pagingscraper
       - receiver/hostmetrics/internal/scraper/processesscraper
       - receiver/hostmetrics/internal/scraper/processscraper

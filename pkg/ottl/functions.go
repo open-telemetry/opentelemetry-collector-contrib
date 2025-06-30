@@ -14,12 +14,16 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// PathExpressionParser is how a context provides OTTL access to all its Paths.
 type PathExpressionParser[K any] func(Path[K]) (GetSetter[K], error)
 
+// EnumParser is how a context provides OTTL access to all its Enums.
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
+// Enum is how OTTL represents an enum's numeric value.
 type Enum int64
 
+// EnumSymbol is how OTTL represents an enum's string value.
 type EnumSymbol string
 
 func buildOriginalText(path *path) string {
@@ -472,6 +476,12 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "PSliceGetter"):
+		arg, err := buildSlice[PSliceGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	case strings.HasPrefix(name, "StringGetter"):
 		arg, err := buildSlice[StringGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
@@ -606,6 +616,12 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardPMapGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "PSliceGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardPSliceGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "DurationGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -708,6 +724,7 @@ type optionalManager interface {
 	get() reflect.Value
 }
 
+// Optional is used to represent an optional function argument
 type Optional[T any] struct {
 	val      T
 	hasValue bool
@@ -737,7 +754,7 @@ func (o Optional[T]) get() reflect.Value {
 	return reflect.ValueOf(o).MethodByName("Get").Call(nil)[0]
 }
 
-// Allows creating an Optional with a value already populated for use in testing
+// NewTestingOptional allows creating an Optional with a value already populated for use in testing
 // OTTL functions.
 func NewTestingOptional[T any](val T) Optional[T] {
 	return Optional[T]{

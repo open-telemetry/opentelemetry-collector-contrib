@@ -391,67 +391,78 @@ func TestCompareProfiles(t *testing.T) {
 func TestCompareResourceProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.ResourceProfiles
-		actual   pprofile.ResourceProfiles
+		expected func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles)
+		actual   func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles)
 		err      error
 	}{
 		{
 			name: "equal",
-			expected: func() pprofile.ResourceProfiles {
-				return basicProfiles().Transform().ResourceProfiles().At(0)
-			}(),
-			actual: func() pprofile.ResourceProfiles {
-				return basicProfiles().Transform().ResourceProfiles().At(0)
-			}(),
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				prof := basicProfiles().Transform()
+				return prof.ProfilesDictionary(), prof.ResourceProfiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				prof := basicProfiles().Transform()
+				return prof.ProfilesDictionary(), prof.ResourceProfiles().At(0)
+			},
 		},
 		{
 			name: "resource-attributes-mismatch",
-			expected: func() pprofile.ResourceProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.Resource().Attributes().PutStr("key1", "value1")
 				rl.Resource().Attributes().PutStr("key2", "value2")
-				return rl
-			}(),
-			actual: func() pprofile.ResourceProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.Resource().Attributes().PutStr("key1", "value1")
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("attributes don't match expected: map[key1:value1 key2:value2], actual: map[key1:value1]"),
 		},
 		{
 			name: "resource-schema-url-mismatch",
-			expected: func() pprofile.ResourceProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.SetSchemaUrl("schema-url")
-				return rl
-			}(),
-			actual: func() pprofile.ResourceProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.SetSchemaUrl("schema-url-2")
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
 		},
 		{
 			name: "scope-profiles-number-mismatch",
-			expected: func() pprofile.ResourceProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.ScopeProfiles().AppendEmpty()
 				rl.ScopeProfiles().AppendEmpty()
-				return rl
-			}(),
-			actual: func() pprofile.ResourceProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.ScopeProfiles().AppendEmpty()
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("number of scopes doesn't match expected: 2, actual: 1"),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareResourceProfiles(test.expected, test.actual))
+			eDic, eRp := test.expected()
+			aDic, aRp := test.actual()
+
+			require.Equal(t, test.err, CompareResourceProfiles(eDic, aDic, eRp, aRp))
 		})
 	}
 }
@@ -459,65 +470,73 @@ func TestCompareResourceProfiles(t *testing.T) {
 func TestCompareScopeProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.ScopeProfiles
-		actual   pprofile.ScopeProfiles
+		expected func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles)
+		actual   func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles)
 		err      error
 	}{
 		{
 			name: "equal",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
 		},
 		{
 			name: "scope-name-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetName("scope-name")
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetName("scope-name-2")
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: errors.New("name doesn't match expected: scope-name, actual: scope-name-2"),
 		},
 		{
 			name: "scope-version-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetVersion("scope-version")
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetVersion("scope-version-2")
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: errors.New("version doesn't match expected: scope-version, actual: scope-version-2"),
 		},
 		{
 			name: "scope-attributes-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
 				sl.Scope().Attributes().PutStr("scope-attr2", "value2")
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
 				sl.Scope().SetDroppedAttributesCount(1)
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: multierr.Combine(
 				errors.New("attributes don't match expected: map[scope-attr1:value1 scope-attr2:value2], "+
 					"actual: map[scope-attr1:value1]"),
@@ -526,36 +545,40 @@ func TestCompareScopeProfiles(t *testing.T) {
 		},
 		{
 			name: "scope-schema-url-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewScopeProfiles()
 				rl.SetSchemaUrl("schema-url")
-				return rl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewScopeProfiles()
 				rl.SetSchemaUrl("schema-url-2")
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
 		},
 		{
 			name: "profiles-number-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Profiles().AppendEmpty()
 				sl.Profiles().AppendEmpty()
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Profiles().AppendEmpty()
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: errors.New("number of profiles doesn't match expected: 2, actual: 1"),
 		},
 		{
 			name: "profile-records-order-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
@@ -567,9 +590,10 @@ func TestCompareScopeProfiles(t *testing.T) {
 						Attributes: []Attribute{{"scope-attr2", "value2"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
@@ -581,8 +605,9 @@ func TestCompareScopeProfiles(t *testing.T) {
 						Attributes: []Attribute{{"scope-attr1", "value1"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
 			err: multierr.Combine(
 				errors.New(`profiles are out of order: profile "map[scope-attr1:value1]" expected at index 0, found at index 1`),
 				errors.New(`profiles are out of order: profile "map[scope-attr2:value2]" expected at index 1, found at index 0`),
@@ -591,7 +616,10 @@ func TestCompareScopeProfiles(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareScopeProfiles(test.expected, test.actual))
+			eDic, eSp := test.expected()
+			aDic, aSp := test.actual()
+
+			require.Equal(t, test.err, CompareScopeProfiles(eDic, aDic, eSp, aSp))
 		})
 	}
 }
@@ -599,24 +627,26 @@ func TestCompareScopeProfiles(t *testing.T) {
 func TestCompareProfile(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.Profile
-		actual   pprofile.Profile
+		expected func() (pprofile.ProfilesDictionary, pprofile.Profile)
+		actual   func() (pprofile.ProfilesDictionary, pprofile.Profile)
 		err      error
 	}{
 		{
 			name: "empty",
-			expected: func() pprofile.Profile {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
+				dic := pprofile.NewProfilesDictionary()
 				l := pprofile.NewProfile()
-				return l
-			}(),
-			actual: func() pprofile.Profile {
+				return dic, l
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
+				dic := pprofile.NewProfilesDictionary()
 				l := pprofile.NewProfile()
-				return l
-			}(),
+				return dic, l
+			},
 		},
 		{
 			name: "equal",
-			expected: func() pprofile.Profile {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
@@ -639,9 +669,10 @@ func TestCompareProfile(t *testing.T) {
 						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu", Unit: "nanoseconds"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
-			actual: func() pprofile.Profile {
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
@@ -664,12 +695,13 @@ func TestCompareProfile(t *testing.T) {
 						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu", Unit: "nanoseconds"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
 		},
 		{
 			name: "not equal",
-			expected: func() pprofile.Profile {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
@@ -692,9 +724,10 @@ func TestCompareProfile(t *testing.T) {
 						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu", Unit: "nanoseconds"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
-			actual: func() pprofile.Profile {
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
 				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
 					{
@@ -717,22 +750,22 @@ func TestCompareProfile(t *testing.T) {
 						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu2", Unit: "nanoseconds2"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.ProfilesDictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
 			err: multierr.Combine(
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
-				errors.New(`stringTable '[ cpu1 nanoseconds1 samples count samples1 count1 cpu2 nanoseconds2]' does not match expected '[ cpu nanoseconds samples count]'`),
 				errors.New(`period does not match expected '1', actual '2'`),
 				fmt.Errorf(`sampleType: %w`, errors.New(`missing expected valueType "unit: 4, type: 3, aggregationTemporality: 1"`)),
 				fmt.Errorf(`sampleType: %w`, errors.New(`unexpected valueType "unit: 6, type: 5, aggregationTemporality: 1"`)),
-				fmt.Errorf(`attributeUnits: %w`, errors.New(`missing expected attributeUnit "attributeKey: 1"`)),
-				fmt.Errorf(`attributeUnits: %w`, errors.New(`unexpected profile attributeUnit "attributeKey: 7"`)),
 			),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareProfile(test.expected, test.actual))
+			eDic, eP := test.expected()
+			aDic, aP := test.actual()
+			require.Equal(t, test.err, CompareProfile(eDic, aDic, eP, aP))
 		})
 	}
 }
