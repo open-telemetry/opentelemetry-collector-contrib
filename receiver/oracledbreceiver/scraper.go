@@ -525,8 +525,6 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		}
 	}
 
-	s.logger.Info("Done scraping 1")
-
 	if s.logsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		sampleLogs, samplesCollectionErrors := s.collectQuerySamples(ctx)
 		if samplesCollectionErrors != nil {
@@ -536,7 +534,6 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		}
 	}
 
-	s.logger.Info("Done scraping 2")
 	return logs, errors.Join(scrapeErrors...)
 }
 
