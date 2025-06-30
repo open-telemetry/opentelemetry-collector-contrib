@@ -130,7 +130,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "client.address-val", "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", "oracledb.object_name-val", "oracledb.object_type-val", "oracledb.osuser-val", 21.100000)
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "db.namespace-val", "client.address-val", 11, "network.peer.address-val", 17, "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", "oracledb.object_name-val", "oracledb.object_type-val", "oracledb.osuser-val", 21.100000)
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", 30.100000, 20, 26.100000, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000)
@@ -176,9 +176,21 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("user.name")
 					assert.True(t, ok)
 					assert.Equal(t, "user.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.namespace")
+					assert.True(t, ok)
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("client.address")
 					assert.True(t, ok)
 					assert.Equal(t, "client.address-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("client.port")
+					assert.True(t, ok)
+					assert.EqualValues(t, 11, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("network.peer.address")
+					assert.True(t, ok)
+					assert.Equal(t, "network.peer.address-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("network.peer.port")
+					assert.True(t, ok)
+					assert.EqualValues(t, 17, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("oracledb.plan_hash_value")
 					assert.True(t, ok)
 					assert.Equal(t, "oracledb.plan_hash_value-val", attrVal.Str())

@@ -400,7 +400,11 @@ sample query
 | db.query.text | The text of the database query being executed. | Any Str |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
 | user.name | Database user name under which a session is connected to | Any Str |
-| client.address | Identifies the name of the machine (host) from which the database client is connecting to the Oracle database. | Any Str |
+| db.namespace | The database name. | Any Str |
+| client.address | Hostname or address of the client. | Any Str |
+| client.port | TCP port used by the client. | Any Int |
+| network.peer.address | IP address of the peer client. | Any Str |
+| network.peer.port | TCP port used by the peer client. | Any Int |
 | oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
 | oracledb.sql_id | The SQL ID of the query. | Any Str |
 | oracledb.child_number | The child number of the query. | Any Str |
