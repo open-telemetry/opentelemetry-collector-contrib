@@ -107,10 +107,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			if net.ParseIP(value.Str()) != nil {
 				info.Request.ClientIP = awsxray.String(value.Str())
 			}
-		case string(conventions.URLPathKey):
-			urlParts[key] = value.Str()
-			hasHTTP = true
-		case string(conventions.URLQueryKey):
+		case string(conventions.URLPathKey), string(conventions.URLQueryKey):
 			urlParts[key] = value.Str()
 			hasHTTP = true
 		case string(conventions.ServerAddressKey):
