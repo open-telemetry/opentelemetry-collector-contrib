@@ -113,9 +113,9 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Histogram = pmetric.NewHistogramDataPoint()
-			currentDist.CopyTo(referenceTsi.Histogram)
+			minimalHistogramCopyTo(currentDist, referenceTsi.Histogram)
 			previousTsi.Histogram = pmetric.NewHistogramDataPoint()
-			currentDist.CopyTo(previousTsi.Histogram)
+			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
 			return true
 		}
 
@@ -136,9 +136,9 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 			referenceTsi.Histogram.SetStartTimestamp(resetStartTimeStamp)
 			currentDist.ExplicitBounds().CopyTo(referenceTsi.Histogram.ExplicitBounds())
 			referenceTsi.Histogram.BucketCounts().FromRaw(make([]uint64, currentDist.BucketCounts().Len()))
-			currentDist.CopyTo(previousTsi.Histogram)
+			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
 		} else {
-			currentDist.CopyTo(previousTsi.Histogram)
+			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
 			subtractHistogramDataPoint(currentDist, referenceTsi.Histogram)
 		}
 		return false
@@ -165,9 +165,9 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			currentDist.CopyTo(referenceTsi.ExponentialHistogram)
+			minimalExponentialHistogramCopyTo(currentDist, referenceTsi.ExponentialHistogram)
 			previousTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			currentDist.CopyTo(previousTsi.ExponentialHistogram)
+			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
 			return true
 		}
 
@@ -188,9 +188,9 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 			referenceTsi.ExponentialHistogram.SetScale(currentDist.Scale())
 			referenceTsi.ExponentialHistogram.Positive().BucketCounts().FromRaw(make([]uint64, currentDist.Positive().BucketCounts().Len()))
 			referenceTsi.ExponentialHistogram.Negative().BucketCounts().FromRaw(make([]uint64, currentDist.Negative().BucketCounts().Len()))
-			currentDist.CopyTo(previousTsi.ExponentialHistogram)
+			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
 		} else {
-			currentDist.CopyTo(previousTsi.ExponentialHistogram)
+			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
 			subtractExponentialHistogramDataPoint(currentDist, referenceTsi.ExponentialHistogram)
 		}
 		return false
@@ -217,9 +217,9 @@ func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.Timeseries
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Number = pmetric.NewNumberDataPoint()
-			currentSum.CopyTo(referenceTsi.Number)
+			minimalSumCopyTo(currentSum, referenceTsi.Number)
 			previousTsi.Number = pmetric.NewNumberDataPoint()
-			currentSum.CopyTo(previousTsi.Number)
+			minimalSumCopyTo(currentSum, previousTsi.Number)
 			return true
 		}
 
@@ -237,9 +237,9 @@ func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.Timeseries
 			referenceTsi.Number = pmetric.NewNumberDataPoint()
 			previousTsi.Number = pmetric.NewNumberDataPoint()
 			referenceTsi.Number.SetStartTimestamp(resetStartTimeStamp)
-			currentSum.CopyTo(previousTsi.Number)
+			minimalSumCopyTo(currentSum, previousTsi.Number)
 		} else {
-			currentSum.CopyTo(previousTsi.Number)
+			minimalSumCopyTo(currentSum, previousTsi.Number)
 			currentSum.SetDoubleValue(currentSum.DoubleValue() - referenceTsi.Number.DoubleValue())
 		}
 		return false
@@ -260,9 +260,9 @@ func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.Timese
 		if !found {
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
-			currentSummary.CopyTo(referenceTsi.Summary)
+			minimalSummaryCopyTo(currentSummary, referenceTsi.Summary)
 			previousTsi.Summary = pmetric.NewSummaryDataPoint()
-			currentSummary.CopyTo(previousTsi.Summary)
+			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
 			return true
 		}
 
@@ -280,10 +280,10 @@ func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.Timese
 			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
 			previousTsi.Summary = pmetric.NewSummaryDataPoint()
 			referenceTsi.Summary.SetStartTimestamp(resetStartTimeStamp)
-			currentSummary.CopyTo(previousTsi.Summary)
+			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
 		} else {
 			currentSummary.SetStartTimestamp(referenceTsi.Summary.StartTimestamp())
-			currentSummary.CopyTo(previousTsi.Summary)
+			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
 			currentSummary.SetCount(currentSummary.Count() - referenceTsi.Summary.Count())
 			currentSummary.SetSum(currentSummary.Sum() - referenceTsi.Summary.Sum())
 		}
@@ -338,4 +338,53 @@ func subtractExponentialBuckets(a, b pmetric.ExponentialHistogramDataPointBucket
 		}
 	}
 	return newBuckets
+}
+
+// minimalHistogramCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
+func minimalHistogramCopyTo(a, b pmetric.HistogramDataPoint) {
+	// Copy attributes and exemplars to temporary structures so they are not copied to b.
+	tmpAttrs := pcommon.NewMap()
+	tmpExemplars := pmetric.NewExemplarSlice()
+	a.Attributes().MoveTo(tmpAttrs)
+	a.Exemplars().MoveAndAppendTo(tmpExemplars)
+	a.CopyTo(b)
+	// Restore attributes and exemplars.
+	tmpAttrs.MoveTo(a.Attributes())
+	tmpExemplars.MoveAndAppendTo(a.Exemplars())
+}
+
+// minimalExponentialHistogramCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
+func minimalExponentialHistogramCopyTo(a, b pmetric.ExponentialHistogramDataPoint) {
+	// Copy attributes and exemplars to temporary structures so they are not copied to b.
+	tmpAttrs := pcommon.NewMap()
+	tmpExemplars := pmetric.NewExemplarSlice()
+	a.Attributes().MoveTo(tmpAttrs)
+	a.Exemplars().MoveAndAppendTo(tmpExemplars)
+	a.CopyTo(b)
+	// Restore attributes and exemplars.
+	tmpAttrs.MoveTo(a.Attributes())
+	tmpExemplars.MoveAndAppendTo(a.Exemplars())
+}
+
+// minimalSumCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
+func minimalSumCopyTo(a, b pmetric.NumberDataPoint) {
+	// Copy attributes and exemplars to temporary structures so they are not copied to b.
+	tmpAttrs := pcommon.NewMap()
+	tmpExemplars := pmetric.NewExemplarSlice()
+	a.Attributes().MoveTo(tmpAttrs)
+	a.Exemplars().MoveAndAppendTo(tmpExemplars)
+	a.CopyTo(b)
+	// Restore attributes and exemplars.
+	tmpAttrs.MoveTo(a.Attributes())
+	tmpExemplars.MoveAndAppendTo(a.Exemplars())
+}
+
+// minimalSummaryCopyTo is equivalent to a.CopyTo(b) without copying attributes or exemplars
+func minimalSummaryCopyTo(a, b pmetric.SummaryDataPoint) {
+	// Copy attributes to a temporary map so they are not copied to b.
+	tmpAttrs := pcommon.NewMap()
+	a.Attributes().MoveTo(tmpAttrs)
+	a.CopyTo(b)
+	// Restore attributes.
+	tmpAttrs.MoveTo(a.Attributes())
 }
