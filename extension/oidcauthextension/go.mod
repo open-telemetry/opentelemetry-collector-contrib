@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.34.1-0.20250628171447-c6cd1aeb58b7
 	go.opentelemetry.io/collector/extension/extensiontest v0.128.1-0.20250628171447-c6cd1aeb58b7
 	go.uber.org/goleak v1.3.0
+	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
 
@@ -43,7 +44,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect

@@ -22,10 +22,11 @@ This extension implements a `configauth.ServerAuthenticator`, to be used in rece
 ```yaml
 extensions:
   oidc:
-    issuer_url: http://localhost:8080/auth/realms/opentelemetry
-    issuer_ca_path: /etc/pki/tls/cert.pem
-    audience: account
-    username_claim: email
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        issuer_ca_path: /etc/pki/tls/cert.pem
+        audience: account
+        username_claim: email
 
 receivers:
   otlp:
@@ -48,3 +49,19 @@ service:
       processors: []
       exporters: [debug]
 ```
+
+## Provider Matching
+
+Although multiple OIDC providers can be configured, incoming tokens will only be verified against a single provider. This is done by decoding the token, extracting the `iss` claim, and checking the configured providers for one with a matching `issuer_url` field.
+
+## Configuration Structure Change
+
+Earlier versions of this extension only allowed configuring a single provider:
+```yaml
+extensions:
+  oidc:
+    issuer_url: http://localhost:8080/auth/realms/opentelemetry
+    issuer_ca_path: /etc/pki/tls/cert.pem
+```
+
+Although this configuration is still accepted by the extension, it is deprecated and support for it will be dropped in the future.
