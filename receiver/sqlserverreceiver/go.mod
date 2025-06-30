@@ -7,11 +7,11 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/microsoft/go-mssqldb v1.9.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.128.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.128.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.129.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.0
 	go.opentelemetry.io/collector/component/componenttest v0.129.0
@@ -66,7 +66,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.128.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.129.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
