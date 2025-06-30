@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"iter"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -199,7 +200,10 @@ func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) s
 func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
 	return func(yield func([]byte, ptrace.Traces) bool) {
 		if !e.config.PartitionTracesByID {
-			yield(nil, td)
+			// If partitioning by trace ID is disabled, we use a random key.
+			// This is useful for load balancing across partitions.
+			key := []byte(uuid.New().String())
+			yield(key, td)
 			return
 		}
 		for _, td := range batchpersignal.SplitTraces(td) {
