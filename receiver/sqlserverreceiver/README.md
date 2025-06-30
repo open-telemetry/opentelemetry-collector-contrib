@@ -80,12 +80,9 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
-- `enabled`: (optional, default = `false`): Enable collection of top queries.
-  - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
-- `enabled`: (optional, default = `false`): Enable collection of sample queries.
 Example:
 
 ```yaml
@@ -128,12 +125,10 @@ Top query collection enabled:
         server: 0.0.0.0
         port: 1433
         top_query_collection:
-          enabled: true
           lookback_time: 60
           max_query_sample_count: 1000
           top_query_count: 200
         query_sample_collection:
-          enabled: true
           max_rows_per_query: 1450
 ```
 
