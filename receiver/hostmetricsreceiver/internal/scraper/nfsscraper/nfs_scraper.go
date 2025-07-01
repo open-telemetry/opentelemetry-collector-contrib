@@ -5,8 +5,6 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -77,88 +75,87 @@ func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp, nfsStats *NfsStats) {
 	if nfsStats.NfsNetStats != nil {
-		s.mb.RecordSystemNfsNetCountDataPoint(now, int64(nfsStats.NfsNetStats.NetCount))
-		s.mb.RecordSystemNfsNetUDPCountDataPoint(now, int64(nfsStats.NfsNetStats.UDPCount))
-		s.mb.RecordSystemNfsNetTCPCountDataPoint(now, int64(nfsStats.NfsNetStats.TCPCount))
-		s.mb.RecordSystemNfsNetTCPConnectionCountDataPoint(now, int64(nfsStats.NfsNetStats.TCPConnectionCount))
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(nfsStats.NfsNetStats.NetCount))
+		s.mb.RecordNfsClientNetUDPCountDataPoint(now, int64(nfsStats.NfsNetStats.UDPCount))
+		s.mb.RecordNfsClientNetTCPCountDataPoint(now, int64(nfsStats.NfsNetStats.TCPCount))
+		s.mb.RecordNfsClientNetTCPConnectionCountDataPoint(now, int64(nfsStats.NfsNetStats.TCPConnectionCount))
 	}
 
 	if nfsStats.NfsRPCStats != nil {
-		s.mb.RecordSystemNfsRPCCountDataPoint(now, int64(nfsStats.NfsRPCStats.RPCCount))
-		s.mb.RecordSystemNfsRPCRetransmitCountDataPoint(now, int64(nfsStats.NfsRPCStats.RetransmitCount))
-		s.mb.RecordSystemNfsRPCAuthrefreshCountDataPoint(now, int64(nfsStats.NfsRPCStats.AuthRefreshCount))
+		s.mb.RecordNfsClientRPCCountDataPoint(now, int64(nfsStats.NfsRPCStats.RPCCount))
+		s.mb.RecordNfsClientRPCRetransmitCountDataPoint(now, int64(nfsStats.NfsRPCStats.RetransmitCount))
+		s.mb.RecordNfsClientRPCAuthrefreshCountDataPoint(now, int64(nfsStats.NfsRPCStats.AuthRefreshCount))
 	}
 
 	if nfsStats.NfsV3ProcedureStats != nil {
 		for _, callStat := range *nfsStats.NfsV3ProcedureStats {
-			s.mb.RecordSystemNfsProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordNfsClientProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if nfsStats.NfsV4ProcedureStats != nil {
 		for _, callStat := range *nfsStats.NfsV4ProcedureStats {
-			s.mb.RecordSystemNfsProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordNfsClientProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if nfsStats.NfsV4OperationStats != nil {
 		for _, callStat := range *nfsStats.NfsV4OperationStats {
-			s.mb.RecordSystemNfsOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordNfsClientOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 }
 
 func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp, nfsdStats *NfsdStats) {
 	if nfsdStats.NfsdRepcacheStats != nil {
-		s.mb.RecordSystemNfsdRepcacheHitsDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Hits))
-		s.mb.RecordSystemNfsdRepcacheMissesDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Misses))
-		s.mb.RecordSystemNfsdRepcacheNocacheDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Nocache))
-		fmt.Fprintf(os.Stderr, "nfsdrepcachestats is %v\n", nfsdStats.NfsdRepcacheStats)		
+		s.mb.RecordNfsServerRepcacheHitsDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Hits))
+		s.mb.RecordNfsServerRepcacheMissesDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Misses))
+		s.mb.RecordNfsServerRepcacheNocacheDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Nocache))
 	}
 
 	if nfsdStats.NfsdFhStats != nil {
-		s.mb.RecordSystemNfsdFhStaleCountDataPoint(now, int64(nfsdStats.NfsdFhStats.Stale))
+		s.mb.RecordNfsServerFhStaleCountDataPoint(now, int64(nfsdStats.NfsdFhStats.Stale))
 	}
 
 	if nfsdStats.NfsdIoStats != nil {
-		s.mb.RecordSystemNfsdIoReadCountDataPoint(now, int64(nfsdStats.NfsdIoStats.Read))
-		s.mb.RecordSystemNfsdIoWriteCountDataPoint(now, int64(nfsdStats.NfsdIoStats.Write))
+		s.mb.RecordNfsServerIoReadCountDataPoint(now, int64(nfsdStats.NfsdIoStats.Read))
+		s.mb.RecordNfsServerIoWriteCountDataPoint(now, int64(nfsdStats.NfsdIoStats.Write))
 	}
 
 	if nfsdStats.NfsdThreadStats != nil {
-		s.mb.RecordSystemNfsdThreadCountDataPoint(now, int64(nfsdStats.NfsdThreadStats.Threads))
+		s.mb.RecordNfsServerThreadCountDataPoint(now, int64(nfsdStats.NfsdThreadStats.Threads))
 	}
 
 	if nfsdStats.NfsdNetStats != nil {
-		s.mb.RecordSystemNfsdNetCountDataPoint(now, int64(nfsdStats.NfsdNetStats.NetCount))
-		s.mb.RecordSystemNfsdNetUDPCountDataPoint(now, int64(nfsdStats.NfsdNetStats.UDPCount))
-		s.mb.RecordSystemNfsdNetTCPCountDataPoint(now, int64(nfsdStats.NfsdNetStats.TCPCount))
-		s.mb.RecordSystemNfsdNetTCPConnectionCountDataPoint(now, int64(nfsdStats.NfsdNetStats.TCPConnectionCount))
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(nfsdStats.NfsdNetStats.NetCount))
+		s.mb.RecordNfsServerNetUDPCountDataPoint(now, int64(nfsdStats.NfsdNetStats.UDPCount))
+		s.mb.RecordNfsServerNetTCPCountDataPoint(now, int64(nfsdStats.NfsdNetStats.TCPCount))
+		s.mb.RecordNfsServerNetTCPConnectionCountDataPoint(now, int64(nfsdStats.NfsdNetStats.TCPConnectionCount))
 	}
 
 	if nfsdStats.NfsdRPCStats != nil {
-		s.mb.RecordSystemNfsdRPCCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.RPCCount))
-		s.mb.RecordSystemNfsdRPCBadCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadCount))
-		s.mb.RecordSystemNfsdRPCBadfmtCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadFmtCount))
-		s.mb.RecordSystemNfsdRPCBadauthCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadAuthCount))
-		s.mb.RecordSystemNfsdRPCBadclientCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadClientCount))
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.RPCCount))
+		s.mb.RecordNfsServerRPCBadCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadCount))
+		s.mb.RecordNfsServerRPCBadfmtCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadFmtCount))
+		s.mb.RecordNfsServerRPCBadauthCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadAuthCount))
+		s.mb.RecordNfsServerRPCBadclientCountDataPoint(now, int64(nfsdStats.NfsdRPCStats.BadClientCount))
 	}
 
 	if nfsdStats.NfsdV3ProcedureStats != nil {
 		for _, callStat := range *nfsdStats.NfsdV3ProcedureStats {
-			s.mb.RecordSystemNfsdProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordNfsServerProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if nfsdStats.NfsdV4ProcedureStats != nil {
 		for _, callStat := range *nfsdStats.NfsdV4ProcedureStats {
-			s.mb.RecordSystemNfsdProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordNfsServerProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if nfsdStats.NfsdV4OperationStats != nil {
 		for _, callStat := range *nfsdStats.NfsdV4OperationStats {
-			s.mb.RecordSystemNfsdOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
+			s.mb.RecordNfsServerOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 }
