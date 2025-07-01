@@ -6,6 +6,7 @@ package targetallocator // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -13,9 +14,10 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	"strings"
+	"syscall"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -68,8 +70,19 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		return err
 	}
 	m.settings.Logger.Info("Starting target allocator discovery")
+
+	operation := func() (uint64, error) {
+		savedHash, err := m.sync(uint64(0), httpClient)
+		if err != nil {
+			if errors.Is(err, syscall.ECONNREFUSED) {
+				return 0, backoff.RetryAfter(1)
+			}
+			return 0, err
+		}
+		return savedHash, nil
+	}
 	// immediately sync jobs, not waiting for the first tick
-	savedHash, err := m.sync(uint64(0), httpClient)
+	savedHash, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()))
 	if err != nil {
 		return err
 	}
@@ -213,44 +226,9 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 		return nil, err
 	}
 
-	var resp *http.Response
-	var lastErr error
-
-	// Retry configuration: retry for up to 1 minute with exponential backoff
-	maxRetryDuration := time.Minute
-	initialBackoff := 100 * time.Millisecond
-	maxBackoff := 5 * time.Second
-	backoffMultiplier := 2.0
-
-	startTime := time.Now()
-	backoff := initialBackoff
-
-	for {
-		resp, err = httpClient.Get(scrapeConfigsURL)
-		if err == nil {
-			break // Success, exit retry loop
-		}
-
-		lastErr = err
-
-		// Check if this is a connection error that we should retry
-		if !isRetriableError(err) {
-			return nil, err
-		}
-
-		// Check if we've exceeded the max retry duration
-		if time.Since(startTime) >= maxRetryDuration {
-			return nil, fmt.Errorf("failed to connect to target allocator after %v, last error: %w", maxRetryDuration, lastErr)
-		}
-
-		// Wait before retrying
-		time.Sleep(backoff)
-
-		// Increase backoff for next iteration, with a maximum
-		backoff = time.Duration(float64(backoff) * backoffMultiplier)
-		if backoff > maxBackoff {
-			backoff = maxBackoff
-		}
+	resp, err := httpClient.Get(scrapeConfigsURL)
+	if err != nil {
+		return nil, err
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -269,17 +247,6 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 		return nil, err
 	}
 	return jobToScrapeConfig, nil
-}
-
-// isRetriableError determines if an error is a connection error that should be retried
-func isRetriableError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	// Check for specific connection error strings
-	errStr := err.Error()
-	return strings.Contains(errStr, "connection refused")
 }
 
 // instantiateShard inserts the SHARD environment variable in the returned configuration
