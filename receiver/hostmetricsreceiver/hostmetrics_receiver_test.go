@@ -53,6 +53,7 @@ var allMetrics = []string{
 	"system.network.errors",
 	"system.network.io",
 	"system.network.packets",
+	"system.paging.faults",
 	"system.paging.operations",
 	"system.paging.usage",
 }
@@ -65,11 +66,11 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count", "system.nfs.net.count", "system.nfs.net.udp.count", "system.nfs.net.tcp.count", "system.nfs.net.tcp.connection.count", "system.nfs.rpc.count", "system.nfs.rpc.retransmit.count", "system.nfs.rpc.authrefresh.count", "system.nfs.procedure.count", "system.nfs.operation.count", "system.nfsd.repcache.hits", "system.nfsd.repcache.misses", "system.nfsd.repcache.nocache", "system.nfsd.fh.stale.count", "system.nfsd.io.read.count", "system.nfsd.io.write.count", "system.nfsd.thread.count", "system.nfsd.net.count", "system.nfsd.net.udp.count", "system.nfsd.net.tcp.count", "system.nfsd.net.tcp.connection.count", "system.nfsd.rpc.count", "system.nfsd.rpc.bad.count", "system.nfsd.rpc.badfmt.count", "system.nfsd.rpc.badauth.count", "system.nfsd.rpc.badclient.count", "system.nfsd.procedure.count", "system.nfsd.operation.count"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"solaris": {"system.filesystem.inodes.usage", "system.paging.faults"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.processes.created", "system.processes.count", "nfs.client.net.count", "nfs.client.net.udp.count", "nfs.client.net.tcp.count", "nfs.client.net.tcp.connection.count", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.hits", "nfs.server.repcache.misses", "nfs.server.repcache.nocache", "nfs.server.fh.stale.count", "nfs.server.io.read.count", "nfs.server.io.write.count", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.udp.count", "nfs.server.net.tcp.count", "nfs.server.net.tcp.connection.count", "nfs.server.rpc.count", "nfs.server.rpc.bad.count", "nfs.server.rpc.badfmt.count", "nfs.server.rpc.badauth.count", "nfs.server.rpc.badclient.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.processes.count"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.processes.count"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"solaris": {"system.filesystem.inodes.usage"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
