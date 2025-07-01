@@ -21,7 +21,7 @@ import (
 // preserves the total adjusted count when accounting for both OTEP 235 and tail sampling adjustments
 func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	
+
 	// Single test case - mixed weight traces
 	bm := newBucketManagerWithTimeSource(
 		logger,
@@ -62,7 +62,7 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 	assert.Greater(t, len(sampledTraces), 0, "Should sample some traces")
 	assert.LessOrEqual(t, len(sampledTraces), 100, "Should not exceed capacity")
 	assert.Greater(t, actualTotal, 0.0, "Should have positive total weight")
-	
+
 	t.Logf("Expected total: %.2f, Actual total: %.2f, Sampled: %d/%d",
 		expectedTotal, actualTotal, len(sampledTraces), 1000)
 }
@@ -70,7 +70,7 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 // TestVaroptBasicFunctionality tests basic Varopt integration
 func TestVaroptBasicFunctionality(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	
+
 	bm := newBucketManagerWithTimeSource(
 		logger,
 		1, // single bucket
