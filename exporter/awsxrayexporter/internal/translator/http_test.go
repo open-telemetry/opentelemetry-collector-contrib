@@ -79,7 +79,8 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes[string(conventions.HTTPRequestMethodKey)] = "GET"
 	attributes[string(conventions.URLSchemeKey)] = "https"
 	attributes[string(conventionsv112.HTTPHostKey)] = "api.example.com"
-	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.URLPathKey)] = "/users/junit"
+	attributes[string(conventions.URLQueryKey)] = "v=1"
 	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
@@ -92,7 +93,7 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit?v=1")
 }
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
@@ -128,7 +129,7 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes[string(conventionsv112.NetPeerNameKey)] = "kb234.example.com"
 	attributes[string(conventionsv112.NetPeerPortKey)] = 8080
 	attributes[string(conventionsv112.NetPeerIPKey)] = "10.8.17.36"
-	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.URLQueryKey)] = "users=junit"
 	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPClientSpan(attributes)
 
@@ -143,7 +144,7 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/users/junit")
+	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/?users=junit")
 }
 
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
@@ -279,7 +280,7 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
 	attributes[string(conventions.URLSchemeKey)] = "https"
 	attributes[string(conventions.ServerAddressKey)] = "api.example.com"
-	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.URLPathKey)] = "/users/junit"
 	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
 	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
@@ -293,6 +294,28 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
+}
+
+func TestServerSpanWithNewConventionsWithURLPath(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[string(conventions.HTTPRequestMethodKey)] = http.MethodGet
+	attributes[string(conventions.ServerAddressKey)] = "localhost"
+	attributes[string(conventions.URLSchemeKey)] = "http"
+	attributes[string(conventions.URLQueryKey)] = "?version=test"
+	attributes[string(conventions.URLPathKey)] = "/api"
+	attributes[string(conventions.ClientAddressKey)] = "127.0.0.1"
+	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
+	span := constructHTTPServerSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.Contains(t, jsonStr, "http://localhost/api?version=test")
 }
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
@@ -323,7 +346,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) 
 	attributes[string(conventions.URLSchemeKey)] = "https"
 	attributes[string(conventions.ServerAddressKey)] = "api.example.com"
 	attributes[string(conventions.ServerPortKey)] = 443
-	attributes[string(conventions.URLQueryKey)] = "/users/junit"
+	attributes[string(conventions.URLQueryKey)] = "users=junit"
 	attributes[string(conventions.ClientAddressKey)] = "192.168.15.32"
 	attributes[string(conventions.HTTPResponseStatusCodeKey)] = 200
 	span := constructHTTPServerSpan(attributes)
@@ -336,7 +359,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) 
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
+	assert.Contains(t, jsonStr, "https://api.example.com/?users=junit")
 }
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
