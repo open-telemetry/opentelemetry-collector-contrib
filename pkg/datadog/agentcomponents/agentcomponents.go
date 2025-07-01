@@ -10,6 +10,7 @@ import (
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	logsconfig "github.com/DataDog/datadog-agent/comp/logs/agent/config"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
@@ -124,6 +125,7 @@ func WithForwarderConfig() ConfigOption {
 		pkgconfig.Set("forwarder_backoff_max", 64, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("forwarder_recovery_interval", 2, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("forwarder_http_protocol", "auto", pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("forwarder_max_concurrent_requests", 1, pkgconfigmodel.SourceDefault)
 	}
 }
 
@@ -150,6 +152,7 @@ func WithLogsDefaults() ConfigOption {
 		pkgconfig.Set("logs_config.auditor_ttl", pkgconfigsetup.DefaultAuditorTTL, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.batch_max_content_size", pkgconfigsetup.DefaultBatchMaxContentSize, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.batch_max_size", pkgconfigsetup.DefaultBatchMaxSize, pkgconfigmodel.SourceDefault)
+		pkgconfig.Set("logs_config.compression_kind", logsconfig.GzipCompressionKind, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.force_use_http", true, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.input_chan_size", pkgconfigsetup.DefaultInputChanSize, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("logs_config.max_message_size_bytes", pkgconfigsetup.DefaultMaxMessageSizeBytes, pkgconfigmodel.SourceDefault)
@@ -183,10 +186,10 @@ func WithPayloadsConfig() ConfigOption {
 	}
 }
 
-// WithProxyFromEnv configures proxy settings from environment variables
-func WithProxyFromEnv() ConfigOption {
+// WithProxy configures proxy settings from config or environment variables
+func WithProxy(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		setProxyFromEnv(pkgconfig)
+		setProxy(cfg, pkgconfig)
 	}
 }
 
@@ -197,10 +200,20 @@ func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) Confi
 	}
 }
 
-func setProxyFromEnv(config pkgconfigmodel.Config) {
+func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	proxyConfig := httpproxy.FromEnvironment()
-	config.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceEnvVar)
-	config.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceEnvVar)
+	if proxyConfig.HTTPProxy != "" {
+		pkgconfig.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceDefault)
+	}
+	if proxyConfig.HTTPSProxy != "" {
+		pkgconfig.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceDefault)
+	}
+
+	// proxy_url takes precedence over proxy environment variables if set
+	if cfg.ProxyURL != "" {
+		pkgconfig.Set("proxy.http", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("proxy.https", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+	}
 
 	// If this is set to an empty []string, viper will have a type conflict when merging
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
@@ -209,7 +222,7 @@ func setProxyFromEnv(config pkgconfigmodel.Config) {
 	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
-	config.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend
@@ -217,7 +230,7 @@ func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) forw
 	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
 		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
 	}
-	forwarderOptions := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
+	forwarderOptions, _ := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
 	forwarderOptions.DisableAPIKeyChecking = true
 	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
 }

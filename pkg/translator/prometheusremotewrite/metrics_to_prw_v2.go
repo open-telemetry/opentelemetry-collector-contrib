@@ -101,11 +101,19 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m)
 					}
 				case pmetric.MetricTypeHistogram:
-					// TODO implement
+					dataPoints := metric.Histogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)
 				case pmetric.MetricTypeExponentialHistogram:
 					// TODO implement
 				case pmetric.MetricTypeSummary:
-					// TODO implement
+					dataPoints := metric.Summary().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					c.addSummaryDataPoints(dataPoints, resource, settings, promName, m)
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
