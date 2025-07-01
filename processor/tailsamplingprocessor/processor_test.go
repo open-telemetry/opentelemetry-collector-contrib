@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -146,7 +147,7 @@ func TestTraceIntegrity(t *testing.T) {
 		require.NoError(t, p.Shutdown(context.Background()))
 	}()
 
-	mpe1.NextDecision = sampling.Sampled
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), traces))

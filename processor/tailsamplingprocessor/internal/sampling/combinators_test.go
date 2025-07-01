@@ -37,55 +37,55 @@ func TestThresholdOrCombinator(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	trace := &TraceData{}
 
-	t.Run("empty policies returns NotSampled", func(t *testing.T) {
-		combinator := NewThresholdOrCombinator([]PolicyEvaluator{})
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, NotSampled.Threshold, decision.Threshold)
-	})
+	   t.Run("empty policies returns NotSampled", func(t *testing.T) {
+			   combinator := NewThresholdOrCombinator([]PolicyEvaluator{})
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("single Sampled policy", func(t *testing.T) {
-		policies := []PolicyEvaluator{
-			newMockPolicy(Sampled),
-		}
-		combinator := NewThresholdOrCombinator(policies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+	   t.Run("single Sampled policy", func(t *testing.T) {
+			   policies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),
+			   }
+			   combinator := NewThresholdOrCombinator(policies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("single NotSampled policy", func(t *testing.T) {
-		policies := []PolicyEvaluator{
-			newMockPolicy(NotSampled),
-		}
-		combinator := NewThresholdOrCombinator(policies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
-	})
+	   t.Run("single NotSampled policy", func(t *testing.T) {
+			   policies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)),
+			   }
+			   combinator := NewThresholdOrCombinator(policies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("OR logic - minimum threshold wins", func(t *testing.T) {
-		// Create policies with different thresholds
-		// AlwaysSample (0) should win over NeverSample (2^56)
-		policies := []PolicyEvaluator{
-			newMockPolicy(NotSampled), // NeverSample threshold
-			newMockPolicy(Sampled),    // AlwaysSample threshold
-		}
-		combinator := NewThresholdOrCombinator(policies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+	   t.Run("OR logic - minimum threshold wins", func(t *testing.T) {
+			   // Create policies with different thresholds
+			   // AlwaysSample (0) should win over NeverSample (2^56)
+			   policies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // NeverSample threshold
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),    // AlwaysSample threshold
+			   }
+			   combinator := NewThresholdOrCombinator(policies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 
 	t.Run("handles errors", func(t *testing.T) {
 		policies := []PolicyEvaluator{
 			newMockPolicyWithError(assert.AnError),
-			newMockPolicy(Sampled),
+			newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),
 		}
 		combinator := NewThresholdOrCombinator(policies)
 		decision, err := combinator.Evaluate(ctx, traceID, trace)
 		require.NoError(t, err)
-		assert.True(t, decision.IsError())
+		assert.NotNil(t, decision.Error)
 	})
 }
 
@@ -94,74 +94,74 @@ func TestInvertAwareOrCombinator(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	trace := &TraceData{}
 
-	t.Run("precedence: explicit NotSampled overrides inverted", func(t *testing.T) {
-		normalPolicies := []PolicyEvaluator{
-			newMockPolicy(NotSampled), // Explicit NotSampled
-		}
-		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(NewInvertedDecision(sampling.NeverSampleThreshold)), // Inverted sampling intent
-		}
+	   t.Run("precedence: explicit NotSampled overrides inverted", func(t *testing.T) {
+			   normalPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // Explicit NotSampled
+			   }
+			   invertedPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // Inverted sampling intent replaced with threshold
+			   }
 
-		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
+			   combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
 
-		// Should ignore inverted policies and return NotSampled
-		assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
-	})
+			   // Should ignore inverted policies and return NotSampled
+			   assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("no explicit NotSampled - combines all decisions", func(t *testing.T) {
-		normalPolicies := []PolicyEvaluator{
-			newMockPolicy(Sampled), // Regular Sampled
-		}
-		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(NewInvertedDecision(sampling.NeverSampleThreshold)), // Inverted sampling
-		}
+	   t.Run("no explicit NotSampled - combines all decisions", func(t *testing.T) {
+			   normalPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)), // Regular Sampled
+			   }
+			   invertedPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // Inverted sampling replaced with threshold
+			   }
 
-		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
+			   combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
 
-		// Should combine both with OR logic - minimum threshold wins
-		// AlwaysSample (0) wins over weak threshold (1)
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+			   // Should combine both with OR logic - minimum threshold wins
+			   // AlwaysSample (0) wins over weak threshold (1)
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("only inverted policies", func(t *testing.T) {
-		normalPolicies := []PolicyEvaluator{}
-		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(NewInvertedDecision(sampling.NeverSampleThreshold)),
-		}
+	   t.Run("only inverted policies", func(t *testing.T) {
+			   normalPolicies := []PolicyEvaluator{}
+			   invertedPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)),
+			   }
 
-		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
+			   combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
 
-		// Should use the inverted policy's threshold (NewInvertedDecision(NeverSample) = inverted NeverSample = AlwaysSample)
-		assert.Equal(t, sampling.AlwaysSampleThreshold.Unsigned(), decision.Threshold.Unsigned())
-	})
+			   // Should use the inverted policy's threshold (NewInvertedDecision(NeverSample) = inverted NeverSample = AlwaysSample)
+			   assert.Equal(t, sampling.AlwaysSampleThreshold.Unsigned(), decision.Threshold.Unsigned())
+	   })
 
-	t.Run("mixed scenario demonstrating precedence", func(t *testing.T) {
-		// Scenario: Normal policy matches service=web, inverted policy matches error=true
-		// Normal result: Sampled (service=web matched)
-		// Inverted result: InvertNotSampled (error=true matched, then inverted to NotSampled)
-		// Expected: Precedence rule should make final decision NotSampled
+	   t.Run("mixed scenario demonstrating precedence", func(t *testing.T) {
+			   // Scenario: Normal policy matches service=web, inverted policy matches error=true
+			   // Normal result: Sampled (service=web matched)
+			   // Inverted result: InvertNotSampled (error=true matched, then inverted to NotSampled)
+			   // Expected: Precedence rule should make final decision NotSampled
 
-		normalPolicies := []PolicyEvaluator{
-			newMockPolicy(Sampled), // Matches service=web
-		}
-		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(InvertNotSampled), // Matches error=true, inverted to NotSampled
-		}
+			   normalPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)), // Matches service=web
+			   }
+			   invertedPolicies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // Matches error=true, inverted to NotSampled
+			   }
 
-		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
+			   combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
 
-		// InvertNotSampled should be treated as explicit NotSampled for precedence
-		// So inverted decisions are ignored, leaving only Sampled
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+			   // InvertNotSampled should be treated as explicit NotSampled for precedence
+			   // So inverted decisions are ignored, leaving only Sampled
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 }
 
 func TestThresholdAndCombinator(t *testing.T) {
@@ -169,36 +169,36 @@ func TestThresholdAndCombinator(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	trace := &TraceData{}
 
-	t.Run("empty policies returns Sampled", func(t *testing.T) {
-		combinator := NewThresholdAndCombinator([]PolicyEvaluator{})
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+	   t.Run("empty policies returns Sampled", func(t *testing.T) {
+			   combinator := NewThresholdAndCombinator([]PolicyEvaluator{})
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("AND logic - maximum threshold wins", func(t *testing.T) {
-		// Create policies with different thresholds
-		// NeverSample (2^56) should win over AlwaysSample (0) in AND
-		policies := []PolicyEvaluator{
-			newMockPolicy(Sampled),    // AlwaysSample threshold
-			newMockPolicy(NotSampled), // NeverSample threshold
-		}
-		combinator := NewThresholdAndCombinator(policies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
-	})
+	   t.Run("AND logic - maximum threshold wins", func(t *testing.T) {
+			   // Create policies with different thresholds
+			   // NeverSample (2^56) should win over AlwaysSample (0) in AND
+			   policies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),    // AlwaysSample threshold
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // NeverSample threshold
+			   }
+			   combinator := NewThresholdAndCombinator(policies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.NeverSampleThreshold, decision.Threshold)
+	   })
 
-	t.Run("all Sampled returns Sampled", func(t *testing.T) {
-		policies := []PolicyEvaluator{
-			newMockPolicy(Sampled),
-			newMockPolicy(Sampled),
-		}
-		combinator := NewThresholdAndCombinator(policies)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+	   t.Run("all Sampled returns Sampled", func(t *testing.T) {
+			   policies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),
+			   }
+			   combinator := NewThresholdAndCombinator(policies)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 }
 
 func TestRateLimitedOrCombinator(t *testing.T) {
@@ -206,18 +206,18 @@ func TestRateLimitedOrCombinator(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	trace := &TraceData{}
 
-	t.Run("basic OR logic works", func(t *testing.T) {
-		policies := []PolicyEvaluator{
-			newMockPolicy(Sampled),
-			newMockPolicy(NotSampled),
-		}
-		combinator := NewRateLimitedOrCombinator(policies, 100)
-		decision, err := combinator.Evaluate(ctx, traceID, trace)
-		require.NoError(t, err)
+	   t.Run("basic OR logic works", func(t *testing.T) {
+			   policies := []PolicyEvaluator{
+					   newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)),
+					   newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)),
+			   }
+			   combinator := NewRateLimitedOrCombinator(policies, 100)
+			   decision, err := combinator.Evaluate(ctx, traceID, trace)
+			   require.NoError(t, err)
 
-		// Should use OR logic - minimum threshold wins
-		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
-	})
+			   // Should use OR logic - minimum threshold wins
+			   assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	   })
 
 	// TODO: Add proper rate limiting tests when rate limiting logic is implemented
 }
@@ -226,8 +226,8 @@ func TestCombinationHelpers(t *testing.T) {
 	t.Run("combineWithOrLogic", func(t *testing.T) {
 		// Test minimum threshold selection
 		decisions := []Decision{
-			NotSampled, // NeverSample threshold (2^56)
-			Sampled,    // AlwaysSample threshold (0)
+			NewDecisionWithThreshold(sampling.NeverSampleThreshold), // NeverSample threshold (2^56)
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),    // AlwaysSample threshold (0)
 		}
 		result := combineWithOrLogic(decisions)
 		assert.Equal(t, sampling.AlwaysSampleThreshold, result.Threshold)
@@ -236,8 +236,8 @@ func TestCombinationHelpers(t *testing.T) {
 	t.Run("combineWithAndLogic", func(t *testing.T) {
 		// Test maximum threshold selection
 		decisions := []Decision{
-			Sampled,    // AlwaysSample threshold (0)
-			NotSampled, // NeverSample threshold (2^56)
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),    // AlwaysSample threshold (0)
+			NewDecisionWithThreshold(sampling.NeverSampleThreshold), // NeverSample threshold (2^56)
 		}
 		result := combineWithAndLogic(decisions)
 		assert.Equal(t, sampling.NeverSampleThreshold, result.Threshold)
@@ -245,11 +245,11 @@ func TestCombinationHelpers(t *testing.T) {
 
 	t.Run("hasNotSampledDecision", func(t *testing.T) {
 		// Test with NotSampled present
-		decisions := []Decision{Sampled, NotSampled}
+		decisions := []Decision{NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), NewDecisionWithThreshold(sampling.NeverSampleThreshold)}
 		assert.True(t, hasNotSampledDecision(decisions))
 
 		// Test without NotSampled
-		decisions = []Decision{Sampled, NewInvertedDecision(sampling.NeverSampleThreshold)}
+		decisions = []Decision{NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)}
 		assert.False(t, hasNotSampledDecision(decisions))
 	})
 
@@ -257,19 +257,19 @@ func TestCombinationHelpers(t *testing.T) {
 		errorDecision := NewDecisionWithError(assert.AnError)
 		decisions := []Decision{
 			errorDecision,
-			Sampled,
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		}
 		result := combineWithOrLogic(decisions)
-		assert.True(t, result.IsError())
+		assert.NotNil(t, result.Error)
 	})
 
 	t.Run("dropped handling in OR logic", func(t *testing.T) {
 		decisions := []Decision{
-			Dropped,
-			Sampled,
+			NewDecisionWithThreshold(sampling.NeverSampleThreshold),
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		}
 		result := combineWithOrLogic(decisions)
-		assert.True(t, result.IsDropped())
+		assert.Equal(t, sampling.AlwaysSampleThreshold, result.Threshold)
 	})
 }
 
@@ -281,22 +281,20 @@ func TestCombinatorsWithMathematicalInversion(t *testing.T) {
 	t.Run("InvertAwareOrCombinator with mathematical inversion", func(t *testing.T) {
 		// Test scenario from threshold-compilation-analysis.md
 		// Policy 1: matches service=web → AlwaysSample (0)
-		// Policy 2: inverted, matches error=true → InvertNotSampled (mathematically inverted)
+		// Policy 2: inverted, matches error=true → inverted decision
 
 		normalPolicies := []PolicyEvaluator{
-			newMockPolicy(Sampled), // service=web matched
+			newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)), // service=web matched
 		}
 		invertedPolicies := []PolicyEvaluator{
-			newMockPolicy(InvertNotSampled), // error=true matched, then mathematically inverted
+			newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)), // error=true matched, will be inverted
 		}
 
 		combinator := NewInvertAwareOrCombinator(normalPolicies, invertedPolicies)
 		decision, err := combinator.Evaluate(ctx, traceID, trace)
 		require.NoError(t, err)
 
-		// With precedence logic: should ignore inverted decisions if normal has NotSampled
-		// But in this case, we have Sampled + InvertNotSampled
-		// InvertNotSampled is treated as NotSampled for precedence, so inverted ignored
+		// With precedence logic: should use minimum threshold from available decisions
 		assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
 	})
 
@@ -305,8 +303,8 @@ func TestCombinatorsWithMathematicalInversion(t *testing.T) {
 		// Should use minimum threshold: min(0, 2^56) = 0 → Sampled
 
 		policies := []PolicyEvaluator{
-			newMockPolicy(Sampled),          // AlwaysSample (0)
-			newMockPolicy(InvertNotSampled), // NeverSample (2^56)
+			newMockPolicy(NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)), // AlwaysSample (0)
+			newMockPolicy(NewDecisionWithThreshold(sampling.NeverSampleThreshold)),  // NeverSample (2^56)
 		}
 
 		combinator := NewThresholdOrCombinator(policies)

@@ -202,6 +202,6 @@ func createTestTraceData(traceState string) *TraceData {
 		DecisionTime:    time.Time{},
 		SpanCount:       spanCount,
 		ReceivedBatches: traces,
-		FinalDecision:   Pending,
+		FinalDecision:   NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 	}
 }

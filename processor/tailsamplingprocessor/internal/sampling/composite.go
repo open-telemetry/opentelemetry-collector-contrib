@@ -101,41 +101,41 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 		}
 	}
 
-	for _, sub := range c.subpolicies {
-		decision, err := sub.evaluator.Evaluate(ctx, traceID, trace)
-		if err != nil {
-			return Unspecified, err
-		}
+	   for _, sub := range c.subpolicies {
+			   decision, err := sub.evaluator.Evaluate(ctx, traceID, trace)
+			   if err != nil {
+					   return NewDecisionWithError(err), err
+			   }
 
-		if decision.IsSampled() {
-			// The subpolicy made a decision to Sample. Now we need to make our decision.
+			   if decision.Threshold == sampling.AlwaysSampleThreshold {
+					   // The subpolicy made a decision to Sample. Now we need to make our decision.
 
-			// Calculate resulting SPS counter if we decide to sample this trace
-			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount.Load()
+					   // Calculate resulting SPS counter if we decide to sample this trace
+					   spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount.Load()
 
-			// Check if the rate will be within the allocated bandwidth.
-			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
-				sub.sampledSPS = spansInSecondIfSampled
+					   // Check if the rate will be within the allocated bandwidth.
+					   if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
+							   sub.sampledSPS = spansInSecondIfSampled
 
-				// Update trace threshold for OTEP 235 consistency when sampling
-				c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
+							   // Update trace threshold for OTEP 235 consistency when sampling
+							   c.updateTraceThreshold(trace, sampling.AlwaysSampleThreshold)
 
-				// Let the sampling happen with deferred attribute insertion
-				if c.recordSubPolicy {
-					return NewSampledDecisionWithCompositePolicy(sub.name), nil
-				}
-				return Sampled, nil
-			}
+							   // Let the sampling happen with deferred attribute insertion
+							   if c.recordSubPolicy {
+									   return NewSampledDecisionWithCompositePolicy(sub.name), nil
+							   }
+							   return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
+					   }
 
-			// We exceeded the rate limit. Don't sample this trace.
-			// Note that we will continue evaluating new incoming traces against
-			// allocated SPS, we do not update sub.sampledSPS here in order to give
-			// chance to another smaller trace to be accepted later.
-			return NotSampled, nil
-		}
-	}
+					   // We exceeded the rate limit. Don't sample this trace.
+					   // Note that we will continue evaluating new incoming traces against
+					   // allocated SPS, we do not update sub.sampledSPS here in order to give
+					   // chance to another smaller trace to be accepted later.
+					   return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
+			   }
+	   }
 
-	return NotSampled, nil
+	   return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 }
 
 // updateTraceThreshold updates the trace's final threshold according to OTEP 250 AnyOf logic.

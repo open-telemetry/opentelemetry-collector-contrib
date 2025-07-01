@@ -211,8 +211,8 @@ func TestAndEvaluatorDeferredAttributes(t *testing.T) {
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 
 	// Should be sampled (both sub-policies match)
-	assert.Equal(t, Sampled.Threshold, decision.Threshold)
-	assert.Equal(t, Sampled.Attributes, decision.Attributes)
+	assert.Equal(t, sampling.AlwaysSampleThreshold, decision.Threshold)
+	assert.Equal(t, map[string]any{"sampled": true}, decision.Attributes)
 
 	// The key insight: AND policy should have deferred attribute inserters
 	// This is the main change from OTEP-235 - composite policies now use

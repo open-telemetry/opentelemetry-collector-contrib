@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type alwaysSample struct {
@@ -27,5 +29,5 @@ func NewAlwaysSample(settings component.TelemetrySettings) PolicyEvaluator {
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (as *alwaysSample) Evaluate(context.Context, pcommon.TraceID, *TraceData) (Decision, error) {
 	as.logger.Debug("Evaluating spans in always-sample filter")
-	return Sampled, nil
+	return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
 }

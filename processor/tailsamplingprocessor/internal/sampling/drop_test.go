@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestDropEvaluatorNotSampled(t *testing.T) {
@@ -35,7 +37,7 @@ func TestDropEvaluatorNotSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, NotSampled, decision)
+	assert.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
 }
 
 func TestDropEvaluatorSampled(t *testing.T) {
@@ -60,7 +62,7 @@ func TestDropEvaluatorSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, Dropped, decision)
+	assert.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
 }
 
 func TestDropEvaluatorStringInvertMatch(t *testing.T) {
@@ -85,7 +87,7 @@ func TestDropEvaluatorStringInvertMatch(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, Dropped, decision)
+	assert.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
 }
 
 func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
@@ -110,5 +112,5 @@ func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, NotSampled, decision)
+	assert.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
 }

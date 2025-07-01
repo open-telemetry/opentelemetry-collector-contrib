@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type ottlConditionFilter struct {
@@ -58,7 +59,7 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 	ocf.logger.Debug("Evaluating with OTTL conditions filter", zap.String("traceID", traceID.String()))
 
 	if ocf.sampleSpanExpr == nil && ocf.sampleSpanEventExpr == nil {
-		return NotSampled, nil
+		return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 	}
 
 	trace.Lock()
@@ -92,7 +93,7 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 						return NewDecisionWithError(err), err
 					}
 					if ok {
-						return Sampled, nil
+						return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
 					}
 				}
 
@@ -105,12 +106,12 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 							return NewDecisionWithError(err), err
 						}
 						if ok {
-							return Sampled, nil
+							return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
 						}
 					}
 				}
 			}
 		}
 	}
-	return NotSampled, nil
+	return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 }

@@ -63,12 +63,14 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Trac
 	deferredInserter := NewDeferredAttributeInserter(subDecisions, "AND")
 
 	// Return decision with threshold and deferred attributes
-	// For consistency with simple policies, return attributes that match the sampling decision pattern
+	// For consistency with test expectations, provide attributes that reflect sampling decision
 	var attributes map[string]any
 	if maxThreshold == sampling.AlwaysSampleThreshold {
+		// When all sub-policies would sample, return attributes indicating sampling
 		attributes = map[string]any{"sampled": true}
 	} else {
-		attributes = make(map[string]any) // Empty but non-nil for consistency
+		// When at least one sub-policy would not sample, return empty attributes
+		attributes = make(map[string]any)
 	}
 
 	return Decision{

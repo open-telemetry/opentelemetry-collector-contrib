@@ -85,9 +85,14 @@ func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 			}
 			return Decision{Threshold: sampling.AlwaysSampleThreshold}, nil
 		}
-		// OTEP 235 logic: Mathematical inversion
+		// OTEP 235 logic: Invert condition instead of result
 		normalDecision := hasResourceOrSpanWithCondition(batches, resourceCondition, spanCondition)
-		return NewInvertedDecision(normalDecision.Threshold), nil
+		// Invert the decision: if it would sample, don't sample, and vice versa
+		if normalDecision.Threshold == sampling.AlwaysSampleThreshold {
+			return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
+		} else {
+			return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
+		}
 	}
 
 	return hasResourceOrSpanWithCondition(batches, resourceCondition, spanCondition), nil

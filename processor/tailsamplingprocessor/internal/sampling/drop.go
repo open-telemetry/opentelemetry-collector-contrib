@@ -53,11 +53,11 @@ func (c *Drop) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Tra
 		// Early exit: If any policy suggests not sampling (NeverSampleThreshold),
 		// we can immediately return NotSampled
 		if decision.Threshold == sampling.NeverSampleThreshold {
-			return NotSampled, nil
+			return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 		}
 	}
 
 	// All sub-policies agree to sample, so we drop the trace
 	// "Dropped" means we explicitly reject a trace that would otherwise be sampled
-	return Dropped, nil
+	return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 }

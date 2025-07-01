@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestEvaluate_OTTL(t *testing.T) {
@@ -33,7 +34,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			true,
-			NotSampled,
+			NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 		},
 		{
 			"OTTL conditions match specific span attributes 1",
@@ -41,7 +42,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			false,
-			Sampled,
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		},
 		{
 			"OTTL conditions match specific span attributes 2",
@@ -49,7 +50,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
 			false,
-			NotSampled,
+			NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 		},
 		{
 			"OTTL conditions inverse match(!=) span attributes 2",
@@ -57,7 +58,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{},
 			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_2"}}},
 			false,
-			Sampled,
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		},
 		{
 			"OTTL conditions match specific span event attributes",
@@ -65,7 +66,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
 			[]spanWithAttributes{{SpanEventAttributes: map[string]string{"event_attr_k_1": "event_attr_v_1"}}},
 			false,
-			Sampled,
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		},
 		{
 			"OTTL conditions match specific span event name",
@@ -73,7 +74,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{"name != \"incorrect event name\""},
 			[]spanWithAttributes{{SpanEventAttributes: nil}},
 			false,
-			Sampled,
+			NewDecisionWithThreshold(sampling.AlwaysSampleThreshold),
 		},
 		{
 			"OTTL conditions not matched",
@@ -81,7 +82,7 @@ func TestEvaluate_OTTL(t *testing.T) {
 			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
 			[]spanWithAttributes{},
 			false,
-			NotSampled,
+			NewDecisionWithThreshold(sampling.NeverSampleThreshold),
 		},
 	}
 

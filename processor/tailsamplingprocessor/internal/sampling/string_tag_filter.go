@@ -158,8 +158,12 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 				},
 			)
 
-			// Apply mathematical inversion to the threshold
-			return NewInvertedDecision(normalDecision.Threshold), nil
+			// Invert the decision: if it would sample, don't sample, and vice versa
+			if normalDecision.Threshold == sampling.AlwaysSampleThreshold {
+				return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
+			} else {
+				return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
+			}
 		}
 	}
 

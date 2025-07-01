@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type spanCount struct {
@@ -35,10 +37,10 @@ func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *Tr
 	spanCount := int(traceData.SpanCount.Load())
 	switch {
 	case c.maxSpans == 0 && spanCount >= int(c.minSpans):
-		return Sampled, nil
+		return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
 	case spanCount >= int(c.minSpans) && spanCount <= int(c.maxSpans):
-		return Sampled, nil
+		return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil
 	default:
-		return NotSampled, nil
+		return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 	}
 }

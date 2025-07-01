@@ -90,7 +90,7 @@ var (
 
 // decisionToMetricAttribute converts a Decision to a metric attribute for telemetry.
 func decisionToMetricAttribute(decision internalsampling.Decision) metric.MeasurementOption {
-	if decision.IsSampled() {
+	if decision.ShouldSample(sampling.TraceIDToRandomness(pcommon.TraceID{})) {
 		return attrSampledTrue
 	}
 	return attrSampledFalse
@@ -383,7 +383,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.Unlock()
 
 		switch {
-		case decision.IsSampled():
+		case decision.ShouldSample(trace.RandomnessValue):
 			tsp.releaseSampledTrace(ctx, id, allSpans)
 		default:
 			tsp.releaseNotSampledTrace(id)
@@ -408,7 +408,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *internalsampling.TraceData, metrics *policyMetrics) internalsampling.Decision {
-	finalDecision := internalsampling.NotSampled
+	finalDecision := internalsampling.NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 
 	// Track policy decisions without using Decision as map key
 	var errorPolicy *policy
@@ -446,18 +446,18 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 		policyDecisions = append(policyDecisions, decision)
 
 		// Track policies for metrics and debugging (first occurrence only)
-		if decision.IsDropped() && droppedPolicy == nil {
+		if decision.Error != nil && droppedPolicy == nil {
 			droppedPolicy = p
-		} else if decision.IsSampled() && sampledPolicy == nil {
+		} else if decision.ShouldSample(trace.RandomnessValue) && sampledPolicy == nil {
 			sampledPolicy = p
 		}
 
-		// Break early if dropped. This can drastically reduce tick/decision latency.
-		if decision.IsDropped() {
+		// Break early if error. This can drastically reduce tick/decision latency.
+		if decision.Error != nil {
 			break
 		}
 		// If sampleOnFirstMatch is enabled, make decision as soon as a policy produces a sampling decision
-		if tsp.sampleOnFirstMatch && decision.IsSampled() {
+		if tsp.sampleOnFirstMatch && decision.ShouldSample(trace.RandomnessValue) {
 			break
 		}
 	}
@@ -465,58 +465,48 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 	// Decision Logic with precedence
 	switch {
 	case droppedPolicy != nil:
-		// Dropped takes precedence over all other decisions
-		finalDecision = internalsampling.NotSampled
+		// Error takes precedence over all other decisions
+		finalDecision = internalsampling.NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 	default:
 		// For SampleOnFirstMatch, use the last collected decision (which was the matching one)
 		if tsp.sampleOnFirstMatch && len(policyDecisions) > 0 {
 			lastDecision := policyDecisions[len(policyDecisions)-1]
-			if lastDecision.IsSampled() {
-				finalDecision = internalsampling.Sampled
+			if lastDecision.ShouldSample(trace.RandomnessValue) {
+				finalDecision = internalsampling.NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
 				finalThreshold := sampling.AlwaysSampleThreshold
 				trace.FinalThreshold = &finalThreshold
 			} else {
-				finalDecision = internalsampling.NotSampled
+				finalDecision = internalsampling.NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 				finalThreshold := sampling.NeverSampleThreshold
 				trace.FinalThreshold = &finalThreshold
 			}
 		} else {
 			// Standard threshold-based decision logic
-			// Find the minimum (most restrictive) threshold from all policies
+			// Find the minimum (most permissive) threshold from all policies
 			minThreshold := sampling.NeverSampleThreshold
-			hasExplicitNotSampled := false
+			hasErrorDecision := false
 
 			for _, decision := range policyDecisions {
-				if decision.IsDropped() || decision.IsError() {
+				if decision.Error != nil {
+					hasErrorDecision = true
 					continue
 				}
 
-				// Explicit NotSampled decisions override everything
-				if decision.IsNotSampled() {
-					hasExplicitNotSampled = true
-					break
-				}
-
-				// Track minimum threshold for threshold-based policies
+				// Track minimum threshold for threshold-based policies using OR logic
 				if sampling.ThresholdLessThan(decision.Threshold, minThreshold) {
 					minThreshold = decision.Threshold
 				}
 			}
 
 			// Apply simplified decision logic
-			if hasExplicitNotSampled {
-				finalDecision = internalsampling.NotSampled
+			if hasErrorDecision && minThreshold == sampling.NeverSampleThreshold {
+				// If we only have errors and no positive decisions, don't sample
+				finalDecision = internalsampling.NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 				finalThreshold := sampling.NeverSampleThreshold
 				trace.FinalThreshold = &finalThreshold
 			} else {
-				// Use pure threshold logic
-				if minThreshold == sampling.AlwaysSampleThreshold {
-					finalDecision = internalsampling.Sampled
-				} else if minThreshold == sampling.NeverSampleThreshold {
-					finalDecision = internalsampling.NotSampled
-				} else {
-					finalDecision = internalsampling.NewDecisionWithThreshold(minThreshold)
-				}
+				// Use pure threshold logic - the minimum threshold wins (OR semantics)
+				finalDecision = internalsampling.NewDecisionWithThreshold(minThreshold)
 				trace.FinalThreshold = &minThreshold
 			}
 		}
@@ -536,11 +526,11 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *in
 	}
 
 	// Apply deferred attribute inserters from the final decision
-	if finalDecision.IsSampled() {
+	if finalDecision.ShouldSample(trace.RandomnessValue) {
 		finalDecision.ApplyAttributeInserters(trace)
 	}
 
-	if finalDecision.IsSampled() {
+	if finalDecision.ShouldSample(trace.RandomnessValue) {
 		metrics.decisionSampled++
 	} else {
 		metrics.decisionNotSampled++
@@ -657,7 +647,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		actualData.Lock()
 		finalDecision := actualData.FinalDecision
 
-		if finalDecision.IsUnspecified() {
+		if (finalDecision.Threshold == sampling.Threshold{}) && finalDecision.Error == nil {
 			// If the final decision hasn't been made, add the new spans under the lock.
 			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
 			actualData.Unlock()
@@ -666,11 +656,11 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		actualData.Unlock()
 
-		if finalDecision.IsSampled() {
+		if finalDecision.ShouldSample(actualData.RandomnessValue) {
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-		} else if !finalDecision.IsError() {
+		} else if finalDecision.Error == nil {
 			tsp.releaseNotSampledTrace(id)
 		} else {
 			tsp.logger.Warn("Unexpected sampling decision", zap.String("decision", "error"))
@@ -767,7 +757,7 @@ func (tsp *tailSamplingSpanProcessor) processBucketExpiration(metrics *policyMet
 		twd.trace.Unlock()
 
 		switch {
-		case twd.decision.IsSampled():
+		case twd.decision.ShouldSample(twd.trace.RandomnessValue):
 			// Calculate tail sampling adjustment from Varopt weight ratios
 			tailAdjustment := twd.bucketTrace.getTailSamplingAdjustment()
 			tsp.releaseSampledTraceWithTailAdjustment(ctx, twd.bucketTrace.traceID, allSpans, tailAdjustment)
@@ -784,7 +774,7 @@ func (tsp *tailSamplingSpanProcessor) applyRateLimitingVaropt(tracesWithDecision
 
 	for _, twd := range tracesWithDecisions {
 		// Check if this trace was accepted by a rate limiting policy
-		if twd.decision.IsSampled() && twd.decision.Attributes != nil {
+		if twd.decision.ShouldSample(twd.trace.RandomnessValue) && twd.decision.Attributes != nil {
 			if isRateLimit, ok := twd.decision.Attributes["rate_limiting_policy"].(bool); ok && isRateLimit {
 				if spansPerSec, exists := twd.decision.Attributes["spans_per_second"].(int64); exists {
 					if rateLimitGroups[spansPerSec] == nil {
@@ -873,7 +863,7 @@ func (tsp *tailSamplingSpanProcessor) applyVaropRateLimitToGroup(rateLimitedTrac
 			twd.trace.TailSamplingMultiplier = &result.tailSamplingMultiplier
 		} else {
 			// Drop the trace
-			twd.decision = internalsampling.NotSampled
+			twd.decision = internalsampling.NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 			droppedCount++
 		}
 	}

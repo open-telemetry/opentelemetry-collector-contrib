@@ -42,8 +42,12 @@ func invertHasResourceOrSpanWithCondition(
 	// First get the normal (non-inverted) decision
 	normalDecision := hasResourceOrSpanWithCondition(td, shouldSampleResource, shouldSampleSpan)
 
-	// Apply mathematical inversion using OTEP 250 semantics
-	return NewInvertedDecision(normalDecision.Threshold)
+	// Apply simple inversion: if it would sample, don't sample, and vice versa
+	if normalDecision.Threshold == sampling.AlwaysSampleThreshold {
+		return NewDecisionWithThreshold(sampling.NeverSampleThreshold)
+	} else {
+		return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
+	}
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.

@@ -36,7 +36,7 @@ func NewThresholdOrCombinator(policies []PolicyEvaluator) *ThresholdOrCombinator
 // This follows pure OTEP 250 semantics without precedence overrides.
 func (c *ThresholdOrCombinator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	if len(c.policies) == 0 {
-		return NotSampled, nil
+		return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 	}
 
 	var decisions []Decision
@@ -90,13 +90,19 @@ func (c *InvertAwareOrCombinator) Evaluate(ctx context.Context, traceID pcommon.
 		normalDecisions = append(normalDecisions, decision)
 	}
 
-	// Collect decisions from inverted policies
+	// Collect decisions from inverted policies and apply mathematical inversion
 	for _, policy := range c.invertedPolicies {
 		decision, err := policy.Evaluate(ctx, traceID, trace)
 		if err != nil && firstError == nil {
 			firstError = err
 		}
-		invertedDecisions = append(invertedDecisions, decision)
+		// Apply mathematical inversion to the threshold
+		invertedDecision := NewInvertedDecision(decision.Threshold)
+		// Preserve other decision attributes but with inverted threshold
+		invertedDecision.Attributes = decision.Attributes
+		invertedDecision.Error = decision.Error
+		invertedDecision.AttributeInserters = decision.AttributeInserters
+		invertedDecisions = append(invertedDecisions, invertedDecision)
 	}
 
 	if firstError != nil {
@@ -131,7 +137,7 @@ func NewThresholdAndCombinator(policies []PolicyEvaluator) *ThresholdAndCombinat
 // Evaluate implements AND logic by taking the maximum threshold (most restrictive).
 func (c *ThresholdAndCombinator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	if len(c.policies) == 0 {
-		return Sampled, nil // Empty AND is true
+		return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), nil // Empty AND is true
 	}
 
 	var decisions []Decision
@@ -174,7 +180,7 @@ func NewRateLimitedOrCombinator(policies []PolicyEvaluator, rateLimit int) *Rate
 // Evaluate implements rate-limited OR logic.
 func (c *RateLimitedOrCombinator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	if len(c.policies) == 0 {
-		return NotSampled, nil
+		return NewDecisionWithThreshold(sampling.NeverSampleThreshold), nil
 	}
 
 	var decisions []Decision
@@ -197,7 +203,7 @@ func (c *RateLimitedOrCombinator) Evaluate(ctx context.Context, traceID pcommon.
 	orResult := combineWithOrLogic(decisions)
 
 	// Apply rate limiting if result would be sampled
-	if orResult.IsSampled() {
+	if orResult.Threshold == sampling.AlwaysSampleThreshold {
 		// TODO: Implement proper atomic rate limiting
 		// For now, return the OR result without rate limiting
 		// In a full implementation, this would check against rate limits
@@ -211,32 +217,25 @@ func (c *RateLimitedOrCombinator) Evaluate(ctx context.Context, traceID pcommon.
 // combineWithOrLogic implements pure OR logic by taking minimum threshold.
 func combineWithOrLogic(decisions []Decision) Decision {
 	if len(decisions) == 0 {
-		return NotSampled
+		return NewDecisionWithThreshold(sampling.NeverSampleThreshold)
 	}
 
 	// Start with the maximum threshold (most restrictive)
 	minThreshold := sampling.NeverSampleThreshold
 	hasError := false
-	hasDropped := false
 
 	var firstError error
 	var subPolicyDecisions []SubPolicyDecision
 
-	for _, decision := range decisions {
-		// Handle error decisions - check both Error field and error attribute
-		if decision.IsError() || decision.Error != nil {
-			hasError = true
-			if firstError == nil {
-				firstError = decision.Error
-			}
-			continue
-		}
-
-		// Handle dropped decisions
-		if decision.IsDropped() {
-			hasDropped = true
-			continue
-		}
+	   for _, decision := range decisions {
+			   // Handle error decisions - check Error field
+			   if decision.Error != nil {
+					   hasError = true
+					   if firstError == nil {
+							   firstError = decision.Error
+					   }
+					   continue
+			   }
 
 		// Take minimum threshold (most permissive wins in OR)
 		if decision.Threshold.Unsigned() < minThreshold.Unsigned() {
@@ -256,16 +255,14 @@ func combineWithOrLogic(decisions []Decision) Decision {
 		}
 	}
 
-	// Precedence: Errors and drops override sampling decisions
-	if hasError {
-		if firstError != nil {
-			return NewDecisionWithError(firstError)
-		}
-		return ErrorDecision
-	}
-	if hasDropped {
-		return Dropped
-	}
+	// Precedence: Errors override sampling decisions
+	   if hasError {
+			   if firstError != nil {
+					   return NewDecisionWithError(firstError)
+			   }
+			   // Return a generic error decision if no error provided
+			   return NewDecisionWithError(nil)
+	   }
 
 	// Create decision with deferred attribute insertion
 	result := NewDecisionWithThreshold(minThreshold)
@@ -279,33 +276,27 @@ func combineWithOrLogic(decisions []Decision) Decision {
 
 // combineWithAndLogic implements pure AND logic by taking maximum threshold.
 func combineWithAndLogic(decisions []Decision) Decision {
-	if len(decisions) == 0 {
-		return Sampled // Empty AND is true
-	}
+	   if len(decisions) == 0 {
+			   // Empty AND is true: AlwaysSampleThreshold
+			   return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
+	   }
 
 	// Start with the minimum threshold (most permissive)
 	maxThreshold := sampling.AlwaysSampleThreshold
 	hasError := false
-	hasDropped := false
 
 	var firstError error
 	var subPolicyDecisions []SubPolicyDecision
 
-	for _, decision := range decisions {
-		// Handle error decisions - check both Error field and error attribute
-		if decision.IsError() || decision.Error != nil {
-			hasError = true
-			if firstError == nil {
-				firstError = decision.Error
-			}
-			continue
-		}
-
-		// Handle dropped decisions
-		if decision.IsDropped() {
-			hasDropped = true
-			continue
-		}
+	   for _, decision := range decisions {
+			   // Handle error decisions - check Error field
+			   if decision.Error != nil {
+					   hasError = true
+					   if firstError == nil {
+							   firstError = decision.Error
+					   }
+					   continue
+			   }
 
 		// Take maximum threshold (most restrictive wins in AND)
 		if decision.Threshold.Unsigned() > maxThreshold.Unsigned() {
@@ -325,16 +316,14 @@ func combineWithAndLogic(decisions []Decision) Decision {
 		}
 	}
 
-	// Precedence: Errors and drops override sampling decisions
-	if hasError {
-		if firstError != nil {
-			return NewDecisionWithError(firstError)
-		}
-		return ErrorDecision
-	}
-	if hasDropped {
-		return Dropped
-	}
+	// Precedence: Errors override sampling decisions
+	   if hasError {
+			   if firstError != nil {
+					   return NewDecisionWithError(firstError)
+			   }
+			   // Return a generic error decision if no error provided
+			   return NewDecisionWithError(nil)
+	   }
 
 	// Create decision with deferred attribute insertion
 	result := NewDecisionWithThreshold(maxThreshold)
@@ -349,7 +338,7 @@ func combineWithAndLogic(decisions []Decision) Decision {
 // hasNotSampledDecision checks if any decision is explicit NotSampled.
 func hasNotSampledDecision(decisions []Decision) bool {
 	for _, decision := range decisions {
-		if decision.IsNotSampled() {
+		if decision.Threshold == sampling.NeverSampleThreshold {
 			return true
 		}
 	}

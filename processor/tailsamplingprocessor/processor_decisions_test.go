@@ -48,7 +48,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		require.NoError(t, p.Shutdown(context.Background()))
 	}()
 
-	mpe1.NextDecision = sampling.Sampled
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -144,9 +144,9 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		require.NoError(t, p.Shutdown(context.Background()))
 	}()
 
-	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.Sampled
-	mpe2.NextDecision = sampling.Sampled
+	// Both policies sample
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
+	mpe2.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -198,8 +198,8 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// First policy takes precedence
-	mpe1.NextDecision = sampling.Sampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
+	mpe2.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -249,7 +249,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.NotSampled
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.NeverSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -297,7 +297,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.NotSampled
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.NeverSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -343,8 +343,8 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.InvertNotSampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = sampling.NewInvertedDecision(pkgsampling.NeverSampleThreshold)
+	mpe2.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -397,8 +397,8 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = sampling.InvertNotSampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = sampling.NewInvertedDecision(pkgsampling.NeverSampleThreshold)
+	mpe2.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
@@ -447,7 +447,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 
 	// The combined decision from the policies is NotSampled
 	mpe1.NextDecision = sampling.NewInvertedDecision(pkgsampling.NeverSampleThreshold)
-	mpe2.NextDecision = sampling.NotSampled
+	mpe2.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.NeverSampleThreshold)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -520,7 +520,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be sampled, this will later be set to not sampled, but the sampling decision will be cached
-	mpe.NextDecision = sampling.Sampled
+	mpe.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -554,7 +554,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	require.False(t, ok)
 
 	// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = sampling.NotSampled
+	mpe.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.NeverSampleThreshold)
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -597,7 +597,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be NOT sampled, this will later be set to sampled, but the sampling decision will be cached
-	mpe.NextDecision = sampling.NotSampled
+	mpe.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.NeverSampleThreshold)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -631,7 +631,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	require.False(t, ok)
 
 	// Set next decision to sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = sampling.Sampled
+	mpe.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -672,8 +672,8 @@ func TestSampleOnFirstMatch(t *testing.T) {
 	}()
 
 	// Second policy matches, last policy should not be evaluated
-	mpe1.NextDecision = sampling.NotSampled
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.NeverSampleThreshold)
+	mpe2.NextDecision = sampling.NewDecisionWithThreshold(pkgsampling.AlwaysSampleThreshold)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
