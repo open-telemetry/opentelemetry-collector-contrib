@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.67.0
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.67.0
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.67.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.5
+	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.7
 	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.0
