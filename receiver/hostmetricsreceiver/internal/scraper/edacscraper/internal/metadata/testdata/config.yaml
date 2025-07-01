@@ -1,0 +1,13 @@
+default:
+all_set:
+  metrics:
+    system.edac.memory.csrow.errors:
+      enabled: true
+    system.edac.memory.errors:
+      enabled: true
+none_set:
+  metrics:
+    system.edac.memory.csrow.errors:
+      enabled: false
+    system.edac.memory.errors:
+      enabled: false

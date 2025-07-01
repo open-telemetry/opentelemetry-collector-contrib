@@ -1,0 +1,46 @@
+type: edac
+
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+attributes:
+  edac.controller.id:
+    description: The memory controller ID (e.g., "0", "1").
+    type: string
+
+  edac.csrow.id:
+    description: The CSROW (chip-select row) ID (e.g., "0", "1", "unknown").
+    type: string
+
+  edac.error.type:
+    description: The type of memory error.
+    type: string
+    enum: [correctable, uncorrectable]
+
+metrics:
+  system.edac.memory.errors:
+    enabled: true
+    description: Total number of ECC memory errors reported by EDAC.
+    unit: "{errors}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [edac.controller.id, edac.error.type]
+
+  system.edac.memory.csrow.errors:
+    enabled: true
+    description: Total number of ECC memory errors by CSROW (chip-select row).
+    unit: "{errors}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [edac.controller.id, edac.csrow.id, edac.error.type]
