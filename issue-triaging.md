@@ -49,14 +49,16 @@ It is recommended that a triager should follow these steps when a new issue is r
 1. Assess the validity of the issue. Here's an rough outline on how to assess:
    - Does the issue include a clear description of the problem?
       - Whether it’s a bug report, an enhancement proposal, or a request for a new component, the purpose of the issue should be easy to understand.
-   - Following outline is applicable to bugs or enhancements:
+   - The following outline is applicable to bugs or enhancements:
       - Does the issue specify the relevant version or environment details?
       - Does it provide the user’s configuration, the expected behavior, and any other relevant context?
       - If it's reported as a bug, are the steps to reproduce clearly outlined?
       - For enhancements, does the user clearly outline the expected behavior and provide relevant examples or use cases?
-   - For new components requests:
+   - For new component requests:
       - Does the user explain the purpose and intended use of the component?
       - Has the user provided example configurations, interfaces, or scenarios where the component would be applied?
+      - Will the user contribute the necessary code, or they are expecting someone from upstream to volunteer?
+      - Will the user be available to provide feedback, clarify requirements, or help with testing and maintenance?
    - If the issues lacks sufficient information, ask the author clarifying questions:
       - Collector configuration (missing or incomplete configurations are not uncommon)
       - The expected vs. actual behavior
@@ -81,11 +83,6 @@ It is recommended that a triager should follow these steps when a new issue is r
    - The enhancement/bugfix has already been addressed in the newer version.
    - The new component has been added to the repository.
 
-5. For new components:
-   - We should set clear expectations regarding a new component, if it is accepted:
-      - Will the user contribute the necessary code, or they are expecting someone from upstream to volunteer?
-      - Will the user be available to provide feedback, clarify requirements, or help with testing and maintenance?
-
 #### Triage process flowchart 
 
 ```mermaid
@@ -97,13 +94,10 @@ flowchart TD
     Start -->|Valid| Classify
 
     Classify -->|Bug| EnrichBug[Tag:<br><code>bug</code>,<br><code>waiting-for-codeowners</code>,<br>Optional: <code>bug:perf/crash</code>,<br><code>workaround:yes/no</code>,<br><code>release:blocker</code>]
-    EnrichBug --> WaitingCodeowners[Tag:<br><code>waiting-for-codeowners</code>]
 
     Classify -->|Enhancement| EnhancementLabel[Tag:<br><code>enhancement</code>,<br><code>waiting-for-codeowners</code>]
-    EnhancementLabel --> WaitingCodeowners
 
     Classify -->|Documentation| DocLabel[Tag:<br><code>documentation</code>,<br><code>waiting-for-codeowners</code>]
-    DocLabel --> WaitingCodeowners
 
     Classify -->|New Component| NewComponent[Tag:<br><code>sponsor-needed</code>]
     NewComponent --> Expectations[Set expectations:<br>Will user contribute code?<br>Will they provide feedback/support?<br><br>Suggest joining SIG,<br>propose via SIG,<br>or reach out on<br><code>#otel-collector-dev</code> Slack]
