@@ -81,11 +81,10 @@ It is recommended that a triager should follow these steps when a new issue is r
    - The enhancement/bugfix has already been addressed in the newer version.
    - The new component has been added to the repository.
 
-5. _For new components_:
-   - We should set clear expectations reagarding a new component, if it is accepted:
+5. For new components:
+   - We should set clear expectations regarding a new component, if it is accepted:
       - Will the user contribute the necessary code, or they are expecting someone from upstream to volunteer?
       - Will the user be available to provide feedback, clarify requirements, or help with testing and maintenance?
-
 
 #### Triage process flowchart 
 
