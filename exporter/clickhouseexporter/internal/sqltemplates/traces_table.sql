@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
-                                     Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
+    Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
     TraceId String CODEC(ZSTD(1)),
     SpanId String CODEC(ZSTD(1)),
     ParentSpanId String CODEC(ZSTD(1)),
@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
-    ) ENGINE = %s
-    PARTITION BY toDate(Timestamp)
-    ORDER BY (ServiceName, SpanName, toDateTime(Timestamp))
-    %s
-    SETTINGS index_granularity=8192, ttl_only_drop_parts = 1
+) ENGINE = %s
+PARTITION BY toDate(Timestamp)
+ORDER BY (ServiceName, SpanName, toDateTime(Timestamp))
+%s
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1
