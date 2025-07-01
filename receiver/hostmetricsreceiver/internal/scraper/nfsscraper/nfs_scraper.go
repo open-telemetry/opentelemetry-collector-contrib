@@ -5,6 +5,8 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -111,6 +113,7 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp, nfsdStats *NfsdSta
 		s.mb.RecordSystemNfsdRepcacheHitsDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Hits))
 		s.mb.RecordSystemNfsdRepcacheMissesDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Misses))
 		s.mb.RecordSystemNfsdRepcacheNocacheDataPoint(now, int64(nfsdStats.NfsdRepcacheStats.Nocache))
+		fmt.Fprintf(os.Stderr, "nfsdrepcachestats is %v\n", nfsdStats.NfsdRepcacheStats)		
 	}
 
 	if nfsdStats.NfsdFhStats != nil {

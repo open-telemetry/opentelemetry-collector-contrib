@@ -12,7 +12,7 @@ metrics:
     enabled: false
 ```
 
-### system.nfs.net.count
+### nfs.client.net.count
 
 Reports the count of kernel NFS client network requests handled
 
@@ -20,7 +20,7 @@ Reports the count of kernel NFS client network requests handled
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfs.net.tcp.connection.count
+### nfs.client.net.tcp.connection.count
 
 Reports the count of kernel NFS client TCP connections accepted
 
@@ -28,7 +28,7 @@ Reports the count of kernel NFS client TCP connections accepted
 | ---- | ----------- | ---------- |
 | {connection} | Gauge | Int |
 
-### system.nfs.net.tcp.count
+### nfs.client.net.tcp.count
 
 Reports the count of kernel NFS client TCP segments handled
 
@@ -36,7 +36,7 @@ Reports the count of kernel NFS client TCP segments handled
 | ---- | ----------- | ---------- |
 | {segment} | Gauge | Int |
 
-### system.nfs.net.udp.count
+### nfs.client.net.udp.count
 
 Reports the count of kernel NFS client UDP datagrams handled
 
@@ -44,7 +44,7 @@ Reports the count of kernel NFS client UDP datagrams handled
 | ---- | ----------- | ---------- |
 | {datagram} | Gauge | Int |
 
-### system.nfs.operation.count
+### nfs.client.operation.count
 
 Reports the count of kernel NFSv4+ client operations
 
@@ -59,7 +59,7 @@ Reports the count of kernel NFSv4+ client operations
 | rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
-### system.nfs.procedure.count
+### nfs.client.procedure.count
 
 Reports the count of kernel NFS client procedures
 
@@ -74,7 +74,7 @@ Reports the count of kernel NFS client procedures
 | rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str |
 
-### system.nfs.rpc.authrefresh.count
+### nfs.client.rpc.authrefresh.count
 
 Reports the count of kernel NFS client RPC authentication refreshes
 
@@ -82,7 +82,7 @@ Reports the count of kernel NFS client RPC authentication refreshes
 | ---- | ----------- | ---------- |
 | {authrefresh} | Gauge | Int |
 
-### system.nfs.rpc.count
+### nfs.client.rpc.count
 
 Reports the count of kernel NFS client RPCs handled
 
@@ -90,7 +90,7 @@ Reports the count of kernel NFS client RPCs handled
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfs.rpc.retransmit.count
+### nfs.client.rpc.retransmit.count
 
 Reports the count of kernel NFS client RPC retransmits
 
@@ -98,7 +98,7 @@ Reports the count of kernel NFS client RPC retransmits
 | ---- | ----------- | ---------- |
 | {retransmit} | Gauge | Int |
 
-### system.nfsd.fh.stale.count
+### nfs.server.fh.stale.count
 
 Reports the count of kernel NFS server stale file handles
 
@@ -106,7 +106,7 @@ Reports the count of kernel NFS server stale file handles
 | ---- | ----------- | ---------- |
 | {fh} | Gauge | Int |
 
-### system.nfsd.io.read.count
+### nfs.server.io.read.count
 
 Reports the count of kernel NFS server bytes returned to read requests
 
@@ -114,7 +114,7 @@ Reports the count of kernel NFS server bytes returned to read requests
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
-### system.nfsd.io.write.count
+### nfs.server.io.write.count
 
 Reports the count of kernel NFS server bytes passed to write requests
 
@@ -122,7 +122,7 @@ Reports the count of kernel NFS server bytes passed to write requests
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
-### system.nfsd.net.count
+### nfs.server.net.count
 
 Reports the count of kernel NFS server network requests handled
 
@@ -130,7 +130,7 @@ Reports the count of kernel NFS server network requests handled
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfsd.net.tcp.connection.count
+### nfs.server.net.tcp.connection.count
 
 Reports the count of kernel NFS server TCP connections accepted
 
@@ -138,7 +138,7 @@ Reports the count of kernel NFS server TCP connections accepted
 | ---- | ----------- | ---------- |
 | {connection} | Gauge | Int |
 
-### system.nfsd.net.tcp.count
+### nfs.server.net.tcp.count
 
 Reports the count of kernel NFS server TCP segments handled
 
@@ -146,7 +146,7 @@ Reports the count of kernel NFS server TCP segments handled
 | ---- | ----------- | ---------- |
 | {segment} | Gauge | Int |
 
-### system.nfsd.net.udp.count
+### nfs.server.net.udp.count
 
 Reports the count of kernel NFS server UDP datagrams handled
 
@@ -154,7 +154,7 @@ Reports the count of kernel NFS server UDP datagrams handled
 | ---- | ----------- | ---------- |
 | {datagram} | Gauge | Int |
 
-### system.nfsd.operation.count
+### nfs.server.operation.count
 
 Reports the count of kernel NFSv4+ server operations
 
@@ -169,7 +169,7 @@ Reports the count of kernel NFSv4+ server operations
 | rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
-### system.nfsd.procedure.count
+### nfs.server.procedure.count
 
 Reports the count of kernel NFS client procedures
 
@@ -184,7 +184,7 @@ Reports the count of kernel NFS client procedures
 | rpc.onc.version | ONC/Sun RPC program version | Any Int |
 | rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str |
 
-### system.nfsd.repcache.hits
+### nfs.server.repcache.hits
 
 Reports the kernel NFS server request reply cache hit count
 
@@ -192,7 +192,7 @@ Reports the kernel NFS server request reply cache hit count
 | ---- | ----------- | ---------- |
 | {hit} | Gauge | Int |
 
-### system.nfsd.repcache.misses
+### nfs.server.repcache.misses
 
 Reports the kernel NFS server request reply cache miss count
 
@@ -200,7 +200,7 @@ Reports the kernel NFS server request reply cache miss count
 | ---- | ----------- | ---------- |
 | {miss} | Gauge | Int |
 
-### system.nfsd.repcache.nocache
+### nfs.server.repcache.nocache
 
 Reports the count of kernel NFS server request replies that are uncacheable
 
@@ -208,7 +208,7 @@ Reports the count of kernel NFS server request replies that are uncacheable
 | ---- | ----------- | ---------- |
 | {miss} | Gauge | Int |
 
-### system.nfsd.rpc.bad.count
+### nfs.server.rpc.bad.count
 
 Reports the total count of kernel NFS server bad RPCs
 
@@ -216,7 +216,7 @@ Reports the total count of kernel NFS server bad RPCs
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfsd.rpc.badauth.count
+### nfs.server.rpc.badauth.count
 
 Reports the total count of kernel NFS server badly authenticated RPCs
 
@@ -224,7 +224,7 @@ Reports the total count of kernel NFS server badly authenticated RPCs
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfsd.rpc.badclient.count
+### nfs.server.rpc.badclient.count
 
 Reports the total count of kernel NFS server unauthorized client RPCs
 
@@ -232,7 +232,7 @@ Reports the total count of kernel NFS server unauthorized client RPCs
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfsd.rpc.badfmt.count
+### nfs.server.rpc.badfmt.count
 
 Reports the total count of kernel NFS server badly formatted RPCs
 
@@ -240,7 +240,7 @@ Reports the total count of kernel NFS server badly formatted RPCs
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfsd.rpc.count
+### nfs.server.rpc.count
 
 Reports the count of kernel NFS server RPCs handled
 
@@ -248,7 +248,7 @@ Reports the count of kernel NFS server RPCs handled
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### system.nfsd.thread.count
+### nfs.server.thread.count
 
 Reports the count of kernel NFS server available threads
 

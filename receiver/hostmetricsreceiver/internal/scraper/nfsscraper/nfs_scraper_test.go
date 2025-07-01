@@ -175,34 +175,34 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err)
 
 			noAttrs := pcommon.NewMap()
-			assertMetric(t, md, "system.nfs.net.count", int64(scraper.nfsStats.NfsNetStats.NetCount), noAttrs)
-			assertMetric(t, md, "system.nfs.net.udp.count", int64(scraper.nfsStats.NfsNetStats.UDPCount), noAttrs)
-			assertMetric(t, md, "system.nfs.net.tcp.count", int64(scraper.nfsStats.NfsNetStats.TCPCount), noAttrs)
-			assertMetric(t, md, "system.nfs.net.tcp.connection.count", int64(scraper.nfsStats.NfsNetStats.TCPConnectionCount), noAttrs)
+			assertMetric(t, md, "nfs.net.count", int64(scraper.nfsStats.NfsNetStats.NetCount), noAttrs)
+			assertMetric(t, md, "nfs.net.udp.count", int64(scraper.nfsStats.NfsNetStats.UDPCount), noAttrs)
+			assertMetric(t, md, "nfs.net.tcp.count", int64(scraper.nfsStats.NfsNetStats.TCPCount), noAttrs)
+			assertMetric(t, md, "nfs.net.tcp.connection.count", int64(scraper.nfsStats.NfsNetStats.TCPConnectionCount), noAttrs)
 
-			assertMetric(t, md, "system.nfs.rpc.count", int64(scraper.nfsStats.NfsRPCStats.RPCCount), noAttrs)
-			assertMetric(t, md, "system.nfs.rpc.retransmit.count", int64(scraper.nfsStats.NfsRPCStats.RetransmitCount), noAttrs)
-			assertMetric(t, md, "system.nfs.rpc.authrefresh.count", int64(scraper.nfsStats.NfsRPCStats.AuthRefreshCount), noAttrs)
+			assertMetric(t, md, "nfs.rpc.count", int64(scraper.nfsStats.NfsRPCStats.RPCCount), noAttrs)
+			assertMetric(t, md, "nfs.rpc.retransmit.count", int64(scraper.nfsStats.NfsRPCStats.RetransmitCount), noAttrs)
+			assertMetric(t, md, "nfs.rpc.authrefresh.count", int64(scraper.nfsStats.NfsRPCStats.AuthRefreshCount), noAttrs)
 
 			for _, s := range *scraper.nfsStats.NfsV3ProcedureStats {
 				attrs := pcommon.NewMap()
 				attrs.PutInt("rpc.onc.version", s.NFSVersion)
 				attrs.PutStr("rpc.onc.procedure.name", s.NFSCallName)
-				assertMetric(t, md, "system.nfs.procedure.count", int64(s.NFSCallCount), attrs)
+				assertMetric(t, md, "nfs.client.procedure.count", int64(s.NFSCallCount), attrs)
 			}
 
 			for _, s := range *scraper.nfsStats.NfsV4ProcedureStats {
 				attrs := pcommon.NewMap()
 				attrs.PutInt("rpc.onc.version", s.NFSVersion)
 				attrs.PutStr("rpc.onc.procedure.name", s.NFSCallName)
-				assertMetric(t, md, "system.nfs.procedure.count", int64(s.NFSCallCount), attrs)
+				assertMetric(t, md, "nfs.client.procedure.count", int64(s.NFSCallCount), attrs)
 			}
 
 			for _, s := range *scraper.nfsStats.NfsV4OperationStats {
 				attrs := pcommon.NewMap()
 				attrs.PutInt("rpc.onc.version", s.NFSVersion)
 				attrs.PutStr("rpc.nfs.operation.name", s.NFSCallName)
-				assertMetric(t, md, "system.nfs.operation.count", int64(s.NFSCallCount), attrs)
+				assertMetric(t, md, "nfs.client.operation.count", int64(s.NFSCallCount), attrs)
 			}
 
 			assertMetric(t, md, "nfs.server.repcache.hits", int64(scraper.nfsdStats.NfsdRepcacheStats.Hits), noAttrs)
