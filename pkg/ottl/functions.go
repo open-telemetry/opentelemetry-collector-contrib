@@ -423,7 +423,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		case strings.HasPrefix(fieldType.Name(), "LiteralGetter"):
 			fieldVal, ok := field.Addr().Interface().(typedValueWrapper)
 			if !ok {
-				return err
+				return errors.New("LiteralGetter is not a typedValueWrapper. This is a bug in the OTTL")
 			}
 
 			var buildArg any
@@ -433,7 +433,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			}
 
 			if _, ok = buildArg.(literalGetter); !ok {
-				return fmt.Errorf("getter type %T does not support literals values", buildArg)
+				return fmt.Errorf("getter type %T does not support literal values", buildArg)
 			}
 
 			err = fieldVal.setWrappedValue(reflect.ValueOf(buildArg))
