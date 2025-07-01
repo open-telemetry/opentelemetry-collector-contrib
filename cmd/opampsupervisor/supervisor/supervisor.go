@@ -775,12 +775,12 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	if message.Health != nil {
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient.Store(message.Health)
-		if !s.agentReady.Load() {
-			s.markAgentReady()
-		}
 		err := s.opampClient.SetHealth(message.Health)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
+		}
+		if !s.agentReady.Load() && message.Health.Healthy {
+			s.markAgentReady()
 		}
 	}
 
@@ -1351,7 +1351,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.lastHealthFromClient.Store(nil)
+			s.telemetrySettings.Logger.Debug("agent has new config", zap.String("previous_health", s.lastHealthFromClient.Load().String()))
 			if !configApplyTimeoutTimer.Stop() {
 				select {
 				case <-configApplyTimeoutTimer.C: // Try to drain the channel
@@ -1359,13 +1359,10 @@ func (s *Supervisor) runAgentProcess() {
 				}
 			}
 			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
-
-			s.telemetrySettings.Logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 
 			if s.config.Agent.UseHUPConfigReload {
-				err := s.hupReloadAgent()
-				if err != nil {
+				if err := s.hupReloadAgent(); err != nil {
 					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
 					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 					continue
@@ -1380,8 +1377,9 @@ func (s *Supervisor) runAgentProcess() {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
+			s.lastHealthFromClient.Store(nil)
 			if status == agentNotStarting {
-				// not starting agent because of nop config, clear timer, report applied status, report healthy status
+				// not starting agent because of nop config: clear timer, report applied status, report healthy status
 				configApplyTimeoutTimer.Stop()
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
@@ -1484,9 +1482,12 @@ func (s *Supervisor) waitForAgentReady() error {
 	// agent is crashlooping. This can be inferred by the lack of health reports
 	// from the agent. In this case the agent will never be ready and it makes
 	// no sense to wait for it.
-	if s.commander.IsRunning() && s.lastHealthFromClient.Load() == nil {
-		return nil
-	}
+	// if s.commander.IsRunning() && s.lastHealthFromClient.Load() == nil {
+	// 	if s.lastHealthFromClient.Load() == nil || !s.lastHealthFromClient.Load().Healthy {
+	// 		s.telemetrySettings.Logger.Debug("agent is running but has no health report, skipping wait for ready")
+	// return nil
+	// 	}
+	// }
 
 	bootstrapTimer := time.NewTimer(s.config.Agent.BootstrapTimeout)
 	defer bootstrapTimer.Stop()
@@ -1513,9 +1514,11 @@ func (s *Supervisor) waitForAgentReady() error {
 func (s *Supervisor) hupReloadAgent() error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
+	defer s.resetAgentReady()
 
-	if err := s.waitForAgentReady(); err != nil {
-		return err
+	if s.cfgState.Load().(*configState).configMapIsEmpty {
+		s.stopAgentApplyConfig()
+		return nil
 	}
 
 	if err := s.writeAgentConfig(); err != nil {
@@ -1523,11 +1526,14 @@ func (s *Supervisor) hupReloadAgent() error {
 	}
 
 	if !s.commander.IsRunning() {
-		s.telemetrySettings.Logger.Debug("agent is not running, skipping hup reload")
-		return nil
+		if _, err := s.startAgent(); err != nil {
+			return fmt.Errorf("failed to start agent: %w", err)
+		}
 	}
 
-	s.resetAgentReady()
+	if err := s.waitForAgentReady(); err != nil {
+		return err
+	}
 
 	s.telemetrySettings.Logger.Debug("agent is running, reloading config")
 	if err := s.reloadAgentConfig(); err != nil {

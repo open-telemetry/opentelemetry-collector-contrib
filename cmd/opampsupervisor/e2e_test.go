@@ -347,7 +347,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 				"local_config": cfgFile.Name(),
 			}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "basic", extraConfigData)
@@ -415,7 +415,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 				"local_config": filepath.Join("testdata", "collector", "healthcheck_config.yaml"),
 			}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "healthcheck_port", extraConfigData)
@@ -495,7 +495,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 				"storage_dir": storageDir,
 			}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "basic", extraConfigData)
@@ -744,7 +744,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 
 			extraConfigData := map[string]string{"url": server.addr}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "basic", extraConfigData)
@@ -1351,7 +1351,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 				"storage_dir": storageDir,
 			}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "basic", extraConfigData)
@@ -1534,7 +1534,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 
 			extraConfigData := map[string]string{"url": initialServer.addr, "storage_dir": tempDir}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "persistence", extraConfigData)
@@ -2036,7 +2036,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				"config_apply_timeout": "3s",
 			}
 			if mode.UseHUPConfigReload {
-				extraConfigData["hupRestart"] = "true"
+				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			s := newSupervisor(t, "report_status", extraConfigData)
@@ -2061,6 +2061,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 			// Check that the status is set to APPLYING
 			require.Eventually(t, func() bool {
 				status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				t.Log("status", status.Status)
 				return status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
 			}, 5*time.Second, 100*time.Millisecond, "Remote config status was not set to APPLYING")
 
@@ -2074,7 +2075,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 			require.Eventually(t, func() bool {
 				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
-			}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED")
+			}, 5*time.Second, 100*time.Millisecond, "Remote config status was not set to APPLIED")
 
 			require.Eventually(t, func() bool {
 				cfg, ok := agentConfig.Load().(string)
@@ -2099,54 +2100,56 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				return n != 0
 			}, 10*time.Second, 100*time.Millisecond, "Log never appeared in output")
 
-			// Test with bad configuration
-			badCfg, badHash := createBadCollectorConf(t)
+			t.Run("bad config", func(t *testing.T) {
+				// Test with bad configuration
+				badCfg, badHash := createBadCollectorConf(t)
 
-			server.sendToSupervisor(&protobufs.ServerToAgent{
-				RemoteConfig: &protobufs.AgentRemoteConfig{
-					Config: &protobufs.AgentConfigMap{
-						ConfigMap: map[string]*protobufs.AgentConfigFile{
-							"": {Body: badCfg.Bytes()},
+				server.sendToSupervisor(&protobufs.ServerToAgent{
+					RemoteConfig: &protobufs.AgentRemoteConfig{
+						Config: &protobufs.AgentConfigMap{
+							ConfigMap: map[string]*protobufs.AgentConfigFile{
+								"": {Body: badCfg.Bytes()},
+							},
 						},
+						ConfigHash: badHash,
 					},
-					ConfigHash: badHash,
-				},
-			})
+				})
 
-			// Check that the status is set to APPLYING
-			require.Eventually(t, func() bool {
-				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-			}, 5*time.Second, 200*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
+				// Check that the status is set to APPLYING
+				require.Eventually(t, func() bool {
+					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
+				}, 5*time.Second, 200*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
 
-			// Wait for the health checks to fail
-			require.Eventually(t, func() bool {
-				health, ok := healthReport.Load().(*protobufs.ComponentHealth)
-				return ok && !health.Healthy
-			}, 30*time.Second, 100*time.Millisecond, "Collector did not become unhealthy with bad config")
+				// Wait for the health checks to fail
+				require.Eventually(t, func() bool {
+					health, ok := healthReport.Load().(*protobufs.ComponentHealth)
+					return ok && !health.Healthy
+				}, 30*time.Second, 100*time.Millisecond, "Collector did not become unhealthy with bad config")
 
-			// Check that the status is set to FAILED after failed health checks
-			require.Eventually(t, func() bool {
-				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
-			}, 15*time.Second, 100*time.Millisecond, "Remote config status was not set to FAILED for bad config")
+				// Check that the status is set to FAILED after failed health checks
+				require.Eventually(t, func() bool {
+					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+				}, 15*time.Second, 100*time.Millisecond, "Remote config status was not set to FAILED for bad config")
 
-			// Test with nop configuration
-			emptyHash := sha256.Sum256([]byte{})
-			server.sendToSupervisor(&protobufs.ServerToAgent{
-				RemoteConfig: &protobufs.AgentRemoteConfig{
-					Config: &protobufs.AgentConfigMap{
-						ConfigMap: map[string]*protobufs.AgentConfigFile{},
+				// Test with nop configuration
+				emptyHash := sha256.Sum256([]byte{})
+				server.sendToSupervisor(&protobufs.ServerToAgent{
+					RemoteConfig: &protobufs.AgentRemoteConfig{
+						Config: &protobufs.AgentConfigMap{
+							ConfigMap: map[string]*protobufs.AgentConfigFile{},
+						},
+						ConfigHash: emptyHash[:],
 					},
-					ConfigHash: emptyHash[:],
-				},
-			})
+				})
 
-			// Check that the status is set to APPLIED
-			require.Eventually(t, func() bool {
-				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
-			}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
+				// Check that the status is set to APPLIED
+				require.Eventually(t, func() bool {
+					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
+				}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
+			})
 		})
 	}
 }
