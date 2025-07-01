@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.35.1-0.20250630174123-18b3b578b0b3
 	go.opentelemetry.io/collector/receiver/receivertest v0.129.1-0.20250630174123-18b3b578b0b3
 	go.opentelemetry.io/otel v1.37.0
-	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.36.0
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.37.0
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
