@@ -11,12 +11,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
 )
@@ -145,10 +145,16 @@ func (cfg *PromConfig) Validate() error {
 }
 
 func reloadPromConfig(dst *PromConfig, src any) error {
-	yamlOut, err := yaml.Marshal(src)
+	yamlOut, err := yaml.MarshalWithOptions(
+		src,
+		yaml.CustomMarshaler(func(s commonconfig.Secret) ([]byte, error) {
+			return []byte(s), nil
+		}),
+	)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
 	}
+
 	newCfg, err := promconfig.Load(string(yamlOut), slog.Default())
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
