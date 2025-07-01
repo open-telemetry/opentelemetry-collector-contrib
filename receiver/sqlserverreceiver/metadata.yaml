@@ -654,6 +654,7 @@ metrics:
     unit: "{CPUs}"
     gauge:
       value_type: int
+      input_type: string
 tests:
   config:
   goleak:

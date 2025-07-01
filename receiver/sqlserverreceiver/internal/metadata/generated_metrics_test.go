@@ -81,7 +81,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverCPUCountDataPoint(ts, 1)
+			mb.RecordSqlserverCPUCountDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordSqlserverDatabaseBackupOrRestoreRateDataPoint(ts, 1)
