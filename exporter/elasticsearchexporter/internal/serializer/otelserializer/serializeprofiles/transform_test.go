@@ -192,6 +192,7 @@ func TestTransform(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.SetPeriod(1e9 / 20)
 
 				st := p.SampleType().AppendEmpty()
 				st.SetTypeStrindex(2)
@@ -260,6 +261,7 @@ func TestTransform(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
+						Frequency:    20,
 						Count:        1,
 					},
 				},
@@ -337,6 +339,7 @@ func TestStackPayloads(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.SetPeriod(1e9 / 20)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
@@ -398,6 +401,7 @@ func TestStackPayloads(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
+						Frequency:    20,
 						Count:        1,
 					},
 				},
@@ -442,6 +446,7 @@ func TestStackPayloads(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.SetPeriod(1e9 / 20)
 
 				s := p.Sample().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
@@ -503,6 +508,7 @@ func TestStackPayloads(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
+						Frequency:    20,
 						Count:        2,
 					},
 				},
@@ -558,6 +564,7 @@ func TestStackTraceEvent(t *testing.T) {
 			wantEvent: StackTraceEvent{
 				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
+				Frequency:    20,
 				Count:        1,
 			},
 		},
@@ -584,6 +591,7 @@ func TestStackTraceEvent(t *testing.T) {
 				EcsVersion:   EcsVersion{V: EcsVersionString},
 				TimeStamp:    1000000000000000000,
 				StackTraceID: stacktraceIDBase64,
+				Frequency:    20,
 				Count:        1,
 			},
 		},
@@ -608,6 +616,7 @@ func TestStackTraceEvent(t *testing.T) {
 			wantEvent: StackTraceEvent{
 				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
+				Frequency:    20,
 				Count:        1,
 			},
 		},
@@ -652,6 +661,7 @@ func TestStackTraceEvent(t *testing.T) {
 				ThreadName:       "my_thread",
 				ServiceName:      "my_service",
 				StackTraceID:     stacktraceIDBase64,
+				Frequency:        20,
 				Count:            1,
 			},
 		},
@@ -663,7 +673,7 @@ func TestStackTraceEvent(t *testing.T) {
 			s := p.Sample().At(0)
 
 			hostMetadata := newHostMetadata(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
-			event := stackTraceEvent(dic, stacktraceIDBase64, s, hostMetadata)
+			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, hostMetadata)
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
