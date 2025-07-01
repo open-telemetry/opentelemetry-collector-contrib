@@ -558,6 +558,8 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, err
 	const sqlText = "SQL_FULLTEXT"
 	const username = "USERNAME"
 	const waitclass = "WAIT_CLASS"
+	const port = "PORT"
+	const serviceName = "SERVICE_NAME"
 
 	var scrapeErrors []error
 
@@ -591,9 +593,15 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, err
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for Duration, value was %s: %w", row[duration], err))
 		}
 
-		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[hostName], queryPlanHashVal, row[sqlID], row[sqlChildNumber],
-			row[sid], row[serialNumber], row[process], row[schemaName], row[program], row[module], row[status], row[state], row[waitclass],
-			row[event], row[objectName], row[objectType], row[osUser], queryDuration)
+		clientPort, err := strconv.ParseInt(row[port], 10, 64)
+		if err != nil {
+			clientPort = 0
+		}
+
+		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
+			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[sid], row[serialNumber], row[process],
+			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], row[objectName], row[objectType],
+			row[osUser], queryDuration)
 	}
 
 	out := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
