@@ -164,7 +164,7 @@ type Supervisor struct {
 	// agentReady is true if the agent has started and is fully ready.
 	agentReady atomic.Bool
 	// agentReadyChan is a channel that can be used to wait for the agent to
-	// start in case [agentStarted] is false.
+	// start in case [agentReady] is false.
 	agentReadyChan chan struct{}
 
 	// agentRestarting is true if the agent is restarting.
@@ -1471,7 +1471,8 @@ func (s *Supervisor) resetAgentReady() {
 }
 
 // waitForAgentReady waits for the agent to be ready. The agent is considered to
-// be ready when its first health report is received by the opamp server.
+// be ready when its first health report is received by the Supervisor's opamp
+// server.
 // WARNING: this is not thread-safe! If there are two goroutines waiting for
 // the agent to be ready, only one of them will be able to proceed.
 func (s *Supervisor) waitForAgentReady() error {
@@ -1480,8 +1481,9 @@ func (s *Supervisor) waitForAgentReady() error {
 	}
 
 	// Sometimes the commander is trying to start the agent process, but the
-	// agent is crashlooping. In this case the agent will never be ready and
-	// it makes no sense to wait for it.
+	// agent is crashlooping. This can be infered by the lack of health reports
+	// from the agent. In this case the agent will never be ready and it makes
+	// no sense to wait for it.
 	if s.commander.IsRunning() && s.lastHealthFromClient.Load() == nil {
 		return nil
 	}
@@ -1499,6 +1501,17 @@ func (s *Supervisor) waitForAgentReady() error {
 	}
 }
 
+// hupReloadAgent sends a HUP signal to the agent process  with the intent of
+// triggering a configuration reload. There are 3 possible outcomes of this:
+// 1. The agent is the "official" Otel Collector, which properly traps the HUP
+// signal and reloads the config.
+// 2. The agent is a custom process, which does not trap the HUP signal: in
+// this case the default behavior of a process that receives a HUP signal is to
+// exit. This ends up being the same behavior as the standard stop -> restart
+// configuration reload method.
+// 3. The agent traps the HUP signal, but does nothing. On the next health
+// report the agent will be consiered healthy and ready, even though it might
+// be running on old configuration.
 func (s *Supervisor) hupReloadAgent() error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
