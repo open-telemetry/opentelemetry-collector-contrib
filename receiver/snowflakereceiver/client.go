@@ -402,9 +402,9 @@ func (c snowflakeClient) FetchStorageMetrics(ctx context.Context) (*[]storageMet
 			return nil, err
 		}
 		res = append(res, storageMetric{
-			storageBytes:  int64(storageBytes),
-			stageBytes:    int64(stageBytes),
-			failsafeBytes: int64(failsafeBytes),
+			storageBytes:  storageBytes,
+			stageBytes:    stageBytes,
+			failsafeBytes: failsafeBytes,
 		})
 	}
 	return &res, nil
