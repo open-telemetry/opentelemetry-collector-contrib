@@ -1481,7 +1481,7 @@ func (s *Supervisor) waitForAgentReady() error {
 	}
 
 	// Sometimes the commander is trying to start the agent process, but the
-	// agent is crashlooping. This can be infered by the lack of health reports
+	// agent is crashlooping. This can be inferred by the lack of health reports
 	// from the agent. In this case the agent will never be ready and it makes
 	// no sense to wait for it.
 	if s.commander.IsRunning() && s.lastHealthFromClient.Load() == nil {
