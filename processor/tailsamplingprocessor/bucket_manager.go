@@ -4,7 +4,6 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -172,9 +171,6 @@ func (bm *bucketManager) addTrace(traceID pcommon.TraceID, trace *internalsampli
 	}
 
 	// Use Varopt to add the trace with the OTEP 235 adjusted count as weight
-	// DEBUG: Track what we're feeding to Varopt
-	fmt.Printf("DEBUG: Adding trace to Varopt: traceID=%s, inputWeight=%.6f\n", traceID.String(), inputWeight)
-
 	_, err := bucket.sampler.Add(bucketTrace, inputWeight)
 	if err != nil {
 		bm.logger.Warn("Failed to add trace to Varopt sampler",
@@ -243,10 +239,6 @@ func (bucket *traceBucket) getTracesWithTailAdjustments() []*bucketTrace {
 
 	for i := 0; i < count; i++ {
 		trace, varopOutputWeight := bucket.sampler.Get(i) // Get returns (item, adjustedWeight)
-
-		// DEBUG: Track what Varopt is outputting
-		fmt.Printf("DEBUG: Varopt output: traceID=%s, inputWeight=%.6f, varopOutputWeight=%.6f, adjustment=%.6f\n",
-			trace.traceID.String(), trace.inputWeight, varopOutputWeight, varopOutputWeight/trace.inputWeight)
 
 		// Calculate the tail sampling adjustment from weight ratios
 		// Note: The input weight was the OTEP 235 adjusted count

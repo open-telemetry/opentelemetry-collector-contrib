@@ -4,6 +4,7 @@
 package tailsamplingprocessor
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -35,7 +36,7 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 			inputTraceCount: 1000,
 			bucketCapacity:  100,
 			trials:          5,
-			tolerance:       0.15, // 15% tolerance
+			tolerance:       0, // 0% tolerance
 			setupTraces: func(traceCount int) ([]*internalsampling.TraceData, float64) {
 				traces, total := createUniformWeightTraces(traceCount)
 				return traces, total
@@ -47,7 +48,7 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 			inputTraceCount: 1000,
 			bucketCapacity:  100,
 			trials:          5,
-			tolerance:       0.20, // 20% tolerance (higher due to more variance)
+			tolerance:       0.0, // 0% tolerance
 			setupTraces: func(traceCount int) ([]*internalsampling.TraceData, float64) {
 				return createMixedWeightTraces(traceCount)
 			},
@@ -58,7 +59,7 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 			inputTraceCount: 5000,
 			bucketCapacity:  10, // Very small capacity to force heavy approximation
 			trials:          10,
-			tolerance:       0.50, // 50% tolerance - expect significant approximation error
+			tolerance:       0, // 0% tolerance
 			setupTraces: func(traceCount int) ([]*internalsampling.TraceData, float64) {
 				return createExtremeHighPressureTraces(traceCount)
 			},
@@ -69,7 +70,7 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 			inputTraceCount: 10000,
 			bucketCapacity:  5, // Extremely small capacity - 1 in 2000 sampling
 			trials:          10,
-			tolerance:       0.75, // 75% tolerance - expect very high approximation error
+			tolerance:       0.0, // 0% tolerance
 			setupTraces: func(traceCount int) ([]*internalsampling.TraceData, float64) {
 				return createExtremeHighPressureTraces(traceCount)
 			},
@@ -80,11 +81,22 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 			inputTraceCount: 2000,
 			bucketCapacity:  50, // 1 in 40 sampling ratio
 			trials:          8,
-			tolerance:       0.35, // 35% tolerance for medium approximation pressure
+			tolerance:       0.0, // 0% tolerance
 			setupTraces: func(traceCount int) ([]*internalsampling.TraceData, float64) {
 				return createMixedWeightTraces(traceCount)
 			},
 			description: "Medium approximation pressure: 2k traces compressed to 50 slots",
+		},
+		{
+			name:            "gradient_probability_pressure",
+			inputTraceCount: 10000,
+			bucketCapacity:  10, // Very aggressive: 1000 traces compressed to 10 slots
+			trials:          15,
+			tolerance:       0.0000000000001, // very small tol
+			setupTraces: func(traceCount int) ([]*internalsampling.TraceData, float64) {
+				return createGradientProbabilityTraces(traceCount)
+			},
+			description: "Gradient probability pressure: 1000 traces with gradual probability differences (1/110 to 1/90) compressed to 10 slots",
 		},
 	}
 
@@ -126,9 +138,6 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 
 				// Calculate total adjusted count accounting for both adjustments
 				var actualTotal float64
-				var heavyWeightCount, lightWeightCount, ultraHeavyWeightCount, ultraUltraHeavyWeightCount int
-				var highWeightTraceFound, ultraHighWeightTraceFound, ultraUltraHighWeightTraceFound bool
-				var highWeightContribution, ultraHighWeightContribution, ultraUltraHighWeightContribution float64
 
 				for _, bt := range sampledTraces {
 					// OTEP 235 adjusted count (input weight)
@@ -136,56 +145,6 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 
 					// Tail sampling adjustment
 					tailAdjustment := bt.getTailSamplingAdjustment()
-
-					// Debug: Show weight details for all traces in severe approximation pressure test, first 10 for others
-					showDebug := trial == 0 && ((tt.name == "severe_approximation_pressure") || (heavyWeightCount+lightWeightCount+ultraHeavyWeightCount+ultraUltraHeavyWeightCount) < 10)
-					if showDebug {
-						// Get the TraceState from the actual trace data
-						var traceStateStr string
-						if bt.trace != nil {
-							bt.trace.Lock()
-							if bt.trace.ReceivedBatches.SpanCount() > 0 {
-								resourceSpans := bt.trace.ReceivedBatches.ResourceSpans()
-								if resourceSpans.Len() > 0 {
-									scopeSpans := resourceSpans.At(0).ScopeSpans()
-									if scopeSpans.Len() > 0 {
-										spans := scopeSpans.At(0).Spans()
-										if spans.Len() > 0 {
-											traceStateStr = spans.At(0).TraceState().AsRaw()
-										}
-									}
-								}
-							}
-							bt.trace.Unlock()
-						}
-
-						t.Logf("DEBUG: TraceID=%s, TraceState='%s', InputWeight=%.6f, VaropAdjustedWeight=%.6f, TailAdjustment=%.6f, FinalWeight=%.6f",
-							bt.traceID, traceStateStr, otep235AdjustedCount, bt.varopAdjustedWeight, tailAdjustment, otep235AdjustedCount*tailAdjustment)
-					}
-
-					// Check for different weight categories
-					isUltraUltraHighWeight := otep235AdjustedCount > 4000.0                              // th:ffff traces (65536.0)
-					isUltraHighWeight := otep235AdjustedCount > 1000.0 && otep235AdjustedCount <= 4000.0 // th:fff traces (4096.0)
-					isHighWeight := otep235AdjustedCount > 250.0 && otep235AdjustedCount <= 1000.0       // th:ff traces (256.0)
-					isMediumWeight := otep235AdjustedCount > 15.0 && otep235AdjustedCount <= 250.0       // th:f traces (16.0)
-
-					if isUltraUltraHighWeight {
-						ultraUltraHighWeightTraceFound = true
-						ultraUltraHighWeightContribution = otep235AdjustedCount * tailAdjustment
-						ultraUltraHeavyWeightCount++
-					} else if isUltraHighWeight {
-						ultraHighWeightTraceFound = true
-						ultraHighWeightContribution = otep235AdjustedCount * tailAdjustment
-						ultraHeavyWeightCount++
-					} else if isHighWeight {
-						highWeightTraceFound = true
-						highWeightContribution = otep235AdjustedCount * tailAdjustment
-						heavyWeightCount++
-					} else if isMediumWeight {
-						heavyWeightCount++ // Group medium with heavy for simplicity
-					} else {
-						lightWeightCount++
-					}
 
 					// Combined adjustment
 					combinedAdjustedCount := otep235AdjustedCount * tailAdjustment
@@ -196,26 +155,6 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 				absoluteError := math.Abs(actualTotal - expectedTotal)
 				errorPct := absoluteError / expectedTotal * 100
 				totalErrors = append(totalErrors, errorPct)
-
-				// Summary of high-weight trace impact
-				if ultraUltraHighWeightTraceFound {
-					ultraUltraHighWeightPercentage := (ultraUltraHighWeightContribution / actualTotal) * 100
-					t.Logf("ULTRA-ULTRA-HEAVY SUMMARY: Found=%v, Contribution=%.3f, Percentage of total=%.1f%%",
-						ultraUltraHighWeightTraceFound, ultraUltraHighWeightContribution, ultraUltraHighWeightPercentage)
-				}
-				if ultraHighWeightTraceFound {
-					ultraHighWeightPercentage := (ultraHighWeightContribution / actualTotal) * 100
-					t.Logf("ULTRA-HEAVY SUMMARY: Found=%v, Contribution=%.3f, Percentage of total=%.1f%%",
-						ultraHighWeightTraceFound, ultraHighWeightContribution, ultraHighWeightPercentage)
-				}
-				if highWeightTraceFound {
-					highWeightPercentage := (highWeightContribution / actualTotal) * 100
-					t.Logf("HIGH-WEIGHT SUMMARY: Found=%v, Contribution=%.3f, Percentage of total=%.1f%%",
-						highWeightTraceFound, highWeightContribution, highWeightPercentage)
-				}
-				if !highWeightTraceFound && !ultraHighWeightTraceFound && !ultraUltraHighWeightTraceFound && tt.name != "uniform_weight_traces" {
-					t.Logf("HIGH-WEIGHT SUMMARY: NO HEAVY TRACES FOUND IN SAMPLE!")
-				}
 
 				t.Logf("Trial %d: Expected total: %.2f, Actual total: %.2f, Absolute error: %.10f, Error: %.8f%%, Sampled: %d/%d",
 					trial+1, expectedTotal, actualTotal, absoluteError, errorPct, len(sampledTraces), tt.inputTraceCount)
@@ -233,12 +172,6 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 							i+1, otep235Weight, varopWeight, tailAdjustment, finalWeight)
 					}
 					t.Logf("=== END OUTPUT WEIGHTS ===")
-				}
-
-				// For mixed weight test, verify that heavy weights are less likely
-				if tt.name == "mixed_weight_traces" || tt.name == "high_pressure_extreme_weights" {
-					t.Logf("Trial %d: Ultra-heavy: %d, Heavy: %d, Light: %d (of %d sampled)",
-						trial+1, ultraHeavyWeightCount, heavyWeightCount, lightWeightCount, len(sampledTraces))
 				}
 			}
 
@@ -262,6 +195,159 @@ func TestVaroptTailSamplingAdjustmentPreservation(t *testing.T) {
 			sampledTraces := bucket.getTracesWithTailAdjustments()
 			assert.Greater(t, len(sampledTraces), 0,
 				"No traces were sampled")
+		})
+	}
+}
+
+// TestVaroptRandomnessWithBooleanAttributes tests that Varopt sampling preserves
+// the distribution of boolean attributes when sampling uniform unweighted traces.
+// This follows the pattern from varopt tests to verify unbiased sampling.
+func TestVaroptRandomnessWithBooleanAttributes(t *testing.T) {
+	tests := []struct {
+		name            string
+		populationSize  int
+		sampleSize      int
+		trials          int
+		attributeName   string
+		chiSquaredAlpha float64 // significance level for chi-squared test
+		description     string
+	}{
+		{
+			name:            "balanced_sampling_medium",
+			populationSize:  1000,
+			sampleSize:      100,
+			trials:          50,
+			attributeName:   "test_boolean",
+			chiSquaredAlpha: 0.05, // 95% confidence
+			description:     "1000 traces sampled to 100, testing boolean distribution",
+		},
+		{
+			name:            "balanced_sampling_aggressive",
+			populationSize:  5000,
+			sampleSize:      50,
+			trials:          30,
+			attributeName:   "is_important",
+			chiSquaredAlpha: 0.05,
+			description:     "5000 traces sampled to 50, testing boolean distribution",
+		},
+		{
+			name:            "balanced_sampling_extreme",
+			populationSize:  10000,
+			sampleSize:      20,
+			trials:          25,
+			attributeName:   "feature_flag",
+			chiSquaredAlpha: 0.05,
+			description:     "10000 traces sampled to 20, testing boolean distribution",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := zaptest.NewLogger(t)
+
+			// Track results across trials for chi-squared test
+			var trueCountsPerTrial []int
+			var falseCountsPerTrial []int
+			var totalDeviations []float64
+
+			for trial := 0; trial < tt.trials; trial++ {
+				t.Logf("Trial %d/%d: %s", trial+1, tt.trials, tt.description)
+
+				// Create bucket manager
+				bm := newBucketManagerWithTimeSource(
+					logger,
+					1, // single bucket
+					time.Minute,
+					uint64(tt.sampleSize),
+					1.0,
+					&fixedTimeSource{t: time.Now()},
+				)
+
+				// Create uniform unweighted traces with boolean attributes
+				traces, trueCount, falseCount := createUniformTracesWithBooleanAttribute(
+					tt.populationSize, tt.attributeName)
+
+				t.Logf("Population: %d true, %d false (total: %d)",
+					trueCount, falseCount, tt.populationSize)
+
+				// Add all traces to the bucket
+				baseTime := time.Now()
+				for i, trace := range traces {
+					traceID := generateTraceID(i)
+					bm.addTrace(traceID, trace, baseTime)
+				}
+
+				// Get sampled traces
+				bucket := bm.buckets[0]
+				sampledTraces := bucket.getTracesWithTailAdjustments()
+
+				// Count boolean attribute distribution in sample
+				sampledTrueCount := 0
+				sampledFalseCount := 0
+
+				for _, bt := range sampledTraces {
+					hasTrue := extractBooleanAttribute(bt, tt.attributeName)
+					if hasTrue {
+						sampledTrueCount++
+					} else {
+						sampledFalseCount++
+					}
+				}
+
+				sampledTotal := sampledTrueCount + sampledFalseCount
+				assert.Equal(t, len(sampledTraces), sampledTotal,
+					"Sample count mismatch")
+
+				// Calculate percentages
+				expectedTrueRatio := float64(trueCount) / float64(tt.populationSize)
+				actualTrueRatio := float64(sampledTrueCount) / float64(sampledTotal)
+
+				deviation := math.Abs(actualTrueRatio - expectedTrueRatio)
+				totalDeviations = append(totalDeviations, deviation)
+
+				trueCountsPerTrial = append(trueCountsPerTrial, sampledTrueCount)
+				falseCountsPerTrial = append(falseCountsPerTrial, sampledFalseCount)
+
+				t.Logf("Trial %d: Sample=%d (true=%d, false=%d), Expected true ratio=%.3f, Actual=%.3f, Deviation=%.4f",
+					trial+1, sampledTotal, sampledTrueCount, sampledFalseCount,
+					expectedTrueRatio, actualTrueRatio, deviation)
+			}
+
+			// Calculate average deviation
+			var avgDeviation float64
+			for _, dev := range totalDeviations {
+				avgDeviation += dev
+			}
+			avgDeviation /= float64(len(totalDeviations))
+
+			// Perform chi-squared test to validate randomness
+			chiSquaredStatistic, pValue := calculateChiSquaredTest(trueCountsPerTrial, falseCountsPerTrial)
+
+			t.Logf("=== RANDOMNESS TEST RESULTS ===")
+			t.Logf("Average deviation from expected ratio: %.4f", avgDeviation)
+			t.Logf("Chi-squared statistic: %.4f", chiSquaredStatistic)
+			t.Logf("P-value: %.6f", pValue)
+			t.Logf("Alpha (significance level): %.2f", tt.chiSquaredAlpha)
+
+			// Verify randomness: p-value should be > alpha (fail to reject null hypothesis)
+			assert.Greater(t, pValue, tt.chiSquaredAlpha,
+				"Chi-squared test suggests non-random sampling (p=%.6f < α=%.2f). "+
+					"This indicates the sampler may be biased.", pValue, tt.chiSquaredAlpha)
+
+			// Verify reasonable average deviation (should be small for large sample sizes)
+			maxExpectedDeviation := 0.2 // 20% maximum average deviation
+			if tt.sampleSize >= 50 {
+				maxExpectedDeviation = 0.15 // 15% for larger samples
+			}
+			if tt.sampleSize >= 100 {
+				maxExpectedDeviation = 0.10 // 10% for very large samples
+			}
+
+			assert.LessOrEqual(t, avgDeviation, maxExpectedDeviation,
+				"Average deviation %.4f exceeds expected maximum %.4f for sample size %d",
+				avgDeviation, maxExpectedDeviation, tt.sampleSize)
+
+			t.Logf("✓ Randomness test passed: sampling appears unbiased")
 		})
 	}
 }
@@ -446,6 +532,44 @@ func createExtremeHighPressureTraces(count int) ([]*internalsampling.TraceData, 
 	return traces, expectedTotal
 }
 
+// createGradientProbabilityTraces creates traces with gradually changing sampling thresholds
+// from 1/110 to 1/90 to test approximation with subtle weight differences
+func createGradientProbabilityTraces(count int) ([]*internalsampling.TraceData, float64) {
+	traces := make([]*internalsampling.TraceData, count)
+	var expectedTotal float64
+
+	for i := 0; i < count; i++ {
+		probability := max(0.1, rand.Float64())
+
+		// Convert probability to threshold using pkg/sampling
+		threshold, err := sampling.ProbabilityToThreshold(probability)
+		if i == 0 {
+			threshold, err = sampling.ProbabilityToThreshold(1e-8)
+		} else if i == 1 {
+			threshold, err = sampling.ProbabilityToThreshold(1e-6)
+		} else if i == 2 {
+			threshold, err = sampling.ProbabilityToThreshold(1e-4)
+		}
+		if err != nil {
+			panic(fmt.Sprint("no fallback", probability, err))
+		}
+
+		// Get the adjusted count (weight) for this trace
+		weight := threshold.AdjustedCount()
+
+		// Create tracestate with the threshold value
+		traceState := "ot=th:" + threshold.TValue()
+
+		traces[i] = &internalsampling.TraceData{
+			ReceivedBatches: createTraceBatch(generateTraceID(i), traceState),
+		}
+
+		expectedTotal += weight
+	}
+
+	return traces, expectedTotal
+}
+
 // createTraceBatch creates a ptrace.Traces with specified traceID and traceState
 func createTraceBatch(traceID pcommon.TraceID, traceState string) ptrace.Traces {
 	traces := ptrace.NewTraces()
@@ -462,6 +586,144 @@ func createTraceBatch(traceID pcommon.TraceID, traceState string) ptrace.Traces 
 	}
 
 	return traces
+}
+
+// createUniformTracesWithBooleanAttribute creates traces with uniform weight (no OTEP 235)
+// and attaches boolean attributes with equal true/false distribution
+func createUniformTracesWithBooleanAttribute(count int, attributeName string) ([]*internalsampling.TraceData, int, int) {
+	traces := make([]*internalsampling.TraceData, count)
+
+	trueCount := count / 2
+	falseCount := count - trueCount // Handle odd counts
+
+	// Create traces with alternating boolean values to ensure balance
+	for i := 0; i < count; i++ {
+		boolValue := i < trueCount // First half get true, second half get false
+
+		traces[i] = &internalsampling.TraceData{
+			ReceivedBatches: createTraceBatchWithBooleanAttribute(
+				generateTraceID(i), "", attributeName, boolValue),
+		}
+	}
+
+	// Shuffle to remove any ordering bias
+	rng := rand.New(rand.NewSource(int64(count)))
+	rng.Shuffle(len(traces), func(i, j int) {
+		traces[i], traces[j] = traces[j], traces[i]
+	})
+
+	return traces, trueCount, falseCount
+}
+
+// createTraceBatchWithBooleanAttribute creates a ptrace.Traces with a boolean attribute
+func createTraceBatchWithBooleanAttribute(traceID pcommon.TraceID, traceState, attributeName string, boolValue bool) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	resourceSpan := traces.ResourceSpans().AppendEmpty()
+	scopeSpan := resourceSpan.ScopeSpans().AppendEmpty()
+	span := scopeSpan.Spans().AppendEmpty()
+
+	span.SetTraceID(traceID)
+	span.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetName("test-span")
+
+	// Add boolean attribute to span
+	span.Attributes().PutBool(attributeName, boolValue)
+
+	if traceState != "" {
+		span.TraceState().FromRaw(traceState)
+	}
+
+	return traces
+}
+
+// extractBooleanAttribute extracts a boolean attribute from a sampled trace
+func extractBooleanAttribute(bt *bucketTrace, attributeName string) bool {
+	// Navigate through the trace structure to find the attribute
+	for i := 0; i < bt.trace.ReceivedBatches.ResourceSpans().Len(); i++ {
+		resourceSpan := bt.trace.ReceivedBatches.ResourceSpans().At(i)
+
+		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+			scopeSpan := resourceSpan.ScopeSpans().At(j)
+
+			for k := 0; k < scopeSpan.Spans().Len(); k++ {
+				span := scopeSpan.Spans().At(k)
+
+				if value, exists := span.Attributes().Get(attributeName); exists {
+					return value.Bool()
+				}
+			}
+		}
+	}
+
+	// Default to false if attribute not found
+	return false
+}
+
+// calculateChiSquaredTest performs a chi-squared test for randomness
+// H0: The sampling is random (true/false distribution matches expected)
+// H1: The sampling is not random
+func calculateChiSquaredTest(trueCountsPerTrial, falseCountsPerTrial []int) (float64, float64) {
+	numTrials := len(trueCountsPerTrial)
+
+	// Calculate overall statistics
+	var totalTrue, totalFalse int
+	for i := 0; i < numTrials; i++ {
+		totalTrue += trueCountsPerTrial[i]
+		totalFalse += falseCountsPerTrial[i]
+	}
+
+	expectedTruePerTrial := float64(totalTrue) / float64(numTrials)
+	expectedFalsePerTrial := float64(totalFalse) / float64(numTrials)
+
+	// Calculate chi-squared statistic
+	var chiSquared float64
+	for i := 0; i < numTrials; i++ {
+		trueObs := float64(trueCountsPerTrial[i])
+		falseObs := float64(falseCountsPerTrial[i])
+
+		chiSquared += math.Pow(trueObs-expectedTruePerTrial, 2) / expectedTruePerTrial
+		chiSquared += math.Pow(falseObs-expectedFalsePerTrial, 2) / expectedFalsePerTrial
+	}
+
+	// Degrees of freedom = numTrials - 1 (for each category)
+	degreesOfFreedom := float64(numTrials - 1)
+
+	// Approximate p-value using incomplete gamma function
+	// For simplicity, we'll use a basic approximation
+	// In a real implementation, you'd use a proper statistical library
+	pValue := approximateChiSquaredPValue(chiSquared, degreesOfFreedom)
+
+	return chiSquared, pValue
+}
+
+// approximateChiSquaredPValue provides a rough approximation of chi-squared p-value
+// This is a simplified implementation for testing purposes
+func approximateChiSquaredPValue(chiSquared, degreesOfFreedom float64) float64 {
+	// For df > 30, chi-squared approaches normal distribution
+	// Use Wilson-Hilferty transformation for better approximation
+
+	if degreesOfFreedom > 30 {
+		// Normal approximation
+		mean := degreesOfFreedom
+		variance := 2 * degreesOfFreedom
+		standardized := (chiSquared - mean) / math.Sqrt(variance)
+
+		// Approximate p-value using complementary error function
+		return 0.5 * math.Erfc(standardized/math.Sqrt(2))
+	}
+
+	// For smaller df, use a lookup table approach
+	// These are rough approximations for common significance levels
+	critical05 := degreesOfFreedom + 1.96*math.Sqrt(2*degreesOfFreedom) // α = 0.05
+	critical01 := degreesOfFreedom + 2.58*math.Sqrt(2*degreesOfFreedom) // α = 0.01
+
+	if chiSquared < critical05 {
+		return 0.5 // p > 0.05
+	} else if chiSquared < critical01 {
+		return 0.02 // 0.01 < p < 0.05
+	} else {
+		return 0.005 // p < 0.01
+	}
 }
 
 // generateTraceID creates a traceID with specified index and random randomness
