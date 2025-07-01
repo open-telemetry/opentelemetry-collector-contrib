@@ -17,9 +17,7 @@ issues: [40982]
 # Use pipe (|) for multiline entries.
 subtext: |
   This change adds retry logic for connection refused errors. The target allocator could be
-  busy starting up the receiver and the first connection attempt may fail. This change adds a
-  retry loop that will attempt to connect for up to 60 seconds with a 5 second delay between attempts.
-  If the connection is still refused after 60 seconds, the receiver will fail to start.
+  busy starting up the receiver and the first connection attempt may fail.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
