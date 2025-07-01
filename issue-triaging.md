@@ -74,7 +74,7 @@ It is recommended that a triager should follow these steps when a new issue is r
    - The user is using an incorrect configuration.
        - In such cases, a brief comment and a link to documentation should be sufficient to close the issue.
    - The issue was filed in the wrong repository:
-       - For example, we might receive an issue for `otlpexporter` in contrib. It is best to reach out to project maintainers on CNCF slack and ask to transfer the issue.
+       - For example, we might receive an issue for `otlpexporter` in contrib. It is best to reach out in the #otel-collector-dev channel on CNCF Slack and ask project maintainers to transfer the issue.
 
 4. An issue may be considered complete for following reasons:
    - The enhancement/bugfix PR has been merged.
