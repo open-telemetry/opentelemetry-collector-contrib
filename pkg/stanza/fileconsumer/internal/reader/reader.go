@@ -266,7 +266,7 @@ func (r *Reader) readContents(ctx context.Context) {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			numTokensBatched = 0
-			r.Offset = s.Pos()
+			r.Offset, tokenOffsets[0] = s.Pos(), s.Pos()
 		}
 	}
 }
