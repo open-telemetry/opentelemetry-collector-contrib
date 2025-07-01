@@ -65,7 +65,15 @@ In Prometheus Remote Write v2, this problem is solved since the time series are 
 
 `Created Timestamp` is a feature in Prometheus that works similarly and is translated to OTel's `StartTimeUnixNano`. Prometheus Remote Write v1 doesn't send Created Timestamps, so we can never populate the StartTimeUnixNano field from that protocol.
 
-## Resource Metrics Cache
+## Known Limitations
+
+### Summaries and Classic Histograms are unsupported
+
+As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic Histograms are split into several separate time series and, for this reason, it is impossible to determine if the amount of buckets received are the complete set. 
+
+Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
+
+### Resource Metrics Cache
 
 `target_info` metrics and "normal" metrics are a match when they have the same job/instance labels (Please read the [specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1) for more details). But these metrics do not always come in the same Remote-Write request. For this reason, the receiver uses an internal LRU (Least Recently Used) and stateless cache implementation to store resource metrics across requests.
 
