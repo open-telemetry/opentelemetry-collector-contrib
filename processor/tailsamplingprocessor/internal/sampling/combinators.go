@@ -227,15 +227,15 @@ func combineWithOrLogic(decisions []Decision) Decision {
 	var firstError error
 	var subPolicyDecisions []SubPolicyDecision
 
-	   for _, decision := range decisions {
-			   // Handle error decisions - check Error field
-			   if decision.Error != nil {
-					   hasError = true
-					   if firstError == nil {
-							   firstError = decision.Error
-					   }
-					   continue
-			   }
+	for _, decision := range decisions {
+		// Handle error decisions - check Error field
+		if decision.Error != nil {
+			hasError = true
+			if firstError == nil {
+				firstError = decision.Error
+			}
+			continue
+		}
 
 		// Take minimum threshold (most permissive wins in OR)
 		if decision.Threshold.Unsigned() < minThreshold.Unsigned() {
@@ -256,13 +256,13 @@ func combineWithOrLogic(decisions []Decision) Decision {
 	}
 
 	// Precedence: Errors override sampling decisions
-	   if hasError {
-			   if firstError != nil {
-					   return NewDecisionWithError(firstError)
-			   }
-			   // Return a generic error decision if no error provided
-			   return NewDecisionWithError(nil)
-	   }
+	if hasError {
+		if firstError != nil {
+			return NewDecisionWithError(firstError)
+		}
+		// Return a generic error decision if no error provided
+		return NewDecisionWithError(nil)
+	}
 
 	// Create decision with deferred attribute insertion
 	result := NewDecisionWithThreshold(minThreshold)
@@ -276,10 +276,10 @@ func combineWithOrLogic(decisions []Decision) Decision {
 
 // combineWithAndLogic implements pure AND logic by taking maximum threshold.
 func combineWithAndLogic(decisions []Decision) Decision {
-	   if len(decisions) == 0 {
-			   // Empty AND is true: AlwaysSampleThreshold
-			   return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
-	   }
+	if len(decisions) == 0 {
+		// Empty AND is true: AlwaysSampleThreshold
+		return NewDecisionWithThreshold(sampling.AlwaysSampleThreshold)
+	}
 
 	// Start with the minimum threshold (most permissive)
 	maxThreshold := sampling.AlwaysSampleThreshold
@@ -288,15 +288,15 @@ func combineWithAndLogic(decisions []Decision) Decision {
 	var firstError error
 	var subPolicyDecisions []SubPolicyDecision
 
-	   for _, decision := range decisions {
-			   // Handle error decisions - check Error field
-			   if decision.Error != nil {
-					   hasError = true
-					   if firstError == nil {
-							   firstError = decision.Error
-					   }
-					   continue
-			   }
+	for _, decision := range decisions {
+		// Handle error decisions - check Error field
+		if decision.Error != nil {
+			hasError = true
+			if firstError == nil {
+				firstError = decision.Error
+			}
+			continue
+		}
 
 		// Take maximum threshold (most restrictive wins in AND)
 		if decision.Threshold.Unsigned() > maxThreshold.Unsigned() {
@@ -317,13 +317,13 @@ func combineWithAndLogic(decisions []Decision) Decision {
 	}
 
 	// Precedence: Errors override sampling decisions
-	   if hasError {
-			   if firstError != nil {
-					   return NewDecisionWithError(firstError)
-			   }
-			   // Return a generic error decision if no error provided
-			   return NewDecisionWithError(nil)
-	   }
+	if hasError {
+		if firstError != nil {
+			return NewDecisionWithError(firstError)
+		}
+		// Return a generic error decision if no error provided
+		return NewDecisionWithError(nil)
+	}
 
 	// Create decision with deferred attribute insertion
 	result := NewDecisionWithThreshold(maxThreshold)

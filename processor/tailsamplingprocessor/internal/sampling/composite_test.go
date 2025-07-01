@@ -108,8 +108,8 @@ func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
 	decision, err := c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
-	   // Check that the decision is sampled (threshold comparison)
-	   assert.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold).Threshold, decision.Threshold, "Decision should be Sampled")
+	// Check that the decision is sampled (threshold comparison)
+	assert.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold).Threshold, decision.Threshold, "Decision should be Sampled")
 
 	// Set up randomness value for the trace (needed for deferred attribute application)
 	trace.RandomnessValue = sampling.TraceIDToRandomness(traceID)
@@ -279,44 +279,44 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	// We have 2 subpolicies, so each should initially get half the bandwidth
 
-	   // First totalSPS/2 should be Sampled until we hit the rate limit
-	   for i := 0; i < totalSPS/2; i++ {
-			   decision, err := c.Evaluate(context.Background(), traceID, trace)
-			   require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
-			   require.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision, "Incorrect decision by composite policy evaluator: expected %v, actual %v", NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision)
-	   }
+	// First totalSPS/2 should be Sampled until we hit the rate limit
+	for i := 0; i < totalSPS/2; i++ {
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+		require.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision, "Incorrect decision by composite policy evaluator: expected %v, actual %v", NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision)
+	}
 
-	   // Now we hit the rate limit for second subpolicy, so subsequent evaluations should result in NotSampled
-	   for i := 0; i < totalSPS/2; i++ {
-			   decision, err := c.Evaluate(context.Background(), traceID, trace)
-			   require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
-			   require.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision, "Incorrect decision by composite policy evaluator: expected %v, actual %v", NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
-	   }
+	// Now we hit the rate limit for second subpolicy, so subsequent evaluations should result in NotSampled
+	for i := 0; i < totalSPS/2; i++ {
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+		require.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision, "Incorrect decision by composite policy evaluator: expected %v, actual %v", NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
+	}
 
-	   // Let the time advance by one second.
-	   timeProvider.second++
+	// Let the time advance by one second.
+	timeProvider.second++
 
-	   // It is a new second, so we should start sampling again.
-	   for i := 0; i < totalSPS/2; i++ {
-			   decision, err := c.Evaluate(context.Background(), traceID, trace)
-			   require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
-			   assert.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision)
-	   }
+	// It is a new second, so we should start sampling again.
+	for i := 0; i < totalSPS/2; i++ {
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+		assert.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision)
+	}
 
-	   // Now let's hit the hard limit and exceed the total by a factor of 2
-	   for i := 0; i < 2*totalSPS; i++ {
-			   decision, err := c.Evaluate(context.Background(), traceID, trace)
-			   require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
-			   assert.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
-	   }
+	// Now let's hit the hard limit and exceed the total by a factor of 2
+	for i := 0; i < 2*totalSPS; i++ {
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+		assert.Equal(t, NewDecisionWithThreshold(sampling.NeverSampleThreshold), decision)
+	}
 
-	   // Let the time advance by one second.
-	   timeProvider.second++
+	// Let the time advance by one second.
+	timeProvider.second++
 
-	   // It is a new second, so we should start sampling again.
-	   for i := 0; i < totalSPS/2; i++ {
-			   decision, err := c.Evaluate(context.Background(), traceID, trace)
-			   require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
-			   assert.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision)
-	   }
+	// It is a new second, so we should start sampling again.
+	for i := 0; i < totalSPS/2; i++ {
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+		assert.Equal(t, NewDecisionWithThreshold(sampling.AlwaysSampleThreshold), decision)
+	}
 }
