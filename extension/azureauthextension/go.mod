@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
+	github.com/elastic/go-freelru v0.16.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250630174123-18b3b578b0b3
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250630174123-18b3b578b0b3

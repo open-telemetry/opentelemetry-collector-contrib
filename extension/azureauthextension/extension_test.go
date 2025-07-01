@@ -5,6 +5,7 @@ package azureauthextension
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -31,6 +32,28 @@ func TestGetToken(t *testing.T) {
 	}
 	_, err := auth.GetToken(context.Background(), policy.TokenRequestOptions{})
 	require.NoError(t, err)
+}
+
+func TestGetTokenForScope(t *testing.T) {
+	m := mockTokenCredential{}
+	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	auth := authenticator{
+		credential:  &m,
+		tokensCache: make(map[string]azcore.AccessToken, 5),
+	}
+	_, err := auth.getTokenForScope(context.Background(), "scope-1")
+	require.NoError(t, err)
+
+	auth.mx.Lock()
+	require.Len(t, auth.tokensCache, 1)
+	auth.mx.Unlock()
+
+	_, err = auth.getTokenForScope(context.Background(), "scope-2")
+	require.NoError(t, err)
+
+	auth.mx.Lock()
+	require.Len(t, auth.tokensCache, 2)
+	auth.mx.Unlock()
 }
 
 func TestGetHeaderValue(t *testing.T) {
@@ -116,6 +139,7 @@ func TestAuthenticate(t *testing.T) {
 			},
 			expectedErr: `unauthorized: invalid token`,
 		},
+
 		"valid_authenticate": {
 			headers: map[string][]string{
 				"Authorization": {"Bearer test"},
@@ -127,13 +151,15 @@ func TestAuthenticate(t *testing.T) {
 	m := mockTokenCredential{}
 	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
-		credential: &m,
+		credential:  &m,
+		tokensCache: make(map[string]azcore.AccessToken, 1),
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			_, err := auth.Authenticate(context.Background(), test.headers)
 			if test.expectedErr != "" {
+				fmt.Println("there is an error: ", err.Error())
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
 				require.NoError(t, err)
@@ -184,7 +210,8 @@ func TestRoundTrip(t *testing.T) {
 	m := mockTokenCredential{}
 	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
-		credential: &m,
+		credential:  &m,
+		tokensCache: make(map[string]azcore.AccessToken, 1),
 	}
 	base := &mockRoundTripper{}
 	base.On("RoundTrip", mock.Anything).Return(&http.Response{StatusCode: http.StatusOK}, nil)

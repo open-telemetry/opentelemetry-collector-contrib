@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -25,6 +27,12 @@ import (
 type authenticator struct {
 	credential azcore.TokenCredential
 	logger     *zap.Logger
+
+	// tokensCache holds the tokens for each scope, it is
+	// only used in the HTTPClient and Server interface
+	// implementations
+	tokensCache map[string]azcore.AccessToken
+	mx          sync.RWMutex
 }
 
 var (
@@ -98,8 +106,9 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 	}
 
 	return &authenticator{
-		credential: credential,
-		logger:     logger,
+		credential:  credential,
+		logger:      logger,
+		tokensCache: make(map[string]azcore.AccessToken, 5),
 	}, nil
 }
 
@@ -119,6 +128,8 @@ func getCertificateAndKey(filename string) (*x509.Certificate, crypto.PrivateKey
 }
 
 func (a *authenticator) Start(_ context.Context, _ component.Host) error {
+	// TODO Consider launching a cleanup routine to the tokens cache
+
 	return nil
 }
 
@@ -153,23 +164,48 @@ func getHeaderValue(header string, headers map[string][]string) (string, error) 
 	return value[0], nil
 }
 
-// getTokenForHost will request an access token based on a scope
-// computed from the host value. It will return the token value
-// or an error if request failed.
-func (a *authenticator) getTokenForHost(ctx context.Context, host string) (string, error) {
+func (a *authenticator) getTokenForScope(ctx context.Context, scope string) (string, error) {
+	a.mx.RLock()
+	token, ok := a.tokensCache[scope]
+	a.mx.RUnlock()
+
+	// if token exists, and is not expired
+	if ok && token.ExpiresOn.Before(time.Now()) {
+		return token.Token, nil
+	}
+
+	a.mx.Lock()
+	defer a.mx.Unlock()
+
 	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
-		// TODO Cache the tokens
 		Scopes: []string{
-			// Example: if host is "management.azure.com", then the scope to get the
-			// token will be "https://management.azure.com/.default".
-			// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
-			fmt.Sprintf("https://%s/.default", host),
+			scope,
 		},
 	})
 	if err != nil {
 		return "", err
 	}
+	a.tokensCache[scope] = token
 	return token.Token, nil
+}
+
+// getTokenForHost will request an access token based on a scope
+// computed from the host value. It will return the token value
+// or an error if request failed.
+func (a *authenticator) getTokenForHost(ctx context.Context, host string) (string, error) {
+	// Example: if host is "management.azure.com", then the scope to get the
+	// token will be "https://management.azure.com/.default".
+	// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
+	//
+	// TODO Add support for scope in configuration, that will take priority over this
+	// computed scope
+	scope := fmt.Sprintf("https://%s/.default", host)
+
+	token, err := a.getTokenForScope(ctx, scope)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
@@ -178,11 +214,6 @@ func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]s
 	if err != nil {
 		return ctx, err
 	}
-	host, err := getHeaderValue("Host", headers)
-	if err != nil {
-		return ctx, err
-	}
-
 	authFormat := strings.Split(auth, " ")
 	if len(authFormat) != 2 {
 		return ctx, errors.New(`authorization header does not follow expected format "Bearer <Token>"`)
@@ -191,13 +222,19 @@ func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, fmt.Errorf(`expected "Bearer" as schema, got %q`, authFormat[0])
 	}
 
+	host, err := getHeaderValue("Host", headers)
+	if err != nil {
+		return ctx, err
+	}
 	token, err := a.getTokenForHost(ctx, host)
 	if err != nil {
 		return ctx, err
 	}
+
 	if authFormat[1] != token {
 		return ctx, errors.New("unauthorized: invalid token")
 	}
+
 	return ctx, nil
 }
 
