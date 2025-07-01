@@ -537,6 +537,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbPendingRecovery = "db_recoveryPending"
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
+	const cpuCount = "cpu_count"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -565,6 +566,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+		errs = append(errs, s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]))
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
