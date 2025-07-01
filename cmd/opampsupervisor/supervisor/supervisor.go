@@ -1491,13 +1491,11 @@ func (s *Supervisor) waitForAgentReady() error {
 	bootstrapTimer := time.NewTimer(s.config.Agent.BootstrapTimeout)
 	defer bootstrapTimer.Stop()
 
-	for {
-		select {
-		case <-s.agentReadyChan:
-			return nil
-		case <-bootstrapTimer.C:
-			return fmt.Errorf("agent has not started after %s", s.config.Agent.BootstrapTimeout)
-		}
+	select {
+	case <-s.agentReadyChan:
+		return nil
+	case <-bootstrapTimer.C:
+		return fmt.Errorf("agent has not started after %s", s.config.Agent.BootstrapTimeout)
 	}
 }
 
