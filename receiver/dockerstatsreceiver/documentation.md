@@ -24,11 +24,11 @@ More docs for [cgroups v1](https://www.kernel.org/doc/Documentation/cgroup-v1/bl
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.cpu.usage.kernelmode
 
@@ -114,9 +114,9 @@ Bytes received by the container.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.network.io.usage.rx_dropped
 
@@ -128,9 +128,9 @@ Incoming packets dropped.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.network.io.usage.tx_bytes
 
@@ -142,9 +142,9 @@ Bytes sent.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.network.io.usage.tx_dropped
 
@@ -156,9 +156,9 @@ Outgoing packets dropped.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ## Optional Metrics
 
@@ -182,11 +182,11 @@ Number of bios/requests merged into requests belonging to this cgroup and its de
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.blockio.io_queued_recursive
 
@@ -200,11 +200,11 @@ Number of requests queued up for this cgroup and its descendant cgroups (Only av
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.blockio.io_service_time_recursive
 
@@ -218,11 +218,11 @@ Total amount of time in nanoseconds between request dispatch and request complet
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.blockio.io_serviced_recursive
 
@@ -236,11 +236,11 @@ Number of IOs (bio) issued to the disk by the group and descendant groups (Only 
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.blockio.io_time_recursive
 
@@ -254,11 +254,11 @@ Disk time allocated to cgroup (and descendant cgroups) per device in millisecond
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.blockio.io_wait_time_recursive
 
@@ -272,11 +272,11 @@ Total amount of time the IOs for this cgroup (and descendant cgroups) spent wait
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.blockio.sectors_recursive
 
@@ -290,11 +290,11 @@ Number of sectors transferred to/from disk by the group and descendant groups (O
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device_major | Device major number for block IO operations. | Any Str |
-| device_minor | Device minor number for block IO operations. | Any Str |
-| operation | Type of BlockIO operation. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| device_major | Device major number for block IO operations. | Any Str | false |
+| device_minor | Device minor number for block IO operations. | Any Str | false |
+| operation | Type of BlockIO operation. | Any Str | false |
 
 ### container.cpu.limit
 
@@ -356,9 +356,9 @@ Per-core CPU usage by the container (Only available with cgroups v1).
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| core | The CPU core number when utilising per-CPU metrics. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| core | The CPU core number when utilising per-CPU metrics. | Any Str | false |
 
 ### container.cpu.usage.system
 
@@ -666,9 +666,9 @@ Received errors.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.network.io.usage.rx_packets
 
@@ -680,9 +680,9 @@ Packets received.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.network.io.usage.tx_errors
 
@@ -694,9 +694,9 @@ Sent errors.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.network.io.usage.tx_packets
 
@@ -708,9 +708,9 @@ Packets sent.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| interface | Network interface. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| interface | Network interface. | Any Str | false |
 
 ### container.pids.count
 

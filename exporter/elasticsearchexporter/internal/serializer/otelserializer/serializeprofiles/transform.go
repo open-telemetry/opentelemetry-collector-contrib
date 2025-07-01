@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -83,6 +84,12 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 
 	hostMetadata := newHostMetadata(dic, resource, scope, profile)
 
+	frequency := int64(math.Round(1e9 / float64(profile.Period())))
+	if frequency <= 0 {
+		// The lowest sensical frequency is 1Hz.
+		frequency = 1
+	}
+
 	for i := 0; i < profile.Sample().Len(); i++ {
 		sample := profile.Sample().At(i)
 
@@ -99,7 +106,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			return nil, fmt.Errorf("failed to create stacktrace ID: %w", err)
 		}
 
-		event := stackTraceEvent(dic, traceID, sample, hostMetadata)
+		event := stackTraceEvent(dic, traceID, sample, frequency, hostMetadata)
 
 		// Set the stacktrace and stackframes to the payload.
 		// The docs only need to be written once.
@@ -208,12 +215,13 @@ func isFrameSymbolized(frame StackFrame) bool {
 	return len(frame.FileName) > 0 || len(frame.FunctionName) > 0
 }
 
-func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, hostMetadata map[string]string) StackTraceEvent {
+func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64, hostMetadata map[string]string) StackTraceEvent {
 	event := StackTraceEvent{
 		EcsVersion:   EcsVersion{V: EcsVersionString},
 		HostID:       hostMetadata[string(semconv.HostIDKey)],
 		StackTraceID: traceID,
 		Count:        1, // Elasticsearch v9.2+ doesn't read the count value any more.
+		Frequency:    frequency,
 	}
 
 	// Store event-specific attributes.
