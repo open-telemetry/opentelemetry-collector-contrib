@@ -72,12 +72,12 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 	m.settings.Logger.Info("Starting target allocator discovery")
 
 	operation := func() (uint64, error) {
-		savedHash, err := m.sync(uint64(0), httpClient)
-		if err != nil {
-			if errors.Is(err, syscall.ECONNREFUSED) {
+		savedHash, opErr := m.sync(uint64(0), httpClient)
+		if opErr != nil {
+			if errors.Is(opErr, syscall.ECONNREFUSED) {
 				return 0, backoff.RetryAfter(1)
 			}
-			return 0, err
+			return 0, opErr
 		}
 		return savedHash, nil
 	}
