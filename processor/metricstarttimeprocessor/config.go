@@ -6,18 +6,21 @@ package metricstarttimeprocessor // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimemetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
 
 // Config holds configuration of the metric start time processor.
 type Config struct {
-	Strategy   string        `mapstructure:"strategy"`
-	GCInterval time.Duration `mapstructure:"gc_interval"`
+	Strategy             string        `mapstructure:"strategy"`
+	GCInterval           time.Duration `mapstructure:"gc_interval"`
+	StartTimeMetricRegex string        `mapstructure:"start_time_metric_regex"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -34,11 +37,17 @@ func (cfg *Config) Validate() error {
 	switch cfg.Strategy {
 	case truereset.Type:
 	case subtractinitial.Type:
+	case starttimemetric.Type:
 	default:
 		return fmt.Errorf("%q is not a valid strategy", cfg.Strategy)
 	}
 	if cfg.GCInterval <= 0 {
 		return errors.New("gc_interval must be positive")
+	}
+	if cfg.StartTimeMetricRegex != "" {
+		if _, err := regexp.Compile(cfg.StartTimeMetricRegex); err != nil {
+			return err
+		}
 	}
 	return nil
 }
