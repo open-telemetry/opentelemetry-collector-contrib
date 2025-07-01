@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.67.0
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.67.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.41.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.42.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.0
@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/config v1.29.17
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.32
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.226.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.227.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.129.0
@@ -130,7 +130,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.6 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
