@@ -69,6 +69,7 @@ func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profile
 			zap.Int64("rejected_profiles", partialSuccess.RejectedProfiles()),
 		)
 	}
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 
