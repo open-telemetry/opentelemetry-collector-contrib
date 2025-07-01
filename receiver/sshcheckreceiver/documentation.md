@@ -30,9 +30,9 @@ Records errors occurring during SSH check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| error.message | Error message recorded during check | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| error.message | Error message recorded during check | Any Str | false |
 
 ### sshcheck.status
 
@@ -70,9 +70,9 @@ Records errors occurring during SFTP check.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| error.message | Error message recorded during check | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| error.message | Error message recorded during check | Any Str | false |
 
 ### sshcheck.sftp_status
 
