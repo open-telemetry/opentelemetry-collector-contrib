@@ -166,9 +166,6 @@ type Supervisor struct {
 	// agentReadyChan is a channel that can be used to wait for the agent to
 	// start in case [agentStarted] is false.
 	agentReadyChan chan struct{}
-	// agentReadyLock is a mutex to protect [agentStartedChan]. This is
-	// required because we need a new channel every time the agent restarts.
-	agentReadyLock *sync.Mutex
 
 	// agentRestarting is true if the agent is restarting.
 	agentRestarting atomic.Bool
@@ -196,8 +193,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		agentConn:                    &atomic.Value{},
 		featureGates:                 map[string]struct{}{},
 		agentReady:                   atomic.Bool{},
-		agentReadyChan:               make(chan struct{}),
-		agentReadyLock:               &sync.Mutex{},
+		agentReadyChan:               make(chan struct{}, 1),
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -780,10 +776,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient.Store(message.Health)
 		if !s.agentReady.Load() {
-			s.agentReady.Store(true)
-			s.agentReadyLock.Lock()
-			close(s.agentReadyChan)
-			s.agentReadyLock.Unlock()
+			s.markAgentReady()
 		}
 		err := s.opampClient.SetHealth(message.Health)
 		if err != nil {
@@ -1308,10 +1301,7 @@ func (s *Supervisor) handleRestartCommand() error {
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
-	s.agentReady.Store(false)
-	s.agentReadyLock.Lock()
-	s.agentReadyChan = make(chan struct{})
-	s.agentReadyLock.Unlock()
+	s.resetAgentReady()
 	return err
 }
 
@@ -1461,8 +1451,29 @@ func (s *Supervisor) runAgentProcess() {
 	}
 }
 
+// markAgentReady marks the agent as ready and sends a signal to
+// [agentReadyChan].
+func (s *Supervisor) markAgentReady() {
+	s.agentReady.Store(true)
+	select {
+	case s.agentReadyChan <- struct{}{}:
+	default:
+	}
+}
+
+// resetAgentReady resets the agent as not ready and drains [agentReadyChan].
+func (s *Supervisor) resetAgentReady() {
+	s.agentReady.Store(false)
+	select {
+	case <-s.agentReadyChan:
+	default:
+	}
+}
+
 // waitForAgentReady waits for the agent to be ready. The agent is considered to
 // be ready when its first health report is received by the opamp server.
+// WARNING: this is not thread-safe! If there are two goroutines waiting for
+// the agent to be ready, only one of them will be able to proceed.
 func (s *Supervisor) waitForAgentReady() error {
 	if s.agentReady.Load() {
 		return nil
@@ -1471,15 +1482,12 @@ func (s *Supervisor) waitForAgentReady() error {
 	// Sometimes the commander is trying to start the agent process, but the
 	// agent is crashlooping. In this case the agent will never be ready and
 	// it makes no sense to wait for it.
-	if s.commander.IsRunning() {
+	if s.commander.IsRunning() && s.lastHealthFromClient.Load() == nil {
 		return nil
 	}
 
 	bootstrapTimer := time.NewTimer(s.config.Agent.BootstrapTimeout)
 	defer bootstrapTimer.Stop()
-
-	s.agentReadyLock.Lock()
-	defer s.agentReadyLock.Unlock()
 
 	for {
 		select {
@@ -1508,10 +1516,7 @@ func (s *Supervisor) hupReloadAgent() error {
 		return nil
 	}
 
-	s.agentReady.Store(false)
-	s.agentReadyLock.Lock()
-	s.agentReadyChan = make(chan struct{})
-	s.agentReadyLock.Unlock()
+	s.resetAgentReady()
 
 	s.telemetrySettings.Logger.Debug("agent is running, reloading config")
 	if err := s.reloadAgentConfig(); err != nil {

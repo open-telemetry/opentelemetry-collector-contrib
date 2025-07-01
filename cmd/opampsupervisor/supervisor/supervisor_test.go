@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -914,7 +913,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 			agentReadyChan:               make(chan struct{}),
-			agentReadyLock:               &sync.Mutex{},
 			agentReady:                   atomic.Bool{},
 		}
 
@@ -1111,7 +1109,6 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
 			agentReadyChan:               make(chan struct{}),
-			agentReadyLock:               &sync.Mutex{},
 			agentReady:                   atomic.Bool{},
 		}
 
