@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/common v0.65.0
 	github.com/prometheus/exporter-toolkit v0.14.0
-	github.com/prometheus/prometheus v0.304.1
+	github.com/prometheus/prometheus v0.304.2
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250630174123-18b3b578b0b3
 	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250630174123-18b3b578b0b3
