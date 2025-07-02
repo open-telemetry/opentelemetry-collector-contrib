@@ -25,7 +25,7 @@ var (
 type Config struct {
 	// Syslog server address
 	Endpoint string `mapstructure:"endpoint"`
-	// Syslog server port (ignored for unix sockets)
+	// Syslog server port (ignored for Unix sockets)
 	Port int `mapstructure:"port"`
 	// Network for syslog communication
 	// options: tcp, udp, unix
