@@ -27,6 +27,13 @@ type LeaderElection interface {
 
 // SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
 func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
+	lee.mu.Lock()
+	defer lee.mu.Unlock()
+
+	if lee.onStartLeadingChan != nil {
+		lee.onStartLeadingChan <- onStartLeading
+	}
+
 	lee.onStartedLeading = append(lee.onStartedLeading, onStartLeading)
 	lee.onStoppedLeading = append(lee.onStoppedLeading, onStopLeading)
 }
@@ -42,13 +49,38 @@ type leaderElectionExtension struct {
 
 	onStartedLeading []StartCallback
 	onStoppedLeading []StopCallback
+
+	onStartLeadingChan chan StartCallback
+
+	mu sync.Mutex
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
+	lee.onStartLeadingChan = make(chan StartCallback, 1)
+
 	for _, callback := range lee.onStartedLeading {
 		callback(ctx)
 	}
+	go func() {
+		for {
+			select {
+			case _, ok := <-lee.onStartLeadingChan:
+				if !ok {
+					return
+				}
+			case <-ctx.Done():
+				return
+
+			default:
+				callback := <-lee.onStartLeadingChan
+				if callback != nil {
+					callback(ctx)
+				}
+			}
+		}
+	}()
+
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
@@ -56,6 +88,7 @@ func (lee *leaderElectionExtension) stoppedLeading() {
 	for _, callback := range lee.onStoppedLeading {
 		callback()
 	}
+	close(lee.onStartLeadingChan)
 }
 
 // Start begins the extension's processing.
