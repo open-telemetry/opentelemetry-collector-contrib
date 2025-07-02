@@ -1372,6 +1372,10 @@ func (s *Supervisor) runAgentProcess() {
 			}
 
 			s.telemetrySettings.Logger.Debug("Agent is not running, starting new instance")
+			// This call to [startAgent] is useful for both the normal config reload
+			// and the HUP one. It takes care of not starting the agent if the config
+			// is empty and also of starting it when the config changes from empty
+			// to non-empty.
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
@@ -1516,6 +1520,7 @@ func (s *Supervisor) hupReloadAgent() error {
 	defer s.agentRestarting.Store(false)
 	defer s.resetAgentReady()
 
+	// If we have an empty config, the agent should be stopped.
 	if s.cfgState.Load().(*configState).configMapIsEmpty {
 		s.stopAgentApplyConfig()
 		return nil
@@ -1525,10 +1530,10 @@ func (s *Supervisor) hupReloadAgent() error {
 		return fmt.Errorf("failed to write agent new config: %w", err)
 	}
 
+	// If the agent is not running, we can send a HUP signal to it, so we
+	// return and let it be started by the caller.
 	if !s.commander.IsRunning() {
-		if _, err := s.startAgent(); err != nil {
-			return fmt.Errorf("failed to start agent: %w", err)
-		}
+		return nil
 	}
 
 	if err := s.waitForAgentReady(); err != nil {
