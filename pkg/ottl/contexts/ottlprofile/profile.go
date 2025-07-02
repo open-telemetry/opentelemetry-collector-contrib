@@ -88,6 +88,11 @@ func (tCtx TransformContext) GetProfile() pprofile.Profile {
 	return tCtx.profile
 }
 
+// GetProfilesDictionary returns the profiles dictionary from the TransformContext.
+func (tCtx TransformContext) GetProfilesDictionary() pprofile.ProfilesDictionary {
+	return tCtx.dictionary
+}
+
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.
 func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return tCtx.instrumentationScope
