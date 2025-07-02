@@ -13,8 +13,10 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -142,6 +144,7 @@ func getAzureMonitorExporter(config *Config, transportChannel appinsights.Teleme
 	return &azureMonitorExporter{
 		config,
 		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
 	}
