@@ -28,7 +28,7 @@ require (
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -124,7 +124,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	gitlab.com/gitlab-org/api/client-go v0.130.1
+	gitlab.com/gitlab-org/api/client-go v0.131.0
 	go.opentelemetry.io/collector/client v1.35.1-0.20250630174123-18b3b578b0b3 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250630174123-18b3b578b0b3
 	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250630174123-18b3b578b0b3 // indirect
