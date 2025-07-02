@@ -220,15 +220,6 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
-	if len(a.ConfigFiles) == 0 {
-		a.ConfigFiles = []string{
-			string(SpecialConfigFileRemoteConfig),
-			string(SpecialConfigFileOwnMetrics),
-			string(SpecialConfigFileBuiltin),
-			string(SpecialConfigFileOpAMPExtension),
-		}
-	}
-
 	for _, file := range a.ConfigFiles {
 		if !strings.HasPrefix(file, "$") {
 			continue
