@@ -1351,6 +1351,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.lastHealthFromClient.Store(nil)
 			s.telemetrySettings.Logger.Debug("agent has new config", zap.String("previous_health", s.lastHealthFromClient.Load().String()))
 			if !configApplyTimeoutTimer.Stop() {
 				select {
@@ -1381,7 +1382,6 @@ func (s *Supervisor) runAgentProcess() {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
-			s.lastHealthFromClient.Store(nil)
 			if status == agentNotStarting {
 				// not starting agent because of nop config: clear timer, report applied status, report healthy status
 				configApplyTimeoutTimer.Stop()
