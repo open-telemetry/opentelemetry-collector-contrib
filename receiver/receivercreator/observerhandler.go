@@ -232,7 +232,7 @@ func filterConsumerSignals(consumer *enhancingConsumer, signals receiverSignals)
 	if !signals.logs {
 		consumer.logs = nil
 	}
-	if !signals.metrics {
+	if !signals.traces {
 		consumer.traces = nil
 	}
 }

@@ -121,5 +121,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewSliceToMapFactory[K](),
 		NewProfileIDFactory[K](),
 		NewParseIntFactory[K](),
+		NewKeysFactory[K](),
 	}
 }
