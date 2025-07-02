@@ -1805,3 +1805,58 @@ telemetry:
 
 	supervisor.Shutdown()
 }
+
+func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
+	cfg := setupSupervisorConfig(t, configTemplate)
+
+	testCases := []struct {
+		name                string
+		configFiles         []string
+		expectedConfigFiles []string
+	}{
+		{
+			name:        "No config files provided, default config files are added",
+			configFiles: []string{},
+			expectedConfigFiles: []string{
+				"$OWN_METRICS_CONFIG",
+				"$BUILTIN_CONFIG",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$REMOTE_CONFIG",
+			},
+		},
+		{
+			name:        "Special config files partially provided, missing defaults are added",
+			configFiles: []string{"$OWN_METRICS_CONFIG", "$REMOTE_CONFIG"},
+			// The order here is not exactly the same as the default order
+			// because some special config files were manually provided.
+			// Only the missing ones are added where the default order would
+			// have them.
+			expectedConfigFiles: []string{
+				"$OWN_METRICS_CONFIG",
+				"$BUILTIN_CONFIG",
+				"$REMOTE_CONFIG",
+				"$OPAMP_EXTENSION_CONFIG",
+			},
+		},
+		{
+			name:        "Only normal config files provided, special config files are added",
+			configFiles: []string{"some_file.yaml"},
+			expectedConfigFiles: []string{
+				"$OWN_METRICS_CONFIG",
+				"$BUILTIN_CONFIG",
+				"some_file.yaml",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$REMOTE_CONFIG",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg.Agent.ConfigFiles = tc.configFiles
+			supervisor := Supervisor{config: cfg}
+			supervisor.addSpecialConfigFiles()
+			require.Equal(t, tc.expectedConfigFiles, supervisor.config.Agent.ConfigFiles)
+		})
+	}
+}
