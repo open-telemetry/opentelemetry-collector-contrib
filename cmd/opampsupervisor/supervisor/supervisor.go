@@ -1482,17 +1482,6 @@ func (s *Supervisor) waitForAgentReady() error {
 		return nil
 	}
 
-	// Sometimes the commander is trying to start the agent process, but the
-	// agent is crashlooping. This can be inferred by the lack of health reports
-	// from the agent. In this case the agent will never be ready and it makes
-	// no sense to wait for it.
-	// if s.commander.IsRunning() && s.lastHealthFromClient.Load() == nil {
-	// 	if s.lastHealthFromClient.Load() == nil || !s.lastHealthFromClient.Load().Healthy {
-	// 		s.telemetrySettings.Logger.Debug("agent is running but has no health report, skipping wait for ready")
-	// return nil
-	// 	}
-	// }
-
 	bootstrapTimer := time.NewTimer(s.config.Agent.BootstrapTimeout)
 	defer bootstrapTimer.Stop()
 
