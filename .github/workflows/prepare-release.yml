@@ -12,6 +12,8 @@ on:
       current-beta:
         required: true
         description: Current version (beta, like 0.69.1)
+permissions:
+  contents: read
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
