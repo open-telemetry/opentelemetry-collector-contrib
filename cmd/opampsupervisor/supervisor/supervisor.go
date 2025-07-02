@@ -935,8 +935,8 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 }
 
 func (s *Supervisor) addSpecialConfigFiles() {
-	// - If no config file are provided, we add the special config files matching the
-	//   standard order of configuration merging.
+	// If no config files are provided, we add the special config files in the
+	// their default merge order.
 	if len(s.config.Agent.ConfigFiles) == 0 {
 		for _, file := range config.SpecialConfigFiles {
 			s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(file))

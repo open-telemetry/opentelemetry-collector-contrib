@@ -147,7 +147,7 @@ agent:
   # below for more details.
   config_files:
     - $OPAMP_EXTENSION_CONFIG
-    - $OWN_METRICS_CONFIG
+    - $OWN_TELEMETRY_CONFIG
     - $BUILTIN_CONFIG
     - $REMOTE_CONFIG
 
@@ -236,13 +236,15 @@ The indicated configuration files are merged in memory and the resulting configu
 is written to `<storage::directory>/effective.yaml`.
 
 There are a few "special" configuration files that can be used to completely
-customize the priority order of the Collector configuration. Below are the available
+customize final configuration given to the Collector. Below are the available
 values and what they represent:
 
 - `$OPAMP_EXTENSION_CONFIG`: configuration for the OpAMP extension to connect to the Supervisor.
 - `$OWN_METRICS_CONFIG`: configuration for the Collector to report its own metrics.
 - `$BUILTIN_CONFIG`: built-in base configuration.
 - `$REMOTE_CONFIG`: remote configuration received by the Supervisor.
+
+**NOTE**: These configuration snippets, particularly `$OPAMP_EXTENSION_CONFIG`, are essential for the Supervisor and Collector to work together. Overriding values in these may result in the Supervisor failing to properly start the Collector and should be done with caution.
 
 These special files can be mixed with user-provided configuration files to create complex
 configuration merge orders, for instance, creating base-layer configuration at the
@@ -286,7 +288,7 @@ agent:
     GO_HOME: '~/go'
 ```
 
-It results to the following startup parameters for the collector process:
+This results in the following Collector process invocation:
 
 ```shell
 ./otel-binary --config /var/lib/otelcol/supervisor/effective.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
