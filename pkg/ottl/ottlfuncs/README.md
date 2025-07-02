@@ -456,6 +456,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Decode](#decode)
 - [Concat](#concat)
+- [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
 - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
 - [ConvertTextToElementsXML](#converttexttoelementsxml)
@@ -483,6 +484,7 @@ Available Converters:
 - [IsMatch](#ismatch)
 - [IsList](#islist)
 - [IsString](#isstring)
+- [Keys](#keys)
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
@@ -585,6 +587,23 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
+
+### ContainsValue
+
+`ContainsValue(target, item)`
+
+The `ContainsValue` Converter checks if an item is present in a given slice `target` using OTTL [comparison rules](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/LANGUAGE.md#comparison-rules). It returns `true` if the `item` is found, and `false` otherwise.
+
+`target` is a slice of any type described in the OTTL comparison rules.
+
+`item` is the value to check for in the `target`.
+
+Examples:
+
+- `ContainsValue(attributes["tags"], "staging")`
+- `ContainsValue([1, 2, 3, 4, 5], 3)`
+- `ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`
+- `ContainsValue(["GET", "PUT", "POST"], "GET")`
 
 ### ConvertCase
 
@@ -1258,6 +1277,21 @@ Examples:
 - `IsString(log.body)`
 
 - `IsString(resource.attributes["maybe a string"])`
+
+### Keys
+
+`Keys(target)`
+
+The `Keys` Converter returns a slice containing all the keys from the given map.
+
+`target` is a `pcommon.Map`. If `target` is another type an error is returned.
+
+The returned type is `pcommon.Slice`.
+
+Examples:
+- 
+- `Keys(resource.attributes)`
+- `Keys({"k1":"v1", "k2": "v2"})`
 
 ### Len
 

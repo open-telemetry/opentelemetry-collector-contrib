@@ -70,6 +70,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 		)
 	}
 
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 

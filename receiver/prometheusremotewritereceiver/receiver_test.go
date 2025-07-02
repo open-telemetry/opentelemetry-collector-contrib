@@ -254,6 +254,26 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "help ref 3 is out of bounds of symbolsTable",
 		},
 		{
+			name: "unsupported metric type UNSPECIFIED",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `unsupported metric type "METRIC_TYPE_UNSPECIFIED" for metric "test_metric"`,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
 			name:    "valid request",
 			request: writeV2RequestFixture,
 			expectedMetrics: func() pmetric.Metrics {
@@ -554,6 +574,472 @@ func TestTranslateV2(t *testing.T) {
 				Exemplars:  0,
 			},
 		},
+		{
+			name: "exponential histogram - integer",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 20,
+								},
+								Sum:           30,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountInt{
+									ZeroCountInt: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
+								PositiveDeltas: []int64{100, 244, 221},
+								NegativeDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
+				dp.SetSum(30)
+				dp.SetCount(20)
+				dp.SetZeroCount(2)
+				dp.SetZeroThreshold(1)
+				dp.Positive().SetOffset(0)
+				dp.Positive().BucketCounts().FromRaw([]uint64{100, 344, 0, 0, 0, 565})
+				dp.Negative().BucketCounts().FromRaw([]uint64{1})
+				dp.Negative().SetOffset(-1)
+				dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 3})
+				dp.Attributes().PutStr("attr1", "attr1")
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - integer with negative counts",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 20,
+								},
+								Sum:           30,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountInt{
+									ZeroCountInt: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2, Length: 1}},
+								PositiveDeltas: []int64{100, 244, -500},
+								NegativeDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - float",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountFloat{
+									CountFloat: 20,
+								},
+								Sum:           33.3,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountFloat{
+									ZeroCountFloat: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}, {Offset: 5, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+								NegativeCounts: []float64{1},
+								PositiveCounts: []float64{33, 30, 26, 100},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
+				dp.SetSum(33.3)
+				dp.SetCount(20)
+				dp.SetZeroCount(2)
+				dp.SetZeroThreshold(1)
+				dp.Positive().SetOffset(0)
+				dp.Positive().BucketCounts().FromRaw([]uint64{33, 30, 0, 0, 0, 26, 0, 0, 0, 0, 0, 100})
+				dp.Negative().BucketCounts().FromRaw([]uint64{1})
+				dp.Negative().SetOffset(-1)
+				dp.Negative().BucketCounts().FromRaw([]uint64{1})
+				dp.Attributes().PutStr("attr1", "attr1")
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+		},
+		{
+			name: "exponential histogram - float with negative counts",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountFloat{
+									CountFloat: 20,
+								},
+								Sum:           33.3,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountFloat{
+									ZeroCountFloat: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}, {Offset: 5, Length: 1}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+								NegativeCounts: []float64{1},
+								// As we are passing negative counts, the translation should drop the sample.
+								PositiveCounts: []float64{-33, 30, 26, -100},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				return metrics
+			}(),
+		},
+		{
+			name: "reset hint gauge should be dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								ResetHint: writev2.Histogram_RESET_HINT_GAUGE,
+								Count: &writev2.Histogram_CountFloat{
+									CountFloat: 20,
+								},
+								Sum:           33.3,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								ZeroCount: &writev2.Histogram_ZeroCountFloat{
+									ZeroCountFloat: 2,
+								},
+								Schema:         -4,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}},
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+								NegativeCounts: []float64{1},
+								PositiveCounts: []float64{33},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				return metrics
+			}(),
+		},
+		{
+			name: "classic histogram - should be dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						// Classic histograms populate samples instead of histograms. Those should be dropped.
+						Histograms: []writev2.Histogram{},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				return metrics
+			}(),
+		},
+		{
+			name: "summary - should be dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_SUMMARY,
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				return metrics
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
@@ -578,14 +1064,14 @@ func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-type MockConsumer struct {
+type mockConsumer struct {
 	nonMutatingConsumer
 	mu         sync.Mutex
 	metrics    []pmetric.Metrics
 	dataPoints int
 }
 
-func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.metrics = append(m.metrics, md)
@@ -705,7 +1191,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockConsumer := new(MockConsumer)
+			mockConsumer := new(mockConsumer)
 			prwReceiver := setupMetricsReceiver(t)
 			prwReceiver.nextConsumer = mockConsumer
 
@@ -905,7 +1391,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		return metrics
 	}()
 
-	mockConsumer := new(MockConsumer)
+	mockConsumer := new(mockConsumer)
 	prwReceiver.nextConsumer = mockConsumer
 
 	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))

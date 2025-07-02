@@ -1,0 +1,62 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      load:
+      network:
+
+processors:
+  batch:
+    send_batch_size: 1024
+    timeout: 10s
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 4000
+    spike_limit_mib: 800
+
+exporters:
+  debug:
+    verbosity: "detailed"
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: ${env:DD_SITE}
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+  pprof:
+    endpoint: "0.0.0.0:17777"
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: ${env:DD_SITE}
+
+connectors:
+  datadog/connector:
+
+service:
+  telemetry:
+    logs:
+      level: "info"
+  extensions: [health_check, pprof, datadog]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [datadog/connector, datadog]
+    metrics:
+      receivers: [otlp, hostmetrics, datadog/connector]
+      processors: [memory_limiter, batch]
+      exporters: [datadog]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug, datadog]
