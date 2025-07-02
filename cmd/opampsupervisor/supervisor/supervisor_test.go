@@ -912,6 +912,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                  client,
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
+			agentReadyChan:               make(chan struct{}),
+			agentReady:                   atomic.Bool{},
 		}
 
 		loopDoneChan := make(chan struct{})
@@ -1106,6 +1108,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                  mc,
 			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
 			doneChan:                     make(chan struct{}),
+			agentReadyChan:               make(chan struct{}),
+			agentReady:                   atomic.Bool{},
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{

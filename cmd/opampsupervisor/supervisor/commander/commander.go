@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -93,6 +94,19 @@ func (c *Commander) Restart(ctx context.Context) error {
 	}
 
 	return c.Start(ctx)
+}
+
+func (c *Commander) ReloadConfigFile() error {
+	if c.cmd == nil || c.cmd.Process == nil {
+		return errors.New("agent process is not running")
+	}
+
+	c.logger.Debug("Sending SIGHUP to agent process to reload config", zap.Int("pid", c.cmd.Process.Pid))
+	if err := c.cmd.Process.Signal(syscall.SIGHUP); err != nil {
+		return fmt.Errorf("failed to send SIGHUP to agent process: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Commander) startNormal() error {
@@ -323,7 +337,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	}
 
 	pid := c.cmd.Process.Pid
-	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
+	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
 	if err := sendShutdownSignal(c.cmd.Process); err != nil {
