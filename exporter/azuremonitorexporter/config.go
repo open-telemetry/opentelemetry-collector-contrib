@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -22,4 +23,5 @@ type Config struct {
 	ShutdownTimeout        time.Duration                   `mapstructure:"shutdown_timeout"`
 	CustomEventsEnabled    bool                            `mapstructure:"custom_events_enabled"`
 	ExceptionEventsEnabled bool                            `mapstructure:"exception_events_enabled"`
+	ClientConfig           confighttp.ClientConfig         `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
