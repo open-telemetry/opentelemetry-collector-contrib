@@ -78,7 +78,6 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 			}
 		}
 	}()
-
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
