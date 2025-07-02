@@ -254,6 +254,26 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "help ref 3 is out of bounds of symbolsTable",
 		},
 		{
+			name: "unsupported metric type UNSPECIFIED",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `unsupported metric type "METRIC_TYPE_UNSPECIFIED" for metric "test_metric"`,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
 			name:    "valid request",
 			request: writeV2RequestFixture,
 			expectedMetrics: func() pmetric.Metrics {
