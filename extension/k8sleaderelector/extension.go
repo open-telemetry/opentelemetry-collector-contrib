@@ -65,15 +65,13 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 	go func() {
 		for {
 			select {
-			case _, ok := <-lee.onStartLeadingChan:
+			case <-ctx.Done():
+				return
+			default:
+				callback, ok := <-lee.onStartLeadingChan
 				if !ok {
 					return
 				}
-			case <-ctx.Done():
-				return
-
-			default:
-				callback := <-lee.onStartLeadingChan
 				if callback != nil {
 					callback(ctx)
 				}
