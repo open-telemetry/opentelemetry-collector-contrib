@@ -24,8 +24,10 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterPrometheusremotewriteFailedTranslations.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteSentBatches.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWalReadLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReads.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReadsFailures.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWalWriteLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWrites.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWritesFailures.Add(context.Background(), 1)
 	AssertEqualExporterPrometheusremotewriteConsumers(t, testTel,
@@ -40,11 +42,17 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWalReadLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalReads(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalReadsFailures(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWalWriteLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalWrites(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

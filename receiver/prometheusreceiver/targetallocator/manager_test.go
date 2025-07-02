@@ -802,7 +802,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 	ta := &Config{}
-	ta.TLSSetting = configtls.ClientConfig{
+	ta.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 		ServerName:         "test.server",
 		Config: configtls.Config{

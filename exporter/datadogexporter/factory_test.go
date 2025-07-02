@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -95,8 +94,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
-	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -142,8 +139,9 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
@@ -172,13 +170,9 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
-	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
@@ -221,8 +215,9 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
@@ -251,8 +246,6 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
@@ -303,8 +296,8 @@ func TestOnlyMetadata(t *testing.T) {
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
 		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
 	}
-	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
 	expTraces, err := factory.CreateTraces(
 		ctx,

@@ -90,6 +90,12 @@ Time a page will stay in the buffer pool.
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| performance_counter.object_name | Category to which this counter belongs | Any Str | false |
+
 ### sqlserver.page.operation.rate
 
 Number of physical database page operations issued.
@@ -102,9 +108,9 @@ This metric is only available when running on Windows.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The page operation types. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The page operation types. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.page.split.rate
 
@@ -234,9 +240,9 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` | false |
 
 ### sqlserver.database.execution.errors
 
@@ -266,12 +272,12 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| physical_filename | The physical filename of the file being monitored. | Any Str | false |
+| logical_filename | The logical filename of the file being monitored. | Any Str | false |
+| file_type | The type of file being monitored. | Any Str | false |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.database.latency
 
@@ -285,12 +291,12 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| physical_filename | The physical filename of the file being monitored. | Any Str | false |
+| logical_filename | The logical filename of the file being monitored. | Any Str | false |
+| file_type | The type of file being monitored. | Any Str | false |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.database.operations
 
@@ -304,12 +310,12 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| physical_filename | The physical filename of the file being monitored. | Any Str | false |
+| logical_filename | The logical filename of the file being monitored. | Any Str | false |
+| file_type | The type of file being monitored. | Any Str | false |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.database.tempdb.space
 
@@ -321,9 +327,9 @@ Total free space in temporary DB.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used`` | false |
 
 ### sqlserver.database.tempdb.version_store.size
 
@@ -411,10 +417,10 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| wait.category | Category of the reason for a wait. | Any Str |
-| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| wait.category | Category of the reason for a wait. | Any Str | false |
+| wait.type | Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information. | Any Str | false |
 
 ### sqlserver.page.buffer_cache.free_list.stalls.rate
 
@@ -452,9 +458,9 @@ Throughput rate of replica data.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` | false |
 
 ### sqlserver.resource_pool.disk.operations
 
@@ -468,9 +474,9 @@ This metric is only available when the receiver is configured to directly connec
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | false |
 
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
@@ -502,10 +508,10 @@ The number of tables.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| table.state | The state of the table. | Str: ``active``, ``inactive`` |
-| table.status | The status of the table. | Str: ``temporary``, ``permanent`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| table.state | The state of the table. | Str: ``active``, ``inactive`` | false |
+| table.status | The status of the table. | Str: ``temporary``, ``permanent`` | false |
 
 ### sqlserver.transaction.delay
 
@@ -531,6 +537,16 @@ The following events are emitted by default. Each of them can be disabled by app
 events:
   <event_name>:
     enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
 ```
 
 ### db.server.query_sample

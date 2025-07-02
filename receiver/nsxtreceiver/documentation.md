@@ -22,9 +22,9 @@ The average amount of CPU being used by the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` | false |
 
 ### nsxt.node.filesystem.usage
 
@@ -36,9 +36,9 @@ The amount of storage space used by the node.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of storage space. | Str: ``used``, ``available`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | The state of storage space. | Str: ``used``, ``available`` | false |
 
 ### nsxt.node.filesystem.utilization
 
@@ -74,9 +74,9 @@ The number of bytes which have flowed through the network interface.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | false |
 
 ### nsxt.node.network.packet.count
 
@@ -88,10 +88,10 @@ The number of packets which have flowed through the network interface on the nod
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` |
-| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | false |
+| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` | false |
 
 ## Resource Attributes
 
