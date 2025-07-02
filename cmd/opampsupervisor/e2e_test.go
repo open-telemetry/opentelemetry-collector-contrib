@@ -169,7 +169,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	}
 }
 
-func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
+func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) (*supervisor.Supervisor, *config.Supervisor) {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
 
 	cfg, err := config.Load(cfgFile.Name())
@@ -181,7 +181,7 @@ func newSupervisor(t *testing.T, configType string, extraConfigData map[string]s
 	s, err := supervisor.NewSupervisor(logger, cfg)
 	require.NoError(t, err)
 
-	return s
+	return s, &cfg
 }
 
 func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[string]string) *os.File {
@@ -259,7 +259,10 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
 			require.Nil(t, s.Start())
 			defer s.Shutdown()
@@ -350,7 +353,10 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 			t.Cleanup(s.Shutdown)
 			require.NoError(t, s.Start())
 
@@ -418,7 +424,10 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "healthcheck_port", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "healthcheck_port", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 			t.Cleanup(s.Shutdown)
 			require.Nil(t, s.Start())
 
@@ -498,7 +507,10 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
 			require.Nil(t, s.Start())
 			defer s.Shutdown()
@@ -578,7 +590,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	require.NoError(t, err)
 
 	// fill env variables passed via parameters which are used in the collector config passed via config_files param
-	s := newSupervisor(t, "exec_config", map[string]string{
+	s, _ := newSupervisor(t, "exec_config", map[string]string{
 		"url":             server.addr,
 		"storage_dir":     storageDir,
 		"inputLogFile":    inputFile.Name(),
@@ -643,7 +655,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 	// The supervisor is started without a running OpAMP server.
 	// The supervisor should start successfully, even if the OpAMP server is stopped.
-	s := newSupervisor(t, "healthcheck_port", map[string]string{
+	s, _ := newSupervisor(t, "healthcheck_port", map[string]string{
 		"url":              server.addr,
 		"healthcheck_port": "12345",
 	})
@@ -747,7 +759,10 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
 			require.Nil(t, s.Start())
 			defer s.Shutdown()
@@ -827,7 +842,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+	s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -917,7 +932,7 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 					},
 				})
 
-			s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+			s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 
 			require.Nil(t, s.Start())
 			defer s.Shutdown()
@@ -1003,7 +1018,7 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "reports_available_components", map[string]string{"url": server.addr})
+	s, _ := newSupervisor(t, "reports_available_components", map[string]string{"url": server.addr})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1066,7 +1081,7 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+	s, _ := newSupervisor(t, "basic", map[string]string{"url": server.addr})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1177,7 +1192,7 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1354,7 +1369,10 @@ func TestSupervisorRestartCommand(t *testing.T) {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
 			require.Nil(t, s.Start())
 			defer s.Shutdown()
@@ -1431,7 +1449,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 		defaultConnectingHandler,
 		types.ConnectionCallbacks{})
 
-	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+	s, _ := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1483,7 +1501,7 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
+	s, _ := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1537,7 +1555,10 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "persistence", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "persistence", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
 			require.Nil(t, s.Start())
 
@@ -1583,7 +1604,10 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 			defer newServer.shutdown()
 
 			extraConfigData["url"] = newServer.addr
-			s1 := newSupervisor(t, "persistence", extraConfigData)
+			s1, supervisorCfg := newSupervisor(t, "persistence", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 
 			require.Nil(t, s1.Start())
 			defer s1.Shutdown()
@@ -1627,7 +1651,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "basic", map[string]string{
+	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
@@ -1659,7 +1683,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 	default:
 	}
 
-	s = newSupervisor(t, "basic", map[string]string{
+	s, _ = newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
@@ -1712,7 +1736,7 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "basic", map[string]string{
+	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
@@ -1742,7 +1766,7 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 	default:
 	}
 
-	s = newSupervisor(t, "basic", map[string]string{
+	s, _ = newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
@@ -1774,7 +1798,7 @@ func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
 		types.ConnectionCallbacks{},
 	)
 
-	s := newSupervisor(t, "basic", map[string]string{
+	s, _ := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
@@ -1822,7 +1846,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "healthcheck_port", map[string]string{
+	s, _ := newSupervisor(t, "healthcheck_port", map[string]string{
 		"url": server.addr,
 	})
 
@@ -2039,7 +2063,10 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s := newSupervisor(t, "report_status", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "report_status", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
 			require.Nil(t, s.Start())
 			defer s.Shutdown()
 
@@ -2175,7 +2202,7 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 	supervisorOpAmpServerPort, err := findRandomPort()
 	require.NoError(t, err)
 
-	s := newSupervisor(t, "server_port", map[string]string{"url": server.addr, "supervisor_opamp_server_port": fmt.Sprintf("%d", supervisorOpAmpServerPort)})
+	s, _ := newSupervisor(t, "server_port", map[string]string{"url": server.addr, "supervisor_opamp_server_port": fmt.Sprintf("%d", supervisorOpAmpServerPort)})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -2287,7 +2314,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	defer mockBackend.Stop()
 	require.NoError(t, mockBackend.Start())
 
-	s := newSupervisor(t,
+	s, _ := newSupervisor(t,
 		"emit_telemetry",
 		map[string]string{
 			"url":          server.addr,
