@@ -935,15 +935,6 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 }
 
 func (s *Supervisor) addSpecialConfigFiles() {
-	// If no config files are provided, we add the special config files in the
-	// their default merge order.
-	if len(s.config.Agent.ConfigFiles) == 0 {
-		for _, file := range config.SpecialConfigFiles {
-			s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(file))
-		}
-		return
-	}
-
 	missingSpecialConfigFiles := make(map[config.SpecialConfigFile]struct{}, len(config.SpecialConfigFiles))
 	for _, file := range config.SpecialConfigFiles {
 		missingSpecialConfigFiles[file] = struct{}{}
@@ -952,22 +943,6 @@ func (s *Supervisor) addSpecialConfigFiles() {
 		if strings.HasPrefix(file, "$") {
 			delete(missingSpecialConfigFiles, config.SpecialConfigFile(file))
 		}
-	}
-
-	// If there are config files AND none of them are the special ones, we
-	// add the special config files to the user provided ones.
-	if len(missingSpecialConfigFiles) == len(config.SpecialConfigFiles) {
-		newConfigFiles := []string{
-			string(config.SpecialConfigFileOwnMetrics),
-			string(config.SpecialConfigFileBuiltin),
-		}
-		newConfigFiles = append(newConfigFiles, s.config.Agent.ConfigFiles...)
-		newConfigFiles = append(newConfigFiles,
-			string(config.SpecialConfigFileOpAMPExtension),
-			string(config.SpecialConfigFileRemoteConfig),
-		)
-		s.config.Agent.ConfigFiles = newConfigFiles
-		return
 	}
 
 	// if missing ownmetrics, add it to the beginning
