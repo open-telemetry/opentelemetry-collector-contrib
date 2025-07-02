@@ -66,11 +66,15 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.processes.created", "system.processes.count", "nfs.client.net.count", "nfs.client.net.udp.count", "nfs.client.net.tcp.count", "nfs.client.net.tcp.connection.count", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.hits", "nfs.server.repcache.misses", "nfs.server.repcache.nocache", "nfs.server.fh.stale.count", "nfs.server.io.read.count", "nfs.server.io.write.count", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.udp.count", "nfs.server.net.tcp.count", "nfs.server.net.tcp.connection.count", "nfs.server.rpc.count", "nfs.server.rpc.bad.count", "nfs.server.rpc.badfmt.count", "nfs.server.rpc.badauth.count", "nfs.server.rpc.badclient.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
 	"darwin":  {"system.filesystem.inodes.usage", "system.processes.count"},
 	"freebsd": {"system.filesystem.inodes.usage", "system.processes.count"},
 	"openbsd": {"system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
 	"solaris": {"system.filesystem.inodes.usage"},
+}
+
+var systemSpecificMetricsNFS = map[string][]string{
+	"linux":   {"nfs.client.net.count", "nfs.client.net.udp.count", "nfs.client.net.tcp.count", "nfs.client.net.tcp.connection.count", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.hits", "nfs.server.repcache.misses", "nfs.server.repcache.nocache", "nfs.server.fh.stale.count", "nfs.server.io.read.count", "nfs.server.io.write.count", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.udp.count", "nfs.server.net.tcp.count", "nfs.server.net.tcp.connection.count", "nfs.server.rpc.count", "nfs.server.rpc.bad.count", "nfs.server.rpc.badfmt.count", "nfs.server.rpc.badauth.count", "nfs.server.rpc.badclient.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -92,7 +96,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		),
 	}
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" && nfsscraper.CanScrapeAll() {
 		f := nfsscraper.NewFactory()
 		cfg.Scrapers[f.Type()] = f.CreateDefaultConfig()
 	}
@@ -148,6 +152,10 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	expectedMetrics := allMetrics
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
+	if nfsscraper.CanScrapeAll() {
+		expectedMetrics = append(expectedMetrics, systemSpecificMetricsNFS[runtime.GOOS]...)
+	}
+	
 	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)

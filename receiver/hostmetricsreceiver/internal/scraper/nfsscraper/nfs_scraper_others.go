@@ -12,3 +12,7 @@ func getOSNfsStats() (*NfsStats, error) {
 func getOSNfsdStats() (*NfsdStats, error) {
 	return nil, nil
 }
+
+func CanScrapeAll() bool {
+	return false
+}

@@ -554,3 +554,15 @@ func parseStringsToUint64s(strSlice []string) (*[]uint64, error) {
 
 	return &uint64Slice, nil
 }
+
+func CanScrapeAll() bool {
+	_, err := os.Stat(nfsProcFile)
+	if err == nil {
+		_, err := os.Stat(nfsdProcFile)
+		if err == nil {
+			return true
+		}
+	}
+
+	return false
+}
