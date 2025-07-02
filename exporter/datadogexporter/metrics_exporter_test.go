@@ -10,6 +10,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
 	"sync"
 	"testing"
 	"time"
@@ -24,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -933,6 +937,76 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewExporterWithProxy(t *testing.T) {
+	if !isMetricExportV2Enabled() {
+		require.NoError(t, enableNativeMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
+	}
+
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.URL.Scheme = "http"
+			req.URL.Host = server.Listener.Addr().String()
+		},
+	})
+	defer proxyServer.Close()
+
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		Metrics: datadogconfig.MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: datadogconfig.HistogramConfig{
+				Mode:             datadogconfig.HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeToDelta,
+			},
+		},
+		HostMetadata: datadogconfig.HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
+
+		ClientConfig: confighttp.ClientConfig{
+			ProxyURL: proxyServer.URL,
+		},
+	}
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	f := NewFactory()
+
+	// The client should have been created correctly
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+
+	// Create & send test metrics (no metadata)
+	testMetrics := pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	assert.Empty(t, server.MetadataChan)
+
+	// Send another with metadata
+	testMetrics = pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+
+	recvMetadata := <-server.MetadataChan
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
