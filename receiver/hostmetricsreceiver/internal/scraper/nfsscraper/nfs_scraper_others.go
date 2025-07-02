@@ -5,10 +5,10 @@
 
 package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 
-func (s *nfsScraper) getOSNfsStats() (*NfsStats, error) {
+func getOSNfsStats() (*NfsStats, error) {
 	return nil, nil
 }
 
-func (s *nfsScraper) getOSNfsdStats() (*NfsdStats, error) {
+func getOSNfsdStats() (*NfsdStats, error) {
 	return nil, nil
 }
