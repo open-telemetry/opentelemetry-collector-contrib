@@ -1519,7 +1519,7 @@ func (s *Supervisor) hupReloadAgent() error {
 		return fmt.Errorf("failed to write agent new config: %w", err)
 	}
 
-	// If the agent is not running, we can send a HUP signal to it, so we
+	// If the agent is not running, we can't send a HUP signal to it, so we
 	// return and let it be started by the caller.
 	if !s.commander.IsRunning() {
 		return nil
