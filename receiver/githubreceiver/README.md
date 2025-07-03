@@ -221,11 +221,11 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 [otcli]: https://github.com/equinix-labs/otel-cli
 [tr]: ./trace_event_handling.go
 
-## Custom Properties as Resource Attributes
+### Custom Properties as Resource Attributes
 
 The GitHub receiver supports adding custom properties from GitHub repositories as resource attributes in your telemetry data. This feature allows you to enrich your traces with additional metadata specific to your repositories.
 
-### How It Works
+#### How It Works
 
 When a GitHub webhook event is received, the receiver extracts all custom properties from the repository and adds them as resource attributes with the prefix `github.repository.custom_properties`.
 
@@ -245,7 +245,7 @@ github.repository.custom_properties.environment: "production"
 github.repository.custom_properties.service_tier: "critical"
 ```
 
-### Key Formatting
+#### Key Formatting
 
 To ensure consistency with OpenTelemetry naming conventions, all custom property keys are converted to snake_case format using the following rules:
 
