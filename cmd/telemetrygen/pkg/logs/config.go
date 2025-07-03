@@ -58,7 +58,7 @@ func (c *Config) SetDefaults() {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumLogs <= 0 {
+	if c.TotalDuration.Duration() <= 0 && c.NumLogs <= 0 && !c.TotalDuration.IsInf() {
 		return errors.New("either `logs` or `duration` must be greater than 0")
 	}
 
