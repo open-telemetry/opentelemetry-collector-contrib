@@ -2790,7 +2790,7 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 				assert.Nil(t, val)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantVal, val)
+				assert.Equal(t, tt.wantVal, *val.(*string))
 			}
 		})
 	}
@@ -2922,7 +2922,7 @@ func Test_newStandardIntLikeGetter(t *testing.T) {
 				assert.Nil(t, val)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantVal, val)
+				assert.Equal(t, tt.wantVal, *(val.(*int64)))
 			}
 		})
 	}
