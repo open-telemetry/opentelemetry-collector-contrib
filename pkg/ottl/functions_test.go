@@ -2085,6 +2085,129 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 	assert.Zero(t, args.OptionalFloatArg)
 }
 
+func Test_LiteralGetter_getWrappedValue(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		value     any
+		wantError string
+	}{
+		{
+			name: "pass expected type",
+			value: &mockLiteralGetter[any, string]{
+				valueGetter: func(ctx context.Context, a any) (string, error) {
+					return "foo", nil
+				},
+			},
+		},
+		{
+			name:      "pass invalid type",
+			value:     "invalid",
+			wantError: "cannot set value of type string to a Getter of type *ottl.mockLiteralGetter[interface {},string]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := LiteralGetter[any, string, *mockLiteralGetter[any, string]]{}
+			err := l.setWrappedValue(reflect.ValueOf(tt.value))
+			if tt.wantError == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tt.wantError)
+			}
+		})
+	}
+}
+
+func Test_LiteralGetter_IsLiteral(t *testing.T) {
+	tests := []struct {
+		name   string
+		getter typedGetter[any, any]
+		want   bool
+	}{
+		{
+			name: "not a literal",
+			getter: &mockLiteralGetter[any, any]{
+				literal: false,
+			},
+			want: false,
+		},
+		{
+			name: "literal",
+			getter: &mockLiteralGetter[any, any]{
+				literal: true,
+			},
+			want: true,
+		},
+		{
+			name:   "literal interface not implemented",
+			getter: &mockedGetter[any]{},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := LiteralGetter[any, any, typedGetter[any, any]]{
+				getter: tt.getter,
+			}
+			require.Equal(t, tt.want, l.IsLiteral())
+		})
+	}
+}
+
+func Test_LiteralGetter_GetLiteral(t *testing.T) {
+	tests := []struct {
+		name      string
+		getter    typedGetter[any, any]
+		want      any
+		wantError string
+	}{
+		{
+			name: "literal",
+			getter: &mockLiteralGetter[any, any]{
+				valueGetter: func(ctx context.Context, a any) (any, error) {
+					return "foo", nil
+				},
+			},
+			want: "foo",
+		},
+		{
+			name: "literal implementation returns an error",
+			getter: &mockLiteralGetter[any, any]{
+				valueGetter: func(ctx context.Context, a any) (any, error) {
+					return nil, errors.New("error")
+				},
+			},
+			wantError: "error",
+		},
+		{
+			name:      "literal interface not implemented",
+			getter:    &mockedGetter[any]{},
+			wantError: "getter of type *ottl.mockedGetter[interface {}] is not a literal getter",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := LiteralGetter[any, any, typedGetter[any, any]]{
+				getter: tt.getter,
+			}
+
+			got, err := l.GetLiteral()
+
+			if tt.wantError != "" {
+				require.Nil(t, got)
+				require.ErrorContains(t, err, tt.wantError)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
 func functionWithNoArguments() (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil

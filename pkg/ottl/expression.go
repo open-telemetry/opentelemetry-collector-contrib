@@ -556,7 +556,7 @@ type BoolGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (bool, error)
 }
 
-func newStandardBoolGetter[K any](getter Getter[K]) BoolGetter[K] {
+func newStandardBoolGetter[K any](getter Getter[K]) *StandardBoolGetter[K] {
 	litGetter, isLiteralGetter := getter.(literalGetter)
 	return &StandardBoolGetter[K]{
 		Getter:  getter.Get,
@@ -900,9 +900,9 @@ type IntLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*int64, error)
 }
 
-func newStandardIntLikeGetter[K any](getter Getter[K]) IntLikeGetter[K] {
+func newStandardIntLikeGetter[K any](getter Getter[K]) *StandardIntLikeGetter[K] {
 	litGetter, isLiteralGetter := getter.(literalGetter)
-	return StandardIntLikeGetter[K]{
+	return &StandardIntLikeGetter[K]{
 		Getter:  getter.Get,
 		literal: isLiteralGetter && litGetter.isLiteral(),
 	}
@@ -985,9 +985,9 @@ type ByteSliceLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) ([]byte, error)
 }
 
-func newStandardByteSliceLikeGetter[K any](getter Getter[K]) ByteSliceLikeGetter[K] {
+func newStandardByteSliceLikeGetter[K any](getter Getter[K]) *StandardByteSliceLikeGetter[K] {
 	litGetter, isLiteralGetter := getter.(literalGetter)
-	return StandardByteSliceLikeGetter[K]{
+	return &StandardByteSliceLikeGetter[K]{
 		Getter:  getter.Get,
 		literal: isLiteralGetter && litGetter.isLiteral(),
 	}
