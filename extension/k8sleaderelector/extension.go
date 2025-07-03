@@ -27,13 +27,19 @@ type LeaderElection interface {
 
 // SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
 func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
-	lee.mu.Lock()
-	defer lee.mu.Unlock()
-
+	// If the extension has already started, and it has become the leader, then channel is already created so we can push the callbacks to it.
 	if lee.onStartLeadingChan != nil {
 		lee.onStartLeadingChan <- onStartLeading
 	}
+	if lee.onStopLeadingChan != nil {
+		lee.onStopLeadingChan <- onStopLeading
+	}
 
+	// Append the callbacks to the lists for following cases
+	// 1. When the leader election is lost, and in case its gained again then the callbacks should be invoked again.
+	// 2. When the extension has started, but it is not the leader, then the callbacks should be stored.
+	lee.mu.Lock()
+	defer lee.mu.Unlock()
 	lee.onStartedLeading = append(lee.onStartedLeading, onStartLeading)
 	lee.onStoppedLeading = append(lee.onStoppedLeading, onStopLeading)
 }
@@ -51,17 +57,22 @@ type leaderElectionExtension struct {
 	onStoppedLeading []StopCallback
 
 	onStartLeadingChan chan StartCallback
+	onStopLeadingChan  chan StopCallback
 
 	mu sync.Mutex
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
+	// Create a channel for receivers which have registered the callback after the extension has become the leader. In such case the callback is pushed to
+	// channel and executed immediately.
 	lee.onStartLeadingChan = make(chan StartCallback, 1)
+	lee.onStopLeadingChan = make(chan StopCallback, 1)
 
 	for _, callback := range lee.onStartedLeading {
 		callback(ctx)
 	}
+
 	go func() {
 		for {
 			select {
@@ -85,7 +96,22 @@ func (lee *leaderElectionExtension) stoppedLeading() {
 	for _, callback := range lee.onStoppedLeading {
 		callback()
 	}
+
+	go func() {
+		for {
+			callback, ok := <-lee.onStopLeadingChan
+			if !ok {
+				return
+			}
+			if callback != nil {
+				callback()
+			}
+		}
+	}()
+
+	// Close the channel as the channel is recreated when we become leader again.
 	close(lee.onStartLeadingChan)
+	close(lee.onStopLeadingChan)
 }
 
 // Start begins the extension's processing.
