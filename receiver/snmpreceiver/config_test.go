@@ -30,13 +30,13 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 		expectedErr string
 	}
 
-	metrics := map[string]*MetricConfig{
+	metrics := map[string]*metricConfig{
 		"m3": {
 			Unit: "By",
-			Gauge: &GaugeMetric{
+			Gauge: &gaugeMetric{
 				ValueType: "double",
 			},
-			ScalarOIDs: []ScalarOID{
+			ScalarOIDs: []scalarOID{
 				{
 					OID: "1",
 				},
@@ -266,19 +266,19 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	}
 }
 
-func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
-	metricCfg := map[string]*MetricConfig{
+func getBaseMetricConfig(gauge bool, scalar bool) map[string]*metricConfig {
+	metricCfg := map[string]*metricConfig{
 		"m3": {
 			Unit: "By",
 		},
 	}
 
 	if gauge {
-		metricCfg["m3"].Gauge = &GaugeMetric{
+		metricCfg["m3"].Gauge = &gaugeMetric{
 			ValueType: "double",
 		}
 	} else {
-		metricCfg["m3"].Sum = &SumMetric{
+		metricCfg["m3"].Sum = &sumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   true,
 			ValueType:   "double",
@@ -286,13 +286,13 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
 	}
 
 	if scalar {
-		metricCfg["m3"].ScalarOIDs = []ScalarOID{
+		metricCfg["m3"].ScalarOIDs = []scalarOID{
 			{
 				OID: "1",
 			},
 		}
 	} else {
-		metricCfg["m3"].ColumnOIDs = []ColumnOID{
+		metricCfg["m3"].ColumnOIDs = []columnOID{
 			{
 				OID: "1",
 			},
@@ -302,22 +302,22 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
 	return metricCfg
 }
 
-func getBaseAttrConfig(attrType string) map[string]*AttributeConfig {
+func getBaseAttrConfig(attrType string) map[string]*attributeConfig {
 	switch attrType {
 	case "oid":
-		return map[string]*AttributeConfig{
+		return map[string]*attributeConfig{
 			"a2": {
 				OID: "1",
 			},
 		}
 	case "prefix":
-		return map[string]*AttributeConfig{
+		return map[string]*attributeConfig{
 			"a2": {
 				IndexedValuePrefix: "p",
 			},
 		}
 	default:
-		return map[string]*AttributeConfig{
+		return map[string]*attributeConfig{
 			"a2": {
 				Enum: []string{"val1", "val2"},
 			},
@@ -325,22 +325,22 @@ func getBaseAttrConfig(attrType string) map[string]*AttributeConfig {
 	}
 }
 
-func getBaseResourceAttrConfig(attrType string) map[string]*ResourceAttributeConfig {
+func getBaseResourceAttrConfig(attrType string) map[string]*resourceAttributeConfig {
 	switch attrType {
 	case "oid":
-		return map[string]*ResourceAttributeConfig{
+		return map[string]*resourceAttributeConfig{
 			"ra1": {
 				OID: "2",
 			},
 		}
 	case "scalar_oid":
-		return map[string]*ResourceAttributeConfig{
+		return map[string]*resourceAttributeConfig{
 			"ra1": {
 				ScalarOID: "0",
 			},
 		}
 	default:
-		return map[string]*ResourceAttributeConfig{
+		return map[string]*resourceAttributeConfig{
 			"ra1": {
 				IndexedValuePrefix: "p",
 			},
@@ -409,7 +409,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	expectedConfigNoScalarOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigNoScalarOIDAttrName.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigNoScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Value: "val1",
 		},
@@ -418,7 +418,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadScalarOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadScalarOIDAttrName.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigBadScalarOIDAttrName.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a1",
 			Value: "val1",
@@ -428,7 +428,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadScalarOIDAttr := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadScalarOIDAttr.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigBadScalarOIDAttr.Attributes = getBaseAttrConfig("oid")
-	expectedConfigBadScalarOIDAttr.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttr.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val1",
@@ -438,7 +438,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadScalarOIDAttrValue := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadScalarOIDAttrValue.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigBadScalarOIDAttrValue.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadScalarOIDAttrValue.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttrValue.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val3",
@@ -451,12 +451,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	expectedConfigNoColumnOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigNoColumnOIDAttrName.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigNoColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{{}}
+	expectedConfigNoColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{{}}
 
 	expectedConfigBadColumnOIDAttrName := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadColumnOIDAttrName.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigBadColumnOIDAttrName.Attributes = getBaseAttrConfig("oid")
-	expectedConfigBadColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigBadColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name: "a1",
 		},
@@ -465,7 +465,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigBadColumnOIDAttrValue := factory.CreateDefaultConfig().(*Config)
 	expectedConfigBadColumnOIDAttrValue.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigBadColumnOIDAttrValue.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadColumnOIDAttrValue.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigBadColumnOIDAttrValue.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val3",
@@ -480,7 +480,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute := factory.CreateDefaultConfig().(*Config)
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Attributes = getBaseAttrConfig("enum")
-	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a2",
 			Value: "val1",
@@ -495,32 +495,32 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	expectedConfigComplexGood := factory.CreateDefaultConfig().(*Config)
 	expectedConfigComplexGood.ResourceAttributes = getBaseResourceAttrConfig("prefix")
-	expectedConfigComplexGood.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigComplexGood.ResourceAttributes["ra2"] = &resourceAttributeConfig{OID: "1"}
 	expectedConfigComplexGood.Attributes = getBaseAttrConfig("enum")
-	expectedConfigComplexGood.Attributes["a1"] = &AttributeConfig{
+	expectedConfigComplexGood.Attributes["a1"] = &attributeConfig{
 		Value: "v",
 		Enum:  []string{"val1"},
 	}
-	expectedConfigComplexGood.Attributes["a3"] = &AttributeConfig{IndexedValuePrefix: "p"}
-	expectedConfigComplexGood.Attributes["a4"] = &AttributeConfig{OID: "1"}
+	expectedConfigComplexGood.Attributes["a3"] = &attributeConfig{IndexedValuePrefix: "p"}
+	expectedConfigComplexGood.Attributes["a4"] = &attributeConfig{OID: "1"}
 	expectedConfigComplexGood.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigComplexGood.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigComplexGood.Metrics["m3"].ScalarOIDs[0].Attributes = []attribute{
 		{
 			Name:  "a1",
 			Value: "val1",
 		},
 	}
-	expectedConfigComplexGood.Metrics["m1"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m1"] = &metricConfig{
 		Unit: "1",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Monotonic:   true,
 			Aggregation: "cumulative",
 			ValueType:   "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name: "a4",
 					},
@@ -528,15 +528,15 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m2"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m2"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name: "a3",
 					},
@@ -548,7 +548,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 			{
 				OID: "2",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name: "a3",
 					},
@@ -560,30 +560,30 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m4"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m4"] = &metricConfig{
 		Unit: "{things}",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   true,
 			ValueType:   "int",
 		},
-		ScalarOIDs: []ScalarOID{
+		ScalarOIDs: []scalarOID{
 			{
 				OID: "1",
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m5"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m5"] = &metricConfig{
 		Unit: "{things}",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   false,
 			ValueType:   "int",
 		},
-		ScalarOIDs: []ScalarOID{
+		ScalarOIDs: []scalarOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a1",
 						Value: "val1",
@@ -592,17 +592,17 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m6"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m6"] = &metricConfig{
 		Unit: "1",
-		Sum: &SumMetric{
+		Sum: &sumMetric{
 			Aggregation: "delta",
 			Monotonic:   true,
 			ValueType:   "int",
 		},
-		ScalarOIDs: []ScalarOID{
+		ScalarOIDs: []scalarOID{
 			{
 				OID: "1",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a2",
 						Value: "val1",
@@ -611,7 +611,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 			{
 				OID: "2",
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a2",
 						Value: "val2",
@@ -620,12 +620,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m7"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m7"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
@@ -634,12 +634,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m8"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m8"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
@@ -648,12 +648,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m9"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m9"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
@@ -663,19 +663,19 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m10"] = &MetricConfig{
+	expectedConfigComplexGood.Metrics["m10"] = &metricConfig{
 		Unit: "By",
-		Gauge: &GaugeMetric{
+		Gauge: &gaugeMetric{
 			ValueType: "int",
 		},
-		ColumnOIDs: []ColumnOID{
+		ColumnOIDs: []columnOID{
 			{
 				OID: "1",
 				ResourceAttributes: []string{
 					"ra1",
 					"ra2",
 				},
-				Attributes: []Attribute{
+				Attributes: []attribute{
 					{
 						Name:  "a1",
 						Value: "val1",
@@ -695,7 +695,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Attributes = getBaseAttrConfig("oid")
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name: "a2",
 		},
@@ -706,7 +706,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Attributes = getBaseAttrConfig("prefix")
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []attribute{
 		{
 			Name: "a2",
 		},
@@ -721,32 +721,32 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute := factory.CreateDefaultConfig().(*Config)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes["ra2"] = &resourceAttributeConfig{OID: "1"}
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute := factory.CreateDefaultConfig().(*Config)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{IndexedValuePrefix: "p"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes["ra2"] = &resourceAttributeConfig{IndexedValuePrefix: "p"}
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigMultipleKeysOnResourceAttribute := factory.CreateDefaultConfig().(*Config)
 	expectedConfigMultipleKeysOnResourceAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "0", OID: "1"}
+	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes["ra1"] = &resourceAttributeConfig{ScalarOID: "0", OID: "1"}
 	expectedConfigMultipleKeysOnResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit := factory.CreateDefaultConfig().(*Config)
 	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "1"}
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra1"] = &resourceAttributeConfig{ScalarOID: "1"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra2"] = &resourceAttributeConfig{OID: "1"}
 	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigColumnOIDResourceAttributeEndsInZero := factory.CreateDefaultConfig().(*Config)
 	expectedConfigColumnOIDResourceAttributeEndsInZero.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes = getBaseResourceAttrConfig("oid")
-	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes["ra1"] = &ResourceAttributeConfig{OID: "0"}
+	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes["ra1"] = &resourceAttributeConfig{OID: "0"}
 	expectedConfigColumnOIDResourceAttributeEndsInZero.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid := factory.CreateDefaultConfig().(*Config)
@@ -758,7 +758,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.Metrics = getBaseMetricConfig(true, true)
 	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.Metrics["m3"].ScalarOIDs[0].OID = "0"
 	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.ResourceAttributes["ra2"] = &ResourceAttributeConfig{ScalarOID: "0"}
+	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.ResourceAttributes["ra2"] = &resourceAttributeConfig{ScalarOID: "0"}
 	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid := factory.CreateDefaultConfig().(*Config)
@@ -1024,13 +1024,13 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Version:   "v2c",
 				Community: "public",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1045,13 +1045,13 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Endpoint:  "udp://localhost:161",
 				Community: "public",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1067,13 +1067,13 @@ func TestValidate(t *testing.T) {
 				Endpoint: "udp://localhost:161",
 				Version:  "v3",
 				User:     "u",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1091,13 +1091,13 @@ func TestValidate(t *testing.T) {
 				SecurityLevel: "auth_no_priv",
 				User:          "u",
 				AuthPassword:  "p",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
@@ -1117,13 +1117,13 @@ func TestValidate(t *testing.T) {
 				AuthType:        "md5",
 				AuthPassword:    "p",
 				PrivacyPassword: "pp",
-				Metrics: map[string]*MetricConfig{
+				Metrics: map[string]*metricConfig{
 					"m3": {
 						Unit: "By",
-						Gauge: &GaugeMetric{
+						Gauge: &gaugeMetric{
 							ValueType: "double",
 						},
-						ScalarOIDs: []ScalarOID{
+						ScalarOIDs: []scalarOID{
 							{
 								OID: "1",
 							},
