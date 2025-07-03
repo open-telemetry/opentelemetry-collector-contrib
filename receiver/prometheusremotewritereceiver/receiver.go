@@ -361,6 +361,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				// Drop summary series as we will not handle them.
 				continue
+			default:
+				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+				continue
 			}
 
 			metricCache[metricKey] = metric

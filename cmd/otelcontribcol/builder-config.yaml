@@ -47,6 +47,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension v0.129.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.129.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension v0.129.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension v0.129.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.129.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.129.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension v0.129.0
