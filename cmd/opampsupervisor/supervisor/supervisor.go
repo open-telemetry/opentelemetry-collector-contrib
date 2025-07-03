@@ -58,7 +58,7 @@ var (
 	//go:embed templates/nooppipeline.yaml
 	noopPipelineTpl string
 
-	//go:embed templates/extraconfig.yaml
+	//go:embed templates/extratelemetryconfig.yaml
 	extraConfigTpl string
 
 	//go:embed templates/opampextension.yaml
@@ -121,18 +121,18 @@ type Supervisor struct {
 	// Supervisor's persistent state
 	persistentState *persistentState
 
-	noopPipelineTemplate   *template.Template
-	opampextensionTemplate *template.Template
-	extraConfigTemplate    *template.Template
-	ownTelemetryTemplate   *template.Template
+	noopPipelineTemplate         *template.Template
+	opampextensionTemplate       *template.Template
+	extraTelemetryConfigTemplate *template.Template
+	ownTelemetryTemplate         *template.Template
 
 	agentConn *atomic.Value
 
-	// A config section to be added to the Collector's config to fetch its own metrics.
+	// A config section to be added to the Collector's config to fetch its own telemetry.
 	// TODO: store this persistently so that when starting we can compose the effective
 	// config correctly.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21078
-	agentConfigOwnMetricsSection *atomic.Value
+	agentConfigOwnTelemetrySection *atomic.Value
 
 	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
@@ -180,19 +180,19 @@ type Supervisor struct {
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
-		pidProvider:                  defaultPIDProvider{},
-		hasNewConfig:                 make(chan struct{}, 1),
-		agentConfigOwnMetricsSection: &atomic.Value{},
-		cfgState:                     &atomic.Value{},
-		effectiveConfig:              &atomic.Value{},
-		agentDescription:             &atomic.Value{},
-		availableComponents:          &atomic.Value{},
-		doneChan:                     make(chan struct{}),
-		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
-		agentConn:                    &atomic.Value{},
-		featureGates:                 map[string]struct{}{},
-		agentReady:                   atomic.Bool{},
-		agentReadyChan:               make(chan struct{}, 1),
+		pidProvider:                    defaultPIDProvider{},
+		hasNewConfig:                   make(chan struct{}, 1),
+		agentConfigOwnTelemetrySection: &atomic.Value{},
+		cfgState:                       &atomic.Value{},
+		effectiveConfig:                &atomic.Value{},
+		agentDescription:               &atomic.Value{},
+		availableComponents:            &atomic.Value{},
+		doneChan:                       make(chan struct{}),
+		customMessageToServer:          make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
+		agentConn:                      &atomic.Value{},
+		featureGates:                   map[string]struct{}{},
+		agentReady:                     atomic.Bool{},
+		agentReadyChan:                 make(chan struct{}, 1),
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -395,7 +395,7 @@ func (s *Supervisor) createTemplates() error {
 	if s.noopPipelineTemplate, err = template.New("nooppipeline").Parse(noopPipelineTpl); err != nil {
 		return err
 	}
-	if s.extraConfigTemplate, err = template.New("extraconfig").Parse(extraConfigTpl); err != nil {
+	if s.extraTelemetryConfigTemplate, err = template.New("extratelemetryconfig").Parse(extraConfigTpl); err != nil {
 		return err
 	}
 	if s.opampextensionTemplate, err = template.New("opampextension").Parse(opampextensionTpl); err != nil {
@@ -1031,8 +1031,8 @@ func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 	return k.Marshal(yaml.Parser())
 }
 
-func (s *Supervisor) composeOwnMetricsConfig() []byte {
-	ownMetricsCfg, ok := s.agentConfigOwnMetricsSection.Load().(string)
+func (s *Supervisor) composeOwnTelemetryConfig() []byte {
+	ownMetricsCfg, ok := s.agentConfigOwnTelemetrySection.Load().(string)
 	if !ok {
 		return nil
 	}
@@ -1053,7 +1053,7 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 		"ResourceAttributes": resourceAttrs,
 		"SupervisorPort":     s.opampServerPort,
 	}
-	err := s.extraConfigTemplate.Execute(
+	err := s.extraTelemetryConfigTemplate.Execute(
 		&cfg,
 		tplVars,
 	)
@@ -1272,7 +1272,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 			return
 		}
 	}
-	s.agentConfigOwnMetricsSection.Store(cfg.String())
+	s.agentConfigOwnTelemetrySection.Store(cfg.String())
 
 	// Need to recalculate the Agent config so that the metric config is included in it.
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
