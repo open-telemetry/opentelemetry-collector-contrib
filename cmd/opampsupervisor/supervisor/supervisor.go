@@ -1109,9 +1109,12 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 	}
 
 	for _, file := range s.config.Agent.ConfigFiles {
-		// The special config files should always be valid yaml.
-		// If they are not we need a hard crash.
-		// Important: this applies ONLY to special config files.
+		// The special config files should always be valid yaml and most of them
+		// will be due to the typing in the Supervisor's config struct and its
+		// validation function.
+		// The special config file for the remote configuration is the exception
+		// here: it could be invalid yaml. In case it is, the `koanf` loader
+		// will return an error.
 		// Normal config files with invalid yaml should be just ignored.
 		if strings.HasPrefix(file, "$") {
 			cfgProviders := specialConfigComposers[config.SpecialConfigFile(file)]
