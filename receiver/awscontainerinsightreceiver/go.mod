@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.32
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.226.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.228.0
 	github.com/google/cadvisor v0.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.129.0
@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.129.0
-	github.com/shirou/gopsutil/v4 v4.25.5
+	github.com/shirou/gopsutil/v4 v4.25.6
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250630174123-18b3b578b0b3
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250630174123-18b3b578b0b3
