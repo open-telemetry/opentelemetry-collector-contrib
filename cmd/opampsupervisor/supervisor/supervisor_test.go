@@ -1821,14 +1821,12 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 		{
 			name: "User config files and all special files are provided in the right order",
 			configFiles: []string{
-				"$OWN_TELEMETRY_CONFIG",
 				"$BUILTIN_CONFIG",
 				"some_file.yaml",
 				"$OPAMP_EXTENSION_CONFIG",
 				"$REMOTE_CONFIG",
 			},
 			expectedConfigFiles: []string{
-				"$OWN_TELEMETRY_CONFIG",
 				"$BUILTIN_CONFIG",
 				"some_file.yaml",
 				"$OPAMP_EXTENSION_CONFIG",
@@ -1841,14 +1839,12 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 				"$REMOTE_CONFIG",
 				"$OPAMP_EXTENSION_CONFIG",
 				"$BUILTIN_CONFIG",
-				"$OWN_TELEMETRY_CONFIG",
 				"some_file.yaml",
 			},
 			expectedConfigFiles: []string{
 				"$REMOTE_CONFIG",
 				"$OPAMP_EXTENSION_CONFIG",
 				"$BUILTIN_CONFIG",
-				"$OWN_TELEMETRY_CONFIG",
 				"some_file.yaml",
 			},
 		},
@@ -1856,7 +1852,6 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 			name:        "No config files provided, default config files are added",
 			configFiles: []string{},
 			expectedConfigFiles: []string{
-				"$OWN_TELEMETRY_CONFIG",
 				"$BUILTIN_CONFIG",
 				"$OPAMP_EXTENSION_CONFIG",
 				"$REMOTE_CONFIG",
@@ -1864,13 +1859,12 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 		},
 		{
 			name:        "Special config files partially provided, missing defaults are added",
-			configFiles: []string{"$OWN_TELEMETRY_CONFIG", "$REMOTE_CONFIG"},
+			configFiles: []string{"$REMOTE_CONFIG"},
 			// The order here is not exactly the same as the default order
 			// because some special config files were manually provided.
 			// Only the missing ones are added where the default order would
 			// have them.
 			expectedConfigFiles: []string{
-				"$OWN_TELEMETRY_CONFIG",
 				"$BUILTIN_CONFIG",
 				"$REMOTE_CONFIG",
 				"$OPAMP_EXTENSION_CONFIG",
@@ -1880,7 +1874,6 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 			name:        "Only normal config files provided, special config files are added",
 			configFiles: []string{"some_file.yaml"},
 			expectedConfigFiles: []string{
-				"$OWN_TELEMETRY_CONFIG",
 				"$BUILTIN_CONFIG",
 				"some_file.yaml",
 				"$OPAMP_EXTENSION_CONFIG",

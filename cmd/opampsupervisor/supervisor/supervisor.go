@@ -950,14 +950,9 @@ func (s *Supervisor) addSpecialConfigFiles() {
 		}
 	}
 
-	// if missing ownmetrics, add it to the beginning
-	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOwnMetrics]; ok {
-		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 0, string(config.SpecialConfigFileOwnMetrics))
-	}
-
 	// if missing builtin, add it to the beginning
 	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileBuiltin]; ok {
-		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 1, string(config.SpecialConfigFileBuiltin))
+		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 0, string(config.SpecialConfigFileBuiltin))
 	}
 
 	// if missing opamp extension, add it to the end
@@ -1102,8 +1097,7 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 	konf := koanf.New("::")
 
 	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
-		config.SpecialConfigFileOwnMetrics:     {s.composeOwnMetricsConfig},
-		config.SpecialConfigFileBuiltin:        {s.composeExtraLocalConfig},
+		config.SpecialConfigFileBuiltin:        {s.composeOwnMetricsConfig, s.composeExtraLocalConfig},
 		config.SpecialConfigFileOpAMPExtension: {s.composeOpAMPExtensionConfig},
 		config.SpecialConfigFileRemoteConfig:   s.createRemoteConfigComposers(incomingConfig),
 	}

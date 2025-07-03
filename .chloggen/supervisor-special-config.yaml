@@ -25,8 +25,7 @@ subtext: |
 
   Here's a list of the available special configuration options and what they represent:
 
-  - "$OWN_TELEMETRY_CONFIG": configuration for the agent's own telemetry.
-  - "$BUILTIN_CONFIG": configuration that doesn't affect how it works (resource, identifying and non-identifying attributes, etc.).
+  - "$BUILTIN_CONFIG": configuration that doesn't affect how it works (resource, identifying and non-identifying attributes, agent's own telemetry, etc.).
   - "$OPAMP_EXTENSION_CONFIG": configuration for the agent's OpAMP extension to connect to the Supervisor.
   - "$REMOTE_CONFIG": remote configuration received by the Supervisor.
 
@@ -36,7 +35,6 @@ subtext: |
   agent:
     config_files:
     - base_config.yaml
-    - $OWN_TELEMETRY_CONFIG
     - $BUILTIN_CONFIG
     - $OPAMP_EXTENSION_CONFIG
     - $REMOTE_CONFIG
@@ -46,7 +44,6 @@ subtext: |
   If **one or more** of the special files are not specified, they are automatically
   added at predetermined positions in the list. The order is as follows:
 
-  - `$OWN_TELEMETRY_CONFIG`
   - `$BUILTIN_CONFIG`
   - <USER_PROVIDED_CONFIG_FILES>
   - `$OPAMP_EXTENSION_CONFIG`
