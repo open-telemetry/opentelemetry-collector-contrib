@@ -7,6 +7,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/elastic/go-docappender/v2 v2.10.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.1
+	github.com/elastic/go-elasticsearch/v9 v9.0.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.0
