@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -26,6 +27,7 @@ func TestValidate(t *testing.T) {
 		name          string
 		config        Supervisor
 		expectedError string
+		skipFunc      func() (bool, string)
 	}{
 		{
 			name: "Valid filled out config",
@@ -373,6 +375,33 @@ func TestValidate(t *testing.T) {
 			},
 			expectedError: "agent::config_apply_timeout must be valid duration",
 		},
+		{
+			name: "HUP config reload not supported on Windows",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					UseHUPConfigReload:      true,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::use_hup_config_reload is not supported on Windows",
+			skipFunc:      func() (bool, string) { return runtime.GOOS != "windows", "HUP reload not supported on Windows" },
+		},
 	}
 
 	// create some fake files for validating agent config
@@ -383,6 +412,12 @@ func TestValidate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.skipFunc != nil {
+				if skip, reason := tc.skipFunc(); skip {
+					t.Skip(reason)
+				}
+			}
+
 			// Fill in path to agent executable
 			tc.config.Agent.Executable = os.Expand(tc.config.Agent.Executable,
 				func(s string) string {
