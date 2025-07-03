@@ -2086,7 +2086,6 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 }
 
 func Test_LiteralGetter_getWrappedValue(t *testing.T) {
-
 	tests := []struct {
 		name      string
 		value     any
@@ -2095,7 +2094,7 @@ func Test_LiteralGetter_getWrappedValue(t *testing.T) {
 		{
 			name: "pass expected type",
 			value: &mockLiteralGetter[any, string]{
-				valueGetter: func(ctx context.Context, a any) (string, error) {
+				valueGetter: func(_ context.Context, _ any) (string, error) {
 					return "foo", nil
 				},
 			},
@@ -2167,7 +2166,7 @@ func Test_LiteralGetter_GetLiteral(t *testing.T) {
 		{
 			name: "literal",
 			getter: &mockLiteralGetter[any, any]{
-				valueGetter: func(ctx context.Context, a any) (any, error) {
+				valueGetter: func(_ context.Context, _ any) (any, error) {
 					return "foo", nil
 				},
 			},
@@ -2176,7 +2175,7 @@ func Test_LiteralGetter_GetLiteral(t *testing.T) {
 		{
 			name: "literal implementation returns an error",
 			getter: &mockLiteralGetter[any, any]{
-				valueGetter: func(ctx context.Context, a any) (any, error) {
+				valueGetter: func(_ context.Context, _ any) (any, error) {
 					return nil, errors.New("error")
 				},
 			},
