@@ -16,14 +16,14 @@ issues: [39963]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The special configuration files ($OWN_METRICS_CONFIG, $BUILTIN_CONFIG, $OPAMP_EXTENSION_CONFIG, $REMOTE_CONFIG) are essential for the Supervisor
+  The special configuration files ($OWN_TELEMETRY_CONFIG, $BUILTIN_CONFIG, $OPAMP_EXTENSION_CONFIG, $REMOTE_CONFIG) are essential for the Supervisor
   and Collector to work together. Because of this, any of these that are missing
   from the config list will be automatically added in what is considered to be
   their "default" position.
 
   The default position special configuration files is as follows:
 
-  - `$OWN_METRICS_CONFIG`
+  - `$OWN_TELEMETRY_CONFIG`
   - `$BUILTIN_CONFIG`
   - <USER_PROVIDED_CONFIG_FILES>
   - `$OPAMP_EXTENSION_CONFIG`

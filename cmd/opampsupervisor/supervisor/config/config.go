@@ -237,7 +237,7 @@ type SpecialConfigFile string
 const (
 	SpecialConfigFileBuiltin        SpecialConfigFile = "$BUILTIN_CONFIG"
 	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
-	SpecialConfigFileOwnMetrics     SpecialConfigFile = "$OWN_METRICS_CONFIG"
+	SpecialConfigFileOwnMetrics     SpecialConfigFile = "$OWN_TELEMETRY_CONFIG"
 	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
 )
 

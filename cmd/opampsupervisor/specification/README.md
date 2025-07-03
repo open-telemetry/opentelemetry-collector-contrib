@@ -240,7 +240,7 @@ customize final configuration given to the Collector. Below are the available
 values and what they represent:
 
 - `$OPAMP_EXTENSION_CONFIG`: configuration for the OpAMP extension to connect to the Supervisor.
-- `$OWN_METRICS_CONFIG`: configuration for the Collector to report its own metrics.
+- `$OWN_TELEMETRY_CONFIG`: configuration for the Collector to report its own metrics.
 - `$BUILTIN_CONFIG`: built-in base configuration.
 - `$REMOTE_CONFIG`: remote configuration received by the Supervisor.
 
@@ -254,7 +254,7 @@ lowest priority while keeping compliance configuration at the highest priority:
 agent:
   config_files:
     - base_config.yaml
-    - $OWN_METRICS_CONFIG
+    - $OWN_TELEMETRY_CONFIG
     - $BUILTIN_CONFIG
     - $OPAMP_EXTENSION_CONFIG
     - $REMOTE_CONFIG
@@ -264,7 +264,7 @@ agent:
 If **one or more** of the special files are not specified, they are automatically
 added at predetermined positions in the list. The order is as follows:
 
-- `$OWN_METRICS_CONFIG`
+- `$OWN_TELEMETRY_CONFIG`
 - `$BUILTIN_CONFIG`
 - <USER_PROVIDED_CONFIG_FILES>
 - `$OPAMP_EXTENSION_CONFIG`

@@ -399,7 +399,7 @@ func TestValidate(t *testing.T) {
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
-			expectedError: "agent::config_files contains invalid special file: \"$DOESNTEXIST\". Must be one of [$OWN_METRICS_CONFIG $BUILTIN_CONFIG $OPAMP_EXTENSION_CONFIG $REMOTE_CONFIG]",
+			expectedError: "agent::config_files contains invalid special file: \"$DOESNTEXIST\". Must be one of [$OWN_TELEMETRY_CONFIG $BUILTIN_CONFIG $OPAMP_EXTENSION_CONFIG $REMOTE_CONFIG]",
 		},
 	}
 
