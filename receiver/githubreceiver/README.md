@@ -24,6 +24,7 @@
   - [Receiver Configuration](#receiver-configuration)
   - [Configuring Service Name](#configuring-service-name)
   - [Configuration a GitHub App](#configuration-a-github-app)
+  - [Custom Properties as Resource Attributes](#custom-properties-as-resource-attributes)
 
 ## Overview
 
