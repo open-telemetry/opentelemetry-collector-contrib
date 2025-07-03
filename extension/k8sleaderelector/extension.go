@@ -25,14 +25,20 @@ type LeaderElection interface {
 	SetCallBackFuncs(StartCallback, StopCallback)
 }
 
+type callBackFuncs struct {
+	onStartLeading StartCallback
+	onStopLeading  StopCallback
+}
+
 // SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
 func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
 	// If the extension has already started, and it has become the leader, then channel is already created so we can push the callbacks to it.
-	if lee.onStartLeadingChan != nil {
-		lee.onStartLeadingChan <- onStartLeading
+	callBack := callBackFuncs{
+		onStartLeading: onStartLeading,
+		onStopLeading:  onStopLeading,
 	}
-	if lee.onStopLeadingChan != nil {
-		lee.onStopLeadingChan <- onStopLeading
+	if lee.callBackChan != nil {
+		lee.callBackChan <- callBack
 	}
 
 	// Append the callbacks to the lists for following cases
@@ -40,8 +46,7 @@ func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallbac
 	// 2. When the extension has started, but it is not the leader, then the callbacks should be stored.
 	lee.mu.Lock()
 	defer lee.mu.Unlock()
-	lee.onStartedLeading = append(lee.onStartedLeading, onStartLeading)
-	lee.onStoppedLeading = append(lee.onStoppedLeading, onStopLeading)
+	lee.callBackFuncs = append(lee.callBackFuncs, callBack)
 }
 
 // leaderElectionExtension is the main struct implementing the extension's behavior.
@@ -56,8 +61,8 @@ type leaderElectionExtension struct {
 	onStartedLeading []StartCallback
 	onStoppedLeading []StopCallback
 
-	onStartLeadingChan chan StartCallback
-	onStopLeadingChan  chan StopCallback
+	callBackChan  chan callBackFuncs
+	callBackFuncs []callBackFuncs
 
 	mu sync.Mutex
 }
@@ -66,11 +71,10 @@ type leaderElectionExtension struct {
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 	// Create a channel for receivers which have registered the callback after the extension has become the leader. In such case the callback is pushed to
 	// channel and executed immediately.
-	lee.onStartLeadingChan = make(chan StartCallback, 1)
-	lee.onStopLeadingChan = make(chan StopCallback, 1)
+	lee.callBackChan = make(chan callBackFuncs, 1)
 
-	for _, callback := range lee.onStartedLeading {
-		callback(ctx)
+	for _, callback := range lee.callBackFuncs {
+		callback.onStartLeading(ctx)
 	}
 
 	go func() {
@@ -79,12 +83,12 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				callback, ok := <-lee.onStartLeadingChan
+				callback, ok := <-lee.callBackChan
 				if !ok {
 					return
 				}
-				if callback != nil {
-					callback(ctx)
+				if callback.onStartLeading != nil {
+					callback.onStartLeading(ctx)
 				}
 			}
 		}
@@ -93,25 +97,12 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
 func (lee *leaderElectionExtension) stoppedLeading() {
-	for _, callback := range lee.onStoppedLeading {
-		callback()
+	// We have lost the leader election, so we close the channel to stop receiving callbacks.
+	close(lee.callBackChan)
+	// make sure for all the callbacks that were registered before the leader election was lost, we invoke the stopLeading callback.
+	for _, callback := range lee.callBackFuncs {
+		callback.onStopLeading()
 	}
-
-	go func() {
-		for {
-			callback, ok := <-lee.onStopLeadingChan
-			if !ok {
-				return
-			}
-			if callback != nil {
-				callback()
-			}
-		}
-	}()
-
-	// Close the channel as the channel is recreated when we become leader again.
-	close(lee.onStartLeadingChan)
-	close(lee.onStopLeadingChan)
 }
 
 // Start begins the extension's processing.
