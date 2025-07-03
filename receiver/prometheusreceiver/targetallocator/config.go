@@ -4,7 +4,6 @@
 package targetallocator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
 
 import (
-	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -13,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -111,14 +110,17 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 }
 
 func unmarshalYAML(in map[string]any, out any) error {
-	yamlOut, err := yaml.Marshal(in)
+	yamlOut, err := yaml.MarshalWithOptions(
+		in,
+		yaml.CustomMarshaler[commonconfig.Secret](func(s commonconfig.Secret) ([]byte, error) {
+			return []byte(s), nil
+		}),
+	)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
 	}
 
-	decoder := yaml.NewDecoder(bytes.NewReader(yamlOut))
-	decoder.KnownFields(true)
-	err = decoder.Decode(out)
+	err = yaml.Unmarshal(yamlOut, out)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
 	}
