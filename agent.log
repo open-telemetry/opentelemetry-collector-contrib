@@ -1,0 +1,2 @@
+Error: invalid configuration: service::extensions: references extension "opamp" which is not configured
+2025/05/20 13:20:17 collector server run finished with error: invalid configuration: service::extensions: references extension "opamp" which is not configured
