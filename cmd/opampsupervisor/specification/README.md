@@ -147,7 +147,7 @@ agent:
   # below for more details.
   config_files:
     - $OPAMP_EXTENSION_CONFIG
-    - $BUILTIN_CONFIG
+    - $OWN_TELEMETRY_CONFIG
     - $REMOTE_CONFIG
 
   # Optional directories that are allowed to be read/written by the
@@ -239,7 +239,7 @@ customize final configuration given to the Collector. Below are the available
 values and what they represent:
 
 - `$OPAMP_EXTENSION_CONFIG`: configuration for the OpAMP extension to connect to the Supervisor.
-- `$BUILTIN_CONFIG`: built-in base configuration, includes configuration for the Collector to report its own telemetry.
+- `$OWN_TELEMETRY_CONFIG`: configuration for the agent to report its own telemetry.
 - `$REMOTE_CONFIG`: remote configuration received by the Supervisor.
 
 **NOTE**: These configuration snippets, particularly `$OPAMP_EXTENSION_CONFIG`, are essential for the Supervisor and Collector to work together. Overriding values in these may result in the Supervisor failing to properly start the Collector and should be done with caution.
@@ -252,7 +252,7 @@ lowest priority while keeping compliance configuration at the highest priority:
 agent:
   config_files:
     - base_config.yaml
-    - $BUILTIN_CONFIG
+    - $OWN_TELEMETRY_CONFIG
     - $OPAMP_EXTENSION_CONFIG
     - $REMOTE_CONFIG
     - compliance_config.yaml
@@ -261,7 +261,7 @@ agent:
 If **one or more** of the special files are not specified, they are automatically
 added at predetermined positions in the list. The order is as follows:
 
-- `$BUILTIN_CONFIG`
+- `$OWN_TELEMETRY_CONFIG`
 - <USER_PROVIDED_CONFIG_FILES>
 - `$OPAMP_EXTENSION_CONFIG`
 - `$REMOTE_CONFIG`

@@ -236,13 +236,13 @@ func (a Agent) Validate() error {
 type SpecialConfigFile string
 
 const (
-	SpecialConfigFileBuiltin        SpecialConfigFile = "$BUILTIN_CONFIG"
+	SpecialConfigFileOwnTelemetry   SpecialConfigFile = "$OWN_TELEMETRY_CONFIG"
 	SpecialConfigFileOpAMPExtension SpecialConfigFile = "$OPAMP_EXTENSION_CONFIG"
 	SpecialConfigFileRemoteConfig   SpecialConfigFile = "$REMOTE_CONFIG"
 )
 
 var SpecialConfigFiles = []SpecialConfigFile{
-	SpecialConfigFileBuiltin,
+	SpecialConfigFileOwnTelemetry,
 	SpecialConfigFileOpAMPExtension,
 	SpecialConfigFileRemoteConfig,
 }

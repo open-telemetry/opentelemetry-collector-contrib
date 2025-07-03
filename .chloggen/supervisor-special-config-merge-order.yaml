@@ -21,7 +21,7 @@ subtext: |
 
   The new default order configuration merging is as follows (from lowest to highest precedence):
 
-  - `$BUILTIN_CONFIG`
+  - `$OWN_TELEMETRY_CONFIG`
   - <USER_PROVIDED_CONFIG_FILES>
   - `$OPAMP_EXTENSION_CONFIG`
   - `$REMOTE_CONFIG`
