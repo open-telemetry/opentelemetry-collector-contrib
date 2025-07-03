@@ -1803,9 +1803,9 @@ The return type is `int64`.
 
 Examples:
 
-- `ParseInt("12345", 10) -> 12345`
-- `ParseInt("0xAA", 0) -> 170`
-- `ParseInt("AA", 16) -> 170`
+- `ParseInt("12345", 10)`
+- `ParseInt("0xAA", 0)`
+- `ParseInt("AA", 16)`
 - `ParseInt("notANumber", 10) -> returns an error`
 - `ParseInt("123456", -10) -> returns an error, base cannot be a negative integer`
 
