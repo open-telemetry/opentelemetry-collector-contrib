@@ -7,7 +7,7 @@ change_type: enhancement
 component: awss3exporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: add configuration field `resource_attrs_to_s3/s3_bucket` to support mapping s3 bucket to OTel resource attributes
+note: Add a new configuration `resource_attrs_to_s3/s3_bucket` to enable mapping OTel resource attributes to s3 bucket
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40321]
