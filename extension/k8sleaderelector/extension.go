@@ -58,9 +58,6 @@ type leaderElectionExtension struct {
 	cancel        context.CancelFunc
 	waitGroup     sync.WaitGroup
 
-	onStartedLeading []StartCallback
-	onStoppedLeading []StopCallback
-
 	callBackChan  chan callBackFuncs
 	callBackFuncs []callBackFuncs
 
