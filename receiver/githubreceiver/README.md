@@ -220,3 +220,49 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 [run]: https://github.com/krzko/run-with-telemetry
 [otcli]: https://github.com/equinix-labs/otel-cli
 [tr]: ./trace_event_handling.go
+
+## Custom Properties as Resource Attributes
+
+The GitHub receiver supports adding custom properties from GitHub repositories as resource attributes in your telemetry data. This feature allows you to enrich your traces with additional metadata specific to your repositories.
+
+### How It Works
+
+When a GitHub webhook event is received, the receiver extracts all custom properties from the repository and adds them as resource attributes with the prefix `github.repository.custom_properties`.
+
+For example, if your repository has these custom properties:
+
+```
+team-name: platform-engineering
+environment: production
+service-tier: critical
+```
+
+They will be added as resource attributes:
+
+```
+github.repository.custom_properties.team_name: "platform-engineering"
+github.repository.custom_properties.environment: "production"
+github.repository.custom_properties.service_tier: "critical"
+```
+
+### Key Formatting
+
+To ensure consistency with OpenTelemetry naming conventions, all custom property keys are converted to snake_case format using the following rules:
+
+1. Hyphens, spaces, and dots are replaced with underscores
+2. Special characters like `$` and `#` are replaced with `_dollar_` and `_hash_`
+3. CamelCase and PascalCase are converted to snake_case by inserting underscores before uppercase letters
+4. Multiple consecutive underscores are replaced with a single underscore
+
+Examples of key transformations:
+
+| Original Key | Transformed Key |
+|--------------|----------------|
+| `teamName` | `team_name` |
+| `API-Key` | `api_key` |
+| `Service.Level` | `service_level` |
+| `$Cost` | `_dollar_cost` |
+| `#Priority` | `_hash_priority` |
+
+**Note**:
+The `service_name` custom property is handled specially and is not added as a resource attribute with the prefix. Instead, it's used to set the `service.name` resource attribute directly, as described in the [Configuring Service Name](#configuring-service-name) section.
