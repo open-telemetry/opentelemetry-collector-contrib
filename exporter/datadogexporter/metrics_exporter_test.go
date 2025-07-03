@@ -940,16 +940,23 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 }
 
 func TestNewExporterWithProxy(t *testing.T) {
-	if !isMetricExportV2Enabled() {
-		require.NoError(t, enableNativeMetricExport())
+	if isMetricExportV2Enabled() {
+		require.NoError(t, enableZorkianMetricExport())
 		defer require.NoError(t, enableMetricExportSerializer())
 	}
 
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
+	var proxyRequests []*http.Request
+	var proxyRequestsMutex sync.Mutex
+
 	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
 		Director: func(req *http.Request) {
+			proxyRequestsMutex.Lock()
+			proxyRequests = append(proxyRequests, req)
+			proxyRequestsMutex.Unlock()
+
 			req.URL.Scheme = "http"
 			req.URL.Host = server.Listener.Addr().String()
 		},
@@ -1007,6 +1014,21 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
+
+	proxyRequestsMutex.Lock()
+	defer proxyRequestsMutex.Unlock()
+
+	// At least should have metrics + metadata
+	assert.GreaterOrEqual(t, len(proxyRequests), 2, "Expected at least 2 requests to go through the proxy")
+
+	for _, req := range proxyRequests {
+		assert.Equal(t, "gzip", req.Header.Get("Accept-Encoding"))
+		assert.Equal(t, "otelcol/latest", req.Header.Get("User-Agent"))
+
+		assert.True(t, req.URL.Path == "/intake" || req.URL.Path == "/api/v1/validate",
+			"Unexpected request path: %s", req.URL.Path,
+		)
+	}
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
