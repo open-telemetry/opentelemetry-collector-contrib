@@ -53,6 +53,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	supervisorTelemetry "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
 var (
@@ -177,9 +178,11 @@ type Supervisor struct {
 	telemetrySettings telemetrySettings
 
 	featureGates map[string]struct{}
+	metrics      *supervisorTelemetry.Metrics
 }
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
+	var err error
 	s := &Supervisor{
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
@@ -194,27 +197,32 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		featureGates:                 map[string]struct{}{},
 		agentReady:                   atomic.Bool{},
 		agentReadyChan:               make(chan struct{}, 1),
+		metrics:                      &supervisorTelemetry.Metrics{},
 	}
-	if err := s.createTemplates(); err != nil {
+	if err = s.createTemplates(); err != nil {
 		return nil, err
 	}
 
-	telSettings, err := initTelemetrySettings(logger, cfg.Telemetry)
+	s.telemetrySettings, err = initTelemetrySettings(logger, cfg.Telemetry)
 	if err != nil {
 		return nil, err
 	}
-	s.telemetrySettings = telSettings
 
-	if err := cfg.Validate(); err != nil {
+	if err = cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg
 
-	if err := os.MkdirAll(s.config.Storage.Directory, 0o700); err != nil {
+	if err = os.MkdirAll(s.config.Storage.Directory, 0o700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+
+	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
+	if err != nil {
+		return nil, fmt.Errorf("error creating internal metrics: %w", err)
+	}
 
 	return s, nil
 }
@@ -572,18 +580,15 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 						s.telemetrySettings.Logger.Error("Could not stop OpAmp client", zap.Error(stopErr))
 					}
 				}(s)
-				if healthErr := s.opampClient.SetHealth(&protobufs.ComponentHealth{
-					Healthy:   false,
-					LastError: err.Error(),
-				}); healthErr != nil {
-					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
+				err = s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: err.Error()})
+				if err != nil {
+					s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
 				}
 			} else {
 				s.telemetrySettings.Logger.Error("Could not start OpAMP client to report health to server", zap.Error(startOpAMPErr))
 			}
 		}
 		if err != nil {
-			s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
 			span.SetStatus(codes.Error, err.Error())
 		} else {
 			span.SetStatus(codes.Ok, "")
@@ -671,7 +676,7 @@ func (s *Supervisor) startOpAMPClient() error {
 		return err
 	}
 
-	if err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+	if err = s.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
 		return err
 	}
 
@@ -782,6 +787,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 		if !s.agentReady.Load() && message.Health.Healthy {
 			s.markAgentReady()
 		}
+		// _ = s.SetHealth(message.Health)
 	}
 
 	return &protobufs.ServerToAgent{}
@@ -1321,10 +1327,10 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Cannot start the agent", zap.Error(err))
 		startErr := fmt.Errorf("cannot start the agent: %w", err)
-		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: startErr.Error()})
-		if err != nil {
-			s.telemetrySettings.Logger.Error("Failed to report OpAMP client health", zap.Error(err))
+		if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: startErr.Error()}); err != nil {
+			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
+		s.metrics.CollectorStartupErrors.Add(context.Background(), 1)
 		return "", startErr
 	}
 
@@ -1348,9 +1354,12 @@ func (s *Supervisor) runAgentProcess() {
 	configApplyTimeoutTimer := time.NewTimer(0)
 	configApplyTimeoutTimer.Stop()
 
+	s.metrics.CollectorStartupAttempts.Add(context.Background(), 1)
+
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.metrics.CollectorStartupAttempts.Add(context.Background(), 1)
 			s.lastHealthFromClient.Store(nil)
 			s.telemetrySettings.Logger.Debug("agent has new config", zap.String("previous_health", s.lastHealthFromClient.Load().String()))
 			if !configApplyTimeoutTimer.Stop() {
@@ -1379,11 +1388,13 @@ func (s *Supervisor) runAgentProcess() {
 			// to non-empty.
 			status, err := s.startAgent()
 			if err != nil {
+				s.metrics.CollectorConfigErrors.Add(context.Background(), 1)
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
 			if status == agentNotStarting {
 				// not starting agent because of nop config: clear timer, report applied status, report healthy status
+				s.telemetrySettings.Logger.Debug("No config present, nothing to apply")
 				configApplyTimeoutTimer.Stop()
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
@@ -1402,6 +1413,7 @@ func (s *Supervisor) runAgentProcess() {
 		case <-s.commander.Exited():
 			// the agent process exit is expected for restart command and will not attempt to restart
 			if s.agentRestarting.Load() {
+				s.telemetrySettings.Logger.Debug("Agent restarted")
 				continue
 			}
 
@@ -1410,10 +1422,10 @@ func (s *Supervisor) runAgentProcess() {
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
 				s.commander.Pid(), s.commander.ExitCode(),
 			)
-			err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg})
-			if err != nil {
+			if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg}); err != nil {
 				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 			}
+			s.metrics.CollectorStartupErrors.Add(context.Background(), 1)
 
 			// TODO: decide why the agent stopped. If it was due to bad config, report it to server.
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
@@ -1429,8 +1441,10 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-restartTimer.C:
 			s.telemetrySettings.Logger.Debug("Agent starting after start backoff")
+			s.metrics.CollectorStartupAttempts.Add(context.Background(), 1)
 			_, err := s.startAgent()
 			if err != nil {
+				s.metrics.CollectorStartupErrors.Add(context.Background(), 1)
 				s.telemetrySettings.Logger.Error("restarting agent failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
@@ -1677,6 +1691,21 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 	if err := s.opampClient.SetRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not report OpAMP remote config status", zap.Error(err))
 	}
+}
+
+func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error {
+	s.telemetrySettings.Logger.Debug(
+		"Setting health",
+		zap.Bool("healthy", componentHealth.Healthy),
+		zap.String("lastError", componentHealth.LastError),
+	)
+	s.metrics.SetCollectorHealthStatus(context.Background(), componentHealth.Healthy)
+
+	err := s.opampClient.SetHealth(componentHealth)
+	if err != nil {
+		return fmt.Errorf("failed to set health to OpAMP server: %w", err)
+	}
+	return nil
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
