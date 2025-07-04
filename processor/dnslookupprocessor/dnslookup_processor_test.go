@@ -23,8 +23,8 @@ func TestProcessor(t *testing.T) {
 	testCases := []struct {
 		name      string
 		goldenDir string
-		resolve   LookupConfig
-		reverse   LookupConfig
+		resolve   *lookupConfig
+		reverse   *lookupConfig
 	}{
 		{
 			name:      "resolve source.address and reverse custom.ip",
@@ -47,12 +47,12 @@ func TestProcessor(t *testing.T) {
 		{
 			name:      "take the first valid attribute",
 			goldenDir: "multiple_attrs",
-			resolve: LookupConfig{
+			resolve: &lookupConfig{
 				Context:          resource,
 				SourceAttributes: []string{"bad.address", "good.address"},
 				TargetAttribute:  "resolved.ip",
 			},
-			reverse: LookupConfig{
+			reverse: &lookupConfig{
 				Context:          resource,
 				SourceAttributes: []string{"bad.ip", "good.ip"},
 				TargetAttribute:  "resolved.address",
@@ -67,18 +67,18 @@ func TestProcessor(t *testing.T) {
 		{
 			name:      "custom resolve attributes",
 			goldenDir: "custom_resolve_attr",
-			resolve: LookupConfig{
+			resolve: &lookupConfig{
 				Context:          record,
 				SourceAttributes: []string{"custom.address", "custom.another.address"},
 				TargetAttribute:  "custom.ip",
 			},
-			reverse: LookupConfig{},
+			reverse: &lookupConfig{},
 		},
 		{
 			name:      "custom reverse attributes",
 			goldenDir: "custom_reverse_attr",
 			resolve:   defaultResolve(),
-			reverse: LookupConfig{
+			reverse: &lookupConfig{
 				Context:          record,
 				SourceAttributes: []string{"custom.ip", "custom.another.ip"},
 				TargetAttribute:  "custom.address",
@@ -94,23 +94,23 @@ func TestProcessor(t *testing.T) {
 	}
 }
 
-func defaultResolve() LookupConfig {
-	return LookupConfig{
+func defaultResolve() *lookupConfig {
+	return &lookupConfig{
 		Context:          resource,
 		SourceAttributes: []string{"source.address"},
 		TargetAttribute:  "source.ip",
 	}
 }
 
-func customReverse() LookupConfig {
-	return LookupConfig{
+func customReverse() *lookupConfig {
+	return &lookupConfig{
 		Context:          resource,
 		SourceAttributes: []string{"custom.ip", "custom.another.ip"},
 		TargetAttribute:  "custom.address",
 	}
 }
 
-func createNonExpiryHostsConfig(t *testing.T, resolve LookupConfig, reverse LookupConfig) component.Config {
+func createNonExpiryHostsConfig(t *testing.T, resolve *lookupConfig, reverse *lookupConfig) component.Config {
 	const hostsContent = `
 192.168.1.20 example.com
 192.168.1.30 another.example.com

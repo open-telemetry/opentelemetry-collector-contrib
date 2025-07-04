@@ -49,12 +49,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_empty"),
 			expected: &Config{
-				Resolve: LookupConfig{
+				Resolve: &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{string(semconv.SourceAddressKey)},
 					TargetAttribute:  sourceIPKey,
 				},
-				Reverse: LookupConfig{
+				Reverse: &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{sourceIPKey},
 					TargetAttribute:  string(semconv.SourceAddressKey),
@@ -64,19 +64,19 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_target_attribute"),
 			expected: &Config{
-				Resolve: LookupConfig{
+				Resolve: &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"custom.address"},
 					TargetAttribute:  sourceIPKey,
 				},
-				Reverse: LookupConfig{},
+				Reverse: nil,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_source_attributes"),
 			expected: &Config{
-				Resolve: LookupConfig{},
-				Reverse: LookupConfig{
+				Resolve: nil,
+				Reverse: &lookupConfig{
 					Context:          record,
 					SourceAttributes: []string{sourceIPKey},
 					TargetAttribute:  "custom.address",
@@ -86,8 +86,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_context"),
 			expected: &Config{
-				Resolve: LookupConfig{},
-				Reverse: LookupConfig{
+				Resolve: nil,
+				Reverse: &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"custom.ip"},
 					TargetAttribute:  "custom.address",
@@ -97,12 +97,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "custom_attributes"),
 			expected: &Config{
-				Resolve: LookupConfig{
+				Resolve: &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"custom.address", "proxy.address"},
 					TargetAttribute:  "custom.ip",
 				},
-				Reverse: LookupConfig{
+				Reverse: &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"custom.ip", "proxy.ip"},
 					TargetAttribute:  "custom.address",
@@ -144,12 +144,12 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_Validate(t *testing.T) {
 	createValidConfig := func() Config {
 		return Config{
-			Resolve: LookupConfig{
+			Resolve: &lookupConfig{
 				Context:          resource,
 				SourceAttributes: []string{"host.name"},
 				TargetAttribute:  "host.ip",
 			},
-			Reverse: LookupConfig{
+			Reverse: &lookupConfig{
 				Context:          resource,
 				SourceAttributes: []string{"client.ip"},
 				TargetAttribute:  "client.name",
@@ -179,12 +179,12 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Empty reverse attribute list",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve = LookupConfig{
+				cfg.Resolve = &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"source.address"},
 					TargetAttribute:  "source.ip",
 				}
-				cfg.Reverse = LookupConfig{
+				cfg.Reverse = &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{},
 					TargetAttribute:  "source.address",
@@ -204,12 +204,12 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Missing reverse target_attribute",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve = LookupConfig{
+				cfg.Resolve = &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"source.address"},
 					TargetAttribute:  "source.ip",
 				}
-				cfg.Reverse = LookupConfig{
+				cfg.Reverse = &lookupConfig{
 					Context:          resource,
 					SourceAttributes: []string{"source.ip"},
 				}
@@ -228,7 +228,7 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Invalid reverse context",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Reverse = LookupConfig{
+				cfg.Reverse = &lookupConfig{
 					Context:          "invalid",
 					SourceAttributes: []string{"source.ip"},
 					TargetAttribute:  "source.address",

@@ -67,7 +67,8 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 
 // createProcessPairs creates a list of processPair based on the configuration.
 func (dp *dnsLookupProcessor) createProcessPairs() []processPair {
-	if dp.config.Resolve.Context == dp.config.Reverse.Context {
+	if (dp.config.Resolve != nil && dp.config.Reverse != nil) &&
+		(dp.config.Resolve.Context == dp.config.Reverse.Context) {
 		return []processPair{
 			{
 				ContextID: dp.config.Resolve.Context,
@@ -78,14 +79,14 @@ func (dp *dnsLookupProcessor) createProcessPairs() []processPair {
 
 	var processPairs []processPair
 
-	if dp.config.Resolve.Context != "" {
+	if dp.config.Resolve != nil {
 		processPairs = append(processPairs, processPair{
 			ContextID: dp.config.Resolve.Context,
 			ProcessFn: dp.processResolveLookup,
 		})
 	}
 
-	if dp.config.Reverse.Context != "" {
+	if dp.config.Reverse != nil {
 		processPairs = append(processPairs, processPair{
 			ContextID: dp.config.Reverse.Context,
 			ProcessFn: dp.processReverseLookup,
@@ -130,7 +131,7 @@ func (dp *dnsLookupProcessor) processReverseLookup(ctx context.Context, pMap pco
 func (dp *dnsLookupProcessor) processLookup(
 	ctx context.Context,
 	pMap pcommon.Map,
-	config LookupConfig,
+	config *lookupConfig,
 	validateFn func(string) (string, error),
 	lookupFn func(context.Context, string) ([]string, error),
 ) error {

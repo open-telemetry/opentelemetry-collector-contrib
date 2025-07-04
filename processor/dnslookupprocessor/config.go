@@ -5,7 +5,6 @@ package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,17 +33,17 @@ func (c *contextID) UnmarshalText(text []byte) error {
 // Config holds the configuration for the DnsLookup processor.
 type Config struct {
 	// Resolve contains configuration for forward DNS lookups (hostname to IP).
-	Resolve LookupConfig `mapstructure:"resolve"`
+	Resolve *lookupConfig `mapstructure:"resolve"`
 
 	// Reverse contains configuration for reverse DNS lookups (IP to hostname).
-	Reverse LookupConfig `mapstructure:"reverse"`
+	Reverse *lookupConfig `mapstructure:"reverse"`
 
 	// Hostfiles specifies the path to custom host files.
 	Hostfiles []string `mapstructure:"hostfiles"`
 }
 
-// LookupConfig defines the configuration for forward/reverse DNS resolution.
-type LookupConfig struct {
+// lookupConfig defines the configuration for forward/reverse DNS resolution.
+type lookupConfig struct {
 	// Context specifies where to look for attributes (resource or record).
 	Context contextID `mapstructure:"context"`
 
@@ -58,8 +57,8 @@ type LookupConfig struct {
 var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
-	validateLookupConfig := func(lc LookupConfig) error {
-		if reflect.DeepEqual(lc, LookupConfig{}) {
+	validateLookupConfig := func(lc *lookupConfig) error {
+		if lc == nil {
 			return nil
 		}
 
@@ -75,6 +74,10 @@ func (cfg *Config) Validate() error {
 		return nil
 	}
 
+	if cfg.Resolve == nil && cfg.Reverse == nil {
+		return errors.New("at least one of 'resolve' or 'reverse' must be configured")
+	}
+
 	if err := validateLookupConfig(cfg.Resolve); err != nil {
 		return fmt.Errorf("invalid resolve configuration: %w", err)
 	}
@@ -86,39 +89,43 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		// Nothing to do if there is no config given.
+var _ confmap.Unmarshaler = (*Config)(nil)
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
 		return nil
 	}
-	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
+
+	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
 
-	if !componentParser.IsSet("resolve") && !componentParser.IsSet("reverse") {
-		return errors.New("at least one of 'resolve' or 'reverse' must be configured")
-	}
-
-	if componentParser.IsSet("resolve") {
-		if !componentParser.IsSet("resolve::context") {
+	if conf.IsSet("resolve") {
+		if cfg.Resolve == nil {
+			cfg.Resolve = &lookupConfig{}
+		}
+		if !conf.IsSet("resolve::context") {
 			cfg.Resolve.Context = resource
 		}
-		if !componentParser.IsSet("resolve::source_attributes") {
+		if !conf.IsSet("resolve::source_attributes") {
 			cfg.Resolve.SourceAttributes = []string{string(semconv.SourceAddressKey)}
 		}
-		if !componentParser.IsSet("resolve::target_attribute") {
+		if !conf.IsSet("resolve::target_attribute") {
 			cfg.Resolve.TargetAttribute = sourceIPKey
 		}
 	}
 
-	if componentParser.IsSet("reverse") {
-		if !componentParser.IsSet("reverse::context") {
+	if conf.IsSet("reverse") {
+		if cfg.Reverse == nil {
+			cfg.Reverse = &lookupConfig{}
+		}
+		if !conf.IsSet("reverse::context") {
 			cfg.Reverse.Context = resource
 		}
-		if !componentParser.IsSet("reverse::source_attributes") {
+		if !conf.IsSet("reverse::source_attributes") {
 			cfg.Reverse.SourceAttributes = []string{sourceIPKey}
 		}
-		if !componentParser.IsSet("reverse::target_attribute") {
+		if !conf.IsSet("reverse::target_attribute") {
 			cfg.Reverse.TargetAttribute = string(semconv.SourceAddressKey)
 		}
 	}
