@@ -137,12 +137,16 @@ func TestIsKindSupported(t *testing.T) {
 
 func TestPrepareSharedInformerFactory(t *testing.T) {
 	tests := []struct {
-		name   string
-		client *fake.Clientset
+		name                  string
+		client                *fake.Clientset
+		config                *Config
+		wantInformerFactories int
 	}{
 		{
-			name:   "new_server_version",
-			client: newFakeClientWithAllResources(),
+			name:                  "new_server_version",
+			client:                newFakeClientWithAllResources(),
+			config:                &Config{},
+			wantInformerFactories: 1,
 		},
 		{
 			name: "old_server_version", // With no batch/v1.CronJob support.
@@ -184,6 +188,16 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				}
 				return client
 			}(),
+			config:                &Config{},
+			wantInformerFactories: 1,
+		},
+		{
+			name:   "with namespaced informers",
+			client: newFakeClientWithAllResources(),
+			config: &Config{
+				Namespaces: []string{"namespace1", "namespace2"},
+			},
+			wantInformerFactories: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -194,11 +208,12 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
 				metadataStore: metadata.NewStore(),
-				config:        &Config{},
+				config:        tt.config,
 			}
 
 			assert.NoError(t, rw.prepareSharedInformerFactory())
 
+			assert.Len(t, rw.informerFactories, tt.wantInformerFactories)
 			// Make sure no warning or error logs are raised
 			assert.Equal(t, 0, logs.Len())
 		})
@@ -214,7 +229,9 @@ func TestSetupInformerForKind(t *testing.T) {
 	}
 
 	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
-	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, factory)
+	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, map[string]informers.SharedInformerFactory{
+		"<cluster-wide-informer-key>": factory,
+	})
 
 	assert.Equal(t, 1, logs.Len())
 	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Message)
@@ -226,7 +243,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	logsConsumer := new(consumertest.LogsSink)
 
 	// Setup k8s resources.
-	pods := createPods(t, client, 1)
+	pods := createPods(t, client, 1, false)
 
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
@@ -379,7 +396,7 @@ func TestObjMetadata(t *testing.T) {
 			name: "Pod with Service metadata",
 			metadataStore: func() *metadata.Store {
 				ms := metadata.NewStore()
-				ms.Setup(gvk.Service, &testutils.MockStore{
+				ms.Setup(gvk.Service, metadata.ClusterWideInformerKey, &testutils.MockStore{
 					Cache: map[string]any{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{
