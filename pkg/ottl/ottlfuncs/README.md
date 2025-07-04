@@ -1544,7 +1544,7 @@ Examples:
 
 `ParseInt(target, base)`
 
-The `ParseInt` Converter interprets a string `target` in the given `base` (0, 2 to 36) and returns its integer representaiton.
+The `ParseInt` Converter interprets a string `target` in the given `base` (0, 2 to 36) and returns its integer representation.
 
 `target` is the string to be converted. `target` should be a valid integer represented in string format. For example, "1234" is a valid `target` value, but "notANumber" is not. The `target` may begin with a leading sign: "+" or "-".
 
