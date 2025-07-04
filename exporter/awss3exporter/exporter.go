@@ -42,12 +42,19 @@ func newS3Exporter(
 
 func (e *s3Exporter) getUploadOpts(res pcommon.Resource) *upload.UploadOptions {
 	s3Prefix := ""
+	s3Bucket := ""
 	if s3PrefixKey := e.config.ResourceAttrsToS3.S3Prefix; s3PrefixKey != "" {
 		if value, ok := res.Attributes().Get(s3PrefixKey); ok {
 			s3Prefix = value.AsString()
 		}
 	}
+	if s3BucketKey := e.config.ResourceAttrsToS3.S3Bucket; s3BucketKey != "" {
+		if value, ok := res.Attributes().Get(s3BucketKey); ok {
+			s3Bucket = value.AsString()
+		}
+	}
 	uploadOpts := &upload.UploadOptions{
+		OverrideBucket: s3Bucket,
 		OverridePrefix: s3Prefix,
 	}
 	return uploadOpts
