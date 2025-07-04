@@ -121,6 +121,7 @@ func Test_ParseInt(t *testing.T) {
 				},
 			},
 			expected: nil,
+			err:      true,
 		},
 		{
 			name: "negative base value",

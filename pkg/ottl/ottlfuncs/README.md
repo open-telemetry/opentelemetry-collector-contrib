@@ -1547,6 +1547,7 @@ Examples:
 The `ParseInt` Converter interprets a string `target` in the given `base` (0, 2 to 36) and returns its integer representaiton.
 
 `target` is the string to be converted. `target` should be a valid integer represented in string format. For example, "1234" is a valid `target` value, but "notANumber" is not. The `target` may begin with a leading sign: "+" or "-".
+
 `base` is an `int64` representing the base of the number in the `target` string. An error occurs if the `base` argument is a negative integer.
 
 If the `base` argument is 0, the true base is implied by the string's prefix following the sign (if present): 2 for "0b", 8 for "0" or "0o", 16 for "0x", and 10 otherwise. Also, for `base` value is 0 only, underscore characters are permitted as defined by the Go syntax for [integer literals](https://go.dev/ref/spec#Integer_literals).

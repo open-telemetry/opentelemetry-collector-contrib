@@ -47,6 +47,10 @@ func parseIntFunc[K any](target ottl.StringGetter[K], base ottl.IntGetter[K]) ot
 		if baseValue < 0 {
 			return nil, fmt.Errorf("invalid base value: %d for ParseInt function, base cannot be negative", baseValue)
 		}
-		return strconv.ParseInt(targetValue, int(baseValue), 64)
+		result, err := strconv.ParseInt(targetValue, int(baseValue), 64)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	}
 }
