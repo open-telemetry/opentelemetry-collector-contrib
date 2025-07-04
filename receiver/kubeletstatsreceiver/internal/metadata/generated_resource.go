@@ -77,10 +77,66 @@ func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	}
 }
 
+// SetK8sNodeAnnotation sets provided attribute key with template prefix "k8s.node.annotation".
+func (rb *ResourceBuilder) SetK8sNodeAnnotation(key string, val string) {
+	if rb.config.K8sNodeAnnotation.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.annotation."+key, val)
+	}
+}
+
+// SetK8sNodeBool sets provided attribute key with template prefix "k8s.node.bool".
+func (rb *ResourceBuilder) SetK8sNodeBool(key string, val bool) {
+	if rb.config.K8sNodeBool.Enabled {
+		rb.res.Attributes().PutBool("k8s.node.bool."+key, val)
+	}
+}
+
+// SetK8sNodeBytes sets provided attribute key with template prefix "k8s.node.bytes".
+func (rb *ResourceBuilder) SetK8sNodeBytes(key string, val []byte) {
+	if rb.config.K8sNodeBytes.Enabled {
+		rb.res.Attributes().PutEmptyBytes("k8s.node.bytes." + key).FromRaw(val)
+	}
+}
+
+// SetK8sNodeDouble sets provided attribute key with template prefix "k8s.node.double".
+func (rb *ResourceBuilder) SetK8sNodeDouble(key string, val float64) {
+	if rb.config.K8sNodeDouble.Enabled {
+		rb.res.Attributes().PutDouble("k8s.node.double."+key, val)
+	}
+}
+
+// SetK8sNodeInt sets provided attribute key with template prefix "k8s.node.int".
+func (rb *ResourceBuilder) SetK8sNodeInt(key string, val int64) {
+	if rb.config.K8sNodeInt.Enabled {
+		rb.res.Attributes().PutInt("k8s.node.int."+key, val)
+	}
+}
+
+// SetK8sNodeLabel sets provided attribute key with template prefix "k8s.node.label".
+func (rb *ResourceBuilder) SetK8sNodeLabel(key string, val string) {
+	if rb.config.K8sNodeLabel.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.label."+key, val)
+	}
+}
+
+// SetK8sNodeMap sets provided attribute key with template prefix "k8s.node.map".
+func (rb *ResourceBuilder) SetK8sNodeMap(key string, val map[string]any) {
+	if rb.config.K8sNodeMap.Enabled {
+		rb.res.Attributes().PutEmptyMap("k8s.node.map." + key).FromRaw(val)
+	}
+}
+
 // SetK8sNodeName sets provided value as "k8s.node.name" attribute.
 func (rb *ResourceBuilder) SetK8sNodeName(val string) {
 	if rb.config.K8sNodeName.Enabled {
 		rb.res.Attributes().PutStr("k8s.node.name", val)
+	}
+}
+
+// SetK8sNodeSlice sets provided attribute key with template prefix "k8s.node.slice".
+func (rb *ResourceBuilder) SetK8sNodeSlice(key string, val []any) {
+	if rb.config.K8sNodeSlice.Enabled {
+		rb.res.Attributes().PutEmptySlice("k8s.node.slice." + key).FromRaw(val)
 	}
 }
 
