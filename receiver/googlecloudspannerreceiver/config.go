@@ -35,6 +35,8 @@ type Project struct {
 type Instance struct {
 	ID        string   `mapstructure:"instance_id"`
 	Databases []string `mapstructure:"databases"`
+	// Add this new field
+	ScrapeAllDatabases bool `mapstructure:"scrape_all_databases,omitempty"`
 }
 
 func (config *Config) Validate() error {
@@ -90,8 +92,19 @@ func (instance Instance) Validate() error {
 		return errors.New("field \"instance_id\" is required and cannot be empty for instance configuration")
 	}
 
-	if len(instance.Databases) == 0 {
-		return errors.New("field \"databases\" is required and cannot be empty for instance configuration")
+	hasDatabases := len(instance.Databases) > 0
+
+	if instance.ScrapeAllDatabases {
+		if hasDatabases {
+			return errors.New("\"scrape_all_databases\" cannot be true when \"databases\" is populated")
+		}
+		// Validation passes if scrape_all_databases is true and databases is empty.
+		return nil
+	}
+
+	// This is the original logic, which now only runs if ScrapeAllDatabases is false.
+	if !hasDatabases {
+		return errors.New("either \"databases\" must be specified or \"scrape_all_databases\" must be set to true")
 	}
 
 	for _, database := range instance.Databases {

@@ -10,10 +10,13 @@ googlecloudspanner:
       service_account_key: "path to spanner project 1 service account json key"
       instances:
         - instance_id: "id1"
+          scrape_all_databases: false
           databases:
             - "db11"
             - "db12"
         - instance_id: "id2"
+          scrape_all_databases: false
+          # Note: The 'databases' list for 'id2' has been removed.
           databases:
             - "db21"
             - "db22"
@@ -21,10 +24,12 @@ googlecloudspanner:
       service_account_key: "path to spanner project 2 service account json key"
       instances:
         - instance_id: "id3"
+          scrape_all_databases: false
           databases:
             - "db31"
             - "db32"
         - instance_id: "id4"
+          scrape_all_databases: false
           databases:
             - "db41"
             - "db42"
