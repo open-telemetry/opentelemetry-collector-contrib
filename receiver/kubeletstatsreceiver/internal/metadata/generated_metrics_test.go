@@ -270,6 +270,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodUptimeDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sPodVolumeUsageDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
@@ -1028,6 +1031,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.volume.usage":
+					assert.False(t, validatedMetrics["k8s.pod.volume.usage"], "Found a duplicate in the metrics slice: k8s.pod.volume.usage")
+					validatedMetrics["k8s.pod.volume.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of used bytes in the pod volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
