@@ -254,6 +254,26 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "help ref 3 is out of bounds of symbolsTable",
 		},
 		{
+			name: "unsupported metric type UNSPECIFIED",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `unsupported metric type "METRIC_TYPE_UNSPECIFIED" for metric "test_metric"`,
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
 			name:    "valid request",
 			request: writeV2RequestFixture,
 			expectedMetrics: func() pmetric.Metrics {
@@ -970,10 +990,52 @@ func TestTranslateV2(t *testing.T) {
 				sm.Scope().SetName("scope1")
 				sm.Scope().SetVersion("v1")
 
-				m := sm.Metrics().AppendEmpty()
-				m.SetName("test_metric")
-				m.SetUnit("")
-				m.SetDescription("")
+				return metrics
+			}(),
+		},
+		{
+			name: "summary - should be dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_SUMMARY,
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
 
 				return metrics
 			}(),
