@@ -500,11 +500,11 @@ Available Converters:
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
+- [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
-- [ParseInt](#parseint)
 - [ProfileID](#profileid)
 - [RemoveXML](#removexml)
 - [Second](#second)
@@ -1540,6 +1540,23 @@ Examples:
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
 
+### ParseInt
+
+`ParseInt(target, base)`
+
+The `ParseInt` Converter converts a string to its integer representation. 
+
+`target` is the string to be converted.
+`base` is an `int64` representing the base of the number in the string `target`.
+
+The return type is `int64`.
+
+Examples:
+
+- `ParseInt("12345", 10)`
+- `ParseInt("0xAA", 0)`
+- `ParseInt("AA", 16)`
+
 ### ParseJSON
 
 `ParseJSON(target)`
@@ -1789,25 +1806,6 @@ Examples:
 - `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
-
-### ParseInt
-
-`ParseInt(target, base)`
-
-The `ParseInt` Converter converts a string to its integer representation. 
-
-`target` is the string to be converted.
-`base` is an `int64` representing the base of the number in the string `target`.
-
-The return type is `int64`.
-
-Examples:
-
-- `ParseInt("12345", 10)`
-- `ParseInt("0xAA", 0)`
-- `ParseInt("AA", 16)`
-- `ParseInt("notANumber", 10) -> returns an error`
-- `ParseInt("123456", -10) -> returns an error, base cannot be a negative integer`
 
 ### ProfileID
 
