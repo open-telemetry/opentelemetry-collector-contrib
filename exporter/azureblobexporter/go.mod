@@ -28,8 +28,7 @@ require (
 	go.opentelemetry.io/collector/pdata/xpdata v0.129.1-0.20250703115036-26a1aed9c04b // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.3 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 )
 
 require (

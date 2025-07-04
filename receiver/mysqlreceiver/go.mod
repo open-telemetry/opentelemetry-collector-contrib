@@ -47,8 +47,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.3 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 )
 
 require (
