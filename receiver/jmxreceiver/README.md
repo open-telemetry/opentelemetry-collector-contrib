@@ -79,7 +79,7 @@ _Required._
 ### target_system
 
 The built-in target system (or systems) metric gatherer script to run.
-Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`,  `"jetty"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
+The supported target systems are defined by the JMX scraper and can be found in the [JMX scraper configuration reference](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-scraper/README.md#configuration-reference).
 
 If additional target systems must be supported (because of a custom JMX metrics gatherer jar configured using the 
 `MetricsGathererHash` build time config), they can be added with another build time flag.

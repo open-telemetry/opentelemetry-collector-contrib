@@ -197,27 +197,8 @@ func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar st
 }
 
 var (
-	validLogLevels     = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
-	validTargetSystems = map[string]struct{}{
-		"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
-		"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {},
-	}
+	validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
 )
-var AdditionalTargetSystems = "n/a"
-
-// Separated into two functions for tests
-func init() {
-	initAdditionalTargetSystems()
-}
-
-func initAdditionalTargetSystems() {
-	if AdditionalTargetSystems != "n/a" {
-		additionalTargets := strings.Split(AdditionalTargetSystems, ",")
-		for _, t := range additionalTargets {
-			validTargetSystems[t] = struct{}{}
-		}
-	}
-}
 
 func (c *Config) Validate() error {
 	var missingFields []string
@@ -258,12 +239,6 @@ func (c *Config) Validate() error {
 	if len(c.LogLevel) > 0 {
 		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
 			return fmt.Errorf("`log_level` must be one of %s", listKeys(validLogLevels))
-		}
-	}
-
-	for _, system := range strings.Split(c.TargetSystem, ",") {
-		if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
-			return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
 		}
 	}
 
