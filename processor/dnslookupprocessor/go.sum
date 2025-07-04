@@ -68,6 +68,8 @@ go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250703115036-
 go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250703115036-26a1aed9c04b/go.mod h1:ZTXhTLQjwTA5h+O7ka/RoKdhGhtnMW1JXcTl3iZjV7k=
 go.opentelemetry.io/collector/confmap v1.35.1-0.20250703115036-26a1aed9c04b h1:XXuA2vxmPEWA17D0j2zC9mmlRs8XMnkVLW1vaTNhdUo=
 go.opentelemetry.io/collector/confmap v1.35.1-0.20250703115036-26a1aed9c04b/go.mod h1:taTeLqkfP3tzhZFv4Et036kqiWaKAteJ88f15RiEmOU=
+go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250703115036-26a1aed9c04b h1:r9TF1YdndmzpnsIuH+7TLRDh2QiDvj6VVvQVcCyJgHQ=
+go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250703115036-26a1aed9c04b/go.mod h1:Aflw4fdiwW8btGx506FYTr6I8K0EfcA+jeZ3Mgsr1YI=
 go.opentelemetry.io/collector/consumer v1.35.1-0.20250703115036-26a1aed9c04b h1:CUFzdutlvJWFlzbdfUFH5kN30DcJh9DeDF4QqGCeUhY=
 go.opentelemetry.io/collector/consumer v1.35.1-0.20250703115036-26a1aed9c04b/go.mod h1:9sSPX0hDHaHqzR2uSmfLOuFK9v3e9K3HRQ+fydAjOWs=
 go.opentelemetry.io/collector/consumer/consumertest v0.129.1-0.20250703115036-26a1aed9c04b h1:bJYE4qyKloxZ/qKaFIHUS4Rl2Ujw6lx2h7ExTlpcnA0=
