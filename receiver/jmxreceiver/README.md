@@ -92,8 +92,11 @@ _Required._
 
 **Supported by:** `jmx-scraper`, `jmx-gatherer`
 
-The built-in target system (or systems) metric gatherer to run.
-Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`,  `"jetty"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
+The built-in target system (or systems) metric gatherer to run. Supported
+targets include:
+
+ - [JMX Scraper documentation](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper#configuration-reference)
+ - [JMX Gatherer documentation](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-metrics#target-systems)
 
 If additional target systems must be supported (because of a custom jar configured using the
 `MetricsGathererHash` build time config), they can be added with another build time flag.
@@ -109,7 +112,7 @@ Corresponds to the `otel.jmx.target.system` property.
 
 **Supported by:** `jmx-scraper`
 
-Source of metrics definitions to use for `target_system`, supported values are `auto` (default), `instrumentation` and `legacy`.
+Source of metrics definitions to use for `target_system`, supported values are `auto` (default), `instrumentation` and `legacy`. Find more details in the [JMX Scraper documentation](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper#configuration-reference).
 
 ### jmx_configs
 
