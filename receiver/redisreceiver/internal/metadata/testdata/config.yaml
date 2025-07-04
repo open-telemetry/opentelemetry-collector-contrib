@@ -13,7 +13,7 @@ all_set:
       enabled: true
     redis.cmd.latency:
       enabled: true
-    redis.cmd.usec:
+    redis.cmd.sec:
       enabled: true
     redis.commands:
       enabled: true
@@ -92,7 +92,7 @@ none_set:
       enabled: false
     redis.cmd.latency:
       enabled: false
-    redis.cmd.usec:
+    redis.cmd.sec:
       enabled: false
     redis.commands:
       enabled: false

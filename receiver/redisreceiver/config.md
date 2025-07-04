@@ -40,7 +40,7 @@ and extend it with more fields if needed.
 | redis.clients.max_input_buffer |[redis-clients-max-input-buffer-MetricSettings](#redis-clients-max-input-buffer-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
 | redis.clients.max_output_buffer |[redis-clients-max-output-buffer-MetricSettings](#redis-clients-max-output-buffer-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
 | redis.cmd.calls |[redis-cmd-calls-MetricSettings](#redis-cmd-calls-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
-| redis.cmd.usec |[redis-cmd-usec-MetricSettings](#redis-cmd-usec-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
+| redis.cmd.sec |[redis-cmd-usec-MetricSettings](#redis-cmd-usec-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
 | redis.commands |[redis-commands-MetricSettings](#redis-commands-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
 | redis.commands.processed |[redis-commands-processed-MetricSettings](#redis-commands-processed-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
 | redis.connections.received |[redis-connections-received-MetricSettings](#redis-connections-received-MetricSettings)| <no value> | MetricSettings provides common settings for a particular metric.  |
@@ -99,7 +99,7 @@ and extend it with more fields if needed.
 | ---- | --------- | ------- | ---- |
 | enabled |bool| false |  |
 
-### redis-cmd-usec-MetricSettings
+### redis-cmd-sec-MetricSettings
 
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
