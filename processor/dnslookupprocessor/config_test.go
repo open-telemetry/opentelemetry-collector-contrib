@@ -21,25 +21,30 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
-		errMsg   string
+		id          component.ID
+		expected    component.Config
+		expectError bool
+		errMsg      string
 	}{
 		{
-			id:     component.NewIDWithName(metadata.Type, "missing_resolve_reverse"),
-			errMsg: "at least one of 'resolve' or 'reverse' must be configured",
+			id:          component.NewIDWithName(metadata.Type, "missing_resolve_reverse"),
+			expectError: true,
+			errMsg:      "at least one of 'resolve' or 'reverse' must be configured",
 		},
 		{
-			id:     component.NewIDWithName(metadata.Type, "invalid_context"),
-			errMsg: "unknown context invalid_context",
+			id:          component.NewIDWithName(metadata.Type, "invalid_context"),
+			expectError: true,
+			errMsg:      "unknown context invalid_context",
 		},
 		{
-			id:     component.NewIDWithName(metadata.Type, "invalid_source_attributes"),
-			errMsg: "at least one source_attributes must be specified for DNS resolution",
+			id:          component.NewIDWithName(metadata.Type, "invalid_source_attributes"),
+			expectError: true,
+			errMsg:      "at least one source_attributes must be specified for DNS resolution",
 		},
 		{
-			id:     component.NewIDWithName(metadata.Type, "invalid_empty_target_attribute"),
-			errMsg: "target_attribute must be specified for DNS resolution",
+			id:          component.NewIDWithName(metadata.Type, "invalid_empty_target_attribute"),
+			expectError: true,
+			errMsg:      "target_attribute must be specified for DNS resolution",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_empty"),
@@ -64,25 +69,28 @@ func TestLoadConfig(t *testing.T) {
 					SourceAttributes: []string{"custom.address"},
 					TargetAttribute:  sourceIPKey,
 				},
+				Reverse: LookupConfig{},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_source_attributes"),
 			expected: &Config{
+				Resolve: LookupConfig{},
 				Reverse: LookupConfig{
 					Context:          record,
-					SourceAttributes: []string{string(semconv.SourceAddressKey)},
-					TargetAttribute:  sourceIPKey,
+					SourceAttributes: []string{sourceIPKey},
+					TargetAttribute:  "custom.address",
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_context"),
 			expected: &Config{
+				Resolve: LookupConfig{},
 				Reverse: LookupConfig{
 					Context:          resource,
-					SourceAttributes: []string{string(semconv.SourceAddressKey)},
-					TargetAttribute:  sourceIPKey,
+					SourceAttributes: []string{"custom.ip"},
+					TargetAttribute:  "custom.address",
 				},
 			},
 		},
@@ -96,8 +104,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Reverse: LookupConfig{
 					Context:          resource,
-					SourceAttributes: []string{"custom.address", "proxy.address"},
-					TargetAttribute:  "custom.ip",
+					SourceAttributes: []string{"custom.ip", "proxy.ip"},
+					TargetAttribute:  "custom.address",
 				},
 			},
 		},
@@ -114,20 +122,19 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 
-			errUnmarshal := sub.Unmarshal(cfg)
-			if errUnmarshal != nil {
+			if errUnmarshal := sub.Unmarshal(cfg); errUnmarshal != nil {
+				assert.True(t, tt.expectError, "Expected no error but got: %v", errUnmarshal)
 				assert.ErrorContains(t, errUnmarshal, tt.errMsg)
 				return
 			}
 
-			errValidate := xconfmap.Validate(cfg)
-			if errValidate != nil {
+			if errValidate := xconfmap.Validate(cfg); errValidate != nil {
+				assert.True(t, tt.expectError, "Expected no error but got: %v", errValidate)
 				assert.ErrorContains(t, errValidate, tt.errMsg)
 				return
 			}
 
-			assert.NoError(t, errUnmarshal)
-			assert.NoError(t, errValidate)
+			assert.False(t, tt.expectError, "Expected error but got none")
 			assert.Empty(t, tt.errMsg)
 			assert.Equal(t, tt.expected, cfg)
 		})

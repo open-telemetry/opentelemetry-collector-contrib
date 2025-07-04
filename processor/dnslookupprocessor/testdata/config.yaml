@@ -20,15 +20,15 @@ dnslookup/valid_no_target_attribute:
 dnslookup/valid_no_source_attributes:
   reverse:
     context: "record"
-    target_attribute: "custom.ip"
+    target_attribute: "custom.address"
 dnslookup/valid_no_context:
   reverse:
-    source_attributes: ["custom.address"]
-    target_attribute: "custom.ip"
+    source_attributes: ["custom.ip"]
+    target_attribute: "custom.address"
 dnslookup/custom_attributes:
   resolve:
     source_attributes: ["custom.address", "proxy.address"]
     target_attribute: "custom.ip"
   reverse:
-    source_attributes: ["custom.address", "proxy.address"]
-    target_attribute: "custom.ip"
+    source_attributes: ["custom.ip", "proxy.ip"]
+    target_attribute: "custom.address"

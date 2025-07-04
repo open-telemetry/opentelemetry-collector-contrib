@@ -5,6 +5,7 @@ package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -58,6 +59,10 @@ var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
 	validateLookupConfig := func(lc LookupConfig) error {
+		if reflect.DeepEqual(lc, LookupConfig{}) {
+			return nil
+		}
+
 		if len(lc.SourceAttributes) == 0 {
 			return errors.New("at least one source_attributes must be specified for DNS resolution")
 		}
