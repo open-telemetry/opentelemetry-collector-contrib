@@ -30,14 +30,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
-			Dimensions:              []string{"dimension-1", "dimension-2"},
+			Dimensions:              []string{"dimension-1", "dimension-2", "db.name"},
 			Store: StoreConfig{
 				TTL:      time.Second,
 				MaxItems: 10,
 			},
-			CacheLoop:             time.Minute,
-			StoreExpirationLoop:   2 * time.Second,
-			DatabaseNameAttribute: "db.name",
+			CacheLoop:           time.Minute,
+			StoreExpirationLoop: 2 * time.Second,
 		},
 		cfg.Connectors[component.NewID(metadata.Type)],
 	)
