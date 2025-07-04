@@ -1,0 +1,32 @@
+[
+  {
+    "hostname": "web-server-01",
+    "system_id": "SYS-001",
+    "location": "us-east-1a",
+    "environment": "production",
+    "build_info": "AMI-12345678",
+    "os_version": "Ubuntu 20.04.4 LTS",
+    "manufacturer": "AWS",
+    "instance_type": "m5.large"
+  },
+  {
+    "hostname": "web-server-02",
+    "system_id": "SYS-002",
+    "location": "us-east-1b",
+    "environment": "production",
+    "build_info": "AMI-12345678",
+    "os_version": "Ubuntu 20.04.4 LTS",
+    "manufacturer": "AWS",
+    "instance_type": "m5.large"
+  },
+  {
+    "hostname": "db-server-01",
+    "system_id": "SYS-003",
+    "location": "us-east-1a",
+    "environment": "production",
+    "build_info": "AMI-87654321",
+    "os_version": "Ubuntu 20.04.4 LTS",
+    "manufacturer": "AWS",
+    "instance_type": "r5.xlarge"
+  }
+]
