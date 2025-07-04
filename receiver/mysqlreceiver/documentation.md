@@ -430,6 +430,14 @@ The number of joins that perform table scans.
 | ---- | ----------- | ------ | -------- |
 | kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` | false |
 
+### mysql.max_used_connections
+
+Maximum number of connections used simultaneously since the server started.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
 ### mysql.mysqlx_worker_threads
 
 The number of worker threads available.
