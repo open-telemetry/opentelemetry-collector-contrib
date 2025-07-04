@@ -27,7 +27,7 @@ var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 
 var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableNativeHistograms",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will convert"+
 		" Prometheus native histograms to OTEL exponential histograms and ignore"+
 		" those Prometheus classic histograms that have a native histogram alternative"),

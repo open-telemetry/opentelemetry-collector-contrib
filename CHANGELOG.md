@@ -35,6 +35,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 🚩 Deprecations 🚩
 
+- `prometheusreceiver`: Promote the receiver.prometheusreceiver.EnableNativeHistograms feature gate to beta. 
+  The EnableNativeHistograms feature gate is now enabled by default. When enabled, the Prometheus receiver will convert Prometheus native histograms to OTEL exponential histograms and ignore those Prometheus classic histograms that have a native histogram alternative.
 - `logzioexporter`: Deprecates `jsonlog` and `logziospan` usage and replace with `plogotlp.ExportRequest` and `ptraceotlp.ExportRequest` accordingly. (#40192)
 - `datadogexporter`: Config `logs::dump_payloads` is no longer supported now that the UseLogsAgentExporter feature gate is stable. (#40925)
 - `prometheusremotewriteexporter`: Remove the stable exporter.prometheusremotewriteexporter.deprecateCreatedMetric featuregate (#40570)
