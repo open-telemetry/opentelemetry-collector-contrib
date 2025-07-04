@@ -10,8 +10,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/value"
+	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -37,14 +38,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
-				labels := labels.Labels{
-					labels.Label{
-						Name:  labels.MetricName,
-						Value: "test",
-					},
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[uint64]*writev2.TimeSeries{
-					labels.Hash(): {
+					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
@@ -68,14 +66,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
-				labels := labels.Labels{
-					labels.Label{
-						Name:  labels.MetricName,
-						Value: "test",
-					},
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[uint64]*writev2.TimeSeries{
-					labels.Hash(): {
+					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.5},
@@ -99,14 +94,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
-				labels := labels.Labels{
-					labels.Label{
-						Name:  labels.MetricName,
-						Value: "staleNaN",
-					},
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "staleNaN"},
 				}
 				return map[uint64]*writev2.TimeSeries{
-					labels.Hash(): {
+					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: math.Float64frombits(value.StaleNaN)},
@@ -161,14 +153,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		2, ts,
 	)
 	want := func() map[uint64]*writev2.TimeSeries {
-		labels := labels.Labels{
-			labels.Label{
-				Name:  labels.MetricName,
-				Value: "test",
-			},
+		labels := []prompb.Label{
+			{Name: model.MetricNameLabel, Value: "test"},
 		}
 		return map[uint64]*writev2.TimeSeries{
-			labels.Hash(): {
+			timeSeriesSignature(labels): {
 				LabelsRefs: []uint32{1, 2},
 				Samples: []writev2.Sample{
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 2},
