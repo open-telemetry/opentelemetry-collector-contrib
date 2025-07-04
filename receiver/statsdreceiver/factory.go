@@ -20,8 +20,9 @@ import (
 const (
 	defaultBindEndpoint        = "localhost:8125"
 	defaultAggregationInterval = 60 * time.Second
-	defaultEnableMetricType    = false
 	defaultIsMonotonicCounter  = false
+	defaultEnableMetricType    = false
+	defaultMetricTypeAttribute = "metric_type"
 	defaultSocketPermissions   = os.FileMode(0o622)
 )
 
@@ -45,6 +46,7 @@ func createDefaultConfig() component.Config {
 		AggregationInterval:   defaultAggregationInterval,
 		EnableMetricType:      defaultEnableMetricType,
 		IsMonotonicCounter:    defaultIsMonotonicCounter,
+		MetricTypeAttribute:   defaultMetricTypeAttribute,
 		TimerHistogramMapping: defaultTimerHistogramMapping,
 		SocketPermissions:     defaultSocketPermissions,
 	}
