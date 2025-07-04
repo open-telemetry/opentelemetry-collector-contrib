@@ -203,6 +203,24 @@ func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	}
 }
 
+// AddLinks adds a slice of span links to the document.
+func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
+	if links.Len() == 0 {
+		return
+	}
+
+	linkValues := make([]Value, links.Len())
+	for i := 0; i < links.Len(); i++ {
+		link := links.At(i)
+		linkObj := Document{}
+		linkObj.AddTraceID("trace_id", link.TraceID())
+		linkObj.AddSpanID("span_id", link.SpanID())
+		linkValues[i] = Value{kind: KindObject, doc: linkObj}
+	}
+
+	doc.Add(key, ArrValue(linkValues...))
+}
+
 func (doc *Document) sort() {
 	sort.SliceStable(doc.fields, func(i, j int) bool {
 		return doc.fields[i].key < doc.fields[j].key
