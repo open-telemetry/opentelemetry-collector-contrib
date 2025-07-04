@@ -55,12 +55,9 @@ func newExporter(cfg component.Config, set exporter.Settings) *tinybirdExporter 
 }
 
 func (e *tinybirdExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
-	if err != nil {
-		return err
-	}
-	e.client = client
-	return nil
+	var err error
+	e.client, err = e.config.ClientConfig.ToClient(ctx, host, e.settings)
+	return err
 }
 
 func (e *tinybirdExporter) pushTraces(_ context.Context, _ ptrace.Traces) error {
