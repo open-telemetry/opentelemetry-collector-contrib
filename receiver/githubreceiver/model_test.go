@@ -128,13 +128,13 @@ func TestReplaceAPIURL(t *testing.T) {
 func TestAddCustomPropertiesToAttrs(t *testing.T) {
 	tests := []struct {
 		name         string
-		customProps  map[string]interface{}
+		customProps  map[string]any
 		expectedKeys []string
-		expectedVals map[string]interface{}
+		expectedVals map[string]any
 	}{
 		{
 			name: "adds string custom properties",
-			customProps: map[string]interface{}{
+			customProps: map[string]any{
 				"team_name":    "open-telemetry",
 				"environment":  "development",
 				"service_name": "should-be-skipped", // This should be skipped
@@ -143,14 +143,14 @@ func TestAddCustomPropertiesToAttrs(t *testing.T) {
 				"github.repository.custom_properties.team_name",
 				"github.repository.custom_properties.environment",
 			},
-			expectedVals: map[string]interface{}{
+			expectedVals: map[string]any{
 				"github.repository.custom_properties.team_name":   "open-telemetry",
 				"github.repository.custom_properties.environment": "development",
 			},
 		},
 		{
 			name: "adds different types of custom properties",
-			customProps: map[string]interface{}{
+			customProps: map[string]any{
 				"string_prop": "string-value",
 				"int_prop":    42,
 				"float_prop":  3.14,
@@ -162,7 +162,7 @@ func TestAddCustomPropertiesToAttrs(t *testing.T) {
 				"github.repository.custom_properties.float_prop",
 				"github.repository.custom_properties.bool_prop",
 			},
-			expectedVals: map[string]interface{}{
+			expectedVals: map[string]any{
 				"github.repository.custom_properties.string_prop": "string-value",
 				"github.repository.custom_properties.int_prop":    int64(42),
 				"github.repository.custom_properties.float_prop":  3.14,
@@ -171,7 +171,7 @@ func TestAddCustomPropertiesToAttrs(t *testing.T) {
 		},
 		{
 			name: "converts keys to snake_case",
-			customProps: map[string]interface{}{
+			customProps: map[string]any{
 				"camelCase":   "camel-value",
 				"PascalCase":  "pascal-value",
 				"kebab-case":  "kebab-value",
@@ -193,7 +193,7 @@ func TestAddCustomPropertiesToAttrs(t *testing.T) {
 				"github.repository.custom_properties._dollar_dollar",
 				"github.repository.custom_properties._hash_hash",
 			},
-			expectedVals: map[string]interface{}{
+			expectedVals: map[string]any{
 				"github.repository.custom_properties.camel_case":     "camel-value",
 				"github.repository.custom_properties.pascal_case":    "pascal-value",
 				"github.repository.custom_properties.kebab_case":     "kebab-value",
@@ -207,15 +207,15 @@ func TestAddCustomPropertiesToAttrs(t *testing.T) {
 		},
 		{
 			name:         "handles empty custom properties",
-			customProps:  map[string]interface{}{},
+			customProps:  map[string]any{},
 			expectedKeys: []string{},
-			expectedVals: map[string]interface{}{},
+			expectedVals: map[string]any{},
 		},
 		{
 			name:         "handles nil custom properties",
 			customProps:  nil,
 			expectedKeys: []string{},
-			expectedVals: map[string]interface{}{},
+			expectedVals: map[string]any{},
 		},
 	}
 
@@ -258,7 +258,7 @@ func TestAddCustomPropertiesToAttrs(t *testing.T) {
 
 			// Check that no unexpected keys were added
 			count := 0
-			attrs.Range(func(k string, v pcommon.Value) bool {
+			attrs.Range(func(_ string, _ pcommon.Value) bool {
 				count++
 				return true
 			})

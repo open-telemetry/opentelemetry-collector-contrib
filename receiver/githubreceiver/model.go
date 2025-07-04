@@ -329,7 +329,7 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 // addCustomPropertiesToAttrs adds all custom properties from the repository as resource attributes
 // with the prefix AttributeGitHubCustomProperty. Keys are converted to snake_case to follow
 // resource attribute naming convention.
-func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]interface{}) {
+func addCustomPropertiesToAttrs(attrs pcommon.Map, customProps map[string]any) {
 	if len(customProps) == 0 {
 		return
 	}
