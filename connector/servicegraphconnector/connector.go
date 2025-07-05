@@ -115,9 +115,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
-	if pConfig.DatabaseNameAttribute != "" {
-		pConfig.DatabaseNameAttributes = append(pConfig.DatabaseNameAttributes, pConfig.DatabaseNameAttribute)
-	} else if len(pConfig.DatabaseNameAttributes) == 0 {
+	if len(pConfig.DatabaseNameAttributes) == 0 {
 		pConfig.DatabaseNameAttributes = defaultDatabaseNameAttributes
 	}
 
