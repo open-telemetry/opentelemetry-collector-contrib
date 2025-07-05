@@ -165,12 +165,22 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 }
 
 func renderInsertLogsJSONSQL(cfg *Config) string {
-	return fmt.Sprintf(sqltemplates.LogsJSONInsert, cfg.database(), cfg.LogsTableName)
+	var template = sqltemplates.LogsJSONInsert
+	if cfg.SqlTemplate.LogsInsert != "" {
+		template = cfg.SqlTemplate.LogsInsert
+	}
+
+	return fmt.Sprintf(template, cfg.database(), cfg.LogsTableName)
 }
 
 func renderCreateLogsJSONTableSQL(cfg *Config) string {
+	var template = sqltemplates.LogsJSONCreateTable
+	if cfg.SqlTemplate.LogsCreateTable != "" {
+		template = cfg.SqlTemplate.LogsCreateTable
+	}
+
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "Timestamp")
-	return fmt.Sprintf(sqltemplates.LogsJSONCreateTable,
+	return fmt.Sprintf(template,
 		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,

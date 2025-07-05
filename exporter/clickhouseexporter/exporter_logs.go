@@ -154,12 +154,22 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
-	return fmt.Sprintf(sqltemplates.LogsInsert, cfg.database(), cfg.LogsTableName)
+	var template = sqltemplates.LogsInsert
+	if cfg.SqlTemplate.LogsInsert != "" {
+		template = cfg.SqlTemplate.LogsInsert
+	}
+
+	return fmt.Sprintf(template, cfg.database(), cfg.LogsTableName)
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
+	var template = sqltemplates.LogsCreateTable
+	if cfg.SqlTemplate.LogsCreateTable != "" {
+		template = cfg.SqlTemplate.LogsCreateTable
+	}
+
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "TimestampTime")
-	return fmt.Sprintf(sqltemplates.LogsCreateTable,
+	return fmt.Sprintf(template,
 		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
