@@ -430,6 +430,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 					s.settings.Logger.Debug("response", zap.Any("raw", response))
 
+					includeTags := len(s.cfg.AppendTagsAsAttributes) > 0
 					for _, metricValues := range response.Values {
 						if metricValues.ResourceID == nil {
 							continue
@@ -449,10 +450,13 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 									name := metadataPrefix + *value.Name.Value
 									attributes[name] = value.Value
 								}
-								if s.cfg.AppendTagsAsAttributes {
+								if includeTags {
 									for tagName, value := range res.tags {
-										name := tagPrefix + tagName
-										attributes[name] = value
+										// Check if the tag should be included as an attribute.
+										if appendTagAsAttribute(s.cfg.AppendTagsAsAttributes, tagName) {
+											name := tagPrefix + tagName
+											attributes[name] = value
+										}
 									}
 								}
 								attributes["timegrain"] = &compositeKey.timeGrain

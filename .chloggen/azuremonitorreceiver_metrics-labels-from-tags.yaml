@@ -1,0 +1,12 @@
+change_type: breaking
+
+component: azuremonitorreceiver
+
+note: |
+  Updated `append_tags_as_attributes` configuration type from boolean to array. It controls which Azure resource tags are added as resource attributes to the metrics. The values can be a list of specific tag names or `["*"]` to include all tags.
+
+issues: [40988]
+
+subtext:
+
+change_logs: [user]

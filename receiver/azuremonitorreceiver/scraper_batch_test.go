@@ -219,10 +219,11 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 	}
 	cfg := createDefaultTestConfig()
 	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	cfgTagsEnabled := createDefaultTestConfig()
-	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.AppendTagsAsAttributes = []string{"*"}
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
 
 	tests := []struct {
@@ -255,10 +256,11 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
+			includeTags := len(tt.fields.cfg.AppendTagsAsAttributes) > 0
 			optionsResolver := newMockClientOptionsResolver(
 				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
-				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
+				getResourcesMockData(includeTags),
 				getMetricsDefinitionsMockData(),
 				nil,
 				getMetricsQueryResponseMockData(),

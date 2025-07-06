@@ -436,6 +436,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 				return
 			}
 
+			includeTags := len(s.cfg.AppendTagsAsAttributes) > 0
 			for _, metric := range result.Value {
 				for _, timeseriesElement := range metric.Timeseries {
 					if timeseriesElement.Data != nil {
@@ -447,10 +448,13 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 							name := metadataPrefix + *value.Name.Value
 							attributes[name] = value.Value
 						}
-						if s.cfg.AppendTagsAsAttributes {
+						if includeTags {
 							for tagName, value := range res.tags {
-								name := tagPrefix + tagName
-								attributes[name] = value
+								// Check if the tag should be included as an attribute.
+								if appendTagAsAttribute(s.cfg.AppendTagsAsAttributes, tagName) {
+									name := tagPrefix + tagName
+									attributes[name] = value
+								}
 							}
 						}
 						for _, metricValue := range timeseriesElement.Data {
@@ -562,4 +566,14 @@ func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
 
 	var got T
 	return got, false
+}
+
+// appendTagAsAttribute checks if the given tagList contains either the tag or wildcard
+func appendTagAsAttribute(tagList []string, tagName string) bool {
+	for _, tag := range tagList {
+		if tag == "*" || strings.EqualFold(tag, tagName) {
+			return true
+		}
+	}
+	return false
 }
