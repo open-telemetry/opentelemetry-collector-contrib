@@ -219,6 +219,10 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
+		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
 	return nil
 }
 
