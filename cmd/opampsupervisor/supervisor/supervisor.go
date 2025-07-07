@@ -113,8 +113,6 @@ type Supervisor struct {
 	// Commander that starts/stops the Agent process.
 	commander *commander.Commander
 
-	startedAt time.Time
-
 	// Supervisor's own config.
 	config config.Supervisor
 
@@ -163,10 +161,12 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
-	// agentHasStarted is true if the agent has started.
-	agentHasStarted bool
-	// agentStartHealthCheckAttempts is the number of health check attempts made by the agent since it started.
-	agentStartHealthCheckAttempts int
+	// agentReady is true if the agent has started and is fully ready.
+	agentReady atomic.Bool
+	// agentReadyChan is a channel that can be used to wait for the agent to
+	// start in case [agentReady] is false.
+	agentReadyChan chan struct{}
+
 	// agentRestarting is true if the agent is restarting.
 	agentRestarting atomic.Bool
 
@@ -192,6 +192,8 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
 		featureGates:                 map[string]struct{}{},
+		agentReady:                   atomic.Bool{},
+		agentReadyChan:               make(chan struct{}, 1),
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -777,6 +779,9 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
+		if !s.agentReady.Load() && message.Health.Healthy {
+			s.markAgentReady()
+		}
 	}
 
 	return &protobufs.ServerToAgent{}
@@ -1296,6 +1301,7 @@ func (s *Supervisor) handleRestartCommand() error {
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
+	s.resetAgentReady()
 	return err
 }
 
@@ -1322,10 +1328,6 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		return "", startErr
 	}
 
-	s.agentHasStarted = false
-	s.agentStartHealthCheckAttempts = 0
-	s.startedAt = time.Now()
-
 	return agentStarting, nil
 }
 
@@ -1350,6 +1352,7 @@ func (s *Supervisor) runAgentProcess() {
 		select {
 		case <-s.hasNewConfig:
 			s.lastHealthFromClient.Store(nil)
+			s.telemetrySettings.Logger.Debug("agent has new config", zap.String("previous_health", s.lastHealthFromClient.Load().String()))
 			if !configApplyTimeoutTimer.Stop() {
 				select {
 				case <-configApplyTimeoutTimer.C: // Try to drain the channel
@@ -1357,18 +1360,30 @@ func (s *Supervisor) runAgentProcess() {
 				}
 			}
 			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
-
-			s.telemetrySettings.Logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
-			s.stopAgentApplyConfig()
+
+			if s.config.Agent.UseHUPConfigReload {
+				if err := s.hupReloadAgent(); err != nil {
+					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
+					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+					continue
+				}
+			} else {
+				s.stopAgentApplyConfig()
+			}
+
+			s.telemetrySettings.Logger.Debug("Agent is not running, starting new instance")
+			// This call to [startAgent] is useful for both the normal config reload
+			// and the HUP one. It takes care of not starting the agent if the config
+			// is empty and also of starting it when the config changes from empty
+			// to non-empty.
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
-
 			if status == agentNotStarting {
-				// not starting agent because of nop config, clear timer, report applied status, report healthy status
+				// not starting agent because of nop config: clear timer, report applied status, report healthy status
 				configApplyTimeoutTimer.Stop()
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
@@ -1384,7 +1399,6 @@ func (s *Supervisor) runAgentProcess() {
 					}
 				}
 			}
-
 		case <-s.commander.Exited():
 			// the agent process exit is expected for restart command and will not attempt to restart
 			if s.agentRestarting.Load() {
@@ -1439,16 +1453,116 @@ func (s *Supervisor) runAgentProcess() {
 	}
 }
 
+// markAgentReady marks the agent as ready and sends a signal to
+// [agentReadyChan].
+func (s *Supervisor) markAgentReady() {
+	s.agentReady.Store(true)
+	select {
+	case s.agentReadyChan <- struct{}{}:
+	default:
+	}
+}
+
+// resetAgentReady resets the agent as not ready and drains [agentReadyChan].
+func (s *Supervisor) resetAgentReady() {
+	s.agentReady.Store(false)
+	select {
+	case <-s.agentReadyChan:
+	default:
+	}
+}
+
+// waitForAgentReady waits for the agent to be ready. The agent is considered to
+// be ready when its first health report is received by the Supervisor's opamp
+// server.
+// WARNING: this is not thread-safe! If there are two goroutines waiting for
+// the agent to be ready, only one of them will be able to proceed.
+func (s *Supervisor) waitForAgentReady() error {
+	if s.agentReady.Load() {
+		return nil
+	}
+
+	bootstrapTimer := time.NewTimer(s.config.Agent.BootstrapTimeout)
+	defer bootstrapTimer.Stop()
+
+	select {
+	case <-s.agentReadyChan:
+		return nil
+	case <-bootstrapTimer.C:
+		return fmt.Errorf("agent has not started after %s", s.config.Agent.BootstrapTimeout)
+	}
+}
+
+// hupReloadAgent sends a HUP signal to the agent process  with the intent of
+// triggering a configuration reload. There are 3 possible outcomes of this:
+// 1. The agent is the "official" Otel Collector, which properly traps the HUP
+// signal and reloads the config.
+// 2. The agent is a custom process, which does not trap the HUP signal: in
+// this case the default behavior of a process that receives a HUP signal is to
+// exit. This ends up being the same behavior as the standard stop -> restart
+// configuration reload method.
+// 3. The agent traps the HUP signal, but does nothing. On the next health
+// report the agent will be consiered healthy and ready, even though it might
+// be running on old configuration.
+func (s *Supervisor) hupReloadAgent() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
+	defer s.resetAgentReady()
+
+	// If we have an empty config, the agent should be stopped.
+	if s.cfgState.Load().(*configState).configMapIsEmpty {
+		s.stopAgentApplyConfig()
+		return nil
+	}
+
+	if err := s.writeAgentConfig(); err != nil {
+		return fmt.Errorf("failed to write agent new config: %w", err)
+	}
+
+	// If the agent is not running, we can't send a HUP signal to it, so we
+	// return and let it be started by the caller.
+	if !s.commander.IsRunning() {
+		return nil
+	}
+
+	if err := s.waitForAgentReady(); err != nil {
+		return err
+	}
+
+	s.telemetrySettings.Logger.Debug("agent is running, reloading config")
+	if err := s.reloadAgentConfig(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Supervisor) reloadAgentConfig() error {
+	s.telemetrySettings.Logger.Debug("Reloading the agent config")
+	err := s.commander.ReloadConfigFile()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Supervisor) writeAgentConfig() error {
+	cfgState := s.cfgState.Load().(*configState)
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Supervisor) stopAgentApplyConfig() {
 	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
-	cfgState := s.cfgState.Load().(*configState)
 	err := s.commander.Stop(context.Background())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
-		s.telemetrySettings.Logger.Error("Failed to write agent config.", zap.Error(err))
+	if err := s.writeAgentConfig(); err != nil {
+		s.telemetrySettings.Logger.Error("Failed to write agent config", zap.Error(err))
 	}
 }
 
