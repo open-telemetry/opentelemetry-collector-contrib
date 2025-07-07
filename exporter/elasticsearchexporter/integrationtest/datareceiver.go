@@ -50,6 +50,18 @@ const (
 	TestTracesIndex = "traces-test-idx"
 )
 
+type errElasticsearch struct {
+	httpStatus    int
+	httpDocStatus int
+}
+
+func (e *errElasticsearch) Error() string {
+	if e.httpStatus != http.StatusOK {
+		return fmt.Sprintf("Simulated Elasticsearch returned HTTP status %d", e.httpStatus)
+	}
+	return fmt.Sprintf("Simulated Elasticsearch returned document status %d", e.httpDocStatus)
+}
+
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver          receiver.Logs
@@ -149,13 +161,17 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: false
     sending_queue:
       enabled: true
+      block_on_overflow: true
     mapping:
       mode: otel
     retry:
       enabled: true
       initial_interval: 100ms
-      max_interval: 1s
-      max_requests: 10000`,
+      max_interval: 500ms
+      max_retries: 10000
+      retry_on_status: [429, 503]
+    timeout: 10m
+`,
 		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
 	)
 
@@ -303,13 +319,23 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 				case TestTracesIndex:
 					consumeErr = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
 				}
+				var errES *errElasticsearch
 				if consumeErr != nil {
-					response.HasErrors = true
-					item.Status = http.StatusTooManyRequests
-					item.Error.Type = "simulated_es_error"
-					item.Error.Reason = consumeErr.Error()
+					if errors.As(consumeErr, &errES) {
+						if errES.httpStatus != http.StatusOK {
+							w.WriteHeader(errES.httpStatus)
+							return
+						}
+						response.HasErrors = true
+						item.Status = errES.httpDocStatus
+						item.Error.Type = "simulated_es_error"
+						item.Error.Reason = consumeErr.Error()
+						itemMap[k] = item
+					} else {
+						// unknown consume error
+						panic("unknown consume error")
+					}
 				}
-				itemMap[k] = item
 			}
 		}
 		if jsonErr := json.NewEncoder(w).Encode(response); jsonErr != nil {

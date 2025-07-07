@@ -4,8 +4,8 @@
 package integrationtest
 
 import (
-	"errors"
 	"fmt"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -17,7 +17,6 @@ import (
 )
 
 func TestExporter(t *testing.T) {
-	t.Skip("flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40488")
 	for _, eventType := range []string{"logs", "metrics", "traces"} {
 		for _, tc := range []struct {
 			name string
@@ -102,7 +101,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		&testbed.CorrectnessResults{},
 		testbed.WithDecisionFunc(func() error {
 			if esFailing.Load() {
-				return errors.New("simulated ES failure")
+				return &errElasticsearch{httpStatus: http.StatusServiceUnavailable}
 			}
 			return nil
 		}),
