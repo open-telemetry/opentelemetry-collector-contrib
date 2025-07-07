@@ -31,19 +31,19 @@ func TestExporter(t *testing.T) {
 			// the collector allows durability testing of the ES exporter
 			// based on the OTEL config used for testing.
 			restartCollector bool
-			mockESFailure    bool
+			mockESErr        error
 		}{
 			{name: "basic"},
-			{name: "es_intermittent_failure", mockESFailure: true},
+			{name: "es_intermittent_failure", mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
 
 			{name: "batcher_enabled", batcherEnabled: ptrTo(true)},
-			{name: "batcher_enabled_es_intermittent_failure", batcherEnabled: ptrTo(true), mockESFailure: true},
+			{name: "batcher_enabled_es_intermittent_failure", batcherEnabled: ptrTo(true), mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
 			{name: "batcher_disabled", batcherEnabled: ptrTo(false)},
-			{name: "batcher_disabled_es_intermittent_failure", batcherEnabled: ptrTo(false), mockESFailure: true},
+			{name: "batcher_disabled_es_intermittent_failure", batcherEnabled: ptrTo(false), mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
 
 			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
-			{name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
+			{name: "collector_restart_with_es_intermittent_failure", mockESErr: true, restartCollector: true},
 			*/
 		} {
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
@@ -51,13 +51,13 @@ func TestExporter(t *testing.T) {
 				if tc.batcherEnabled != nil {
 					opts = append(opts, withBatcherEnabled(*tc.batcherEnabled))
 				}
-				runner(t, eventType, tc.restartCollector, tc.mockESFailure, opts...)
+				runner(t, eventType, tc.restartCollector, tc.mockESErr, opts...)
 			})
 		}
 	}
 }
 
-func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool, opts ...dataReceiverOption) {
+func runner(t *testing.T, eventType string, restartCollector bool, mockESErr error, opts ...dataReceiverOption) {
 	t.Helper()
 
 	var (
@@ -101,7 +101,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		&testbed.CorrectnessResults{},
 		testbed.WithDecisionFunc(func() error {
 			if esFailing.Load() {
-				return &errElasticsearch{httpStatus: http.StatusServiceUnavailable}
+				return mockESErr
 			}
 			return nil
 		}),
@@ -117,7 +117,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 	tc.Sleep(2 * time.Second)
 
 	// Fail ES if required and send load.
-	if mockESFailure {
+	if mockESErr != nil {
 		esFailing.Store(true)
 		tc.Sleep(2 * time.Second)
 	}
