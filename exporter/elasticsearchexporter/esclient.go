@@ -129,6 +129,11 @@ func newElasticsearchClient(
 		componentHost:   host,
 	}
 
+	maxRetries := defaultMaxRetries
+	if config.Retry.MaxRetries != 0 {
+		maxRetries = config.Retry.MaxRetries
+	}
+
 	return elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
@@ -145,7 +150,7 @@ func newElasticsearchClient(
 		RetryOnError: func(_ *http.Request, err error) bool {
 			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
 		},
-		MaxRetries:   config.Retry.MaxRetries,
+		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
