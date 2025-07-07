@@ -23,7 +23,6 @@ type kvTime struct {
 	ts    time.Time
 	kind  faroTypes.Kind
 	hash  uint64
-	level string
 }
 
 // TranslateToLogs converts faro.Payload into Logs pipeline data
