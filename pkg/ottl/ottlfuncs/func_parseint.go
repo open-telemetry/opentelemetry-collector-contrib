@@ -38,7 +38,7 @@ func parseIntFunc[K any](target ottl.StringGetter[K], base ottl.IntGetter[K]) ot
 			return nil, err
 		}
 		if targetValue == "" {
-			return nil, fmt.Errorf("invalid target value: %s for ParseInt function, target cannot be empty", targetValue)
+			return nil, errors.New("invalid target value for ParseInt function, target cannot be empty")
 		}
 		baseValue, err := base.Get(ctx, tCtx)
 		if err != nil {
