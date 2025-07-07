@@ -145,7 +145,7 @@ func newElasticsearchClient(
 		RetryOnError: func(_ *http.Request, err error) bool {
 			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
 		},
-		MaxRetries:   min(defaultMaxRetries, config.Retry.MaxRetries),
+		MaxRetries:   config.Retry.MaxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
