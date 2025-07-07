@@ -35,13 +35,6 @@ type TopQueryCollection struct {
 	QueryCacheSize      int  `mapstructure:"query_cache_size"`
 }
 
-type QuerySample struct {
-	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 type Config struct {
 	DataSource                     string `mapstructure:"datasource"`
 	Endpoint                       string `mapstructure:"endpoint"`
@@ -53,7 +46,6 @@ type Config struct {
 	metadata.LogsBuilderConfig     `mapstructure:",squash"`
 
 	TopQueryCollection `mapstructure:"top_query_collection"`
-	QuerySample        `mapstructure:"query_sample_collection"`
 }
 
 func (c Config) Validate() error {

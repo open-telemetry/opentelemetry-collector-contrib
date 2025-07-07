@@ -84,8 +84,6 @@ all_set:
     oracledb.user_rollbacks:
       enabled: true
   events:
-    db.server.query_sample:
-      enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
@@ -178,8 +176,6 @@ none_set:
     oracledb.user_rollbacks:
       enabled: false
   events:
-    db.server.query_sample:
-      enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:

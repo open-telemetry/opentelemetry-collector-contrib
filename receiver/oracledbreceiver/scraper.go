@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -92,9 +91,6 @@ const (
 )
 
 var (
-
-	//go:embed templates/oracleQuerySampleSql.tmpl
-	samplesQuery string
 	//go:embed templates/oracleQueryMetricsAndTextSql.tmpl
 	oracleQueryMetricsSQL string
 	//go:embed templates/oracleQueryPlanSql.tmpl
@@ -128,7 +124,6 @@ type oracleScraper struct {
 	logsBuilderConfig          metadata.LogsBuilderConfig
 	metricCache                *lru.Cache[string, map[string]int64]
 	topQueryCollectCfg         TopQueryCollection
-	querySampleCfg             QuerySample
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, hostName string) (scraper.Metrics, error) {
@@ -147,7 +142,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 
 func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadata.LogsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig,
 	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, metricCache *lru.Cache[string, map[string]int64],
-	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, hostName string,
+	topQueryCollectCfg TopQueryCollection, hostName string,
 ) (scraper.Logs, error) {
 	s := &oracleScraper{
 		lb:                 logsBuilder,
@@ -159,7 +154,6 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		instanceName:       instanceName,
 		metricCache:        metricCache,
 		topQueryCollectCfg: topQueryCollectCfg,
-		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
@@ -176,7 +170,6 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
-	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	return nil
 }
 
@@ -513,7 +506,6 @@ type queryMetricCacheHit struct {
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
-	logs := plog.NewLogs()
 	var scrapeErrors []error
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
@@ -521,92 +513,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		if topNCollectionErrors != nil {
 			scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 		} else {
-			topNLogs.ResourceLogs().CopyTo(logs.ResourceLogs())
+			return topNLogs, errors.Join(scrapeErrors...)
 		}
 	}
 
-	if s.logsBuilderConfig.Events.DbServerQuerySample.Enabled {
-		sampleLogs, samplesCollectionErrors := s.collectQuerySamples(ctx)
-		if samplesCollectionErrors != nil {
-			scrapeErrors = append(scrapeErrors, samplesCollectionErrors)
-		} else {
-			sampleLogs.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
-		}
-	}
-
-	return logs, errors.Join(scrapeErrors...)
-}
-
-func (s *oracleScraper) collectQuerySamples(ctx context.Context) (plog.Logs, error) {
-	const duration = "DURATION_SEC"
-	const event = "EVENT"
-	const hostName = "MACHINE"
-	const module = "MODULE"
-	const osUser = "OSUSER"
-	const objectName = "OBJECT_NAME"
-	const objectType = "OBJECT_TYPE"
-	const process = "PROCESS"
-	const program = "PROGRAM"
-	const planHashValue = "PLAN_HASH_VALUE"
-	const sqlID = "SQL_ID"
-	const schemaName = "SCHEMANAME"
-	const sqlChildNumber = "SQL_CHILD_NUMBER"
-	const sid = "SID"
-	const serialNumber = "SERIAL"
-	const status = "STATUS"
-	const state = "STATE"
-	const sqlText = "SQL_FULLTEXT"
-	const username = "USERNAME"
-	const waitclass = "WAIT_CLASS"
-	const port = "PORT"
-	const serviceName = "SERVICE_NAME"
-
-	var scrapeErrors []error
-
-	dbClients := s.samplesQueryClient
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-
-	rows, err := dbClients.metricRows(ctx, s.querySampleCfg.MaxRowsPerQuery)
-	if err != nil {
-		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
-	}
-
-	rb := s.lb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
-
-	for _, row := range rows {
-		if row[sqlText] == "" {
-			continue
-		}
-
-		obfuscatedSQL, err := ObfuscateSQL(row[sqlText])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("oracleScraper failed updating this log record: %s", err))
-			continue
-		}
-
-		queryPlanHashVal := hex.EncodeToString([]byte(row[planHashValue]))
-
-		queryDuration, err := strconv.ParseFloat(row[duration], 64)
-		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for Duration, value was %s: %w", row[duration], err))
-		}
-
-		clientPort, err := strconv.ParseInt(row[port], 10, 64)
-		if err != nil {
-			clientPort = 0
-		}
-
-		s.lb.RecordDbServerQuerySampleEvent(ctx, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
-			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[sid], row[serialNumber], row[process],
-			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], row[objectName], row[objectType],
-			row[osUser], queryDuration)
-	}
-
-	out := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
-
-	return out, errors.Join(scrapeErrors...)
+	return plog.NewLogs(), errors.Join(scrapeErrors...)
 }
 
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, error) {
