@@ -655,7 +655,9 @@ events:
 
 ### db.server.query_sample
 
-query sample event
+Query sample collection enables monitoring of current running database statements.
+This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
+
 
 #### Attributes
 

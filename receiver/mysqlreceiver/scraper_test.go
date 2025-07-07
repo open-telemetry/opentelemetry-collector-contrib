@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -480,7 +481,7 @@ func (c *mockClient) getQuerySamples(uint64) ([]querySample, error) {
 		s.digest = text[7]
 		s.eventID, _ = parseInt(text[8])
 		s.waitEvent = text[9]
-		s.waitTime, _ = parseFloat(text[10])
+		s.waitTime, _ = strconv.ParseFloat(text[10], 64)
 
 		samples = append(samples, s)
 	}

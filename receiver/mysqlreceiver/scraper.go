@@ -695,8 +695,3 @@ func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[st
 func parseInt(value string) (int64, error) {
 	return strconv.ParseInt(value, 10, 64)
 }
-
-// parseFloat converts string to float64.
-func parseFloat(value string) (float64, error) {
-	return strconv.ParseFloat(value, 64)
-}

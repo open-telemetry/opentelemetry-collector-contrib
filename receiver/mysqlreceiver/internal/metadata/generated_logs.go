@@ -22,30 +22,30 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	if !e.config.Enabled {
 		return
 	}
-	lr := e.data.AppendEmpty()
-	lr.SetEventName("db.server.query_sample")
-	lr.SetTimestamp(timestamp)
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.query_sample")
+	dp.SetTimestamp(timestamp)
 
 	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
-		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
-		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutInt("mysql.threads.thread_id", mysqlThreadsThreadIDAttributeValue)
+	dp.Attributes().PutStr("user.name", userNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("mysql.threads.processlist_command", mysqlThreadsProcesslistCommandAttributeValue)
+	dp.Attributes().PutStr("mysql.threads.processlist_state", mysqlThreadsProcesslistStateAttributeValue)
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("mysql.events_statements_current.digest", mysqlEventsStatementsCurrentDigestAttributeValue)
+	dp.Attributes().PutInt("mysql.event_id", mysqlEventIDAttributeValue)
+	dp.Attributes().PutStr("mysql.wait_type", mysqlWaitTypeAttributeValue)
+	dp.Attributes().PutDouble("mysql.events_waits_current.timer_wait", mysqlEventsWaitsCurrentTimerWaitAttributeValue)
+	dp.Attributes().PutStr("client.address", clientAddressAttributeValue)
+	dp.Attributes().PutInt("client.port", clientPortAttributeValue)
+	dp.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
+	dp.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
 
-	lr.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
-	lr.Attributes().PutInt("mysql.threads.thread_id", mysqlThreadsThreadIDAttributeValue)
-	lr.Attributes().PutStr("user.name", userNameAttributeValue)
-	lr.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	lr.Attributes().PutStr("mysql.threads.processlist_command", mysqlThreadsProcesslistCommandAttributeValue)
-	lr.Attributes().PutStr("mysql.threads.processlist_state", mysqlThreadsProcesslistStateAttributeValue)
-	lr.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
-	lr.Attributes().PutStr("mysql.events_statements_current.digest", mysqlEventsStatementsCurrentDigestAttributeValue)
-	lr.Attributes().PutInt("mysql.event_id", mysqlEventIDAttributeValue)
-	lr.Attributes().PutStr("mysql.wait_type", mysqlWaitTypeAttributeValue)
-	lr.Attributes().PutDouble("mysql.events_waits_current.timer_wait", mysqlEventsWaitsCurrentTimerWaitAttributeValue)
-	lr.Attributes().PutStr("client.address", clientAddressAttributeValue)
-	lr.Attributes().PutInt("client.port", clientPortAttributeValue)
-	lr.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
-	lr.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
