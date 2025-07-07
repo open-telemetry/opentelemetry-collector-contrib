@@ -230,6 +230,10 @@ func (a Agent) Validate() error {
 		}
 	}
 
+	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
+		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
 	return nil
 }
 
