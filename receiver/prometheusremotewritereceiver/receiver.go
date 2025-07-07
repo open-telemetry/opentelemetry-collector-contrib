@@ -414,7 +414,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		// Determine histogram type based on schema
 		switch histogram.Schema {
 		case -53:
-			histogramType = "cbnh"
+			histogramType = "nhcb"
 		case -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8:
 			histogramType = "exponential"
 		default:
@@ -465,7 +465,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		histMetric, exists := metricCache[metricKeyHashForSchema]
 		if !exists {
 			histMetric = setMetric(scope, metricName, unit, description)
-			if histogramType == "cbnh" {
+			if histogramType == "nhcb" {
 				hist := histMetric.SetEmptyHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			} else {
@@ -480,8 +480,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 
 		// Process the individual histogram
-		if histogramType == "cbnh" {
-			addCBNHDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+		if histogramType == "nhcb" {
+			addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		} else {
 			addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		}
@@ -707,8 +707,8 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 	return scopeName, scopeVersion
 }
 
-// addCBNHDatapoint converts a single Custom Buckets Native Histogram (CBNH) to OpenTelemetry histogram datapoints
-func addCBNHDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+// addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
+func addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
@@ -724,19 +724,19 @@ func addCBNHDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram writ
 	}
 
 	dp.ExplicitBounds().FromRaw(histogram.CustomValues)
-	bucketCounts := convertCBNHBuckets(histogram)
+	bucketCounts := convertNHCBBuckets(histogram)
 	dp.BucketCounts().FromRaw(bucketCounts)
 
 	extractAttributes(ls).CopyTo(dp.Attributes())
 	stats.Histograms++
 }
 
-// convertCBNHBuckets converts CBNH bucket data to OpenTelemetry bucket counts
-func convertCBNHBuckets(histogram writev2.Histogram) []uint64 {
-	// For CBNH, we need numExplicitBounds + 1 buckets (including the final +inf bucket)
+// convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts
+func convertNHCBBuckets(histogram writev2.Histogram) []uint64 {
+	// For NHCB, we need numExplicitBounds + 1 buckets (including the final +inf bucket)
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 
-	// CBNH uses the positive bucket list and spans for all buckets
+	// NHCB uses the positive bucket list and spans for all buckets
 	if len(histogram.PositiveSpans) == 0 {
 		return bucketCounts
 	}

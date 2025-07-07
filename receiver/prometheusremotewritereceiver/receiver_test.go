@@ -370,7 +370,7 @@ func TestTranslateV2(t *testing.T) {
 						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
 					},
 					{
-						// CBNH histogram with scope1
+						// NHCB histogram with scope1
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16},
 						Histograms: []writev2.Histogram{
@@ -433,7 +433,7 @@ func TestTranslateV2(t *testing.T) {
 				dp2.SetDoubleValue(2.0)
 				dp2.Attributes().PutStr("d", "e")
 
-				// Add CBNH histogram to scope1
+				// Add NHCB histogram to scope1
 				cbneMetric := sm1.Metrics().AppendEmpty()
 				cbneMetric.SetName("test_metric")
 				cbneMetric.SetUnit("")
@@ -1083,22 +1083,22 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 		},
 		{
-			name: "CBNH translation",
+			name: "NHCB translation",
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
 					"__name__",
-					"test_cbnh_histogram",
+					"test_hncb_histogram",
 					"job",
 					"test",
 					"instance",
 					"localhost:8080",
 					"seconds",
-					"Test CBNH histogram",
+					"Test NHCB histogram",
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_cbnh_histogram, job=test, instance=localhost:8080
+						LabelsRefs:       []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram, job=test, instance=localhost:8080
 						CreatedTimestamp: 123456000,
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
@@ -1106,7 +1106,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Timestamp:    123456789,
-								Schema:       -53, // CBNH schema
+								Schema:       -53, // NHCB schema
 								Sum:          100.5,
 								Count:        &writev2.Histogram_CountInt{CountInt: 50},
 								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
@@ -1136,7 +1136,7 @@ func TestTranslateV2(t *testing.T) {
 				sm.Scope().SetName("OpenTelemetry Collector")
 				sm.Scope().SetVersion("latest")
 				m1 := sm.Metrics().AppendEmpty()
-				m1.SetName("test_cbnh_histogram")
+				m1.SetName("test_hncb_histogram")
 				m1.SetUnit("")
 				m1.SetDescription("")
 				hist := m1.SetEmptyHistogram()
@@ -1154,29 +1154,29 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 		},
 		{
-			name: "CBNH translation with stale NaN",
+			name: "NHCB translation with stale NaN",
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
 					"__name__",
-					"test_cbnh_histogram_stale",
+					"test_hncb_histogram_stale",
 					"job",
 					"test",
 					"instance",
 					"localhost:8080",
 					"seconds",
-					"Test CBNH histogram with stale NaN",
+					"Test NHCB histogram with stale NaN",
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_cbnh_histogram_stale, job=test, instance=localhost:8080
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6}, // __name__=test_hncb_histogram_stale, job=test, instance=localhost:8080
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
 						Histograms: []writev2.Histogram{
 							{
 								Timestamp:    123456789,
-								Schema:       -53, // CBNH schema
+								Schema:       -53, // NHCB schema
 								Sum:          math.Float64frombits(value.StaleNaN),
 								Count:        &writev2.Histogram_CountInt{CountInt: 50},
 								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
@@ -1206,7 +1206,7 @@ func TestTranslateV2(t *testing.T) {
 				sm.Scope().SetName("OpenTelemetry Collector")
 				sm.Scope().SetVersion("latest")
 				m1 := sm.Metrics().AppendEmpty()
-				m1.SetName("test_cbnh_histogram_stale")
+				m1.SetName("test_hncb_histogram_stale")
 				m1.SetUnit("")
 				m1.SetDescription("")
 				hist := m1.SetEmptyHistogram()
@@ -1273,7 +1273,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: pmetric.NewMetrics(), // When all histograms have invalid schemas, no metrics should be created
 		},
 		{
-			name: "mixed schema histograms - CBNH and exponential",
+			name: "mixed schema histograms - NHCB and exponential",
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
@@ -1295,7 +1295,7 @@ func TestTranslateV2(t *testing.T) {
 						},
 						Histograms: []writev2.Histogram{
 							{
-								// First histogram - CBNH
+								// First histogram - NHCB
 								Timestamp:    123456789,
 								Schema:       -53,
 								Sum:          100.5,
@@ -1340,7 +1340,7 @@ func TestTranslateV2(t *testing.T) {
 				sm.Scope().SetName("OpenTelemetry Collector")
 				sm.Scope().SetVersion("latest")
 
-				// First metric - CBNH (regular histogram)
+				// First metric - NHCB (regular histogram)
 				m1 := sm.Metrics().AppendEmpty()
 				m1.SetName("test_mixed_histogram")
 				m1.SetUnit("")
