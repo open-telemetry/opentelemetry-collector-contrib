@@ -76,6 +76,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid_regex"),
 			errorMessage: "error parsing regexp: missing closing ): `((((`",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "regex_with_subtract_initial_point"),
+			errorMessage: "start_time_metric_regex can only be used with the start_time_metric strategy",
+		},
 	}
 
 	for _, tt := range tests {

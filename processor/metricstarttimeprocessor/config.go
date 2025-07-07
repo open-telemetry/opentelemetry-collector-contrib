@@ -18,9 +18,10 @@ import (
 
 // Config holds configuration of the metric start time processor.
 type Config struct {
-	Strategy             string        `mapstructure:"strategy"`
-	GCInterval           time.Duration `mapstructure:"gc_interval"`
-	StartTimeMetricRegex string        `mapstructure:"start_time_metric_regex"`
+	Strategy   string        `mapstructure:"strategy"`
+	GCInterval time.Duration `mapstructure:"gc_interval"`
+	// StartTimeMetricRegex only applies then the start_time_metric strategy is used
+	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -47,6 +48,9 @@ func (cfg *Config) Validate() error {
 	if cfg.StartTimeMetricRegex != "" {
 		if _, err := regexp.Compile(cfg.StartTimeMetricRegex); err != nil {
 			return err
+		}
+		if cfg.Strategy != starttimemetric.Type {
+			return errors.New("start_time_metric_regex can only be used with the start_time_metric strategy")
 		}
 	}
 	return nil

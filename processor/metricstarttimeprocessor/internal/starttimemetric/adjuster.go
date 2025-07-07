@@ -26,10 +26,8 @@ var (
 	errNoDataPointsStartTimeMetric    = errors.New("start time metric with no data points")
 	errUnsupportedTypeStartTimeMetric = errors.New("unsupported data type for start time metric")
 	// approximateCollectorStartTime is the approximate start time of the
-	// collector. Used as a fallback start time for metrics that don't have a
-	// start time set (when the
-	// receiver.prometheusreceiver.UseCollectorStartTimeFallback feature gate is
-	// enabled).  Set when the component is initialized.
+	// collector. Used as a fallback start time for metrics when the start time
+	// metric is not found. Set when the component is initialized.
 	approximateCollectorStartTime time.Time
 )
 

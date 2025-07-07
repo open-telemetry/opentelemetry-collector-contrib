@@ -16,10 +16,13 @@ metricstarttime/start_time_metric:
   strategy: start_time_metric
   start_time_metric_regex: "^.+_process_start_time_seconds$"
 
-
 metricstarttime/invalid_regex:
   strategy: start_time_metric
   start_time_metric_regex: "(((("
 
 metricstarttime/invalid_strategy:
   strategy: bad
+
+metricstarttime/regex_with_subtract_initial_point:
+  strategy: subtract_initial_point
+  start_time_metric_regex: "^.+_process_start_time_seconds$"
