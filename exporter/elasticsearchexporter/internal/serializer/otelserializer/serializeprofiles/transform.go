@@ -228,16 +228,18 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		Frequency:        frequency,
 	}
 
-	// Fetch event-specific attributes.
-	for i := 0; i < sample.AttributeIndices().Len(); i++ {
-		if dic.AttributeTable().Len() < i {
+	// Store event-specific attributes.
+	for _, idx := range sample.AttributeIndices().All() {
+		if dic.AttributeTable().Len() < int(idx) {
 			continue
 		}
-		attr := dic.AttributeTable().At(i)
+		attr := dic.AttributeTable().At(int(idx))
 
 		switch attribute.Key(attr.Key()) {
 		case semconv.ThreadNameKey:
 			event.ThreadName = attr.Value().AsString()
+		case semconv.ProcessExecutableNameKey:
+			event.ExecutableName = attr.Value().AsString()
 		case semconv.ServiceNameKey:
 			event.ServiceName = attr.Value().AsString()
 		}
