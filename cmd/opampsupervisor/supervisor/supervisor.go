@@ -1094,7 +1094,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 type configComposer func() []byte
 
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig) ([]byte, error) {
-	konf := koanf.New("::")
+	conf := koanf.New("::")
 
 	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
 		config.SpecialConfigFileOwnTelemetry:   {s.composeOwnTelemetryConfig, s.composeExtraTelemetryConfig},
@@ -1114,7 +1114,7 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 			cfgProviders := specialConfigComposers[config.SpecialConfigFile(file)]
 			for _, cfgProvider := range cfgProviders {
 				cfgBytes := cfgProvider()
-				err := konf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+				err := conf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
 				if err != nil {
 					s.telemetrySettings.Logger.Error("Could not merge special config file", zap.String("specialConfig", file), zap.Error(err))
 					return nil, err
@@ -1129,14 +1129,14 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 			continue
 		}
 
-		err = konf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+		err = conf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not merge local config file: "+file, zap.Error(err))
 			continue
 		}
 	}
 
-	b, err := konf.Marshal(yaml.Parser())
+	b, err := conf.Marshal(yaml.Parser())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
