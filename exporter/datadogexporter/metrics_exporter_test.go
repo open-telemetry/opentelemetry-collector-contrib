@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"os"
+	"path/filepath" 
 	"sync"
 	"testing"
 	"time"
@@ -424,6 +426,32 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+				},
+			},
+		},
+		{
+			metrics: loadOTLPMetrics(t, "metrics_stats.json"),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: datadogconfig.HistogramModeDistributions,
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+					map[string]any{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 				},
 			},
@@ -871,6 +899,25 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				},
 			},
 		},
+		{
+			metrics: loadOTLPMetrics(t, "metrics_stats.json"),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: datadogconfig.HistogramModeDistributions,
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []any{[]any{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
 	}
 	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
@@ -1101,25 +1148,39 @@ func seconds(i int) pcommon.Timestamp {
 
 func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode datadogconfig.HistogramMode) *datadogconfig.Config {
 	t.Helper()
-	return &datadogconfig.Config{
-		HostMetadata: datadogconfig.HostMetadataConfig{
-			Tags: hostTags,
+	cfg := datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
+	cfg.HostMetadata = datadogconfig.HostMetadataConfig{
+		Tags: hostTags,
+	}
+	cfg.TagsConfig = datadogconfig.TagsConfig{
+		Hostname: "test-host",
+	}
+
+	cfg.Metrics = datadogconfig.MetricsConfig{
+		TCPAddrConfig: confignet.TCPAddrConfig{
+			Endpoint: endpoint,
 		},
-		TagsConfig: datadogconfig.TagsConfig{
-			Hostname: "test-host",
+		HistConfig: datadogconfig.HistogramConfig{
+			Mode: histogramMode,
 		},
-		Metrics: datadogconfig.MetricsConfig{
-			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: endpoint,
-			},
-			HistConfig: datadogconfig.HistogramConfig{
-				Mode: histogramMode,
-			},
-			// Set values to avoid errors. No particular intention in value selection.
-			DeltaTTL: 3600,
-			SumConfig: datadogconfig.SumConfig{
-				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeRawValue,
-			},
+		// Set values to avoid errors. No particular intention in value selection.
+		DeltaTTL: 3600,
+		SumConfig: datadogconfig.SumConfig{
+			CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeRawValue,
 		},
 	}
+
+	return cfg
+}
+
+func loadOTLPMetrics(t *testing.T, filename string) pmetric.Metrics {
+	t.Helper()
+	otlpbytes, err := os.ReadFile(filepath.Join("testdata", filename))
+	require.NoError(t, err)
+
+	var unmarshaler pmetric.JSONUnmarshaler
+	otlpmetrics, err := unmarshaler.UnmarshalMetrics(otlpbytes)
+	require.NoError(t, err)
+
+	return otlpmetrics
 }
