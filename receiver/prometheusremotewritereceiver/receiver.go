@@ -756,11 +756,6 @@ func convertNHCBBuckets(histogram writev2.Histogram) []uint64 {
 				bucketIdx++
 			}
 		}
-
-		// Convert from cumulative to delta buckets (like classic histograms)
-		for i := len(bucketCounts) - 1; i > 0; i-- {
-			bucketCounts[i] -= bucketCounts[i-1]
-		}
 	} else {
 		// Integer histograms: values are deltas between buckets
 		bucketIdx := 0
@@ -782,29 +777,6 @@ func convertNHCBBuckets(histogram writev2.Histogram) []uint64 {
 				bucketIdx++
 			}
 		}
-
-		// Convert from cumulative to delta buckets (like classic histograms)
-		for i := len(bucketCounts) - 1; i > 0; i-- {
-			bucketCounts[i] -= bucketCounts[i-1]
-		}
-	}
-
-	// Ensure the final (+inf) bucket count so that sum of bucket counts equals overall count
-	totalBucketCount := uint64(0)
-	for i := 0; i < len(bucketCounts)-1; i++ {
-		totalBucketCount += bucketCounts[i]
-	}
-
-	var overallCount uint64
-	if histogram.IsFloatHistogram() {
-		overallCount = uint64(histogram.GetCountFloat())
-	} else {
-		overallCount = histogram.GetCountInt()
-	}
-
-	// Set the final bucket count to make the total equal to overall count
-	if overallCount >= totalBucketCount {
-		bucketCounts[len(bucketCounts)-1] = overallCount - totalBucketCount
 	}
 
 	return bucketCounts

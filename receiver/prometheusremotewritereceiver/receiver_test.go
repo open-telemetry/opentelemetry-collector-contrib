@@ -376,11 +376,11 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Schema:         -53,
-								Count:          &writev2.Histogram_CountInt{CountInt: 1},
+								Count:          &writev2.Histogram_CountInt{CountInt: 4},
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -393,7 +393,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Schema:        0,
-								Count:         &writev2.Histogram_CountInt{CountInt: 1},
+								Count:         &writev2.Histogram_CountInt{CountInt: 6},
 								Sum:           1,
 								Timestamp:     1,
 								ZeroThreshold: 1,
@@ -443,10 +443,10 @@ func TestTranslateV2(t *testing.T) {
 
 				cbneDP := hist.DataPoints().AppendEmpty()
 				cbneDP.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				cbneDP.SetCount(1)
+				cbneDP.SetCount(4)
 				cbneDP.SetSum(1)
 				cbneDP.ExplicitBounds().FromRaw([]float64{1.0})
-				cbneDP.BucketCounts().FromRaw([]uint64{1, 0})
+				cbneDP.BucketCounts().FromRaw([]uint64{1, 3})
 				cbneDP.Attributes().PutStr("d", "e")
 
 				sm2 := rm1.ScopeMetrics().AppendEmpty()
@@ -473,7 +473,7 @@ func TestTranslateV2(t *testing.T) {
 				expDP := expHist.DataPoints().AppendEmpty()
 				expDP.SetStartTimestamp(pcommon.Timestamp(150 * int64(time.Millisecond)))
 				expDP.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				expDP.SetCount(1)
+				expDP.SetCount(6)
 				expDP.SetSum(1)
 				expDP.SetScale(0)
 				expDP.SetZeroThreshold(1)
@@ -1108,7 +1108,7 @@ func TestTranslateV2(t *testing.T) {
 								Timestamp:    123456789,
 								Schema:       -53, // NHCB schema
 								Sum:          100.5,
-								Count:        &writev2.Histogram_CountInt{CountInt: 50},
+								Count:        &writev2.Histogram_CountInt{CountInt: 180},
 								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
@@ -1146,9 +1146,9 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
 				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
 				dp.SetSum(100.5)
-				dp.SetCount(50)
+				dp.SetCount(180)
 				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
-				dp.BucketCounts().FromRaw([]uint64{10, 15, 20, 5, 0}) // Delta counts
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
 
 				return metrics
 			}(),
@@ -1178,12 +1178,8 @@ func TestTranslateV2(t *testing.T) {
 								Timestamp:    123456789,
 								Schema:       -53, // NHCB schema
 								Sum:          math.Float64frombits(value.StaleNaN),
-								Count:        &writev2.Histogram_CountInt{CountInt: 50},
+								Count:        &writev2.Histogram_CountInt{CountInt: 0},
 								CustomValues: []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
-								PositiveSpans: []writev2.BucketSpan{
-									{Offset: 0, Length: 5}, // 5 buckets: 4 custom + 1 overflow
-								},
-								PositiveDeltas: []int64{10, 15, 20, 5, 0}, // Delta counts for each bucket
 							},
 						},
 					},
@@ -1216,7 +1212,7 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
 				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
-				dp.BucketCounts().FromRaw([]uint64{10, 15, 20, 5, 0}) // Delta counts
+				dp.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0})
 
 				return metrics
 			}(),
@@ -1299,7 +1295,7 @@ func TestTranslateV2(t *testing.T) {
 								Timestamp:    123456789,
 								Schema:       -53,
 								Sum:          100.5,
-								Count:        &writev2.Histogram_CountInt{CountInt: 50},
+								Count:        &writev2.Histogram_CountInt{CountInt: 180},
 								CustomValues: []float64{1.0, 2.0, 5.0, 10.0},
 								PositiveSpans: []writev2.BucketSpan{
 									{Offset: 0, Length: 5},
@@ -1352,9 +1348,9 @@ func TestTranslateV2(t *testing.T) {
 				dp1.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
 				dp1.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
 				dp1.SetSum(100.5)
-				dp1.SetCount(50)
+				dp1.SetCount(180)
 				dp1.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
-				dp1.BucketCounts().FromRaw([]uint64{10, 15, 20, 5, 0})
+				dp1.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
 
 				// Second metric - Exponential histogram
 				m2 := sm.Metrics().AppendEmpty()
