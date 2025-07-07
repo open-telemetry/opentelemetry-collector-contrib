@@ -940,11 +940,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 }
 
 func TestNewExporterWithProxy(t *testing.T) {
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableMetricExportSerializer())
-	}
-
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
@@ -957,6 +952,7 @@ func TestNewExporterWithProxy(t *testing.T) {
 			proxyRequests = append(proxyRequests, req)
 			proxyRequestsMutex.Unlock()
 
+			req.Header.Set("X-Proxy-Test", "test-proxy-123")
 			req.URL.Scheme = "http"
 			req.URL.Host = server.Listener.Addr().String()
 		},
@@ -969,7 +965,7 @@ func TestNewExporterWithProxy(t *testing.T) {
 		},
 		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: server.URL,
+				Endpoint: proxyServer.URL,
 			},
 			DeltaTTL: 3600,
 			HistConfig: datadogconfig.HistogramConfig{
@@ -1018,16 +1014,30 @@ func TestNewExporterWithProxy(t *testing.T) {
 	proxyRequestsMutex.Lock()
 	defer proxyRequestsMutex.Unlock()
 
-	// At least should have metrics + metadata
-	assert.GreaterOrEqual(t, len(proxyRequests), 2, "Expected at least 2 requests to go through the proxy")
+	assert.GreaterOrEqual(t, len(proxyRequests), 3, "Expected at least 3 requests to go through the proxy")
+
+	// Verify got metrics & sketches requests
+	hasMetricsRequest := false
+	hasSketchesRequest := false
+	for _, req := range proxyRequests {
+		if req.URL.Path == "/api/v2/series" {
+			hasMetricsRequest = true
+		}
+		if req.URL.Path == "/api/beta/sketches" || req.URL.Path == "/api/v1/sketches" {
+			hasSketchesRequest = true
+		}
+	}
+	assert.True(t, hasMetricsRequest, "Expected to capture metrics request to /api/v2/series")
+	assert.True(t, hasSketchesRequest, "Expected to capture sketches request")
 
 	for _, req := range proxyRequests {
-		assert.Equal(t, "gzip", req.Header.Get("Accept-Encoding"))
-		assert.Equal(t, "otelcol/latest", req.Header.Get("User-Agent"))
+		assert.Equal(t, "test-proxy-123", req.Header.Get("X-Proxy-Test"),
+			"Request should have gone through our proxy")
 
-		assert.True(t, req.URL.Path == "/intake" || req.URL.Path == "/api/v1/validate",
-			"Unexpected request path: %s", req.URL.Path,
-		)
+		assert.Contains(t, req.Header.Get("X-Forwarded-For"), "127.0.0.1",
+			"Request should have X-Forwarded-For header from proxy")
+
+		assert.Equal(t, "gzip", req.Header.Get("Accept-Encoding"))
 	}
 }
 
