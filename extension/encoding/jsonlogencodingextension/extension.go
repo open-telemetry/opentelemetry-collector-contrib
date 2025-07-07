@@ -97,27 +97,33 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 
 func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
-
-	// get json logs from the buffer
-	var jsonLogs []map[string]any
-	var err error
+	sl := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
 	if e.config.ArrayMode {
 		// Default mode to handle arrays having backward compatibility
+		var jsonLogs []map[string]any
+		var err error
+
 		if err = json.Unmarshal(buf, &jsonLogs); err != nil {
 			return p, err
 		}
-	} else {
-		jsonLogs, err = todDecodedJSONDocuments(bytes.NewReader(buf))
-		if err != nil {
-			return p, err
-		}
-	}
 
-	sl := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
-	for _, r := range jsonLogs {
-		if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(r); err != nil {
-			return p, err
+		for _, r := range jsonLogs {
+			if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(r); err != nil {
+				return p, err
+			}
+		}
+	} else {
+		reader := newStreamReader(bytes.NewReader(buf))
+		for reader.next() {
+			record, err := reader.value()
+			if err != nil {
+				return plog.Logs{}, err
+			}
+
+			if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(record); err != nil {
+				return p, err
+			}
 		}
 	}
 
@@ -132,23 +138,43 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// todDecodedJSONDocuments is a generic helper to derive json records decoded from a reader.
-func todDecodedJSONDocuments(reader io.Reader) ([]map[string]any, error) {
-	decoder := json.NewDecoder(reader)
-	jsonDocuments := make([]map[string]any, 0)
+// streamReader is a wrapper to process input stream and return processed JSON records one by one
+type streamReader struct {
+	decoder *json.Decoder
+	current map[string]any
+	err     error
+	done    bool
+}
 
-	for {
-		var doc map[string]any
-		err := decoder.Decode(&doc)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
+func newStreamReader(r io.Reader) *streamReader {
+	return &streamReader{
+		decoder: json.NewDecoder(r),
+	}
+}
 
-		jsonDocuments = append(jsonDocuments, doc)
+func (r *streamReader) next() bool {
+	if r.done {
+		return false
 	}
 
-	return jsonDocuments, nil
+	err := r.decoder.Decode(&r.current)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			// EOF signals the end
+			r.done = true
+			r.current = nil
+			return false
+		}
+
+		// Record error and let caller handles the result
+		r.err = err
+		r.current = nil
+		return true
+	}
+
+	return true
+}
+
+func (r *streamReader) value() (map[string]any, error) {
+	return r.current, r.err
 }

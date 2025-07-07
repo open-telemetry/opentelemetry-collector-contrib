@@ -89,10 +89,23 @@ func TestMarshalUnmarshal(t *testing.T) {
 			}
 
 			// special comparison for non array JSON. Compared in decoded format.
-			inputDocuments, err := todDecodedJSONDocuments(bytes.NewReader([]byte(tt.input)))
-			require.NoError(t, err)
+			inputReader := newStreamReader(bytes.NewReader([]byte(tt.input)))
+			var inputDocuments []map[string]any
+			var value map[string]any
+			for inputReader.next() {
+				value, err = inputReader.value()
+				assert.NoError(t, err)
+				inputDocuments = append(inputDocuments, value)
+			}
 
-			outputDocuments, err := todDecodedJSONDocuments(bytes.NewReader(buf))
+			outputReader := newStreamReader(bytes.NewReader(buf))
+			var outputDocuments []map[string]any
+			for outputReader.next() {
+				value, err = outputReader.value()
+				assert.NoError(t, err)
+				outputDocuments = append(outputDocuments, value)
+			}
+
 			require.NoError(t, err)
 			for i, line := range inputDocuments {
 				assert.Equal(t, line, outputDocuments[i])
