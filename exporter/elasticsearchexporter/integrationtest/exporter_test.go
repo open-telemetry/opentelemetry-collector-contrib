@@ -34,12 +34,15 @@ func TestExporter(t *testing.T) {
 			mockESErr        error
 		}{
 			{name: "basic"},
-			{name: "es_intermittent_failure", mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "es_intermittent_http_error", mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "es_intermittent_doc_error", mockESErr: &errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 
 			{name: "batcher_enabled", batcherEnabled: ptrTo(true)},
-			{name: "batcher_enabled_es_intermittent_failure", batcherEnabled: ptrTo(true), mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "batcher_enabled_es_intermittent_http_error", batcherEnabled: ptrTo(true), mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "batcher_enabled_es_intermittent_doc_error", batcherEnabled: ptrTo(true), mockESErr: &errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 			{name: "batcher_disabled", batcherEnabled: ptrTo(false)},
 			{name: "batcher_disabled_es_intermittent_failure", batcherEnabled: ptrTo(false), mockESErr: &errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "batcher_disabled_es_intermittent_doc_error", batcherEnabled: ptrTo(false), mockESErr: &errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 
 			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
