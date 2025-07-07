@@ -7,7 +7,7 @@ change_type: enhancement
 component: oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support query-level log collection, fetching top N query metrics and details of currently running queries (samples).
+note: Support query-level log collection, fetching top N query metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37478]
@@ -18,8 +18,7 @@ issues: [37478]
 subtext: |
   With the introduction of query level log collection, the oracledbreceiver can now send metrics for Top N queries, 
   filtered based on the highest CPU time consumed. The number of queries can be configured. This helps the user to have
-  a better understanding of the database operations. In addition to this, query samples can be collected for the currently
-  executing queries. This enhancement enables users to proactively monitor and manage the database performance.
+  a better understanding of the database operations.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
