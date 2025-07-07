@@ -14,17 +14,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.129.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
-	go.opentelemetry.io/collector/component v1.35.1-0.20250703115036-26a1aed9c04b
+	go.opentelemetry.io/collector/component v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250703115036-26a1aed9c04b
-	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250703115036-26a1aed9c04b
-	go.opentelemetry.io/collector/confmap v1.35.1-0.20250703115036-26a1aed9c04b
+	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/confmap v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250703115036-26a1aed9c04b
-	go.opentelemetry.io/collector/consumer v1.35.1-0.20250703115036-26a1aed9c04b
+	go.opentelemetry.io/collector/consumer v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.1-0.20250703115036-26a1aed9c04b
-	go.opentelemetry.io/collector/featuregate v1.35.1-0.20250703115036-26a1aed9c04b
+	go.opentelemetry.io/collector/featuregate v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/filter v0.129.1-0.20250703115036-26a1aed9c04b
-	go.opentelemetry.io/collector/pdata v1.35.1-0.20250703115036-26a1aed9c04b
-	go.opentelemetry.io/collector/receiver v1.35.1-0.20250703115036-26a1aed9c04b
+	go.opentelemetry.io/collector/pdata v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/receiver v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/receiver/receivertest v0.129.1-0.20250703115036-26a1aed9c04b
 	go.opentelemetry.io/collector/scraper v0.129.1-0.20250703115036-26a1aed9c04b
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.129.1-0.20250703115036-26a1aed9c04b
