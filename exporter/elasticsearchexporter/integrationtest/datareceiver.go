@@ -151,14 +151,8 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
   elasticsearch:
     endpoints: [%s]
     logs_index: %s
-    logs_dynamic_index:
-      enabled: false
     metrics_index: %s
-    metrics_dynamic_index:
-      enabled: false
     traces_index: %s
-    traces_dynamic_index:
-      enabled: false
     sending_queue:
       enabled: true
       block_on_overflow: true
