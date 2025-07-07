@@ -326,7 +326,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 						item.Error.Reason = consumeErr.Error()
 						itemMap[k] = item
 					} else {
-						// unknown consume error
+						// panic to surface test logic error
 						panic("unknown consume error")
 					}
 				}
