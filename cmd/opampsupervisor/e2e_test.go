@@ -459,7 +459,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			storageDir := t.TempDir()
 			remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 
-			cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+			cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t, true)
 			remoteConfigProto := &protobufs.AgentRemoteConfig{
 				Config: &protobufs.AgentConfigMap{
 					ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -528,7 +528,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	// create remote config to check agent's health
 	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
-	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t, false)
 	remoteConfigProto := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -1261,8 +1261,8 @@ func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
 	return bytes.NewBuffer(colCfg), h.Sum(nil)
 }
 
-func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byte, remotePort int) {
-	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "healthcheck_config.yaml"))
+func createHealthCheckCollectorConf(t *testing.T, nopPipeline bool) (cfg *bytes.Buffer, hash []byte, remotePort int) {
+	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "healthcheck_config.tmpl.yaml"))
 	require.NoError(t, err)
 
 	templ, err := template.New("").Parse(string(colCfgTpl))
@@ -1271,7 +1271,9 @@ func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byt
 	var confmapBuf bytes.Buffer
 	err = templ.Execute(
 		&confmapBuf,
-		map[string]string{},
+		map[string]any{
+			"nopPipeline": nopPipeline,
+		},
 	)
 	require.NoError(t, err)
 
