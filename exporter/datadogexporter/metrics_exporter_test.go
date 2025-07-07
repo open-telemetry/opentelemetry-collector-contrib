@@ -991,14 +991,24 @@ func TestNewExporterWithProxy(t *testing.T) {
 	defer server.Close()
 
 	var proxyRequests []*http.Request
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	expectedRequests := 7
+
+	wg.Add(expectedRequests)
 
 	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
 		Director: func(req *http.Request) {
+			mu.Lock()
 			proxyRequests = append(proxyRequests, req)
+			mu.Unlock()
 
 			req.Header.Set("X-Proxy-Test", "test-proxy-123")
 			req.URL.Scheme = "http"
 			req.URL.Host = server.Listener.Addr().String()
+
+			wg.Done()
 		},
 	})
 	defer proxyServer.Close()
@@ -1054,6 +1064,11 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
+
+	// Wait for all requests to be processed
+	wg.Wait()
+	mu.Lock()
+	defer mu.Unlock()
 
 	assert.GreaterOrEqual(t, len(proxyRequests), 3, "Expected at least 3 requests to go through the proxy")
 
