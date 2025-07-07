@@ -205,6 +205,8 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// connection
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
+		case "Max_used_connections":
+			addPartialIfError(errs, m.mb.RecordMysqlMaxUsedConnectionsDataPoint(now, v))
 
 		// prepared_statements_commands
 		case "Com_stmt_execute":

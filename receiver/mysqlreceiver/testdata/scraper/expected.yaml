@@ -1759,3 +1759,4 @@ resourceMetrics:
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest
+        
