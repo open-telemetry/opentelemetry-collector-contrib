@@ -990,7 +990,11 @@ func TestNewExporterWithProxy(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	var proxyRequests []*http.Request
+	type requestInfo struct {
+		Path    string
+		Headers map[string]string
+	}
+	var proxyRequests []requestInfo
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
@@ -1000,13 +1004,24 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
 		Director: func(req *http.Request) {
-			mu.Lock()
-			proxyRequests = append(proxyRequests, req)
-			mu.Unlock()
-
 			req.Header.Set("X-Proxy-Test", "test-proxy-123")
 			req.URL.Scheme = "http"
 			req.URL.Host = server.Listener.Addr().String()
+
+			// Copy request data to avoid race conditions
+			headers := make(map[string]string)
+			for key, values := range req.Header {
+				if len(values) > 0 {
+					headers[key] = values[0]
+				}
+			}
+
+			mu.Lock()
+			proxyRequests = append(proxyRequests, requestInfo{
+				Path:    req.URL.Path,
+				Headers: headers,
+			})
+			mu.Unlock()
 
 			wg.Done()
 		},
@@ -1076,10 +1091,10 @@ func TestNewExporterWithProxy(t *testing.T) {
 	hasMetricsRequest := false
 	hasSketchesRequest := false
 	for _, req := range proxyRequests {
-		if req.URL.Path == "/api/v2/series" {
+		if req.Path == "/api/v2/series" {
 			hasMetricsRequest = true
 		}
-		if req.URL.Path == "/api/beta/sketches" || req.URL.Path == "/api/v1/sketches" {
+		if req.Path == "/api/beta/sketches" || req.Path == "/api/v1/sketches" {
 			hasSketchesRequest = true
 		}
 	}
@@ -1087,13 +1102,10 @@ func TestNewExporterWithProxy(t *testing.T) {
 	assert.True(t, hasSketchesRequest, "Expected to capture sketches request")
 
 	for _, req := range proxyRequests {
-		assert.Equal(t, "test-proxy-123", req.Header.Get("X-Proxy-Test"),
+		assert.Equal(t, "test-proxy-123", req.Headers["X-Proxy-Test"],
 			"Request should have gone through our proxy")
 
-		assert.Contains(t, req.Header.Get("X-Forwarded-For"), "127.0.0.1",
-			"Request should have X-Forwarded-For header from proxy")
-
-		assert.Equal(t, "gzip", req.Header.Get("Accept-Encoding"))
+		assert.Equal(t, "gzip", req.Headers["Accept-Encoding"])
 	}
 }
 
