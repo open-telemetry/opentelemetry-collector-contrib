@@ -208,6 +208,7 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/config/confignet v1.35.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250707130321-ac9adbf016bf // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.129.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.35.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250707130321-ac9adbf016bf // indirect
