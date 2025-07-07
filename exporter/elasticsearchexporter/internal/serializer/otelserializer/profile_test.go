@@ -104,8 +104,10 @@ func TestSerializeProfile(t *testing.T) {
 				pt := profile.PeriodType()
 				pt.SetTypeStrindex(2)
 				pt.SetUnitStrindex(3)
+				profile.SetPeriod(1e9 / 20)
 
 				profile.AttributeIndices().Append(2)
+				profile.LocationIndices().Append(0)
 
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
@@ -119,12 +121,13 @@ func TestSerializeProfile(t *testing.T) {
 					"ecs.version":            "1.12.0",
 				},
 				{
-					"@timestamp":          "1970-01-01T00:00:00Z",
-					"Stacktrace.count":    json.Number("1"),
-					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
-					"ecs.version":         "1.12.0",
-					"host.id":             "localhost",
-					"process.thread.name": "",
+					"@timestamp":                    "1970-01-01T00:00:00Z",
+					"Stacktrace.count":              json.Number("1"),
+					"Stacktrace.sampling_frequency": json.Number("20"),
+					"Stacktrace.id":                 "02VzuClbpt_P3xxwox83Ng",
+					"ecs.version":                   "1.12.0",
+					"host.id":                       "localhost",
+					"process.thread.name":           "",
 				},
 				{
 					"script": map[string]any{
