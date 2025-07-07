@@ -991,13 +991,10 @@ func TestNewExporterWithProxy(t *testing.T) {
 	defer server.Close()
 
 	var proxyRequests []*http.Request
-	var proxyRequestsMutex sync.Mutex
 
 	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
 		Director: func(req *http.Request) {
-			proxyRequestsMutex.Lock()
 			proxyRequests = append(proxyRequests, req)
-			proxyRequestsMutex.Unlock()
 
 			req.Header.Set("X-Proxy-Test", "test-proxy-123")
 			req.URL.Scheme = "http"
@@ -1057,9 +1054,6 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
-
-	proxyRequestsMutex.Lock()
-	defer proxyRequestsMutex.Unlock()
 
 	assert.GreaterOrEqual(t, len(proxyRequests), 3, "Expected at least 3 requests to go through the proxy")
 
