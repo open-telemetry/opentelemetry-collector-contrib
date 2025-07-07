@@ -192,6 +192,7 @@ func TestTransform(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
 				p.SetPeriod(1e9 / 20)
 
 				st := p.SampleType().AppendEmpty()
@@ -339,6 +340,7 @@ func TestStackPayloads(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
 				p.SetPeriod(1e9 / 20)
 
 				s := p.Sample().AppendEmpty()
@@ -446,6 +448,7 @@ func TestStackPayloads(t *testing.T) {
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
+				p.LocationIndices().FromRaw([]int32{0, 1})
 				p.SetPeriod(1e9 / 20)
 
 				s := p.Sample().AppendEmpty()
@@ -753,6 +756,7 @@ func TestStackTrace(t *testing.T) {
 			},
 			buildProfile: func() pprofile.Profile {
 				p := pprofile.NewProfile()
+				p.LocationIndices().FromRaw([]int32{0, 1, 2})
 
 				s := p.Sample().AppendEmpty()
 				s.SetLocationsLength(3)
@@ -776,7 +780,7 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Sample().At(0)
 
-			frames, frameTypes, _, err := stackFrames(dic, s)
+			frames, frameTypes, _, err := stackFrames(dic, p, s)
 			require.NoError(t, err)
 
 			stacktrace := stackTrace("", frames, frameTypes)
@@ -801,6 +805,11 @@ func frameTypesToString(frameTypes []libpf.FrameType) string {
 func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 	dic := pprofile.NewProfilesDictionary()
 	p := pprofile.NewProfile()
+	indices := make([]int32, len(frameIDs))
+	for i := range frameIDs {
+		indices[i] = int32(i)
+	}
+	p.LocationIndices().FromRaw(indices)
 	s := p.Sample().AppendEmpty()
 	s.SetLocationsLength(int32(len(frameIDs)))
 
@@ -824,7 +833,7 @@ func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 		l.AttributeIndices().Append(0)
 	}
 
-	frames, _, _, err := stackFrames(dic, s)
+	frames, _, _, err := stackFrames(dic, p, s)
 	require.NoError(t, err)
 
 	traceID, err := stackTraceID(frames)

@@ -93,7 +93,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	for i := 0; i < profile.Sample().Len(); i++ {
 		sample := profile.Sample().At(i)
 
-		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
+		frames, frameTypes, leafFrame, err := stackFrames(dic, profile, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -270,10 +270,10 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	}
 }
 
-func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *libpf.FrameID, error) {
+func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *libpf.FrameID, error) {
 	frames := make([]StackFrame, 0, sample.LocationsLength())
 
-	locations := getLocations(dic, sample)
+	locations := getLocations(dic, profile, sample)
 	totalFrames := 0
 	for _, location := range locations {
 		totalFrames += location.Line().Len()
@@ -445,11 +445,17 @@ func stackTraceID(frames []StackFrame) (string, error) {
 	return traceHash.Base64(), nil
 }
 
-func getLocations(dic pprofile.ProfilesDictionary, sample pprofile.Sample) []pprofile.Location {
+func getLocations(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) []pprofile.Location {
 	locations := make([]pprofile.Location, 0, sample.LocationsLength())
-	lastIndex := min(int(sample.LocationsStartIndex()+sample.LocationsLength()), dic.LocationTable().Len())
-	for i := int(sample.LocationsStartIndex()); i < lastIndex; i++ {
-		locations = append(locations, dic.LocationTable().At(i))
+
+	firstIndexPos := int(sample.LocationsStartIndex())
+	lastIndexPos := int(sample.LocationsStartIndex() + sample.LocationsLength())
+	lastIndexPos = min(lastIndexPos, profile.LocationIndices().Len())
+	for i := firstIndexPos; i < lastIndexPos; i++ {
+		locationIndex := int(profile.LocationIndices().At(i))
+		if locationIndex < dic.LocationTable().Len() {
+			locations = append(locations, dic.LocationTable().At(locationIndex))
+		}
 	}
 	return locations
 }
