@@ -29,7 +29,7 @@ type Adjuster struct {
 	// timeseries. Subsequent points are normalized against this point.
 	referenceCache *datapointstorage.Cache
 	// previousValueCache to store the previous value of each
-	// timeseries for reset detection.
+	// timeseries provided to the adjuster for reset detection.
 	previousValueCache *datapointstorage.Cache
 	set                component.TelemetrySettings
 }
