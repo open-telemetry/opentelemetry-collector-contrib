@@ -9,6 +9,14 @@ resourceMetrics:
             stringValue: ad8fb2b53dce
     scopeMetrics:
       - metrics:
+          - description: Number of CPUs.
+            gauge:
+              dataPoints:
+                - asInt: "16"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.cpu.count
+            unit: '{CPUs}'
           - description: The number of databases
             gauge:
               dataPoints:

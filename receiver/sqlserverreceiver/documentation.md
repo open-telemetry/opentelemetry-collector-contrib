@@ -220,6 +220,14 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.cpu.count
+
+Number of CPUs.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {CPUs} | Gauge | Int |
+
 ### sqlserver.database.backup_or_restore.rate
 
 Total number of backups/restores.
