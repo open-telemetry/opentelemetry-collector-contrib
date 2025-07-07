@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_ratio_type"),
-			unmarshalErrorMessage: "decoding failed due to the following error(s):\n\n'gomemlimit.ratio' expected type 'float64', got unconvertible type 'string', value: 'not_valid'",
+			unmarshalErrorMessage: "decoding failed due to the following error(s):\n\n'gomemlimit.ratio' expected type 'float64', got unconvertible type 'string'",
 		},
 	}
 

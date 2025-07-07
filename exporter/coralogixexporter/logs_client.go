@@ -70,6 +70,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		)
 	}
 
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 
