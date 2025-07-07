@@ -18,6 +18,7 @@ const (
 	LogFileOwnerName      = "log.file.owner.name"
 	LogFileOwnerGroupName = "log.file.owner.group.name"
 	LogFileRecordNumber   = "log.file.record_number"
+	LogFileRecordOffset   = "log.file.record_offset"
 )
 
 type Resolver struct {
