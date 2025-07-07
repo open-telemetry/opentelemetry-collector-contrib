@@ -187,6 +187,7 @@ type Agent struct {
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -216,6 +217,10 @@ func (a Agent) Validate() error {
 
 	if a.ConfigApplyTimeout <= 0 {
 		return errors.New("agent::config_apply_timeout must be valid duration")
+	}
+
+	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
+		return errors.New("agent::use_hup_config_reload is not supported on Windows")
 	}
 
 	return nil
