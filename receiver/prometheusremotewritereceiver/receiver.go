@@ -272,9 +272,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
 
 			// Add the remaining labels as resource attributes
-			for _, l := range ls {
-				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
-					attrs.PutStr(l.Name, l.Value)
+			for labelName, labelValue := range ls.Map() {
+				if labelName != "job" && labelName != "instance" && labelName != labels.MetricName {
+					attrs.PutStr(labelName, labelValue)
 				}
 			}
 			prw.rmCache.Add(hashedLabels, rm)
@@ -599,13 +599,13 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes return all attributes different from job, instance, metric name and scope name/version
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	for _, l := range ls {
-		if l.Name == "instance" || l.Name == "job" || // Become resource attributes
-			l.Name == labels.MetricName || // Becomes metric name
-			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+	for labelName, labelValue := range ls.Map() {
+		if labelName == "instance" || labelName == "job" || // Become resource attributes
+			labelName == labels.MetricName || // Becomes metric name
+			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
 			continue
 		}
-		attrs.PutStr(l.Name, l.Value)
+		attrs.PutStr(labelName, labelValue)
 	}
 	return attrs
 }

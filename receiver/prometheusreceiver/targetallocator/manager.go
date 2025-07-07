@@ -183,13 +183,14 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 func (m *Manager) applyCfg() error {
 	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
+	truePtr := true
 	if err != nil {
 		return fmt.Errorf("could not get scrape configs: %w", err)
 	}
 	if !m.enableNativeHistograms {
 		// Enforce scraping classic histograms to avoid dropping them.
 		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
-			scrapeConfig.AlwaysScrapeClassicHistograms = true
+			scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
 		}
 	}
 
