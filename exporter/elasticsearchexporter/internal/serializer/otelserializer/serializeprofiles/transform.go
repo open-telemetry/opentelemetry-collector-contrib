@@ -140,12 +140,11 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			t := sample.TimestampsUnixNano().At(j)
 			event.TimeStamp = newUnixTime64(t)
 
+			count := 1
 			if j < sample.Value().Len() {
-				event.Count = uint16(sample.Value().At(j))
-			} else {
-				event.Count = 1 // restore default
+				count = int(sample.Value().At(j))
 			}
-			if event.Count > 0 {
+			for range count {
 				stackPayload = append(stackPayload, StackPayload{
 					StackTraceEvent: event,
 				})
@@ -221,7 +220,7 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		EcsVersion:   EcsVersion{V: EcsVersionString},
 		HostID:       hostMetadata[string(semconv.HostIDKey)],
 		StackTraceID: traceID,
-		Count:        1, // TODO: Check whether count can be dropped with nanosecond timestamps
+		Count:        1, // Elasticsearch v9.2+ doesn't read the count value any more.
 		Frequency:    frequency,
 	}
 
