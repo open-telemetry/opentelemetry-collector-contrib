@@ -315,20 +315,19 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 				}
 				var errES *errElasticsearch
 				if consumeErr != nil {
-					if errors.As(consumeErr, &errES) {
-						if errES.httpStatus != http.StatusOK {
-							w.WriteHeader(errES.httpStatus)
-							return
-						}
-						response.HasErrors = true
-						item.Status = errES.httpDocStatus
-						item.Error.Type = "simulated_es_error"
-						item.Error.Reason = consumeErr.Error()
-						itemMap[k] = item
-					} else {
-						// panic to surface test logic error
+					if !errors.As(consumeErr, &errES) {
+						// panic to surface test logic error because we only expect error of type errElasticsearch
 						panic("unknown consume error")
 					}
+					if errES.httpStatus != http.StatusOK {
+						w.WriteHeader(errES.httpStatus)
+						return
+					}
+					response.HasErrors = true
+					item.Status = errES.httpDocStatus
+					item.Error.Type = "simulated_es_error"
+					item.Error.Reason = consumeErr.Error()
+					itemMap[k] = item
 				}
 			}
 		}
