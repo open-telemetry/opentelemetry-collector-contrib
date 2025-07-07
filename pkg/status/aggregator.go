@@ -154,9 +154,23 @@ func (a *Aggregator) updateStatus(pipelineScope Scope, source *componentstatus.I
 	}
 
 	componentKey := strings.ToLower(source.Kind().String()) + ":" + source.ComponentID().String()
-	pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
-		Event: event,
+
+	componentStatus, ok := pipelineStatus.ComponentStatusMap[componentKey]
+	if !ok {
+		componentStatus = &AggregateStatus{
+			ComponentStatusMap: make(map[string]*AggregateStatus),
+		}
 	}
+
+	eventAttrs := event.Attributes()
+	if subComponentID, subComponentFound := eventAttrs.Value("otel.subcomponent.id"); subComponentFound && subComponentID.AsString() != "" {
+		componentStatus.ComponentStatusMap[subComponentID.AsString()] = &AggregateStatus{
+			Event: event,
+		}
+	} else {
+		componentStatus.Event = event
+	}
+	pipelineStatus.ComponentStatusMap[componentKey] = componentStatus
 	pipelineStatus.Event = a.aggregationFunc(pipelineStatus)
 	a.notifySubscribers(pipelineScope, pipelineStatus)
 }

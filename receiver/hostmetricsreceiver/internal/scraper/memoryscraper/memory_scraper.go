@@ -10,13 +10,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/v4/mem"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
@@ -49,7 +51,17 @@ func newMemoryScraper(_ context.Context, settings scraper.Settings, cfg *Config)
 	}
 }
 
-func (s *memoryScraper) start(ctx context.Context, _ component.Host) error {
+type reporterHost interface {
+	componentstatus.Reporter
+}
+
+func (s *memoryScraper) start(ctx context.Context, h component.Host) error {
+	smHost, ok := h.(reporterHost)
+	if !ok {
+		return errors.New("the memory scraper is not compatible with the provided component.host")
+	}
+	smHost.Report(componentstatus.NewEventWithAttributesSet(componentstatus.StatusOK, attribute.NewSet(attribute.String("otel.subcomponent.id", "memory_scraper"))))
+
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
