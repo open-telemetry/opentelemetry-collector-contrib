@@ -7,7 +7,7 @@ change_type: bug_fix
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix a regression causing `retry::max_retries` to be capped to 2 for HTTP request levels retries
+note: Fix regression `retry::max_retries` not applying correctly for HTTP request levels retries
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39670]
@@ -15,7 +15,7 @@ issues: [39670]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The regression affected versions from v0.120.0 and might cause data loss due to prematurely stopping HTTP request level retries, e.g. when ES is unavailable.
+subtext: The regression affected versions from v0.120.0 and might cause data loss due to prematurely stopping HTTP request level retries, e.g. when ES is unavailable, as it was cap to a maximum of 2 retries.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
