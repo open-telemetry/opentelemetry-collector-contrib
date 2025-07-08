@@ -42,19 +42,19 @@ func (cfg *Config) Validate() (errors error) {
 		errors = multierr.Append(errors, errBadOrMissingEndpoint)
 	} else {
 		if cfg.IdxEndpoint.Endpoint != "" {
-			if cfg.IdxEndpoint.Auth == nil {
+			if !cfg.IdxEndpoint.Auth.HasValue() {
 				errors = multierr.Append(errors, errMissingAuthExtension)
 			}
 			endpoints = append(endpoints, cfg.IdxEndpoint.Endpoint)
 		}
 		if cfg.SHEndpoint.Endpoint != "" {
-			if cfg.SHEndpoint.Auth == nil {
+			if !cfg.SHEndpoint.Auth.HasValue() {
 				errors = multierr.Append(errors, errMissingAuthExtension)
 			}
 			endpoints = append(endpoints, cfg.SHEndpoint.Endpoint)
 		}
 		if cfg.CMEndpoint.Endpoint != "" {
-			if cfg.CMEndpoint.Auth == nil {
+			if !cfg.CMEndpoint.Auth.HasValue() {
 				errors = multierr.Append(errors, errMissingAuthExtension)
 			}
 			endpoints = append(endpoints, cfg.CMEndpoint.Endpoint)

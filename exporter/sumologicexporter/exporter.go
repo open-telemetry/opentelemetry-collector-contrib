@@ -15,6 +15,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -178,7 +180,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 
 	for _, e := range se.host.GetExtensions() {
 		v, ok := e.(*sumologicextension.SumologicExtension)
-		if ok && httpSettings.Auth.AuthenticatorID == v.ComponentID() {
+		if ok && httpSettings.Auth.HasValue() && httpSettings.Auth.Get().AuthenticatorID == v.ComponentID() {
 			ext = v
 			foundSumoExt = true
 			se.foundSumologicExtension = true
@@ -188,8 +190,8 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 	}
 
 	switch {
-	case httpSettings.Endpoint == "" && httpSettings.Auth != nil &&
-		httpSettings.Auth.AuthenticatorID.Type() == sumologicextension.NewFactory().Type():
+	case httpSettings.Endpoint == "" && httpSettings.Auth.HasValue() &&
+		httpSettings.Auth.Get().AuthenticatorID.Type() == sumologicextension.NewFactory().Type():
 		// If user specified using sumologicextension as auth but none was
 		// found then return an error.
 		if !foundSumoExt {
@@ -197,7 +199,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 				"sumologic was specified as auth extension (named: %q) but "+
 					"a matching extension was not found in the config, "+
 					"please re-check the config and/or define the sumologicextension",
-				httpSettings.Auth.AuthenticatorID.String(),
+				httpSettings.Auth.Get().AuthenticatorID.String(),
 			)
 		}
 
@@ -235,8 +237,8 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 
 		// Clean authenticator if set to sumologic.
 		// Setting to null in configuration doesn't work, so we have to force it that way.
-		if httpSettings.Auth != nil && httpSettings.Auth.AuthenticatorID.Type() == sumologicextension.NewFactory().Type() {
-			httpSettings.Auth = nil
+		if httpSettings.Auth.HasValue() && httpSettings.Auth.Get().AuthenticatorID.Type() == sumologicextension.NewFactory().Type() {
+			httpSettings.Auth = configoptional.None[configauth.Config]()
 		}
 	default:
 		return errors.New("no auth extension and no endpoint specified")

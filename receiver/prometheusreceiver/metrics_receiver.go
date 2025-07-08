@@ -242,10 +242,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 
 	// If allowed CORS origins are provided in the receiver config, combine them into a single regex since the Prometheus API server requires this format.
 	var corsOriginRegexp *grafanaRegexp.Regexp
-	if r.cfg.APIServer.ServerConfig.CORS != nil && len(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins) > 0 {
+	if r.cfg.APIServer.ServerConfig.CORS.HasValue() && len(r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins) > 0 {
 		var combinedOriginsBuilder strings.Builder
-		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[0])
-		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[1:] {
+		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins[0])
+		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins[1:] {
 			combinedOriginsBuilder.WriteString("|")
 			combinedOriginsBuilder.WriteString(origin)
 		}

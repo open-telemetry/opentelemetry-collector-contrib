@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -108,15 +109,15 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		SHEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		CMEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,

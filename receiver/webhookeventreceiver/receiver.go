@@ -62,7 +62,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 	}
 
 	transport := "http"
-	if cfg.TLS != nil {
+	if cfg.TLS.HasValue() {
 		transport = "https"
 	}
 
