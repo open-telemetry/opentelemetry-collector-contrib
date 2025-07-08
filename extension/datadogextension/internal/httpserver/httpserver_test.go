@@ -495,6 +495,9 @@ func TestServerStop(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.name == "Context cancelled before shutdown completes" {
+				t.Skip("flaky test https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41146")
+			}
 			srv, logs := tt.setupServer()
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
