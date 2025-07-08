@@ -55,7 +55,7 @@ type errElasticsearch struct {
 	httpDocStatus int
 }
 
-func (e *errElasticsearch) Error() string {
+func (e errElasticsearch) Error() string {
 	if e.httpStatus != http.StatusOK {
 		return fmt.Sprintf("Simulated Elasticsearch returned HTTP status %d", e.httpStatus)
 	}
@@ -313,7 +313,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 				case TestTracesIndex:
 					consumeErr = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
 				}
-				var errES *errElasticsearch
+				var errES errElasticsearch
 				if consumeErr != nil {
 					if !errors.As(consumeErr, &errES) {
 						// panic to surface test logic error because we only expect error of type errElasticsearch
