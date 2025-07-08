@@ -214,6 +214,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found, "Expected to find a log record with the query text")
+	assert.True(t, ns.newestQueryTimestamp > 0)
 
 	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
 	assert.NoError(t, err)
