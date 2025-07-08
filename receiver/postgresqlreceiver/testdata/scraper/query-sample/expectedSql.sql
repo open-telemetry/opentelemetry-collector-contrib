@@ -10,6 +10,7 @@ SELECT
     COALESCE(query_id::TEXT, '') AS query_id,
     COALESCE(pid::TEXT, '') AS pid,
     COALESCE(application_name::TEXT, '') AS application_name,
+    EXTRACT(EPOCH FROM query_start) AS _query_start_timestamp,
     state,
     query
 FROM pg_stat_activity
@@ -18,4 +19,10 @@ WHERE
       TRIM(query), 
       ''
     ) != ''
+    AND NOT (
+
+      query_start < TO_TIMESTAMP(123440.111)
+      AND state = 'idle'
+    )   
 LIMIT 30;
+

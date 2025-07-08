@@ -47,8 +47,9 @@ type postgreSQLScraper struct {
 	excludes      map[string]struct{}
 	cache         *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
-	separateSchemaAttr bool
-	queryPlanCache     *expirable.LRU[string, string]
+	separateSchemaAttr   bool
+	queryPlanCache       *expirable.LRU[string, string]
+	newestQueryTimestamp float64
 }
 
 type errsMux struct {
@@ -200,7 +201,8 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, err := dbClient.getQuerySamples(ctx, limit, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, logger)
+	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
 		return
