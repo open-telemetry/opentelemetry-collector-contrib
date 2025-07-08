@@ -401,6 +401,18 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 		return
 	}
 
+	includeTags := len(s.cfg.AppendTagsAsAttributes) > 0
+	includedResourceTags := map[string]*string{}
+	if includeTags {
+		for tagName, value := range res.tags {
+			// Check if the tag should be included as an attribute.
+			if appendTagAsAttribute(s.cfg.AppendTagsAsAttributes, tagName) {
+				name := tagPrefix + tagName
+				includedResourceTags[name] = value
+			}
+		}
+	}
+
 	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
 		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
@@ -436,7 +448,6 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 				return
 			}
 
-			includeTags := len(s.cfg.AppendTagsAsAttributes) > 0
 			for _, metric := range result.Value {
 				for _, timeseriesElement := range metric.Timeseries {
 					if timeseriesElement.Data != nil {
@@ -448,14 +459,8 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 							name := metadataPrefix + *value.Name.Value
 							attributes[name] = value.Value
 						}
-						if includeTags {
-							for tagName, value := range res.tags {
-								// Check if the tag should be included as an attribute.
-								if appendTagAsAttribute(s.cfg.AppendTagsAsAttributes, tagName) {
-									name := tagPrefix + tagName
-									attributes[name] = value
-								}
-							}
+						for tagName, value := range includedResourceTags {
+							attributes[tagName] = value
 						}
 						for _, metricValue := range timeseriesElement.Data {
 							s.processTimeseriesData(resourceID, metric, metricValue, attributes)
