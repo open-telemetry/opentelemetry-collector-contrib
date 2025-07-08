@@ -2819,3 +2819,24 @@ func Test_newKey(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.Equal(t, "bar", *s)
 }
+
+func Test_Optional_Get(t *testing.T) {
+	opt := NewTestingOptional[string]("foo")
+	assert.Equal(t, "foo", opt.Get())
+}
+
+func Test_Optional_IsEmpty(t *testing.T) {
+	setOpt := NewTestingOptional[string]("foo")
+	assert.False(t, setOpt.IsEmpty())
+
+	emptyOpt := Optional[any]{}
+	assert.True(t, emptyOpt.IsEmpty())
+}
+
+func Test_Optional_GetOr(t *testing.T) {
+	emptyOpt := Optional[string]{}
+	assert.Equal(t, "bar", emptyOpt.GetOr("bar"))
+
+	setOpt := NewTestingOptional[string]("foo")
+	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
