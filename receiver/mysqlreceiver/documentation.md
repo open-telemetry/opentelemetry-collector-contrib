@@ -172,7 +172,7 @@ The number of InnoDB log operations.
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| operation | The log operation types. | Str: ``waits``, ``write_requests``, ``writes`` | false |
+| operation | The log operation types. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | false |
 
 ### mysql.mysqlx_connections
 
