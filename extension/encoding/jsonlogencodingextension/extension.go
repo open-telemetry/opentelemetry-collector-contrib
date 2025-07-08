@@ -157,7 +157,8 @@ func (r *streamReader) next() bool {
 		return false
 	}
 
-	err := r.decoder.Decode(&r.current)
+	var entry map[string]any
+	err := r.decoder.Decode(&entry)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			// EOF signals the end
@@ -172,6 +173,7 @@ func (r *streamReader) next() bool {
 		return true
 	}
 
+	r.current = entry
 	return true
 }
 
