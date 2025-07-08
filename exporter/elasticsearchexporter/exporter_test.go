@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elastic/go-docappender/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -530,7 +531,8 @@ func TestExporterLogs(t *testing.T) {
 				scopeLogs.LogRecords().AppendEmpty()
 				logs.MarkReadOnly()
 				err := exporter.ConsumeLogs(context.Background(), logs) // as sync bulk indexer is used, retries are finished on return
-				require.Error(t, err)
+				var errFlushFailed docappender.ErrorFlushFailed
+				require.ErrorAs(t, err, &errFlushFailed)
 
 				assert.Equal(t, 0, rec.countItems())
 				assert.Equal(t, expectedRetries+1, attempts) // initial request + retries
