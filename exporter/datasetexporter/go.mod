@@ -3,29 +3,25 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datase
 go 1.23.0
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/google/uuid v1.6.0
-	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.129.0
 	github.com/scalyr/dataset-go v0.20.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/config/configretry v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/confmap v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/exporter v0.129.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/exporter/exportertest v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/pdata v1.35.1-0.20250707130321-ac9adbf016bf
 	go.uber.org/zap v1.27.0
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
-	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/config/configretry v1.35.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/exporter/exportertest v0.129.1-0.20250707130321-ac9adbf016bf
-)
-
-require (
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
