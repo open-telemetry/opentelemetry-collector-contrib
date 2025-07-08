@@ -15,7 +15,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.67.0
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.67.0
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.67.0-devel.0.20250507144401-a64863d1e01a
-	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.7
+	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.8
 	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
 	github.com/DataDog/datadog-agent/pkg/util/log v0.67.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.42.0
@@ -178,7 +178,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.36 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.36 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.228.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.230.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.17 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.5 // indirect
