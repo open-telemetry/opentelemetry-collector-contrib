@@ -35,9 +35,9 @@ func TestLoadConfig(t *testing.T) {
 				TTL:      time.Second,
 				MaxItems: 10,
 			},
-			CacheLoop:             time.Minute,
-			StoreExpirationLoop:   2 * time.Second,
-			DatabaseNameAttribute: "db.name",
+			CacheLoop:              time.Minute,
+			StoreExpirationLoop:    2 * time.Second,
+			DatabaseNameAttributes: []string{"db.name"},
 		},
 		cfg.Connectors[component.NewID(metadata.Type)],
 	)

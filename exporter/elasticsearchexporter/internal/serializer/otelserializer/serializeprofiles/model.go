@@ -46,6 +46,8 @@ type StackTraceEvent struct {
 	ContainerName    string `json:"container.name,omitempty"`
 	K8sNamespaceName string `json:"k8s.namespace.name,omitempty"`
 	ThreadName       string `json:"process.thread.name"`
+	ExecutableName   string `json:"process.executable.name"`
+	ServiceName      string `json:"service.name,omitempty"`
 	Frequency        int64  `json:"Stacktrace.sampling_frequency"`
 	Count            uint16 `json:"Stacktrace.count"`
 }
