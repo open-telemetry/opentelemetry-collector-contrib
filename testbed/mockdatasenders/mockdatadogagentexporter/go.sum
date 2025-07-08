@@ -42,7 +42,6 @@ github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/golang/snappy v1.0.0 h1:Oy607GVXHs7RtbggtPBnr2RmDArIsAefDwvrdWvRhGs=
 github.com/golang/snappy v1.0.0/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
-github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/google/go-tpm v0.9.5 h1:ocUmnDebX54dnW+MQWGQRbdaAcJELsa6PqZhJ48KwVU=
@@ -135,8 +134,8 @@ go.opentelemetry.io/collector/config/configretry v1.35.1-0.20250707130321-ac9adb
 go.opentelemetry.io/collector/config/configretry v1.35.1-0.20250707130321-ac9adbf016bf/go.mod h1:QNnb+MCk7aS1k2EuGJMtlNCltzD7b8uC7Xel0Dxm1wQ=
 go.opentelemetry.io/collector/config/configtls v1.35.1-0.20250707130321-ac9adbf016bf h1:8zUKv0BL5j7n3D2vasp+UMXc8CEAn1wOXmD2oW4oAvY=
 go.opentelemetry.io/collector/config/configtls v1.35.1-0.20250707130321-ac9adbf016bf/go.mod h1:twLYBQkeB4r1EpGoDGiyOj6CVpxyTX9qCji/hRs75EE=
-go.opentelemetry.io/collector/confmap v1.35.0 h1:U4JDATAl4PrKWe9bGHbZkoQXmJXefWgR2DIkFvw8ULQ=
-go.opentelemetry.io/collector/confmap v1.35.0/go.mod h1:qX37ExVBa+WU4jWWJCZc7IJ+uBjb58/9oL+/ctF1Bt0=
+go.opentelemetry.io/collector/confmap v1.35.1-0.20250707130321-ac9adbf016bf h1:x3Tuo3uZ7U9RoQX/wLHmpymnTjMymPTGTA669QUGms8=
+go.opentelemetry.io/collector/confmap v1.35.1-0.20250707130321-ac9adbf016bf/go.mod h1:taTeLqkfP3tzhZFv4Et036kqiWaKAteJ88f15RiEmOU=
 go.opentelemetry.io/collector/consumer v1.35.1-0.20250707130321-ac9adbf016bf h1:2IpK/q1PSzmYRycAPGqV29Lw1Z96E9c4koLEIQoIR0U=
 go.opentelemetry.io/collector/consumer v1.35.1-0.20250707130321-ac9adbf016bf/go.mod h1:9sSPX0hDHaHqzR2uSmfLOuFK9v3e9K3HRQ+fydAjOWs=
 go.opentelemetry.io/collector/consumer/consumererror v0.129.1-0.20250707130321-ac9adbf016bf h1:iKu7PpTdsRPsfFXeVGTsdcfZO1ORyf3ujcP3BRxN9u8=
@@ -265,5 +264,3 @@ gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
-sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
-sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
