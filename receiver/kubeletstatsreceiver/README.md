@@ -18,7 +18,8 @@ The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from t
 and sends it down the metric pipeline for further processing.
 
 > [!WARNING]
-> The `receiver.kubeletstats.enableCPUUsageMetrics` feature gate was moved to stage `Beta` what results in a breaking change in metrics names.
+> The `receiver.kubeletstats.enableCPUUsageMetrics` feature gate was moved to stage `Stable`.
+> Deprecated metrics cannot be used anymore.
 > For more information which metrics are affected see [here](#metrics-deprecation).
 
 ## Metrics
@@ -342,8 +343,6 @@ The following metrics were deprecated and renamed from version `v0.125.0`:
 
 The above metrics show usage counted in CPUs and it's not a percentage of used resources.
 These metrics were previously incorrectly named using the utilization term.
-
-You can enable the usage of the deprecated metrics by disabling the `receiver.kubeletstats.enableCPUUsageMetrics` feature gate.
 
 #### `receiver.kubeletstats.enableCPUUsageMetrics` feature gate
 
