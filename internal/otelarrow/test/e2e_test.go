@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/datagen"
-	otel_assert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	"github.com/open-telemetry/otel-arrow/go/pkg/datagen"
+	otel_assert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -281,7 +281,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -627,7 +627,7 @@ func nearLimitGenFunc() MkGen {
 	const hardLimit = 1 << 20   // 1 MiB
 
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,

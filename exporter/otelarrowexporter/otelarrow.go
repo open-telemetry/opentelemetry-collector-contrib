@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
