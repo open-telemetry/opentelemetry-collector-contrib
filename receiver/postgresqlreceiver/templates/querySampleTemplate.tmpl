@@ -20,8 +20,8 @@ WHERE
       ''
     ) != ''
     AND NOT (
-{{/* we only want query that is either still running that was started before our newestQueryTimeStamp or idle but start after the newestQueryTimeStamp */}}
-      query_start < TO_TIMESTAMP({{ .newestQueryTimeStamp }})
+{{/* we only want query that is either still running that was started before our newestQueryTimestamp or idle but start after the newestQueryTimestamp */}}
+      query_start < TO_TIMESTAMP({{ .newestQueryTimestamp }})
       AND state = 'idle'
     )
 LIMIT {{ .limit }};

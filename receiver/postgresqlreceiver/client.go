@@ -796,7 +796,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 
 	if err := tmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
-		"newestQueryTimeStamp": newestQueryTimestamp,
+		"newestQueryTimestamp": newestQueryTimestamp,
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
 		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
