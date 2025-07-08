@@ -194,9 +194,6 @@ service:
 	effectiveConfig, err := os.ReadFile("../testdata/collector/effective_config.yaml")
 	require.NoError(t, err)
 
-	mergedEffectiveConfig, err := os.ReadFile("./testdata/merged_effective_config.yaml")
-	require.NoError(t, err)
-
 	mergedLocalConfig, err := os.ReadFile("./testdata/merged_local_config.yaml")
 	require.NoError(t, err)
 
@@ -230,7 +227,7 @@ service:
 			acceptsRemoteConfig: true,
 			remoteConfig:        nil,
 			wantErr:             false,
-			wantChanged:         true,
+			wantChanged:         false,
 			wantConfig:          mergedLocalConfig,
 		},
 		{
@@ -245,7 +242,7 @@ service:
 				},
 			},
 			wantErr:     false,
-			wantChanged: true,
+			wantChanged: false,
 			wantConfig:  effectiveConfig,
 		},
 		{
@@ -255,16 +252,20 @@ service:
 			remoteConfig:        nil,
 			wantErr:             false,
 			wantChanged:         false,
-			wantConfig:          mergedEffectiveConfig,
+			wantConfig:          effectiveConfig,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := Supervisor{
-				telemetrySettings:              newNopTelemetrySettings(),
-				persistentState:                &persistentState{},
-				config:                         config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: tt.acceptsRemoteConfig}, Agent: config.Agent{ConfigFiles: tt.configFiles}},
+				telemetrySettings: newNopTelemetrySettings(),
+				persistentState:   &persistentState{},
+				config: config.Supervisor{
+					Capabilities: config.Capabilities{AcceptsRemoteConfig: tt.acceptsRemoteConfig},
+					Agent:        config.Agent{ConfigFiles: tt.configFiles},
+					Storage:      config.Storage{Directory: t.TempDir()},
+				},
 				pidProvider:                    staticPIDProvider(1234),
 				hasNewConfig:                   make(chan struct{}, 1),
 				agentConfigOwnTelemetrySection: &atomic.Value{},
