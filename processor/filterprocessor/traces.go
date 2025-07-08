@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 )
 
 type filterSpanProcessor struct {

@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 )
 
 // Config defines configuration for Resource processor.
@@ -280,7 +280,6 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validateExplicitContextConfig() error {
-
 	if (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
 		return errors.New("cannot use ottl conditions and include/exclude for spans at the same time")
 	}

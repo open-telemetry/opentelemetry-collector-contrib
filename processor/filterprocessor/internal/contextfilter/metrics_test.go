@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common_test"
+package contextfilter_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter_test"
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 )
 
 var (
@@ -326,7 +327,6 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()), common.WithMetricErrorMode(tt.errorMode))
 			assert.NoError(t, err)
 
@@ -347,7 +347,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			// Apply each consumer sequentially
 			for _, consumer := range consumers {
 				if err := consumer.ConsumeMetrics(context.Background(), finalMetrics); err != nil {
-					if err == processorhelper.ErrSkipProcessingData {
+					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
 						consumeErr = err
 						break
 					}
@@ -365,7 +365,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 				return
 			}
 
-			if consumeErr != nil && consumeErr != processorhelper.ErrSkipProcessingData {
+			if consumeErr != nil && errors.Is(consumeErr, processorhelper.ErrSkipProcessingData) {
 				assert.NoError(t, consumeErr)
 				return
 			}
@@ -393,7 +393,7 @@ func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
 		{
 			condition:          `resource.attributes["host.name"] == "wrong"`,
 			filteredEverything: false,
-			want: func(md pmetric.Metrics) {
+			want: func(_ pmetric.Metrics) {
 				// Nothing should be filtered, original data remains
 			},
 		},
@@ -446,7 +446,7 @@ func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
 		{
 			condition:          `scope.version == "2"`,
 			filteredEverything: false,
-			want: func(md pmetric.Metrics) {
+			want: func(_ pmetric.Metrics) {
 				// Nothing should be filtered, original data remains
 			},
 		},

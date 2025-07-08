@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common_test"
+package contextfilter_test // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter_test"
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,78 +13,59 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/contextfilter"
 )
 
 var (
-	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pcommon.NewTimestampFromTime(TestSpanStartTime)
+	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	TestLogTimestamp = pcommon.NewTimestampFromTime(TestLogTime)
 
-	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+	TestObservedTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	TestObservedTimestamp = pcommon.NewTimestampFromTime(TestObservedTime)
 
-	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
+	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 )
 
-func TestFilterTraceProcessorWithOTTL(t *testing.T) {
+func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
 		conditions       []string
 		filterEverything bool
-		want             func(td ptrace.Traces)
+		want             func(ld plog.Logs)
 		wantErr          bool
 		errorMode        ottl.ErrorMode
 	}{
 		{
-			name: "drop spans",
+			name: "drop logs",
 			conditions: []string{
-				`span.name == "operationA"`,
+				`log.body == "operationA"`,
 			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
-					return span.Name() == "operationA"
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return log.Body().AsString() == "operationA"
 				})
 			},
 			errorMode: ottl.IgnoreError,
 		},
 		{
-			name: "drop everything by dropping all spans",
+			name: "drop everything by dropping all logs",
 			conditions: []string{
-				`IsMatch(span.name, "operation.*")`,
+				`IsMatch(log.body, "operation.*")`,
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
-		},
-		{
-			name: "drop span events",
-			conditions: []string{
-				`spanevent.name == "spanEventA"`,
-			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
-					return event.Name() == "spanEventA"
-				})
-			},
-			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
 			conditions: []string{
-				`span.name == "operationZ"`,
-				`span.span_id != nil`,
-			},
-			filterEverything: true,
-			errorMode:        ottl.IgnoreError,
-		},
-		{
-			name: "filters resource",
-			conditions: []string{
-				`resource.schema_url == "test_schema_url"`,
+				`IsMatch(log.body, "wrong name")`,
+				`IsMatch(log.body, "operation.*")`,
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
@@ -93,14 +75,22 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			conditions: []string{
 				`Substring("", 0, 100) == "test"`,
 			},
-			want:      func(_ ptrace.Traces) {},
+			want:      func(_ plog.Logs) {},
 			wantErr:   true,
 			errorMode: ottl.IgnoreError,
+		},
+		{
+			name: "filters resource",
+			conditions: []string{
+				`resource.schema_url == "test_schema_url"`,
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
 			assert.NoError(t, err)
 			got, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
 			if tt.wantErr {
@@ -108,8 +98,8 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "error parsing conditions")
-			finalTraces := constructTraces()
-			consumeErr := got.ConsumeTraces(context.Background(), finalTraces)
+			finalLogs := constructLogs()
+			consumeErr := got.ConsumeLogs(context.Background(), finalLogs)
 			switch {
 			case tt.filterEverything && !tt.wantErr:
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
@@ -117,42 +107,42 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 				assert.Error(t, consumeErr)
 			default:
 				assert.NoError(t, consumeErr)
-				exTd := constructTraces()
+				exTd := constructLogs()
 				tt.want(exTd)
-				assert.Equal(t, exTd, finalTraces)
+				assert.Equal(t, exTd, finalLogs)
 			}
 		})
 	}
 }
 
-func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
+func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
 		conditions    []common.ContextConditions
-		want          func(td ptrace.Traces)
+		want          func(td plog.Logs)
 		wantErr       bool
 		wantErrorWith string
 	}{
 		{
-			name:      "span: conditions group with error mode",
+			name:      "log: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`span.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(span.name, ".*")`}},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(log.body, ".*")`}},
 			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
-					return len(span.Name()) == 0
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return len(log.Body().AsString()) == 0
 				})
 			},
 		},
 		{
-			name:      "span: conditions group error mode does not affect default",
+			name:      "log: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`span.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`span.attributes["pass"] == ParseJSON(true)`}},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON(true)`}},
 			},
 			wantErrorWith: "expected string but got bool",
 		},
@@ -163,9 +153,9 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
 			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
-					v, _ := rs.Resource().Attributes().Get("host.name")
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+					v, _ := rl.Resource().Attributes().Get("host.name")
 					return len(v.AsString()) == 0
 				})
 			},
@@ -186,9 +176,9 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.schema_url != "test_schema_url"`}},
 			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-					return ss.SchemaUrl() != "test_schema_url"
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+					return sl.SchemaUrl() != "test_schema_url"
 				})
 			},
 		},
@@ -205,11 +195,10 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()), common.WithTraceErrorMode(tt.errorMode))
+			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()), common.WithLogErrorMode(tt.errorMode))
 			assert.NoError(t, err)
 
-			var consumers []common.TracesConsumer
+			var consumers []common.LogsConsumer
 			for _, condition := range tt.conditions {
 				consumer, err := collection.ParseContextConditions(condition)
 				if tt.wantErr {
@@ -220,13 +209,13 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				consumers = append(consumers, consumer)
 			}
 
-			finalTraces := constructTraces()
+			finalLogs := constructLogs()
 			var consumeErr error
 
 			// Apply each consumer sequentially
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeTraces(context.Background(), finalTraces); err != nil {
-					if err == processorhelper.ErrSkipProcessingData {
+				if err := consumer.ConsumeLogs(context.Background(), finalLogs); err != nil {
+					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
 						consumeErr = err
 						break
 					}
@@ -244,42 +233,42 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				return
 			}
 
-			if consumeErr != nil && consumeErr != processorhelper.ErrSkipProcessingData {
+			if consumeErr != nil && errors.Is(consumeErr, processorhelper.ErrSkipProcessingData) {
 				assert.NoError(t, consumeErr)
 				return
 			}
 
-			exTd := constructTraces()
+			exTd := constructLogs()
 			tt.want(exTd)
-			assert.Equal(t, exTd, finalTraces)
+			assert.Equal(t, exTd, finalLogs)
 		})
 	}
 }
 
-func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
+func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
 	tests := []struct {
 		condition          string
 		filteredEverything bool
-		want               func(td ptrace.Traces)
+		want               func(td plog.Logs)
 	}{
 		{
 			condition:          `resource.attributes["host.name"] == "localhost"`,
 			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
+			want: func(_ plog.Logs) {
 				// Everything should be filtered out
 			},
 		},
 		{
 			condition:          `resource.attributes["host.name"] == "wrong"`,
 			filteredEverything: false,
-			want: func(td ptrace.Traces) {
+			want: func(_ plog.Logs) {
 				// Nothing should be filtered, original data remains
 			},
 		},
 		{
 			condition:          `resource.schema_url == "test_schema_url"`,
 			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
+			want: func(_ plog.Logs) {
 				// Everything should be filtered out since schema_url matches
 			},
 		},
@@ -287,21 +276,21 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.condition, func(t *testing.T) {
-			td := constructTraces()
+			td := constructLogs()
 
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
 			assert.NoError(t, err)
 
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeTraces(context.Background(), td)
+			err = consumer.ConsumeLogs(context.Background(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
 				assert.NoError(t, err)
-				exTd := constructTraces()
+				exTd := constructLogs()
 				tt.want(exTd)
 				assert.Equal(t, exTd, td)
 			}
@@ -309,30 +298,30 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 	}
 }
 
-func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
+func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
 	tests := []struct {
 		condition          string
 		filteredEverything bool
-		want               func(td ptrace.Traces)
+		want               func(td plog.Logs)
 	}{
 		{
 			condition:          `scope.name == "scope"`,
 			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
+			want: func(_ plog.Logs) {
 				// Everything should be filtered out since scope name matches
 			},
 		},
 		{
 			condition:          `scope.version == "2"`,
 			filteredEverything: false,
-			want: func(td ptrace.Traces) {
+			want: func(_ plog.Logs) {
 				// Nothing should be filtered, original data remains
 			},
 		},
 		{
 			condition:          `scope.schema_url == "test_schema_url"`,
 			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
+			want: func(_ plog.Logs) {
 				// Everything should be filtered out since schema_url matches
 			},
 		},
@@ -340,21 +329,21 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.condition, func(t *testing.T) {
-			td := constructTraces()
+			td := constructLogs()
 
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
 			assert.NoError(t, err)
 
 			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
 			assert.NoError(t, err)
 
-			err = consumer.ConsumeTraces(context.Background(), td)
+			err = consumer.ConsumeLogs(context.Background(), td)
 
 			if tt.filteredEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
 				assert.NoError(t, err)
-				exTd := constructTraces()
+				exTd := constructLogs()
 				tt.want(exTd)
 				assert.Equal(t, exTd, td)
 			}
@@ -362,60 +351,42 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 	}
 }
 
-func constructTraces() ptrace.Traces {
-	td := ptrace.NewTraces()
-	rs0 := td.ResourceSpans().AppendEmpty()
+func constructLogs() plog.Logs {
+	td := plog.NewLogs()
+	rs0 := td.ResourceLogs().AppendEmpty()
 	rs0.SetSchemaUrl("test_schema_url")
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
-	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
 	rs0ils0.SetSchemaUrl("test_schema_url")
 	rs0ils0.Scope().SetName("scope")
-	fillSpanOne(rs0ils0.Spans().AppendEmpty())
-	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
+	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
+	fillLogTwo(rs0ils0.LogRecords().AppendEmpty())
 	return td
 }
 
-func fillSpanOne(span ptrace.Span) {
-	span.SetName("operationA")
-	span.SetSpanID(spanID)
-	span.SetParentSpanID(spanID2)
-	span.SetTraceID(traceID)
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
-	span.SetDroppedAttributesCount(1)
-	span.SetDroppedLinksCount(1)
-	span.SetDroppedEventsCount(1)
-	span.SetKind(1)
-	span.TraceState().FromRaw("new")
-	span.Attributes().PutStr("http.method", "get")
-	span.Attributes().PutStr("http.path", "/health")
-	span.Attributes().PutStr("http.url", "http://localhost/health")
-	span.Attributes().PutStr("flags", "A|B|C")
-	span.Attributes().PutStr("total.string", "123456789")
-	status := span.Status()
-	status.SetCode(ptrace.StatusCodeError)
-	status.SetMessage("status-cancelled")
-	event := span.Events().AppendEmpty()
-	event.SetName("eventA")
+func fillLogOne(log plog.LogRecord) {
+	log.Body().SetStr("operationA")
+	log.SetTimestamp(TestLogTimestamp)
+	log.SetObservedTimestamp(TestObservedTimestamp)
+	log.SetDroppedAttributesCount(1)
+	log.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
+	log.SetSeverityNumber(1)
+	log.SetTraceID(traceID)
+	log.SetSpanID(spanID)
+	log.Attributes().PutStr("http.method", "get")
+	log.Attributes().PutStr("http.path", "/health")
+	log.Attributes().PutStr("http.url", "http://localhost/health")
+	log.Attributes().PutStr("flags", "A|B|C")
+	log.Attributes().PutStr("total.string", "123456789")
 }
 
-func fillSpanTwo(span ptrace.Span) {
-	span.SetName("operationB")
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
-	span.Attributes().PutStr("http.method", "get")
-	span.Attributes().PutStr("http.path", "/health")
-	span.Attributes().PutStr("http.url", "http://localhost/health")
-	span.Attributes().PutStr("flags", "C|D")
-	span.Attributes().PutStr("total.string", "345678")
-	link0 := span.Links().AppendEmpty()
-	link0.SetDroppedAttributesCount(4)
-	link1 := span.Links().AppendEmpty()
-	link1.SetDroppedAttributesCount(4)
-	span.SetDroppedLinksCount(3)
-	status := span.Status()
-	status.SetCode(ptrace.StatusCodeError)
-	status.SetMessage("status-cancelled")
-	event := span.Events().AppendEmpty()
-	event.SetName("eventB")
+func fillLogTwo(log plog.LogRecord) {
+	log.Body().SetStr("operationB")
+	log.SetTimestamp(TestLogTimestamp)
+	log.SetObservedTimestamp(TestObservedTimestamp)
+	log.Attributes().PutStr("http.method", "get")
+	log.Attributes().PutStr("http.path", "/health")
+	log.Attributes().PutStr("http.url", "http://localhost/health")
+	log.Attributes().PutStr("flags", "C|D")
+	log.Attributes().PutStr("total.string", "345678")
 }
