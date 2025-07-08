@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/config v1.29.17
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.82.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.83.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/confmap v1.35.1-0.20250707130321-ac9adbf016bf
 	go.uber.org/goleak v1.3.0
