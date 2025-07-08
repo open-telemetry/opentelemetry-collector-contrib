@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
@@ -902,6 +903,105 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_inferred_trace"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`span.attributes["test"] == "pass"`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_inferred_metric"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				MetricConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`metric.name == "pass"`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_inferred_log"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				LogConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`log.attributes["test"] == "pass"`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_inferred_with_error_mode"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`span.attributes["test"] == "pass"`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_inferred_multiple_conditions"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceConditions: []common.ContextConditions{
+					{
+						Conditions: []string{
+							`span.attributes["test"] == "pass"`,
+							`span.attributes["test2"] == "also pass"`,
+						},
+						ErrorMode: "",
+					},
+					{
+						Conditions: []string{`span.attributes["event"] == "pass"`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "mix_trace_conditions"),
+			errorMessage: `cannot use context inferred trace conditions "trace_conditions" and the settings "traces.span", "traces.spanevent" at the same time`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "mix_metric_conditions"),
+			errorMessage: `cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "mix_log_conditions"),
+			errorMessage: `cannot use context inferred log conditions "log_conditions" and the settings "logs.log", "logs.include", "logs.exclude" at the same time`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "mix_metric_conditions_with_include"),
+			errorMessage: `cannot use context inferred metric conditions "metric_conditions" and the settings "metrics.metric", "metrics.datapoint", "metrics.include", "metrics.exclude" at the same time`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "mix_log_conditions_with_exclude"),
+			errorMessage: `cannot use context inferred log conditions "log_conditions" and the settings "logs.log", "logs.include", "logs.exclude" at the same time`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_trace"),
+			errorMessage: `condition has invalid syntax: 1:23: unexpected token "<EOF>" (expected Field ("." Field)*)`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_metric"),
+			errorMessage: `converter names must start with an uppercase letter but got 'invalid_function'`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_log"),
+			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
 		},
 	}
 
