@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,46 +20,35 @@ func Test_keepKeys(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
-			return tCtx, nil
-		},
-	}
-
 	tests := []struct {
-		name   string
-		target ottl.PMapGetter[pcommon.Map]
-		keys   []string
-		want   func(pcommon.Map)
+		name string
+		keys []string
+		want func(pcommon.Map)
 	}{
 		{
-			name:   "keep one",
-			target: target,
-			keys:   []string{"test"},
+			name: "keep one",
+			keys: []string{"test"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
-			name:   "keep two",
-			target: target,
-			keys:   []string{"test", "test2"},
+			name: "keep two",
+			keys: []string{"test", "test2"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
 			},
 		},
 		{
-			name:   "keep none",
-			target: target,
-			keys:   []string{},
-			want:   func(_ pcommon.Map) {},
+			name: "keep none",
+			keys: []string{},
+			want: func(_ pcommon.Map) {},
 		},
 		{
-			name:   "no match",
-			target: target,
-			keys:   []string{"no match"},
-			want:   func(_ pcommon.Map) {},
+			name: "no match",
+			keys: []string{"no match"},
+			want: func(_ pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {
@@ -66,10 +56,26 @@ func Test_keepKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc := keepKeys(tt.target, tt.keys)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc := keepKeys(target, tt.keys)
 
 			_, err := exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -81,9 +87,12 @@ func Test_keepKeys(t *testing.T) {
 
 func Test_keepKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -96,9 +105,12 @@ func Test_keepKeys_bad_input(t *testing.T) {
 }
 
 func Test_keepKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
