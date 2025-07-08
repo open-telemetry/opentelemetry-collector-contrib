@@ -1795,7 +1795,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 // processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
 func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig) bool {
 	if !s.config.Capabilities.AcceptsRemoteConfig {
-		s.telemetrySettings.Logger.Error("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
+		s.telemetrySettings.Logger.Warn("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
 		return false
 	}
 
