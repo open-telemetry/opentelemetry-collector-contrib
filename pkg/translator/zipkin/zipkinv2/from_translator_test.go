@@ -95,7 +95,7 @@ func TestExtractScopeTags(t *testing.T) {
 	}{
 		{
 			name:     "empty scope",
-			scopeCfg: func(il pcommon.InstrumentationScope) {},
+			scopeCfg: func(_ pcommon.InstrumentationScope) {},
 			res:      map[string]string{},
 		},
 		{
