@@ -6,10 +6,15 @@ status:
     beta: [metrics]
   distributions: [core, contrib]
   codeowners:
-    active: [Aneurysm9, rapphil, dashpole, ArthurSens]
+    active: [Aneurysm9, rapphil, dashpole, ArthurSens, ywwg]
 
 tests:
   expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"
 
 telemetry:
   metrics:
@@ -41,3 +46,45 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_writes:
+      enabled: true
+      description: Number of WAL writes
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_writes_failures:
+      enabled: true
+      description: Number of WAL writes that failed
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_reads:
+      enabled: true
+      description: Number of WAL reads
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_reads_failures:
+      enabled: true
+      description: Number of WAL reads that failed
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_write_latency:
+      enabled: true
+      description: Response latency in ms for the WAL writes.
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+    exporter_prometheusremotewrite_wal_read_latency:
+      enabled: true
+      description: Response latency in ms for the WAL reads.
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]

@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -93,13 +93,13 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	resourceAttrs := rl.Resource().Attributes()
-	resourceAttrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	resourceAttrs.PutStr(conventions.AttributeCloudAccountID, cwLog.Owner)
-	resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames).AppendEmpty().SetStr(cwLog.LogGroup)
-	resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames).AppendEmpty().SetStr(cwLog.LogStream)
-	// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogGroupNames` instead
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
 	resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
-	// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogStreamNames` instead
+	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
 	resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
 
 	sl := rl.ScopeLogs().AppendEmpty()

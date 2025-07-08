@@ -114,7 +114,7 @@ func TestLoadConfig(t *testing.T) {
 							Endpoint:  "localhost:9876",
 							Transport: confignet.TransportTypeTCP,
 						},
-						TLSSetting: &configtls.ServerConfig{
+						TLS: &configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "/test.crt",
 								KeyFile:  "/test.key",
@@ -163,7 +163,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "empty").String())
 	require.NoError(t, err)
 	err = sub.Unmarshal(cfg)
-	assert.EqualError(t, err, "empty config for Jaeger receiver")
+	assert.ErrorContains(t, err, "empty config for Jaeger receiver")
 }
 
 func TestInvalidConfig(t *testing.T) {

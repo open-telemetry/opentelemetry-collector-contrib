@@ -198,7 +198,7 @@ func newReceiver(
 	}
 
 	transport := "http"
-	if config.TLSSetting != nil {
+	if config.TLS.HasValue() {
 		transport = "https"
 	}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{

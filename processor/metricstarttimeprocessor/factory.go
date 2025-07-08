@@ -5,6 +5,7 @@ package metricstarttimeprocessor // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimemetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
@@ -41,6 +43,17 @@ func createMetricsProcessor(
 		adjustMetrics = adjuster.AdjustMetrics
 	case subtractinitial.Type:
 		adjuster := subtractinitial.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
+		adjustMetrics = adjuster.AdjustMetrics
+	case starttimemetric.Type:
+		var startTimeMetricRegex *regexp.Regexp
+		var err error
+		if rCfg.StartTimeMetricRegex != "" {
+			startTimeMetricRegex, err = regexp.Compile(rCfg.StartTimeMetricRegex)
+			if err != nil {
+				return nil, err
+			}
+		}
+		adjuster := starttimemetric.NewAdjuster(set.TelemetrySettings, startTimeMetricRegex)
 		adjustMetrics = adjuster.AdjustMetrics
 	}
 

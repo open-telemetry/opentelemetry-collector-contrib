@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -31,15 +31,15 @@ func TestContainerResource(t *testing.T) {
 	attrMap := r.Attributes()
 	require.Equal(t, 9, attrMap.Len())
 	expected := map[string]string{
-		conventions.AttributeContainerName:      "container-1",
-		conventions.AttributeContainerID:        "001",
-		attributeECSDockerName:                  "docker-container-1",
-		conventions.AttributeContainerImageName: "nginx",
-		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		conventions.AttributeContainerImageTag:  "v1.0",
-		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
-		attributeContainerStartedAt:             "2020-07-30T22:12:31.153459485Z",
-		attributeContainerKnownStatus:           "RUNNING",
+		string(conventions.ContainerNameKey):      "container-1",
+		string(conventions.ContainerIDKey):        "001",
+		attributeECSDockerName:                    "docker-container-1",
+		string(conventions.ContainerImageNameKey): "nginx",
+		attributeContainerImageID:                 "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		string(conventions.ContainerImageTagKey):  "v1.0",
+		attributeContainerCreatedAt:               "2020-07-30T22:12:29.837074927Z",
+		attributeContainerStartedAt:               "2020-07-30T22:12:31.153459485Z",
+		attributeContainerKnownStatus:             "RUNNING",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -68,16 +68,16 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	require.EqualValues(t, 2, getExitCodeAd.Int())
 	require.Equal(t, 11, attrMap.Len())
 	expected := map[string]string{
-		conventions.AttributeContainerName:      "container-1",
-		conventions.AttributeContainerID:        "001",
-		attributeECSDockerName:                  "docker-container-1",
-		conventions.AttributeContainerImageName: "nginx",
-		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		conventions.AttributeContainerImageTag:  "v1.0",
-		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
-		attributeContainerStartedAt:             "2020-07-30T22:12:31.153459485Z",
-		attributeContainerFinishedAt:            "2020-07-31T22:12:29.837074927Z",
-		attributeContainerKnownStatus:           "STOPPED",
+		string(conventions.ContainerNameKey):      "container-1",
+		string(conventions.ContainerIDKey):        "001",
+		attributeECSDockerName:                    "docker-container-1",
+		string(conventions.ContainerImageNameKey): "nginx",
+		attributeContainerImageID:                 "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		string(conventions.ContainerImageTagKey):  "v1.0",
+		attributeContainerCreatedAt:               "2020-07-30T22:12:29.837074927Z",
+		attributeContainerStartedAt:               "2020-07-30T22:12:31.153459485Z",
+		attributeContainerFinishedAt:              "2020-07-31T22:12:29.837074927Z",
+		attributeContainerKnownStatus:             "STOPPED",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -102,21 +102,21 @@ func TestTaskResource(t *testing.T) {
 	attrMap := r.Attributes()
 	require.Equal(t, 15, attrMap.Len())
 	expected := map[string]string{
-		attributeECSCluster:                        "cluster-1",
-		conventions.AttributeAWSECSTaskARN:         "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
-		attributeECSTaskID:                         "158d1c8083dd49d6b527399fd6414f5c",
-		conventions.AttributeAWSECSTaskFamily:      "task-def-family-1",
-		attributeECSTaskRevision:                   "v1.2",
-		conventions.AttributeAWSECSTaskRevision:    "v1.2",
-		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
-		attributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
-		attributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
-		attributeECSTaskKnownStatus:                "RUNNING",
-		attributeECSTaskLaunchType:                 "EC2",
-		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
-		conventions.AttributeCloudRegion:           "us-west-2",
-		conventions.AttributeCloudAccountID:        "111122223333",
-		attributeECSServiceName:                    "MyService",
+		attributeECSCluster:                          "cluster-1",
+		string(conventions.AWSECSTaskARNKey):         "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
+		attributeECSTaskID:                           "158d1c8083dd49d6b527399fd6414f5c",
+		string(conventions.AWSECSTaskFamilyKey):      "task-def-family-1",
+		attributeECSTaskRevision:                     "v1.2",
+		string(conventions.AWSECSTaskRevisionKey):    "v1.2",
+		string(conventions.CloudAvailabilityZoneKey): "us-west-2d",
+		attributeECSTaskPullStartedAt:                "2020-10-02T00:43:06.202617438Z",
+		attributeECSTaskPullStoppedAt:                "2020-10-02T00:43:06.31288465Z",
+		attributeECSTaskKnownStatus:                  "RUNNING",
+		attributeECSTaskLaunchType:                   "EC2",
+		string(conventions.AWSECSLaunchtypeKey):      conventions.AWSECSLaunchtypeEC2.Value.AsString(),
+		string(conventions.CloudRegionKey):           "us-west-2",
+		string(conventions.CloudAccountIDKey):        "111122223333",
+		attributeECSServiceName:                      "MyService",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -142,21 +142,21 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	require.Equal(t, 15, attrMap.Len())
 
 	expected := map[string]string{
-		attributeECSCluster:                        "main-cluster",
-		conventions.AttributeAWSECSTaskARN:         "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
-		attributeECSTaskID:                         "c8083dd49d6b527399fd6414",
-		conventions.AttributeAWSECSTaskFamily:      "task-def-family-1",
-		attributeECSTaskRevision:                   "v1.2",
-		conventions.AttributeAWSECSTaskRevision:    "v1.2",
-		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
-		attributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
-		attributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
-		attributeECSTaskKnownStatus:                "RUNNING",
-		attributeECSTaskLaunchType:                 "EC2",
-		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
-		conventions.AttributeCloudRegion:           "us-west-2",
-		conventions.AttributeCloudAccountID:        "803860917211",
-		attributeECSServiceName:                    "MyService",
+		attributeECSCluster:                          "main-cluster",
+		string(conventions.AWSECSTaskARNKey):         "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
+		attributeECSTaskID:                           "c8083dd49d6b527399fd6414",
+		string(conventions.AWSECSTaskFamilyKey):      "task-def-family-1",
+		attributeECSTaskRevision:                     "v1.2",
+		string(conventions.AWSECSTaskRevisionKey):    "v1.2",
+		string(conventions.CloudAvailabilityZoneKey): "us-west-2d",
+		attributeECSTaskPullStartedAt:                "2020-10-02T00:43:06.202617438Z",
+		attributeECSTaskPullStoppedAt:                "2020-10-02T00:43:06.31288465Z",
+		attributeECSTaskKnownStatus:                  "RUNNING",
+		attributeECSTaskLaunchType:                   "EC2",
+		string(conventions.AWSECSLaunchtypeKey):      conventions.AWSECSLaunchtypeEC2.Value.AsString(),
+		string(conventions.CloudRegionKey):           "us-west-2",
+		string(conventions.CloudAccountIDKey):        "803860917211",
+		attributeECSServiceName:                      "MyService",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)

@@ -30,6 +30,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchRequestRate:                   MetricConfig{Enabled: true},
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: true},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: true},
+					SqlserverCPUCount:                           MetricConfig{Enabled: true},
 					SqlserverDatabaseBackupOrRestoreRate:        MetricConfig{Enabled: true},
 					SqlserverDatabaseCount:                      MetricConfig{Enabled: true},
 					SqlserverDatabaseExecutionErrors:            MetricConfig{Enabled: true},
@@ -42,12 +43,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDeadlockRate:                       MetricConfig{Enabled: true},
 					SqlserverIndexSearchRate:                    MetricConfig{Enabled: true},
 					SqlserverLockTimeoutRate:                    MetricConfig{Enabled: true},
+					SqlserverLockWaitCount:                      MetricConfig{Enabled: true},
 					SqlserverLockWaitRate:                       MetricConfig{Enabled: true},
 					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: true},
 					SqlserverLoginRate:                          MetricConfig{Enabled: true},
 					SqlserverLogoutRate:                         MetricConfig{Enabled: true},
 					SqlserverMemoryGrantsPendingCount:           MetricConfig{Enabled: true},
 					SqlserverMemoryUsage:                        MetricConfig{Enabled: true},
+					SqlserverOsWaitDuration:                     MetricConfig{Enabled: true},
 					SqlserverPageBufferCacheFreeListStallsRate:  MetricConfig{Enabled: true},
 					SqlserverPageBufferCacheHitRatio:            MetricConfig{Enabled: true},
 					SqlserverPageCheckpointFlushRate:            MetricConfig{Enabled: true},
@@ -58,6 +61,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverPageSplitRate:                      MetricConfig{Enabled: true},
 					SqlserverProcessesBlocked:                   MetricConfig{Enabled: true},
 					SqlserverReplicaDataRate:                    MetricConfig{Enabled: true},
+					SqlserverResourcePoolDiskOperations:         MetricConfig{Enabled: true},
 					SqlserverResourcePoolDiskThrottledReadRate:  MetricConfig{Enabled: true},
 					SqlserverResourcePoolDiskThrottledWriteRate: MetricConfig{Enabled: true},
 					SqlserverTableCount:                         MetricConfig{Enabled: true},
@@ -74,6 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverUserConnectionCount:                MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					HostName:              ResourceAttributeConfig{Enabled: true},
 					ServerAddress:         ResourceAttributeConfig{Enabled: true},
 					ServerPort:            ResourceAttributeConfig{Enabled: true},
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
@@ -89,6 +94,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchRequestRate:                   MetricConfig{Enabled: false},
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: false},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: false},
+					SqlserverCPUCount:                           MetricConfig{Enabled: false},
 					SqlserverDatabaseBackupOrRestoreRate:        MetricConfig{Enabled: false},
 					SqlserverDatabaseCount:                      MetricConfig{Enabled: false},
 					SqlserverDatabaseExecutionErrors:            MetricConfig{Enabled: false},
@@ -101,12 +107,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDeadlockRate:                       MetricConfig{Enabled: false},
 					SqlserverIndexSearchRate:                    MetricConfig{Enabled: false},
 					SqlserverLockTimeoutRate:                    MetricConfig{Enabled: false},
+					SqlserverLockWaitCount:                      MetricConfig{Enabled: false},
 					SqlserverLockWaitRate:                       MetricConfig{Enabled: false},
 					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: false},
 					SqlserverLoginRate:                          MetricConfig{Enabled: false},
 					SqlserverLogoutRate:                         MetricConfig{Enabled: false},
 					SqlserverMemoryGrantsPendingCount:           MetricConfig{Enabled: false},
 					SqlserverMemoryUsage:                        MetricConfig{Enabled: false},
+					SqlserverOsWaitDuration:                     MetricConfig{Enabled: false},
 					SqlserverPageBufferCacheFreeListStallsRate:  MetricConfig{Enabled: false},
 					SqlserverPageBufferCacheHitRatio:            MetricConfig{Enabled: false},
 					SqlserverPageCheckpointFlushRate:            MetricConfig{Enabled: false},
@@ -117,6 +125,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverPageSplitRate:                      MetricConfig{Enabled: false},
 					SqlserverProcessesBlocked:                   MetricConfig{Enabled: false},
 					SqlserverReplicaDataRate:                    MetricConfig{Enabled: false},
+					SqlserverResourcePoolDiskOperations:         MetricConfig{Enabled: false},
 					SqlserverResourcePoolDiskThrottledReadRate:  MetricConfig{Enabled: false},
 					SqlserverResourcePoolDiskThrottledWriteRate: MetricConfig{Enabled: false},
 					SqlserverTableCount:                         MetricConfig{Enabled: false},
@@ -133,6 +142,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverUserConnectionCount:                MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					HostName:              ResourceAttributeConfig{Enabled: false},
 					ServerAddress:         ResourceAttributeConfig{Enabled: false},
 					ServerPort:            ResourceAttributeConfig{Enabled: false},
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: false},
@@ -161,6 +171,16 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	return cfg
 }
 
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
 func TestResourceAttributesConfig(t *testing.T) {
 	tests := []struct {
 		name string
@@ -173,6 +193,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				HostName:              ResourceAttributeConfig{Enabled: true},
 				ServerAddress:         ResourceAttributeConfig{Enabled: true},
 				ServerPort:            ResourceAttributeConfig{Enabled: true},
 				SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
@@ -183,6 +204,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				HostName:              ResourceAttributeConfig{Enabled: false},
 				ServerAddress:         ResourceAttributeConfig{Enabled: false},
 				ServerPort:            ResourceAttributeConfig{Enabled: false},
 				SqlserverComputerName: ResourceAttributeConfig{Enabled: false},

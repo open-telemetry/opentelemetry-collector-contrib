@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
 			Index:      splunk.DefaultIndexLabel,
-			Host:       conventions.AttributeHostName,
+			Host:       string(conventions.HostNameKey),
 		},
 		RawPath:    splunk.DefaultRawPath,
 		HealthPath: splunk.DefaultHealthPath,

@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -224,7 +225,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverEnabled = false // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.TLSSetting.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.TLS.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
@@ -235,10 +236,8 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
-	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
-		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
-	} else {
-		params.Logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention.")
+	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 	}
 	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
@@ -255,6 +254,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
-	tracelog.SetLogger(&datadog.Zaplogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
+	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }

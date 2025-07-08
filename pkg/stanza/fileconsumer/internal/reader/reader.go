@@ -25,6 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 )
 
+const gzipExtension = ".gz"
+
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
 	Offset          int64
@@ -33,6 +35,7 @@ type Metadata struct {
 	HeaderFinalized bool
 	FlushState      flush.State
 	TokenLenState   tokenlen.State
+	FileType        string
 }
 
 // Reader manages a single file
@@ -69,30 +72,30 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		// We need to create a gzip reader each time ReadToEnd is called because the underlying
-		// SectionReader can only read a fixed window (from previous offset to EOF).
-		info, err := r.file.Stat()
+		currentEOF, err := r.createGzipReader()
 		if err != nil {
-			r.set.Logger.Error("failed to stat", zap.Error(err))
 			return
 		}
-		currentEOF := info.Size()
-
-		// use a gzip Reader with an underlying SectionReader to pick up at the last
-		// offset of a gzip compressed file
-		gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
-			}
-			return
-		}
-		r.reader = gzipReader
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
 		// we need to set the offset to the end of the file.
 		defer func() {
 			r.Offset = currentEOF
 		}()
+	case "auto":
+		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
+		if r.FileType == gzipExtension {
+			currentEOF, err := r.createGzipReader()
+			if err != nil {
+				return
+			}
+			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+			// we need to set the offset to the end of the file.
+			defer func() {
+				r.Offset = currentEOF
+			}()
+		} else {
+			r.reader = r.file
+		}
 	default:
 		r.reader = r.file
 	}
@@ -115,6 +118,29 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 
 	r.readContents(ctx)
+}
+
+// createGzipReader creates gzip reader and returns the file offset
+func (r *Reader) createGzipReader() (int64, error) {
+	// We need to create a gzip reader each time ReadToEnd is called because the underlying
+	// SectionReader can only read a fixed window (from previous offset to EOF).
+	info, err := r.file.Stat()
+	if err != nil {
+		r.set.Logger.Error("failed to stat", zap.Error(err))
+		return 0, err
+	}
+	currentEOF := info.Size()
+	// use a gzip Reader with an underlying SectionReader to pick up at the last
+	// offset of a gzip compressed file
+	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+	if err != nil {
+		if !errors.Is(err, io.EOF) {
+			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
+		}
+		return 0, err
+	}
+	r.reader = gzipReader
+	return currentEOF, nil
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
@@ -194,7 +220,10 @@ func (r *Reader) readContents(ctx context.Context) {
 	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc)
 
 	tokenBodies := make([][]byte, r.maxBatchSize)
+	tokenOffsets := make([]int64, r.maxBatchSize+1)
+
 	numTokensBatched := 0
+	tokenOffsets[0] = r.Offset
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -212,7 +241,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets)
 				if err != nil {
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
 				}
@@ -223,6 +252,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		var err error
 		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
+		tokenOffsets[numTokensBatched+1] = s.Pos()
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -232,11 +262,11 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
-			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum); err != nil {
+			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			numTokensBatched = 0
-			r.Offset = s.Pos()
+			r.Offset, tokenOffsets[0] = s.Pos(), s.Pos()
 		}
 	}
 }
@@ -294,7 +324,7 @@ func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return false
 	}
@@ -317,7 +347,7 @@ func (r *Reader) updateFingerprint() {
 	if r.file == nil {
 		return
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return
 	}

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -46,12 +47,13 @@ type Factory struct {
 	Attributes              attrs.Resolver
 	DeleteAtEOF             bool
 	IncludeFileRecordNumber bool
+	IncludeFileRecordOffset bool
 	Compression             string
 	AcquireFSLock           bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.NewFromFile(file, f.FingerprintSize)
+	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "")
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -59,6 +61,11 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	if err != nil {
 		return nil, err
 	}
+	var filetype string
+	if filepath.Ext(file.Name()) == gzipExtension {
+		filetype = gzipExtension
+	}
+
 	m := &Metadata{
 		Fingerprint:    fp,
 		FileAttributes: attributes,
@@ -66,6 +73,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		FlushState: flush.State{
 			LastDataChange: time.Now(),
 		},
+		FileType: filetype,
 	}
 	return f.NewReaderFromMetadata(file, m)
 }
@@ -91,7 +99,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 
 	if r.Fingerprint.Len() > r.fingerprintSize {
 		// User has reconfigured fingerprint_size
-		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
+		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "")
 		if rereadErr != nil {
 			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}

@@ -6,6 +6,7 @@ cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
+confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
 connector/countconnector connector/count
@@ -22,7 +23,6 @@ connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
@@ -66,6 +66,7 @@ exporter/stefexporter exporter/stef
 exporter/sumologicexporter exporter/sumologic
 exporter/syslogexporter exporter/syslog
 exporter/tencentcloudlogserviceexporter exporter/tencentcloudlogservice
+exporter/tinybirdexporter exporter/tinybird
 exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
@@ -113,7 +114,6 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
-extension/tpmextension extension/tpm
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -140,6 +140,7 @@ pkg/core/xidutils pkg/core/xidutils
 pkg/datadog pkg/datadog
 pkg/experimentalmetricmetadata pkg/experimentalmetricmetadata
 pkg/golden pkg/golden
+pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/pdatatest pkg/pdatatest
@@ -234,6 +235,7 @@ receiver/hostmetricsreceiver/internal/scraper/filesystemscraper receiver/hostmet
 receiver/hostmetricsreceiver/internal/scraper/loadscraper receiver/hostmetrics/internal/scraper/loadscraper
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper receiver/hostmetrics/internal/scraper/memory
 receiver/hostmetricsreceiver/internal/scraper/networkscraper receiver/hostmetrics/internal/scraper/network
+receiver/hostmetricsreceiver/internal/scraper/nfsscraper receiver/hostmetrics/internal/scraper/nfsscraper
 receiver/hostmetricsreceiver/internal/scraper/pagingscraper receiver/hostmetrics/internal/scraper/paging
 receiver/hostmetricsreceiver/internal/scraper/processesscraper receiver/hostmetrics/internal/scraper/processes
 receiver/hostmetricsreceiver/internal/scraper/processscraper receiver/hostmetrics/internal/scraper/process
@@ -316,6 +318,7 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
 exporter/opensearchexporter exporter/opensearch

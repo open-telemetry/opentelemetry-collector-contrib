@@ -3,8 +3,6 @@ exporters:
     path: ./foo
   nop:
 extensions:
-  health_check:
-    endpoint: localhost:8000
   opamp:
     capabilities:
       reports_available_components: false
@@ -25,7 +23,6 @@ receivers:
   nop:
 service:
   extensions:
-    - health_check
     - opamp
   pipelines:
     traces:
@@ -36,5 +33,7 @@ service:
   telemetry:
     logs:
       encoding: json
+      error_output_paths: ["stderr"]
+      output_paths: ["stdout"]
     resource:
       service.name: otelcol

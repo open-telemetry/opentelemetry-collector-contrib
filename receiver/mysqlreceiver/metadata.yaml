@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [antonblock]
+    active: [antonblock, ishleenk17]
     seeking_new: true
     emeritus: [djaglowski]
 
@@ -487,6 +487,15 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
+      aggregation_temporality: cumulative
+  mysql.max_used_connections:
+    enabled: false
+    description: Maximum number of connections used simultaneously since the server started.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
       aggregation_temporality: cumulative
   mysql.connection.errors:
     enabled: false
