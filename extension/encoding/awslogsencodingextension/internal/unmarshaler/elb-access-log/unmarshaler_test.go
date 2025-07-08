@@ -102,7 +102,7 @@ func TestUnmarshallElbAccessLogs(t *testing.T) {
 			}
 			require.NoError(t, err)
 			// uncomment this to generate the expected file
-			golden.WriteLogs(t, filepath.Join(filesDirectory, test.logsExpectedFilename), logs)
+			// golden.WriteLogs(t, filepath.Join(filesDirectory, test.logsExpectedFilename), logs)
 
 			if test.logsExpectedFilename == "" {
 				return
