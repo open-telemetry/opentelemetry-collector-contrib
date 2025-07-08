@@ -6,7 +6,7 @@ require (
 	github.com/maxmind/MaxMind-DB v0.0.0-20240605211347-880f6b4b5eb6
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.129.0
-	github.com/oschwald/geoip2-golang v1.11.0
+	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250707130321-ac9adbf016bf
