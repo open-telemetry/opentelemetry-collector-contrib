@@ -391,7 +391,7 @@ events:
 
 ### db.server.top_query
 
-top query
+Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
 
 #### Attributes
 
