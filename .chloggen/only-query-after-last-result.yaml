@@ -7,9 +7,7 @@ change_type: enhancement
 component: postgresqlreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: |
-  the current implementation scrape query samples from all the time, which is not very efficiency.
-  this changes it to only scrape the query that is newer than the previous oldest query.
+note: Only scrape the query samples that are newer than last scraped
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [40622]
