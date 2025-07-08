@@ -18,7 +18,12 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
+- ELB access logs:
+   - [Classic Load Balancer (CLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
+   - [Application Load Balancer (ALB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html)
+   - [Network Load Balancer (NLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html)
  - (More to be added later.)
+
 
 Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
@@ -55,6 +60,13 @@ Example for CloudTrail logs:
 extensions:
   awslogs_encoding/cloudtrail:
     format: cloudtrail_log
+```
+
+Example for ELB access logs:
+```yaml
+extensions:
+  awslogs_encoding/elb_access_log:
+    format: elb_access_log
 ```
 
 #### VPC flow log record fields
@@ -213,5 +225,62 @@ extensions:
 | `userIdentity.userId`                 | `user.id`                                                     |
 | `userIdentity.userName`               | `user.name`                                                   |
 
-
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
+
+#### ELB Access Log Fields
+
+ELB access log record fields are mapped this way in the resulting OpenTelemetry log:
+
+##### Application Load Balancer (ALB)
+
+
+| **AWS Field**         | **OpenTelemetry Field**                                                                 |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| Provider              | `cloud.provider`                                                                          |
+| Resource              | `cloud.resource_id`                                                                       |
+| Protocol              | `network.protocol.name`<br> `network.protocol.version`                                   |
+| Client IP             | `client.address`                                                                          |
+| Request Method        | `http.request.method`                                                                     |
+| Request URL           | `url.full`                                                                                |
+| Client Port           | `client.port`                                                                             |
+| Request Size          | `http.request.size`                                                                       |
+| Response Size         | `http.response.size`                                                                      |
+| ELB Status            | `aws.elb.status.code`                                                                     |
+| TLS Version           | `tls.protocol.version`                                                                    |
+| Cipher Suite          | `tls.cipher`                                                                              |
+
+##### Network Load Balancer (NLB)
+
+
+| **AWS Field**         | **OpenTelemetry Field(s)**                                                                 |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| Provider              | `cloud.provider`                                                                          |
+| Resource              | `cloud.resource_id`                                                                       |
+| Protocol              | `network.protocol.name`<br>`network.protocol.version`                                   |
+| Client IP             | `client.address`                                                                          |
+| Client Port           | `client.port`                                                                             |
+| Request Size          | `http.request.size`                                                                       |
+| Response Size         | `http.response.size`                                                                      |
+| Listener ARN          | `tls.listener.resource_id`                                                                |
+| TLS Version           | `tls.protocol.version`                                                                    |
+| Cipher Suite          | `tls.cipher`                                                                              |
+
+
+##### Classic Load Balancer (CLB)
+
+
+| **AWS Field**         | **OpenTelemetry Field(s)**                                                                 |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| Provider              | `cloud.provider`                                                                          |
+| Resource              | `cloud.resource_id`                                                                       |
+| Client IP             | `client.address`                                                                          |
+| Request Method        | `http.request.method`                                                                     |
+| Request URL           | `url.full`                                                                                |
+| Protocol              | `network.protocol.name`<br> `network.protocol.version`                                   |
+| Client Port           | `client.port`                                                                             |
+| Request Size          | `http.request.size`                                                                       |
+| Response Size         | `http.response.size`                                                                      |
+| TLS Version           | `tls.protocol.version`                                                                    |
+| Cipher Suite          | `tls.cipher`                                                                              |
+| ELB Status            | `aws.elb.status.code`                                                                     |
+| Backend Status        | `aws.elb.backend.status.code`                                                             |

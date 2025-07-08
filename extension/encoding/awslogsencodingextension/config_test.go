@@ -94,6 +94,15 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "elb_access_log"),
+			expected: &Config{
+				Format: formatELBAccessLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					FileFormat: fileFormatPlainText,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
