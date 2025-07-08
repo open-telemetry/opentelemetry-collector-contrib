@@ -67,6 +67,7 @@ components:
         - ack
         - asapclient
         - awscloudwatchmetricstreams_encoding
+        - awslogs_encoding
         - awsproxy
         - azureauth
         - basicauth

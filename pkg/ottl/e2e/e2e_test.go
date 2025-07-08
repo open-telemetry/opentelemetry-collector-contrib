@@ -1222,6 +1222,14 @@ func Test_e2e_converters(t *testing.T) {
 	))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "info")
+      },
+    },
+    {
+			statement: `set(attributes["list"], Sort(Keys({"foo": "bar", "baz": "foo"})))`,
+			want: func(tCtx ottllog.TransformContext) {
+				attributes := tCtx.GetLogRecord().Attributes().PutEmptySlice("list")
+				attributes.AppendEmpty().SetStr("baz")
+				attributes.AppendEmpty().SetStr("foo")
 			},
 		},
 	}
