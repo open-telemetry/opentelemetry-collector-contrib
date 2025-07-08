@@ -93,7 +93,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	for i := 0; i < profile.Sample().Len(); i++ {
 		sample := profile.Sample().At(i)
 
-		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
+		frames, frameTypes, leafFrame, err := stackFrames(dic, profile, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -140,12 +140,11 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			t := sample.TimestampsUnixNano().At(j)
 			event.TimeStamp = newUnixTime64(t)
 
+			count := 1
 			if j < sample.Value().Len() {
-				event.Count = uint16(sample.Value().At(j))
-			} else {
-				event.Count = 1 // restore default
+				count = int(sample.Value().At(j))
 			}
-			if event.Count > 0 {
+			for range count {
 				stackPayload = append(stackPayload, StackPayload{
 					StackTraceEvent: event,
 				})
@@ -218,31 +217,31 @@ func isFrameSymbolized(frame StackFrame) bool {
 
 func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64, hostMetadata map[string]string) StackTraceEvent {
 	event := StackTraceEvent{
-		EcsVersion:   EcsVersion{V: EcsVersionString},
-		HostID:       hostMetadata[string(semconv.HostIDKey)],
-		StackTraceID: traceID,
-		Count:        1, // TODO: Check whether count can be dropped with nanosecond timestamps
-		Frequency:    frequency,
+		EcsVersion:       EcsVersion{V: EcsVersionString},
+		HostID:           hostMetadata[string(semconv.HostIDKey)],
+		StackTraceID:     traceID,
+		ContainerID:      hostMetadata[string(semconv.ContainerIDKey)],
+		ContainerName:    hostMetadata[string(semconv.ContainerNameKey)],
+		PodName:          hostMetadata[string(semconv.K8SPodNameKey)],
+		K8sNamespaceName: hostMetadata[string(semconv.K8SNamespaceNameKey)],
+		Count:            1, // Elasticsearch v9.2+ doesn't read the count value any more.
+		Frequency:        frequency,
 	}
 
 	// Store event-specific attributes.
-	for i := 0; i < sample.AttributeIndices().Len(); i++ {
-		if dic.AttributeTable().Len() < i {
+	for _, idx := range sample.AttributeIndices().All() {
+		if dic.AttributeTable().Len() < int(idx) {
 			continue
 		}
-		attr := dic.AttributeTable().At(i)
+		attr := dic.AttributeTable().At(int(idx))
 
 		switch attribute.Key(attr.Key()) {
-		case semconv.HostIDKey:
-			event.HostID = attr.Value().AsString()
-		case semconv.ContainerIDKey:
-			event.ContainerID = attr.Value().AsString()
-		case semconv.K8SPodNameKey:
-			event.PodName = attr.Value().AsString()
-		case semconv.ContainerNameKey:
-			event.ContainerName = attr.Value().AsString()
 		case semconv.ThreadNameKey:
 			event.ThreadName = attr.Value().AsString()
+		case semconv.ProcessExecutableNameKey:
+			event.ExecutableName = attr.Value().AsString()
+		case semconv.ServiceNameKey:
+			event.ServiceName = attr.Value().AsString()
 		}
 	}
 
@@ -271,10 +270,10 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	}
 }
 
-func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *libpf.FrameID, error) {
+func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *libpf.FrameID, error) {
 	frames := make([]StackFrame, 0, sample.LocationsLength())
 
-	locations := getLocations(dic, sample)
+	locations := getLocations(dic, profile, sample)
 	totalFrames := 0
 	for _, location := range locations {
 		totalFrames += location.Line().Len()
@@ -446,11 +445,17 @@ func stackTraceID(frames []StackFrame) (string, error) {
 	return traceHash.Base64(), nil
 }
 
-func getLocations(dic pprofile.ProfilesDictionary, sample pprofile.Sample) []pprofile.Location {
+func getLocations(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) []pprofile.Location {
 	locations := make([]pprofile.Location, 0, sample.LocationsLength())
-	lastIndex := min(int(sample.LocationsStartIndex()+sample.LocationsLength()), dic.LocationTable().Len())
-	for i := int(sample.LocationsStartIndex()); i < lastIndex; i++ {
-		locations = append(locations, dic.LocationTable().At(i))
+
+	firstIndexPos := int(sample.LocationsStartIndex())
+	lastIndexPos := int(sample.LocationsStartIndex() + sample.LocationsLength())
+	lastIndexPos = min(lastIndexPos, profile.LocationIndices().Len())
+	for i := firstIndexPos; i < lastIndexPos; i++ {
+		locationIndex := int(profile.LocationIndices().At(i))
+		if locationIndex < dic.LocationTable().Len() {
+			locations = append(locations, dic.LocationTable().At(locationIndex))
+		}
 	}
 	return locations
 }
