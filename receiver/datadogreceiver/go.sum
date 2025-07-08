@@ -4,8 +4,6 @@ github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.67.0 h1:2mE
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.67.0/go.mod h1:ejJHsyJTG7NU6c6TDbF7dmckD3g+AUGSdiSXy+ZyaCE=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.67.0 h1:NcvyDVIUA0NbBDbp7QJnsYhoBv548g8bXq886795mCQ=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.67.0/go.mod h1:1oPcs3BUTQhiTkmk789rb7ob105MxNV6OuBa28BdukQ=
-github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.7 h1:aeyPBEdG4m0wMLkhGScXWri4xS6JjLm3r4wOSvBlVh4=
-github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.7/go.mod h1:TVs0u8VKvl2zOCpL9MYhEJqI682sF6pb22ymSnbKuXo=
 github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.8 h1:6vnikfqU48s4oxn9mydj+k+KlFOcLXXIWAY9q/EDgK4=
 github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.8/go.mod h1:TVs0u8VKvl2zOCpL9MYhEJqI682sF6pb22ymSnbKuXo=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.67.0 h1:tB+H/TFlFl97ON6v+r9PXPrM+X5qUTc+UPAWF9pA0Fc=
