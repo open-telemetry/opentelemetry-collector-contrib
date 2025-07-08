@@ -278,12 +278,6 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 	}
 
 	mf := t.getOrCreateMetricFamily(*rKey, getScopeID(l), mn)
-
-	// Workaround for https://github.com/prometheus/prometheus/issues/16217
-	if !t.enableNativeHistograms && mf.mtype == pmetric.MetricTypeHistogram && l.Get(model.MetricNameLabel) == mf.name {
-		return 0, nil
-	}
-
 	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
 
 	return 0, nil
