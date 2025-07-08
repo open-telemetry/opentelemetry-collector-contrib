@@ -505,7 +505,7 @@ func TestExporterLogs(t *testing.T) {
 					expectedRetries = defaultMaxRetries
 				}
 
-				var attempts atomic.Int32
+				var attempts atomic.Int64
 				rec := newBulkRecorder()
 				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 					// always return error, and assert that the number of attempts is expected, not more, not less.
@@ -535,7 +535,7 @@ func TestExporterLogs(t *testing.T) {
 				require.ErrorAs(t, err, &errFlushFailed)
 
 				assert.Equal(t, 0, rec.countItems())
-				assert.Equal(t, expectedRetries+1, int(attempts.Load())) // initial request + retries
+				assert.Equal(t, int64(expectedRetries+1), attempts.Load()) // initial request + retries
 			})
 		}
 	})
@@ -549,7 +549,7 @@ func TestExporterLogs(t *testing.T) {
 					expectedRetries = defaultMaxRetries
 				}
 
-				var attempts atomic.Int32
+				var attempts atomic.Int64
 				rec := newBulkRecorder()
 				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 					// always return error, and assert that the number of attempts is expected, not more, not less.
@@ -570,12 +570,12 @@ func TestExporterLogs(t *testing.T) {
 				mustSendLogRecords(t, exporter, plog.NewLogRecord()) // as sync bulk indexer is used, retries are not guaranteed to finish
 
 				assert.Eventually(t, func() bool {
-					return expectedRetries+1 == int(attempts.Load())
+					return int64(expectedRetries+1) == attempts.Load()
 				}, time.Second, 5*time.Millisecond)
 
 				// assert that it does not retry in async more than expected
 				time.Sleep(20 * time.Millisecond)
-				assert.Equal(t, expectedRetries+1, int(attempts.Load()))
+				assert.Equal(t, int64(expectedRetries+1), attempts.Load())
 				assert.Equal(t, 0, rec.countItems())
 			})
 		}
