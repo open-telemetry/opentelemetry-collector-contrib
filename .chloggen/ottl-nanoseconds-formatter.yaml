@@ -8,6 +8,9 @@ component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Fixes the OTTL nanoseconds formatter to correctly handle 9 digits of nanoseconds, ensuring accurate time formatting and parsing.
+Places that import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils" are likely affected by this change. 
+For example, `FormatTime`and `Time` OTTL functions are affected. See [here](https://github.com/search?q=repo%3Aopen-telemetry%2Fopentelemetry-collector-contrib+%22github.com%2Fopen-telemetry%2Fopentelemetry-collector-contrib%2Finternal%2Fcoreinternal%2Ftimeutils%22&type=code) for a full list of affected functionalities.
+
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [41144]
