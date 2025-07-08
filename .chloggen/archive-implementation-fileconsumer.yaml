@@ -7,7 +7,7 @@ change_type: enhancement
 component: filelogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a new setting, `polls_to_archive`, control the number of poll cycles to store on disk, rather than being discarded. 
+note: Add a new setting, `polls_to_archive`, to control the number of poll cycles to store on disk, rather than being discarded. 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32727]
