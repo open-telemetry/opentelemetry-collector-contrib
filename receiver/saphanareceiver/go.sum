@@ -1,5 +1,3 @@
-github.com/SAP/go-hdb v1.13.9 h1:AqLOfdxL9pFI08ByOZdYTd/ZD3+Y8qmgMnljW/vOGxI=
-github.com/SAP/go-hdb v1.13.9/go.mod h1:FaFpT7GJwxdou1weby+gb+K3psukpAspvln/LJzVFFE=
 github.com/SAP/go-hdb v1.13.11 h1:DhHGUfeeFS9BlgGAtw+Ln24PCJ5T0IeNwwfMSxC677M=
 github.com/SAP/go-hdb v1.13.11/go.mod h1:FaFpT7GJwxdou1weby+gb+K3psukpAspvln/LJzVFFE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
