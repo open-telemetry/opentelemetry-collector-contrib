@@ -538,7 +538,6 @@ func TestExporterLogs(t *testing.T) {
 				assert.Equal(t, expectedRetries+1, attempts) // initial request + retries
 			})
 		}
-
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
