@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func testLogsJSONExporter(t *testing.T, endpoint string) {
+func testLogsJSONExporter(t *testing.T, endpoint string, mapBody bool) {
 	overrideJSONStringSetting := func(config *Config) {
 		config.ConnectionParams["output_format_native_write_json_as_string"] = "1"
 	}
@@ -22,7 +22,7 @@ func testLogsJSONExporter(t *testing.T, endpoint string) {
 		config.LogsTableName = "otel_logs_json"
 	}
 	exporter := newTestLogsJSONExporter(t, endpoint, overrideJSONStringSetting, overrideLogsTableName)
-	verifyExportLogsJSON(t, exporter)
+	verifyExportLogsJSON(t, exporter, mapBody)
 }
 
 func newTestLogsJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsJSONExporter {
@@ -34,9 +34,12 @@ func newTestLogsJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *lo
 	return exporter
 }
 
-func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter) {
+func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody bool) {
+	err := exporter.db.Exec(context.Background(), "TRUNCATE otel_int_test.otel_logs_json")
+	require.NoError(t, err)
+
 	pushConcurrentlyNoError(t, func() error {
-		return exporter.pushLogsData(context.Background(), simpleLogs(5000))
+		return exporter.pushLogsData(context.Background(), simpleLogs(5000, mapBody))
 	})
 
 	type log struct {
@@ -73,12 +76,15 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter) {
 		ScopeAttributes:    `{"lib":"clickhouse"}`,
 		LogAttributes:      `{"service":{"namespace":"default"}}`,
 	}
+	if mapBody {
+		expectedLog.Body = `{"error":"message"}`
+	}
 
 	row := exporter.db.QueryRow(context.Background(), "SELECT * FROM otel_int_test.otel_logs_json")
 	require.NoError(t, row.Err())
 
 	var actualLog log
-	err := row.ScanStruct(&actualLog)
+	err = row.ScanStruct(&actualLog)
 	require.NoError(t, err)
 
 	require.Equal(t, expectedLog, actualLog)

@@ -129,10 +129,18 @@ func TestIntegration(t *testing.T) {
 
 	t.Run("TestLogsExporter", func(t *testing.T) {
 		t.Run("Native", func(t *testing.T) {
-			testLogsExporter(t, nativeEndpoint)
+			testLogsExporter(t, nativeEndpoint, false)
 		})
 		t.Run("HTTP", func(t *testing.T) {
-			testLogsExporter(t, httpEndpoint)
+			testLogsExporter(t, httpEndpoint, false)
+		})
+	})
+	t.Run("TestLogsExporter Map Body", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsExporter(t, nativeEndpoint, true)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsExporter(t, httpEndpoint, true)
 		})
 	})
 	t.Run("TestTracesExporter", func(t *testing.T) {
@@ -153,10 +161,18 @@ func TestIntegration(t *testing.T) {
 	})
 	t.Run("TestLogsJSONExporter", func(t *testing.T) {
 		t.Run("Native", func(t *testing.T) {
-			testLogsJSONExporter(t, nativeEndpoint)
+			testLogsJSONExporter(t, nativeEndpoint, false)
 		})
 		t.Run("HTTP", func(t *testing.T) {
-			testLogsJSONExporter(t, httpEndpoint)
+			testLogsJSONExporter(t, httpEndpoint, false)
+		})
+	})
+	t.Run("TestLogsJSONExporter Map Body", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsJSONExporter(t, nativeEndpoint, true)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsJSONExporter(t, httpEndpoint, true)
 		})
 	})
 	t.Run("TestTracesJSONExporter", func(t *testing.T) {
