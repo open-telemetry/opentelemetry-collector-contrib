@@ -97,7 +97,7 @@ require (
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/time v0.11.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
 	sigs.k8s.io/yaml v1.5.0 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	gitlab.com/gitlab-org/api/client-go v0.131.0
+	gitlab.com/gitlab-org/api/client-go v0.134.0
 	go.opentelemetry.io/collector/client v1.35.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250707130321-ac9adbf016bf // indirect
