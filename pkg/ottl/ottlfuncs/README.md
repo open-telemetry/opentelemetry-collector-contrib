@@ -915,7 +915,7 @@ If either `time` or `format` are nil, an error is returned. The parser used is t
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
@@ -2153,7 +2153,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
