@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.2.0
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
 	github.com/knadh/koanf/v2 v2.2.1
-	github.com/open-telemetry/opamp-go v0.19.0
+	github.com/open-telemetry/opamp-go v0.20.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.129.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250703115036-26a1aed9c04b
