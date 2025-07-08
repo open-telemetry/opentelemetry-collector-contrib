@@ -5,6 +5,7 @@
 | Stability     | [development]: profiles   |
 |               | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
@@ -503,6 +504,12 @@ as tags.
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
+
+## Warnings
+
+- **Memory consumption**: Since the processor fetches and caches the K8s metadata for the resources
+   of the node it is on, it consumes more memory than other processors. That consumption is compounded
+   if users don't filter down to only the metadata for the node the processor is running on.
 
 ## Feature Gate
 
