@@ -507,7 +507,7 @@ func TestExporterLogs(t *testing.T) {
 
 				attempts := 0
 				rec := newBulkRecorder()
-				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 					// always return error, and assert that the number of attempts is expected, not more, not less.
 					attempts++
 					return nil, &httpTestError{status: http.StatusServiceUnavailable, message: "oops"}
@@ -551,7 +551,7 @@ func TestExporterLogs(t *testing.T) {
 
 				attempts := 0
 				rec := newBulkRecorder()
-				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 					// always return error, and assert that the number of attempts is expected, not more, not less.
 					attempts++
 					return nil, &httpTestError{status: http.StatusServiceUnavailable, message: "oops"}
