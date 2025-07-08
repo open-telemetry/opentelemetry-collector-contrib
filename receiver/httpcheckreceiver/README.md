@@ -26,6 +26,8 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
+For HTTPS endpoints, the receiver will also collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability.
+
 ## Configuration
 
 The following configuration settings are available:
@@ -39,6 +41,7 @@ Each target has the following properties:
 - `endpoint` (optional): A single URL to be monitored.
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
+- `collect_tls` (optional, default: `true`): Whether to collect TLS certificate metrics for HTTPS endpoints.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
@@ -62,6 +65,9 @@ receivers:
         endpoint: "http://localhost:8080/hello"
         headers:
           Authorization: "Bearer <your_bearer_token>"
+      - method: "GET"
+        endpoint: "https://example.com"
+        collect_tls: false  # Disable TLS certificate collection for this target
 processors:
   batch:
     send_batch_max_size: 1000

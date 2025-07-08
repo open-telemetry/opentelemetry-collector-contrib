@@ -5,9 +5,12 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -31,6 +34,64 @@ type httpcheckScraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
+}
+
+// extractTLSInfo extracts TLS certificate information from the connection state
+func extractTLSInfo(state *tls.ConnectionState) (issuer string, commonName string, sans []any, timeLeft int64) {
+	if state == nil || len(state.PeerCertificates) == 0 {
+		return "", "", nil, 0
+	}
+
+	cert := state.PeerCertificates[0]
+	issuer = cert.Issuer.String()
+	commonName = cert.Subject.CommonName
+
+	// Collect all SANs
+	sans = make([]any, 0, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
+	for _, ip := range cert.IPAddresses {
+		sans = append(sans, ip.String())
+	}
+	for _, uri := range cert.URIs {
+		sans = append(sans, uri.String())
+	}
+	for _, dnsName := range cert.DNSNames {
+		sans = append(sans, dnsName)
+	}
+	for _, emailAddress := range cert.EmailAddresses {
+		sans = append(sans, emailAddress)
+	}
+
+	// Calculate time left until expiry
+	currentTime := time.Now()
+	timeLeftSeconds := cert.NotAfter.Sub(currentTime).Seconds()
+	timeLeft = int64(timeLeftSeconds)
+
+	return issuer, commonName, sans, timeLeft
+}
+
+// getTLSState makes a direct TLS connection to get certificate info
+func getTLSState(endpoint string) (*tls.ConnectionState, error) {
+	parsedURL, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	host := parsedURL.Host
+	if parsedURL.Port() == "" {
+		host = net.JoinHostPort(parsedURL.Hostname(), "443")
+	}
+
+	conn, err := tls.Dial("tcp", host, &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         parsedURL.Hostname(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	state := conn.ConnectionState()
+	return &state, nil
 }
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
@@ -122,6 +183,30 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			mux.Lock()
+
+			// Check if this is an HTTPS endpoint and extract TLS certificate info
+			// Default to true if CollectTLS is nil
+			collectTLS := h.cfg.Targets[targetIndex].CollectTLS == nil || *h.cfg.Targets[targetIndex].CollectTLS
+			if collectTLS {
+				parsedURL, urlErr := url.Parse(h.cfg.Targets[targetIndex].Endpoint)
+				if urlErr == nil && parsedURL.Scheme == "https" {
+					// Get TLS state by making a direct TLS connection
+					tlsState, tlsErr := getTLSState(h.cfg.Targets[targetIndex].Endpoint)
+					if tlsErr == nil && tlsState != nil {
+						issuer, commonName, sans, timeLeft := extractTLSInfo(tlsState)
+						if issuer != "" || commonName != "" || len(sans) > 0 {
+							h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
+								now,
+								timeLeft,
+								h.cfg.Targets[targetIndex].Endpoint,
+								issuer,
+								commonName,
+								sans,
+							)
+						}
+					}
+				}
+			}
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
 				time.Since(start).Milliseconds(),
