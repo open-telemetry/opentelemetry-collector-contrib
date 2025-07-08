@@ -9,16 +9,16 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.129.0
 	github.com/snowflakedb/gosnowflake v1.15.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/component v1.35.1-0.20250708151327-74cb2f311035
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/confmap v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250708151327-74cb2f311035
+	go.opentelemetry.io/collector/confmap v1.35.1-0.20250708151327-74cb2f311035
 	go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/consumer v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/consumer v1.35.1-0.20250708151327-74cb2f311035
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/filter v0.129.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/pdata v1.35.1-0.20250707130321-ac9adbf016bf
-	go.opentelemetry.io/collector/receiver v1.35.1-0.20250707130321-ac9adbf016bf
+	go.opentelemetry.io/collector/pdata v1.35.1-0.20250708151327-74cb2f311035
+	go.opentelemetry.io/collector/receiver v1.35.1-0.20250708151327-74cb2f311035
 	go.opentelemetry.io/collector/receiver/receivertest v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/scraper v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.129.1-0.20250707130321-ac9adbf016bf
@@ -93,7 +93,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.129.1-0.20250707130321-ac9adbf016bf // indirect
-	go.opentelemetry.io/collector/featuregate v1.35.1-0.20250707130321-ac9adbf016bf // indirect
+	go.opentelemetry.io/collector/featuregate v1.35.1-0.20250708151327-74cb2f311035 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/pipeline v0.129.1-0.20250707130321-ac9adbf016bf // indirect
