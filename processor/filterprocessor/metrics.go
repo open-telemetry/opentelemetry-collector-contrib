@@ -62,6 +62,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 		if errors != nil {
 			return nil, errors
 		}
+		return fsp, nil
 	}
 
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
@@ -129,7 +130,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 	return fsp, nil
 }
 
-func (fmp *filterMetricProcessor) processExprs(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (fmp *filterMetricProcessor) processSkipExpression(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	var errors error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		resource := rmetrics.Resource()
@@ -210,7 +211,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	if len(fmp.consumers) > 0 {
 		processedMetrics, errors = fmp.processConditions(ctx, md)
 	} else {
-		processedMetrics, errors = fmp.processExprs(ctx, md)
+		processedMetrics, errors = fmp.processSkipExpression(ctx, md)
 	}
 
 	metricDataPointCountAfterFilters := processedMetrics.DataPointCount()

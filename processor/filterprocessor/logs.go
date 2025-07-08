@@ -54,6 +54,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 		if errors != nil {
 			return nil, errors
 		}
+		return flp, nil
 	}
 
 	if cfg.Logs.LogConditions != nil {
@@ -83,7 +84,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 	return flp, nil
 }
 
-func (flp *filterLogProcessor) processExprs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+func (flp *filterLogProcessor) processSkipExpression(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	var errors error
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		resource := rl.Resource()
@@ -128,7 +129,7 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 	if len(flp.consumers) > 0 {
 		processedLogs, errors = flp.processConditions(ctx, ld)
 	} else {
-		processedLogs, errors = flp.processExprs(ctx, ld)
+		processedLogs, errors = flp.processSkipExpression(ctx, ld)
 	}
 
 	logCountAfterFilters := processedLogs.LogRecordCount()

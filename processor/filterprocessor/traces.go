@@ -56,6 +56,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 		if errors != nil {
 			return nil, errors
 		}
+		return fsp, nil
 	}
 
 	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
@@ -97,7 +98,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 	return fsp, nil
 }
 
-func (fsp *filterSpanProcessor) processExprs(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	var errors error
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
@@ -157,7 +158,7 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 	if len(fsp.consumers) > 0 {
 		processedTraces, errors = fsp.processConditions(ctx, td)
 	} else {
-		processedTraces, errors = fsp.processExprs(ctx, td)
+		processedTraces, errors = fsp.processSkipExpression(ctx, td)
 	}
 
 	spanCountAfterFilters := processedTraces.SpanCount()
