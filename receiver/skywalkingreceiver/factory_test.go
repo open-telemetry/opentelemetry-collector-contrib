@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -127,12 +128,12 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 
 	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
-		TLS: &configtls.ServerConfig{
+		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
-		},
+		}),
 	}
 
 	set := receivertest.NewNopSettings(metadata.Type)

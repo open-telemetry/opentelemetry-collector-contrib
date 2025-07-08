@@ -32,7 +32,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.129.1-0.20250707130321-ac9adbf016bf // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.129.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.129.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.35.1-0.20250707130321-ac9adbf016bf // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.129.1-0.20250707130321-ac9adbf016bf // indirect
