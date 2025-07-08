@@ -246,6 +246,243 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		conditions    []common.ContextConditions
+		want          func(md pmetric.Metrics)
+		wantErr       bool
+		wantErrorWith string
+	}{
+		{
+			name:      "metric: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`metric.name == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(metric.name, ".*")`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return len(metric.Name()) == 0
+				})
+			},
+		},
+		{
+			name:      "metric: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`metric.name == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`metric.name == ParseJSON(true)`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "resource: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+					v, _ := rm.Resource().Attributes().Get("host.name")
+					return len(v.AsString()) == 0
+				})
+			},
+		},
+		{
+			name:      "resource: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(true)`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "scope: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`scope.schema_url != "test_schema_url"`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+					return sm.SchemaUrl() != "test_schema_url"
+				})
+			},
+		},
+		{
+			name:      "scope: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(true)`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()), common.WithMetricErrorMode(tt.errorMode))
+			assert.NoError(t, err)
+
+			var consumers []common.MetricsConsumer
+			for _, condition := range tt.conditions {
+				consumer, err := collection.ParseContextConditions(condition)
+				if tt.wantErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err, "error parsing conditions")
+				consumers = append(consumers, consumer)
+			}
+
+			finalMetrics := constructMetrics()
+			var consumeErr error
+
+			// Apply each consumer sequentially
+			for _, consumer := range consumers {
+				if err := consumer.ConsumeMetrics(context.Background(), finalMetrics); err != nil {
+					if err == processorhelper.ErrSkipProcessingData {
+						consumeErr = err
+						break
+					}
+					consumeErr = err
+					break
+				}
+			}
+
+			if tt.wantErrorWith != "" {
+				if consumeErr == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				} else {
+					assert.Contains(t, consumeErr.Error(), tt.wantErrorWith)
+				}
+				return
+			}
+
+			if consumeErr != nil && consumeErr != processorhelper.ErrSkipProcessingData {
+				assert.NoError(t, consumeErr)
+				return
+			}
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+			assert.Equal(t, exTd, finalMetrics)
+		})
+	}
+}
+
+func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
+	tests := []struct {
+		condition          string
+		filteredEverything bool
+		want               func(md pmetric.Metrics)
+	}{
+		{
+			condition:          `resource.attributes["host.name"] == "myhost"`,
+			filteredEverything: true,
+			want: func(_ pmetric.Metrics) {
+				// Everything should be filtered out
+			},
+		},
+		{
+			condition:          `resource.attributes["host.name"] == "wrong"`,
+			filteredEverything: false,
+			want: func(md pmetric.Metrics) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			condition:          `resource.schema_url == "test_schema_url"`,
+			filteredEverything: true,
+			want: func(_ pmetric.Metrics) {
+				// Everything should be filtered out since schema_url matches
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.condition, func(t *testing.T) {
+			md := constructMetrics()
+
+			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
+			assert.NoError(t, err)
+
+			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
+			assert.NoError(t, err)
+
+			err = consumer.ConsumeMetrics(context.Background(), md)
+
+			if tt.filteredEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := constructMetrics()
+				tt.want(exTd)
+				assert.Equal(t, exTd, md)
+			}
+		})
+	}
+}
+
+func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
+	tests := []struct {
+		condition          string
+		filteredEverything bool
+		want               func(md pmetric.Metrics)
+	}{
+		{
+			condition:          `scope.name == "scope"`,
+			filteredEverything: true,
+			want: func(_ pmetric.Metrics) {
+				// Everything should be filtered out since scope name matches
+			},
+		},
+		{
+			condition:          `scope.version == "2"`,
+			filteredEverything: false,
+			want: func(md pmetric.Metrics) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			condition:          `scope.schema_url == "test_schema_url"`,
+			filteredEverything: true,
+			want: func(_ pmetric.Metrics) {
+				// Everything should be filtered out since schema_url matches
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.condition, func(t *testing.T) {
+			md := constructMetrics()
+
+			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
+			assert.NoError(t, err)
+
+			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
+			assert.NoError(t, err)
+
+			err = consumer.ConsumeMetrics(context.Background(), md)
+
+			if tt.filteredEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := constructMetrics()
+				tt.want(exTd)
+				assert.Equal(t, exTd, md)
+			}
+		})
+	}
+}
+
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()

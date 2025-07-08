@@ -10,11 +10,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -101,7 +100,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
 			assert.NoError(t, err)
 			got, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
 			if tt.wantErr {
@@ -121,6 +120,243 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 				exTd := constructTraces()
 				tt.want(exTd)
 				assert.Equal(t, exTd, finalTraces)
+			}
+		})
+	}
+}
+
+func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		conditions    []common.ContextConditions
+		want          func(td ptrace.Traces)
+		wantErr       bool
+		wantErrorWith string
+	}{
+		{
+			name:      "span: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`span.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(span.name, ".*")`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
+					return len(span.Name()) == 0
+				})
+			},
+		},
+		{
+			name:      "span: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`span.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`span.attributes["pass"] == ParseJSON(true)`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "resource: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+					v, _ := rs.Resource().Attributes().Get("host.name")
+					return len(v.AsString()) == 0
+				})
+			},
+		},
+		{
+			name:      "resource: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(true)`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "scope: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`scope.schema_url != "test_schema_url"`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
+					return ss.SchemaUrl() != "test_schema_url"
+				})
+			},
+		},
+		{
+			name:      "scope: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []common.ContextConditions{
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(true)`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()), common.WithTraceErrorMode(tt.errorMode))
+			assert.NoError(t, err)
+
+			var consumers []common.TracesConsumer
+			for _, condition := range tt.conditions {
+				consumer, err := collection.ParseContextConditions(condition)
+				if tt.wantErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err, "error parsing conditions")
+				consumers = append(consumers, consumer)
+			}
+
+			finalTraces := constructTraces()
+			var consumeErr error
+
+			// Apply each consumer sequentially
+			for _, consumer := range consumers {
+				if err := consumer.ConsumeTraces(context.Background(), finalTraces); err != nil {
+					if err == processorhelper.ErrSkipProcessingData {
+						consumeErr = err
+						break
+					}
+					consumeErr = err
+					break
+				}
+			}
+
+			if tt.wantErrorWith != "" {
+				if consumeErr == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				} else {
+					assert.Contains(t, consumeErr.Error(), tt.wantErrorWith)
+				}
+				return
+			}
+
+			if consumeErr != nil && consumeErr != processorhelper.ErrSkipProcessingData {
+				assert.NoError(t, consumeErr)
+				return
+			}
+
+			exTd := constructTraces()
+			tt.want(exTd)
+			assert.Equal(t, exTd, finalTraces)
+		})
+	}
+}
+
+func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
+	tests := []struct {
+		condition          string
+		filteredEverything bool
+		want               func(td ptrace.Traces)
+	}{
+		{
+			condition:          `resource.attributes["host.name"] == "localhost"`,
+			filteredEverything: true,
+			want: func(_ ptrace.Traces) {
+				// Everything should be filtered out
+			},
+		},
+		{
+			condition:          `resource.attributes["host.name"] == "wrong"`,
+			filteredEverything: false,
+			want: func(td ptrace.Traces) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			condition:          `resource.schema_url == "test_schema_url"`,
+			filteredEverything: true,
+			want: func(_ ptrace.Traces) {
+				// Everything should be filtered out since schema_url matches
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.condition, func(t *testing.T) {
+			td := constructTraces()
+
+			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			assert.NoError(t, err)
+
+			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
+			assert.NoError(t, err)
+
+			err = consumer.ConsumeTraces(context.Background(), td)
+
+			if tt.filteredEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := constructTraces()
+				tt.want(exTd)
+				assert.Equal(t, exTd, td)
+			}
+		})
+	}
+}
+
+func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
+	tests := []struct {
+		condition          string
+		filteredEverything bool
+		want               func(td ptrace.Traces)
+	}{
+		{
+			condition:          `scope.name == "scope"`,
+			filteredEverything: true,
+			want: func(_ ptrace.Traces) {
+				// Everything should be filtered out since scope name matches
+			},
+		},
+		{
+			condition:          `scope.version == "2"`,
+			filteredEverything: false,
+			want: func(td ptrace.Traces) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			condition:          `scope.schema_url == "test_schema_url"`,
+			filteredEverything: true,
+			want: func(_ ptrace.Traces) {
+				// Everything should be filtered out since schema_url matches
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.condition, func(t *testing.T) {
+			td := constructTraces()
+
+			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			assert.NoError(t, err)
+
+			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
+			assert.NoError(t, err)
+
+			err = consumer.ConsumeTraces(context.Background(), td)
+
+			if tt.filteredEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := constructTraces()
+				tt.want(exTd)
+				assert.Equal(t, exTd, td)
 			}
 		})
 	}

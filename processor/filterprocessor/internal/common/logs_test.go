@@ -127,19 +127,21 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "log: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`set(log.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`set(log.attributes["test"], "pass") where log.body == "operationA"`}},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(log.body, ".*")`}},
 			},
-			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return len(log.Body().AsString()) == 0
+				})
 			},
 		},
 		{
 			name:      "log: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`set(log.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`set(log.attributes["pass"], ParseJSON(true))`}},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON(true)`}},
 			},
 			wantErrorWith: "expected string but got bool",
 		},
@@ -147,19 +149,22 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`set(resource.attributes["test"], "pass")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
 			},
-			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+					v, _ := rl.Resource().Attributes().Get("host.name")
+					return len(v.AsString()) == 0
+				})
 			},
 		},
 		{
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON(true)`}},
 			},
 			wantErrorWith: "expected string but got bool",
 		},
@@ -167,19 +172,21 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`set(scope.attributes["test"], "pass")`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`scope.schema_url != "test_schema_url"`}},
 			},
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+					return sl.SchemaUrl() != "test_schema_url"
+				})
 			},
 		},
 		{
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []common.ContextConditions{
-				{Conditions: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(1)`}, ErrorMode: ottl.IgnoreError},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON(true)`}},
 			},
 			wantErrorWith: "expected string but got bool",
 		},
@@ -234,110 +241,6 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			exTd := constructLogs()
 			tt.want(exTd)
 			assert.Equal(t, exTd, finalLogs)
-		})
-	}
-}
-
-func Test_ProcessLogs_InferredMixContext(t *testing.T) {
-	tests := []struct {
-		name              string
-		contextConditions []common.ContextConditions
-		want              func(td plog.Logs)
-	}{
-		{
-			name: "set resource and then use",
-			contextConditions: []common.ContextConditions{
-				{
-					Conditions: []string{`set(resource.attributes["test"], "pass")`},
-				},
-				{
-					Conditions: []string{`set(log.attributes["test"], "pass") where resource.attributes["test"] == "pass"`},
-				},
-			},
-			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			name: "set scope and then use",
-			contextConditions: []common.ContextConditions{
-				{
-					Conditions: []string{`set(scope.attributes["test"], "pass")`},
-				},
-				{
-					Conditions: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
-				},
-			},
-			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			name: "order matters",
-			contextConditions: []common.ContextConditions{
-				{
-					Conditions: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
-				},
-				{
-					Conditions: []string{`set(scope.attributes["test"], "pass")`},
-				},
-			},
-			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			name: "reuse context",
-			contextConditions: []common.ContextConditions{
-				{
-					Conditions: []string{`set(scope.attributes["test"], "pass")`},
-				},
-				{
-					Conditions: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
-				},
-				{
-					Conditions: []string{`set(scope.attributes["test"], "fail")`},
-				},
-			},
-			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "fail")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			td := constructLogs()
-
-			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
-			assert.NoError(t, err)
-
-			var consumers []common.LogsConsumer
-			for _, condition := range tt.contextConditions {
-				consumer, err := collection.ParseContextConditions(condition)
-				require.NoError(t, err)
-				consumers = append(consumers, consumer)
-			}
-
-			// Apply each consumer sequentially
-			for _, consumer := range consumers {
-				err := consumer.ConsumeLogs(context.Background(), td)
-				if err != nil && err != processorhelper.ErrSkipProcessingData {
-					assert.NoError(t, err)
-					return
-				}
-			}
-
-			exTd := constructLogs()
-			tt.want(exTd)
-
-			assert.Equal(t, exTd, td)
 		})
 	}
 }
