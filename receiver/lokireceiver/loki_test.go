@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -437,6 +439,48 @@ func TestExpectedStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
+	jsonPayload := `{
+		"streams": [
+			{
+				"stream": {
+					"job": "test"
+				},
+				"values": [
+					["1752000000000000000", "This is a log line"]
+				]
+			}
+		]
+	}`
+
+	cfg := &Config{
+		Protocols: Protocols{
+			HTTP: &confighttp.ServerConfig{
+				Endpoint: "localhost:0",
+			},
+		},
+	}
+	consumer := consumertest.NewNop()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	receiver, err := newLokiReceiver(cfg, consumer, settings)
+	require.NoError(t, err)
+	require.NotNil(t, receiver)
+
+	req := httptest.NewRequest("POST", "/loki/api/v1/push", strings.NewReader(jsonPayload))
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+
+	receiver.httpMux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	require.Equal(t, 204, resp.StatusCode)
+}
+
+
+
 
 type logRecord struct {
 	Timestamp  int64
