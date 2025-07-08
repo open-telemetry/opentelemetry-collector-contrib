@@ -239,7 +239,7 @@ func TestExtractTLSInfo(t *testing.T) {
 
 func TestHTTPSWithTLS(t *testing.T) {
 	// Create an HTTPS test server
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -263,7 +263,7 @@ func TestHTTPSWithTLS(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that we have metrics
-	require.Greater(t, metrics.ResourceMetrics().Len(), 0)
+	require.Positive(t, metrics.ResourceMetrics().Len())
 	rm := metrics.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 
@@ -292,7 +292,7 @@ func TestHTTPSWithTLS(t *testing.T) {
 
 func TestHTTPSWithTLSDisabled(t *testing.T) {
 	// Create an HTTPS test server
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -318,7 +318,7 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that we have metrics but no TLS metric
-	require.Greater(t, metrics.ResourceMetrics().Len(), 0)
+	require.Positive(t, metrics.ResourceMetrics().Len())
 	rm := metrics.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 
