@@ -23,6 +23,32 @@ Make sure to run the collector as administrator in order to collect all performa
 
 ## Configuration
 
+The following is a generic configuration that can be used for the default logs and metrics scraped
+by the SQL Server receiver. A basic explanation on some of the fields has also been provided. For more
+information, please reference the following section.
+
+```yaml
+sqlserver:
+  collection_interval: 10s                     # interval for overall collection
+  instance_name: CustomInstance
+  username: myusername
+  password: mypassword
+  server: sqlserver.address
+  port: 1433
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
+  top_query_collection:                        # this collection exports the most expensive queries as logs
+    lookback_time: 60                          # which time window should we look for the top queries
+    max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
+    top_query_count: 200                       # The maximum number of active queries to report in a single run.
+    collection_interval: 60s                   # collection interval for top query collection specifically
+  query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
+    max_rows_per_query: 100                    # the maximum number of samples to return for one single query.
+```
+
 The following settings are optional:
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
 - `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
@@ -54,12 +80,9 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
-- `enabled`: (optional, default = `false`): Enable collection of top queries.
-  - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
-- `enabled`: (optional, default = `false`): Enable collection of sample queries.
 Example:
 
 ```yaml
@@ -102,14 +125,11 @@ Top query collection enabled:
         server: 0.0.0.0
         port: 1433
         top_query_collection:
-          enabled: true
           lookback_time: 60
           max_query_sample_count: 1000
           top_query_count: 200
         query_sample_collection:
-          enabled: true
           max_rows_per_query: 1450
-          
 ```
 
 ## Feature Gate
