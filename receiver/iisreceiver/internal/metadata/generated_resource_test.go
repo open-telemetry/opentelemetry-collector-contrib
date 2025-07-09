@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("iis.application_pool")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "iis.application_pool-val", val.Str())
+				assert.Equal(t, "iis.application_pool-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("iis.site")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "iis.site-val", val.Str())
+				assert.Equal(t, "iis.site-val", val.Str())
 			}
 		})
 	}
