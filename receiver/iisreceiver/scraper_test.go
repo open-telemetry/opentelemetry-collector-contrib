@@ -48,8 +48,8 @@ func TestScrape(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	defer func() {
 		if t.Failed() {
-			metricBytes, err := golden.MarshalMetricsYAML(actualMetrics)
-			require.NoError(t, err)
+			metricBytes, errMarshal := golden.MarshalMetricsYAML(actualMetrics)
+			require.NoError(t, errMarshal)
 			t.Errorf("latest result:\n%s", metricBytes)
 		}
 	}()
