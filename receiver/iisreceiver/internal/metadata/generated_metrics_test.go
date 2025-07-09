@@ -68,9 +68,11 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisApplicationPoolStateDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisApplicationPoolUptimeDataPoint(ts, 1)
 
@@ -243,7 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "iis.network.io":
 					assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
 					validatedMetrics["iis.network.io"] = true
@@ -260,7 +262,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "iis.request.count":
 					assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
 					validatedMetrics["iis.request.count"] = true
@@ -277,7 +279,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 				case "iis.request.queue.age.max":
 					assert.False(t, validatedMetrics["iis.request.queue.age.max"], "Found a duplicate in the metrics slice: iis.request.queue.age.max")
 					validatedMetrics["iis.request.queue.age.max"] = true
