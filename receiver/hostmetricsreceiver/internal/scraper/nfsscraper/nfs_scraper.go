@@ -34,7 +34,7 @@ type nfsScraper struct {
 	nfsdStats *NfsdStats
 }
 
-// newNfsScraper creates an NFS Scraper related metric
+// newNfsScraper creates a metric scraper for NFS metrics
 func newNfsScraper(settings scraper.Settings, cfg *Config) *nfsScraper {
 	return &nfsScraper{
 		settings:     settings,
