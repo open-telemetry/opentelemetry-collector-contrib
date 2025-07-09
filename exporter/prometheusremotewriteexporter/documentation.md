@@ -38,6 +38,22 @@ Number of Prometheus time series that were translated from OTel metrics
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_exporter_prometheusremotewrite_wal_bytes_read
+
+Total number of bytes read from the WAL
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_bytes_written
+
+Total number of bytes written to the WAL
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
 ### otelcol_exporter_prometheusremotewrite_wal_read_latency
 
 Response latency in ms for the WAL reads.

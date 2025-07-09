@@ -293,7 +293,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
 	prwe.wal.telemetry.recordWALWrites(ctx)
 	start := time.Now()
-	err = prwe.wal.persistToWAL(requests)
+	err = prwe.wal.persistToWAL(ctx, requests)
 	duration := time.Since(start)
 	prwe.wal.telemetry.recordWALWriteLatency(ctx, duration.Milliseconds())
 	if err != nil {
