@@ -346,8 +346,8 @@ func Benchmark_ScrapePagingMetrics(b *testing.B) {
 }
 
 func Benchmark_ScrapeNFSMetrics(b *testing.B) {
-	if runtime.GOOS != "linux" {
-		b.Skip("skipping test on non linux")
+	if !nfsscraper.CanScrapeAll() || runtime.GOOS != "linux" {
+		b.Skip("skipping test on unsupported platform")
 	}
 
 	cfg := &Config{
