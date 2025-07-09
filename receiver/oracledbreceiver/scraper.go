@@ -506,18 +506,10 @@ type queryMetricCacheHit struct {
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
-	var scrapeErrors []error
-
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
-		topNLogs, topNCollectionErrors := s.collectTopNMetricData(ctx)
-		if topNCollectionErrors != nil {
-			scrapeErrors = append(scrapeErrors, topNCollectionErrors)
-		} else {
-			return topNLogs, errors.Join(scrapeErrors...)
-		}
+		return s.collectTopNMetricData(ctx)
 	}
-
-	return plog.NewLogs(), errors.Join(scrapeErrors...)
+	return plog.NewLogs(), nil
 }
 
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, error) {
@@ -530,18 +522,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, e
 	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, now, intervalSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
-		errs = append(errs, fmt.Errorf("error executing %s: %w", oracleQueryMetricsSQL, metricError))
-		return plog.NewLogs(), errors.Join(errs...)
+		return plog.NewLogs(), fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
 	}
-
 	if len(metricRows) == 0 {
-		errs = append(errs, errors.New("no data returned from oracleQueryMetricsClient"))
-		return plog.NewLogs(), errors.Join(errs...)
+		return plog.NewLogs(), errors.New("no data returned from oracleQueryMetricsClient")
 	}
 
 	metricNames := s.getTopNMetricNames()
-	s.logger.Debug("Metric columns", zap.Strings("names", metricNames))
-	s.logger.Debug("Cache", zap.Int("size", s.metricCache.Len()))
 	var hits []queryMetricCacheHit
 	var cacheUpdates, discardedHits int
 	for _, row := range metricRows {
@@ -604,29 +591,16 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context) (plog.Logs, e
 	}
 
 	s.logger.Debug("Cache hits", zap.Int("hit-count", len(hits)), zap.Int("discarded-hit-count", discardedHits))
-	for _, hit := range hits {
-		s.logger.Debug(fmt.Sprintf("Cache hit, SQL_ID: %v, CHILD_NUMBER: %v", hit.sqlID, hit.childNumber), zap.Int64("elapsed-time", hit.metrics[elapsedTimeMetric]))
-	}
 
 	// order by elapsed time delta, descending
 	sort.Slice(hits, func(i, j int) bool {
 		return hits[i].metrics[elapsedTimeMetric] > hits[j].metrics[elapsedTimeMetric]
 	})
 
-	for _, hit := range hits {
-		s.logger.Debug(fmt.Sprintf("Cache hit after sorting, SQL_ID: %v, CHILD_NUMBER: %v", hit.sqlID, hit.childNumber), zap.String("child-address", hit.childAddress), zap.Int64("elapsed-time", hit.metrics[elapsedTimeMetric]))
-	}
-
 	// keep at most maxHitSize
-	hitCountBefore := len(hits)
 	maxHitsSize := min(len(hits), int(s.topQueryCollectCfg.TopQueryCount))
 	hits = hits[:maxHitsSize]
-	skippedCacheHits := hitCountBefore - len(hits)
-	s.logger.Debug("Skipped cache hits", zap.Int("count", skippedCacheHits))
 
-	for _, hit := range hits {
-		s.logger.Debug(fmt.Sprintf("Final cache hit, SQL_ID: %v, CHILD_NUMBER: %v", hit.sqlID, hit.childNumber), zap.String("child-address", hit.childAddress), zap.Any("metrics", hit.metrics))
-	}
 	hits = s.obfuscateCacheHits(hits)
 	childAddressToPlanMap := s.getChildAddressToPlanMap(ctx, hits)
 
@@ -683,11 +657,11 @@ func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMe
 	var obfuscatedHits []queryMetricCacheHit
 	for _, hit := range hits {
 		// obfuscate and normalize the query text
-		obfuscatedSQL, err := ObfuscateSQL(hit.queryText)
+		obfuscatedSQL, err := obfuscateSQL(hit.queryText)
 		if err != nil {
 			s.logger.Error("oracleScraper failed getting metric rows", zap.Error(err))
 		} else {
-			obfuscatedSQLLowerCase := strings.ToLower(obfuscatedSQL)
+			obfuscatedSQLLowerCase := strings.ToLower(obfuscatedSQL.Query)
 			hit.queryText = obfuscatedSQLLowerCase
 			obfuscatedHits = append(obfuscatedHits, hit)
 		}

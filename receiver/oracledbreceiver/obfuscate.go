@@ -29,12 +29,7 @@ func lazyInitObfuscator() *obfuscate.Obfuscator {
 	return obfuscator
 }
 
-// ObfuscateSQL obfuscates the provided SQL query, writing the error into errResult if the operation fails
-func ObfuscateSQL(rawQuery string) (string, error) {
-	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLStringWithOptions(rawQuery, &obfuscate.SQLConfig{DBMS: "oracle"})
-	if err != nil {
-		return "", err
-	}
-
-	return obfuscatedQuery.Query, nil
+// obfuscateSQL obfuscates the provided SQL query, writing the error into errResult if the operation fails
+func obfuscateSQL(rawQuery string) (*obfuscate.ObfuscatedQuery, error) {
+	return lazyInitObfuscator().ObfuscateSQLStringWithOptions(rawQuery, &obfuscate.SQLConfig{DBMS: "oracle"})
 }

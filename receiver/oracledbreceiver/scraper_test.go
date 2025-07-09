@@ -253,7 +253,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 					Err: errors.New("Mock error"),
 				}
 			},
-			errWanted: fmt.Sprintf("error executing %s: %s", oracleQueryMetricsSQL, "Mock error"),
+			errWanted: fmt.Sprintf("error executing oracleQueryMetricsSQL: Mock error"),
 		},
 	}
 
