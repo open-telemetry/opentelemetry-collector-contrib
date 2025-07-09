@@ -283,7 +283,7 @@ func TestHTTPSWithTLS(t *testing.T) {
 			assert.Equal(t, server.URL, urlVal.Str())
 
 			// The test server cert should have some time left
-			assert.Greater(t, dp.IntValue(), int64(0))
+			assert.Positive(t, dp.IntValue())
 			break
 		}
 	}
