@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -836,11 +837,11 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := Config{
 		ServerConfig: configgrpc.ServerConfig{
-			TLS: &configtls.ServerConfig{
+			TLS: configoptional.Some(configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "willfail",
 				},
-			},
+			}),
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: "tcp",

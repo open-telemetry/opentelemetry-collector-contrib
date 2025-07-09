@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -52,17 +53,17 @@ func TestUnmarshalConfig(t *testing.T) {
 						Endpoint:  "0.0.0.0:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
-					},
+					}),
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
@@ -74,7 +75,7 @@ func TestUnmarshalConfig(t *testing.T) {
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
 						},
-					},
+					}),
 				},
 				Arrow: ArrowConfig{
 					MemoryLimitMiB: 123,

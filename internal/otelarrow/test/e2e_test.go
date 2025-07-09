@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -612,12 +613,12 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
 			ServerParameters: &configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
 			},
-		}
+		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
 
