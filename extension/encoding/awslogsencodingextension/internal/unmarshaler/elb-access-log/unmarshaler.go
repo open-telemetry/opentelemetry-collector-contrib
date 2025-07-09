@@ -56,7 +56,7 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 	}
 
 	// Check for control message
-	if fields[0] == "Enable" {
+	if fields[0] == EnableControlMessage {
 		f.logger.Info(fmt.Sprintf("Control message received: %s", line))
 		return plog.NewLogs(), nil
 	}
@@ -131,6 +131,13 @@ func (f *elbAccessLogUnmarshaler) createLogs(scopeLogsByResource map[string]plog
 // addToClbAccessLogs adds clb record to provided logs based
 // on the extracted logs of each resource
 func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[string]plog.ScopeLogs, clbRecord ClbAccessLogRecord) {
+	// Convert timestamp first; if invalid, skip log creation
+	epochNanoseconds, err := convertToUnixEpoch(clbRecord.Time)
+	if err != nil {
+		f.logger.Debug("Timestamp cannot be converted to unix epoch nanoseconds", zap.Error(err))
+		return
+	}
+
 	// Create record log
 	recordLog := plog.NewLogRecord()
 	// Populate record attributes
@@ -154,13 +161,8 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[str
 	if clbRecord.BackendStatusCode != 0 {
 		recordLog.Attributes().PutInt(AttributeELBBackendStatusCode, clbRecord.BackendStatusCode)
 	}
-	// Add timestamp
-	epochNanoseconds, err := convertToUnixEpoch(clbRecord.Time)
-	if err == nil {
-		recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
-	} else {
-		f.logger.Debug("Timestamp cannot be converted to unix epoch nanoseconds", zap.Error(err))
-	}
+	// Set timestamp
+	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
 	// Get scope logs
 	scopeLogs := f.getScopeLogs(clbRecord.ELB, scopeLogsByResource)
@@ -173,6 +175,13 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[str
 // addToAlbAccessLogs adds alb record to provided logs based
 // on the extracted logs of each resource
 func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[string]plog.ScopeLogs, albRecord AlbAccessLogRecord) {
+	// Convert timestamp first; if invalid, skip log creation
+	epochNanoseconds, err := convertToUnixEpoch(albRecord.Time)
+	if err != nil {
+		f.logger.Debug("Timestamp cannot be converted to unix epoch nanoseconds", zap.Error(err))
+		return
+	}
+
 	// Create record log
 	recordLog := plog.NewLogRecord()
 	// Populate record attributes
@@ -192,13 +201,8 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[str
 		recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), albRecord.SSLCipher)
 	}
 
-	// Add timestamp
-	epochNanoseconds, err := convertToUnixEpoch(albRecord.Time)
-	if err == nil {
-		recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
-	} else {
-		f.logger.Debug("Timestamp cannot be converted to unix epoch nanoseconds", zap.Error(err))
-	}
+	// Set timestamp
+	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
 	// Get scope logs
 	scopeLogs := f.getScopeLogs(albRecord.ELB, scopeLogsByResource)
@@ -211,6 +215,13 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[str
 // addToNlbAccessLogs adds nlb record to provided logs based
 // on the extracted logs of each resource
 func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(scopeLogsByResource map[string]plog.ScopeLogs, nlbRecord NlbAccessLogRecord) {
+	// Convert timestamp first; if invalid, skip log creation
+	epochNanoseconds, err := convertToUnixEpoch(nlbRecord.Time)
+	if err != nil {
+		f.logger.Debug("Timestamp cannot be converted to unix epoch nanoseconds", zap.Error(err))
+		return
+	}
+
 	// Create record log
 	recordLog := plog.NewLogRecord()
 	// Populate record attributes
@@ -224,13 +235,8 @@ func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(scopeLogsByResource map[str
 	recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
 	recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
 
-	// Add timestamp
-	epochNanoseconds, err := convertToUnixEpoch(nlbRecord.Time)
-	if err == nil {
-		recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
-	} else {
-		f.logger.Debug("Timestamp cannot be converted to unix epoch nanoseconds", zap.Error(err))
-	}
+	// Set timestamp
+	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
 	// Get scope logs
 	scopeLogs := f.getScopeLogs(nlbRecord.ELB, scopeLogsByResource)

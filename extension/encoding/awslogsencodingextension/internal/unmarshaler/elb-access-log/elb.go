@@ -19,6 +19,8 @@ const (
 	// any field can be set to - to indicate that the data was unknown
 	// or unavailable, or that the field was not applicable to this request.
 	unknownField = "-"
+	// First field of ELB control message
+	EnableControlMessage = "Enable"
 )
 
 // ClbAccessLogRecord represents a record of access logs from an AWS Classic Load Balancer.
@@ -83,12 +85,12 @@ func convertTextToClbAccessLogRecord(fields []string) (ClbAccessLogRecord, error
 	}
 
 	// ELB status code and backend status code can be - in case of TCP and SSL entry
-	if fields[7] != "-" {
+	if fields[7] != unknownField {
 		if record.ELBStatusCode, err = safeConvertStrToInt(fields[7]); err != nil {
 			return record, fmt.Errorf("could not convert ELB status code to integer: %w", err)
 		}
 	}
-	if fields[8] != "-" {
+	if fields[8] != unknownField {
 		if record.BackendStatusCode, err = safeConvertStrToInt(fields[8]); err != nil {
 			return record, fmt.Errorf("could not convert backend status code to integer: %w", err)
 		}
@@ -178,7 +180,7 @@ func convertTextToNlbAccessLogRecord(fields []string) (NlbAccessLogRecord, error
 	if record.ConnectionTime, err = safeConvertStrToInt(fields[7]); err != nil {
 		return record, fmt.Errorf("could not convert connection time to integer: %w", err)
 	}
-	if fields[8] != "-" {
+	if fields[8] != unknownField {
 		if record.TLSHandshakeTime, err = safeConvertStrToInt(fields[8]); err != nil {
 			return record, fmt.Errorf("could not convert TLS handshake time to integer: %w", err)
 		}
@@ -303,16 +305,21 @@ func safeConvertStrToFloat(stringNum string) (float64, error) {
 	return value, nil
 }
 
+// findLogSyntaxByField determines the log syntax type based on the first field of a log entry.
+// It first checks for known protocol types (ALB and NLB).
+// ALB supports http, https, h2, grpcs, ws, wss and NLB supports tls.
+// Only if those are not matched, it checks if the field is a valid timestamp (for CLB logs).
+// If none match, it returns an error.
 func findLogSyntaxByField(field string) (string, error) {
-	if isValidTimestamp(field) {
-		return clbAccessLogs, nil
-	}
 	switch field {
 	case "http", "https", "h2", "grpcs", "ws", "wss":
 		return albAccessLogs, nil
 	case "tls":
 		return nlbAccessLogs, nil
 	default:
+		if isValidTimestamp(field) {
+			return clbAccessLogs, nil
+		}
 		return "", fmt.Errorf("invalid type: %v", field)
 	}
 }
