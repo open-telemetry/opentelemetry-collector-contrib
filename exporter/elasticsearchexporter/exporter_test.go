@@ -401,17 +401,20 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish otel mapping mode", func(t *testing.T) {
 		for _, tc := range []struct {
+			name         string
 			body         pcommon.Value
 			isEvent      bool
 			wantDocument []byte
 		}{
 			{
+				name: "basic",
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
+				name: "map body",
 				body: func() pcommon.Value {
 					vm := pcommon.NewValueMap()
 					m := vm.SetEmptyMap()
@@ -423,6 +426,7 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
+				name: "map body event",
 				body: func() pcommon.Value {
 					vm := pcommon.NewValueMap()
 					m := vm.SetEmptyMap()
@@ -435,6 +439,7 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
+				name: "heterogeneous slice body",
 				body: func() pcommon.Value {
 					vs := pcommon.NewValueSlice()
 					s := vs.Slice()
@@ -446,6 +451,7 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
+				name: "heterogeneous slice body event",
 				body: func() pcommon.Value {
 					vs := pcommon.NewValueSlice()
 					s := vs.Slice()
@@ -458,42 +464,44 @@ func TestExporterLogs(t *testing.T) {
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 		} {
-			rec := newBulkRecorder()
-			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-				rec.Record(docs)
-				return itemsAllOK(docs)
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
+				recordAttrs := map[string]any{
+					"data_stream.dataset": "attr.dataset",
+					"attr.foo":            "attr.foo.value",
+				}
+				if tc.isEvent {
+					recordAttrs["event.name"] = "foo"
+				}
+				logs := newLogsWithAttributes(
+					recordAttrs,
+					nil,
+					map[string]any{
+						"data_stream.dataset":   "resource.attribute.dataset",
+						"data_stream.namespace": "resource.attribute.namespace",
+						"resource.attr.foo":     "resource.attr.foo.value",
+					},
+				)
+				tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
+				mustSendLogs(t, exporter, logs)
+
+				expected := []itemRequest{
+					{
+						Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+						Document: tc.wantDocument,
+					},
+				}
+
+				assertRecordedItems(t, expected, rec, false)
 			})
-
-			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-				cfg.Mapping.Mode = "otel"
-			})
-			recordAttrs := map[string]any{
-				"data_stream.dataset": "attr.dataset",
-				"attr.foo":            "attr.foo.value",
-			}
-			if tc.isEvent {
-				recordAttrs["event.name"] = "foo"
-			}
-			logs := newLogsWithAttributes(
-				recordAttrs,
-				nil,
-				map[string]any{
-					"data_stream.dataset":   "resource.attribute.dataset",
-					"data_stream.namespace": "resource.attribute.namespace",
-					"resource.attr.foo":     "resource.attr.foo.value",
-				},
-			)
-			tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
-			mustSendLogs(t, exporter, logs)
-
-			expected := []itemRequest{
-				{
-					Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
-					Document: tc.wantDocument,
-				},
-			}
-
-			assertRecordedItems(t, expected, rec, false)
 		}
 	})
 
