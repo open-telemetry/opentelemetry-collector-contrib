@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: iis.site
           value:
-            stringValue: Default Web Site
+            stringValue: Instance
     scopeMetrics:
       - metrics:
           - description: Number of active connections.
@@ -158,7 +158,7 @@ resourceMetrics:
       attributes:
         - key: iis.application_pool
           value:
-            stringValue: .NET v4.5 Classic
+            stringValue: Instance
     scopeMetrics:
       - metrics:
           - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
@@ -184,7 +184,7 @@ resourceMetrics:
       attributes:
         - key: iis.application_pool
           value:
-            stringValue: '---1'
+            stringValue: Instance
     scopeMetrics:
       - metrics:
           - description: Age of oldest request in the queue.
@@ -221,7 +221,7 @@ resourceMetrics:
       attributes:
         - key: iis.application_pool
           value:
-            stringValue: DefaultAppPool
+            stringValue: Instance
     scopeMetrics:
       - metrics:
           - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
@@ -274,7 +274,7 @@ resourceMetrics:
       attributes:
         - key: iis.application_pool
           value:
-            stringValue: .NET v4.5
+            stringValue: Instance
     scopeMetrics:
       - metrics:
           - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
