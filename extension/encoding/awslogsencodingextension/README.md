@@ -233,54 +233,89 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 
 ##### Application Load Balancer (ALB)
 
+> AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
-| **AWS Field**         | **OpenTelemetry Field**                                                                 |
-|-----------------------|---------------------------------------------------------------------------------------------|
-| Provider              | `cloud.provider`                                                                          |
-| Resource              | `cloud.resource_id`                                                                       |
-| Protocol              | `network.protocol.name`<br> `network.protocol.version`                                   |
-| Client IP             | `client.address`                                                                          |
-| Request Method        | `http.request.method`                                                                     |
-| Request URL           | `url.full`                                                                                |
-| Client Port           | `client.port`                                                                             |
-| Request Size          | `http.request.size`                                                                       |
-| Response Size         | `http.response.size`                                                                      |
-| ELB Status            | `aws.elb.status.code`                                                                     |
-| TLS Version           | `tls.protocol.version`                                                                    |
-| Cipher Suite          | `tls.cipher`                                                                              |
+
+| **AWS Field**                | **OpenTelemetry Field(s)**                                      |
+|------------------------------|-----------------------------------------------------------------------|
+| type                         | `network.protocol.name`                                |
+| time                         | Log timestamp                                |
+| elb                          | `cloud.resource_id`                                                  |
+| client:port                  | `client.address`, `client.port`                                      |
+| received_bytes               | `http.request.size`                                                  |
+| sent_bytes                   | `http.response.size`                                                 |
+| "request"                    | `url.full`, `http.request.method`, `network.protocol.version`                                    |
+| ssl_cipher                   | `tls.cipher`                                                         |
+| ssl_protocol                 | `tls.protocol.version`                                               |
+| elb_status_code              | `aws.elb.status.code`                                                |
+| target:port                  | _Currently not supported_                                |
+| request_processing_time      | _Currently not supported_                                |
+| target_processing_time       | _Currently not supported_                                |
+| response_processing_time     | _Currently not supported_                                |
+| target_status_code           | _Currently not supported_                                |
+| "user_agent"                 | _Currently not supported_                                |
+| target_group_arn             | _Currently not supported_                                |
+| "trace_id"                   | _Currently not supported_                                |
+| "domain_name"                | _Currently not supported_                                |
+| "chosen_cert_arn"            | _Currently not supported_                                |
+| matched_rule_priority        | _Currently not supported_                                |
+| request_creation_time        | _Currently not supported_                                |
+| "actions_executed"           | _Currently not supported_                                |
+| "redirect_url"               | _Currently not supported_                                |
+| "error_reason"               | _Currently not supported_                                |
+| "target:port_list"           | _Currently not supported_                                |
+| "target_status_code_list"    | _Currently not supported_                                |
+| "classification"             | _Currently not supported_                                |
+| "classification_reason"      | _Currently not supported_                                |
+| conn_trace_id                | _Currently not supported_                                |
 
 ##### Network Load Balancer (NLB)
 
+> AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format).
 
-| **AWS Field**         | **OpenTelemetry Field(s)**                                                                 |
-|-----------------------|---------------------------------------------------------------------------------------------|
-| Provider              | `cloud.provider`                                                                          |
-| Resource              | `cloud.resource_id`                                                                       |
-| Protocol              | `network.protocol.name`<br>`network.protocol.version`                                   |
-| Client IP             | `client.address`                                                                          |
-| Client Port           | `client.port`                                                                             |
-| Request Size          | `http.request.size`                                                                       |
-| Response Size         | `http.response.size`                                                                      |
-| Listener ARN          | `tls.listener.resource_id`                                                                |
-| TLS Version           | `tls.protocol.version`                                                                    |
-| Cipher Suite          | `tls.cipher`                                                                              |
-
+| **AWS Field**                | **OpenTelemetry Field(s)**                                      |
+|------------------------------|-------------------------------------------------------------|
+| type                         | `network.protocol.name`                                     |
+| version                      | `network.protocol.version`                                  |
+| time                         | Log timestamp                                               |
+| elb                          | `cloud.resource_id`                                         |
+| listener                     | `aws.elb.tls.listener.resource_id`                                  |
+| client:port                  | `client.address`, `client.port`                             |
+| received_bytes               | `http.request.size`                                         |
+| sent_bytes                   | `http.response.size`                                        |
+| tls_cipher                   | `tls.cipher`                                                |
+| tls_protocol_version         | `tls.protocol.version`                                      |
+| destination:port             | _Currently not supported_                                   |
+| connection_time              | _Currently not supported_                                   |
+| tls_handshake_time           | _Currently not supported_                                   |
+| incoming_tls_alert           | _Currently not supported_                                   |
+| chosen_cert_arn              | _Currently not supported_                                   |
+| chosen_cert_serial           | _Currently not supported_                                   |
+| tls_named_group              | _Currently not supported_                                   |
+| domain_name                  | _Currently not supported_                                   |
+| alpn_fe_protocol             | _Currently not supported_                                   |
+| alpn_be_protocol             | _Currently not supported_                                   |
+| alpn_client_preference_list  | _Currently not supported_                                   |
+| tls_connection_creation_time | _Currently not supported_                                   |
 
 ##### Classic Load Balancer (CLB)
 
+> AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
 
 | **AWS Field**         | **OpenTelemetry Field(s)**                                                                 |
-|-----------------------|---------------------------------------------------------------------------------------------|
-| Provider              | `cloud.provider`                                                                          |
-| Resource              | `cloud.resource_id`                                                                       |
-| Client IP             | `client.address`                                                                          |
-| Request Method        | `http.request.method`                                                                     |
-| Request URL           | `url.full`                                                                                |
-| Protocol              | `network.protocol.name`<br> `network.protocol.version`                                   |
-| Client Port           | `client.port`                                                                             |
-| Request Size          | `http.request.size`                                                                       |
-| Response Size         | `http.response.size`                                                                      |
-| TLS Version           | `tls.protocol.version`                                                                    |
-| Cipher Suite          | `tls.cipher`                                                                              |
-| ELB Status            | `aws.elb.status.code`                                                                     |
-| Backend Status        | `aws.elb.backend.status.code`                                                             |
+|-----------------------|--------------------------------------------------------------------------------------------|
+| time                  | Log timestamp                                                                              |
+| elb                   | `cloud.resource_id`                                                                        |
+| client:port                  | `client.address`, `client.port`                             |
+| elb_status_code       | `aws.elb.status.code`                                                                      |
+| backend_status_code   | `aws.elb.backend.status.code`                                                              |
+| received_bytes        | `http.request.size`                                                                        |
+| sent_bytes            | `http.response.size`                                                                       |
+| "request"                    | `url.full`, `http.request.method`, `network.protocol.name`, `network.protocol.version`                                    |
+| ssl_cipher            | `tls.cipher`                                                                               |
+| ssl_protocol          | `tls.protocol.version`                                                                     |
+| backend:port                  | _Currently not supported_                                |
+| request_processing_time | _Currently not supported_                                                                |
+| backend_processing_time | _Currently not supported_                                                                |
+| response_processing_time | _Currently not supported_                                                               |
+| user_agent                            | _Currently not supported_            |

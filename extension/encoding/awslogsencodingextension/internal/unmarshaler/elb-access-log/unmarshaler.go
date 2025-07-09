@@ -31,12 +31,16 @@ func NewELBAccessLogUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logge
 	}
 }
 
+type resourceAttributes struct {
+	resourceId string
+}
+
 // UnmarshalAWSLogs processes a file containing ELB access logs.
 func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	scanner := bufio.NewScanner(reader)
 
-	// Initialize scopeLogsByResource
-	scopeLogsByResource := map[string]plog.ScopeLogs{}
+	logs, resourceLogs, scopeLogs := f.createLogs()
+	resourceAttr := &resourceAttributes{}
 
 	var line string
 	var fields []string
@@ -66,7 +70,6 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("unable to determine log syntax: %w", err)
 	}
-
 	for {
 		// Process lines based on determined syntax
 		switch syntax {
@@ -75,19 +78,19 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 			if err != nil {
 				return plog.Logs{}, fmt.Errorf("unable to convert log line to ALB record: %w", err)
 			}
-			f.addToAlbAccessLogs(scopeLogsByResource, record)
+			f.addToAlbAccessLogs(resourceAttr, scopeLogs, record)
 		case nlbAccessLogs:
 			record, err := convertTextToNlbAccessLogRecord(fields)
 			if err != nil {
 				return plog.Logs{}, fmt.Errorf("unable to convert log line to NLB record: %w", err)
 			}
-			f.addToNlbAccessLogs(scopeLogsByResource, record)
+			f.addToNlbAccessLogs(resourceAttr, scopeLogs, record)
 		case clbAccessLogs:
 			record, err := convertTextToClbAccessLogRecord(fields)
 			if err != nil {
 				return plog.Logs{}, fmt.Errorf("unable to convert log line to NLB record: %w", err)
 			}
-			f.addToClbAccessLogs(scopeLogsByResource, record)
+			f.addToClbAccessLogs(resourceAttr, scopeLogs, record)
 		default:
 			return plog.Logs{}, fmt.Errorf("unsupported log syntax: %s", syntax)
 		}
@@ -109,28 +112,30 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 		return plog.Logs{}, fmt.Errorf("error scanning log lines: %w", err)
 	}
 
-	return f.createLogs(scopeLogsByResource), nil
+	f.setResourceAttributes(resourceAttr, resourceLogs)
+	return logs, nil
 }
 
-// createLogs based on the scopeLogsByResource map
-func (f *elbAccessLogUnmarshaler) createLogs(scopeLogsByResource map[string]plog.ScopeLogs) plog.Logs {
+// createLogs with the expected fields for the scope logs
+func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
 	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName(metadata.ScopeName)
+	scopeLogs.Scope().SetVersion(f.buildInfo.Version)
+	return logs, resourceLogs, scopeLogs
+}
 
-	for resourceId, scopeLogs := range scopeLogsByResource {
-		rl := logs.ResourceLogs().AppendEmpty()
-		attr := rl.Resource().Attributes()
-		attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-		attr.PutStr(string(conventions.CloudResourceIDKey), resourceId)
-
-		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
-	}
-
-	return logs
+// setResourceAttributes based on the resourceAttributes
+func (f *elbAccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
+	attr := logs.Resource().Attributes()
+	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	attr.PutStr(string(conventions.CloudResourceIDKey), r.resourceId)
 }
 
 // addToClbAccessLogs adds clb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[string]plog.ScopeLogs, clbRecord ClbAccessLogRecord) {
+func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, clbRecord ClbAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(clbRecord.Time)
 	if err != nil {
@@ -140,6 +145,8 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[str
 
 	// Create record log
 	recordLog := plog.NewLogRecord()
+	// Set resource id
+	resourceAttr.resourceId = clbRecord.ELB
 	// Populate record attributes
 	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), clbRecord.ClientIp)
 	recordLog.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), clbRecord.RequestMethod)
@@ -164,9 +171,6 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[str
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
-	// Get scope logs
-	scopeLogs := f.getScopeLogs(clbRecord.ELB, scopeLogsByResource)
-
 	// move recordLog to scope
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	recordLog.MoveTo(rScope)
@@ -174,7 +178,7 @@ func (f *elbAccessLogUnmarshaler) addToClbAccessLogs(scopeLogsByResource map[str
 
 // addToAlbAccessLogs adds alb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[string]plog.ScopeLogs, albRecord AlbAccessLogRecord) {
+func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, albRecord AlbAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(albRecord.Time)
 	if err != nil {
@@ -184,6 +188,8 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[str
 
 	// Create record log
 	recordLog := plog.NewLogRecord()
+	// Set resource id
+	resourceAttr.resourceId = albRecord.ELB
 	// Populate record attributes
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), albRecord.Type)
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), albRecord.ProtocolVersion)
@@ -204,9 +210,6 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[str
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
-	// Get scope logs
-	scopeLogs := f.getScopeLogs(albRecord.ELB, scopeLogsByResource)
-
 	// move recordLog to scope
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	recordLog.MoveTo(rScope)
@@ -214,7 +217,7 @@ func (f *elbAccessLogUnmarshaler) addToAlbAccessLogs(scopeLogsByResource map[str
 
 // addToNlbAccessLogs adds nlb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(scopeLogsByResource map[string]plog.ScopeLogs, nlbRecord NlbAccessLogRecord) {
+func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, nlbRecord NlbAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(nlbRecord.Time)
 	if err != nil {
@@ -224,6 +227,8 @@ func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(scopeLogsByResource map[str
 
 	// Create record log
 	recordLog := plog.NewLogRecord()
+	// Set resource id
+	resourceAttr.resourceId = nlbRecord.ELB
 	// Populate record attributes
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), nlbRecord.Type)
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), nlbRecord.Version)
@@ -238,23 +243,7 @@ func (f *elbAccessLogUnmarshaler) addToNlbAccessLogs(scopeLogsByResource map[str
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
-	// Get scope logs
-	scopeLogs := f.getScopeLogs(nlbRecord.ELB, scopeLogsByResource)
-
 	// move recordLog to scope
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	recordLog.MoveTo(rScope)
-}
-
-// getScopeLogs for the given key. If it does not exist yet,
-// create new scope logs, and add the key to the logs map.
-func (f *elbAccessLogUnmarshaler) getScopeLogs(key string, logs map[string]plog.ScopeLogs) plog.ScopeLogs {
-	scopeLogs, ok := logs[key]
-	if !ok {
-		scopeLogs = plog.NewScopeLogs()
-		scopeLogs.Scope().SetName(metadata.ScopeName)
-		scopeLogs.Scope().SetVersion(f.buildInfo.Version)
-		logs[key] = scopeLogs
-	}
-	return scopeLogs
 }

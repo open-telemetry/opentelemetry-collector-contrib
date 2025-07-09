@@ -28,7 +28,7 @@ resourceLogs:
               - key: http.response.size
                 value:
                   intValue: "246"
-              - key: tls.listener.resource_id
+              - key: aws.elb.tls.listener.resource_id
                 value:
                   stringValue: g3d4b5e8bb8464cd
               - key: tls.protocol.version
