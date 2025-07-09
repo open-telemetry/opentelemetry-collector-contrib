@@ -40,6 +40,7 @@ type TelemetryBuilder struct {
 	KafkaReceiverPartitionStart              metric.Int64Counter
 	KafkaReceiverReadLatency                 metric.Float64Histogram
 	KafkaReceiverRecords                     metric.Int64Counter
+	KafkaReceiverRecordsDelay                metric.Float64Histogram
 	KafkaReceiverUnmarshalFailedLogRecords   metric.Int64Counter
 	KafkaReceiverUnmarshalFailedMetricPoints metric.Int64Counter
 	KafkaReceiverUnmarshalFailedSpans        metric.Int64Counter
@@ -156,6 +157,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_kafka_receiver_records",
 		metric.WithDescription("The number of received records."),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.KafkaReceiverRecordsDelay, err = builder.meter.Float64Histogram(
+		"otelcol_kafka_receiver_records_delay",
+		metric.WithDescription("The time in seconds between producing and receiving a batch of records."),
+		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverUnmarshalFailedLogRecords, err = builder.meter.Int64Counter(

@@ -126,7 +126,7 @@ Current message offset
 
 The time it took in ms to receive a batch of messages. [deprecated]
 
-Deprecated in favor of kafka_receiver_read_latency.
+Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_read_latency.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -195,6 +195,8 @@ Number of started partitions
 
 The time it took in seconds to receive a batch of records.
 
+Only produced when franz-go is enabled.
+
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Histogram | Double |
@@ -224,6 +226,25 @@ The number of received records.
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
+
+### otelcol_kafka_receiver_records_delay
+
+The time in seconds between producing and receiving a batch of records.
+
+Only produced when franz-go is enabled.
+This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
+
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The Kafka topic. | Any Str |
+| partition | The Kafka topic partition. | Any Int |
 
 ### otelcol_kafka_receiver_unmarshal_failed_log_records
 

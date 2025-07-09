@@ -384,6 +384,14 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+			metadatatest.AssertEqualKafkaReceiverRecordsDelay(t, tel, []metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("topic", "otlp_spans"),
+						attribute.Int64("partition", 0),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 		} else {
 			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 				{

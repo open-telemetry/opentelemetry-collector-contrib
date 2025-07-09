@@ -558,6 +558,23 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 	)
 }
 
+// OnFetchRecordUnbuffered is called when a fetched record is unbuffered and ready to be processed.
+// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookFetchRecordUnbuffered
+func (c *franzConsumer) OnFetchRecordUnbuffered(r *kgo.Record, polled bool) {
+	if !polled {
+		return // Record metrics when polled by `client.PollRecords()`.
+	}
+	attrs := []attribute.KeyValue{
+		attribute.String("topic", r.Topic),
+		attribute.Int64("partition", int64(r.Partition)),
+	}
+	c.telemetryBuilder.KafkaReceiverRecordsDelay.Record(
+		context.Background(),
+		time.Since(r.Timestamp).Seconds(),
+		metric.WithAttributes(attrs...),
+	)
+}
+
 func compressionFromCodec(c uint8) string {
 	// CompressionType signifies which algorithm the batch was compressed
 	// with.

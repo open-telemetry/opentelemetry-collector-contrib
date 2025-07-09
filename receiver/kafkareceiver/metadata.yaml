@@ -136,6 +136,16 @@ telemetry:
       histogram:
         value_type: double
       attributes: [node_id, topic, partition, outcome]
+    kafka_receiver_records_delay:
+      enabled: true
+      description: The time in seconds between producing and receiving a batch of records.
+      extended_documentation: |
+        Only produced when franz-go is enabled.
+        This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
+      unit: s
+      histogram:
+        value_type: double
+      attributes: [topic, partition]
     kafka_receiver_current_offset:
       enabled: true
       description: Current message offset
