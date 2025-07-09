@@ -5,11 +5,12 @@ package k8sleaderelector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"sync"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
-	"sync"
 )
 
 type (
@@ -76,7 +77,6 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 			callback.onStartLeading(ctx)
 		}
 	}
-
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
