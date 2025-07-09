@@ -474,6 +474,22 @@ func TestExporterLogs(t *testing.T) {
 				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
+			{
+				name: "log attribute value of type map",
+				body: func() pcommon.Value {
+					return pcommon.NewValueStr("foo")
+				}(),
+				recordAttrs: map[string]any{
+					"data_stream.dataset": "attr.dataset",
+					"outer": map[string]any{
+						"inner_foo": "inner_bar",
+						"inner_inner": map[string]any{
+							"inner_inner_foo": "inner_inner_bar",
+						},
+					},
+				},
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"outer.inner_foo":"inner_bar","outer.inner_inner.inner_inner_foo":"inner_inner_bar"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
+			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				rec := newBulkRecorder()
