@@ -109,12 +109,12 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLS: &configtls.ServerConfig{
+		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
