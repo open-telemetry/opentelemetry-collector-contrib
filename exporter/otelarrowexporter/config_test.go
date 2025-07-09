@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/config"
+	"github.com/open-telemetry/otel-arrow/go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

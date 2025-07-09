@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorise
 go 1.23.0
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
 	// https://github.com/go-sql-driver/mysql/issues/1602; https://github.com/apache/doris/pull/32177
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.129.0
@@ -19,6 +18,7 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/google/uuid v1.6.0
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250707130321-ac9adbf016bf
 	go.opentelemetry.io/collector/config/confighttp v0.129.1-0.20250707130321-ac9adbf016bf
@@ -29,7 +29,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
