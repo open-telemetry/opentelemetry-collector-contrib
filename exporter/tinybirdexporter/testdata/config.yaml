@@ -4,10 +4,16 @@ tinybird:
 
 tinybird/full:
   endpoint: "https://api.tinybird.co"
+  compression: "zstd"
+  retry_on_failure:
+    enabled: false
+  sending_queue:
+    enabled: false
   token: "test-token"
   metrics::datasource: "metrics"
   traces::datasource: "traces"
   logs::datasource: "logs"
+  wait: true
 
 tinybird/invalid_datasource:
   endpoint: "https://api.tinybird.co"
@@ -18,12 +24,6 @@ tinybird/invalid_datasource:
 
 tinybird/missing_token:
   endpoint: "https://api.tinybird.co"
-  metrics::datasource: "metrics"
-  traces::datasource: "traces"
-  logs::datasource: "logs"
 
 tinybird/missing_endpoint:
   token: "test-token"
-  metrics::datasource: "metrics"
-  traces::datasource: "traces"
-  logs::datasource: "logs"
