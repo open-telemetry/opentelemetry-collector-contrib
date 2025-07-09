@@ -243,3 +243,29 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 			"kafka consumer: consumer isn't running")
 	}
 }
+
+func TestLost(t *testing.T) {
+	// It is possible that lost is called multiple times for the same partition
+	// or called with a topic/partition that hasn't been assigned. This test
+	// ensures that `lost` works without error in both cases.
+	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+	settings, _, _ := mustNewSettings(t)
+
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
+			return nil
+		}, nil
+	}
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(context.Background())) }()
+
+	// Call lost couple of times for same partition
+	lostM := map[string][]int32{"test": {0}}
+	c.lost(context.Background(), nil, lostM, false)
+	c.lost(context.Background(), nil, lostM, false)
+
+	// Call lost for a topic and partition that was not assigned
+	c.lost(context.Background(), nil, map[string][]int32{"404": {0}}, true)
+}
