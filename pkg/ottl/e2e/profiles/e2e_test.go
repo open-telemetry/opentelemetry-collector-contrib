@@ -5,7 +5,10 @@ package profiles
 
 import (
 	"context"
+	"fmt"
+	"iter"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 
@@ -267,7 +270,10 @@ func Test_e2e_editors(t *testing.T) {
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
 			want: func(tCtx ottlprofile.TransformContext) {
-				getProfileAttribute(t, tCtx, "foo").Map().PutStr("test", "pass")
+				v := pcommon.NewValueEmpty()
+				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
+				v.Map().PutStr("test", "pass")
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
@@ -287,38 +293,42 @@ func Test_e2e_editors(t *testing.T) {
 		{
 			statement: `append(attributes["foo"]["slice"], "sample_value")`,
 			want: func(tCtx ottlprofile.TransformContext) {
-				v := getProfileAttribute(t, tCtx, "foo")
-				sv, _ := v.Map().Get("slice")
-				s := sv.Slice()
+				v := pcommon.NewValueEmpty()
+				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
+				mv, _ := v.Map().Get("slice")
+				s := mv.Slice()
 				s.AppendEmpty().SetStr("sample_value")
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `append(attributes["foo"]["flags"], "sample_value")`,
 			want: func(tCtx ottlprofile.TransformContext) {
-				v := getProfileAttribute(t, tCtx, "foo")
-				s := v.Map().PutEmptySlice("flags")
-				s.AppendEmpty().SetStr("pass")
-				s.AppendEmpty().SetStr("sample_value")
+				v := pcommon.NewValueEmpty()
+				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
+				mv, _ := v.Map().Get("flags")
+				_ = mv.FromRaw([]any{"pass", "sample_value"})
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `append(attributes["foo"]["slice"], values=[5,6])`,
 			want: func(tCtx ottlprofile.TransformContext) {
-				v := getProfileAttribute(t, tCtx, "foo")
-				sv, _ := v.Map().Get("slice")
-				s := sv.Slice()
-				s.AppendEmpty().SetInt(5)
-				s.AppendEmpty().SetInt(6)
+				v := pcommon.NewValueEmpty()
+				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
+				mv, _ := v.Map().Get("slice")
+				_ = mv.FromRaw([]any{"val", 5, 6})
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 		{
 			statement: `append(attributes["foo"]["new_slice"], values=[5,6])`,
 			want: func(tCtx ottlprofile.TransformContext) {
-				v := getProfileAttribute(t, tCtx, "foo")
+				v := pcommon.NewValueEmpty()
+				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				s := v.Map().PutEmptySlice("new_slice")
-				s.AppendEmpty().SetInt(5)
-				s.AppendEmpty().SetInt(6)
+				_ = s.FromRaw([]any{5, 6})
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
 			},
 		},
 	}
@@ -329,16 +339,75 @@ func Test_e2e_editors(t *testing.T) {
 			assert.NoError(t, err)
 
 			for _, statement := range statements {
-				tCtx := constructProfileTransformContextEditors()
+				validator, tCtx := newDictionaryValidator(constructProfileTransformContextEditors())
 				_, _, _ = statement.Execute(context.Background(), tCtx)
+				require.NoError(t, validator.validate())
 
-				exTCtx := constructProfileTransformContextEditors()
+				exValidator, exTCtx := newDictionaryValidator(constructProfileTransformContextEditors())
 				tt.want(exTCtx)
+				require.NoError(t, exValidator.validate())
 
 				assert.NoError(t, pprofiletest.CompareResourceProfiles(exTCtx.GetProfilesDictionary(), tCtx.GetProfilesDictionary(), newResourceProfiles(exTCtx), newResourceProfiles(tCtx)))
 			}
 		})
 	}
+}
+
+type table[T any] interface {
+	Len() int
+	All() iter.Seq2[int, T]
+	At(i int) T
+}
+
+type dictionaryValidator struct {
+	orig, dic pprofile.ProfilesDictionary
+}
+
+func newDictionaryValidator(tCtx ottlprofile.TransformContext) (dictionaryValidator, ottlprofile.TransformContext) {
+	dv := dictionaryValidator{orig: pprofile.NewProfilesDictionary(), dic: tCtx.GetProfilesDictionary()}
+	dv.dic.CopyTo(dv.orig)
+	return dv, tCtx
+}
+
+// validate ensures that no table entries of a dictionary have been changed. Only new entries are allowed.
+func (validator dictionaryValidator) validate() error {
+	if err := compareTables(validator.orig.AttributeTable(), validator.dic.AttributeTable()); err != nil {
+		return fmt.Errorf("attribute table: %w", err)
+	}
+	if err := compareTables(validator.orig.LocationTable(), validator.dic.LocationTable()); err != nil {
+		return fmt.Errorf("location table: %w", err)
+	}
+	if err := compareTables(validator.orig.StringTable(), validator.dic.StringTable()); err != nil {
+		return fmt.Errorf("string table: %w", err)
+	}
+	if err := compareTables(validator.orig.AttributeUnits(), validator.dic.AttributeUnits()); err != nil {
+		return fmt.Errorf("attribute units table: %w", err)
+	}
+	if err := compareTables(validator.orig.FunctionTable(), validator.dic.FunctionTable()); err != nil {
+		return fmt.Errorf("function table: %w", err)
+	}
+	if err := compareTables(validator.orig.LinkTable(), validator.dic.LinkTable()); err != nil {
+		return fmt.Errorf("link table: %w", err)
+	}
+	if err := compareTables(validator.orig.MappingTable(), validator.dic.MappingTable()); err != nil {
+		return fmt.Errorf("mapping table: %w", err)
+	}
+	return nil
+}
+
+// compareTables compares two tables to ensure that the first is a prefix of the second.
+// It means that no changes were made to the original table except new entries.
+func compareTables[T any](org, cmp table[T]) error {
+	if cmp.Len() < org.Len() {
+		return fmt.Errorf("table is smaller than the original: %d < %d", cmp.Len(), org.Len())
+	}
+	for i, attrOrig := range org.All() {
+		attrDic := cmp.At(i)
+		if !reflect.DeepEqual(attrOrig, attrDic) {
+			return fmt.Errorf("value mismatch at index %d: %v != %v", i, attrOrig, attrDic)
+		}
+	}
+	return nil
 }
 
 func Test_e2e_converters(t *testing.T) {
