@@ -353,29 +353,27 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 		{
 			name:       "create profiles processor and pass profile context with a global condition that meets the specified condition",
 			conditions: []string{`original_payload_format == "operationA"`},
-			statements: []string{`set(original_payload_format, "pass")`},
+			statements: []string{`set(attributes["test"], "pass")`},
 			want: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].OriginalPayloadFormat = "pass"
+				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes = []pprofiletest.Attribute{{Key: "test", Value: "pass"}}
 				return p.Transform()
 			},
 			createProfiles: basicProfiles().Transform,
 		},
 		{
 			name:       "create profiles processor and pass profile context with a statement condition that meets the specified condition",
-			conditions: []string{},
-			statements: []string{`set(original_payload_format, "pass") where original_payload_format == "operationA"`},
+			conditions: []string{`original_payload_format == "operationB"`},
+			statements: []string{`set(attributes["test"], "pass")`},
 			want: func() pprofile.Profiles {
-				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].OriginalPayloadFormat = "pass"
-				return p.Transform()
+				return basicProfiles().Transform()
 			},
 			createProfiles: basicProfiles().Transform,
 		},
 		{
 			name:           "create profiles processor and pass profile context with a global condition that fails the specified condition",
 			conditions:     []string{`original_payload_format == "operationB"`},
-			statements:     []string{`set(original_payload_format, "pass")`},
+			statements:     []string{`set(attributes["test"], "pass")`},
 			want:           basicProfiles().Transform,
 			createProfiles: basicProfiles().Transform,
 		},
@@ -1309,7 +1307,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			statements: []common.ContextStatements{
 				{
 					Context:    common.ContextID("profile"),
-					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
+					Statements: []string{`set(attributes["test"], TestProfileFunc())`},
 				},
 			},
 			wantErrorWith: `undefined function "set"`,

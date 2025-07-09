@@ -197,8 +197,6 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 	}
 }
 
-// The commented test cases require this PR to be merged:
-// - https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39416
 func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 	tests := []struct {
 		statement string
@@ -230,46 +228,44 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).SetOriginalPayloadFormat("pass")
 			},
 		},
-		/*
-			{
-				statement: `keep_keys(attributes, ["http.method"]) where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					clearProfileAttributes(td, 0)
-					putProfileAttribute(t, td, 0, "http.method", "get")
-				},
+		{
+			statement: `keep_keys(attributes, ["http.method"]) where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				clearProfileAttributes(td, 0)
+				putProfileAttribute(t, td, 0, "http.method", "get")
 			},
-			{
-				statement: `replace_pattern(attributes["http.method"], "get", "post")`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "http.method", "post")
-					putProfileAttribute(t, td, 1, "http.method", "post")
-				},
+		},
+		{
+			statement: `replace_pattern(attributes["http.method"], "get", "post")`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "http.method", "post")
+				putProfileAttribute(t, td, 1, "http.method", "post")
 			},
-			{
-				statement: `replace_all_patterns(attributes, "value", "get", "post")`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "http.method", "post")
-					putProfileAttribute(t, td, 1, "http.method", "post")
-				},
+		},
+		{
+			statement: `replace_all_patterns(attributes, "value", "get", "post")`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "http.method", "post")
+				putProfileAttribute(t, td, 1, "http.method", "post")
 			},
-			{
-				statement: `replace_all_patterns(attributes, "key", "http.url", "url")`,
-				want: func(td pprofile.Profiles) {
-					clearProfileAttributes(td, 0)
-					putProfileAttribute(t, td, 0, "http.method", "get")
-					putProfileAttribute(t, td, 0, "http.path", "/health")
-					putProfileAttribute(t, td, 0, "url", "http://localhost/health")
-					putProfileAttribute(t, td, 0, "flags", "A|B|C")
-					putProfileAttribute(t, td, 0, "total.string", "123456789")
-					clearProfileAttributes(td, 1)
-					putProfileAttribute(t, td, 1, "http.method", "get")
-					putProfileAttribute(t, td, 1, "http.path", "/health")
-					putProfileAttribute(t, td, 1, "url", "http://localhost/health")
-					putProfileAttribute(t, td, 1, "flags", "C|D")
-					putProfileAttribute(t, td, 1, "total.string", "345678")
-				},
+		},
+		{
+			statement: `replace_all_patterns(attributes, "key", "http.url", "url")`,
+			want: func(td pprofile.Profiles) {
+				clearProfileAttributes(td, 0)
+				putProfileAttribute(t, td, 0, "http.method", "get")
+				putProfileAttribute(t, td, 0, "http.path", "/health")
+				putProfileAttribute(t, td, 0, "url", "http://localhost/health")
+				putProfileAttribute(t, td, 0, "flags", "A|B|C")
+				putProfileAttribute(t, td, 0, "total.string", "123456789")
+				clearProfileAttributes(td, 1)
+				putProfileAttribute(t, td, 1, "http.method", "get")
+				putProfileAttribute(t, td, 1, "http.path", "/health")
+				putProfileAttribute(t, td, 1, "url", "http://localhost/health")
+				putProfileAttribute(t, td, 1, "flags", "C|D")
+				putProfileAttribute(t, td, 1, "total.string", "345678")
 			},
-		*/
+		},
 		{
 			statement: `set(original_payload_format, "pass") where dropped_attributes_count == 1`,
 			want: func(td pprofile.Profiles) {
@@ -290,42 +286,38 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
 			},
 		},
-		/*
-			{
-				statement: `delete_key(attributes, "http.url") where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					deleteProfileAttribute(td, 0, "http.url")
-				},
+		{
+			statement: `delete_key(attributes, "http.url") where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				deleteProfileAttribute(td, 0, "http.url")
 			},
-			{
-				statement: `delete_matching_keys(attributes, "http.*t.*") where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					deleteProfileAttributeSequential(td, 0, "http.path")
-					deleteProfileAttributeSequential(td, 0, "http.method")
-				},
+		},
+		{
+			statement: `delete_matching_keys(attributes, "http.*t.*") where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				deleteProfileAttributeSequential(td, 0, "http.path")
+				deleteProfileAttributeSequential(td, 0, "http.method")
 			},
-		*/
+		},
 		{
 			statement: `set(original_payload_format, Concat([original_payload_format, original_payload_format], ": ")) where original_payload_format == Concat(["operation", "A"], "")`,
 			want: func(td pprofile.Profiles) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("operationA: operationA")
 			},
 		},
-		/*
-			{
-				statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
-					putProfileAttribute(t, td, 1, "test", []any{"C", "D"})
-				},
+		{
+			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
+				putProfileAttribute(t, td, 1, "test", []any{"C", "D"})
 			},
-			{
-				statement: `set(original_payload_format, Split(attributes["flags"], "|")) where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
-				},
+		},
+		{
+			statement: `set(attributes["test"], Split(attributes["flags"], "|")) where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "test", []any{"A", "B", "C"})
 			},
-		*/
+		},
 		{
 			statement: `set(original_payload_format, Split(resource.attributes["not_exist"], "|"))`,
 			want:      func(_ pprofile.Profiles) {},
@@ -376,20 +368,18 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("OperationA")
 			},
 		},
-		/*
-			{
-				statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "json_test", "pass")
-				},
+		{
+			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "json_test", "pass")
 			},
-			{
-				statement: `limit(attributes, 0, []) where original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					clearProfileAttributes(td, 0)
-				},
+		},
+		{
+			statement: `limit(attributes, 0, []) where original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				clearProfileAttributes(td, 0)
 			},
-		*/
+		},
 		{
 			statement: `set(original_payload_format, String(Log(1))) where original_payload_format == "operationA"`,
 			want: func(td pprofile.Profiles) {
@@ -422,8 +412,6 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 	}
 }
 
-// The commented test cases require this PR to be merged:
-// - https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39416
 func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 	tests := []struct {
 		statement string
@@ -455,46 +443,44 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).SetOriginalPayloadFormat("pass")
 			},
 		},
-		/*
-			{
-				statement: `keep_keys(profile.attributes, ["http.method"]) where profile.original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					clearProfileAttributes(td, 0)
-					putProfileAttribute(t, td, 0, "http.method", "get")
-				},
+		{
+			statement: `keep_keys(profile.attributes, ["http.method"]) where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				clearProfileAttributes(td, 0)
+				putProfileAttribute(t, td, 0, "http.method", "get")
 			},
-			{
-				statement: `replace_pattern(profile.attributes["http.method"], "get", "post")`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "http.method", "post")
-					putProfileAttribute(t, td, 1, "http.method", "post")
-				},
+		},
+		{
+			statement: `replace_pattern(profile.attributes["http.method"], "get", "post")`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "http.method", "post")
+				putProfileAttribute(t, td, 1, "http.method", "post")
 			},
-			{
-				statement: `replace_all_patterns(profile.attributes, "value", "get", "post")`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "http.method", "post")
-					putProfileAttribute(t, td, 1, "http.method", "post")
-				},
+		},
+		{
+			statement: `replace_all_patterns(profile.attributes, "value", "get", "post")`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "http.method", "post")
+				putProfileAttribute(t, td, 1, "http.method", "post")
 			},
-			{
-				statement: `replace_all_patterns(profile.attributes, "key", "http.url", "url")`,
-				want: func(td pprofile.Profiles) {
-					clearProfileAttributes(td, 0)
-					putProfileAttribute(t, td, 0, "http.method", "get")
-					putProfileAttribute(t, td, 0, "http.path", "/health")
-					putProfileAttribute(t, td, 0, "url", "http://localhost/health")
-					putProfileAttribute(t, td, 0, "flags", "A|B|C")
-					putProfileAttribute(t, td, 0, "total.string", "123456789")
-					clearProfileAttributes(td, 1)
-					putProfileAttribute(t, td, 1, "http.method", "get")
-					putProfileAttribute(t, td, 1, "http.path", "/health")
-					putProfileAttribute(t, td, 1, "url", "http://localhost/health")
-					putProfileAttribute(t, td, 1, "flags", "C|D")
-					putProfileAttribute(t, td, 1, "total.string", "345678")
-				},
+		},
+		{
+			statement: `replace_all_patterns(profile.attributes, "key", "http.url", "url")`,
+			want: func(td pprofile.Profiles) {
+				clearProfileAttributes(td, 0)
+				putProfileAttribute(t, td, 0, "http.method", "get")
+				putProfileAttribute(t, td, 0, "http.path", "/health")
+				putProfileAttribute(t, td, 0, "url", "http://localhost/health")
+				putProfileAttribute(t, td, 0, "flags", "A|B|C")
+				putProfileAttribute(t, td, 0, "total.string", "123456789")
+				clearProfileAttributes(td, 1)
+				putProfileAttribute(t, td, 1, "http.method", "get")
+				putProfileAttribute(t, td, 1, "http.path", "/health")
+				putProfileAttribute(t, td, 1, "url", "http://localhost/health")
+				putProfileAttribute(t, td, 1, "flags", "C|D")
+				putProfileAttribute(t, td, 1, "total.string", "345678")
 			},
-		*/
+		},
 		{
 			statement: `set(profile.original_payload_format, "pass") where profile.dropped_attributes_count == 1`,
 			want: func(td pprofile.Profiles) {
@@ -508,21 +494,19 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
 			},
 		},
-		/*
-			{
-				statement: `delete_key(profile.attributes, "http.url") where profile.original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					deleteProfileAttribute(td, 0, "http.url")
-				},
+		{
+			statement: `delete_key(profile.attributes, "http.url") where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				deleteProfileAttribute(td, 0, "http.url")
 			},
-			{
-				statement: `delete_matching_keys(profile.attributes, "http.*t.*") where profile.original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					deleteProfileAttributeSequential(td, 0, "http.path")
-					deleteProfileAttributeSequential(td, 0, "http.method")
-				},
+		},
+		{
+			statement: `delete_matching_keys(profile.attributes, "http.*t.*") where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				deleteProfileAttributeSequential(td, 0, "http.path")
+				deleteProfileAttributeSequential(td, 0, "http.method")
 			},
-		*/
+		},
 		{
 			statement: `set(profile.original_payload_format, Concat([profile.original_payload_format, profile.original_payload_format], ": ")) where profile.original_payload_format == Concat(["operation", "A"], "")`,
 			want: func(td pprofile.Profiles) {
@@ -592,20 +576,18 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("OperationA")
 			},
 		},
-		/*
-			{
-				statement: `merge_maps(profile.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where profile.original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					putProfileAttribute(t, td, 0, "json_test", "pass")
-				},
+		{
+			statement: `merge_maps(profile.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				putProfileAttribute(t, td, 0, "json_test", "pass")
 			},
-			{
-				statement: `limit(profile.attribute_indices, 0, []) where profile.original_payload_format == "operationA"`,
-				want: func(td pprofile.Profiles) {
-					td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).AttributeIndices().FromRaw([]int32{})
-				},
+		},
+		{
+			statement: `limit(profile.attributes, 0, []) where profile.original_payload_format == "operationA"`,
+			want: func(td pprofile.Profiles) {
+				clearProfileAttributes(td, 0)
 			},
-		*/
+		},
 		{
 			statement: `set(profile.original_payload_format, String(Log(1))) where profile.original_payload_format == "operationA"`,
 			want: func(td pprofile.Profiles) {
@@ -1362,7 +1344,6 @@ func constructTestProfiles() pprofiletest.Profiles {
 	}
 }
 
-//nolint:unparam // This can be removed when more tests become unlocked by #39416.
 func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, key string, value any) {
 	t.Helper()
 	dic := td.ProfilesDictionary()
@@ -1377,4 +1358,43 @@ func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, k
 	default:
 		t.Fatalf("unsupported value type: %T", v)
 	}
+}
+
+func clearProfileAttributes(pp pprofile.Profiles, idx int) {
+	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
+	profile.AttributeIndices().FromRaw([]int32{})
+}
+
+// deleteProfileAttribute works as deleteKey() in func_delete_key.go.
+func deleteProfileAttribute(pp pprofile.Profiles, idx int, key string) {
+	dic := pp.ProfilesDictionary()
+	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
+	indices := profile.AttributeIndices().AsRaw()
+	for i := range indices {
+		if dic.AttributeTable().At(int(indices[i])).Key() == key {
+			indices[i] = indices[len(indices)-1]
+			profile.AttributeIndices().FromRaw(indices[:len(indices)-1])
+			return
+		}
+	}
+}
+
+// deleteProfileAttributeSequential works as deleteMatchingKeys() in func_delete_matching_keys.go.
+func deleteProfileAttributeSequential(pp pprofile.Profiles, idx int, key string) { //nolint:unparam
+	dic := pp.ProfilesDictionary()
+	profile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(idx)
+	indices := profile.AttributeIndices().AsRaw()
+	j := 0
+	for i := range indices {
+		if dic.AttributeTable().At(int(indices[i])).Key() == key {
+			continue
+		}
+		indices[j] = indices[i]
+		j++
+	}
+	if j == len(indices) {
+		// No matching keys found, nothing to do.
+		return
+	}
+	profile.AttributeIndices().FromRaw(indices[:j])
 }
