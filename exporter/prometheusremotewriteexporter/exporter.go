@@ -371,13 +371,20 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	}
 	compressedData := snappy.Encode(buf.snappy, buf.protobuf.Bytes())
 
+	// Initialize retry attempt counter for enhanced logging
+	retryAttempt := 0
+
 	// executeFunc can be used for backoff and non backoff scenarios.
-	executeFunc := func() (int, error) {
+	executeFunc := func() (struct{}, error) {
+		retryAttempt++
+
 		// check there was no timeout in the component level to avoid retries
 		// to continue to run after a timeout
 		select {
 		case <-ctx.Done():
-			return http.StatusGatewayTimeout, backoff.Permanent(ctx.Err())
+			err := ctx.Err()
+			logEnhancedError(prwe.settings.Logger, err, 0, retryAttempt, false)
+			return struct{}{}, backoff.Permanent(ctx.Err())
 		default:
 			// continue
 		}
@@ -385,7 +392,8 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
-			return http.StatusBadRequest, backoff.Permanent(consumererror.NewPermanent(err))
+			logEnhancedError(prwe.settings.Logger, err, 0, retryAttempt, false)
+			return struct{}{}, backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
 		// Add necessary headers specified by:
@@ -402,13 +410,16 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
-			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
+			err := fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
+			logEnhancedError(prwe.settings.Logger, err, 0, retryAttempt, false)
+			return struct{}{}, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
 		}
 
 		resp, err := prwe.client.Do(req)
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
-			return http.StatusBadRequest, err
+			logEnhancedError(prwe.settings.Logger, err, 0, retryAttempt, false)
+			return struct{}{}, err
 		}
 		defer func() {
 			_, _ = io.Copy(io.Discard, resp.Body)
@@ -435,32 +446,53 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return resp.StatusCode, nil
+			// Log success if there were retries
+			if retryAttempt > 1 {
+				logEnhancedSuccess(prwe.settings.Logger, retryAttempt-1)
+			}
+			return struct{}{}, nil
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+
+		// Log the error with enhanced context
+		logEnhancedError(prwe.settings.Logger, rerr, resp.StatusCode, retryAttempt, false)
+
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			return resp.StatusCode, rerr
+			return struct{}{}, rerr
 		}
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
 		if prwe.retryOnHTTP429 && resp.StatusCode == http.StatusTooManyRequests {
-			return resp.StatusCode, rerr
+			return struct{}{}, rerr
 		}
 
-		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		// For 4xx errors (except 429), log as permanent failure
+		logEnhancedError(prwe.settings.Logger, rerr, resp.StatusCode, retryAttempt, true)
+		return struct{}{}, backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
 	var err error
 	if prwe.retrySettings.Enabled {
 		// Use the BackOff instance to retry the func with exponential backoff.
-		_, err = backoff.Retry(ctx, executeFunc, backoff.WithBackOff(&backoff.ExponentialBackOff{
-			InitialInterval:     prwe.retrySettings.InitialInterval,
-			RandomizationFactor: prwe.retrySettings.RandomizationFactor,
-			Multiplier:          prwe.retrySettings.Multiplier,
-		}), backoff.WithMaxElapsedTime(prwe.retrySettings.MaxElapsedTime))
+		ctx, cancel := context.WithTimeout(ctx, prwe.retrySettings.MaxElapsedTime)
+		defer cancel()
+
+		_, err = backoff.Retry(ctx, executeFunc,
+			backoff.WithBackOff(&backoff.ExponentialBackOff{
+				InitialInterval:     prwe.retrySettings.InitialInterval,
+				RandomizationFactor: prwe.retrySettings.RandomizationFactor,
+				Multiplier:          prwe.retrySettings.Multiplier,
+				MaxInterval:         prwe.retrySettings.MaxInterval,
+			}),
+		)
+
+		// Log final failure if retries are exhausted
+		if err != nil {
+			logEnhancedError(prwe.settings.Logger, err, 0, retryAttempt, true)
+		}
 	} else {
 		_, err = executeFunc()
 	}
