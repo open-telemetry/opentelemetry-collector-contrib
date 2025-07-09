@@ -107,7 +107,7 @@ func parseRegionAndInstanceID(input string) (string, string, string) {
 	// Example mockProviderID: "aws:///us-west-2a/i-049ca2df511bec762"
 	parts := strings.Split(input, "/")
 	// Prevent NPE and return empty strings if the format is invalid
-	if len(parts) < 5 || parts[0] != "aws:" || len(parts[3]) == 0 || len(parts[4]) == 0 {
+	if len(parts) < 5 || parts[0] != "aws:" || parts[3] == "" || parts[4] == "" {
 		return "", "", ""
 	}
 

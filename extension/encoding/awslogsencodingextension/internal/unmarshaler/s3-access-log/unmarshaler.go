@@ -110,7 +110,7 @@ func scanField(logLine string) (string, string, error) {
 	}
 
 	// Remove space after closing quote if present
-	if len(remaining) > 0 && remaining[0] == ' ' {
+	if remaining != "" && remaining[0] == ' ' {
 		remaining = remaining[1:]
 	}
 
