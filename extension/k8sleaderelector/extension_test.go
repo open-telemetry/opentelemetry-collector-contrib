@@ -98,19 +98,21 @@ func TestExtension_WithDelay(t *testing.T) {
 	}
 
 	var onStartLeadingInvoked atomic.Bool
-	// Simulate a delay in the leader election process
+
+	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
+
+	// Simulate a delay of setting up callbacks after the leader election has started.
 	time.Sleep(2 * time.Second)
+	t.Logf("setting up callbacks after delay of 2 seconds at %v\n", time.Now().String())
 	leaderElection.SetCallBackFuncs(
 		func(_ context.Context) {
 			onStartLeadingInvoked.Store(true)
-			fmt.Printf("LeaderElection started leading")
+			fmt.Printf("%v: LeaderElection started leading\n", time.Now().String())
 		},
 		func() {
-			fmt.Printf("LeaderElection stopped leading")
+			fmt.Printf("%v: LeaderElection stopped leading\n", time.Now().String())
 		},
 	)
-
-	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
