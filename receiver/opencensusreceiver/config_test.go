@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -51,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
@@ -63,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
 						},
-					},
+					}),
 				},
 			},
 		},
@@ -79,11 +80,11 @@ func TestLoadConfig(t *testing.T) {
 					MaxConcurrentStreams: 16,
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle: 10 * time.Second,
 						},
-					},
+					}),
 				},
 			},
 		},
@@ -96,12 +97,12 @@ func TestLoadConfig(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
-					},
+					}),
 				},
 			},
 		},
