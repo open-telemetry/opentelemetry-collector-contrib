@@ -16,13 +16,13 @@ func TestUnmarshal(t *testing.T) {
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
-				Name:      "default",
-				ExpectErr: false,
-				Expect:    NewConfig(),
+				Name:               "default",
+				ExpectUnmarshalErr: false,
+				Expect:             NewConfig(),
 			},
 			{
-				Name:      "all",
-				ExpectErr: false,
+				Name:               "all",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.ListenAddress = "10.0.0.1:9000"
@@ -34,8 +34,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "all_with_async",
-				ExpectErr: false,
+				Name:               "all_with_async",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.ListenAddress = "10.0.0.1:9000"

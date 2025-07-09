@@ -6,6 +6,9 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 // NilField is a struct that implements Field, but
 // does nothing for all its operations. It is useful
 // as a default no-op field to avoid nil checks.
+//
+// Deprecated: Originally used for empty Field comparisons,
+// use Field.IsEmpty instead.
 type NilField struct{}
 
 // Get will return always return nil
