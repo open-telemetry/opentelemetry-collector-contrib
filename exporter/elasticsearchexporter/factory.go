@@ -209,13 +209,14 @@ func exporterhelperOptions(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
 	if cfg.Batcher.enabledSet {
-		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.BatcherConfig)) //nolint:staticcheck
+		opts = append(opts,
+			exporterhelper.WithBatcher(cfg.Batcher.BatcherConfig), //nolint:staticcheck
 
-		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-		//
-		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-		// to ensure sending data to the background workers will not block indefinitely.
-		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
+			// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+			//
+			// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
+			// to ensure sending data to the background workers will not block indefinitely.
+			exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	}
 	return opts
 }
