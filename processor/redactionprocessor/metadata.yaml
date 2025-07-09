@@ -1,0 +1,14 @@
+type: redaction
+
+status:
+  class: processor
+  stability:
+    beta: [traces]
+    alpha: [logs,metrics]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [dmitryax, mx-psi, TylerHelmuth]
+    emeritus: [leonsp-ai]
+
+tests:
+  config:

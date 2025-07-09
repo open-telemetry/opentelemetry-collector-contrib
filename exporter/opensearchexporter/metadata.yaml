@@ -1,0 +1,17 @@
+type: opensearch
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [ps48]
+    emeritus: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
+    seeking_new: true
+
+tests:
+  expect_consumer_error: true
+  config:
+    http:
+      endpoint: https://opensearch.example.com:9200

@@ -1,0 +1,19 @@
+type: docker_observer
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [MovieStoreGuy]
+
+# TODO: The tests are not passing on Windows. Either fix them or mark component as not supported on Windows.
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    ignore:
+      top:
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"

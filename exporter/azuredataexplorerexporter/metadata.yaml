@@ -1,0 +1,19 @@
+type: azuredataexplorer
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [ag-ramachandran]
+    emeritus: [asaharn]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  config:
+    cluster_uri: "https://CLUSTER.kusto.windows.net"
+    application_id: "f80da32c-108c-415c-a19e-643f461a677a"
+    application_key: "xx-xx-xx-xx"
+    tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
+  skip_lifecycle: true

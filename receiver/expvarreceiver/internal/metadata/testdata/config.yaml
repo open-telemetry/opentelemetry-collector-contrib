@@ -1,0 +1,109 @@
+default:
+all_set:
+  metrics:
+    process.runtime.memstats.buck_hash_sys:
+      enabled: true
+    process.runtime.memstats.frees:
+      enabled: true
+    process.runtime.memstats.gc_cpu_fraction:
+      enabled: true
+    process.runtime.memstats.gc_sys:
+      enabled: true
+    process.runtime.memstats.heap_alloc:
+      enabled: true
+    process.runtime.memstats.heap_idle:
+      enabled: true
+    process.runtime.memstats.heap_inuse:
+      enabled: true
+    process.runtime.memstats.heap_objects:
+      enabled: true
+    process.runtime.memstats.heap_released:
+      enabled: true
+    process.runtime.memstats.heap_sys:
+      enabled: true
+    process.runtime.memstats.last_pause:
+      enabled: true
+    process.runtime.memstats.lookups:
+      enabled: true
+    process.runtime.memstats.mallocs:
+      enabled: true
+    process.runtime.memstats.mcache_inuse:
+      enabled: true
+    process.runtime.memstats.mcache_sys:
+      enabled: true
+    process.runtime.memstats.mspan_inuse:
+      enabled: true
+    process.runtime.memstats.mspan_sys:
+      enabled: true
+    process.runtime.memstats.next_gc:
+      enabled: true
+    process.runtime.memstats.num_forced_gc:
+      enabled: true
+    process.runtime.memstats.num_gc:
+      enabled: true
+    process.runtime.memstats.other_sys:
+      enabled: true
+    process.runtime.memstats.pause_total:
+      enabled: true
+    process.runtime.memstats.stack_inuse:
+      enabled: true
+    process.runtime.memstats.stack_sys:
+      enabled: true
+    process.runtime.memstats.sys:
+      enabled: true
+    process.runtime.memstats.total_alloc:
+      enabled: true
+none_set:
+  metrics:
+    process.runtime.memstats.buck_hash_sys:
+      enabled: false
+    process.runtime.memstats.frees:
+      enabled: false
+    process.runtime.memstats.gc_cpu_fraction:
+      enabled: false
+    process.runtime.memstats.gc_sys:
+      enabled: false
+    process.runtime.memstats.heap_alloc:
+      enabled: false
+    process.runtime.memstats.heap_idle:
+      enabled: false
+    process.runtime.memstats.heap_inuse:
+      enabled: false
+    process.runtime.memstats.heap_objects:
+      enabled: false
+    process.runtime.memstats.heap_released:
+      enabled: false
+    process.runtime.memstats.heap_sys:
+      enabled: false
+    process.runtime.memstats.last_pause:
+      enabled: false
+    process.runtime.memstats.lookups:
+      enabled: false
+    process.runtime.memstats.mallocs:
+      enabled: false
+    process.runtime.memstats.mcache_inuse:
+      enabled: false
+    process.runtime.memstats.mcache_sys:
+      enabled: false
+    process.runtime.memstats.mspan_inuse:
+      enabled: false
+    process.runtime.memstats.mspan_sys:
+      enabled: false
+    process.runtime.memstats.next_gc:
+      enabled: false
+    process.runtime.memstats.num_forced_gc:
+      enabled: false
+    process.runtime.memstats.num_gc:
+      enabled: false
+    process.runtime.memstats.other_sys:
+      enabled: false
+    process.runtime.memstats.pause_total:
+      enabled: false
+    process.runtime.memstats.stack_inuse:
+      enabled: false
+    process.runtime.memstats.stack_sys:
+      enabled: false
+    process.runtime.memstats.sys:
+      enabled: false
+    process.runtime.memstats.total_alloc:
+      enabled: false

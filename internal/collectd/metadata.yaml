@@ -1,0 +1,5 @@
+status:
+  disable_codecov_badge: true
+  codeowners:
+    active: [atoulme]
+    seeking_new: true

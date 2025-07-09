@@ -1,0 +1,15 @@
+type: tcplog
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [VihasMakwana]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:
+    listen_address: "localhost:0"

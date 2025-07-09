@@ -1,0 +1,13 @@
+type: osquery
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [nslaughter, smithclay]
+
+# TODO: Update the receiver to pass the tests
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

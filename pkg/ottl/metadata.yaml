@@ -1,0 +1,12 @@
+type: ottl
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    development: [ profiles ]
+    beta: [ traces, metrics, logs ]
+  codeowners:
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
+    seeking_new: true

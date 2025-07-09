@@ -1,0 +1,39 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: test.gauge
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 345
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 20
+                  asDouble: 258
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 80
+                  asDouble: 178
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb                      

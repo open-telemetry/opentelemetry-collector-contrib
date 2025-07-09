@@ -1,0 +1,14 @@
+type: mezmo
+
+status:
+  class: exporter
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, billmeyer, gjanco]
+
+tests:
+  config:
+    disable_keep_alives: true
+  expect_consumer_error: true

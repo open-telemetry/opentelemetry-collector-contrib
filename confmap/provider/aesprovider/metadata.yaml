@@ -1,0 +1,10 @@
+type: aes
+
+status:
+  class: provider
+  stability:
+    alpha: [provider]
+  distributions: [contrib]
+  codeowners:
+    active: [kuiperda]
+    emeritus: [djaglowski, shazlehu]

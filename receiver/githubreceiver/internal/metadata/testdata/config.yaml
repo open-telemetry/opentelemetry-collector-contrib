@@ -1,0 +1,75 @@
+default:
+all_set:
+  metrics:
+    vcs.change.count:
+      enabled: true
+    vcs.change.duration:
+      enabled: true
+    vcs.change.time_to_approval:
+      enabled: true
+    vcs.change.time_to_merge:
+      enabled: true
+    vcs.contributor.count:
+      enabled: true
+    vcs.ref.count:
+      enabled: true
+    vcs.ref.lines_delta:
+      enabled: true
+    vcs.ref.revisions_delta:
+      enabled: true
+    vcs.ref.time:
+      enabled: true
+    vcs.repository.count:
+      enabled: true
+  resource_attributes:
+    organization.name:
+      enabled: true
+    vcs.vendor.name:
+      enabled: true
+none_set:
+  metrics:
+    vcs.change.count:
+      enabled: false
+    vcs.change.duration:
+      enabled: false
+    vcs.change.time_to_approval:
+      enabled: false
+    vcs.change.time_to_merge:
+      enabled: false
+    vcs.contributor.count:
+      enabled: false
+    vcs.ref.count:
+      enabled: false
+    vcs.ref.lines_delta:
+      enabled: false
+    vcs.ref.revisions_delta:
+      enabled: false
+    vcs.ref.time:
+      enabled: false
+    vcs.repository.count:
+      enabled: false
+  resource_attributes:
+    organization.name:
+      enabled: false
+    vcs.vendor.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    organization.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcs.vendor.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    organization.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "organization.name-val"
+    vcs.vendor.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcs.vendor.name-val"

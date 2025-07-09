@@ -1,0 +1,13 @@
+type: awss3
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces,metrics,logs]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, adcharre]
+tests:
+  config:
+    starttime: "2024-01-31"
+    endtime: "2024-02-03"

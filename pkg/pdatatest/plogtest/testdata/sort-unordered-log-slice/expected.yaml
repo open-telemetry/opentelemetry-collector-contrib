@@ -1,0 +1,47 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: testKey1
+          value:
+            stringValue: teststringvalue1
+        - key: testKey2
+          value:
+            stringValue: teststringvalue2
+    schemaUrl: https://opentelemetry.io/schemas/1.6.1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: testKey3
+                value:
+                  stringValue: teststringvalue3
+              - key: testKey3
+                value:
+                  stringValue: teststringvalue4
+            body:
+              stringValue: testscopevalue1
+            observedTimeUnixNano: "11651379494838206464"
+            severityNumber: 9
+            severityText: TEST
+            spanId: ""
+            timeUnixNano: "11651379494838206464"
+            traceId: ""
+          - attributes:
+              - key: testKey1
+                value:
+                  stringValue: teststringvalue1
+              - key: testKey2
+                value:
+                  stringValue: teststringvalue2
+            body:
+              stringValue: testscopevalue1
+            flags: 1
+            observedTimeUnixNano: "11651379494838206464"
+            severityNumber: 9
+            severityText: TEST
+            spanId: ""
+            timeUnixNano: "11651379494838206464"
+            traceId: ""
+        schemaUrl: https://opentelemetry.io/schemas/1.6.1
+        scope:
+          name: collector
+          version: v0.1.0

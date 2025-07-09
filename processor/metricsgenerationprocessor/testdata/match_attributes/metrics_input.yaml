@@ -1,0 +1,100 @@
+resourceMetrics:
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: total capacity
+            name: capacity.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                # No attributes to ensure it matches with everything
+                - asInt: "1000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk1"
+                - asInt: "3000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk2"
+                    - key: encrypted
+                      value:
+                        boolValue: true
+            unit: By
+          - description: used capacity
+            name: capacity.used
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "20"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk1"
+                - asInt: "30"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk4"
+                - asInt: "40"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk2"
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                - asInt: "50"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk2"
+                    - key: encrypted
+                      value:
+                        boolValue: false
+                - asInt: "60"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: "/dev/disk1"
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                    - key: owner
+                      value:
+                        stringValue: "foo"
+                    - key: bool_test
+                      value:
+                        boolValue: true
+                    - key: int_test
+                      value:
+                        intValue: 100
+                    - key: double_test
+                      value:
+                        doubleValue: 200
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper
+          version: latest

@@ -1,0 +1,20 @@
+type: system
+
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+metrics:
+  system.uptime:
+    enabled: true
+    description: The time the system has been running
+    unit: s
+    gauge:
+      value_type: double
+    attributes: []

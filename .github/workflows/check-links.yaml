@@ -1,0 +1,52 @@
+name: check-links
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  changedfiles:
+    name: changed files
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+    outputs:
+      files: ${{ steps.changes.outputs.files }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changes
+        run: |
+          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
+
+          if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
+            files="**/*.md"
+          fi
+
+          echo "files=$files" >> $GITHUB_OUTPUT
+
+  check-links:
+    runs-on: ubuntu-24.04
+    needs: changedfiles
+    if: ${{needs.changedfiles.outputs.files}}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@82202e5e9c2f4ef1a55a3d02563e1cb6041e5332 # v2.4.1
+        with:
+          args: "--verbose --no-progress ${{needs.changedfiles.outputs.files}} --config .github/lychee.toml"
+          failIfEmpty: false

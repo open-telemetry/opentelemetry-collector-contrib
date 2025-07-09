@@ -1,0 +1,18 @@
+{
+    "records": [
+        {
+            "time": "2024-04-24T12:06:12.0000000Z",
+            "resourceId": "/RESOURCE_ID",
+            "category": "AppServiceAppLogs",
+            "operationName": "AppLog",
+            "properties": {
+                "ContainerId": "CONTAINER_ID",
+                "ExceptionClass": "EXCEPTION_CLASS",
+                "Host": "HOST",
+                "Method": "METHOD",
+                "Source": "FILEPATH",
+                "Stacktrace": "STACKTRACE"
+            }
+        }
+    ]
+}

@@ -1,0 +1,85 @@
+{
+  "records": [
+    {
+      "time": "2022-11-11T04:48:27.6767145Z",
+      "resourceId": "/RESOURCE_ID-1",
+      "tenantId": "/TENANT_ID",
+      "operationName": "SecretGet",
+      "operationVersion": "7.0",
+      "category": "AuditEvent",
+      "resultType": "Success",
+      "resultSignature": "Signature",
+      "resultDescription": "Description",
+      "durationMs": "1234",
+      "callerIpAddress": "127.0.0.1",
+      "correlationId": "607964b6-41a5-4e24-a5db-db7aab3b9b34",
+      "Level": "Warning",
+      "location": "ukso",
+      "identity": {
+        "claim": {
+          "oid": "607964b6-41a5-4e24-a5db-db7aab3b9b34"
+        }
+      },
+      "properties": {
+        "string": "string",
+        "int": 429,
+        "float": 3.14,
+        "bool": false
+      }
+    },
+    {
+      "time": "2022-11-11T04:48:29.6767145Z",
+      "resourceId": "/RESOURCE_ID-2",
+      "tenantId": "/TENANT_ID",
+      "operationName": "SecretSet",
+      "operationVersion": "7.0",
+      "category": "AuditEvent",
+      "resultType": "Success",
+      "resultSignature": "Signature",
+      "resultDescription": "Description",
+      "durationMs": "4321",
+      "callerIpAddress": "127.0.0.1",
+      "correlationId": "96317703-2132-4a8d-a5d7-e18d2f486783",
+      "Level": "Warning",
+      "location": "ukso",
+      "identity": {
+        "claim": {
+          "oid": "96317703-2132-4a8d-a5d7-e18d2f486783"
+        }
+      },
+      "properties": {
+        "string": "string",
+        "int": 924,
+        "float": 41.3,
+        "bool": true
+      }
+    },
+    {
+      "time": "2022-11-11T04:48:31.6767145Z",
+      "resourceId": "/RESOURCE_ID-2",
+      "tenantId": "/TENANT_ID",
+      "operationName": "SecretGet",
+      "operationVersion": "7.0",
+      "category": "AuditEvent",
+      "resultType": "Success",
+      "resultSignature": "Signature",
+      "resultDescription": "Description",
+      "durationMs": "321",
+      "callerIpAddress": "127.0.0.1",
+      "correlationId": "4ae807da-39d9-4327-b5b4-0ab685a57f9a",
+      "Level": "Warning",
+      "location": "ukso",
+      "identity": {
+        "claim": {
+          "oid": "4ae807da-39d9-4327-b5b4-0ab685a57f9a"
+        }
+      },
+      "properties": {
+        "string": "string",
+        "int": 925,
+        "float": 41.4,
+        "bool": false
+      }
+    }
+  ]
+}

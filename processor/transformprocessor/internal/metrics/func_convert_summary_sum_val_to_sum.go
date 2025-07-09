@@ -1,0 +1,76 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+)
+
+type convertSummarySumValToSumArguments struct {
+	StringAggTemp string
+	Monotonic     bool
+	Suffix        ottl.Optional[string]
+}
+
+func newConvertSummarySumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_summary_sum_val_to_sum", &convertSummarySumValToSumArguments{}, createConvertSummarySumValToSumFunction)
+}
+
+func createConvertSummarySumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	args, ok := oArgs.(*convertSummarySumValToSumArguments)
+
+	if !ok {
+		return nil, errors.New("convertSummarySumValToSumFactory args must be of type *convertSummarySumValToSumArguments")
+	}
+
+	return convertSummarySumValToSum(args.StringAggTemp, args.Monotonic, args.Suffix)
+}
+
+func convertSummarySumValToSum(stringAggTemp string, monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	metricNameSuffix := "_sum"
+	if !suffix.IsEmpty() {
+		metricNameSuffix = suffix.Get()
+	}
+	var aggTemp pmetric.AggregationTemporality
+	switch stringAggTemp {
+	case "delta":
+		aggTemp = pmetric.AggregationTemporalityDelta
+	case "cumulative":
+		aggTemp = pmetric.AggregationTemporalityCumulative
+	default:
+		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
+	}
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
+		metric := tCtx.GetMetric()
+		if metric.Type() != pmetric.MetricTypeSummary {
+			return nil, nil
+		}
+
+		sumMetric := tCtx.GetMetrics().AppendEmpty()
+		sumMetric.SetDescription(metric.Description())
+		sumMetric.SetName(metric.Name() + metricNameSuffix)
+		sumMetric.SetUnit(metric.Unit())
+		sumMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
+		sumMetric.Sum().SetIsMonotonic(monotonic)
+
+		sumDps := sumMetric.Sum().DataPoints()
+		dps := metric.Summary().DataPoints()
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			sumDp := sumDps.AppendEmpty()
+			dp.Attributes().CopyTo(sumDp.Attributes())
+			sumDp.SetDoubleValue(dp.Sum())
+			sumDp.SetStartTimestamp(dp.StartTimestamp())
+			sumDp.SetTimestamp(dp.Timestamp())
+		}
+		return nil, nil
+	}, nil
+}

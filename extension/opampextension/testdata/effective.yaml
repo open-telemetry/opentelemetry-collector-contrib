@@ -1,0 +1,27 @@
+exporters:
+  otlp:
+    endpoint: localhost:1111
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+processors:
+  transform:
+    error_mode: ignore
+    metric_statements:
+      - context: metric
+        conditions: 
+          - type == METRIC_DATA_TYPE_SUM
+        statements:
+          - set(description, "Sum")
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [otlp]

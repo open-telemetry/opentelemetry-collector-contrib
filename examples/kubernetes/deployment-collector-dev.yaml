@@ -1,0 +1,93 @@
+mode: deployment
+
+image:
+  repository: otelcontribcol-dev
+  tag: "0.0.1"
+  pullPolicy: IfNotPresent
+
+command:
+  name: otelcontribcol
+
+extraEnvs:
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups:
+        - ""
+      resources:
+        - events
+        - namespaces
+        - namespaces/status
+        - nodes
+        - nodes/spec
+        - pods
+        - pods/status
+        - replicationcontrollers
+        - replicationcontrollers/status
+        - resourcequotas
+        - services
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - apps
+      resources:
+        - daemonsets
+        - deployments
+        - replicasets
+        - statefulsets
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - extensions
+      resources:
+        - daemonsets
+        - deployments
+        - replicasets
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - batch
+      resources:
+        - jobs
+        - cronjobs
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - autoscaling
+      resources:
+        - horizontalpodautoscalers
+      verbs:
+        - get
+        - list
+        - watch
+
+config:
+  exporters:
+    debug:
+      verbosity: detailed
+  receivers:
+    k8s_cluster:
+      collection_interval: 10s
+      metrics:
+        k8s.container.cpu_limit:
+          enabled: false
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [k8s_cluster]
+        processors: [batch]
+        exporters: [debug]

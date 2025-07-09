@@ -1,0 +1,585 @@
+{
+    "httpd": {
+        "aborted_requests": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of aborted requests"
+        },
+        "bulk_docs": {
+            "value": {
+                "min": 0.0,
+                "max": 0.0,
+                "arithmetic_mean": 0.0,
+                "geometric_mean": 0.0,
+                "harmonic_mean": 0.0,
+                "median": 0.0,
+                "variance": 0.0,
+                "standard_deviation": 0.0,
+                "skewness": 0.0,
+                "kurtosis": 0.0,
+                "percentile": [
+                    [
+                        50,
+                        0.0
+                    ],
+                    [
+                        75,
+                        0.0
+                    ],
+                    [
+                        90,
+                        0.0
+                    ],
+                    [
+                        95,
+                        0.0
+                    ],
+                    [
+                        99,
+                        0.0
+                    ],
+                    [
+                        999,
+                        0.0
+                    ]
+                ],
+                "histogram": [
+                    [
+                        0,
+                        0
+                    ]
+                ],
+                "n": 0
+            },
+            "type": "histogram",
+            "desc": "distribution of the number of docs in _bulk_docs requests"
+        },
+        "bulk_requests": {
+            "value": 2,
+            "type": "counter",
+            "desc": "number of bulk requests"
+        },
+        "requests": {
+            "value": 1,
+            "type": "counter",
+            "desc": "number of HTTP requests"
+        },
+        "temporary_view_reads": {
+            "value": 34,
+            "type": "counter",
+            "desc": "number of temporary view reads"
+        },
+        "view_reads": {
+            "value": 35,
+            "type": "counter",
+            "desc": "number of view reads"
+        },
+        "clients_requesting_changes": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of clients for continuous _changes"
+        },
+        "purge_requests": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of purge requests"
+        }
+    },
+    "dbinfo": {
+        "value": {
+            "min": 0.0,
+            "max": 0.0,
+            "arithmetic_mean": 0.0,
+            "geometric_mean": 0.0,
+            "harmonic_mean": 0.0,
+            "median": 0.0,
+            "variance": 0.0,
+            "standard_deviation": 0.0,
+            "skewness": 0.0,
+            "kurtosis": 0.0,
+            "percentile": [
+                [
+                    50,
+                    0.0
+                ],
+                [
+                    75,
+                    0.0
+                ],
+                [
+                    90,
+                    0.0
+                ],
+                [
+                    95,
+                    0.0
+                ],
+                [
+                    99,
+                    0.0
+                ],
+                [
+                    999,
+                    0.0
+                ]
+            ],
+            "histogram": [
+                [
+                    0,
+                    0
+                ]
+            ],
+            "n": 0
+        },
+        "type": "histogram",
+        "desc": "distribution of latencies for calls to retrieve DB info"
+    },
+    "auth_cache_hits": {
+        "value": 0,
+        "type": "counter",
+        "desc": "number of authentication cache hits"
+    },
+    "auth_cache_misses": {
+        "value": 0,
+        "type": "counter",
+        "desc": "number of authentication cache misses"
+    },
+    "collect_results_time": {
+        "value": {
+            "min": 0.0,
+            "max": 0.0,
+            "arithmetic_mean": 0.0,
+            "geometric_mean": 0.0,
+            "harmonic_mean": 0.0,
+            "median": 0.0,
+            "variance": 0.0,
+            "standard_deviation": 0.0,
+            "skewness": 0.0,
+            "kurtosis": 0.0,
+            "percentile": [
+                [
+                    50,
+                    0.0
+                ],
+                [
+                    75,
+                    0.0
+                ],
+                [
+                    90,
+                    0.0
+                ],
+                [
+                    95,
+                    0.0
+                ],
+                [
+                    99,
+                    0.0
+                ],
+                [
+                    999,
+                    0.0
+                ]
+            ],
+            "histogram": [
+                [
+                    0,
+                    0
+                ]
+            ],
+            "n": 0
+        },
+        "type": "histogram",
+        "desc": "microsecond latency for calls to couch_db:collect_results/3"
+    },
+    "database_writes": {
+        "value": 39,
+        "type": "counter",
+        "desc": "number of times a database was changed"
+    },
+    "database_reads": {
+        "value": 38,
+        "type": "counter",
+        "desc": "number of times a document was read from a database"
+    },
+    "database_purges": {
+        "value": 0,
+        "type": "counter",
+        "desc": "number of times a database was purged"
+    },
+    "db_open_time": {
+        "value": {
+            "min": 0.0,
+            "max": 0.0,
+            "arithmetic_mean": 0.0,
+            "geometric_mean": 0.0,
+            "harmonic_mean": 0.0,
+            "median": 0.0,
+            "variance": 0.0,
+            "standard_deviation": 0.0,
+            "skewness": 0.0,
+            "kurtosis": 0.0,
+            "percentile": [
+                [
+                    50,
+                    0.0
+                ],
+                [
+                    75,
+                    0.0
+                ],
+                [
+                    90,
+                    0.0
+                ],
+                [
+                    95,
+                    0.0
+                ],
+                [
+                    99,
+                    0.0
+                ],
+                [
+                    999,
+                    0.0
+                ]
+            ],
+            "histogram": [
+                [
+                    0,
+                    0
+                ]
+            ],
+            "n": 0
+        },
+        "type": "histogram",
+        "desc": "milliseconds required to open a database"
+    },
+    "document_inserts": {
+        "value": 12,
+        "type": "counter",
+        "desc": "number of documents inserted"
+    },
+    "document_writes": {
+        "value": 12,
+        "type": "counter",
+        "desc": "number of document write operations"
+    },
+    "document_purges": {
+        "total": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of total document purge operations"
+        },
+        "success": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of successful document purge operations"
+        },
+        "failure": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of failed document purge operations"
+        }
+    },
+    "local_document_writes": {
+        "value": 1,
+        "type": "counter",
+        "desc": "number of _local document write operations"
+    },
+    "httpd_request_methods": {
+        "COPY": {
+            "value": 3,
+            "type": "counter",
+            "desc": "number of HTTP COPY requests"
+        },
+        "DELETE": {
+            "value": 4,
+            "type": "counter",
+            "desc": "number of HTTP DELETE requests"
+        },
+        "GET": {
+            "value": 5,
+            "type": "counter",
+            "desc": "number of HTTP GET requests"
+        },
+        "HEAD": {
+            "value": 6,
+            "type": "counter",
+            "desc": "number of HTTP HEAD requests"
+        },
+        "OPTIONS": {
+            "value": 7,
+            "type": "counter",
+            "desc": "number of HTTP OPTIONS requests"
+        },
+        "POST": {
+            "value": 8,
+            "type": "counter",
+            "desc": "number of HTTP POST requests"
+        },
+        "PUT": {
+            "value": 9,
+            "type": "counter",
+            "desc": "number of HTTP PUT requests"
+        }
+    },
+    "httpd_status_codes": {
+        "200": {
+            "value": 10,
+            "type": "counter",
+            "desc": "number of HTTP 200 OK responses"
+        },
+        "201": {
+            "value": 11,
+            "type": "counter",
+            "desc": "number of HTTP 201 Created responses"
+        },
+        "202": {
+            "value": 12,
+            "type": "counter",
+            "desc": "number of HTTP 202 Accepted responses"
+        },
+        "204": {
+            "value": 13,
+            "type": "counter",
+            "desc": "number of HTTP 204 No Content responses"
+        },
+        "206": {
+            "value": 14,
+            "type": "counter",
+            "desc": "number of HTTP 206 Partial Content"
+        },
+        "301": {
+            "value": 15,
+            "type": "counter",
+            "desc": "number of HTTP 301 Moved Permanently responses"
+        },
+        "302": {
+            "value": 16,
+            "type": "counter",
+            "desc": "number of HTTP 302 Found responses"
+        },
+        "304": {
+            "value": 17,
+            "type": "counter",
+            "desc": "number of HTTP 304 Not Modified responses"
+        },
+        "400": {
+            "value": 18,
+            "type": "counter",
+            "desc": "number of HTTP 400 Bad Request responses"
+        },
+        "401": {
+            "value": 19,
+            "type": "counter",
+            "desc": "number of HTTP 401 Unauthorized responses"
+        },
+        "403": {
+            "value": 20,
+            "type": "counter",
+            "desc": "number of HTTP 403 Forbidden responses"
+        },
+        "404": {
+            "value": 21,
+            "type": "counter",
+            "desc": "number of HTTP 404 Not Found responses"
+        },
+        "405": {
+            "value": 22,
+            "type": "counter",
+            "desc": "number of HTTP 405 Method Not Allowed responses"
+        },
+        "406": {
+            "value": 23,
+            "type": "counter",
+            "desc": "number of HTTP 406 Not Acceptable responses"
+        },
+        "409": {
+            "value": 24,
+            "type": "counter",
+            "desc": "number of HTTP 409 Conflict responses"
+        },
+        "412": {
+            "value": 25,
+            "type": "counter",
+            "desc": "number of HTTP 412 Precondition Failed responses"
+        },
+        "413": {
+            "value": 26,
+            "type": "counter",
+            "desc": "number of HTTP 413 Request Entity Too Long responses"
+        },
+        "414": {
+            "value": 27,
+            "type": "counter",
+            "desc": "number of HTTP 414 Request URI Too Long responses"
+        },
+        "415": {
+            "value": 28,
+            "type": "counter",
+            "desc": "number of HTTP 415 Unsupported Media Type responses"
+        },
+        "416": {
+            "value": 29,
+            "type": "counter",
+            "desc": "number of HTTP 416 Requested Range Not Satisfiable responses"
+        },
+        "417": {
+            "value": 30,
+            "type": "counter",
+            "desc": "number of HTTP 417 Expectation Failed responses"
+        },
+        "500": {
+            "value": 31,
+            "type": "counter",
+            "desc": "number of HTTP 500 Internal Server Error responses"
+        },
+        "501": {
+            "value": 32,
+            "type": "counter",
+            "desc": "number of HTTP 501 Not Implemented responses"
+        },
+        "503": {
+            "value": 33,
+            "type": "counter",
+            "desc": "number of HTTP 503 Service unavailable responses"
+        }
+    },
+    "open_databases": {
+        "value": 36,
+        "type": "counter",
+        "desc": "number of open databases"
+    },
+    "open_os_files": {
+        "value": 37,
+        "type": "counter",
+        "desc": "number of file descriptors CouchDB has open"
+    },
+    "request_time": {
+        "value": {
+            "min": 0.0,
+            "max": 0.0,
+            "arithmetic_mean": 1.0,
+            "geometric_mean": 0.0,
+            "harmonic_mean": 0.0,
+            "median": 0.0,
+            "variance": 0.0,
+            "standard_deviation": 0.0,
+            "skewness": 0.0,
+            "kurtosis": 0.0,
+            "percentile": [
+                [
+                    50,
+                    0.0
+                ],
+                [
+                    75,
+                    0.0
+                ],
+                [
+                    90,
+                    0.0
+                ],
+                [
+                    95,
+                    0.0
+                ],
+                [
+                    99,
+                    0.0
+                ],
+                [
+                    999,
+                    0.0
+                ]
+            ],
+            "histogram": [
+                [
+                    0,
+                    0
+                ]
+            ],
+            "n": 0
+        },
+        "type": "histogram",
+        "desc": "length of a request inside CouchDB without MochiWeb"
+    },
+    "couch_server": {
+        "lru_skip": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of couch_server LRU operations skipped"
+        }
+    },
+    "query_server": {
+        "vdu_rejects": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of rejections by validate_doc_update function"
+        },
+        "vdu_process_time": {
+            "value": {
+                "min": 0.0,
+                "max": 0.0,
+                "arithmetic_mean": 0.0,
+                "geometric_mean": 0.0,
+                "harmonic_mean": 0.0,
+                "median": 0.0,
+                "variance": 0.0,
+                "standard_deviation": 0.0,
+                "skewness": 0.0,
+                "kurtosis": 0.0,
+                "percentile": [
+                    [
+                        50,
+                        0.0
+                    ],
+                    [
+                        75,
+                        0.0
+                    ],
+                    [
+                        90,
+                        0.0
+                    ],
+                    [
+                        95,
+                        0.0
+                    ],
+                    [
+                        99,
+                        0.0
+                    ],
+                    [
+                        999,
+                        0.0
+                    ]
+                ],
+                "histogram": [
+                    [
+                        0,
+                        0
+                    ]
+                ],
+                "n": 0
+            },
+            "type": "histogram",
+            "desc": "duration of validate_doc_update function calls"
+        }
+    },
+    "mrview": {
+        "map_doc": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of documents mapped in the view server"
+        },
+        "emits": {
+            "value": 0,
+            "type": "counter",
+            "desc": "number of invocations of `emit' in map functions in the view server"
+        }
+    }
+}

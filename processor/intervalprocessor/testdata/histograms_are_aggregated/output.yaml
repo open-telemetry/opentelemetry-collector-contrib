@@ -1,0 +1,28 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.histogram.test
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 80
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [9, 12, 17, 8, 34]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

@@ -1,0 +1,9 @@
+type: zipkin
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [core, contrib]
+  codeowners:
+    active: [MovieStoreGuy, andrzej-stencel, crobert-1]

@@ -1,0 +1,2 @@
+Receiver: otlp, stef
+Exporter: otlp, stef

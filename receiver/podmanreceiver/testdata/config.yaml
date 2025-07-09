@@ -1,0 +1,9 @@
+podman_stats:
+podman_stats/all:
+  endpoint: http://example.com/
+  collection_interval: 2s
+  timeout: 20s
+podman_stats/empty_endpoint:
+  endpoint: ""
+podman_stats/invalid_collection_interval:
+  collection_interval: 0s

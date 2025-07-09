@@ -1,0 +1,15 @@
+type: filelog
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [andrzej-stencel]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:
+    include: [ testdata/simple.log ]

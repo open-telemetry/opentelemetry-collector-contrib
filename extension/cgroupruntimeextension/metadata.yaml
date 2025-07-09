@@ -1,0 +1,13 @@
+type: cgroupruntime
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [mx-psi, rogercoll]
+  unsupported_platforms: [darwin, windows]
+
+tests:
+  config:

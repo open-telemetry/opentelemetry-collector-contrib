@@ -1,0 +1,30 @@
+# This action generates a weekly report as a github issue
+# More details in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24672
+
+name: 'Generate Weekly Report'
+on:
+  workflow_dispatch: 
+  schedule:
+    # run every tuesday at 1am UTC
+    - cron: "0 1 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  get_issues:
+    permissions:
+      issues: write # required for creating weekly report issues
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: npm install js-yaml
+        working-directory: ./.github/workflows/scripts
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        id: get-issues
+        with:
+          retries: 3
+          script: |
+            const script = require('.github/workflows/scripts/generate-weekly-report.js')
+            await script({github, context})

@@ -1,0 +1,13 @@
+type: googlecloudlogentry_encoding
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    alpha: [ extension ]
+  distributions: [ contrib ]
+  codeowners:
+    active: [ alexvanboxel ]
+
+tests:
+  config:

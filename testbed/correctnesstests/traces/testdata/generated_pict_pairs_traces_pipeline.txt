@@ -1,0 +1,13 @@
+Receiver	Exporter
+zipkin	opencensus
+otlp	opencensus
+jaeger	opencensus
+zipkin	otlp
+opencensus	opencensus
+otlp	zipkin
+jaeger	zipkin
+opencensus	zipkin
+otlp	otlp
+jaeger	otlp
+opencensus	otlp
+zipkin	zipkin

@@ -1,0 +1,10 @@
+type: faro
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs, traces]
+  distributions:
+    - contrib
+  codeowners:
+    active: [dehaansa,rlankfo,mar4uk]

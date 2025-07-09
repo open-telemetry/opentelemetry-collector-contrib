@@ -1,0 +1,15 @@
+type: clickhouse
+
+status:
+  class: exporter
+  stability:
+    alpha: [metrics]
+    beta: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [hanjm, dmitryax, Frapschen, SpencerTorres]
+
+tests:
+  config:
+    endpoint: clickhouse://localhost:9000
+  skip_lifecycle: true

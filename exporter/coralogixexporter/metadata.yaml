@@ -1,0 +1,17 @@
+type: coralogix
+
+status:
+  class: exporter
+  stability:
+    alpha: [profiles]
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [povilasv, iblancasa, douglascamata]
+  warnings: ["Authentication issues in v0.127.0"]
+
+tests:
+  config:
+    domain: "coralogix.com"
+    private_key: "xxx"
+  expect_consumer_error: true

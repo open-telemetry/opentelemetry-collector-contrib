@@ -1,0 +1,34 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: percentage of time CPU is idle.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: instance
+                      value:
+                        stringValue: "0"
+                  timeUnixNano: "1646857199239674900"
+            name: cpu.idle
+            unit: '%'
+          - description: number of bytes committed to memory
+            gauge:
+              dataPoints:
+                - asDouble: 1.9516747776e+10
+                  timeUnixNano: "1646857199239674900"
+            name: bytes.committed
+            unit: By
+          - description: amount of time processor is busy
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: instance
+                      value:
+                        stringValue: "1"
+                  timeUnixNano: "1646857199239674900"
+            name: processor.time
+            unit: '%'
+        scope: {}

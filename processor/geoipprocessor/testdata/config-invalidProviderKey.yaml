@@ -1,0 +1,4 @@
+processors:
+  geoip:
+    providers:
+      invalidProviderKey:

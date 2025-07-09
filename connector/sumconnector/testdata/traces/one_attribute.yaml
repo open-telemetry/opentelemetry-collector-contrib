@@ -1,0 +1,182 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Span sum by attribute
+            name: span.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "5.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "3.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+          - description: Span event sum by attribute
+            name: spanevent.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "15.6"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "8.3"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+
+  
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Span sum by attribute
+            name: span.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "5.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "3.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+          - description: Span event sum by attribute
+            name: spanevent.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "15.2"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "8.1"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: Span sum by attribute
+            name: span.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "5.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "3.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+          - description: Span event sum by attribute
+            name: spanevent.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "15"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "8"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+
+
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Span sum by attribute
+            name: span.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "5.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "3.1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+          - description: Span event sum by attribute
+            name: spanevent.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "15"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127925459000"
+                - asDouble: "8"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127925459000"
+              isMonotonic: true
+

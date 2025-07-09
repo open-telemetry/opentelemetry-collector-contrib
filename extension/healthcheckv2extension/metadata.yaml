@@ -1,0 +1,11 @@
+type: healthcheckv2
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [mwear]
+    emeritus: [jpkrohling]
+    seeking_new: true

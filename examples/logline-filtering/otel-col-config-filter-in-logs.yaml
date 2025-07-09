@@ -1,0 +1,17 @@
+receivers:
+  filelog:
+    include: [/var/log/busybox/simple.log]
+    operators:
+      - type: filter
+        expr: 'body not matches "^WARN:"'
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [otlp/custom]
+      processors: []
+
+exporters:
+  otlp/custom:
+    endpoint: http://0.0.0.0:4242

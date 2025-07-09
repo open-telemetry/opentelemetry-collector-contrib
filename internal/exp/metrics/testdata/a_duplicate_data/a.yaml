@@ -1,0 +1,79 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+      # This entry has an identical scope, so it *could* be merged with the above entry.
+      # However, the initial structure of mdA is left as-is
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 60
+                  asDouble: 444
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # This entry has an identical resource_key, so it *could* be merged with the above entry.
+  # However, the initial structure of mdA is left as-is
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 70
+                  asDouble: 555
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

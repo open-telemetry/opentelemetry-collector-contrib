@@ -1,0 +1,14 @@
+type: awscontainerinsightreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  warnings: [Other]
+  codeowners:
+    active: [Aneurysm9, pxaws]
+
+# TODO: Update the receiver to pass the tests
+tests:
+  skip_lifecycle: true

@@ -1,0 +1,4 @@
+awsfirehose:
+  endpoint: 0.0.0.0:4433
+  encoding: can't have
+  record_type: both

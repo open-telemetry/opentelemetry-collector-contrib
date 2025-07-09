@@ -1,0 +1,753 @@
+{
+  "_nodes": {
+    "total": 1,
+    "successful": 1,
+    "failed": 0
+  },
+  "cluster_name": "docker-cluster",
+  "nodes": {
+    "szaFXm55RIeu8X-PTv5unQ": {
+      "timestamp": 1627669701946,
+      "name": "917e13e55eed",
+      "transport_address": "172.22.0.2:9300",
+      "host": "172.22.0.2",
+      "ip": "172.22.0.2:9300",
+      "roles": [
+        "data",
+        "data_cold",
+        "data_content",
+        "data_frozen",
+        "data_hot",
+        "data_warm",
+        "ingest",
+        "master",
+        "ml",
+        "remote_cluster_client",
+        "transform"
+      ],
+      "attributes": {
+        "ml.machine_memory": "1073741824",
+        "xpack.installed": "true",
+        "transform.node": "true",
+        "ml.max_open_jobs": "512",
+        "ml.max_jvm_size": "536870912"
+      },
+      "indices": {
+        "docs": {
+          "count": 100,
+          "deleted": 200
+        },
+        "store": {
+          "size_in_bytes": 300,
+          "total_data_set_size_in_bytes": 0,
+          "reserved_in_bytes": 0
+        },
+        "indexing": {
+          "index_total": 200,
+          "index_time_in_millis": 300,
+          "index_current": 0,
+          "index_failed": 0,
+          "delete_total": 400,
+          "delete_time_in_millis": 500,
+          "delete_current": 0,
+          "noop_update_total": 0,
+          "is_throttled": false,
+          "throttle_time_in_millis": 0
+        },
+        "get": {
+          "total": 600,
+          "time_in_millis": 500,
+          "exists_total": 512,
+          "exists_time_in_millis": 209,
+          "missing_total": 512,
+          "missing_time_in_millis": 124,
+          "current": 0
+        },
+        "search": {
+          "open_contexts": 0,
+          "query_total": 124,
+          "query_time_in_millis": 2354,
+          "query_current": 6723,
+          "fetch_total": 234,
+          "fetch_time_in_millis": 256,
+          "fetch_current": 234,
+          "scroll_total": 235,
+          "scroll_time_in_millis": 5234,
+          "scroll_current": 234,
+          "suggest_total": 5234,
+          "suggest_time_in_millis": 2342,
+          "suggest_current": 0
+        },
+        "merges": {
+          "current": 123,
+          "current_docs": 5123,
+          "current_size_in_bytes": 5123,
+          "total": 5234,
+          "total_time_in_millis": 25345,
+          "total_docs": 21,
+          "total_size_in_bytes": 423,
+          "total_stopped_time_in_millis": 283,
+          "total_throttled_time_in_millis": 213,
+          "total_auto_throttle_in_bytes": 1234
+        },
+        "refresh": {
+          "total": 958,
+          "total_time_in_millis": 544,
+          "external_total": 0,
+          "external_total_time_in_millis": 0,
+          "listeners": 0
+        },
+        "flush": {
+          "total": 345,
+          "periodic": 0,
+          "total_time_in_millis": 995
+        },
+        "warmer": {
+          "current": 6435,
+          "total": 0,
+          "total_time_in_millis": 664
+        },
+        "query_cache": {
+          "memory_size_in_bytes": 394,
+          "total_count": 983,
+          "hit_count": 333,
+          "miss_count": 5324,
+          "cache_size": 555,
+          "cache_count": 223,
+          "evictions": 938
+        },
+        "fielddata": {
+          "memory_size_in_bytes": 32,
+          "evictions": 13212
+        },
+        "completion": {
+          "size_in_bytes": 0
+        },
+        "segments": {
+          "count": 0,
+          "memory_in_bytes": 0,
+          "terms_memory_in_bytes": 400,
+          "stored_fields_memory_in_bytes": 0,
+          "term_vectors_memory_in_bytes": 0,
+          "norms_memory_in_bytes": 0,
+          "points_memory_in_bytes": 0,
+          "doc_values_memory_in_bytes": 100,
+          "index_writer_memory_in_bytes": 300,
+          "version_map_memory_in_bytes": 0,
+          "fixed_bit_set_memory_in_bytes": 200,
+          "max_unsafe_auto_id_timestamp": -9223372036854775808,
+          "file_sizes": {}
+        },
+        "translog": {
+          "operations": 0,
+          "size_in_bytes": 0,
+          "uncommitted_operations": 0,
+          "uncommitted_size_in_bytes": 0,
+          "earliest_last_modified_age": 0
+        },
+        "request_cache": {
+          "memory_size_in_bytes": 0,
+          "evictions": 0,
+          "hit_count": 0,
+          "miss_count": 0
+        },
+        "recovery": {
+          "current_as_source": 0,
+          "current_as_target": 0,
+          "throttle_time_in_millis": 0
+        }
+      },
+      "os": {
+        "timestamp": 1627669701947,
+        "cpu": {
+          "percent": 3,
+          "load_average": {
+            "1m": 0.0,
+            "5m": 0.02,
+            "15m": 0.02
+          }
+        },
+        "mem": {
+          "total_in_bytes": 1073741824,
+          "free_in_bytes": 294109184,
+          "used_in_bytes": 779632640,
+          "free_percent": 27,
+          "used_percent": 73
+        },
+        "swap": {
+          "total_in_bytes": 1073741824,
+          "free_in_bytes": 1073741824,
+          "used_in_bytes": 0
+        },
+        "cgroup": {
+          "cpuacct": {
+            "control_group": "/",
+            "usage_nanos": 45612972897
+          },
+          "cpu": {
+            "control_group": "/",
+            "cfs_period_micros": 100000,
+            "cfs_quota_micros": 100000,
+            "stat": {
+              "number_of_elapsed_periods": 12406,
+              "number_of_times_throttled": 298,
+              "time_throttled_nanos": 34855164850
+            }
+          },
+          "memory": {
+            "control_group": "/",
+            "limit_in_bytes": "1073741824",
+            "usage_in_bytes": "779632640"
+          }
+        }
+      },
+      "process": {
+        "timestamp": 1627669701948,
+        "open_file_descriptors": 270,
+        "max_file_descriptors": 1048576,
+        "cpu": {
+          "percent": 0,
+          "total_in_millis": 42970
+        },
+        "mem": {
+          "total_virtual_in_bytes": 4961767424
+        }
+      },
+      "jvm": {
+        "timestamp": 1627669701948,
+        "uptime_in_millis": 2059021,
+        "mem": {
+          "heap_used_in_bytes": 305152000,
+          "heap_used_percent": 56,
+          "heap_committed_in_bytes": 536870912,
+          "heap_max_in_bytes": 536870912,
+          "non_heap_used_in_bytes": 128825192,
+          "non_heap_committed_in_bytes": 131792896,
+          "pools": {
+            "young": {
+              "used_in_bytes": 218103808,
+              "max_in_bytes": 636870912,
+              "peak_used_in_bytes": 314572800,
+              "peak_max_in_bytes": 0
+            },
+            "old": {
+              "used_in_bytes": 76562432,
+              "max_in_bytes": 536870912,
+              "peak_used_in_bytes": 76562432,
+              "peak_max_in_bytes": 536870912
+            },
+            "survivor": {
+              "used_in_bytes": 10485760,
+              "max_in_bytes": 736870912,
+              "peak_used_in_bytes": 41943040,
+              "peak_max_in_bytes": 0
+            }
+          }
+        },
+        "threads": {
+          "count": 27,
+          "peak_count": 28
+        },
+        "gc": {
+          "collectors": {
+            "young": {
+              "collection_count": 20,
+              "collection_time_in_millis": 930
+            },
+            "old": {
+              "collection_count": 10,
+              "collection_time_in_millis": 5
+            }
+          }
+        },
+        "buffer_pools": {
+          "mapped": {
+            "count": 0,
+            "used_in_bytes": 0,
+            "total_capacity_in_bytes": 0
+          },
+          "direct": {
+            "count": 9,
+            "used_in_bytes": 1070323,
+            "total_capacity_in_bytes": 1070322
+          },
+          "mapped - 'non-volatile memory'": {
+            "count": 0,
+            "used_in_bytes": 0,
+            "total_capacity_in_bytes": 0
+          }
+        },
+        "classes": {
+          "current_loaded_count": 20695,
+          "total_loaded_count": 20695,
+          "total_unloaded_count": 0
+        }
+      },
+      "thread_pool": {
+        "analyze": {
+          "threads": 1,
+          "queue": 2,
+          "active": 3,
+          "rejected": 4,
+          "largest": 5,
+          "completed": 6
+        }
+      },
+      "fs": {
+        "timestamp": 1627669701948,
+        "total": {
+          "total_in_bytes": 67371577344,
+          "free_in_bytes": 15746158592,
+          "available_in_bytes": 12293464064
+        },
+        "data": [
+          {
+            "path": "/usr/share/elasticsearch/data/nodes/0",
+            "mount": "/ (overlay)",
+            "type": "overlay",
+            "total_in_bytes": 67371577344,
+            "free_in_bytes": 15746158592,
+            "available_in_bytes": 12293464064
+          }
+        ],
+        "io_stats": {
+          "total": {
+            "operations": 49169,
+            "read_operations": 39304,
+            "write_operations": 9865,
+            "read_kilobytes": 1617780,
+            "write_kilobytes": 602016,
+            "io_time_in_millis": 27780
+          }
+        }
+      },
+      "transport": {
+        "server_open": 100,
+        "total_outbound_connections": 200,
+        "rx_count": 0,
+        "rx_size_in_bytes": 129384,
+        "tx_count": 0,
+        "tx_size_in_bytes": 157732
+      },
+      "http": {
+        "current_open": 2,
+        "total_opened": 3,
+        "clients": [
+          {
+            "id": 1644878830,
+            "opened_time_millis": 1627669701929,
+            "closed_time_millis": 1627669701929,
+            "last_request_time_millis": -1,
+            "request_count": 0,
+            "request_size_bytes": 0
+          },
+          {
+            "id": 2001891351,
+            "agent": "Go-http-client/1.1",
+            "local_address": "172.22.0.2:9200",
+            "remote_address": "172.22.0.1:57136",
+            "last_uri": "/_cluster/health",
+            "opened_time_millis": 1627667715500,
+            "last_request_time_millis": 1627669695490,
+            "request_count": 399,
+            "request_size_bytes": 0
+          },
+          {
+            "id": 103547676,
+            "agent": "PostmanRuntime/7.28.2",
+            "local_address": "172.22.0.2:9200",
+            "remote_address": "172.22.0.1:57276",
+            "last_uri": "/_nodes/*/stats/",
+            "opened_time_millis": 1627669701929,
+            "last_request_time_millis": 1627669701929,
+            "request_count": 1,
+            "request_size_bytes": 0
+          }
+        ]
+      },
+      "breakers": {
+        "request": {
+          "limit_size_in_bytes": 322122547,
+          "limit_size": "307.1mb",
+          "estimated_size_in_bytes": 0,
+          "estimated_size": "0b",
+          "overhead": 1.0,
+          "tripped": 0
+        },
+        "fielddata": {
+          "limit_size_in_bytes": 214748364,
+          "limit_size": "204.7mb",
+          "estimated_size_in_bytes": 0,
+          "estimated_size": "0b",
+          "overhead": 1.03,
+          "tripped": 0
+        },
+        "in_flight_requests": {
+          "limit_size_in_bytes": 536870912,
+          "limit_size": "512mb",
+          "estimated_size_in_bytes": 0,
+          "estimated_size": "0b",
+          "overhead": 2.0,
+          "tripped": 0
+        },
+        "model_inference": {
+          "limit_size_in_bytes": 268435456,
+          "limit_size": "256mb",
+          "estimated_size_in_bytes": 0,
+          "estimated_size": "0b",
+          "overhead": 1.0,
+          "tripped": 0
+        },
+        "accounting": {
+          "limit_size_in_bytes": 536870912,
+          "limit_size": "512mb",
+          "estimated_size_in_bytes": 0,
+          "estimated_size": "0b",
+          "overhead": 1.0,
+          "tripped": 0
+        },
+        "parent": {
+          "limit_size_in_bytes": 510027366,
+          "limit_size": "486.3mb",
+          "estimated_size_in_bytes": 305152000,
+          "estimated_size": "291mb",
+          "overhead": 1.0,
+          "tripped": 0
+        }
+      },
+      "script": {
+        "compilations": 1,
+        "cache_evictions": 0,
+        "compilation_limit_triggered": 0
+      },
+      "discovery": {
+        "cluster_state_queue": {
+          "total": 0,
+          "pending": 0,
+          "committed": 0
+        },
+        "published_cluster_states": {
+          "full_states": 2,
+          "incompatible_diffs": 0,
+          "compatible_diffs": 1
+        },
+        "cluster_state_update": {
+          "unchanged": {
+            "count": 4,
+            "computation_time_millis": 7,
+            "notification_time_millis": 1
+          },
+          "success": {
+            "count": 7,
+            "computation_time_millis": 40,
+            "publication_time_millis": 627,
+            "context_construction_time_millis": 17,
+            "commit_time_millis": 113,
+            "completion_time_millis": 117,
+            "master_apply_time_millis": 484,
+            "notification_time_millis": 2
+          },
+          "failure": {
+            "count": 0,
+            "computation_time_millis": 0,
+            "publication_time_millis": 0,
+            "context_construction_time_millis": 0,
+            "commit_time_millis": 0,
+            "completion_time_millis": 0,
+            "master_apply_time_millis": 0,
+            "notification_time_millis": 0
+          }
+        }
+      },
+      "ingest": {
+        "total": {
+          "count": 0,
+          "time_in_millis": 0,
+          "current": 0,
+          "failed": 0
+        },
+        "pipelines": {
+          "xpack_monitoring_6": {
+            "count": 0,
+            "time_in_millis": 0,
+            "current": 0,
+            "failed": 0,
+            "processors": [
+              {
+                "script": {
+                  "type": "script",
+                  "stats": {
+                    "count": 0,
+                    "time_in_millis": 0,
+                    "current": 0,
+                    "failed": 0
+                  }
+                }
+              },
+              {
+                "gsub": {
+                  "type": "gsub",
+                  "stats": {
+                    "count": 0,
+                    "time_in_millis": 0,
+                    "current": 0,
+                    "failed": 0
+                  }
+                }
+              }
+            ]
+          },
+          "xpack_monitoring_7": {
+            "count": 0,
+            "time_in_millis": 0,
+            "current": 0,
+            "failed": 0,
+            "processors": []
+          }
+        }
+      },
+      "adaptive_selection": {},
+      "script_cache": {
+        "sum": {
+          "compilations": 1,
+          "cache_evictions": 0,
+          "compilation_limit_triggered": 0
+        },
+        "contexts": [
+          {
+            "context": "aggregation_selector",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "aggs",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "aggs_combine",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "aggs_init",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "aggs_map",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "aggs_reduce",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "analysis",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "boolean_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "bucket_aggregation",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "date_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "double_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "filter",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "geo_point_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "ingest",
+            "compilations": 1,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "ingest_template",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "interval",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "ip_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "keyword_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "long_field",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "moving-function",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "number_sort",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "painless_test",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "processor_conditional",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "score",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "script_heuristic",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "similarity",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "similarity_weight",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "string_sort",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "template",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "terms_set",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "update",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "watcher_condition",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "watcher_transform",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          },
+          {
+            "context": "xpack_template",
+            "compilations": 0,
+            "cache_evictions": 0,
+            "compilation_limit_triggered": 0
+          }
+        ]
+      },
+      "indexing_pressure": {
+        "memory": {
+          "current": {
+            "combined_coordinating_and_primary_in_bytes": 0,
+            "coordinating_in_bytes": 0,
+            "primary_in_bytes": 0,
+            "replica_in_bytes": 0,
+            "all_in_bytes": 0
+          },
+          "total": {
+            "combined_coordinating_and_primary_in_bytes": 0,
+            "coordinating_in_bytes": 0,
+            "primary_in_bytes": 0,
+            "replica_in_bytes": 0,
+            "all_in_bytes": 0,
+            "coordinating_rejections": 0,
+            "primary_rejections": 0,
+            "replica_rejections": 0
+          },
+          "limit_in_bytes": 53687091
+        }
+      }
+    }
+  }
+}

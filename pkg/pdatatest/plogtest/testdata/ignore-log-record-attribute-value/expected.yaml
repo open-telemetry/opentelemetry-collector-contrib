@@ -1,0 +1,12 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: Key1
+                value:
+                  stringValue: Val2
+            body: {}
+            spanId: ""
+            traceId: ""
+        scope: {}

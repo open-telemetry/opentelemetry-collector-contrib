@@ -1,0 +1,13 @@
+default:
+all_set:
+  resource_attributes:
+    k8s.node.name:
+      enabled: true
+    k8s.node.uid:
+      enabled: true
+none_set:
+  resource_attributes:
+    k8s.node.name:
+      enabled: false
+    k8s.node.uid:
+      enabled: false

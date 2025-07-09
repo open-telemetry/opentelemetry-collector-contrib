@@ -1,0 +1,15 @@
+type: carbon
+
+status:
+  class: receiver
+  stability:
+    unmaintained: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: []
+    emeritus: [aboguszewski-sumo]
+    seeking_new: true
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

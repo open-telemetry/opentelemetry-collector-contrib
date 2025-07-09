@@ -1,0 +1,18 @@
+receivers:
+  nop:
+
+processors:
+
+  probabilistic_sampler/traces:
+    # This is smaller than 2**-56
+    sampling_percentage: .000000000000001
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ probabilistic_sampler/traces ]
+      exporters: [ nop ]
