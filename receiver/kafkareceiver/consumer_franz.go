@@ -488,9 +488,15 @@ func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) 
 }
 
 func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
+		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
+	)
+	c.telemetryBuilder.KafkaBrokerThrottlingLatency.Record(
+		context.Background(),
+		throttleInterval.Seconds(),
 		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
 	)
 }
@@ -500,9 +506,18 @@ func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, re
 	if err != nil {
 		outcome = "failure"
 	}
+	// KafkaReceiverLatency is deprecated in favor of KafkaReceiverReadLatency.
 	c.telemetryBuilder.KafkaReceiverLatency.Record(
 		context.Background(),
 		readWait.Milliseconds()+timeToRead.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+	)
+	c.telemetryBuilder.KafkaReceiverReadLatency.Record(
+		context.Background(),
+		readWait.Seconds()+timeToRead.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
@@ -520,7 +535,13 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
+	// KafkaReceiverMessages is deprecated in favor of KafkaReceiverRecords.
 	c.telemetryBuilder.KafkaReceiverMessages.Add(
+		context.Background(),
+		int64(m.NumRecords),
+		metric.WithAttributes(attrs...),
+	)
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),

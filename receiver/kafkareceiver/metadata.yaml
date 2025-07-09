@@ -121,7 +121,7 @@ telemetry:
       stability:
         level: deprecated
       description: The time it took in ms to receive a batch of messages.
-      extended_documentation: Deprecated in favor of kafka_receiver_read_latency.
+      extended_documentation: Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_read_latency.
       unit: ms
       histogram:
         value_type: int
@@ -131,6 +131,7 @@ telemetry:
     kafka_receiver_read_latency:
       enabled: true
       description: The time it took in seconds to receive a batch of records.
+      extended_documentation: Only produced when franz-go is enabled.
       unit: s
       histogram:
         value_type: double
