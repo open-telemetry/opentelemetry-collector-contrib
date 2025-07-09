@@ -81,7 +81,7 @@ func (c Config) buildArgs() ([]string, error) {
 
 	args = append(args, "--priority", c.Priority)
 
-	if len(c.Grep) > 0 {
+	if c.Grep != "" {
 		args = append(args, "--grep", c.Grep)
 	}
 
@@ -89,7 +89,7 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, "--dmesg")
 	}
 
-	if len(c.Namespace) > 0 {
+	if c.Namespace != "" {
 		args = append(args, "--namespace", c.Namespace)
 	}
 

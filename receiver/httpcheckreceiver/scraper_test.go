@@ -159,7 +159,7 @@ func TestScraperScrape(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			if len(tc.endpoint) > 0 {
+			if tc.endpoint != "" {
 				cfg.Targets = []*targetConfig{
 					{
 						ClientConfig: confighttp.ClientConfig{

@@ -376,7 +376,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			Limit: aws.Int32(maxLogGroupsPerDiscovery),
 		}
 
-		if len(*nextToken) > 0 {
+		if *nextToken != "" {
 			req.NextToken = nextToken
 		}
 

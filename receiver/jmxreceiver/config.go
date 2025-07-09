@@ -95,7 +95,7 @@ func (c *Config) parseProperties(logger *zap.Logger) []string {
 	parsed := make([]string, 0, 1)
 
 	logLevel := "info"
-	if len(c.LogLevel) > 0 {
+	if c.LogLevel != "" {
 		logLevel = strings.ToLower(c.LogLevel)
 	} else if logger != nil {
 		logLevel = getZapLoggerLevelEquivalent(logger)
@@ -255,7 +255,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("`otlp.timeout` must be positive: %vms", c.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds())
 	}
 
-	if len(c.LogLevel) > 0 {
+	if c.LogLevel != "" {
 		if _, ok := validLogLevels[strings.ToLower(c.LogLevel)]; !ok {
 			return fmt.Errorf("`log_level` must be one of %s", listKeys(validLogLevels))
 		}

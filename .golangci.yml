@@ -114,7 +114,6 @@ linters:
         - commentedOutCode
         - deferInLoop
         - emptyFallthrough
-        - emptyStringTest
         - equalFold
         - evalOrder
         - exposedSyncMutex

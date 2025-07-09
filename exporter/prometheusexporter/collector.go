@@ -379,7 +379,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		}
 
 		name := prometheustranslator.TargetInfoMetricName
-		if len(c.namespace) > 0 {
+		if c.namespace != "" {
 			name = c.namespace + "_" + name
 		}
 
