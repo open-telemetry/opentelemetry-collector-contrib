@@ -6,6 +6,7 @@ package splunkhecexporter
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -111,7 +112,12 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
 
-	config.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
+	config.QueueSettings = exporterhelper.NewDefaultQueueConfig()
+	config.QueueSettings.Sizer = exporterhelper.RequestSizerTypeItems
+	config.QueueSettings.Batch = &exporterhelper.BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		MinSize:      8192,
+	}
 
 	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)

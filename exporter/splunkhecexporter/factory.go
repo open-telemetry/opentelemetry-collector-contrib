@@ -58,9 +58,6 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
-	batcherCfg.Enabled = false
-
 	defaultMaxConns := defaultMaxIdleCons
 	defaultIdleConnTimeout := defaultIdleConnTimeout
 
@@ -79,7 +76,6 @@ func createDefaultConfig() component.Config {
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
-		BatcherConfig:           batcherCfg,
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
@@ -132,7 +128,6 @@ func createTracesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 	if err != nil {
 		return nil, err
@@ -166,7 +161,6 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 	if err != nil {
 		return nil, err
@@ -200,7 +194,6 @@ func createLogsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 	if err != nil {
 		return nil, err

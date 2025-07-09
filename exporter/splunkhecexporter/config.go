@@ -68,10 +68,6 @@ type Config struct {
 	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
-	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"` //nolint:staticcheck
-
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
 
