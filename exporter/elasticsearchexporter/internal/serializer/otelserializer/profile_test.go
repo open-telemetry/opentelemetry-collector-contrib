@@ -86,6 +86,9 @@ func TestSerializeProfile(t *testing.T) {
 				a = dic.AttributeTable().AppendEmpty()
 				a.SetKey("host.id")
 				a.Value().SetStr("localhost")
+				a = dic.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.name")
+				a.Value().SetStr("libc.so.6")
 
 				m := dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(0)
@@ -107,10 +110,12 @@ func TestSerializeProfile(t *testing.T) {
 				profile.SetPeriod(1e9 / 20)
 
 				profile.AttributeIndices().Append(2)
+				profile.LocationIndices().Append(0)
 
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
 				sample.SetLocationsLength(1)
+				sample.AttributeIndices().Append(3)
 			},
 			wantErr: false,
 			expected: []map[string]any{
@@ -126,6 +131,7 @@ func TestSerializeProfile(t *testing.T) {
 					"Stacktrace.id":                 "02VzuClbpt_P3xxwox83Ng",
 					"ecs.version":                   "1.12.0",
 					"host.id":                       "localhost",
+					"process.executable.name":       "libc.so.6",
 					"process.thread.name":           "",
 				},
 				{
