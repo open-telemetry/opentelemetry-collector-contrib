@@ -33,7 +33,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		err = testTel.Reader.Collect(context.Background(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
-		require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
+		require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
 		metadatatest.AssertEqualKafkaExporterLatency(
 			t,
 			testTel,
@@ -49,6 +49,23 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+		)
+		metadatatest.AssertEqualKafkaExporterWriteLatency(
+			t,
+			testTel,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes:   attribute.NewSet(attribute.String("outcome", "success")),
+					Count:        1,
+					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+					BucketCounts: []uint64{0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					Min:          metricdata.NewExtrema(60.0),
+					Max:          metricdata.NewExtrema(60.0),
+					Sum:          60.0,
+				},
+			},
+			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 	})
 	t.Run("should only report success outcome for metrics when no error provided", func(t *testing.T) {
@@ -72,7 +89,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		err = testTel.Reader.Collect(context.Background(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
-		require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
+		require.Len(t, rm.ScopeMetrics[0].Metrics, 5)
 		metadatatest.AssertEqualKafkaExporterLatency(
 			t,
 			testTel,
@@ -89,7 +106,47 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
+		metadatatest.AssertEqualKafkaExporterWriteLatency(
+			t,
+			testTel,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes:   attribute.NewSet(attribute.String("outcome", "success")),
+					Count:        1,
+					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+					BucketCounts: []uint64{0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					Min:          metricdata.NewExtrema(60.0),
+					Max:          metricdata.NewExtrema(60.0),
+					Sum:          60.0,
+				},
+			},
+			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
+		)
 		metadatatest.AssertEqualKafkaExporterMessages(
+			t,
+			testTel,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "success"),
+						attribute.String("topic", "foo"),
+						attribute.Int("partition", 0),
+					),
+					Value: 2,
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "success"),
+						attribute.String("topic", "bar"),
+						attribute.Int("partition", 0),
+					),
+					Value: 1,
+				},
+			},
+			metricdatatest.IgnoreTimestamp(),
+		)
+		metadatatest.AssertEqualKafkaExporterRecords(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -157,7 +214,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		err = testTel.Reader.Collect(context.Background(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
-		require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
+		require.Len(t, rm.ScopeMetrics[0].Metrics, 5)
 		metadatatest.AssertEqualKafkaExporterLatency(
 			t,
 			testTel,
@@ -174,7 +231,47 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
+		metadatatest.AssertEqualKafkaExporterWriteLatency(
+			t,
+			testTel,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes:   attribute.NewSet(attribute.String("outcome", "failure")),
+					Count:        1,
+					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+					BucketCounts: []uint64{0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					Min:          metricdata.NewExtrema(60.0),
+					Max:          metricdata.NewExtrema(60.0),
+					Sum:          60.0,
+				},
+			},
+			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
+		)
 		metadatatest.AssertEqualKafkaExporterMessages(
+			t,
+			testTel,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "failure"),
+						attribute.String("topic", "foo"),
+						attribute.Int("partition", 0),
+					),
+					Value: 2,
+				},
+				{
+					Attributes: attribute.NewSet(
+						attribute.String("outcome", "failure"),
+						attribute.String("topic", "bar"),
+						attribute.Int("partition", 0),
+					),
+					Value: 1,
+				},
+			},
+			metricdatatest.IgnoreTimestamp(),
+		)
+		metadatatest.AssertEqualKafkaExporterRecords(
 			t,
 			testTel,
 			[]metricdata.DataPoint[int64]{
@@ -250,7 +347,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		err = testTel.Reader.Collect(context.Background(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
-		require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
+		require.Len(t, rm.ScopeMetrics[0].Metrics, 5)
 		metadatatest.AssertEqualKafkaExporterLatency(
 			t,
 			testTel,
@@ -266,6 +363,23 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+		)
+		metadatatest.AssertEqualKafkaExporterWriteLatency(
+			t,
+			testTel,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes:   attribute.NewSet(attribute.String("outcome", "failure")),
+					Count:        1,
+					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+					BucketCounts: []uint64{0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					Min:          metricdata.NewExtrema(60.0),
+					Max:          metricdata.NewExtrema(60.0),
+					Sum:          60.0,
+				},
+			},
+			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterMessages(
 			t,
