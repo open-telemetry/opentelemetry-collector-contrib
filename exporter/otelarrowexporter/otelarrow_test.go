@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -315,9 +316,9 @@ func TestSendTraces(t *testing.T) {
 		Headers: map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
 		},
-		Auth: &configauth.Config{
+		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
-		},
+		}),
 	}
 	// This test fails w/ Arrow enabled because the function
 	// passed to newTestAuthExtension() below requires it the
@@ -924,9 +925,9 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		Headers: map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
 		},
-		Auth: &configauth.Config{
+		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
-		},
+		}),
 	}
 	// Arrow client is enabled, but the server doesn't support it.
 	cfg.Arrow.NumStreams = 1
