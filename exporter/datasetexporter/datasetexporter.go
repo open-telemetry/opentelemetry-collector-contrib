@@ -20,15 +20,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type DatasetExporter struct {
+type datasetExporter struct {
 	client      *client.DataSetClient
 	logger      *zap.Logger
 	session     string
-	exporterCfg *ExporterConfig
+	exporterCfg *exporterConfig
 	serverHost  string
 }
 
-func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*DatasetExporter, error) {
+func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*datasetExporter, error) {
 	logger := set.Logger
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
@@ -63,7 +63,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
 	}
 
-	return &DatasetExporter{
+	return &datasetExporter{
 		client:      client,
 		session:     uuid.New().String(),
 		logger:      logger,
@@ -72,7 +72,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.Settings) (*
 	}, nil
 }
 
-func (e *DatasetExporter) shutdown(context.Context) error {
+func (e *datasetExporter) shutdown(context.Context) error {
 	return e.client.Shutdown()
 }
 
