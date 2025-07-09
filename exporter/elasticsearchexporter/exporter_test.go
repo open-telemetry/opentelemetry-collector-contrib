@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net/http"
 	"runtime"
@@ -400,10 +401,15 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish otel mapping mode", func(t *testing.T) {
+		defaultRecordAttrs := map[string]any{
+			"data_stream.dataset": "attr.dataset",
+			"attr.foo":            "attr.foo.value",
+		}
 		for _, tc := range []struct {
 			name         string
 			body         pcommon.Value
 			isEvent      bool
+			recordAttrs  map[string]any
 			wantDocument []byte
 		}{
 			{
@@ -411,6 +417,7 @@ func TestExporterLogs(t *testing.T) {
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
+				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
@@ -423,6 +430,7 @@ func TestExporterLogs(t *testing.T) {
 					m.PutEmptyMap("inner").PutStr("foo", "bar")
 					return vm
 				}(),
+				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
@@ -436,6 +444,7 @@ func TestExporterLogs(t *testing.T) {
 					return vm
 				}(),
 				isEvent:      true,
+				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
@@ -448,6 +457,7 @@ func TestExporterLogs(t *testing.T) {
 					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 					return vs
 				}(),
+				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
@@ -461,6 +471,7 @@ func TestExporterLogs(t *testing.T) {
 					return vs
 				}(),
 				isEvent:      true,
+				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 		} {
@@ -474,10 +485,8 @@ func TestExporterLogs(t *testing.T) {
 				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 					cfg.Mapping.Mode = "otel"
 				})
-				recordAttrs := map[string]any{
-					"data_stream.dataset": "attr.dataset",
-					"attr.foo":            "attr.foo.value",
-				}
+				// shallow copy the map
+				recordAttrs := maps.Clone(tc.recordAttrs)
 				if tc.isEvent {
 					recordAttrs["event.name"] = "foo"
 				}
