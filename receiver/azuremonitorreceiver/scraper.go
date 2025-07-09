@@ -300,7 +300,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 				}
 				s.resources[subscriptionID][*resource.ID] = &azureResource{
 					attributes:   attributes,
-					tags:         resource.Tags,
+					tags:         filterResourceTags(s.cfg.AppendTagsAsAttributes, resource.Tags),
 					resourceType: resource.Type,
 				}
 			}
@@ -401,18 +401,6 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 		return
 	}
 
-	includeTags := len(s.cfg.AppendTagsAsAttributes) > 0
-	includedResourceTags := map[string]*string{}
-	if includeTags {
-		for tagName, value := range res.tags {
-			// Check if the tag should be included as an attribute.
-			if appendTagAsAttribute(s.cfg.AppendTagsAsAttributes, tagName) {
-				name := tagPrefix + tagName
-				includedResourceTags[name] = value
-			}
-		}
-	}
-
 	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
 		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
@@ -459,8 +447,9 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 							name := metadataPrefix + *value.Name.Value
 							attributes[name] = value.Value
 						}
-						for tagName, value := range includedResourceTags {
-							attributes[tagName] = value
+						for tagName, value := range res.tags {
+							name := tagPrefix + tagName
+							attributes[name] = value
 						}
 						for _, metricValue := range timeseriesElement.Data {
 							s.processTimeseriesData(resourceID, metric, metricValue, attributes)
@@ -573,12 +562,24 @@ func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
 	return got, false
 }
 
-// appendTagAsAttribute checks if the given tagList contains either the tag or wildcard
-func appendTagAsAttribute(tagList []string, tagName string) bool {
-	for _, tag := range tagList {
-		if tag == "*" || strings.EqualFold(tag, tagName) {
-			return true
+// filterResourceTags filter out resource tags according to configured tag list (append_tags_as_attributes)
+func filterResourceTags(tagFilterList []string, resourceTags map[string]*string) map[string]*string {
+	// wildcard check. Include all tags if wildcard found
+	for _, tag := range tagFilterList {
+		if strings.EqualFold(tag, "*") {
+			return resourceTags
 		}
 	}
-	return false
+
+	// wildcard not found. include only configured tags
+	includedTags := make(map[string]*string, len(resourceTags))
+	for tagName, value := range resourceTags {
+		for _, tag := range tagFilterList {
+			if strings.EqualFold(tagName, tag) {
+				includedTags[tagName] = value
+			}
+		}
+	}
+
+	return includedTags
 }

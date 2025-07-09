@@ -112,6 +112,11 @@ func TestAzureScraperScrape(t *testing.T) {
 	cfgSubNameAttr.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	cfgSubNameAttr.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled = true
 
+	cfgTagsCaseInsensitive := createDefaultTestConfig()
+	cfgTagsCaseInsensitive.AppendTagsAsAttributes = []string{"TAGNAME1"}
+	cfgTagsCaseInsensitive.MaximumNumberOfMetricsInACall = 2
+	cfgTagsCaseInsensitive.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -149,6 +154,15 @@ func TestAzureScraperScrape(t *testing.T) {
 			name: "metrics_subname_golden",
 			fields: fields{
 				cfg: cfgSubNameAttr,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsCaseInsensitive,
 			},
 			args: args{
 				ctx: context.Background(),

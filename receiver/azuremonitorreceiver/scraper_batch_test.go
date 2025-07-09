@@ -222,6 +222,16 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 	cfg.AppendTagsAsAttributes = []string{}
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
+	cfgTagsSelective := createDefaultTestConfig()
+	cfgTagsSelective.AppendTagsAsAttributes = []string{"tagName1"}
+	cfgTagsSelective.MaximumNumberOfMetricsInACall = 2
+	cfgTagsSelective.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
+	cfgTagsCaseInsensitive := createDefaultTestConfig()
+	cfgTagsCaseInsensitive.AppendTagsAsAttributes = []string{"TAGNAME1"}
+	cfgTagsCaseInsensitive.MaximumNumberOfMetricsInACall = 2
+	cfgTagsCaseInsensitive.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
 	cfgTagsEnabled := createDefaultTestConfig()
 	cfgTagsEnabled.AppendTagsAsAttributes = []string{"*"}
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
@@ -245,6 +255,24 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			name: "metrics_tags_golden",
 			fields: fields{
 				cfg: cfgTagsEnabled,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsSelective,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsCaseInsensitive,
 			},
 			args: args{
 				ctx: context.Background(),
