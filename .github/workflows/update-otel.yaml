@@ -4,8 +4,13 @@ on:
   schedule:
     - cron: "27 8 * * 5" # Run at 08:27 UTC on Fridays.
 
+permissions:
+  contents: read
+
 jobs:
   update-otel:
+    permissions:
+      issues: write # required for creating failure issues
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
