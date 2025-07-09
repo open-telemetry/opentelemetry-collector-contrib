@@ -25,3 +25,5 @@ remove_single_attribute:
 remove_single_resource:
   type: remove
   field: resource.key
+invalid_empty_field:
+  type: remove
