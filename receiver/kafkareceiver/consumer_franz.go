@@ -564,14 +564,13 @@ func (c *franzConsumer) OnFetchRecordUnbuffered(r *kgo.Record, polled bool) {
 	if !polled {
 		return // Record metrics when polled by `client.PollRecords()`.
 	}
-	attrs := []attribute.KeyValue{
-		attribute.String("topic", r.Topic),
-		attribute.Int64("partition", int64(r.Partition)),
-	}
 	c.telemetryBuilder.KafkaReceiverRecordsDelay.Record(
 		context.Background(),
 		time.Since(r.Timestamp).Seconds(),
-		metric.WithAttributes(attrs...),
+		metric.WithAttributes(
+			attribute.String("topic", r.Topic),
+			attribute.Int64("partition", int64(r.Partition)),
+		),
 	)
 }
 
