@@ -514,6 +514,23 @@ processors:
           - set(attributes["elasticsearch.document_id"], Concat(["log", attributes["event_name"], attributes["event_creation_time"], "-"))
 ```
 
+## Reliability
+
+This table describes the reliability and outcome under different scenarios.
+
+| Setup                                                      | Scenario: Elasticsearch unreachable | Scenario: Elasticsearch _bulk returning HTTP 500s                                 | Scenario: Collector crash                                                                 | Scenario: Elasticsearch backpressure                                         |
+|------------------------------------------------------------|--------------------------|------------------------------------------------------------------------|--------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| (`batcher::enabled`: true / false) AND no queue            | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated directly up the pipeline                                |
+| (`batcher::enabled`: true / false) AND in-memory queue     | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated up the pipeline if queue is full                        |
+| (`batcher::enabled`: true / false) AND persistent queue    | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | No data loss (including requests being retried), at least once delivery         | Propagated up the pipeline if queue is full                        |
+| (`batcher::enabled`: nil) AND no queue                     | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated up the pipeline when all bulk indexer buffers are full  |
+| (`batcher::enabled`: nil) AND in-memory queue              | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated up the pipeline when all bulk indexer buffers and queue are full |
+| (`batcher::enabled`: nil) AND persistent queue             | Retry                    | If `retry::retry_on_status` includes the returned status code, retry         | Complete data loss                                                              | Propagated up the pipeline when all bulk indexer buffers and queue are full |
+
+Note:
+- Retries are always subject to `retry::enabled` and `retry::max_retries`.
+- When queue is full, it drops or blocks requests depending on [`sending_queue::block_on_overflow`](https://github.com/open-telemetry/opentelemetry-collector/blob/4a3717978a51e6929c90bdaccfba3ea369044629/exporter/exporterhelper/README.md?plain=1#L20).
+
 ## Known issues
 
 ### version_conflict_engine_exception
