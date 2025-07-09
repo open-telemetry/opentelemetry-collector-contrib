@@ -72,6 +72,10 @@ func (s *nfsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp) {
+	if s.nfsStats == nil {
+		return
+	}
+
 	if s.nfsStats.NfsNetStats != nil {
 		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.NfsNetStats.NetCount))
 		s.mb.RecordNfsClientNetUDPCountDataPoint(now, int64(s.nfsStats.NfsNetStats.UDPCount))
@@ -105,6 +109,10 @@ func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp) {
 }
 
 func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
+	if s.nfsdStats == nil {
+		return
+	}
+
 	if s.nfsdStats.NfsdRepcacheStats != nil {
 		s.mb.RecordNfsServerRepcacheHitsDataPoint(now, int64(s.nfsdStats.NfsdRepcacheStats.Hits))
 		s.mb.RecordNfsServerRepcacheMissesDataPoint(now, int64(s.nfsdStats.NfsdRepcacheStats.Misses))
