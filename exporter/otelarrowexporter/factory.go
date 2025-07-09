@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
