@@ -68,7 +68,7 @@ type leaderElectionExtension struct {
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
-	// have read lock
+	// Have read lock so that we no new callbacks can be added while we are invoking the callbacks.
 	lee.mu.Lock()
 	defer lee.mu.Unlock()
 	lee.isLeader = true
@@ -81,13 +81,12 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
 func (lee *leaderElectionExtension) stoppedLeading() {
-	// have a read lock while stopping the receivers. This should make sure that if we have executed any callbacks
-	// after becoming leader, we would execute the stopLeading callbacks for them as well.
+	// Have a read lock while stopping the receivers. This would make sure that if we have executed any onStartLeading callbacks
+	// after becoming leader, we would execute the onStopLeading callbacks for them as well.
 	lee.mu.Lock()
 	defer lee.mu.Unlock()
 
 	lee.isLeader = false
-	// make sure for all the callbacks that were registered before the leader election was lost, we invoke the stopLeading callback.
 	for _, callback := range lee.callBackFuncs {
 		if callback.onStopLeading != nil {
 			callback.onStopLeading()
