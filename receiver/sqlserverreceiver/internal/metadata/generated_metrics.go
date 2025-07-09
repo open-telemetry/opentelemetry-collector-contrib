@@ -357,6 +357,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverTransactionLogUsage: metricInfo{
 		Name: "sqlserver.transaction_log.usage",
 	},
+	SqlserverUptimeComputer: metricInfo{
+		Name: "sqlserver.uptime.computer",
+	},
 	SqlserverUserConnectionCount: metricInfo{
 		Name: "sqlserver.user.connection.count",
 	},
@@ -411,6 +414,7 @@ type metricsInfo struct {
 	SqlserverTransactionLogGrowthCount          metricInfo
 	SqlserverTransactionLogShrinkCount          metricInfo
 	SqlserverTransactionLogUsage                metricInfo
+	SqlserverUptimeComputer                     metricInfo
 	SqlserverUserConnectionCount                metricInfo
 }
 
@@ -2827,6 +2831,55 @@ func newMetricSqlserverTransactionLogUsage(cfg MetricConfig) metricSqlserverTran
 	return m
 }
 
+type metricSqlserverUptimeComputer struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.uptime.computer metric with initial data.
+func (m *metricSqlserverUptimeComputer) init() {
+	m.data.SetName("sqlserver.uptime.computer")
+	m.data.SetDescription("Computer uptime.")
+	m.data.SetUnit("{seconds}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverUptimeComputer) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverUptimeComputer) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverUptimeComputer) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverUptimeComputer(cfg MetricConfig) metricSqlserverUptimeComputer {
+	m := metricSqlserverUptimeComputer{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverUserConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2934,6 +2987,7 @@ type MetricsBuilder struct {
 	metricSqlserverTransactionLogGrowthCount          metricSqlserverTransactionLogGrowthCount
 	metricSqlserverTransactionLogShrinkCount          metricSqlserverTransactionLogShrinkCount
 	metricSqlserverTransactionLogUsage                metricSqlserverTransactionLogUsage
+	metricSqlserverUptimeComputer                     metricSqlserverUptimeComputer
 	metricSqlserverUserConnectionCount                metricSqlserverUserConnectionCount
 }
 
@@ -3008,6 +3062,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTransactionLogGrowthCount:          newMetricSqlserverTransactionLogGrowthCount(mbc.Metrics.SqlserverTransactionLogGrowthCount),
 		metricSqlserverTransactionLogShrinkCount:          newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
 		metricSqlserverTransactionLogUsage:                newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
+		metricSqlserverUptimeComputer:                     newMetricSqlserverUptimeComputer(mbc.Metrics.SqlserverUptimeComputer),
 		metricSqlserverUserConnectionCount:                newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
@@ -3165,6 +3220,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTransactionLogGrowthCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
+	mb.metricSqlserverUptimeComputer.emit(ils.Metrics())
 	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -3470,6 +3526,16 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionLogShrinkCountDataPoint(ts p
 // RecordSqlserverTransactionLogUsageDataPoint adds a data point to sqlserver.transaction_log.usage metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverTransactionLogUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverUptimeComputerDataPoint adds a data point to sqlserver.uptime.computer metric.
+func (mb *MetricsBuilder) RecordSqlserverUptimeComputerDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverUptimeComputer, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverUptimeComputer.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordSqlserverUserConnectionCountDataPoint adds a data point to sqlserver.user.connection.count metric.

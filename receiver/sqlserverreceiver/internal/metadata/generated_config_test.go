@@ -75,6 +75,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverTransactionLogGrowthCount:          MetricConfig{Enabled: true},
 					SqlserverTransactionLogShrinkCount:          MetricConfig{Enabled: true},
 					SqlserverTransactionLogUsage:                MetricConfig{Enabled: true},
+					SqlserverUptimeComputer:                     MetricConfig{Enabled: true},
 					SqlserverUserConnectionCount:                MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -139,6 +140,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverTransactionLogGrowthCount:          MetricConfig{Enabled: false},
 					SqlserverTransactionLogShrinkCount:          MetricConfig{Enabled: false},
 					SqlserverTransactionLogUsage:                MetricConfig{Enabled: false},
+					SqlserverUptimeComputer:                     MetricConfig{Enabled: false},
 					SqlserverUserConnectionCount:                MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

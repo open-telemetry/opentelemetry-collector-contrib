@@ -76,6 +76,7 @@ type MetricsConfig struct {
 	SqlserverTransactionLogGrowthCount          MetricConfig `mapstructure:"sqlserver.transaction_log.growth.count"`
 	SqlserverTransactionLogShrinkCount          MetricConfig `mapstructure:"sqlserver.transaction_log.shrink.count"`
 	SqlserverTransactionLogUsage                MetricConfig `mapstructure:"sqlserver.transaction_log.usage"`
+	SqlserverUptimeComputer                     MetricConfig `mapstructure:"sqlserver.uptime.computer"`
 	SqlserverUserConnectionCount                MetricConfig `mapstructure:"sqlserver.user.connection.count"`
 }
 
@@ -224,6 +225,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverTransactionLogUsage: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverUptimeComputer: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverUserConnectionCount: MetricConfig{
 			Enabled: true,

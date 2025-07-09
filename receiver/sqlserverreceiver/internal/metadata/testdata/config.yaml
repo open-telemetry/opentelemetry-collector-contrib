@@ -97,6 +97,8 @@ all_set:
       enabled: true
     sqlserver.transaction_log.usage:
       enabled: true
+    sqlserver.uptime.computer:
+      enabled: true
     sqlserver.user.connection.count:
       enabled: true
   events:
@@ -214,6 +216,8 @@ none_set:
     sqlserver.transaction_log.shrink.count:
       enabled: false
     sqlserver.transaction_log.usage:
+      enabled: false
+    sqlserver.uptime.computer:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false
