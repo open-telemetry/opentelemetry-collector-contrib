@@ -11,18 +11,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             unit: '{connections}'
           - description: Number of connections established anonymously.
             name: iis.connection.anonymous
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: '{connections}'
           - description: Total number of attempts to connect to the server.
@@ -30,9 +30,9 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: '{attempts}'
           - description: Number of bytes blocked due to bandwidth throttling.
@@ -40,9 +40,9 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: By
           - description: Number of transmitted files.
@@ -50,20 +50,20 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "1"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: '{files}'
           - description: Total amount of bytes sent and received.
@@ -71,20 +71,20 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "1"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: By
           - description: Total number of requests of a given type.
@@ -92,63 +92,63 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: request
-                      value:
-                        stringValue: put
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
+                - asInt: "1"
                   attributes:
                     - key: request
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
-                  attributes:
-                    - key: request
-                      value:
-                        stringValue: head
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
-                  attributes:
-                    - key: request
-                      value:
-                        stringValue: options
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
-                  attributes:
-                    - key: request
-                      value:
-                        stringValue: post
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
-                  attributes:
-                    - key: request
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-                - asInt: "0"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
                   attributes:
                     - key: request
                       value:
                         stringValue: trace
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: options
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: head
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: post
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: put
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
+                - asInt: "1"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: '{requests}'
           - description: The amount of time the server has been up.
             gauge:
               dataPoints:
-                - asInt: "815"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             name: iis.uptime
             unit: s
         scope:
@@ -164,35 +164,25 @@ resourceMetrics:
           - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
             gauge:
               dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             name: iis.application_pool.state
             unit: '{state}'
           - description: The application pools uptime period since the last restart.
             gauge:
               dataPoints:
-                - asInt: "815"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             name: iis.application_pool.uptime
             unit: '{ms}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: iis.application_pool
-          value:
-            stringValue: Instance
-    scopeMetrics:
-      - metrics:
           - description: Age of oldest request in the queue.
             gauge:
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             name: iis.request.queue.age.max
             unit: ms
           - description: Current number of requests in the queue.
@@ -200,99 +190,20 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             unit: '{requests}'
           - description: Total number of requests rejected.
             name: iis.request.rejected
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
               isMonotonic: true
             unit: '{requests}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: iis.application_pool
-          value:
-            stringValue: Instance
-    scopeMetrics:
-      - metrics:
-          - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
-            gauge:
-              dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.state
-            unit: '{state}'
-          - description: The application pools uptime period since the last restart.
-            gauge:
-              dataPoints:
-                - asInt: "815"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.uptime
-            unit: '{ms}'
-          - description: Age of oldest request in the queue.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.request.queue.age.max
-            unit: ms
-          - description: Current number of requests in the queue.
-            name: iis.request.queue.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            unit: '{requests}'
-          - description: Total number of requests rejected.
-            name: iis.request.rejected
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-              isMonotonic: true
-            unit: '{requests}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: iis.application_pool
-          value:
-            stringValue: Instance
-    scopeMetrics:
-      - metrics:
-          - description: The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
-            gauge:
-              dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.state
-            unit: '{state}'
-          - description: The application pools uptime period since the last restart.
-            gauge:
-              dataPoints:
-                - asInt: "815"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
-            name: iis.application_pool.uptime
-            unit: '{ms}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
           version: latest
@@ -304,9 +215,9 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1051"
-                  startTimeUnixNano: "1752035827071293500"
-                  timeUnixNano: "1752035887080036000"
+                - asInt: "1"
+                  startTimeUnixNano: "1752075176966599500"
+                  timeUnixNano: "1752075176967588000"
             unit: '{threads}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
