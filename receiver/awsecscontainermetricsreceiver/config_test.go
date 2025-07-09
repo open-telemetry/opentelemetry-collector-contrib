@@ -34,7 +34,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "collection_interval_settings"),
 			expected: &Config{
-				CollectionInterval: 10 * time.Second,
+				CollectionInterval:    10 * time.Second,
+				IgnoreMissingEndpoint: false,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "ignore_missing_endpoint"),
+			expected: &Config{
+				CollectionInterval:    20 * time.Second,
+				IgnoreMissingEndpoint: true,
 			},
 		},
 	}

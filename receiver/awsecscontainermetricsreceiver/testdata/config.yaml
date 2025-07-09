@@ -1,3 +1,5 @@
 awsecscontainermetrics:
 awsecscontainermetrics/collection_interval_settings:
   collection_interval: 10s
+awsecscontainermetrics/ignore_missing_endpoint:
+  ignore_missing_endpoint: true
