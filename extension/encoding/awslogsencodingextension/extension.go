@@ -123,8 +123,8 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 		return bytesEncoding, bytes.NewReader(buf), nil
 	case formatELBAccessLog:
 		// Check if the data is compressed
-		// Network LB and Applicayion LB store compressed files.
-		// Classic LB stores plain text files.
+		// NLB and ALB store compressed files.
+		// CLB stores plain text files.
 		if len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b {
 			reader, err := e.getGzipReader(buf)
 			return gzipEncoding, reader, err
