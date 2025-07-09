@@ -76,6 +76,7 @@ telemetry:
       unit: s
       histogram:
         value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100]
       attributes: [node_id]
     kafka_receiver_messages:
       enabled: true
@@ -135,6 +136,7 @@ telemetry:
       unit: s
       histogram:
         value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100]
       attributes: [node_id, topic, partition, outcome]
     kafka_receiver_records_delay:
       enabled: true
@@ -145,6 +147,7 @@ telemetry:
       unit: s
       histogram:
         value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100]
       attributes: [topic, partition]
     kafka_receiver_current_offset:
       enabled: true

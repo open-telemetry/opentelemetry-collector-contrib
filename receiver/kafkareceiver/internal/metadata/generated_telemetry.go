@@ -97,6 +97,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_kafka_broker_throttling_latency",
 		metric.WithDescription("The throttling latency in seconds imposed by the broker when receiving records."),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverBytes, err = builder.meter.Int64Counter(
@@ -151,6 +152,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_kafka_receiver_read_latency",
 		metric.WithDescription("The time it took in seconds to receive a batch of records."),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverRecords, err = builder.meter.Int64Counter(
@@ -163,6 +165,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_kafka_receiver_records_delay",
 		metric.WithDescription("The time in seconds between producing and receiving a batch of records."),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaReceiverUnmarshalFailedLogRecords, err = builder.meter.Int64Counter(
