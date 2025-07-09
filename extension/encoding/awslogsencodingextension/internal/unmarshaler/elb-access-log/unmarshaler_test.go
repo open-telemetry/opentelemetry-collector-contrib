@@ -63,6 +63,10 @@ func TestUnmarshallElbAccessLogs(t *testing.T) {
 			reader:      readAndCompressLogFile(t, filesDirectory, "elb_empty_line.log"),
 			expectedErr: "log line has no fields:",
 		},
+		"empty log file": {
+			reader:      readAndCompressLogFile(t, filesDirectory, "elb_empty_file.log"),
+			expectedErr: "no log lines found",
+		},
 		"invalid syntax field": {
 			reader:      readAndCompressLogFile(t, filesDirectory, "alb_al_invalid_syntax.log"),
 			expectedErr: "unable to determine log syntax: invalid type: invalid",
@@ -89,6 +93,10 @@ func TestUnmarshallElbAccessLogs(t *testing.T) {
 		},
 		"process elb control file": {
 			reader: readAndCompressLogFile(t, filesDirectory, "elb_control.log"),
+		},
+		"invalid syntax": {
+			reader:      readAndCompressLogFile(t, filesDirectory, "elb_invalid_syntax.log"),
+			expectedErr: "failed to parse log line",
 		},
 	}
 	// Create a mock logger
