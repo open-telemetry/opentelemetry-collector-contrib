@@ -366,7 +366,9 @@ func getAttributeValue[K ProfileContext](tCtx K, key string) pcommon.Value {
 	for _, tableIndex := range indices {
 		attr := table.At(int(tableIndex))
 		if attr.Key() == key {
-			return attr.Value()
+			v := pcommon.NewValueEmpty()
+			attr.Value().CopyTo(v)
+			return v
 		}
 	}
 
