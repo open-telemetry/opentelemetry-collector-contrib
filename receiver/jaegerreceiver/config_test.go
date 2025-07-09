@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -114,12 +115,12 @@ func TestLoadConfig(t *testing.T) {
 							Endpoint:  "localhost:9876",
 							Transport: confignet.TransportTypeTCP,
 						},
-						TLS: &configtls.ServerConfig{
+						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "/test.crt",
 								KeyFile:  "/test.key",
 							},
-						},
+						}),
 					},
 					ThriftHTTP: &confighttp.ServerConfig{
 						Endpoint: ":3456",
