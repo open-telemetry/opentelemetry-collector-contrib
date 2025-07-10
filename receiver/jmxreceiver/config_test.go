@@ -183,8 +183,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "invalidtargetsystem"),
-			expectedErr: "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'",
+			id:          component.NewIDWithName(metadata.Type, "anytargetsystem"),
+			expectedErr: "",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:55555",
@@ -220,6 +220,7 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, cfg.(*Config).Validate())
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -230,13 +231,11 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 		jar:     "fake wildfly jar",
 		version: "2.3.4",
 	}
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "invalidtargetsystem").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "anytargetsystem").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
@@ -250,15 +249,7 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 	initSupportedJars()
 
 	err = conf.Validate()
-	require.Error(t, err)
-	assert.Equal(t, "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
-
-	AdditionalTargetSystems = "fakejvmtechnology,anothertechnology"
-	t.Cleanup(func() {
-		delete(validTargetSystems, "fakejvmtechnology")
-		delete(validTargetSystems, "anothertechnology")
-	})
-	initAdditionalTargetSystems()
+	require.NoError(t, err)
 
 	conf.TargetSystem = "jvm,fakejvmtechnology,anothertechnology"
 
