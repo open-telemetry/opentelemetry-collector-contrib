@@ -224,7 +224,7 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 
 ### Custom Properties as Resource Attributes
 
-The GitHub receiver supports adding custom properties from GitHub repositories as resource attributes in your telemetry data. This feature allows you to enrich your traces with additional metadata specific to your repositories.
+The GitHub receiver supports adding custom properties from GitHub repositories as resource attributes in your telemetry data. This allows users to enrich traces and events with additional metadata specific to each repository.
 
 #### How It Works
 
@@ -233,17 +233,19 @@ When a GitHub webhook event is received, the receiver extracts all custom proper
 For example, if your repository has these custom properties:
 
 ```
-team-name: platform-engineering
-environment: production
+classification: public
 service-tier: critical
+slack-support-channel: #observability-alerts
+team-name: observability-engineering
 ```
 
 They will be added as resource attributes:
 
 ```
-github.repository.custom_properties.team_name: "platform-engineering"
-github.repository.custom_properties.environment: "production"
+github.repository.custom_properties.classification: "public"
 github.repository.custom_properties.service_tier: "critical"
+github.repository.custom_properties.slack_support_channel: "#observability-alerts"
+github.repository.custom_properties.team_name: "observability-engineering"
 ```
 
 #### Key Formatting
