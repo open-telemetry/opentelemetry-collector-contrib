@@ -600,15 +600,9 @@ func TestExporterLogs(t *testing.T) {
 
 				assert.Len(t, rec.Items(), 1)
 				doc := rec.Items()[0].Document
-				if tc.wantRecordAttrs != "" {
-					assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
-				}
-				if tc.wantScopeAttrs != "" {
-					assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
-				}
-				if tc.wantResourceAttrs != "" {
-					assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
-				}
+				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
 			})
 		}
 	})
