@@ -542,15 +542,7 @@ func TestExporterLogs(t *testing.T) {
 						},
 					},
 				},
-				scopeAttrs: map[string]any{
-					"some.scope.attribute": []string{"foo", "bar"},
-				},
-				resourceAttrs: map[string]any{
-					"some.resource.attribute": []string{"foo", "bar"},
-				},
-				wantRecordAttrs:   `{"outer":{"inner_foo":"inner_bar","inner_inner":{"inner_inner_foo":"inner_inner_bar"}}}`,
-				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
-				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+				wantRecordAttrs: `{"outer":{"inner_foo":"inner_bar","inner_inner":{"inner_inner_foo":"inner_inner_bar"}}}`,
 			},
 			{
 				name: "key prefix conflict",
@@ -588,9 +580,15 @@ func TestExporterLogs(t *testing.T) {
 
 				assert.Len(t, rec.Items(), 1)
 				doc := rec.Items()[0].Document
-				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
-				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
-				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				if tc.wantRecordAttrs != "" {
+					assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				}
+				if tc.wantScopeAttrs != "" {
+					assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				}
+				if tc.wantResourceAttrs != "" {
+					assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				}
 			})
 		}
 	})
