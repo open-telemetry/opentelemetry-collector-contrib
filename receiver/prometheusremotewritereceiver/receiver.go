@@ -396,6 +396,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 ) {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
+		prw.settings.Logger.Info("Dropping classic histogram series. Please configure Prometheus to convert classic histograms into Native Histograms Custom Buckets",
+			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
 
@@ -481,9 +483,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		} else {
-			addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		}
 	}
 }
@@ -530,9 +532,11 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 	stats.Samples += len(ts.Samples)
 }
 
-func addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	// Drop NH with negative counts
 	if hasNegativeCounts(histogram) {
+		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
+			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
 
@@ -708,7 +712,7 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
