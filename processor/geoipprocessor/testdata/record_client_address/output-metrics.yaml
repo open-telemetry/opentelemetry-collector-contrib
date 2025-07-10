@@ -17,16 +17,19 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -41,7 +44,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -50,24 +53,24 @@ resourceMetrics:
                     - key: geo.timezone
                       value:
                         stringValue: Europe/London
-                    - key: client.address
-                      value:
-                        stringValue: 1.2.3.4
             unit: "1"
           - histogram:
               aggregationTemporality: 1
               dataPoints:
                 - attributes:
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -82,7 +85,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -91,9 +94,6 @@ resourceMetrics:
                     - key: geo.timezone
                       value:
                         stringValue: Europe/London
-                    - key: client.address
-                      value:
-                        stringValue: 1.2.3.4
                   bucketCounts:
                     - "9"
                     - "12"
@@ -112,16 +112,19 @@ resourceMetrics:
             summary:
               dataPoints:
                 - attributes:
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -136,7 +139,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -145,9 +148,6 @@ resourceMetrics:
                     - key: geo.timezone
                       value:
                         stringValue: Europe/London
-                    - key: client.address
-                      value:
-                        stringValue: 1.2.3.4
                   quantileValues:
                     - quantile: 0.25
                       value: 50
@@ -165,16 +165,19 @@ resourceMetrics:
                     - key: aaa
                       value:
                         stringValue: bbb
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
                     - key: geo.city_name
                       value:
                         stringValue: Boxford
-                    - key: geo.continent_code
+                    - key: geo.continent.code
                       value:
                         stringValue: EU
                     - key: geo.continent_name
                       value:
                         stringValue: Europe
-                    - key: geo.country_iso_code
+                    - key: geo.country.iso_code
                       value:
                         stringValue: GB
                     - key: geo.country_name
@@ -189,7 +192,7 @@ resourceMetrics:
                     - key: geo.postal_code
                       value:
                         stringValue: OX1
-                    - key: geo.region_iso_code
+                    - key: geo.region.iso_code
                       value:
                         stringValue: WBK
                     - key: geo.region_name
@@ -198,9 +201,6 @@ resourceMetrics:
                     - key: geo.timezone
                       value:
                         stringValue: Europe/London
-                    - key: client.address
-                      value:
-                        stringValue: 1.2.3.4
                   timeUnixNano: "1000000"
             name: test.gauge
         schemaUrl: https://test-scope-schema.com/schema
