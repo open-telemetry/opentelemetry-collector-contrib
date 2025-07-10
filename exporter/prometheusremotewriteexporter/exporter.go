@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/config"
@@ -293,7 +293,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	// Otherwise the WAL is enabled, and just persist the requests to the WAL
 	prwe.wal.telemetry.recordWALWrites(ctx)
 	start := time.Now()
-	err = prwe.wal.persistToWAL(requests)
+	err = prwe.wal.persistToWAL(ctx, requests)
 	duration := time.Since(start)
 	prwe.wal.telemetry.recordWALWriteLatency(ctx, duration.Milliseconds())
 	if err != nil {
@@ -372,12 +372,12 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	compressedData := snappy.Encode(buf.snappy, buf.protobuf.Bytes())
 
 	// executeFunc can be used for backoff and non backoff scenarios.
-	executeFunc := func() error {
+	executeFunc := func() (int, error) {
 		// check there was no timeout in the component level to avoid retries
 		// to continue to run after a timeout
 		select {
 		case <-ctx.Done():
-			return backoff.Permanent(ctx.Err())
+			return http.StatusGatewayTimeout, backoff.Permanent(ctx.Err())
 		default:
 			// continue
 		}
@@ -385,7 +385,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
-			return backoff.Permanent(consumererror.NewPermanent(err))
+			return http.StatusBadRequest, backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
 		// Add necessary headers specified by:
@@ -402,13 +402,13 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
-			return fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
+			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
 		}
 
 		resp, err := prwe.client.Do(req)
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
-			return err
+			return http.StatusBadRequest, err
 		}
 		defer func() {
 			_, _ = io.Copy(io.Discard, resp.Body)
@@ -435,38 +435,34 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return nil
+			return resp.StatusCode, nil
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			return rerr
+			return resp.StatusCode, rerr
 		}
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
 		if prwe.retryOnHTTP429 && resp.StatusCode == http.StatusTooManyRequests {
-			return rerr
+			return resp.StatusCode, rerr
 		}
 
-		return backoff.Permanent(consumererror.NewPermanent(rerr))
+		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
 	var err error
 	if prwe.retrySettings.Enabled {
 		// Use the BackOff instance to retry the func with exponential backoff.
-		err = backoff.Retry(executeFunc, &backoff.ExponentialBackOff{
+		_, err = backoff.Retry(ctx, executeFunc, backoff.WithBackOff(&backoff.ExponentialBackOff{
 			InitialInterval:     prwe.retrySettings.InitialInterval,
 			RandomizationFactor: prwe.retrySettings.RandomizationFactor,
 			Multiplier:          prwe.retrySettings.Multiplier,
-			MaxInterval:         prwe.retrySettings.MaxInterval,
-			MaxElapsedTime:      prwe.retrySettings.MaxElapsedTime,
-			Stop:                backoff.Stop,
-			Clock:               backoff.SystemClock,
-		})
+		}), backoff.WithMaxElapsedTime(prwe.retrySettings.MaxElapsedTime))
 	} else {
-		err = executeFunc()
+		_, err = executeFunc()
 	}
 
 	if err != nil {

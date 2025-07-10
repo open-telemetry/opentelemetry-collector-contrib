@@ -54,6 +54,9 @@ func TestNewSaramaClientConfig(t *testing.T) {
 				cfg.MetricRegistry = nil
 				cfg.Producer.Partitioner = nil
 
+				// Out client ID default differs from Sarama's.
+				expected.ClientID = "otel-collector"
+
 				// Our metadata defaults differ from those of Sarama's.
 				defaultMetadataConfig := configkafka.NewDefaultMetadataConfig()
 				expected.Metadata.Full = defaultMetadataConfig.Full
