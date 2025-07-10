@@ -6,11 +6,11 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.67.0
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.67.0
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.67.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-rc.8
+	github.com/DataDog/datadog-agent/pkg/proto v0.69.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.67.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.29.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.29.1
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.129.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.129.0
@@ -130,9 +130,9 @@ require (
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.29.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.29.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.29.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.29.1 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
