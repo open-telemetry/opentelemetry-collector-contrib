@@ -414,6 +414,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		var histogramType string
 
 		// Determine histogram type based on schema
+		// See https://prometheus.io/docs/specs/native_histograms/#schema
 		switch histogram.Schema {
 		case -53:
 			histogramType = "nhcb"
@@ -453,7 +454,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			scope.Scope().SetVersion(scopeVersion)
 		}
 
-		metricIdentity := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s",
+		metricID := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s",
 			resourceID.String(),
 			scopeName,
 			scopeVersion,
@@ -462,9 +463,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			fmt.Sprintf("%d", ts.Metadata.Type),
 			histogramType,
 		)
-		metricKeyHashForSchema := xxhash.Sum64String(metricIdentity)
+		metricIDHash := xxhash.Sum64String(metricID)
 
-		histMetric, exists := metricCache[metricKeyHashForSchema]
+		histMetric, exists := metricCache[metricIDHash]
 		if !exists {
 			histMetric = setMetric(scope, metricName, unit, description)
 			if histogramType == "nhcb" {
@@ -474,7 +475,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				hist := histMetric.SetEmptyExponentialHistogram()
 				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
-			metricCache[metricKeyHashForSchema] = histMetric
+			metricCache[metricIDHash] = histMetric
 		} else if len(histMetric.Description()) < len(description) {
 			// When the new description is longer than the existing one, we should update the metric description.
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
@@ -533,7 +534,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 }
 
 func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
-	// Drop NH with negative counts
+	// Drop Native Histogram with negative counts
 	if hasNegativeCounts(histogram) {
 		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
 			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
