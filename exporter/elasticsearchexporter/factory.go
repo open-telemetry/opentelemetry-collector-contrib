@@ -205,6 +205,7 @@ func exporterhelperOptions(
 	}
 	qs := cfg.QueueSettings
 	if cfg.Batcher.enabledSet {
+		qs.Sizer = exporterhelper.RequestSizerTypeItems // TODO: Delete once core dependency updated.
 		if cfg.Batcher.Enabled {
 			qs.Batch = &exporterhelper.BatchConfig{
 				FlushTimeout: cfg.Batcher.FlushTimeout,
