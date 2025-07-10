@@ -5,8 +5,8 @@ package metricgroup // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"encoding/binary"
-	"hash/fnv"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -16,9 +16,9 @@ import (
 
 // HashKey is a struct for comparing data point identity.
 type HashKey struct {
-	resourceHash uint32
-	scopeHash    uint32
-	dpHash       uint32
+	resourceHash uint64
+	scopeHash    uint64
+	dpHash       uint64
 }
 
 // DataPointHasher is an interface for hashing data points by their identity,
@@ -64,7 +64,7 @@ func (h *ECSDataPointHasher) HashKey() HashKey {
 		v.CopyTo(merged.PutEmpty(k))
 	}
 
-	hasher := fnv.New32a()
+	hasher := xxhash.New()
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(h.dp.Timestamp()))
@@ -73,40 +73,40 @@ func (h *ECSDataPointHasher) HashKey() HashKey {
 	mapHashSortedExcludeReservedAttrs(hasher, merged)
 
 	return HashKey{
-		dpHash: hasher.Sum32(),
+		dpHash: hasher.Sum64(),
 	}
 }
 
 // OTelDataPointHasher computes a hash for each of resource, scope and data point on each Update call,
 // to avoid wasteful hashing and sorting on data point sharing the same resource and scope.
 type OTelDataPointHasher struct {
-	resourceHash uint32
-	scopeHash    uint32
-	dpHash       uint32
+	resourceHash uint64
+	scopeHash    uint64
+	dpHash       uint64
 }
 
 func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
 	// We cannot use exp/metrics/identity here because some resource fields e.g. schema url
 	// are not dimensions and should not be part of the hash.
 
-	hasher := fnv.New32a()
+	hasher := xxhash.New()
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
-	h.resourceHash = hasher.Sum32()
+	h.resourceHash = hasher.Sum64()
 }
 
 func (h *OTelDataPointHasher) UpdateScope(scope pcommon.InstrumentationScope) {
-	hasher := fnv.New32a()
+	hasher := xxhash.New()
 	hasher.Write([]byte(scope.Name()))
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
-	h.scopeHash = hasher.Sum32()
+	h.scopeHash = hasher.Sum64()
 }
 
 func (h *OTelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
-	hasher := fnv.New32a()
+	hasher := xxhash.New()
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
@@ -121,7 +121,7 @@ func (h *OTelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
 	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
-	h.dpHash = hasher.Sum32()
+	h.dpHash = hasher.Sum64()
 }
 
 func (h *OTelDataPointHasher) HashKey() HashKey {
