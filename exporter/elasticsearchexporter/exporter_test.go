@@ -505,6 +505,96 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
+
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
+
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "map value",
+				recordAttrs: map[string]any{
+					"outer": map[string]any{
+						"inner_foo": "inner_bar",
+						"inner_inner": map[string]any{
+							"inner_inner_foo": "inner_inner_bar",
+						},
+					},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"outer":{"inner_foo":"inner_bar","inner_inner":{"inner_inner_foo":"inner_inner_bar"}}}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
+
+				mustSendLogs(t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+
+				rec.WaitItems(1)
+
+				assert.Len(t, rec.Items(), 1)
+				doc := rec.Items()[0].Document
+				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+			})
+		}
+	})
+
 	t.Run("retry http request batcher", func(t *testing.T) {
 		for _, maxRetries := range []int{0, 1, 11} {
 			t.Run(fmt.Sprintf("max retries %d", maxRetries), func(t *testing.T) {
@@ -733,97 +823,6 @@ func TestExporterLogs(t *testing.T) {
 		wg.Wait() // <- this blocks forever if the event is not retried
 
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
-	})
-
-	t.Run("otel mode attribute", func(t *testing.T) {
-		for _, tc := range []struct {
-			name string
-
-			recordAttrs   map[string]any
-			scopeAttrs    map[string]any
-			resourceAttrs map[string]any
-
-			wantRecordAttrs   string
-			wantScopeAttrs    string
-			wantResourceAttrs string
-		}{
-			{
-				name: "slice value",
-				recordAttrs: map[string]any{
-					"some.record.attribute": []string{"foo", "bar"},
-				},
-				scopeAttrs: map[string]any{
-					"some.scope.attribute": []string{"foo", "bar"},
-				},
-				resourceAttrs: map[string]any{
-					"some.resource.attribute": []string{"foo", "bar"},
-				},
-				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
-				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
-				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
-			},
-			{
-				name: "map value",
-				recordAttrs: map[string]any{
-					"outer": map[string]any{
-						"inner_foo": "inner_bar",
-						"inner_inner": map[string]any{
-							"inner_inner_foo": "inner_inner_bar",
-						},
-					},
-				},
-				scopeAttrs: map[string]any{
-					"some.scope.attribute": []string{"foo", "bar"},
-				},
-				resourceAttrs: map[string]any{
-					"some.resource.attribute": []string{"foo", "bar"},
-				},
-				wantRecordAttrs:   `{"outer":{"inner_foo":"inner_bar","inner_inner":{"inner_inner_foo":"inner_inner_bar"}}}`,
-				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
-				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
-			},
-			{
-				name: "key prefix conflict",
-				recordAttrs: map[string]any{
-					"a":   "a",
-					"a.b": "a.b",
-				},
-				scopeAttrs: map[string]any{
-					"a":   "a",
-					"a.b": "a.b",
-				},
-				resourceAttrs: map[string]any{
-					"a":   "a",
-					"a.b": "a.b",
-				},
-				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
-				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
-				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
-			},
-		} {
-			t.Run(tc.name, func(t *testing.T) {
-				rec := newBulkRecorder()
-				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-					rec.Record(docs)
-					return itemsAllOK(docs)
-				})
-
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
-
-				mustSendLogs(t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
-
-				rec.WaitItems(1)
-
-				assert.Len(t, rec.Items(), 1)
-				doc := rec.Items()[0].Document
-				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
-				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
-				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
-			})
-		}
-
 	})
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
