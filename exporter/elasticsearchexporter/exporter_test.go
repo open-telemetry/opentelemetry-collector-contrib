@@ -533,16 +533,16 @@ func TestExporterLogs(t *testing.T) {
 				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
 			},
 			{
-				name: "map value",
+				name: "map value", // only valid for log attributes https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes
 				recordAttrs: map[string]any{
-					"outer": map[string]any{
-						"inner_foo": "inner_bar",
-						"inner_inner": map[string]any{
-							"inner_inner_foo": "inner_inner_bar",
+					"a.b": map[string]any{
+						"c": "a.b.c",
+						"c.d": map[string]any{
+							"e": "a.b.c.d.e",
 						},
 					},
 				},
-				wantRecordAttrs: `{"outer":{"inner_foo":"inner_bar","inner_inner":{"inner_inner_foo":"inner_inner_bar"}}}`,
+				wantRecordAttrs: `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
 			},
 			{
 				name: "key prefix conflict",
@@ -972,36 +972,6 @@ func TestExporterLogs(t *testing.T) {
 				})
 			}
 		}
-	})
-
-	t.Run("otel mode attribute complex value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		logs := plog.NewLogs()
-		resourceLog := logs.ResourceLogs().AppendEmpty()
-		resourceLog.Resource().Attributes().PutEmptyMap("some.resource.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
-		scopeLog := resourceLog.ScopeLogs().AppendEmpty()
-		scopeLog.Scope().Attributes().PutEmptyMap("some.scope.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
-		logRecord := scopeLog.LogRecords().AppendEmpty()
-		logRecord.Attributes().PutEmptyMap("some.record.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
-
-		mustSendLogs(t, exporter, logs)
-
-		rec.WaitItems(1)
-
-		assert.Len(t, rec.Items(), 1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"some.record.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"some.scope.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"some.resource.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
