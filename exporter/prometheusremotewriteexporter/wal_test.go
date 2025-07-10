@@ -151,7 +151,7 @@ func TestWAL_persist(t *testing.T) {
 		assert.NoError(t, pwal.stop())
 	})
 
-	require.NoError(t, pwal.persistToWAL(reqL))
+	require.NoError(t, pwal.persistToWAL(ctx, reqL))
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.
@@ -295,6 +295,9 @@ func TestWALWrite_Telemetry(t *testing.T) {
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_write_latency")
 	require.NoError(t, err)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_bytes_written")
+	require.NoError(t, err)
 }
 
 func TestWALRead_Telemetry(t *testing.T) {
@@ -372,5 +375,8 @@ func TestWALRead_Telemetry(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_read_latency")
+	require.NoError(t, err)
+
+	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_bytes_read")
 	require.NoError(t, err)
 }
