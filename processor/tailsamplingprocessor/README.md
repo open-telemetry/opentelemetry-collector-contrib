@@ -551,6 +551,15 @@ sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 
 As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" or "drop" decision from another policy would still discard the trace.
 
+**Drop Policy Decision Frequency**
+
+To track how often a drop policy votes to drop a trace, use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{dropped="true"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
+
 ### Tracking sampling policy
 To better understand _which_ sampling policy made the decision to include a trace, you can enable tracking the policy responsible for sampling a trace via the `processor.tailsamplingprocessor.recordpolicy` feature gate.
 
