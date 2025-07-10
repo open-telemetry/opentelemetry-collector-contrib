@@ -83,13 +83,9 @@ func createDefaultConfig() component.Config {
 		},
 		IncludeSourceOnError: nil,
 		Batcher: BatcherConfig{
-			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-				FlushTimeout: 30 * time.Second,
-				SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-					Sizer:   exporterhelper.RequestSizerTypeItems,
-					MinSize: defaultBatcherMinSizeItems,
-				},
-			},
+			FlushTimeout: 30 * time.Second,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      defaultBatcherMinSizeItems,
 		},
 		Flush: FlushSettings{
 			Bytes:    5e+6,
@@ -206,10 +202,26 @@ func exporterhelperOptions(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
-		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
+	qs := cfg.QueueSettings
 	if cfg.Batcher.enabledSet {
-		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.BatcherConfig)) //nolint:staticcheck
+		qs.Sizer = exporterhelper.RequestSizerTypeItems // TODO: Delete once core dependency updated.
+		if cfg.Batcher.Enabled {
+			qs.Batch = &exporterhelper.BatchConfig{
+				FlushTimeout: cfg.Batcher.FlushTimeout,
+				MinSize:      cfg.Batcher.MinSize,
+				MaxSize:      cfg.Batcher.MaxSize,
+				// TODO: Uncomment once core dependency updated.
+				// Sizer:        cfg.Batcher.Sizer,
+			}
+
+			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
+			// behavior of the deprecated batcher.
+			if !qs.Enabled {
+				qs.Enabled = true
+				qs.WaitForResult = true
+			}
+		}
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//
@@ -217,5 +229,6 @@ func exporterhelperOptions(
 		// to ensure sending data to the background workers will not block indefinitely.
 		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	}
+	opts = append(opts, exporterhelper.WithQueue(qs))
 	return opts
 }

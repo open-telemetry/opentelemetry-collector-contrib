@@ -99,6 +99,7 @@ type Config struct {
 	// Batcher is unused by default, in which case Flush will be used.
 	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
 	// then the Flush will be ignored even if Batcher.Enabled is false.
+	// TODO: Deprecate and remove this section in favor of sending_queue::batch.
 	Batcher BatcherConfig `mapstructure:"batcher"`
 }
 
@@ -107,7 +108,11 @@ type Config struct {
 // This is a slightly modified version of exporterbatcher.Config,
 // to enable tri-state Enabled: unset, false, true.
 type BatcherConfig struct {
-	exporterhelper.BatcherConfig `mapstructure:",squash"`
+	Enabled      bool                            `mapstructure:"enabled"`
+	FlushTimeout time.Duration                   `mapstructure:"flush_timeout"`
+	Sizer        exporterhelper.RequestSizerType `mapstructure:"sizer"`
+	MinSize      int64                           `mapstructure:"min_size"`
+	MaxSize      int64                           `mapstructure:"max_size"`
 
 	// enabledSet tracks whether Enabled has been specified.
 	// If enabledSet is false, the exporter will perform its
