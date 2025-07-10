@@ -52,6 +52,7 @@ exporter/logzioexporter exporter/logzio
 exporter/lokiexporter exporter/loki
 exporter/mezmoexporter exporter/mezmo
 exporter/opencensusexporter exporter/opencensus
+exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
 exporter/prometheusremotewriteexporter exporter/prometheusremotewrite
@@ -321,7 +322,6 @@ reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 exporter/kineticaexporter exporter/kinetica
-exporter/opensearchexporter exporter/opensearch
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/carbonreceiver receiver/carbon

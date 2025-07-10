@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -36,7 +37,7 @@ func TestClientCreation(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -65,7 +66,7 @@ func TestClientCreateRequest(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -144,7 +145,7 @@ func TestAPIRequestCreate(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,

@@ -17,13 +17,13 @@ func TestUnmarshal(t *testing.T) {
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
-				Name:      "default",
-				ExpectErr: false,
-				Expect:    NewConfig(),
+				Name:               "default",
+				ExpectUnmarshalErr: false,
+				Expect:             NewConfig(),
 			},
 			{
-				Name:      "custom_id",
-				ExpectErr: false,
+				Name:               "custom_id",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.OperatorID = "merge-split-lines"
@@ -31,8 +31,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "combine_with_custom_string",
-				ExpectErr: false,
+				Name:               "combine_with_custom_string",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.CombineWith = "ABC"
@@ -40,8 +40,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "combine_with_empty_string",
-				ExpectErr: false,
+				Name:               "combine_with_empty_string",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.CombineWith = ""
@@ -49,8 +49,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "combine_with_tab",
-				ExpectErr: false,
+				Name:               "combine_with_tab",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.CombineWith = "\t"
@@ -58,8 +58,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "combine_with_backslash_t",
-				ExpectErr: false,
+				Name:               "combine_with_backslash_t",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.CombineWith = "\\t"
@@ -67,8 +67,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "combine_with_multiline_string",
-				ExpectErr: false,
+				Name:               "combine_with_multiline_string",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.CombineWith = "line1\nLINE2"
@@ -76,8 +76,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "custom_max_log_size",
-				ExpectErr: false,
+				Name:               "custom_max_log_size",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.MaxLogSize = helper.ByteSize(256000)
@@ -85,8 +85,8 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "custom_max_unmatched_batch_size",
-				ExpectErr: false,
+				Name:               "custom_max_unmatched_batch_size",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.MaxUnmatchedBatchSize = 50
