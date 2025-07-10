@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -253,7 +252,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 					Err: errors.New("Mock error"),
 				}
 			},
-			errWanted: fmt.Sprintf("error executing oracleQueryMetricsSQL: Mock error"),
+			errWanted: "error executing oracleQueryMetricsSQL: Mock error",
 		},
 	}
 

@@ -106,7 +106,6 @@ type oracleScraper struct {
 	tablespaceUsageClient      dbClient
 	systemResourceLimitsClient dbClient
 	sessionCountClient         dbClient
-	samplesQueryClient         dbClient
 	oracleQueryMetricsClient   dbClient
 	oraclePlanDataClient       dbClient
 	db                         *sql.DB
