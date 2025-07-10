@@ -1006,7 +1006,7 @@ type metricOracledbLogons struct {
 func (m *metricOracledbLogons) init() {
 	m.data.SetName("oracledb.logons")
 	m.data.SetDescription("Number of logon operations")
-	m.data.SetUnit("{parses}")
+	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
