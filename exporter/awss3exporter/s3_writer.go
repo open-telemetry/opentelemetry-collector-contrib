@@ -5,9 +5,14 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httputil"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -16,6 +21,31 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
 )
+
+// Add middleware to recalculate signature after amending accept-encoding header
+
+type RecalculateV4Signature struct {
+	next   http.RoundTripper
+	signer *v4.Signer
+	cfg    aws.Config
+}
+
+func (lt *RecalculateV4Signature) RoundTrip(req *http.Request) (*http.Response, error) {
+	val := req.Header.Get("Accept-Encoding")
+	req.Header.Del("Accept-Encoding")
+	timeString := req.Header.Get("X-Amz-Date")
+	timeDate, _ := time.Parse("20060102T150405Z", timeString)
+	creds, _ := lt.cfg.Credentials.Retrieve(req.Context())
+	err := lt.signer.SignHTTP(req.Context(), creds, req, v4.GetPayloadHash(req.Context()), "s3", lt.cfg.Region, timeDate)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept-Encoding", val)
+	fmt.Println("AfterAdjustment")
+	rrr, _ := httputil.DumpRequest(req, false)
+	fmt.Println(string(rrr))
+	return lt.next.RoundTrip(req)
+}
 
 func newUploadManager(
 	ctx context.Context,
@@ -70,6 +100,20 @@ func newUploadManager(
 		s3Opts = append(s3Opts, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(endpoint)
 		})
+
+	}
+
+	// If using GCS endpoint, add the recalculate signature middleware
+	if endpoint := conf.S3Uploader.Endpoint; endpoint == "https://storage.googleapis.com" {
+		// Assign custom HTTP client with our middleware
+		cfg.HTTPClient = &http.Client{
+			Transport: &RecalculateV4Signature{
+				next:   http.DefaultTransport,
+				signer: v4.NewSigner(),
+				cfg:    cfg,
+			},
+		}
+		cfg.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
 	}
 
 	var managerOpts []upload.ManagerOpt
