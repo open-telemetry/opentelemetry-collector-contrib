@@ -549,7 +549,7 @@ sum (otelcol_processor_tail_sampling_count_traces_sampled{sampled="true"}) by (p
 sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 ```
 
-As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" decision from another policy would still discard the trace.
+As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" or "drop" decision from another policy would still discard the trace.
 
 ### Tracking sampling policy
 To better understand _which_ sampling policy made the decision to include a trace, you can enable tracking the policy responsible for sampling a trace via the `processor.tailsamplingprocessor.recordpolicy` feature gate.
