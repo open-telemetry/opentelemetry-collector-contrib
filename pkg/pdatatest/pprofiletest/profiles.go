@@ -252,10 +252,6 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 		errs = multierr.Append(errs, fmt.Errorf("profileID does not match expected '%s', actual '%s'", expected.ProfileID().String(), actual.ProfileID().String()))
 	}
 
-	if expected.StartTime() != actual.StartTime() {
-		errs = multierr.Append(errs, fmt.Errorf("start timestamp doesn't match expected: %d, "+"actual: %d", expected.StartTime(), actual.StartTime()))
-	}
-
 	if !reflect.DeepEqual(expected.LocationIndices(), actual.LocationIndices()) {
 		errs = multierr.Append(errs, errors.New("locationIndicies do not match expected"))
 	}
@@ -274,10 +270,6 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 
 	if !bytes.Equal(expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()) {
 		errs = multierr.Append(errs, fmt.Errorf("keepFrames does not match expected '%s', actual '%s'", expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()))
-	}
-
-	if expected.StartTime() != actual.StartTime() {
-		errs = multierr.Append(errs, fmt.Errorf("startTime doesn't match expected: %d, actual: %d", expected.StartTime(), actual.StartTime()))
 	}
 
 	if expected.Duration() != actual.Duration() {

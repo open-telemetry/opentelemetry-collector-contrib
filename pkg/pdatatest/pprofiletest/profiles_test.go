@@ -327,7 +327,7 @@ func TestCompareProfiles(t *testing.T) {
 				}
 				return p.Transform()
 			}(),
-			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": start timestamp doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": time doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": startTime doesn't match expected: 1577836800000000000, actual: 1577836805000000000`),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": time doesn't match expected: 1577836800000000000, actual: 1577836805000000000`),
 			compareOptions: []CompareProfilesOption{
 				IgnoreProfileTimestampValues(),
 			},
