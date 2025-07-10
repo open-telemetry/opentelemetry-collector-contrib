@@ -101,9 +101,18 @@ func TestExtension_WithDelay(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
-	// Simulate a delay of setting up callbacks after the leader election has started.
-	time.Sleep(2 * time.Second)
-	t.Logf("setting up callbacks after delay of 2 seconds at %v\n", time.Now().String())
+	// Simulate a delay of setting up callbacks after the leader has been elected.
+	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	require.Eventually(t, func() bool {
+		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+		require.NotNil(t, lease.Spec.AcquireTime)
+		require.NotNil(t, lease.Spec.HolderIdentity)
+		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
+		return true
+	}, 10*time.Second, 100*time.Millisecond)
+
 	leaderElection.SetCallBackFuncs(
 		func(_ context.Context) {
 			onStartLeadingInvoked.Store(true)
@@ -113,16 +122,6 @@ func TestExtension_WithDelay(t *testing.T) {
 			fmt.Printf("%v: LeaderElection stopped leading\n", time.Now().String())
 		},
 	)
-
-	expectedLeaseDurationSeconds := ptr.To(int32(15))
-
-	require.Eventually(t, func() bool {
-		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, lease)
-		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
-		return true
-	}, 10*time.Second, 100*time.Millisecond)
 
 	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))

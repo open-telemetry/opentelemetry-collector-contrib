@@ -44,9 +44,7 @@ func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallbac
 
 	if lee.isLeader {
 		// Immediately invoke the callback since we are already leader
-		if onStartLeading != nil {
-			onStartLeading(context.Background())
-		}
+		onStartLeading(context.Background())
 	}
 }
 
@@ -73,9 +71,7 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 	defer lee.mu.Unlock()
 	lee.isLeader = true
 	for _, callback := range lee.callBackFuncs {
-		if callback.onStartLeading != nil {
-			callback.onStartLeading(ctx)
-		}
+		callback.onStartLeading(ctx)
 	}
 }
 
@@ -88,9 +84,7 @@ func (lee *leaderElectionExtension) stoppedLeading() {
 
 	lee.isLeader = false
 	for _, callback := range lee.callBackFuncs {
-		if callback.onStopLeading != nil {
-			callback.onStopLeading()
-		}
+		callback.onStopLeading()
 	}
 }
 
