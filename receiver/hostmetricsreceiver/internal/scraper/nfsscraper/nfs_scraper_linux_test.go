@@ -58,7 +58,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		AuthRefreshCount: 662,
 	}
 
-	nfsV3ProcedureStats := &[]CallStats{
+	nfsV3ProcedureStats := []CallStats{
 		{NFSVersion: 3, NFSCallName: "NULL", NFSCallCount: 191},
 		{NFSVersion: 3, NFSCallName: "GETATTR", NFSCallCount: 360},
 		{NFSVersion: 3, NFSCallName: "SETATTR", NFSCallCount: 118},
@@ -83,7 +83,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		{NFSVersion: 3, NFSCallName: "COMMIT", NFSCallCount: 235},
 	}
 
-	nfsV4OperationStats := &[]CallStats{
+	nfsV4OperationStats := []CallStats{
 		{NFSVersion: 4, NFSCallName: "NULL", NFSCallCount: 32},
 		{NFSVersion: 4, NFSCallName: "READ", NFSCallCount: 829},
 		{NFSVersion: 4, NFSCallName: "WRITE", NFSCallCount: 218},
@@ -198,7 +198,7 @@ func getExpectedOSNfsdStats() *NfsdStats {
 		BadClientCount: 748,
 	}
 
-	nfsdV3ProcedureStats := &[]CallStats{
+	nfsdV3ProcedureStats := []CallStats{
 		{NFSVersion: 3, NFSCallName: "NULL", NFSCallCount: 124},
 		{NFSVersion: 3, NFSCallName: "GETATTR", NFSCallCount: 554},
 		{NFSVersion: 3, NFSCallName: "SETATTR", NFSCallCount: 529},
@@ -223,12 +223,12 @@ func getExpectedOSNfsdStats() *NfsdStats {
 		{NFSVersion: 3, NFSCallName: "COMMIT", NFSCallCount: 382},
 	}
 
-	nfsdV4ProcedureStats := &[]CallStats{
+	nfsdV4ProcedureStats := []CallStats{
 		{NFSVersion: 4, NFSCallName: "NULL", NFSCallCount: 512},
 		{NFSVersion: 4, NFSCallName: "COMPOUND", NFSCallCount: 878},
 	}
 
-	nfsdV4OperationStats := &[]CallStats{
+	nfsdV4OperationStats := []CallStats{
 		{NFSVersion: 4, NFSCallName: "UNUSED0", NFSCallCount: 725},
 		{NFSVersion: 4, NFSCallName: "UNUSED1", NFSCallCount: 607},
 		{NFSVersion: 4, NFSCallName: "UNUSED2", NFSCallCount: 978},

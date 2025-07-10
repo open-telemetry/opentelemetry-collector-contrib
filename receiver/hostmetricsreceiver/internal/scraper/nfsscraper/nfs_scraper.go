@@ -90,19 +90,19 @@ func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsStats.NfsV3ProcedureStats != nil {
-		for _, callStat := range *s.nfsStats.NfsV3ProcedureStats {
+		for _, callStat := range s.nfsStats.NfsV3ProcedureStats {
 			s.mb.RecordNfsClientProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if s.nfsStats.NfsV4ProcedureStats != nil {
-		for _, callStat := range *s.nfsStats.NfsV4ProcedureStats {
+		for _, callStat := range s.nfsStats.NfsV4ProcedureStats {
 			s.mb.RecordNfsClientProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if s.nfsStats.NfsV4OperationStats != nil {
-		for _, callStat := range *s.nfsStats.NfsV4OperationStats {
+		for _, callStat := range s.nfsStats.NfsV4OperationStats {
 			s.mb.RecordNfsClientOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
@@ -148,19 +148,19 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.NfsdV3ProcedureStats != nil {
-		for _, callStat := range *s.nfsdStats.NfsdV3ProcedureStats {
+		for _, callStat := range s.nfsdStats.NfsdV3ProcedureStats {
 			s.mb.RecordNfsServerProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if s.nfsdStats.NfsdV4ProcedureStats != nil {
-		for _, callStat := range *s.nfsdStats.NfsdV4ProcedureStats {
+		for _, callStat := range s.nfsdStats.NfsdV4ProcedureStats {
 			s.mb.RecordNfsServerProcedureCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
 
 	if s.nfsdStats.NfsdV4OperationStats != nil {
-		for _, callStat := range *s.nfsdStats.NfsdV4OperationStats {
+		for _, callStat := range s.nfsdStats.NfsdV4OperationStats {
 			s.mb.RecordNfsServerOperationCountDataPoint(now, int64(callStat.NFSCallCount), callStat.NFSVersion, callStat.NFSCallName)
 		}
 	}
