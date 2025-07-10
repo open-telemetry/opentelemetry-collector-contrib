@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"math"
 	"net/http"
 	"runtime"
@@ -401,15 +400,10 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish otel mapping mode", func(t *testing.T) {
-		defaultRecordAttrs := map[string]any{
-			"data_stream.dataset": "attr.dataset",
-			"attr.foo":            "attr.foo.value",
-		}
 		for _, tc := range []struct {
 			name         string
 			body         pcommon.Value
 			isEvent      bool
-			recordAttrs  map[string]any
 			wantDocument []byte
 		}{
 			{
@@ -417,7 +411,6 @@ func TestExporterLogs(t *testing.T) {
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
-				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
@@ -430,7 +423,6 @@ func TestExporterLogs(t *testing.T) {
 					m.PutEmptyMap("inner").PutStr("foo", "bar")
 					return vm
 				}(),
-				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
@@ -444,7 +436,6 @@ func TestExporterLogs(t *testing.T) {
 					return vm
 				}(),
 				isEvent:      true,
-				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
@@ -457,7 +448,6 @@ func TestExporterLogs(t *testing.T) {
 					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 					return vs
 				}(),
-				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
@@ -471,24 +461,7 @@ func TestExporterLogs(t *testing.T) {
 					return vs
 				}(),
 				isEvent:      true,
-				recordAttrs:  defaultRecordAttrs,
 				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
-			},
-			{
-				name: "log attribute value of type map",
-				body: func() pcommon.Value {
-					return pcommon.NewValueStr("foo")
-				}(),
-				recordAttrs: map[string]any{
-					"data_stream.dataset": "attr.dataset",
-					"outer": map[string]any{
-						"inner_foo": "inner_bar",
-						"inner_inner": map[string]any{
-							"inner_inner_foo": "inner_inner_bar",
-						},
-					},
-				},
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"outer.inner_foo":"inner_bar","outer.inner_inner.inner_inner_foo":"inner_inner_bar"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -501,8 +474,10 @@ func TestExporterLogs(t *testing.T) {
 				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 					cfg.Mapping.Mode = "otel"
 				})
-				// shallow copy the map
-				recordAttrs := maps.Clone(tc.recordAttrs)
+				recordAttrs := map[string]any{
+					"data_stream.dataset": "attr.dataset",
+					"attr.foo":            "attr.foo.value",
+				}
 				if tc.isEvent {
 					recordAttrs["event.name"] = "foo"
 				}
@@ -760,61 +735,95 @@ func TestExporterLogs(t *testing.T) {
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
 	})
 
-	t.Run("otel mode attribute array value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
 
-		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.scope.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.resource.attribute": []string{"foo", "bar"},
-		}))
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "map value",
+				recordAttrs: map[string]any{
+					"outer": map[string]any{
+						"inner_foo": "inner_bar",
+						"inner_inner": map[string]any{
+							"inner_inner_foo": "inner_inner_bar",
+						},
+					},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"outer":{"inner_foo":"inner_bar","inner_inner":{"inner_inner_foo":"inner_inner_bar"}}}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		rec.WaitItems(1)
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
 
-		assert.Len(t, rec.Items(), 1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
-	})
+				mustSendLogs(t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
 
-	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+				rec.WaitItems(1)
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+				assert.Len(t, rec.Items(), 1)
+				doc := rec.Items()[0].Document
+				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+			})
+		}
 
-		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}))
-
-		rec.WaitItems(1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
