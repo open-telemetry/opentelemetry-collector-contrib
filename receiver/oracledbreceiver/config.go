@@ -26,13 +26,11 @@ var (
 	errEmptyUsername       = errors.New("username must be set")
 	errMaxQuerySampleCount = errors.New("`max_query_sample_count` must be between 1 and 10000")
 	errTopQueryCount       = errors.New("`top_query_count` must be between 1 and 200 and less than or equal to `max_query_sample_count`")
-	errQueryCacheSize      = errors.New("`query_cache_size` must be strictly positive")
 )
 
 type TopQueryCollection struct {
 	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint `mapstructure:"top_query_count"`
-	QueryCacheSize      int  `mapstructure:"query_cache_size"`
 }
 
 type Config struct {
@@ -97,9 +95,6 @@ func (c Config) Validate() error {
 	}
 	if c.TopQueryCount < 1 || c.TopQueryCount > 200 || c.TopQueryCount > c.MaxQuerySampleCount {
 		allErrs = multierr.Append(allErrs, errTopQueryCount)
-	}
-	if c.QueryCacheSize <= 0 {
-		allErrs = multierr.Append(allErrs, errQueryCacheSize)
 	}
 	return allErrs
 }

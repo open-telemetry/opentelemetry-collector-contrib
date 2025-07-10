@@ -47,7 +47,6 @@ func createDefaultConfig() component.Config {
 		TopQueryCollection: TopQueryCollection{
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
-			QueryCacheSize:      5000,
 		},
 	}
 }
@@ -111,8 +110,9 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 			return nil, hostNameErr
 		}
 
-		cacheSize := sqlCfg.QueryCacheSize
-		metricCache, err := lru.New[string, map[string]int64](cacheSize)
+		// cacheSize is kept at 2 times MaxQuerySampleCount to keep queries of adjacent collections available for delta calculation.
+		cacheSize := sqlCfg.MaxQuerySampleCount * 2
+		metricCache, err := lru.New[string, map[string]int64](int(cacheSize))
 		if err != nil {
 			settings.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
 			return nil, err
