@@ -1335,32 +1335,73 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("otel mode attribute array value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
 
-		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.scope.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.resource.attribute": []string{"foo", "bar"},
-		}))
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		rec.WaitItems(1)
+				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
 
-		assert.Len(t, rec.Items(), 1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				mustSendMetrics(t, exporter, newMetricsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+				rec.WaitItems(1)
+
+				assert.Len(t, rec.Items(), 1)
+				doc := rec.Items()[0].Document
+				assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+				assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+				assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+			})
+		}
 	})
 
 	t.Run("otel mode _doc_count hint", func(t *testing.T) {
@@ -1495,35 +1536,6 @@ func TestExporterMetrics(t *testing.T) {
 		}
 
 		assertRecordedItems(t, expected, rec, false)
-	})
-
-	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}))
-
-		rec.WaitItems(1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
@@ -2179,68 +2191,79 @@ func TestExporterTraces(t *testing.T) {
 		}
 	})
 
-	t.Run("otel mode attribute array value", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("otel mode attribute", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
 
-		traces := newTracesWithAttributes(map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.scope.attribute": []string{"foo", "bar"},
-		}, map[string]any{
-			"some.resource.attribute": []string{"foo", "bar"},
-		})
-		spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
-		fillAttributeMap(spanEventAttrs, map[string]any{
-			"some.record.attribute": []string{"foo", "bar"},
-		})
-		mustSendTraces(t, exporter, traces)
+			wantRecordAttrs   string
+			wantScopeAttrs    string
+			wantResourceAttrs string
+		}{
+			{
+				name: "slice value",
+				recordAttrs: map[string]any{
+					"some.record.attribute": []string{"foo", "bar"},
+				},
+				scopeAttrs: map[string]any{
+					"some.scope.attribute": []string{"foo", "bar"},
+				},
+				resourceAttrs: map[string]any{
+					"some.resource.attribute": []string{"foo", "bar"},
+				},
+				wantRecordAttrs:   `{"some.record.attribute":["foo","bar"]}`,
+				wantScopeAttrs:    `{"some.scope.attribute":["foo","bar"]}`,
+				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
+			},
+			{
+				name: "key prefix conflict",
+				recordAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				scopeAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				resourceAttrs: map[string]any{
+					"a":   "a",
+					"a.b": "a.b",
+				},
+				wantRecordAttrs:   `{"a":"a","a.b":"a.b"}`,
+				wantScopeAttrs:    `{"a":"a","a.b":"a.b"}`,
+				wantResourceAttrs: `{"a":"a","a.b":"a.b"}`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		rec.WaitItems(2)
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "otel"
+				})
 
-		assert.Len(t, rec.Items(), 2)
-		for _, item := range rec.Items() {
-			doc := item.Document
-			assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-			assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-			assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				traces := newTracesWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs)
+				spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
+				fillAttributeMap(spanEventAttrs, tc.recordAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(2)
+
+				assert.Len(t, rec.Items(), 2)
+				for _, item := range rec.Items() {
+					doc := item.Document
+					assert.JSONEq(t, tc.wantRecordAttrs, gjson.GetBytes(doc, `attributes`).Raw)
+					assert.JSONEq(t, tc.wantScopeAttrs, gjson.GetBytes(doc, `scope.attributes`).Raw)
+					assert.JSONEq(t, tc.wantResourceAttrs, gjson.GetBytes(doc, `resource.attributes`).Raw)
+				}
+			})
 		}
-	})
-
-	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
-		mustSendTraces(t, exporter, newTracesWithAttributes(map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}, map[string]any{
-			"a":   "a",
-			"a.b": "a.b",
-		}))
-
-		rec.WaitItems(1)
-		doc := rec.Items()[0].Document
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
