@@ -533,7 +533,9 @@ func TestExporterLogs(t *testing.T) {
 				wantResourceAttrs: `{"some.resource.attribute":["foo","bar"]}`,
 			},
 			{
-				name: "map value", // only valid for log attributes https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes
+				// only valid for log attributes https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes
+				// but testing for all attributes anyway
+				name: "map value",
 				recordAttrs: map[string]any{
 					"a.b": map[string]any{
 						"c": "a.b.c",
@@ -542,7 +544,25 @@ func TestExporterLogs(t *testing.T) {
 						},
 					},
 				},
-				wantRecordAttrs: `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
+				scopeAttrs: map[string]any{
+					"a.b": map[string]any{
+						"c": "a.b.c",
+						"c.d": map[string]any{
+							"e": "a.b.c.d.e",
+						},
+					},
+				},
+				resourceAttrs: map[string]any{
+					"a.b": map[string]any{
+						"c": "a.b.c",
+						"c.d": map[string]any{
+							"e": "a.b.c.d.e",
+						},
+					},
+				},
+				wantRecordAttrs:   `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
+				wantScopeAttrs:    `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
+				wantResourceAttrs: `{"a.b":{"c":"a.b.c","c.d":{"e":"a.b.c.d.e"}}}`,
 			},
 			{
 				name: "key prefix conflict",
