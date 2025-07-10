@@ -77,10 +77,17 @@ func keyValToInterfaceSlice(kv *keyVal) []any {
 // logToKeyVal represents a Log object as keyVal
 func logToKeyVal(l faroTypes.Log) *keyVal {
 	kv := newKeyVal()
+
+	// default to info level, prioritize log level if set
+	level := string(faroTypes.LogLevelInfo)
+	if l.LogLevel != "" {
+		level = string(l.LogLevel)
+	}
+
 	keyValAdd(kv, faroTimestamp, l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindLog))
+	keyValAdd(kv, faroLogLevel, level)
 	keyValAdd(kv, faroLogMessage, l.Message)
-	keyValAdd(kv, faroLogLevel, string(l.LogLevel))
 	mergeKeyValWithPrefix(kv, keyValFromMap(l.Context), faroContextPrefix)
 	mergeKeyVal(kv, traceToKeyVal(l.Trace))
 	mergeKeyVal(kv, actionToKeyVal(l.Action))
@@ -92,6 +99,7 @@ func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
 	kv := newKeyVal()
 	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindException))
+	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelError))
 	keyValAdd(kv, faroExceptionType, e.Type)
 	keyValAdd(kv, faroExceptionValue, e.Value)
 	keyValAdd(kv, faroExceptionStacktrace, exceptionToString(e))
@@ -132,6 +140,7 @@ func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 
 	keyValAdd(kv, faroTimestamp, m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindMeasurement))
+	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroMeasurementType, m.Type)
 	mergeKeyValWithPrefix(kv, keyValFromMap(m.Context), faroContextPrefix)
 
@@ -155,6 +164,7 @@ func eventToKeyVal(e faroTypes.Event) *keyVal {
 	kv := newKeyVal()
 	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindEvent))
+	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroEventName, e.Name)
 	keyValAdd(kv, faroEventDomain, e.Domain)
 	if e.Attributes != nil {
