@@ -994,6 +994,10 @@ func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 }
 
 func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.AgentRemoteConfig) []configComposer {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
+		return []configComposer{}
+	}
+
 	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 	remoteConfigComposers := []configComposer{}
 	if hasIncomingConfigMap {
@@ -1308,7 +1312,7 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	s.addSpecialConfigFiles()
 
 	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
-	if !hasIncomingConfigMap {
+	if s.config.Capabilities.AcceptsRemoteConfig && !hasIncomingConfigMap {
 		// Add noop pipeline
 		var noopConfig []byte
 		noopConfig, err = s.composeNoopPipeline()
@@ -1811,6 +1815,11 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protobufs.AgentRemoteConfig) bool {
 	_, span := s.getTracer().Start(ctx, "processRemoteConfigMessage")
 	defer span.End()
+	if !s.config.Capabilities.AcceptsRemoteConfig {
+		s.telemetrySettings.Logger.Warn("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
+		return false
+	}
+
 	if err := s.saveLastReceivedConfig(msg); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received remote config: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Could not save last received remote config", zap.Error(err))
