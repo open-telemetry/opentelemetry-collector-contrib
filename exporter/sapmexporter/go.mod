@@ -52,7 +52,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.129.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.129.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect

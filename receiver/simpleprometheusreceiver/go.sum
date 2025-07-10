@@ -550,12 +550,12 @@ go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5 h1:YV
 go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:hFg+6sGvwIvz8mR8zhSHGTRrP6JUIPdc//ROrww1D9U=
 go.opentelemetry.io/collector/component v1.35.1-0.20250710172626-1ebb9b20cfa5 h1:Lnq42fLsimLebglpMf/iL6zgdFTKN2RaiWwzX3+V2iw=
 go.opentelemetry.io/collector/component v1.35.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:REK1LenAljD2qjKfdGOuUscv50dtTI0JuBIZO6IGUD0=
-go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710130210-78fbbf655bd3 h1:+V0yhke9I3TPRAxrqDhZFqqjqaLNwhoj/LILz0lRc8o=
-go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710130210-78fbbf655bd3/go.mod h1:qnrxWJIB+w+PGcoTd1/X1LEFH3y7ewUdiUrokJhfKEA=
+go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710172626-1ebb9b20cfa5 h1:qDR+J6MNe7EcEiRoHv7mcJbwiA4t49kCPoeSpnf3I7c=
+go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:qnrxWJIB+w+PGcoTd1/X1LEFH3y7ewUdiUrokJhfKEA=
 go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250710172626-1ebb9b20cfa5 h1:xn1t9BHKKRcjOimoesea5+K+wqNBCaPotZDRv75ItuA=
 go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:ZTXhTLQjwTA5h+O7ka/RoKdhGhtnMW1JXcTl3iZjV7k=
-go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710130210-78fbbf655bd3 h1:OARWt2N/SWaooAaAtNUV250KQRzFC3VDKXf4C6V1daM=
-go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710130210-78fbbf655bd3/go.mod h1:hsLvECIZIxschpUmFN+gkbwu9ftfiPg327sGsIic0gc=
+go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710172626-1ebb9b20cfa5 h1:oYDA/zSenfZV7KIgX4wTNhgd0dso0NNQNgWUKklc61I=
+go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:hsLvECIZIxschpUmFN+gkbwu9ftfiPg327sGsIic0gc=
 go.opentelemetry.io/collector/config/configcompression v1.35.1-0.20250710172626-1ebb9b20cfa5 h1:jrECZCfbZZAXDF0hChST1VcLSE0AoeIlWjojsFbh8M4=
 go.opentelemetry.io/collector/config/configcompression v1.35.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:QwbNpaOl6Me+wd0EdFuEJg0Cc+WR42HNjJtdq4TwE6w=
 go.opentelemetry.io/collector/config/confighttp v0.129.1-0.20250710172626-1ebb9b20cfa5 h1:TKczxJwY4r3a35dr0EeI3RPVC1OMNG5i7Q62HlidCR4=

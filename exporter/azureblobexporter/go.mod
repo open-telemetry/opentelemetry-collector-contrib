@@ -24,7 +24,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.129.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect

@@ -82,7 +82,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.129.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect

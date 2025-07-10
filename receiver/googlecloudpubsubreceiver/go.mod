@@ -66,7 +66,7 @@ require (
 	go.einride.tech/aip v0.68.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
-	go.opentelemetry.io/collector/config/configoptional v0.129.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect

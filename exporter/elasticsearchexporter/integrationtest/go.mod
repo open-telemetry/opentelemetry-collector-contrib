@@ -13,7 +13,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.6
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710130210-78fbbf655bd3
+	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/config/confighttp v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/confmap v1.35.1-0.20250710172626-1ebb9b20cfa5
@@ -156,7 +156,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710130210-78fbbf655bd3 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect

@@ -13,7 +13,7 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710130210-78fbbf655bd3
+	go.opentelemetry.io/collector/component/componentstatus v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/config/confighttp v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250710172626-1ebb9b20cfa5
@@ -77,7 +77,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710130210-78fbbf655bd3 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.129.1-0.20250710172626-1ebb9b20cfa5 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250710172626-1ebb9b20cfa5 // indirect

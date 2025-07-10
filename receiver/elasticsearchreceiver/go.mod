@@ -12,7 +12,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/component v1.35.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710130210-78fbbf655bd3
+	go.opentelemetry.io/collector/config/configauth v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/config/confighttp v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/config/configoptional v0.129.1-0.20250710172626-1ebb9b20cfa5
