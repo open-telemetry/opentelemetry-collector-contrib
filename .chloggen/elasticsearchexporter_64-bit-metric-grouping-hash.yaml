@@ -7,7 +7,7 @@ change_type: enhancement
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Increase metric grouping hash from 32 bit to 64 bit to reduce collisions and chance of consequent data loss
+note: Increase metric grouping hash and _metric_names_hash from 32 bit to 64 bit to reduce collisions and chance of consequent data loss.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [41208]
