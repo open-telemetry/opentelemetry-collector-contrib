@@ -229,12 +229,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					attribute.String("outcome", "success"),
 				),
 			},
-			wantESDocsRetried: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.Int("greatest_retry", 1),
-				),
-			},
+			wantESDocsRetried: &metricdata.DataPoint[int64]{Value: 1},
 		},
 		{
 			name: "500/doc_level",

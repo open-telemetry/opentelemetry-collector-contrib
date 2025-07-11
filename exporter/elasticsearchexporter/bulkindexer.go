@@ -550,13 +550,7 @@ func flushBulkIndexer(
 		)
 	}
 	if stat.RetriedDocs > 0 {
-		tb.ElasticsearchDocsRetried.Add(
-			ctx,
-			stat.RetriedDocs,
-			metric.WithAttributeSet(attribute.NewSet(
-				attribute.Int("greatest_retry", stat.GreatestRetry),
-			)),
-		)
+		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs)
 	}
 	return err
 }

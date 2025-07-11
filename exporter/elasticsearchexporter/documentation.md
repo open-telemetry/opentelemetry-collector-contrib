@@ -55,12 +55,6 @@ Only document level retries are captured, whole bulk request retries are not cap
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| greatest_retry | The greatest observed retry count in the entire bulk request. | Any Int |
-
 ### otelcol.elasticsearch.flushed.bytes
 
 Number of bytes flushed by the indexer. [alpha]

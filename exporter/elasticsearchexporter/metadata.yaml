@@ -17,9 +17,6 @@ attributes:
     description: The operation outcome.
     type: string
     enum: [success, failed_client, failed_server, timeout, too_many, failure_store, internal_server_error]
-  greatest_retry:
-    description: The greatest observed retry count in the entire bulk request.
-    type: int
   failure_store:
     description: The status of the failure store.
     type: string
@@ -70,7 +67,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [greatest_retry]
     elasticsearch.flushed.bytes:
       prefix: otelcol.
       stability:
