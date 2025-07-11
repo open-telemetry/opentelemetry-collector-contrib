@@ -427,7 +427,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			if pc, ok := c.assignments[tp]; ok {
 				delete(c.assignments, tp)
 				// Cancel also locks the partition consumer. This ensures that
-				// the partition consumer is not processing messages when the
+				// the partition consumer stops processing messages when the
 				// partition is lost or reassigned.
 				pc.cancelContext(errors.New(
 					"stopping processing: partition reassigned or lost",
