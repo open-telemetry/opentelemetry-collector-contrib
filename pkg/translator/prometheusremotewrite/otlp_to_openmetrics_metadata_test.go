@@ -233,9 +233,9 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
 						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
-						testdata.TestDoubleSummaryMetricName,
-						pcommon.NewMap(),
-						1, ts,
+							testdata.TestDoubleSummaryMetricName,
+							pcommon.NewMap(),
+							1, ts,
 						)))
 					}(),
 					Unit: "",
