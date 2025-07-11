@@ -71,13 +71,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsProcessed, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.processed",
-		metric.WithDescription("Count of docs flushed to Elasticsearch. [alpha]"),
+		metric.WithDescription("Count of documents flushed to Elasticsearch. [alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsReceived, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.received",
-		metric.WithDescription("Count of Elasticsearch docs successfully received to be buffered. [alpha]"),
+		metric.WithDescription("Count of Elasticsearch documents successfully received to be buffered. [alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

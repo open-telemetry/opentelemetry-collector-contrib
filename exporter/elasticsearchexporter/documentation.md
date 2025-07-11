@@ -23,7 +23,7 @@ Count of the completed bulk requests. [alpha]
 
 ### otelcol.elasticsearch.docs.processed
 
-Count of docs flushed to Elasticsearch. [alpha]
+Count of documents flushed to Elasticsearch. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -39,7 +39,7 @@ Count of docs flushed to Elasticsearch. [alpha]
 
 ### otelcol.elasticsearch.docs.received
 
-Count of Elasticsearch docs successfully received to be buffered. [alpha]
+Count of Elasticsearch documents successfully received to be buffered. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

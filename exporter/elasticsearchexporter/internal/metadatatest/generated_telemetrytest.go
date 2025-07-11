@@ -40,7 +40,7 @@ func AssertEqualElasticsearchBulkRequestsCount(t *testing.T, tt *componenttest.T
 func AssertEqualElasticsearchDocsProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.processed",
-		Description: "Count of docs flushed to Elasticsearch. [alpha]",
+		Description: "Count of documents flushed to Elasticsearch. [alpha]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualElasticsearchDocsProcessed(t *testing.T, tt *componenttest.Telem
 func AssertEqualElasticsearchDocsReceived(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.received",
-		Description: "Count of Elasticsearch docs successfully received to be buffered. [alpha]",
+		Description: "Count of Elasticsearch documents successfully received to be buffered. [alpha]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

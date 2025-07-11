@@ -40,7 +40,7 @@ telemetry:
       stability:
         level: alpha
       enabled: true
-      description: Count of Elasticsearch docs successfully received to be buffered.
+      description: Count of Elasticsearch documents successfully received to be buffered.
       unit: "1"
       sum:
         value_type: int
@@ -50,7 +50,7 @@ telemetry:
       stability:
         level: alpha
       enabled: true
-      description: Count of docs flushed to Elasticsearch.
+      description: Count of documents flushed to Elasticsearch.
       unit: "1"
       sum:
         value_type: int
