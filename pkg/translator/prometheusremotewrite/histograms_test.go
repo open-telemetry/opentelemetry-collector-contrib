@@ -10,6 +10,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -743,7 +744,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
-				metricNamer.Build(translatorMetricFromOtelMetric(metric)),
+				metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)

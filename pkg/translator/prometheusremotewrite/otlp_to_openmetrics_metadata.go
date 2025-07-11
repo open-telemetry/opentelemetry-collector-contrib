@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -67,7 +68,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 				metric := scopeMetrics.Metrics().At(k)
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
-					MetricFamilyName: metricNamer.Build(translatorMetricFromOtelMetric(metric)),
+					MetricFamilyName: metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
 					Unit:             unitNamer.Build(metric.Unit()),
 					Help:             metric.Description(),
 				}

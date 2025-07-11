@@ -15,6 +15,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -120,7 +121,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
 	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: c.addMetricSuffixes, Namespace: c.namespace}
 	labelNamer := otlptranslator.LabelNamer{}
-	name := metricNamer.Build(translatorMetricFromOtelMetric(metric))
+	name := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -487,29 +488,4 @@ func (c *collector) cleanupMetricFamilies() {
 		}
 		return true
 	})
-}
-
-func translatorMetricFromOtelMetric(metric pmetric.Metric) otlptranslator.Metric {
-	m := otlptranslator.Metric{
-		Name: metric.Name(),
-		Unit: metric.Unit(),
-		Type: otlptranslator.MetricTypeUnknown,
-	}
-	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		m.Type = otlptranslator.MetricTypeGauge
-	case pmetric.MetricTypeSum:
-		if metric.Sum().IsMonotonic() {
-			m.Type = otlptranslator.MetricTypeMonotonicCounter
-		} else {
-			m.Type = otlptranslator.MetricTypeNonMonotonicCounter
-		}
-	case pmetric.MetricTypeSummary:
-		m.Type = otlptranslator.MetricTypeSummary
-	case pmetric.MetricTypeHistogram:
-		m.Type = otlptranslator.MetricTypeHistogram
-	case pmetric.MetricTypeExponentialHistogram:
-		m.Type = otlptranslator.MetricTypeExponentialHistogram
-	}
-	return m
 }

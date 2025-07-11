@@ -9,6 +9,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"github.com/prometheus/otlptranslator"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -57,7 +58,7 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	// Update metric naming to match GMP conventions
 	namer := otlptranslator.MetricNamer{WithMetricSuffixes: c.MetricConfig.Config.AddMetricSuffixes}
 	cfg.MetricConfig.GetMetricName = func(baseName string, metric pmetric.Metric) (string, error) {
-		compliantName := namer.Build(translatorMetricFromOtelMetric(metric))
+		compliantName := namer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 		return googlemanagedprometheus.GetMetricName(baseName, compliantName, metric)
 	}
 	// Map to the prometheus_target monitored resource
@@ -80,29 +81,4 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}
 	return nil
-}
-
-func translatorMetricFromOtelMetric(metric pmetric.Metric) otlptranslator.Metric {
-	m := otlptranslator.Metric{
-		Name: metric.Name(),
-		Unit: metric.Unit(),
-		Type: otlptranslator.MetricTypeUnknown,
-	}
-	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		m.Type = otlptranslator.MetricTypeGauge
-	case pmetric.MetricTypeSum:
-		if metric.Sum().IsMonotonic() {
-			m.Type = otlptranslator.MetricTypeMonotonicCounter
-		} else {
-			m.Type = otlptranslator.MetricTypeNonMonotonicCounter
-		}
-	case pmetric.MetricTypeSummary:
-		m.Type = otlptranslator.MetricTypeSummary
-	case pmetric.MetricTypeHistogram:
-		m.Type = otlptranslator.MetricTypeHistogram
-	case pmetric.MetricTypeExponentialHistogram:
-		m.Type = otlptranslator.MetricTypeExponentialHistogram
-	}
-	return m
 }
