@@ -205,52 +205,64 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	endTime := time.Now()
-	for _, r := range l.groupRequests {
-		startTime := l.nextStartTime
 
-		// Retrieve the last persisted timestamp for this log group if exists
-		if l.cloudwatchCheckpointPersister != nil {
-			logGroup := r.groupName()
-			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
-			if err == nil && checkpoint != "" {
-				parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
-				if parseErr == nil && parsedTime.After(startTime) {
-					startTime = parsedTime
-					l.settings.Logger.Info("Resuming from previously known checkpoint(s)",
-						zap.String("logGroup", logGroup),
-						zap.Time("startTime", startTime))
-				} else if parseErr != nil {
-					l.settings.Logger.Warn("Failed to parse persisted timestamp, using default start time",
-						zap.String("logGroup", logGroup),
-						zap.String("checkpoint", checkpoint),
-						zap.Error(parseErr))
-					if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, logGroup); err != nil {
-						l.settings.Logger.Error("Failed to delete invalid checkpoint",
+	var errMu sync.Mutex
+	var wg sync.WaitGroup
+
+	for _, r := range l.groupRequests {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			startTime := l.nextStartTime
+
+			// Retrieve the last persisted timestamp for this log group if exists
+			if l.cloudwatchCheckpointPersister != nil {
+				logGroup := r.groupName()
+				checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
+				if err == nil && checkpoint != "" {
+					parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
+					if parseErr == nil && parsedTime.After(startTime) {
+						startTime = parsedTime
+						l.settings.Logger.Info("Resuming from previously known checkpoint(s)",
+							zap.String("logGroup", logGroup),
+							zap.Time("startTime", startTime))
+					} else if parseErr != nil {
+						l.settings.Logger.Warn("Failed to parse persisted timestamp, using default start time",
 							zap.String("logGroup", logGroup),
 							zap.String("checkpoint", checkpoint),
-							zap.Error(err))
+							zap.Error(parseErr))
+						if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, logGroup); err != nil {
+							l.settings.Logger.Error("Failed to delete invalid checkpoint",
+								zap.String("logGroup", logGroup),
+								zap.String("checkpoint", checkpoint),
+								zap.Error(err))
+						}
 					}
 				}
 			}
-		}
 
-		// Poll logs for the current log group
-		if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
-			errs = errors.Join(errs, err)
-		}
-
-		// Persist the new end time as the checkpoint for this log group
-		if l.cloudwatchCheckpointPersister != nil {
-			logGroup := r.groupName()
-			newCheckpoint := endTime.Format(time.RFC3339)
-			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
-			if err != nil {
-				l.settings.Logger.Error("failed to persist timestamp checkpoint",
-					zap.String("logGroup", logGroup),
-					zap.String("checkpoint", newCheckpoint),
-					zap.Error(err))
+			// Poll logs for the current log group
+			l.settings.Logger.Debug("Polling for logs", zap.String("logGroup", r.groupName()))
+			if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
+				errMu.Lock()
+				errs = errors.Join(errs, err)
+				errMu.Unlock()
 			}
-		}
+
+			// Persist the new end time as the checkpoint for this log group
+			if l.cloudwatchCheckpointPersister != nil {
+				logGroup := r.groupName()
+				newCheckpoint := endTime.Format(time.RFC3339)
+				err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
+				if err != nil {
+					l.settings.Logger.Error("failed to persist timestamp checkpoint",
+						zap.String("logGroup", logGroup),
+						zap.String("checkpoint", newCheckpoint),
+						zap.Error(err))
+				}
+			}
+		}()
+		wg.Wait()
 	}
 
 	// Update the receiver's nextStartTime for the next poll cycle
