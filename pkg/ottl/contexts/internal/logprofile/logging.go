@@ -93,7 +93,6 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 			s,
 			p.Dictionary,
 		}))
-
 	}
 
 	encoder.AddInt64("time_nanos", int64(p.Time()))
