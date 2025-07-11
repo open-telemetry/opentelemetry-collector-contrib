@@ -314,7 +314,6 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 					var id [16]byte
 					binary.LittleEndian.PutUint64(id[:8], uint64(j))
 					profile.SetProfileID(id)
-					profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 					profile.SetDuration(1000000000) // 1 second in nanoseconds
 				}
 				_ = exp.pushProfiles(context.Background(), profiles)
@@ -435,7 +434,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		}
 
@@ -466,7 +464,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		}
 
@@ -512,7 +509,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		}
 
@@ -569,7 +565,6 @@ func TestProfilesExporter_RateLimitErrorCountReset(t *testing.T) {
 	var id [16]byte
 	binary.LittleEndian.PutUint64(id[:8], uint64(1))
 	profile.SetProfileID(id)
-	profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 	profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 
 	err = exp.pushProfiles(context.Background(), profiles)
@@ -624,7 +619,6 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 		var id [16]byte
 		binary.LittleEndian.PutUint64(id[:8], uint64(1))
 		profile.SetProfileID(id)
-		profile.SetStartTime(pcommon.NewTimestampFromTime(time.Now()))
 		profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
 		return profiles
 	}

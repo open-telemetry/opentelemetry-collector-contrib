@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elastic/go-docappender/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -495,23 +497,89 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
+	t.Run("retry http request batcher", func(t *testing.T) {
+		for _, maxRetries := range []int{0, 1, 11} {
+			t.Run(fmt.Sprintf("max retries %d", maxRetries), func(t *testing.T) {
+				t.Parallel()
+				expectedRetries := maxRetries
+				if maxRetries == 0 {
+					expectedRetries = defaultMaxRetries
+				}
+
+				var attempts atomic.Int64
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
+					// always return error, and assert that the number of attempts is expected, not more, not less.
+					attempts.Add(1)
+					return nil, &httpTestError{status: http.StatusServiceUnavailable, message: "oops"}
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Retry.Enabled = true
+					cfg.Retry.RetryOnStatus = []int{http.StatusServiceUnavailable}
+					cfg.Retry.MaxRetries = maxRetries
+					cfg.Retry.InitialInterval = 1 * time.Millisecond
+					cfg.Retry.MaxInterval = 5 * time.Millisecond
+
+					// use sync bulk indexer
+					cfg.Batcher.Enabled = false
+					cfg.Batcher.enabledSet = true
+				})
+
+				logs := plog.NewLogs()
+				resourceLogs := logs.ResourceLogs().AppendEmpty()
+				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+				scopeLogs.LogRecords().AppendEmpty()
+				logs.MarkReadOnly()
+				err := exporter.ConsumeLogs(context.Background(), logs) // as sync bulk indexer is used, retries are finished on return
+				var errFlushFailed docappender.ErrorFlushFailed
+				require.ErrorAs(t, err, &errFlushFailed)
+
+				assert.Equal(t, 0, rec.countItems())
+				assert.Equal(t, int64(expectedRetries+1), attempts.Load()) // initial request + retries
+			})
+		}
+	})
+
 	t.Run("retry http request", func(t *testing.T) {
-		failures := 0
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			if failures == 0 {
-				failures++
-				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
-			}
+		for _, maxRetries := range []int{0, 1, 11} {
+			t.Run(fmt.Sprintf("max retries %d", maxRetries), func(t *testing.T) {
+				t.Parallel()
+				expectedRetries := maxRetries
+				if maxRetries == 0 {
+					expectedRetries = defaultMaxRetries
+				}
 
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+				var attempts atomic.Int64
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
+					// always return error, and assert that the number of attempts is expected, not more, not less.
+					attempts.Add(1)
+					return nil, &httpTestError{status: http.StatusServiceUnavailable, message: "oops"}
+				})
 
-		exporter := newTestLogsExporter(t, server.URL)
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Retry.Enabled = true
+					cfg.Retry.RetryOnStatus = []int{http.StatusServiceUnavailable}
+					cfg.Retry.MaxRetries = maxRetries
+					cfg.Retry.InitialInterval = 1 * time.Millisecond
+					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
-		rec.WaitItems(1)
+					// use async bulk indexer
+					cfg.Batcher.enabledSet = false
+				})
+				mustSendLogRecords(t, exporter, plog.NewLogRecord()) // as sync bulk indexer is used, retries are not guaranteed to finish
+
+				assert.Eventually(t, func() bool {
+					return int64(expectedRetries+1) == attempts.Load()
+				}, time.Second, 5*time.Millisecond)
+
+				// assert that it does not retry in async more than expected
+				time.Sleep(20 * time.Millisecond)
+				assert.Equal(t, int64(expectedRetries+1), attempts.Load())
+				assert.Equal(t, 0, rec.countItems())
+			})
+		}
 	})
 
 	t.Run("no retry", func(t *testing.T) {
@@ -2228,15 +2296,9 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		t.Helper()
 		assert.JSONEq(t, `{"k":"v"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	}
-	checkECSResource := func(t *testing.T, doc []byte, signal string) {
+	checkECSResource := func(t *testing.T, doc []byte, _ string) {
 		t.Helper()
-		if signal == "traces" {
-			// ecs mode schema for spans is currently very different
-			// to logs and metrics
-			assert.Equal(t, "v", gjson.GetBytes(doc, "Resource.k").Str)
-		} else {
-			assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
-		}
+		assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
 	}
 
 	testcases := []struct {
@@ -2369,7 +2431,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = &configauth.Config{AuthenticatorID: testauthID}
+		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -2395,14 +2457,15 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
-		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
+			Enabled: false,
 			// sync bulk indexer is used without batching
-			BatcherConfig: batcherCfg,
-			enabledSet:    true,
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      8192,
+			enabledSet:   true,
 		}
-		cfg.Auth = &configauth.Config{AuthenticatorID: testauthID}
+		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(context.Background(), &mockHost{

@@ -51,7 +51,7 @@ type datadogReceiver struct {
 }
 
 // Endpoint specifies an API endpoint definition.
-type Endpoint struct {
+type endpoint struct {
 	// Pattern specifies the API pattern, as registered by the HTTP handler.
 	Pattern string
 
@@ -60,8 +60,8 @@ type Endpoint struct {
 }
 
 // getEndpoints specifies the list of endpoints registered for the trace-agent API.
-func (ddr *datadogReceiver) getEndpoints() []Endpoint {
-	endpoints := []Endpoint{
+func (ddr *datadogReceiver) getEndpoints() []endpoint {
+	endpoints := []endpoint{
 		{
 			Pattern: "/",
 			Handler: func(w http.ResponseWriter, _ *http.Request) {
@@ -71,7 +71,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	}
 
 	if ddr.nextTracesConsumer != nil {
-		endpoints = append(endpoints, []Endpoint{
+		endpoints = append(endpoints, []endpoint{
 			{
 				Pattern: "/v0.3/traces",
 				Handler: ddr.handleTraces,
@@ -96,7 +96,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	}
 
 	if ddr.nextMetricsConsumer != nil {
-		endpoints = append(endpoints, []Endpoint{
+		endpoints = append(endpoints, []endpoint{
 			{
 				Pattern: "/api/v1/series",
 				Handler: ddr.handleV1Series,
@@ -140,7 +140,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 
 	infoResponse, _ := ddr.buildInfoResponse(endpoints)
 
-	endpoints = append(endpoints, Endpoint{
+	endpoints = append(endpoints, endpoint{
 		Pattern: "/info",
 		Handler: func(w http.ResponseWriter, r *http.Request) { ddr.handleInfo(w, r, infoResponse) },
 	})
@@ -237,7 +237,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 	return ddr.server.Shutdown(ctx)
 }
 
-func (ddr *datadogReceiver) buildInfoResponse(endpoints []Endpoint) ([]byte, error) {
+func (ddr *datadogReceiver) buildInfoResponse(endpoints []endpoint) ([]byte, error) {
 	var endpointPaths []string
 	for _, e := range endpoints {
 		endpointPaths = append(endpointPaths, e.Pattern)
