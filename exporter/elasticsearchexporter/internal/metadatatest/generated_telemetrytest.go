@@ -37,10 +37,10 @@ func AssertEqualElasticsearchBulkRequestsCount(t *testing.T, tt *componenttest.T
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualElasticsearchDocsIndexed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualElasticsearchDocsProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.elasticsearch.docs.indexed",
-		Description: "Count of Elasticsearch docs indexed by Elasticsearch. [alpha]",
+		Name:        "otelcol.elasticsearch.docs.processed",
+		Description: "Count of docs flushed to Elasticsearch. [alpha]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -48,7 +48,7 @@ func AssertEqualElasticsearchDocsIndexed(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.elasticsearch.docs.indexed")
+	got, err := tt.GetMetric("otelcol.elasticsearch.docs.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -56,7 +56,7 @@ func AssertEqualElasticsearchDocsIndexed(t *testing.T, tt *componenttest.Telemet
 func AssertEqualElasticsearchDocsReceived(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.received",
-		Description: "Count of Elasticsearch docs successfully bufferred to be indexed. [alpha]",
+		Description: "Count of Elasticsearch docs successfully received to be buffered. [alpha]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

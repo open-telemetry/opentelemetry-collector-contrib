@@ -419,7 +419,7 @@ func flushBulkIndexer(
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				attribute.String("outcome", "timeout"),
 			))
-			tb.ElasticsearchDocsIndexed.Add(ctx, int64(itemsCount), attrSet)
+			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 		case errors.As(err, &bulkFailedErr):
 			var outcome string
@@ -436,13 +436,13 @@ func flushBulkIndexer(
 				semconv.HTTPResponseStatusCode(bulkFailedErr.StatusCode()),
 				attribute.String("outcome", outcome),
 			))
-			tb.ElasticsearchDocsIndexed.Add(ctx, int64(itemsCount), attrSet)
+			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
 				attribute.String("outcome", "internal_server_error"),
 			))
-			tb.ElasticsearchDocsIndexed.Add(ctx, int64(itemsCount), attrSet)
+			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 		}
 	} else {
@@ -484,7 +484,7 @@ func flushBulkIndexer(
 		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
 	}
 	if stat.Indexed > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.Indexed,
 			metric.WithAttributeSet(attribute.NewSet(
@@ -493,7 +493,7 @@ func flushBulkIndexer(
 		)
 	}
 	if tooManyReqs > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			tooManyReqs,
 			metric.WithAttributeSet(attribute.NewSet(
@@ -502,7 +502,7 @@ func flushBulkIndexer(
 		)
 	}
 	if clientFailed > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			clientFailed,
 			metric.WithAttributeSet(attribute.NewSet(
@@ -511,7 +511,7 @@ func flushBulkIndexer(
 		)
 	}
 	if serverFailed > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			serverFailed,
 			metric.WithAttributeSet(attribute.NewSet(
@@ -520,7 +520,7 @@ func flushBulkIndexer(
 		)
 	}
 	if stat.FailureStoreDocs.Used > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Used,
 			metric.WithAttributeSet(attribute.NewSet(
@@ -530,7 +530,7 @@ func flushBulkIndexer(
 		)
 	}
 	if stat.FailureStoreDocs.Failed > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Failed,
 			metric.WithAttributeSet(attribute.NewSet(
@@ -540,7 +540,7 @@ func flushBulkIndexer(
 		)
 	}
 	if stat.FailureStoreDocs.NotEnabled > 0 {
-		tb.ElasticsearchDocsIndexed.Add(
+		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.NotEnabled,
 			metric.WithAttributeSet(attribute.NewSet(

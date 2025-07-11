@@ -43,17 +43,17 @@ telemetry:
       stability:
         level: alpha
       enabled: true
-      description: Count of Elasticsearch docs successfully bufferred to be indexed.
+      description: Count of Elasticsearch docs successfully received to be buffered.
       unit: "1"
       sum:
         value_type: int
         monotonic: true
-    elasticsearch.docs.indexed:
+    elasticsearch.docs.processed:
       prefix: otelcol.
       stability:
         level: alpha
       enabled: true
-      description: Count of Elasticsearch docs indexed by Elasticsearch.
+      description: Count of docs flushed to Elasticsearch.
       unit: "1"
       sum:
         value_type: int

@@ -27,7 +27,7 @@ type TelemetryBuilder struct {
 	mu                                    sync.Mutex
 	registrations                         []metric.Registration
 	ElasticsearchBulkRequestsCount        metric.Int64Counter
-	ElasticsearchDocsIndexed              metric.Int64Counter
+	ElasticsearchDocsProcessed            metric.Int64Counter
 	ElasticsearchDocsReceived             metric.Int64Counter
 	ElasticsearchDocsRetried              metric.Int64Counter
 	ElasticsearchFlushedBytes             metric.Int64Counter
@@ -69,15 +69,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ElasticsearchDocsIndexed, err = builder.meter.Int64Counter(
-		"otelcol.elasticsearch.docs.indexed",
-		metric.WithDescription("Count of Elasticsearch docs indexed by Elasticsearch. [alpha]"),
+	builder.ElasticsearchDocsProcessed, err = builder.meter.Int64Counter(
+		"otelcol.elasticsearch.docs.processed",
+		metric.WithDescription("Count of docs flushed to Elasticsearch. [alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsReceived, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.received",
-		metric.WithDescription("Count of Elasticsearch docs successfully bufferred to be indexed. [alpha]"),
+		metric.WithDescription("Count of Elasticsearch docs successfully received to be buffered. [alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

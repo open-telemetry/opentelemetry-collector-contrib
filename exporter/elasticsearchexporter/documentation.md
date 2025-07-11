@@ -21,9 +21,9 @@ Count of the completed bulk requests. [alpha]
 | outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
 | http_status_code | HTTP status code. | Any Int |
 
-### otelcol.elasticsearch.docs.indexed
+### otelcol.elasticsearch.docs.processed
 
-Count of Elasticsearch docs indexed by Elasticsearch. [alpha]
+Count of docs flushed to Elasticsearch. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -39,7 +39,7 @@ Count of Elasticsearch docs indexed by Elasticsearch. [alpha]
 
 ### otelcol.elasticsearch.docs.received
 
-Count of Elasticsearch docs successfully bufferred to be indexed. [alpha]
+Count of Elasticsearch docs successfully received to be buffered. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

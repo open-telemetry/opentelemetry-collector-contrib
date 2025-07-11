@@ -132,7 +132,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
 				{Value: 1},
 			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchDocsIndexed(t, ct, []metricdata.DataPoint[int64]{
+			metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
 				{
 					Value: 1,
 					Attributes: attribute.NewSet(
@@ -152,15 +152,15 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 
 func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	tests := []struct {
-		name               string
-		roundTripFunc      func(*http.Request) (*http.Response, error)
-		logFailedDocsInput bool
-		retrySettings      RetrySettings
-		wantMessage        string
-		wantFields         []zap.Field
-		wantESBulkReqs     *metricdata.DataPoint[int64]
-		wantESDocsIndexed  *metricdata.DataPoint[int64]
-		wantESDocsRetried  *metricdata.DataPoint[int64]
+		name                string
+		roundTripFunc       func(*http.Request) (*http.Response, error)
+		logFailedDocsInput  bool
+		retrySettings       RetrySettings
+		wantMessage         string
+		wantFields          []zap.Field
+		wantESBulkReqs      *metricdata.DataPoint[int64]
+		wantESDocsProcessed *metricdata.DataPoint[int64]
+		wantESDocsRetried   *metricdata.DataPoint[int64]
 	}{
 		{
 			name: "500",
@@ -179,7 +179,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					semconv.HTTPResponseStatusCode(500),
 				),
 			},
-			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
@@ -204,7 +204,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					semconv.HTTPResponseStatusCode(429),
 				),
 			},
-			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "too_many"),
@@ -252,7 +252,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					attribute.String("outcome", "success"),
 				),
 			},
-			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_server"),
@@ -271,7 +271,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					attribute.String("outcome", "internal_server_error"),
 				),
 			},
-			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "internal_server_error"),
@@ -296,7 +296,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					attribute.String("outcome", "success"),
 				),
 			},
-			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
@@ -327,7 +327,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					attribute.String("outcome", "success"),
 				),
 			},
-			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+			wantESDocsProcessed: &metricdata.DataPoint[int64]{
 				Value: 1,
 				Attributes: attribute.NewSet(
 					attribute.String("outcome", "failed_client"),
@@ -383,10 +383,10 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					metricdatatest.IgnoreTimestamp(),
 				)
 			}
-			if tt.wantESDocsIndexed != nil {
-				metadatatest.AssertEqualElasticsearchDocsIndexed(
+			if tt.wantESDocsProcessed != nil {
+				metadatatest.AssertEqualElasticsearchDocsProcessed(
 					t, ct,
-					[]metricdata.DataPoint[int64]{*tt.wantESDocsIndexed},
+					[]metricdata.DataPoint[int64]{*tt.wantESDocsProcessed},
 					metricdatatest.IgnoreTimestamp(),
 				)
 			}
@@ -495,7 +495,7 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 	metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
 		{Value: 1},
 	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchDocsIndexed(t, ct, []metricdata.DataPoint[int64]{
+	metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
 		{
 			Value: 1,
 			Attributes: attribute.NewSet(
@@ -558,7 +558,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
 		{Value: 1},
 	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchDocsIndexed(t, ct, []metricdata.DataPoint[int64]{
+	metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
 		{
 			Value: 1,
 			Attributes: attribute.NewSet(
