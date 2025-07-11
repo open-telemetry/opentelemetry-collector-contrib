@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -101,18 +101,23 @@ func newK8sResolver(clt kubernetes.Interface,
 		}
 	}
 
-	epsSelector := fmt.Sprintf("metadata.name=%s", name)
+	labelSelector := discoveryv1.LabelServiceName + "=" + name
+	timeoutSeconds := ptr.To[int64](int64(timeout.Seconds()))
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		options.LabelSelector = labelSelector
+		options.TimeoutSeconds = timeoutSeconds
+		return clt.DiscoveryV1().EndpointSlices(namespace).List(context.Background(), options)
+	}
+
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		options.LabelSelector = labelSelector
+		options.TimeoutSeconds = timeoutSeconds
+		return clt.DiscoveryV1().EndpointSlices(namespace).Watch(context.Background(), options)
+	}
+
 	epsListWatcher := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).List(context.Background(), options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).Watch(context.Background(), options)
-		},
+		ListFunc:  listFunc,
+		WatchFunc: watchFunc,
 	}
 
 	epsStore := &sync.Map{}
@@ -121,6 +126,7 @@ func newK8sResolver(clt kubernetes.Interface,
 		logger:      logger,
 		telemetry:   tb,
 		returnNames: returnNames,
+		ports:       ports,
 	}
 	r := &k8sResolver{
 		logger:         logger,
@@ -146,7 +152,7 @@ func (r *k8sResolver) start(_ context.Context) error {
 	r.once.Do(func() {
 		if r.epsListWatcher != nil {
 			r.logger.Debug("creating and starting endpoints informer")
-			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &corev1.Endpoints{}, 0)
+			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &discoveryv1.EndpointSlice{}, 0)
 			if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
 				r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))
 			}
