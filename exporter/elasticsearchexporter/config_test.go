@@ -119,13 +119,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 30 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -199,13 +195,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 30 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -279,13 +271,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-							Sizer:   exporterhelper.RequestSizerTypeItems,
-							MinSize: defaultBatcherMinSizeItems,
-						},
-					},
+					FlushTimeout: 30 * time.Second,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,

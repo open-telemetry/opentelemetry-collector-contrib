@@ -2457,12 +2457,13 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
-		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
+			Enabled: false,
 			// sync bulk indexer is used without batching
-			BatcherConfig: batcherCfg,
-			enabledSet:    true,
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      8192,
+			enabledSet:   true,
 		}
 		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
