@@ -242,7 +242,9 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	pbMetric, _ := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	pbMetrics, _ := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.Len(t, pbMetrics, 1) // Should have exactly one histogram metric
+	pbMetric := pbMetrics[0]
 	m := io_prometheus_client.Metric{}
 	err := pbMetric.Write(&m)
 	if err != nil {
@@ -283,7 +285,9 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	promMetric, _ := c.convertSum(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	promMetrics, _ := c.convertSum(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.Len(t, promMetrics, 1) // Should have exactly one sum metric
+	promMetric := promMetrics[0]
 	outMetric := io_prometheus_client.Metric{}
 	err := promMetric.Write(&outMetric)
 	if err != nil {
@@ -842,4 +846,83 @@ func TestAccumulateSummary(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestConvertDoubleHistogramWithMinMax(t *testing.T) {
+	// initialize empty histogram
+	metric := pmetric.NewMetric()
+	metric.SetName("test_histogram")
+	metric.SetDescription("histogram with min and max values")
+	metric.SetUnit("bytes")
+
+	// initialize empty datapoint
+	histogramDataPoint := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{10, 50, 100})
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{5, 15, 25})
+	histogramDataPoint.SetCount(45)
+	histogramDataPoint.SetSum(2500)
+
+	// Set min and max values
+	histogramDataPoint.SetMin(1.5)
+	histogramDataPoint.SetMax(99.9)
+
+	pMap := pcommon.NewMap()
+
+	c := collector{
+		accumulator: &mockAccumulator{
+			metrics:            []pmetric.Metric{metric},
+			resourceAttributes: pMap,
+		},
+		logger: zap.NewNop(),
+	}
+
+	promMetrics, err := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.NoError(t, err)
+	require.Len(t, promMetrics, 3) // Should have histogram + min + max metrics
+
+	// Debug: print all metric descriptions
+	for i, m := range promMetrics {
+		t.Logf("Metric %d: %s", i, m.Desc().String())
+	}
+
+	// Check that we have the expected metrics
+	var histogramMetric, minMetric, maxMetric prometheus.Metric
+	for _, m := range promMetrics {
+		desc := m.Desc().String()
+		if strings.Contains(desc, "test_histogram_min") {
+			minMetric = m
+		} else if strings.Contains(desc, "test_histogram_max") {
+			maxMetric = m
+		} else if strings.Contains(desc, "test_histogram") {
+			histogramMetric = m
+		} else {
+			t.Errorf("Unexpected metric: %s", desc)
+		}
+	}
+
+	// Verify histogram metric
+	require.NotNil(t, histogramMetric)
+	histogramProto := &io_prometheus_client.Metric{}
+	err = histogramMetric.Write(histogramProto)
+	require.NoError(t, err)
+	require.NotNil(t, histogramProto.GetHistogram())
+	require.Equal(t, uint64(45), histogramProto.GetHistogram().GetSampleCount())
+	require.Equal(t, 2500.0, histogramProto.GetHistogram().GetSampleSum())
+
+	// Verify min metric
+	require.NotNil(t, minMetric)
+	minProto := &io_prometheus_client.Metric{}
+	err = minMetric.Write(minProto)
+	require.NoError(t, err)
+	require.NotNil(t, minProto.GetGauge())
+	require.Equal(t, 1.5, minProto.GetGauge().GetValue())
+
+	// Verify max metric
+	require.NotNil(t, maxMetric)
+	maxProto := &io_prometheus_client.Metric{}
+	err = maxMetric.Write(maxProto)
+	require.NoError(t, err)
+	require.NotNil(t, maxProto.GetGauge())
+	require.Equal(t, 99.9, maxProto.GetGauge().GetValue())
 }

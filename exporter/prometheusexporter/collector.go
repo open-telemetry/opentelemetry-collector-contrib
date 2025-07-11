@@ -100,7 +100,7 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 
 var errUnknownMetricType = errors.New("unknown metric type")
 
-func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) ([]prometheus.Metric, error) {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return c.convertGauge(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
@@ -154,7 +154,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
-func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) ([]prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_GAUGE.Enum(), ip.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
@@ -180,12 +180,12 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	}
 
 	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
+		return []prometheus.Metric{prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m)}, nil
 	}
-	return m, nil
+	return []prometheus.Metric{m}, nil
 }
 
-func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) ([]prometheus.Metric, error) {
 	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
@@ -231,12 +231,12 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map,
 	}
 
 	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
+		return []prometheus.Metric{prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m)}, nil
 	}
-	return m, nil
+	return []prometheus.Metric{m}, nil
 }
 
-func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) ([]prometheus.Metric, error) {
 	// TODO: In the off chance that we have multiple points
 	// within the same metric, how should we handle them?
 	point := metric.Summary().DataPoints().At(0)
@@ -263,17 +263,20 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 		return nil, err
 	}
 	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(point.Timestamp().AsTime(), m), nil
+		return []prometheus.Metric{prometheus.NewMetricWithTimestamp(point.Timestamp().AsTime(), m)}, nil
 	}
-	return m, nil
+	return []prometheus.Metric{m}, nil
 }
 
-func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) ([]prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), ip.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	if err != nil {
 		return nil, err
 	}
+
+	// Get the metric name for min/max gauges
+	metricName := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
 
 	indicesMap := make(map[float64]int)
 	buckets := make([]float64, 0, ip.BucketCounts().Len())
@@ -318,10 +321,30 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		}
 	}
 
-	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m), nil
+	metrics := make([]prometheus.Metric, 0, 3)
+	if ip.HasMin() {
+		minMetric := prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: fmt.Sprintf("%s_min", metricName),
+			Help: fmt.Sprintf("%s_min", metricName),
+		})
+		minMetric.Set(ip.Min())
+		metrics = append(metrics, minMetric)
 	}
-	return m, nil
+	if ip.HasMax() {
+		maxMetrics := prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: fmt.Sprintf("%s_max", metricName),
+			Help: fmt.Sprintf("%s_max", metricName),
+		})
+		maxMetrics.Set(ip.Max())
+		metrics = append(metrics, maxMetrics)
+	}
+
+	if c.sendTimestamps {
+		metrics = append(metrics, prometheus.NewMetricWithTimestamp(ip.Timestamp().AsTime(), m))
+	} else {
+		metrics = append(metrics, m)
+	}
+	return metrics, nil
 }
 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
@@ -427,14 +450,16 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		pMetric := inMetrics[i]
 		rAttr := resourceAttrs[i]
 
-		m, err := c.convertMetric(pMetric, rAttr, scopeNames[i], scopeVersions[i], scopeSchemaURLs[i], scopeAttributes[i])
+		metrics, err := c.convertMetric(pMetric, rAttr, scopeNames[i], scopeVersions[i], scopeSchemaURLs[i], scopeAttributes[i])
 		if err != nil {
 			c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", pMetric.Name(), err.Error()))
 			continue
 		}
 
-		ch <- m
-		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+		for _, m := range metrics {
+			ch <- m
+			c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+		}
 	}
 	c.cleanupMetricFamilies()
 }
