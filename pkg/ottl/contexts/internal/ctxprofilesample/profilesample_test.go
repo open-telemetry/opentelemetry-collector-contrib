@@ -9,13 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPathGetSetter(t *testing.T) {
@@ -46,7 +45,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "timestamps_unix_nano",
-			val:  []int64{int64(time.Now().Unix()), 2, 3},
+			val:  []int64{time.Now().Unix(), 2, 3},
 		},
 	}
 

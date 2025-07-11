@@ -6,11 +6,11 @@ package ctxprofilesample // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pprofile"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
-
-	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 type ProfileSampleContext interface {
