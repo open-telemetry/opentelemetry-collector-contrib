@@ -467,7 +467,7 @@ func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, receiver)
 
-	req := httptest.NewRequest("POST", "/loki/api/v1/push", strings.NewReader(jsonPayload))
+	req := httptest.NewRequest(http.MethodPost, "/loki/api/v1/push", strings.NewReader(jsonPayload))
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	w := httptest.NewRecorder()
 
@@ -478,9 +478,6 @@ func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
 
 	require.Equal(t, 204, resp.StatusCode)
 }
-
-
-
 
 type logRecord struct {
 	Timestamp  int64
