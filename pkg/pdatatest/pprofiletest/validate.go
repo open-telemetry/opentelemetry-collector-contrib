@@ -13,14 +13,9 @@ import (
 func ValidateProfile(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error {
 	var errs error
 
-	stLen := dic.StringTable().Len()
-	if stLen < 1 {
-		// Return here to avoid panicking when accessing the string table.
-		return errors.New("empty string table, must at least contain the empty string")
-	}
-
-	if dic.StringTable().At(0) != "" {
-		errs = errors.Join(errs, errors.New("string table must start with the empty string"))
+	if err := validateDictionary(dic); err != nil {
+		// don't continue if the dictionary is invalid, will likely crash later
+		return fmt.Errorf("dictionary: %w", err)
 	}
 
 	if pp.SampleType().Len() < 1 {
@@ -32,6 +27,8 @@ func ValidateProfile(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error
 	errs = errors.Join(errs, validateSampleType(dic, pp))
 
 	errs = errors.Join(errs, validateSamples(dic, pp))
+
+	stLen := dic.StringTable().Len()
 
 	if err := validateValueType(stLen, pp.PeriodType()); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("period_type: %w", err))
@@ -52,6 +49,49 @@ func ValidateProfile(dic pprofile.ProfilesDictionary, pp pprofile.Profile) error
 	errs = errors.Join(errs, validateAttributeUnits(dic))
 
 	return errs
+}
+
+func validateLinkTable(dic pprofile.ProfilesDictionary) error {
+	if dic.LinkTable().Len() < 1 {
+		return errors.New("missing default entry")
+	}
+
+	return nil
+}
+
+func validateMappingTable(dic pprofile.ProfilesDictionary) error {
+	if dic.MappingTable().Len() < 1 {
+		return errors.New("missing default entry")
+	}
+
+	return nil
+}
+
+func validateStringTable(dic pprofile.ProfilesDictionary) error {
+	if dic.StringTable().Len() < 1 {
+		// Return here to avoid panicking when accessing the string table.
+		return errors.New("missing default entry")
+	}
+
+	if dic.StringTable().At(0) != "" {
+		return errors.New("first entry must be the empty string")
+	}
+
+	return nil
+}
+
+func validateDictionary(dic pprofile.ProfilesDictionary) error {
+	if err := validateLinkTable(dic); err != nil {
+		return fmt.Errorf("link table: %w", err)
+	}
+	if err := validateMappingTable(dic); err != nil {
+		return fmt.Errorf("mapping table: %w", err)
+	}
+	if err := validateStringTable(dic); err != nil {
+		return fmt.Errorf("string table: %w", err)
+	}
+
+	return nil
 }
 
 func validateIndices(length int, indices pcommon.Int32Slice) error {

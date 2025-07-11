@@ -1581,6 +1581,11 @@ func constructProfileTransformContext() ottlprofile.TransformContext {
 	}
 
 	dic := pprofile.NewProfilesDictionary()
+	// initialize the must-have default table entries
+	dic.LinkTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.StringTable().Append("")
+
 	scopeProfiles := pprofile.NewScopeProfiles()
 	return ottlprofile.NewTransformContext(profile.Transform(dic, scopeProfiles), dic, scope, resource, scopeProfiles, pprofile.NewResourceProfiles())
 }
@@ -1615,6 +1620,11 @@ func constructProfileTransformContextEditors() ottlprofile.TransformContext {
 	}
 
 	dic := pprofile.NewProfilesDictionary()
+	// initialize the must-have default table entries
+	dic.LinkTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.StringTable().Append("")
+
 	scopeProfiles := pprofile.NewScopeProfiles()
 	return ottlprofile.NewTransformContext(profile.Transform(dic, scopeProfiles), dic, scope, resource, scopeProfiles, pprofile.NewResourceProfiles())
 }
