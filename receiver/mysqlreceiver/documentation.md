@@ -172,7 +172,7 @@ The number of InnoDB log operations.
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| operation | The log operation types. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | false |
+| operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | false |
 
 ### mysql.mysqlx_connections
 
