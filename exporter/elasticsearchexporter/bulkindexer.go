@@ -194,7 +194,7 @@ func (s *syncBulkIndexerSession) End() {
 func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
-		if _, err := flushBulkIndexer(
+		if err := flushBulkIndexer(
 			ctx,
 			s.bi,
 			s.s.flushTimeout,
@@ -376,7 +376,8 @@ func (w *asyncBulkIndexerWorker) run() {
 func (w *asyncBulkIndexerWorker) flush() {
 	// TODO (lahsivjar): Should use proper context else client metadata will not be accessible
 	ctx := context.Background()
-	flushBulkIndexer(
+	// ignore error as we they should be already logged and for async we don't propagate errors
+	_ = flushBulkIndexer(
 		ctx,
 		w.indexer,
 		w.flushTimeout,
@@ -393,10 +394,10 @@ func flushBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 	failedDocsInputLogger *zap.Logger,
-) (docappender.BulkIndexerResponseStat, error) {
+) error {
 	itemsCount := bi.Items()
 	if itemsCount == 0 {
-		return docappender.BulkIndexerResponseStat{}, nil
+		return nil
 	}
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -455,9 +456,7 @@ func flushBulkIndexer(
 		)
 	}
 
-	var (
-		tooManyReqs, clientFailed, serverFailed int64
-	)
+	var tooManyReqs, clientFailed, serverFailed int64
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
 		switch {
@@ -559,7 +558,7 @@ func flushBulkIndexer(
 			)),
 		)
 	}
-	return stat, err
+	return err
 }
 
 func getErrorHint(index, errorType string) string {
