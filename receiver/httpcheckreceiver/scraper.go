@@ -67,7 +67,6 @@ func extractTLSInfo(state *tls.ConnectionState) (issuer string, commonName strin
 	return issuer, commonName, sans, timeLeft
 }
 
-
 // start initializes the scraper by creating HTTP clients for each endpoint.
 func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err error) {
 	var expandedTargets []*targetConfig
