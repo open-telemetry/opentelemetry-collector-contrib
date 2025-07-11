@@ -232,15 +232,15 @@ func TestK8sResolve(t *testing.T) {
 
 			slices.Sort(tt.expectedEndpoints)
 
-			err = waitForCondition(t, 1200*time.Millisecond, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+			cErr := waitForCondition(t, 1200*time.Millisecond, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
 				if _, err := suiteCtx.resolver.resolve(ctx); err != nil {
 					return false, err
 				}
 				got := suiteCtx.resolver.Endpoints()
 				return slices.Equal(tt.expectedEndpoints, got), nil
 			})
-			if err != nil {
-				t.Logf("waitForCondition: timed out waiting for resolver endpoints to match expected: %v", err)
+			if cErr != nil {
+				t.Logf("waitForCondition: timed out waiting for resolver endpoints to match expected: %v", cErr)
 			}
 			assert.Equal(t, tt.expectedEndpoints, suiteCtx.resolver.Endpoints(), "resolver returned unexpected endpoints after update")
 		})
