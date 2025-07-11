@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"runtime"
 	"strings"
 	"sync"
@@ -19,9 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/logging"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
 type bulkIndexer interface {
@@ -59,11 +64,17 @@ type bulkIndexerSession interface {
 
 const defaultMaxRetries = 2
 
-func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (bulkIndexer, error) {
+func newBulkIndexer(
+	client esapi.Transport,
+	config *Config,
+	requireDataStream bool,
+	tb *metadata.TelemetryBuilder,
+	logger *zap.Logger,
+) (bulkIndexer, error) {
 	if config.Batcher.enabledSet {
-		return newSyncBulkIndexer(logger, client, config, requireDataStream), nil
+		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
 	}
-	return newAsyncBulkIndexer(logger, client, config, requireDataStream)
+	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
 }
 
 func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
@@ -100,12 +111,19 @@ func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Val
 	return docappender.False
 }
 
-func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {
+func newSyncBulkIndexer(
+	client esapi.Transport,
+	config *Config,
+	requireDataStream bool,
+	tb *metadata.TelemetryBuilder,
+	logger *zap.Logger,
+) *syncBulkIndexer {
 	return &syncBulkIndexer{
 		config:                bulkIndexerConfig(client, config, requireDataStream),
 		flushTimeout:          config.Timeout,
 		flushBytes:            config.Flush.Bytes,
 		retryConfig:           config.Retry,
+		telemetryBuilder:      tb,
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
 	}
@@ -118,6 +136,7 @@ type syncBulkIndexer struct {
 	retryConfig           RetrySettings
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
+	telemetryBuilder      *metadata.TelemetryBuilder
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -158,6 +177,7 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 	if err != nil {
 		return err
 	}
+	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1)
 	// flush bytes should operate on uncompressed length
 	// as Elasticsearch http.max_content_length measures uncompressed length.
 	if s.bi.UncompressedLen() >= s.s.flushBytes {
@@ -175,7 +195,14 @@ func (s *syncBulkIndexerSession) End() {
 func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
-		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger, s.s.failedDocsInputLogger); err != nil {
+		if _, err := flushBulkIndexer(
+			ctx,
+			s.bi,
+			s.s.flushTimeout,
+			s.s.telemetryBuilder,
+			s.s.logger,
+			s.s.failedDocsInputLogger,
+		); err != nil {
 			return err
 		}
 		if s.bi.Items() == 0 {
@@ -202,16 +229,23 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	}
 }
 
-func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (*asyncBulkIndexer, error) {
+func newAsyncBulkIndexer(
+	client esapi.Transport,
+	config *Config,
+	requireDataStream bool,
+	tb *metadata.TelemetryBuilder,
+	logger *zap.Logger,
+) (*asyncBulkIndexer, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU()
 	}
 
 	pool := &asyncBulkIndexer{
-		wg:    sync.WaitGroup{},
-		items: make(chan docappender.BulkIndexerItem, config.NumWorkers),
-		stats: bulkIndexerStats{},
+		wg:               sync.WaitGroup{},
+		items:            make(chan docappender.BulkIndexerItem, config.NumWorkers),
+		stats:            bulkIndexerStats{},
+		telemetryBuilder: tb,
 	}
 	pool.wg.Add(numWorkers)
 
@@ -226,6 +260,7 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 			flushInterval:         config.Flush.Interval,
 			flushTimeout:          config.Timeout,
 			flushBytes:            config.Flush.Bytes,
+			telemetryBuilder:      tb,
 			logger:                logger,
 			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
 			stats:                 &pool.stats,
@@ -243,9 +278,10 @@ type bulkIndexerStats struct {
 }
 
 type asyncBulkIndexer struct {
-	items chan docappender.BulkIndexerItem
-	wg    sync.WaitGroup
-	stats bulkIndexerStats
+	items            chan docappender.BulkIndexerItem
+	wg               sync.WaitGroup
+	stats            bulkIndexerStats // TODO (lahsivjar): Replace usage with telemetry builder
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 type asyncBulkIndexerSession struct {
@@ -289,8 +325,9 @@ func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 	case <-ctx.Done():
 		return ctx.Err()
 	case s.items <- item:
-		return nil
 	}
+	s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1)
+	return nil
 }
 
 // End is a no-op.
@@ -313,6 +350,7 @@ type asyncBulkIndexerWorker struct {
 
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
+	telemetryBuilder      *metadata.TelemetryBuilder
 }
 
 func (w *asyncBulkIndexerWorker) run() {
@@ -347,7 +385,15 @@ func (w *asyncBulkIndexerWorker) run() {
 
 func (w *asyncBulkIndexerWorker) flush() {
 	ctx := context.Background()
-	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger, w.failedDocsInputLogger)
+	stat, _ := flushBulkIndexer(
+		ctx,
+		w.indexer,
+		w.flushTimeout,
+		w.telemetryBuilder,
+		w.logger,
+		w.failedDocsInputLogger,
+	)
+	// TODO (lahsivjar): Handle docs not indexed due to error
 	w.stats.docsIndexed.Add(stat.Indexed)
 }
 
@@ -355,19 +401,85 @@ func flushBulkIndexer(
 	ctx context.Context,
 	bi *docappender.BulkIndexer,
 	timeout time.Duration,
+	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 	failedDocsInputLogger *zap.Logger,
 ) (docappender.BulkIndexerResponseStat, error) {
+	itemsCount := bi.Items()
+	if itemsCount == 0 {
+		return docappender.BulkIndexerResponseStat{}, nil
+	}
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 	stat, err := bi.Flush(ctx)
+	if flushed := bi.BytesFlushed(); flushed > 0 {
+		tb.ElasticsearchFlushedBytes.Add(ctx, int64(flushed))
+	}
+	if flushed := bi.BytesUncompressedFlushed(); flushed > 0 {
+		tb.ElasticsearchFlushedUncompressedBytes.Add(ctx, int64(flushed))
+	}
 	if err != nil {
 		logger.Error("bulk indexer flush error", zap.Error(err))
+		var bulkFailedErr docappender.ErrorFlushFailed
+		switch {
+		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
+			attrSet := metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "timeout"),
+			))
+			tb.ElasticsearchDocsIndexed.Add(ctx, int64(itemsCount), attrSet)
+			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
+		case errors.As(err, &bulkFailedErr):
+			var outcome string
+			code := bulkFailedErr.StatusCode()
+			switch {
+			case code == http.StatusTooManyRequests:
+				outcome = "too_many"
+			case code >= 500:
+				outcome = "failed_server"
+			case code >= 400:
+				outcome = "failed_client"
+			}
+			attrSet := metric.WithAttributeSet(attribute.NewSet(
+				semconv.HTTPResponseStatusCode(bulkFailedErr.StatusCode()),
+				attribute.String("outcome", outcome),
+			))
+			tb.ElasticsearchDocsIndexed.Add(ctx, int64(itemsCount), attrSet)
+			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
+		default:
+			attrSet := metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "internal_server_error"),
+			))
+			tb.ElasticsearchDocsIndexed.Add(ctx, int64(itemsCount), attrSet)
+			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
+		}
+	} else {
+		// Record a successful completed bulk request
+		tb.ElasticsearchBulkRequestsCount.Add(
+			ctx,
+			int64(1),
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "success"),
+			)),
+		)
 	}
+
+	var (
+		tooManyReqs, clientFailed, serverFailed int64
+	)
 	for _, resp := range stat.FailedDocs {
+		// Collect telemetry
+		switch {
+		case resp.Status == http.StatusTooManyRequests:
+			tooManyReqs++
+		case resp.Status >= 500:
+			serverFailed++
+		case resp.Status >= 400:
+			clientFailed++
+		}
+		// Log failed docs
 		fields := []zap.Field{
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
@@ -382,6 +494,81 @@ func flushBulkIndexer(
 			fields = append(fields, zap.String("input", resp.Input))
 		}
 		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
+	}
+	if stat.Indexed > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			stat.Indexed,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "success"),
+			)),
+		)
+	}
+	if tooManyReqs > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			tooManyReqs,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "too_many"),
+			)),
+		)
+	}
+	if clientFailed > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			clientFailed,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "failed_client"),
+			)),
+		)
+	}
+	if serverFailed > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			clientFailed,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "failed_server"),
+			)),
+		)
+	}
+	if stat.FailureStoreDocs.Used > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			stat.FailureStoreDocs.Used,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "failure_store"),
+				attribute.String("failure_store", string(docappender.FailureStoreStatusUsed)),
+			)),
+		)
+	}
+	if stat.FailureStoreDocs.Failed > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			stat.FailureStoreDocs.Failed,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "failure_store"),
+				attribute.String("failure_store", string(docappender.FailureStoreStatusFailed)),
+			)),
+		)
+	}
+	if stat.FailureStoreDocs.NotEnabled > 0 {
+		tb.ElasticsearchDocsIndexed.Add(
+			ctx,
+			stat.FailureStoreDocs.NotEnabled,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.String("outcome", "failure_store"),
+				attribute.String("failure_store", string(docappender.FailureStoreStatusNotEnabled)),
+			)),
+		)
+	}
+	if stat.RetriedDocs > 0 {
+		tb.ElasticsearchDocsRetried.Add(
+			ctx,
+			stat.RetriedDocs,
+			metric.WithAttributeSet(attribute.NewSet(
+				attribute.Int("greatest_retry", stat.GreatestRetry),
+			)),
+		)
 	}
 	return stat, err
 }
@@ -415,6 +602,8 @@ type bulkIndexers struct {
 	profilingStackTraces bulkIndexer // For profiling-stacktraces
 	profilingStackFrames bulkIndexer // For profiling-stackframes
 	profilingExecutables bulkIndexer // For profiling-executables
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func (b *bulkIndexers) start(
@@ -439,32 +628,32 @@ func (b *bulkIndexers) start(
 
 	for _, mode := range allowedMappingModes {
 		var bi bulkIndexer
-		bi, err = newBulkIndexer(set.Logger, esClient, cfg, mode == MappingOTel)
+		bi, err = newBulkIndexer(esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
 		if err != nil {
 			return err
 		}
 		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
 	}
 
-	profilingEvents, err := newBulkIndexer(set.Logger, esClient, cfg, true)
+	profilingEvents, err := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}
 	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
 
-	profilingStackTraces, err := newBulkIndexer(set.Logger, esClient, cfg, false)
+	profilingStackTraces, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}
 	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
 
-	profilingStackFrames, err := newBulkIndexer(set.Logger, esClient, cfg, false)
+	profilingStackFrames, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}
 	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
 
-	profilingExecutables, err := newBulkIndexer(set.Logger, esClient, cfg, false)
+	profilingExecutables, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
 	if err != nil {
 		return err
 	}

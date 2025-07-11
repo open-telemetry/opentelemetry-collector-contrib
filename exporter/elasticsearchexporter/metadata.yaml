@@ -9,6 +9,71 @@ status:
   codeowners:
     active: [JaredTan95, carsonip, lahsivjar]
 
+attributes:
+  http_status_code:
+    description: HTTP status code.
+    type: int
+  outcome:
+    description: The operation outcome.
+    type: string
+    enum: [success, failed_client, failed_server, timeout, too_many, failure_store, internal_server_error]
+  greatest_retry:
+    description: The greatest observed retry count in the entire bulk request.
+    type: int
+  failure_store:
+    description: The status of the failure store.
+    type: string
+    enum: [unknown, not_enabled, used, failed]
+
+telemetry:
+  metrics:
+    elasticsearch.bulk_requests.count:
+      enabled: true
+      description: Count of the completed bulk requests.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [outcome, http_status_code]
+    elasticsearch.docs.received:
+      enabled: true
+      description: Count of Elasticsearch docs successfully bufferred to be indexed.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    elasticsearch.docs.indexed:
+      enabled: true
+      description: Count of Elasticsearch docs indexed by Elasticsearch.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [outcome, http_status_code, failure_store]
+    elasticsearch.docs.retried:
+      enabled: true
+      description: Count of document retries.
+      extended_documentation: Only document level retries are captured, whole bulk request retries are not captured.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [greatest_retry]
+    elasticsearch.flushed.bytes:
+      enabled: true
+      description: Number of bytes flushed by the indexer.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+    elasticsearch.flushed.uncompressed_bytes:
+      enabled: true
+      description: Number of uncompressed bytes flushed by the indexer.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
     endpoints: [http://localhost:9200]
