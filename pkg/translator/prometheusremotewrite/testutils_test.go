@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/prometheus/otlptranslator"
 )
 
 var (

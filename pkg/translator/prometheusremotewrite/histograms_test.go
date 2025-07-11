@@ -10,8 +10,8 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
-	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
