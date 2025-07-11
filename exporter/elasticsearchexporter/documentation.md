@@ -6,9 +6,9 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_elasticsearch.bulk_requests.count
+### otelcol.elasticsearch.bulk_requests.count
 
-Bulk requests counter.
+Count of the completed bulk requests. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -18,11 +18,12 @@ Bulk requests counter.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
 | http_status_code | HTTP status code. | Any Int |
 
-### otelcol_elasticsearch.docs.indexed
+### otelcol.elasticsearch.docs.indexed
 
-Count of Elasticsearch docs indexed by Elasticsearch.
+Count of Elasticsearch docs indexed by Elasticsearch. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -32,35 +33,45 @@ Count of Elasticsearch docs indexed by Elasticsearch.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store`` |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
+| http_status_code | HTTP status code. | Any Int |
+| failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` |
 
-### otelcol_elasticsearch.docs.received
+### otelcol.elasticsearch.docs.received
 
-Count of Elasticsearch docs to be indexed.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
-
-### otelcol_elasticsearch.docs.retried
-
-Count of Elasticsearch docs indexed by Elasticsearch.
+Count of Elasticsearch docs successfully bufferred to be indexed. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelcol_elasticsearch.flushed.bytes
+### otelcol.elasticsearch.docs.retried
 
-Number of bytes flushed by the indexer.
+Count of document retries. [alpha]
+
+Only document level retries are captured, whole bulk request retries are not captured.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| greatest_retry | The greatest observed retry count in the entire bulk request. | Any Int |
+
+### otelcol.elasticsearch.flushed.bytes
+
+Number of bytes flushed by the indexer. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
-### otelcol_elasticsearch.flushed.uncompressed_bytes
+### otelcol.elasticsearch.flushed.uncompressed_bytes
 
-Number of uncompressed bytes flushed by the indexer.
+Number of uncompressed bytes flushed by the indexer. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
