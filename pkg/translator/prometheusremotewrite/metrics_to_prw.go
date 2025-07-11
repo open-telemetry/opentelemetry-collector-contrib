@@ -11,6 +11,7 @@ import (
 
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
@@ -74,7 +75,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := metricNamer.Build(translatorMetricFromOtelMetric(metric))
+				promName := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 
 				// handle individual metrics based on type
 				//exhaustive:enforce

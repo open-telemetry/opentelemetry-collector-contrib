@@ -8,6 +8,7 @@ import (
 
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -166,7 +167,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_GAUGE,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(translatorMetricFromOtelMetric(getIntGaugeMetric(
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestGaugeDoubleMetricName,
 							pcommon.NewMap(),
 							1, ts,
@@ -179,7 +180,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_GAUGE,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(translatorMetricFromOtelMetric(getIntGaugeMetric(
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestGaugeIntMetricName,
 							pcommon.NewMap(),
 							1, ts,
@@ -192,7 +193,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_COUNTER,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(translatorMetricFromOtelMetric(getIntGaugeMetric(
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestSumDoubleMetricName,
 							pcommon.NewMap(),
 							1, ts,
@@ -205,7 +206,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_COUNTER,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(translatorMetricFromOtelMetric(getIntGaugeMetric(
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestSumIntMetricName,
 							pcommon.NewMap(),
 							1, ts,
@@ -218,7 +219,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_HISTOGRAM,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(translatorMetricFromOtelMetric(getIntGaugeMetric(
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestDoubleHistogramMetricName,
 							pcommon.NewMap(),
 							1, ts,
@@ -231,7 +232,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_SUMMARY,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(translatorMetricFromOtelMetric(getIntGaugeMetric(
+						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 						testdata.TestDoubleSummaryMetricName,
 						pcommon.NewMap(),
 						1, ts,

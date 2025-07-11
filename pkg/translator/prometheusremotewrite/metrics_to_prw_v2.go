@@ -11,6 +11,7 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
@@ -76,7 +77,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := metricNamer.Build(translatorMetricFromOtelMetric(metric))
+				promName := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),

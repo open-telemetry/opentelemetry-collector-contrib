@@ -536,29 +536,3 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 func convertTimeStamp(timestamp pcommon.Timestamp) int64 {
 	return timestamp.AsTime().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }
-
-
-func translatorMetricFromOtelMetric(metric pmetric.Metric) otlptranslator.Metric {
-	m := otlptranslator.Metric{
-		Name: metric.Name(),
-		Unit: metric.Unit(),
-		Type: otlptranslator.MetricTypeUnknown,
-	}
-	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		m.Type = otlptranslator.MetricTypeGauge
-	case pmetric.MetricTypeSum:
-		if metric.Sum().IsMonotonic() {
-			m.Type = otlptranslator.MetricTypeMonotonicCounter
-		} else {
-			m.Type = otlptranslator.MetricTypeNonMonotonicCounter
-		}
-	case pmetric.MetricTypeSummary:
-		m.Type = otlptranslator.MetricTypeSummary
-	case pmetric.MetricTypeHistogram:
-		m.Type = otlptranslator.MetricTypeHistogram
-	case pmetric.MetricTypeExponentialHistogram:
-		m.Type = otlptranslator.MetricTypeExponentialHistogram
-	}
-	return m
-}
