@@ -320,7 +320,7 @@ func parseNfsdIoStats(values []uint64) (*nfsdIoStats, error) {
 	}
 
 	return &nfsdIoStats{
-		Read:  values[0],
+		read:  values[0],
 		write: values[1],
 	}, nil
 }
@@ -379,7 +379,7 @@ func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]cal
 	return stats, nil
 }
 
-func parseNfsStats(f io.Reader) (*NfsStats, error) {
+func parseNfsStats(f io.reader) (*NfsStats, error) {
 	nfsStats := &NfsStats{}
 
 	scanner := bufio.NewScanner(f)
@@ -441,7 +441,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 	return nfsStats, nil
 }
 
-func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
+func parseNfsdStats(f io.reader) (*nfsdStats, error) {
 	nfsdStats := &nfsdStats{}
 
 	scanner := bufio.NewScanner(f)

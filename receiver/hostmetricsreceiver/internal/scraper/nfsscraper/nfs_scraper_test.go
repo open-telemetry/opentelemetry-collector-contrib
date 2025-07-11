@@ -74,7 +74,7 @@ func mockGetNfsdStats() (*nfsdStats, error) {
 
 	// Populate nfsdIoStats with sample data
 	ioStats := &nfsdIoStats{
-		Read:  8000000,
+		read:  8000000,
 		write: 4500000,
 	}
 
@@ -211,7 +211,7 @@ func TestScrape(t *testing.T) {
 
 			assertMetric(t, md, "nfs.server.fh.stale.count", int64(scraper.nfsdStats.nfsdFhStats.stale), noAttrs)
 
-			assertMetric(t, md, "nfs.server.io.read.count", int64(scraper.nfsdStats.nfsdIoStats.Read), noAttrs)
+			assertMetric(t, md, "nfs.server.io.read.count", int64(scraper.nfsdStats.nfsdIoStats.read), noAttrs)
 			assertMetric(t, md, "nfs.server.io.write.count", int64(scraper.nfsdStats.nfsdIoStats.write), noAttrs)
 
 			assertMetric(t, md, "nfs.server.thread.count", int64(scraper.nfsdStats.nfsdThreadStats.threads), noAttrs)

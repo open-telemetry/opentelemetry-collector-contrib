@@ -124,7 +124,7 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.nfsdIoStats != nil {
-		s.mb.RecordNfsServerIoReadCountDataPoint(now, int64(s.nfsdStats.nfsdIoStats.Read))
+		s.mb.RecordNfsServerIoReadCountDataPoint(now, int64(s.nfsdStats.nfsdIoStats.read))
 		s.mb.RecordNfsServerIoWriteCountDataPoint(now, int64(s.nfsdStats.nfsdIoStats.write))
 	}
 
