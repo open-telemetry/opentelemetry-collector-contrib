@@ -9,9 +9,11 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/goleak"
@@ -87,6 +89,30 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
+func pushConcurrentlyNoError(t *testing.T, fn func() error) {
+	var (
+		count = 5
+		errs  = make(chan error, count)
+		wg    sync.WaitGroup
+	)
+
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go func() {
+			defer wg.Done()
+			err := fn()
+			errs <- err
+		}()
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+}
+
 var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 
 func TestIntegration(t *testing.T) {
@@ -103,10 +129,18 @@ func TestIntegration(t *testing.T) {
 
 	t.Run("TestLogsExporter", func(t *testing.T) {
 		t.Run("Native", func(t *testing.T) {
-			testLogsExporter(t, nativeEndpoint)
+			testLogsExporter(t, nativeEndpoint, false)
 		})
 		t.Run("HTTP", func(t *testing.T) {
-			testLogsExporter(t, httpEndpoint)
+			testLogsExporter(t, httpEndpoint, false)
+		})
+	})
+	t.Run("TestLogsExporter Map Body", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsExporter(t, nativeEndpoint, true)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsExporter(t, httpEndpoint, true)
 		})
 	})
 	t.Run("TestTracesExporter", func(t *testing.T) {
@@ -123,6 +157,30 @@ func TestIntegration(t *testing.T) {
 		})
 		t.Run("HTTP", func(t *testing.T) {
 			testMetricsExporter(t, httpEndpoint)
+		})
+	})
+	t.Run("TestLogsJSONExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsJSONExporter(t, nativeEndpoint, false)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsJSONExporter(t, httpEndpoint, false)
+		})
+	})
+	t.Run("TestLogsJSONExporter Map Body", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testLogsJSONExporter(t, nativeEndpoint, true)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testLogsJSONExporter(t, httpEndpoint, true)
+		})
+	})
+	t.Run("TestTracesJSONExporter", func(t *testing.T) {
+		t.Run("Native", func(t *testing.T) {
+			testTracesJSONExporter(t, nativeEndpoint)
+		})
+		t.Run("HTTP", func(t *testing.T) {
+			testTracesJSONExporter(t, httpEndpoint)
 		})
 	})
 
