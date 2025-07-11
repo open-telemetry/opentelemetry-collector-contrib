@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"sync"
 
@@ -78,7 +79,8 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 				handleUnmatchedMethod(resp)
 				return
 			}
-			switch req.Header.Get("Content-Type") {
+			reqContentType, _, _ := mime.ParseMediaType(req.Header.Get("Content-Type"))
+			switch reqContentType {
 			case jsonContentType, pbContentType:
 				handleLogs(resp, req, r)
 			default:
