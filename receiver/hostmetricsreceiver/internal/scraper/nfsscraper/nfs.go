@@ -4,7 +4,7 @@
 package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 
 // nfs.net.* stats
-type NfsNetStats struct {
+type nfsNetStats struct {
 	NetCount           uint64
 	UDPCount           uint64
 	TCPCount           uint64
@@ -12,7 +12,7 @@ type NfsNetStats struct {
 }
 
 // nfs.rpc.* stats
-type NfsRPCStats struct {
+type nfsRPCStats struct {
 	RPCCount         uint64
 	RetransmitCount  uint64
 	AuthRefreshCount uint64
@@ -20,14 +20,14 @@ type NfsRPCStats struct {
 
 // nfs.procedure.count / nfsd.procedure.count stats
 // nfs.operation.count / nfsd.operation.count stats
-type CallStats struct {
+type callStats struct {
 	NFSVersion   int64
 	NFSCallName  string
 	NFSCallCount uint64
 }
 
 // nfsd.repcache.* stats
-type NfsdRepcacheStats struct {
+type nfsdRepcacheStats struct {
 	Hits    uint64
 	Misses  uint64
 	Nocache uint64
@@ -35,18 +35,18 @@ type NfsdRepcacheStats struct {
 
 // nfsd.fh.* stats
 // Note: linux/fs/nfsd/stats.c shows many deprecated (always 0) fh stats
-type NfsdFhStats struct {
+type nfsdFhStats struct {
 	Stale uint64
 }
 
 // nfsd.io.* stats
-type NfsdIoStats struct {
+type nfsdIoStats struct {
 	Read  uint64
 	Write uint64
 }
 
 // nfsd.thread.* stats
-type NfsdThreadStats struct {
+type nfsdThreadStats struct {
 	Threads uint64
 }
 
@@ -69,22 +69,22 @@ type NfsdRPCStats struct {
 
 // 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
 type NfsStats struct {
-	NfsNetStats         *NfsNetStats
-	NfsRPCStats         *NfsRPCStats
-	NfsV3ProcedureStats []CallStats
-	NfsV4ProcedureStats []CallStats
-	NfsV4OperationStats []CallStats
+	nfsNetStats         *nfsNetStats
+	nfsRPCStats         *nfsRPCStats
+	nfsV3ProcedureStats []callStats
+	nfsV4ProcedureStats []callStats
+	nfsV4OperationStats []callStats
 }
 
 // 15 metrics + 22 NFSv3 procedures + 76 NFSv4 procedures = 113 metrics
-type NfsdStats struct {
-	NfsdRepcacheStats    *NfsdRepcacheStats
-	NfsdFhStats          *NfsdFhStats
-	NfsdIoStats          *NfsdIoStats
-	NfsdThreadStats      *NfsdThreadStats
+type nfsdStats struct {
+	nfsdRepcacheStats    *nfsdRepcacheStats
+	nfsdFhStats          *nfsdFhStats
+	nfsdIoStats          *nfsdIoStats
+	nfsdThreadStats      *nfsdThreadStats
 	NfsdNetStats         *NfsdNetStats
 	NfsdRPCStats         *NfsdRPCStats
-	NfsdV3ProcedureStats []CallStats
-	NfsdV4ProcedureStats []CallStats
-	NfsdV4OperationStats []CallStats
+	NfsdV3ProcedureStats []callStats
+	NfsdV4ProcedureStats []callStats
+	NfsdV4OperationStats []callStats
 }

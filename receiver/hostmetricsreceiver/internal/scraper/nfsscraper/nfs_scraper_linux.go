@@ -243,7 +243,7 @@ func getOSNfsStats() (*NfsStats, error) {
 	return parseNfsStats(f)
 }
 
-func getOSNfsdStats() (*NfsdStats, error) {
+func getOSnfsdStats() (*nfsdStats, error) {
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
 		return nil, err
@@ -254,12 +254,12 @@ func getOSNfsdStats() (*NfsdStats, error) {
 	return parseNfsdStats(f)
 }
 
-func parseNfsNetStats(values []uint64) (*NfsNetStats, error) {
+func parseNfsNetStats(values []uint64) (*nfsNetStats, error) {
 	if len(values) < 4 {
 		return nil, errors.New("parsing nfs client network stats: unexpected field count")
 	}
 
-	return &NfsNetStats{
+	return &nfsNetStats{
 		NetCount:           values[0],
 		UDPCount:           values[1],
 		TCPCount:           values[2],
@@ -267,12 +267,12 @@ func parseNfsNetStats(values []uint64) (*NfsNetStats, error) {
 	}, nil
 }
 
-func parseNfsRPCStats(values []uint64) (*NfsRPCStats, error) {
+func parseNfsRPCStats(values []uint64) (*nfsRPCStats, error) {
 	if len(values) < 3 {
 		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
 	}
 
-	return &NfsRPCStats{
+	return &nfsRPCStats{
 		RPCCount:         values[0],
 		RetransmitCount:  values[1],
 		AuthRefreshCount: values[2],
@@ -292,45 +292,45 @@ func parseNfsdNetStats(values []uint64) (*NfsdNetStats, error) {
 	}, nil
 }
 
-func parseNfsdRepcacheStats(values []uint64) (*NfsdRepcacheStats, error) {
+func parseNfsdRepcacheStats(values []uint64) (*nfsdRepcacheStats, error) {
 	if len(values) < 3 {
 		return nil, errors.New("parsing nfs server repcache stats: unexpected field count")
 	}
 
-	return &NfsdRepcacheStats{
+	return &nfsdRepcacheStats{
 		Hits:    values[0],
 		Misses:  values[1],
 		Nocache: values[2],
 	}, nil
 }
 
-func parseNfsdFhStats(values []uint64) (*NfsdFhStats, error) {
+func parseNfsdFhStats(values []uint64) (*nfsdFhStats, error) {
 	if len(values) < 1 {
 		return nil, errors.New("parsing nfs server fh stats: unexpected field count")
 	}
 
-	return &NfsdFhStats{
+	return &nfsdFhStats{
 		Stale: values[0],
 	}, nil
 }
 
-func parseNfsdIoStats(values []uint64) (*NfsdIoStats, error) {
+func parseNfsdIoStats(values []uint64) (*nfsdIoStats, error) {
 	if len(values) < 2 {
 		return nil, errors.New("parsing nfs server io stats: unexpected field count")
 	}
 
-	return &NfsdIoStats{
+	return &nfsdIoStats{
 		Read:  values[0],
 		Write: values[1],
 	}, nil
 }
 
-func parseNfsdThreadStats(values []uint64) (*NfsdThreadStats, error) {
+func parseNfsdThreadStats(values []uint64) (*nfsdThreadStats, error) {
 	if len(values) < 1 {
 		return nil, errors.New("parsing nfs server io stats: unexpected field count")
 	}
 
-	return &NfsdThreadStats{
+	return &nfsdThreadStats{
 		Threads: values[0],
 	}, nil
 }
@@ -349,12 +349,12 @@ func parseNfsdRPCStats(values []uint64) (*NfsdRPCStats, error) {
 	}, nil
 }
 
-func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]CallStats, error) {
+func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]callStats, error) {
 	if len(values) < 2 {
 		return nil, errors.New("found empty stats line")
 	}
 
-	stats := make([]CallStats, len(values)-1)
+	stats := make([]callStats, len(values)-1)
 	numCalls := values[0]
 
 	if len(values)-1 != int(numCalls) {
@@ -396,19 +396,19 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		case "net":
 			parse = func(values []uint64) error {
 				var err error
-				nfsStats.NfsNetStats, err = parseNfsNetStats(values)
+				nfsStats.nfsNetStats, err = parseNfsNetStats(values)
 				return err
 			}
 		case "rpc":
 			parse = func(values []uint64) error {
 				var err error
-				nfsStats.NfsRPCStats, err = parseNfsRPCStats(values)
+				nfsStats.nfsRPCStats, err = parseNfsRPCStats(values)
 				return err
 			}
 		case "proc3":
 			parse = func(values []uint64) error {
 				var err error
-				nfsStats.NfsV3ProcedureStats, err = parseNfsCallStats(3, nfsV3Procedures, values)
+				nfsStats.nfsV3ProcedureStats, err = parseNfsCallStats(3, nfsV3Procedures, values)
 				return err
 			}
 		case "proc4":
@@ -416,7 +416,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 				var err error
 				// Linux kernel calls NFSv4 client operations procedures, but they're actually
 				// operations of compound procedures, per RFC7530
-				nfsStats.NfsV4OperationStats, err = parseNfsCallStats(4, nfsV4Procedures, values)
+				nfsStats.nfsV4OperationStats, err = parseNfsCallStats(4, nfsV4Procedures, values)
 				return err
 			}
 		}
@@ -441,8 +441,8 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 	return nfsStats, nil
 }
 
-func parseNfsdStats(f io.Reader) (*NfsdStats, error) {
-	nfsdStats := &NfsdStats{}
+func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
+	nfsdStats := &nfsdStats{}
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -458,25 +458,25 @@ func parseNfsdStats(f io.Reader) (*NfsdStats, error) {
 		case "rc":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdRepcacheStats, err = parseNfsdRepcacheStats(values)
+				nfsdStats.nfsdRepcacheStats, err = parseNfsdRepcacheStats(values)
 				return err
 			}
 		case "fh":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdFhStats, err = parseNfsdFhStats(values)
+				nfsdStats.nfsdFhStats, err = parseNfsdFhStats(values)
 				return err
 			}
 		case "io":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdIoStats, err = parseNfsdIoStats(values)
+				nfsdStats.nfsdIoStats, err = parseNfsdIoStats(values)
 				return err
 			}
 		case "th":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdThreadStats, err = parseNfsdThreadStats(values)
+				nfsdStats.nfsdThreadStats, err = parseNfsdThreadStats(values)
 				return err
 			}
 		case "net":

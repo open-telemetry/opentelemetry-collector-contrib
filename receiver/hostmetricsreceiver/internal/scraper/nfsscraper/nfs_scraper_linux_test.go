@@ -38,27 +38,27 @@ func mockGetOSNfsStats() (*NfsStats, error) {
 	return parseNfsStats(data)
 }
 
-func mockGetOSNfsdStats() (*NfsdStats, error) {
+func mockGetOSnfsdStats() (*nfsdStats, error) {
 	data := strings.NewReader(nfsdProcFileOut)
 
 	return parseNfsdStats(data)
 }
 
 func getExpectedOSNfsStats() *NfsStats {
-	nfsNetStats := &NfsNetStats{
+	nfsNetStats := &nfsNetStats{
 		NetCount:           8,
 		UDPCount:           843,
 		TCPCount:           666,
 		TCPConnectionCount: 157,
 	}
 
-	nfsRPCStats := &NfsRPCStats{
+	nfsRPCStats := &nfsRPCStats{
 		RPCCount:         220,
 		RetransmitCount:  789,
 		AuthRefreshCount: 662,
 	}
 
-	nfsV3ProcedureStats := []CallStats{
+	nfsV3ProcedureStats := []callStats{
 		{NFSVersion: 3, NFSCallName: "NULL", NFSCallCount: 191},
 		{NFSVersion: 3, NFSCallName: "GETATTR", NFSCallCount: 360},
 		{NFSVersion: 3, NFSCallName: "SETATTR", NFSCallCount: 118},
@@ -83,7 +83,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		{NFSVersion: 3, NFSCallName: "COMMIT", NFSCallCount: 235},
 	}
 
-	nfsV4OperationStats := []CallStats{
+	nfsV4OperationStats := []callStats{
 		{NFSVersion: 4, NFSCallName: "NULL", NFSCallCount: 32},
 		{NFSVersion: 4, NFSCallName: "READ", NFSCallCount: 829},
 		{NFSVersion: 4, NFSCallName: "WRITE", NFSCallCount: 218},
@@ -156,30 +156,30 @@ func getExpectedOSNfsStats() *NfsStats {
 	}
 
 	return &NfsStats{
-		NfsNetStats:         nfsNetStats,
-		NfsRPCStats:         nfsRPCStats,
-		NfsV3ProcedureStats: nfsV3ProcedureStats,
-		NfsV4OperationStats: nfsV4OperationStats,
+		nfsNetStats:         nfsNetStats,
+		nfsRPCStats:         nfsRPCStats,
+		nfsV3ProcedureStats: nfsV3ProcedureStats,
+		nfsV4OperationStats: nfsV4OperationStats,
 	}
 }
 
-func getExpectedOSNfsdStats() *NfsdStats {
-	repcacheStats := &NfsdRepcacheStats{
+func getExpectedOSnfsdStats() *nfsdStats {
+	repcacheStats := &nfsdRepcacheStats{
 		Hits:    795,
 		Misses:  819,
 		Nocache: 351,
 	}
 
-	fhStats := &NfsdFhStats{
+	fhStats := &nfsdFhStats{
 		Stale: 709,
 	}
 
-	ioStats := &NfsdIoStats{
+	ioStats := &nfsdIoStats{
 		Read:  111,
 		Write: 464,
 	}
 
-	threadStats := &NfsdThreadStats{
+	threadStats := &nfsdThreadStats{
 		Threads: 261,
 	}
 
@@ -198,7 +198,7 @@ func getExpectedOSNfsdStats() *NfsdStats {
 		BadClientCount: 748,
 	}
 
-	nfsdV3ProcedureStats := []CallStats{
+	nfsdV3ProcedureStats := []callStats{
 		{NFSVersion: 3, NFSCallName: "NULL", NFSCallCount: 124},
 		{NFSVersion: 3, NFSCallName: "GETATTR", NFSCallCount: 554},
 		{NFSVersion: 3, NFSCallName: "SETATTR", NFSCallCount: 529},
@@ -223,12 +223,12 @@ func getExpectedOSNfsdStats() *NfsdStats {
 		{NFSVersion: 3, NFSCallName: "COMMIT", NFSCallCount: 382},
 	}
 
-	nfsdV4ProcedureStats := []CallStats{
+	nfsdV4ProcedureStats := []callStats{
 		{NFSVersion: 4, NFSCallName: "NULL", NFSCallCount: 512},
 		{NFSVersion: 4, NFSCallName: "COMPOUND", NFSCallCount: 878},
 	}
 
-	nfsdV4OperationStats := []CallStats{
+	nfsdV4OperationStats := []callStats{
 		{NFSVersion: 4, NFSCallName: "UNUSED0", NFSCallCount: 725},
 		{NFSVersion: 4, NFSCallName: "UNUSED1", NFSCallCount: 607},
 		{NFSVersion: 4, NFSCallName: "UNUSED2", NFSCallCount: 978},
@@ -307,11 +307,11 @@ func getExpectedOSNfsdStats() *NfsdStats {
 		{NFSVersion: 4, NFSCallName: "REMOVEXATTR", NFSCallCount: 562},
 	}
 
-	stats := &NfsdStats{
-		NfsdRepcacheStats:    repcacheStats,
-		NfsdFhStats:          fhStats,
-		NfsdIoStats:          ioStats,
-		NfsdThreadStats:      threadStats,
+	stats := &nfsdStats{
+		nfsdRepcacheStats:    repcacheStats,
+		nfsdFhStats:          fhStats,
+		nfsdIoStats:          ioStats,
+		nfsdThreadStats:      threadStats,
 		NfsdNetStats:         netStats,
 		NfsdRPCStats:         rpcStats,
 		NfsdV3ProcedureStats: nfsdV3ProcedureStats,
@@ -340,15 +340,15 @@ func TestOSScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			expectedNfsStats := getExpectedOSNfsStats()
-			expectedNfsdStats := getExpectedOSNfsdStats()
+			expectedNfsdStats := getExpectedOSnfsdStats()
 
 			nfsStats, err := mockGetOSNfsStats()
 			require.NoError(t, err)
 
-			nfsdStats, err := mockGetOSNfsdStats()
+			nfsdStats, err := mockGetOSnfsdStats()
 			require.NoError(t, err)
 
-			assert.Equal(t, expectedNfsStats.NfsNetStats.NetCount, nfsStats.NfsNetStats.NetCount)
+			assert.Equal(t, expectedNfsStats.nfsNetStats.NetCount, nfsStats.nfsNetStats.NetCount)
 
 			assert.Equal(t, expectedNfsdStats.NfsdNetStats.NetCount, nfsdStats.NfsdNetStats.NetCount)
 		})
