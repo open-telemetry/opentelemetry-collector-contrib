@@ -5,62 +5,62 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 // nfs.net.* stats
 type nfsNetStats struct {
-	NetCount           uint64
-	UDPCount           uint64
-	TCPCount           uint64
-	TCPConnectionCount uint64
+	netCount           uint64
+	udpCount           uint64
+	tcpCount           uint64
+	tcpConnectionCount uint64
 }
 
 // nfs.rpc.* stats
 type nfsRPCStats struct {
-	RPCCount         uint64
-	RetransmitCount  uint64
-	AuthRefreshCount uint64
+	rpcCount         uint64
+	retransmitCount  uint64
+	authRefreshCount uint64
 }
 
 // nfs.procedure.count / nfsd.procedure.count stats
 // nfs.operation.count / nfsd.operation.count stats
 type callStats struct {
-	NFSVersion   int64
-	NFSCallName  string
-	NFSCallCount uint64
+	nfsVersion   int64
+	nfsCallName  string
+	nfsCallCount uint64
 }
 
 // nfsd.repcache.* stats
 type nfsdRepcacheStats struct {
-	Hits    uint64
-	Misses  uint64
-	Nocache uint64
+	hits    uint64
+	misses  uint64
+	nocache uint64
 }
 
 // nfsd.fh.* stats
 // Note: linux/fs/nfsd/stats.c shows many deprecated (always 0) fh stats
 type nfsdFhStats struct {
-	Stale uint64
+	stale uint64
 }
 
 // nfsd.io.* stats
 type nfsdIoStats struct {
-	Read  uint64
-	Write uint64
+	read  uint64
+	write uint64
 }
 
 // nfsd.thread.* stats
 type nfsdThreadStats struct {
-	Threads uint64
+	threads uint64
 }
 
 // nfsd.net.* stats
 type NfsdNetStats struct {
-	NetCount           uint64
-	UDPCount           uint64
-	TCPCount           uint64
-	TCPConnectionCount uint64
+	netCount           uint64
+	udpCount           uint64
+	tcpCount           uint64
+	tcpConnectionCount uint64
 }
 
 // nfsd.rpc.* stats
 type NfsdRPCStats struct {
-	RPCCount       uint64
+	rpcCount       uint64
 	BadCount       uint64
 	BadFmtCount    uint64
 	BadAuthCount   uint64

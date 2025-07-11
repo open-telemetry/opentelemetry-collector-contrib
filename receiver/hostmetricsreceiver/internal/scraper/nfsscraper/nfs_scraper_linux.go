@@ -260,10 +260,10 @@ func parseNfsNetStats(values []uint64) (*nfsNetStats, error) {
 	}
 
 	return &nfsNetStats{
-		NetCount:           values[0],
-		UDPCount:           values[1],
-		TCPCount:           values[2],
-		TCPConnectionCount: values[3],
+		netCount:           values[0],
+		udpCount:           values[1],
+		tcpCount:           values[2],
+		tcpConnectionCount: values[3],
 	}, nil
 }
 
@@ -273,9 +273,9 @@ func parseNfsRPCStats(values []uint64) (*nfsRPCStats, error) {
 	}
 
 	return &nfsRPCStats{
-		RPCCount:         values[0],
-		RetransmitCount:  values[1],
-		AuthRefreshCount: values[2],
+		rpcCount:         values[0],
+		retransmitCount:  values[1],
+		authRefreshCount: values[2],
 	}, nil
 }
 
@@ -285,10 +285,10 @@ func parseNfsdNetStats(values []uint64) (*NfsdNetStats, error) {
 	}
 
 	return &NfsdNetStats{
-		NetCount:           values[0],
-		UDPCount:           values[1],
-		TCPCount:           values[2],
-		TCPConnectionCount: values[3],
+		netCount:           values[0],
+		udpCount:           values[1],
+		tcpCount:           values[2],
+		tcpConnectionCount: values[3],
 	}, nil
 }
 
@@ -298,9 +298,9 @@ func parseNfsdRepcacheStats(values []uint64) (*nfsdRepcacheStats, error) {
 	}
 
 	return &nfsdRepcacheStats{
-		Hits:    values[0],
-		Misses:  values[1],
-		Nocache: values[2],
+		hits:    values[0],
+		misses:  values[1],
+		nocache: values[2],
 	}, nil
 }
 
@@ -310,7 +310,7 @@ func parseNfsdFhStats(values []uint64) (*nfsdFhStats, error) {
 	}
 
 	return &nfsdFhStats{
-		Stale: values[0],
+		stale: values[0],
 	}, nil
 }
 
@@ -331,7 +331,7 @@ func parseNfsdThreadStats(values []uint64) (*nfsdThreadStats, error) {
 	}
 
 	return &nfsdThreadStats{
-		Threads: values[0],
+		threads: values[0],
 	}, nil
 }
 
@@ -341,7 +341,7 @@ func parseNfsdRPCStats(values []uint64) (*NfsdRPCStats, error) {
 	}
 
 	return &NfsdRPCStats{
-		RPCCount:       values[0],
+		rpcCount:       values[0],
 		BadCount:       values[1],
 		BadFmtCount:    values[2],
 		BadAuthCount:   values[3],
@@ -371,9 +371,9 @@ func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]cal
 			break
 		}
 
-		stats[i-1].NFSVersion = nfsVersion
-		stats[i-1].NFSCallName = names[i-1]
-		stats[i-1].NFSCallCount = calls
+		stats[i-1].nfsVersion = nfsVersion
+		stats[i-1].nfsCallName = names[i-1]
+		stats[i-1].nfsCallCount = calls
 	}
 
 	return stats, nil
