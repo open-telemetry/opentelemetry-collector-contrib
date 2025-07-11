@@ -56,7 +56,7 @@ Total number of bytes written to the WAL
 
 ### otelcol_exporter_prometheusremotewrite_wal_lag
 
-Index-based WAL lag
+WAL lag
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

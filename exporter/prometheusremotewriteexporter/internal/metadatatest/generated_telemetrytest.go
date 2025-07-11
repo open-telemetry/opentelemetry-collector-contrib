@@ -120,7 +120,7 @@ func AssertEqualExporterPrometheusremotewriteWalBytesWritten(t *testing.T, tt *c
 func AssertEqualExporterPrometheusremotewriteWalLag(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_lag",
-		Description: "Index-based WAL lag",
+		Description: "WAL lag",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,

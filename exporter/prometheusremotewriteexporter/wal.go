@@ -107,14 +107,16 @@ type prweWAL struct {
 }
 
 const (
-	defaultWALBufferSize        = 300
-	defaultWALTruncateFrequency = 1 * time.Minute
+	defaultWALBufferSize         = 300
+	defaultWALTruncateFrequency  = 1 * time.Minute
+	defaultWALLagRecordFrequency = 15 * time.Second
 )
 
 type WALConfig struct {
-	Directory         string        `mapstructure:"directory"`
-	BufferSize        int           `mapstructure:"buffer_size"`
-	TruncateFrequency time.Duration `mapstructure:"truncate_frequency"`
+	Directory          string        `mapstructure:"directory"`
+	BufferSize         int           `mapstructure:"buffer_size"`
+	TruncateFrequency  time.Duration `mapstructure:"truncate_frequency"`
+	LagRecordFrequency time.Duration `mapstructure:"lag_record_frequency"`
 }
 
 func (wc *WALConfig) bufferSize() int {
@@ -129,6 +131,13 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 		return wc.TruncateFrequency
 	}
 	return defaultWALTruncateFrequency
+}
+
+func (wc *WALConfig) lagRecordInterval() time.Duration {
+	if wc.LagRecordFrequency > 0 {
+		return wc.LagRecordFrequency
+	}
+	return defaultWALLagRecordFrequency
 }
 
 func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
@@ -231,11 +240,13 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	// Start the process of exporting but wait until the exporting has started.
 	waitUntilStartedCh := make(chan bool)
 	prweWAL.wg.Add(2)
+
 	go func() {
 		defer prweWAL.wg.Done()
-		logger.Info("starting WAL lag loop")
+		defer cancel()
 		prweWAL.recordLagLoop(runCtx, logger)
 	}()
+
 	go func() {
 		defer prweWAL.wg.Done()
 		defer cancel()
@@ -267,7 +278,7 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 }
 
 func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(prweWAL.walConfig.lagRecordInterval())
 	defer ticker.Stop()
 
 	for {
@@ -277,13 +288,10 @@ func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
 		case <-prweWAL.stopChan:
 			return
 		case <-ticker.C:
-			logger.Info("recording WAL lag")
-			prweWAL.mu.Lock()
-			wIndex := prweWAL.wWALIndex.Load()
-			rIndex := prweWAL.rWALIndex.Load()
-			prweWAL.mu.Unlock()
-			logger.Info("recording WAL lag", zap.Int64("wIndex", int64(wIndex)), zap.Int64("rIndex", int64(rIndex)))
-			prweWAL.telemetry.recordWALLag(ctx, int64(wIndex-rIndex))
+			// In normal state, wIndex and rIndex will differ by one. To avoid having -1 as a final value, we set it to 0 as minimum.
+			lag := max(0, int64(prweWAL.wWALIndex.Load()-prweWAL.rWALIndex.Load()))
+			logger.Info("recording lag log", zap.Int64("wIndex", int64(prweWAL.wWALIndex.Load())), zap.Int64("rIndex", int64(prweWAL.wWALIndex.Load())), zap.Int64("lag", int64(lag)))
+			prweWAL.telemetry.recordWALLag(ctx, lag)
 		}
 	}
 }
@@ -447,7 +455,6 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		if index <= 0 {
 			index = 1
 		}
-
 		prweWAL.mu.Lock()
 		if prweWAL.wal == nil {
 			return nil, errors.New("attempt to read from closed WAL")

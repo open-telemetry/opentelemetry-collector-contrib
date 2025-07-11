@@ -104,7 +104,7 @@ telemetry:
         monotonic: true
     exporter_prometheusremotewrite_wal_lag:
       enabled: true
-      description: Index-based WAL lag
+      description: WAL lag
       unit: "1"
       gauge:
         value_type: int

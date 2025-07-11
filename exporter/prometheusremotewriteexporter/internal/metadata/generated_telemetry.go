@@ -108,7 +108,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalLag, err = builder.meter.Int64Gauge(
 		"otelcol_exporter_prometheusremotewrite_wal_lag",
-		metric.WithDescription("Index-based WAL lag"),
+		metric.WithDescription("WAL lag"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
