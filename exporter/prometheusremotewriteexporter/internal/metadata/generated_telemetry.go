@@ -32,6 +32,7 @@ type TelemetryBuilder struct {
 	ExporterPrometheusremotewriteTranslatedTimeSeries metric.Int64Counter
 	ExporterPrometheusremotewriteWalBytesRead         metric.Int64Counter
 	ExporterPrometheusremotewriteWalBytesWritten      metric.Int64Counter
+	ExporterPrometheusremotewriteWalLag               metric.Int64Gauge
 	ExporterPrometheusremotewriteWalReadLatency       metric.Int64Histogram
 	ExporterPrometheusremotewriteWalReads             metric.Int64Counter
 	ExporterPrometheusremotewriteWalReadsFailures     metric.Int64Counter
@@ -103,6 +104,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_prometheusremotewrite_wal_bytes_written",
 		metric.WithDescription("Total number of bytes written to the WAL"),
 		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalLag, err = builder.meter.Int64Gauge(
+		"otelcol_exporter_prometheusremotewrite_wal_lag",
+		metric.WithDescription("Index-based WAL lag"),
+		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalReadLatency, err = builder.meter.Int64Histogram(

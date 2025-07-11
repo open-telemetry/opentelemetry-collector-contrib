@@ -95,7 +95,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
     exporter_prometheusremotewrite_wal_bytes_read:
       enabled: true
       description: Total number of bytes read from the WAL
@@ -103,3 +102,9 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_lag:
+      enabled: true
+      description: Index-based WAL lag
+      unit: "1"
+      gauge:
+        value_type: int

@@ -54,6 +54,14 @@ Total number of bytes written to the WAL
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
+### otelcol_exporter_prometheusremotewrite_wal_lag
+
+Index-based WAL lag
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### otelcol_exporter_prometheusremotewrite_wal_read_latency
 
 Response latency in ms for the WAL reads.

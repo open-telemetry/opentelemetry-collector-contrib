@@ -33,6 +33,7 @@ type prwWalTelemetry interface {
 	recordWALReadsFailures(ctx context.Context)
 	recordWALBytesWritten(ctx context.Context, bytes int)
 	recordWALBytesRead(ctx context.Context, bytes int)
+	recordWALLag(ctx context.Context, lag int64)
 }
 
 type prwWalTelemetryOTel struct {
@@ -70,6 +71,10 @@ func (p *prwWalTelemetryOTel) recordWALBytesWritten(ctx context.Context, bytes i
 
 func (p *prwWalTelemetryOTel) recordWALBytesRead(ctx context.Context, bytes int) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteWalBytesRead.Add(ctx, int64(bytes), metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALLag(ctx context.Context, lag int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalLag.Record(ctx, lag, metric.WithAttributes(p.otelAttrs...))
 }
 
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
@@ -225,7 +230,12 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 
 	// Start the process of exporting but wait until the exporting has started.
 	waitUntilStartedCh := make(chan bool)
-	prweWAL.wg.Add(1)
+	prweWAL.wg.Add(2)
+	go func() {
+		defer prweWAL.wg.Done()
+		logger.Info("starting WAL lag loop")
+		prweWAL.recordLagLoop(runCtx, logger)
+	}()
 	go func() {
 		defer prweWAL.wg.Done()
 		defer cancel()
@@ -254,6 +264,28 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	}()
 	<-waitUntilStartedCh
 	return nil
+}
+
+func (prweWAL *prweWAL) recordLagLoop(ctx context.Context, logger *zap.Logger) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-prweWAL.stopChan:
+			return
+		case <-ticker.C:
+			logger.Info("recording WAL lag")
+			prweWAL.mu.Lock()
+			wIndex := prweWAL.wWALIndex.Load()
+			rIndex := prweWAL.rWALIndex.Load()
+			prweWAL.mu.Unlock()
+			logger.Info("recording WAL lag", zap.Int64("wIndex", int64(wIndex)), zap.Int64("rIndex", int64(rIndex)))
+			prweWAL.telemetry.recordWALLag(ctx, int64(wIndex-rIndex))
+		}
+	}
 }
 
 // continuallyPopWALThenExport reads a prompb.WriteRequest proto encoded blob from the WAL, and moves
