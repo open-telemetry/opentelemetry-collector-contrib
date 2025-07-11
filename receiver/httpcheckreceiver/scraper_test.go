@@ -250,7 +250,7 @@ func TestHTTPSWithTLS(t *testing.T) {
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: server.URL,
 				TLS: configtls.ClientConfig{
-					Insecure: true, // Skip verification for test server
+					InsecureSkipVerify: true, // Skip verification for test server
 				},
 			},
 		},
@@ -304,7 +304,7 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: server.URL,
 				TLS: configtls.ClientConfig{
-					Insecure: true, // Skip verification for test server
+					InsecureSkipVerify: true, // Skip verification for test server
 				},
 			},
 			CollectTLS: &collectTLS,

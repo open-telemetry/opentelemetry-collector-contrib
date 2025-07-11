@@ -8,9 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
-	"net"
 	"net/http"
-	"net/url"
 	"sync"
 	"time"
 
@@ -69,30 +67,6 @@ func extractTLSInfo(state *tls.ConnectionState) (issuer string, commonName strin
 	return issuer, commonName, sans, timeLeft
 }
 
-// getTLSState makes a direct TLS connection to get certificate info
-func getTLSState(endpoint string) (*tls.ConnectionState, error) {
-	parsedURL, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	host := parsedURL.Host
-	if parsedURL.Port() == "" {
-		host = net.JoinHostPort(parsedURL.Hostname(), "443")
-	}
-
-	conn, err := tls.Dial("tcp", host, &tls.Config{
-		InsecureSkipVerify: true,
-		ServerName:         parsedURL.Hostname(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	state := conn.ConnectionState()
-	return &state, nil
-}
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
 func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err error) {
@@ -187,24 +161,18 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// Check if this is an HTTPS endpoint and extract TLS certificate info
 			// Default to true if CollectTLS is nil
 			collectTLS := h.cfg.Targets[targetIndex].CollectTLS == nil || *h.cfg.Targets[targetIndex].CollectTLS
-			if collectTLS {
-				parsedURL, urlErr := url.Parse(h.cfg.Targets[targetIndex].Endpoint)
-				if urlErr == nil && parsedURL.Scheme == "https" {
-					// Get TLS state by making a direct TLS connection
-					tlsState, tlsErr := getTLSState(h.cfg.Targets[targetIndex].Endpoint)
-					if tlsErr == nil && tlsState != nil {
-						issuer, commonName, sans, timeLeft := extractTLSInfo(tlsState)
-						if issuer != "" || commonName != "" || len(sans) > 0 {
-							h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
-								now,
-								timeLeft,
-								h.cfg.Targets[targetIndex].Endpoint,
-								issuer,
-								commonName,
-								sans,
-							)
-						}
-					}
+			if collectTLS && resp != nil && resp.TLS != nil {
+				// Extract TLS info directly from the HTTP response
+				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
+				if issuer != "" || commonName != "" || len(sans) > 0 {
+					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
+						now,
+						timeLeft,
+						h.cfg.Targets[targetIndex].Endpoint,
+						issuer,
+						commonName,
+						sans,
+					)
 				}
 			}
 			h.mb.RecordHttpcheckDurationDataPoint(
