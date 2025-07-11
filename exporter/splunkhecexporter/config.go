@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -158,17 +159,16 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 	if conf.IsSet("batcher") {
 		cfg.DeprecatedBatcher.isSet = true
-		if cfg.QueueSettings.Batch != nil {
+		if cfg.QueueSettings.Batch.HasValue() {
 			return errors.New(`deprecated "batcher" cannot be set along with "sending_queue::batch"`)
 		}
 		if cfg.DeprecatedBatcher.Enabled {
-			cfg.QueueSettings.Batch = &exporterhelper.BatchConfig{
+			cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
 				FlushTimeout: cfg.DeprecatedBatcher.FlushTimeout,
-				// TODO: uncomment once core dependency is updated
-				// Sizer:   cfg.DeprecatedBatcher.Sizer,
-				MinSize: cfg.DeprecatedBatcher.MinSize,
-				MaxSize: cfg.DeprecatedBatcher.MaxSize,
-			}
+				Sizer:        cfg.DeprecatedBatcher.Sizer,
+				MinSize:      cfg.DeprecatedBatcher.MinSize,
+				MaxSize:      cfg.DeprecatedBatcher.MaxSize,
+			})
 
 			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
 			// behavior of the deprecated batcher.
