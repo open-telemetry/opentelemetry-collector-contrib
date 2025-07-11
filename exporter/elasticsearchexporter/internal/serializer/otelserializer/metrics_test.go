@@ -58,6 +58,6 @@ func TestSerializeMetricsConflict(t *testing.T) {
 		"metrics": map[string]any{
 			"foo": json.Number("42"),
 		},
-		"_metric_names_hash": "a9f37ed7",
+		"_metric_names_hash": "33bf00a859c4ba3f",
 	}, result, eventAsJSON)
 }
