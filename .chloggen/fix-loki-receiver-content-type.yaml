@@ -16,10 +16,9 @@ issues: [41192]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When sending logs in json format a valid header like this one: `Content-Type: application/json; charset=utf-8`
-  was rejected in `newLokiReceiver` because this method compared that header with just `application/json`.
-  By using mime.ParseMediaType this change parses a media type value and any optional parameters the same way
-  it is done in push.go.
+  When sending logs in json format a valid header like `Content-Type: application/json; charset=utf-8`
+  was rejected because the value was not equal to `application/json`.
+  This changes the parsing of `Content-Type` header to accept optional parameters.
 
 
 # If your change doesn't affect end users or the exported elements of any package,
