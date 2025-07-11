@@ -513,7 +513,7 @@ func flushBulkIndexer(
 	if serverFailed > 0 {
 		tb.ElasticsearchDocsIndexed.Add(
 			ctx,
-			clientFailed,
+			serverFailed,
 			metric.WithAttributeSet(attribute.NewSet(
 				attribute.String("outcome", "failed_server"),
 			)),

@@ -237,6 +237,29 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			},
 		},
 		{
+			name: "500/doc_level",
+			roundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body: io.NopCloser(strings.NewReader(
+						`{"items":[{"create":{"_index":"test","status":500,"error":{"type":"internal_server_error","reason":""}}}]}`)),
+				}, nil
+			},
+			wantESBulkReqs: &metricdata.DataPoint[int64]{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "success"),
+				),
+			},
+			wantESDocsIndexed: &metricdata.DataPoint[int64]{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("outcome", "failed_server"),
+				),
+			},
+		},
+		{
 			name: "transport error",
 			roundTripFunc: func(*http.Request) (*http.Response, error) {
 				return nil, errors.New("transport error")
