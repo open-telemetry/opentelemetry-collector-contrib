@@ -437,5 +437,4 @@ func TestWALLag_Telemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 0}},
 		metricdatatest.IgnoreTimestamp())
 	require.NoError(t, err)
-
 }
