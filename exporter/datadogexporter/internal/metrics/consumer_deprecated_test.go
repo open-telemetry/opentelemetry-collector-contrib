@@ -16,6 +16,13 @@ import (
 	"go.uber.org/zap"
 )
 
+func addTestMetric(_ *testing.T, rm pmetric.ResourceMetrics) {
+	met := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	met.SetEmptyGauge()
+	met.SetName("test.metric")
+	met.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.0)
+}
+
 func TestZorkianRunningMetrics(t *testing.T) {
 	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
@@ -23,16 +30,20 @@ func TestZorkianRunningMetrics(t *testing.T) {
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
 	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
 	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-1")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
 	resAttrs.PutStr(attributes.AttributeDatadogHostname, "resource-hostname-2")
+	addTestMetric(t, rm)
 
-	rms.AppendEmpty()
+	rm = rms.AppendEmpty()
+	addTestMetric(t, rm)
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)
@@ -69,14 +80,17 @@ func TestZorkianTagsMetrics(t *testing.T) {
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
 	rm.Resource().Attributes().PutStr(string(conventions.AWSECSTaskARNKey), "task-arn-1")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
 	rm.Resource().Attributes().PutStr(string(conventions.AWSECSTaskARNKey), "task-arn-2")
+	addTestMetric(t, rm)
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
 	rm.Resource().Attributes().PutStr(string(conventions.AWSECSTaskARNKey), "task-arn-3")
+	addTestMetric(t, rm)
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)

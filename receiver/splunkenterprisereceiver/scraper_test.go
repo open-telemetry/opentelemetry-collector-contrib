@@ -5,6 +5,7 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -63,6 +65,32 @@ func mockIndexerClusterMangerStatus(w http.ResponseWriter, _ *http.Request) {
 `))
 }
 
+func mockJobsSearch(w http.ResponseWriter, r *http.Request) {
+	status := http.StatusOK
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(status)
+	_, _ = w.Write(getJobsSearchResponse(r))
+}
+
+func getJobsSearchResponse(r *http.Request) []byte {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		return []byte(`error`)
+	}
+	defer r.Body.Close()
+
+	switch string(bodyBytes) {
+	case searchDict[`SplunkIndexerCpuSeconds`]:
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="service_cpu_seconds"><value><text>69.20</text></value></field></result></response>`)
+	case searchDict[`SplunkIoAvgIops`]:
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="iops"><value><text>200400</text></value></field></result></response>`)
+	case searchDict[`SplunkSchedulerAvgRunTime`]:
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="run_time_avg"><value><text>200.40</text></value></field></result></response>`)
+	default:
+		return []byte(`error`)
+	}
+}
+
 // mock server create
 func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +105,8 @@ func createMockServer() *httptest.Server {
 			mockDispatchArtifacts(w, r)
 		case "/services/cluster/manager/status?output_mode=json":
 			mockIndexerClusterMangerStatus(w, r)
+		case "/services/search/jobs/":
+			mockJobsSearch(w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)
 		}
@@ -105,18 +135,21 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
 	metricsettings.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
+	metricsettings.Metrics.SplunkIndexerCPUTime.Enabled = true
+	metricsettings.Metrics.SplunkIoAvgIops.Enabled = true
+	metricsettings.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		SHEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		CMEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
-			Auth:     &configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,

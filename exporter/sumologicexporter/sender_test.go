@@ -22,7 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -73,7 +75,7 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	default:
 		cfg.Compression = configcompression.TypeGzip
 	}
-	cfg.Auth = nil
+	cfg.Auth = configoptional.None[configauth.Config]()
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
 	client, err := httpSettings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
