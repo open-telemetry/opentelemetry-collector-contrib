@@ -54,10 +54,10 @@ Reports the count of kernel NFSv4+ client operations
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.nfs.operation.name | NFSv4+ operation name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
+| rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
 ### nfs.client.procedure.count
 
@@ -69,10 +69,10 @@ Reports the count of kernel NFS client procedures
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
+| rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str |
 
 ### nfs.client.rpc.authrefresh.count
 
@@ -164,10 +164,10 @@ Reports the count of kernel NFSv4+ server operations
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.nfs.operation.name | NFSv4+ operation name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
+| rpc.nfs.operation.name | NFSv4+ operation name | Any Str |
 
 ### nfs.server.procedure.count
 
@@ -179,10 +179,10 @@ Reports the count of kernel NFS client procedures
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| rpc.onc.version | ONC/Sun RPC program version | Any Int |
+| rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str |
 
 ### nfs.server.repcache.hits
 
