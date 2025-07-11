@@ -174,6 +174,9 @@ receivers:
             secret: ${env:SECRET_STRING_VAR}
             required_headers:
                 WAF-Header: "value"
+        scrapers: # The validation expects at least a dummy scraper config
+            scraper:
+                github_org: <some value>
 ```
 
 For tracing, all configuration is set under the `webhook` key. The full set
