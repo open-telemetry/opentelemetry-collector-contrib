@@ -5,6 +5,7 @@ package operationsmanagement // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -57,6 +58,9 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 
 			// Iterate through each individual pmetric.Metric instance
 			metrics := scopeMetric.Metrics()
+
+			helixMetrics = slices.Grow(helixMetrics, metrics.Len())
+
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
@@ -116,7 +120,9 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
-		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+		sliceLen := metric.Sum().DataPoints().Len()
+		helixMetrics = slices.Grow(helixMetrics, sliceLen)
+		for i := 0; i < sliceLen; i++ {
 			dp := metric.Sum().DataPoints().At(i)
 			metricPayload, err := mp.createSingleDatapointMetric(dp, metric, resourceAttrs)
 			if err != nil {
@@ -126,7 +132,9 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 			helixMetrics = append(helixMetrics, *metricPayload)
 		}
 	case pmetric.MetricTypeGauge:
-		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
+		sliceLen := metric.Gauge().DataPoints().Len()
+		helixMetrics = slices.Grow(helixMetrics, sliceLen)
+		for i := 0; i < sliceLen; i++ {
 			dp := metric.Gauge().DataPoints().At(i)
 			metricPayload, err := mp.createSingleDatapointMetric(dp, metric, resourceAttrs)
 			if err != nil {
