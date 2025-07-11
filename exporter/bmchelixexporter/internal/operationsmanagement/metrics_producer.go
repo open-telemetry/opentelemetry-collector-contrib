@@ -59,8 +59,6 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 			// Iterate through each individual pmetric.Metric instance
 			metrics := scopeMetric.Metrics()
 
-			helixMetrics = slices.Grow(helixMetrics, metrics.Len())
-
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
@@ -70,6 +68,9 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 					mp.logger.Warn("Failed to create Helix metrics", zap.Error(err))
 					continue
 				}
+
+				// Grow the helixMetrics slice for the new metrics
+				helixMetrics = slices.Grow(helixMetrics, len(newMetrics))
 
 				// Loop through the newly created metrics and append them to the helixMetrics slice
 				// while also creating parent entities for container metrics
