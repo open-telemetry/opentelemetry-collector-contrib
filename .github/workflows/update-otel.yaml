@@ -20,13 +20,14 @@ jobs:
       - name: Update to latest opentelemetry-collector release and create a PR
         run: |
           exec > >(tee log.out) 2>&1
+          LAST_COMMIT=$(git -C ./opentelemetry-collector/ rev-parse HEAD)
           cd opentelemetry-collector-contrib
           git config user.name opentelemetrybot
           git config user.email 107717825+opentelemetrybot@users.noreply.github.com
           branch="opentelemetrybot/update-otel-$(date +%s)"
           git checkout -b $branch
           make genotelcontribcol
-          make update-otel
+          make update-otel OTEL_STABLE_VERSION=${LAST_COMMIT} OTEL_VERSION=${LAST_COMMIT}
           git push --set-upstream origin $branch  
           gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release"
         env:

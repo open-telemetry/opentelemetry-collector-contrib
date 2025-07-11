@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	trc "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -333,6 +334,76 @@ func TestToPTraceSpan(t *testing.T) {
 				s.Attributes().PutBool("bool_attr", true)
 			},
 		},
+		{
+			name: "valid hex parent ID is correctly parsed",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":            "child-span",
+					"trace.span_id":   "abcdef1234567890",
+					"trace.trace_id":  "1234567890abcdef1234567890abcdef",
+					"trace.parent_id": "1234567890abcdef", // Valid hex-encoded span ID
+					"duration_ms":     50.0,
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("child-span")
+				s.SetSpanID([8]byte{0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				// Parent ID should be the actual hex-decoded value, not a hash
+				s.SetParentSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(50 * time.Millisecond)))
+			},
+		},
+		{
+			name: "invalid parent ID falls back to hash",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":            "child-span",
+					"trace.span_id":   "abcdef1234567890",
+					"trace.trace_id":  "1234567890abcdef1234567890abcdef",
+					"trace.parent_id": "invalid-hex-string", // Invalid hex, should fall back to hash
+					"duration_ms":     50.0,
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("child-span")
+				s.SetSpanID([8]byte{0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				// Parent ID should be the hash of "invalid-hex-string"
+				expectedHash := spanIDFrom("invalid-hex-string")
+				s.SetParentSpanID(pcommon.SpanID(expectedHash))
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(50 * time.Millisecond)))
+			},
+		},
+		{
+			name: "sub-1-millisecond duration",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":           "fast-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    0.5, // 500 microseconds
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("fast-span")
+				s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(500 * time.Microsecond)))
+			},
+		},
 	}
 
 	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms", "status.code", "status.message", "kind"}
@@ -393,6 +464,149 @@ func TestToPTraceSpan(t *testing.T) {
 				// Verify no fewer attributes, extras are expected
 				assert.LessOrEqual(t, want.Attributes().Len(), span.Attributes().Len())
 			}
+		})
+	}
+}
+
+func TestParentIDHandlingDifference(t *testing.T) {
+	validHexParentID := "1234567890abcdef"
+
+	oldApproachResult := spanIDFrom(validHexParentID)
+
+	// What the new approach produces (parsing hex)
+	event := LibhoneyEvent{
+		Data: map[string]any{
+			"trace.parent_id": validHexParentID,
+		},
+	}
+	newApproachResult, err := event.GetParentID("trace.parent_id")
+	require.NoError(t, err)
+
+	assert.NotEqual(t, oldApproachResult, newApproachResult,
+		"Old and new approaches should produce different results for valid hex parent ID")
+
+	expectedBytes := []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef}
+	assert.Equal(t, trc.SpanID(expectedBytes), newApproachResult,
+		"New approach should correctly decode hex parent ID")
+
+	// For invalid hex, both approaches should produce the same result (hash)
+	invalidParentID := "invalid-hex-string"
+	oldInvalidResult := spanIDFrom(invalidParentID)
+
+	eventInvalid := LibhoneyEvent{
+		Data: map[string]any{
+			"trace.parent_id": invalidParentID,
+		},
+	}
+	_, err = eventInvalid.GetParentID("trace.parent_id")
+	assert.Error(t, err, "GetParentID should return error for invalid hex")
+
+	// The ToPTraceSpan function should fall back to hash for invalid hex
+	span := ptrace.NewSpan()
+	cfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			ParentID: "trace.parent_id",
+		},
+	}
+
+	eventInvalid.MsgPackTimestamp = &time.Time{}
+	err = eventInvalid.ToPTraceSpan(&span, &[]string{}, cfg, *zap.NewNop())
+	require.NoError(t, err)
+
+	// Should fall back to hash for invalid hex
+	assert.Equal(t, pcommon.SpanID(oldInvalidResult), span.ParentSpanID(),
+		"Invalid hex should fall back to hash in new approach")
+}
+
+func TestGetParentID(t *testing.T) {
+	tests := []struct {
+		name      string
+		event     LibhoneyEvent
+		fieldName string
+		want      trc.SpanID
+		wantErr   bool
+	}{
+		{
+			name: "valid 16-character hex string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "1234567890abcdef",
+				},
+			},
+			fieldName: "trace.parent_id",
+			want:      trc.SpanID{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
+		},
+		{
+			name: "valid 32-character hex string (trace ID format)",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "1234567890abcdef1234567890abcdef",
+				},
+			},
+			fieldName: "trace.parent_id",
+			want:      trc.SpanID{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
+		},
+		{
+			name: "hex string with hyphens",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "12-34-56-78-90-ab-cd-ef",
+				},
+			},
+			fieldName: "trace.parent_id",
+			want:      trc.SpanID{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
+		},
+		{
+			name: "invalid hex string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "invalid-hex",
+				},
+			},
+			fieldName: "trace.parent_id",
+			wantErr:   true,
+		},
+		{
+			name: "field not found",
+			event: LibhoneyEvent{
+				Data: map[string]any{},
+			},
+			fieldName: "trace.parent_id",
+			wantErr:   true,
+		},
+		{
+			name: "odd length hex string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "1234567890abcde", // 15 characters
+				},
+			},
+			fieldName: "trace.parent_id",
+			wantErr:   true,
+		},
+		{
+			name: "empty string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "",
+				},
+			},
+			fieldName: "",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.event.GetParentID(tt.fieldName)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

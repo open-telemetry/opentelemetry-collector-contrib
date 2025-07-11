@@ -16,7 +16,7 @@ const connectionPoolGateID = "receiver.postgresql.connectionPool"
 
 var connectionPoolGate = featuregate.GlobalRegistry().MustRegister(
 	connectionPoolGateID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Use of connection pooling"),
 	featuregate.WithRegisterFromVersion("0.96.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),

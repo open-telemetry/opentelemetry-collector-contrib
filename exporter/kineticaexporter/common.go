@@ -105,7 +105,7 @@ const (
 	HasTable string = "execute endpoint '/has/table' JSON '{\"table_name\":\"%s\"}'"
 
 	// Metrics - DDLs
-	// Gauge
+	// gauge
 	CreateGauge string = `CREATE TABLE %smetric_gauge
 	(
 		gauge_id UUID (primary_key, shard_key) not null,
@@ -192,7 +192,7 @@ const (
 		FOREIGN KEY (gauge_id) references %smetric_gauge(gauge_id) as fk_gauge_scope_attribute
 	) USING TABLE PROPERTIES (NO_ERROR_IF_EXISTS = TRUE);
 	`
-	// Sum
+	// sum
 
 	CreateSum string = `CREATE TABLE %smetric_sum
 	(
@@ -283,7 +283,7 @@ const (
 	) USING TABLE PROPERTIES (NO_ERROR_IF_EXISTS = TRUE);
 	`
 
-	// Histogram
+	// histogram
 
 	CreateHistogram string = `CREATE TABLE %smetric_histogram
 	(
@@ -394,7 +394,7 @@ const (
 		FOREIGN KEY (histogram_id) references %smetric_histogram(histogram_id) as fk_histogram_scope_attribute
 	) USING TABLE PROPERTIES (NO_ERROR_IF_EXISTS = TRUE);
 	`
-	// exponential Histogram
+	// exponential histogram
 	CreateExpHistogram string = `CREATE TABLE %smetric_exp_histogram
 	(
 		histogram_id UUID (primary_key, shard_key) not null,
@@ -507,7 +507,7 @@ const (
 		FOREIGN KEY (histogram_id) references %smetric_histogram(histogram_id) as fk_histogram_scope_attribute
 	) USING TABLE PROPERTIES (NO_ERROR_IF_EXISTS = TRUE);
 	`
-	// Summary
+	// summary
 	CreateSummary string = `CREATE TABLE %smetric_summary
 	(
 		summary_id UUID (primary_key, shard_key) not null,
@@ -581,18 +581,18 @@ const (
 	`
 )
 
-// ValueTypePair - struct to wrap a value as [any] and its type [pcommon.ValueType]
-type ValueTypePair struct {
+// valueTypePair - struct to wrap a value as [any] and its type [pcommon.ValueType]
+type valueTypePair struct {
 	value     any
 	valueType pcommon.ValueType
 }
 
-// attributeValueToKineticaFieldValue - Convert an attribute value to a [ValueTypePair] for writing to Kinetica
+// attributeValueToKineticaFieldValue - Convert an attribute value to a [valueTypePair] for writing to Kinetica
 //
 //	@param value
-//	@return ValueTypePair
+//	@return valueTypePair
 //	@return error
-func attributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, error) {
+func attributeValueToKineticaFieldValue(value pcommon.Value) (valueTypePair, error) {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
 		var val string
@@ -601,29 +601,29 @@ func attributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, err
 		} else {
 			val = value.Str()
 		}
-		return ValueTypePair{val, pcommon.ValueTypeStr}, nil
+		return valueTypePair{val, pcommon.ValueTypeStr}, nil
 	case pcommon.ValueTypeInt:
-		return ValueTypePair{value.Int(), pcommon.ValueTypeInt}, nil
+		return valueTypePair{value.Int(), pcommon.ValueTypeInt}, nil
 	case pcommon.ValueTypeDouble:
-		return ValueTypePair{value.Double(), pcommon.ValueTypeDouble}, nil
+		return valueTypePair{value.Double(), pcommon.ValueTypeDouble}, nil
 	case pcommon.ValueTypeBool:
-		return ValueTypePair{value.Bool(), pcommon.ValueTypeBool}, nil
+		return valueTypePair{value.Bool(), pcommon.ValueTypeBool}, nil
 	case pcommon.ValueTypeMap:
 		jsonBytes, err := json.Marshal(otlpKeyValueListToMap(value.Map()))
 		if err != nil {
-			return ValueTypePair{nil, pcommon.ValueTypeEmpty}, err
+			return valueTypePair{nil, pcommon.ValueTypeEmpty}, err
 		}
-		return ValueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
+		return valueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
 	case pcommon.ValueTypeSlice:
 		jsonBytes, err := json.Marshal(otlpArrayToSlice(value.Slice()))
 		if err != nil {
-			return ValueTypePair{nil, pcommon.ValueTypeEmpty}, err
+			return valueTypePair{nil, pcommon.ValueTypeEmpty}, err
 		}
-		return ValueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
+		return valueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
 	case pcommon.ValueTypeEmpty:
-		return ValueTypePair{nil, pcommon.ValueTypeEmpty}, nil
+		return valueTypePair{nil, pcommon.ValueTypeEmpty}, nil
 	default:
-		return ValueTypePair{nil, pcommon.ValueTypeEmpty}, fmt.Errorf("Unknown value type %v", value)
+		return valueTypePair{nil, pcommon.ValueTypeEmpty}, fmt.Errorf("Unknown value type %v", value)
 	}
 }
 
@@ -685,41 +685,41 @@ func otlpArrayToSlice(arr pcommon.Slice) []any {
 // getAttributeValue
 //
 //	@param vtPair
-//	@return *AttributeValue
+//	@return *attributeValue
 //	@return error
-func getAttributeValue(vtPair ValueTypePair) (*AttributeValue, error) {
-	var av *AttributeValue
+func getAttributeValue(vtPair valueTypePair) (*attributeValue, error) {
+	var av *attributeValue
 	var err error
 	switch vtPair.valueType {
 	case pcommon.ValueTypeStr:
 		value := vtPair.value.(string)
-		av = new(AttributeValue)
+		av = new(attributeValue)
 		av.StringValue = value
 	case pcommon.ValueTypeInt:
 		value := vtPair.value.(int)
-		av = new(AttributeValue)
+		av = new(attributeValue)
 		av.IntValue = value
 	case pcommon.ValueTypeDouble:
 		value := vtPair.value.(float64)
-		av = new(AttributeValue)
+		av = new(attributeValue)
 		av.DoubleValue = value
 	case pcommon.ValueTypeBool:
 		value := vtPair.value.(int8)
-		av = new(AttributeValue)
+		av = new(attributeValue)
 		av.BoolValue = value
 	case pcommon.ValueTypeBytes:
 		value := vtPair.value.([]byte)
-		av = new(AttributeValue)
+		av = new(attributeValue)
 		copy(av.BytesValue, value)
 	case pcommon.ValueTypeMap:
 		// value := vtPair.value
-		// av = new(AttributeValue)
+		// av = new(attributeValue)
 		// av.SetStringValue(value)
 		err = fmt.Errorf("Unhandled value type %v", vtPair.valueType)
 
 	case pcommon.ValueTypeSlice:
 		// value := vtPair.value.(string)
-		// av = new(AttributeValue)
+		// av = new(attributeValue)
 		// av.SetStringValue(value)
 		err = fmt.Errorf("Unhandled value type %v", vtPair.valueType)
 

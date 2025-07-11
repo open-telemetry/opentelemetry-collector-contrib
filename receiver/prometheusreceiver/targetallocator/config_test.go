@@ -32,7 +32,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
 	assert.Equal(t, 5*time.Second, cfg.Timeout)
-	assert.Equal(t, "client.crt", cfg.TLSSetting.CertFile)
+	assert.Equal(t, "client.crt", cfg.TLS.CertFile)
 	assert.Equal(t, 30*time.Second, cfg.Interval)
 	assert.Equal(t, "collector-1", cfg.CollectorID)
 }

@@ -49,7 +49,7 @@ type Config struct {
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
-	// Deprecated:  Please use AggregationCardinalityLimit instead
+	// Deprecated [v0.130.0]:  Please use AggregationCardinalityLimit instead
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for

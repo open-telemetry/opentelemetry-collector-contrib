@@ -83,7 +83,7 @@ func TestInfo(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, errors.New("error")
 		}
 	}
@@ -93,7 +93,7 @@ func TestInfo(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, nil
 		}
 	}
@@ -160,7 +160,7 @@ func TestInfoForECS(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, errors.New("error")
 		}
 	}
@@ -170,7 +170,7 @@ func TestInfoForECS(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
 			return aws.Config{}, nil
 		}
 	}

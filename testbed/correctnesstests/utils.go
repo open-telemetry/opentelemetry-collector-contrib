@@ -77,7 +77,12 @@ connectors:%v
 service:
   telemetry:
     metrics:
-      address: 127.0.0.1:%d
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '127.0.0.1'
+                port: %d
     logs:
       level: "debug"
   extensions:
@@ -118,7 +123,12 @@ extensions:
 service:
   telemetry:
     metrics:
-      address: 127.0.0.1:%d
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '127.0.0.1'
+                port: %d
   extensions:
   pipelines:
     %s:
@@ -204,6 +214,8 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	switch receiver {
 	case "otlp":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	case "stef":
+		sender = datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "opencensus":
 		sender = datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "prometheus":
@@ -220,6 +232,8 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	switch exporter {
 	case "otlp":
 		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+	case "stef":
+		receiver = datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
 	case "opencensus":
 		receiver = datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t))
 	case "jaeger":

@@ -62,9 +62,9 @@ The number of followers. Only exposed by the leader.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | State of followers | Str: ``synced``, ``unsynced`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | State of followers | Str: ``synced``, ``unsynced`` | false |
 
 ### zookeeper.fsync.exceeded_threshold.count
 
@@ -108,9 +108,9 @@ The number of ZooKeeper packets received or sent by a server.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | State of a packet based on io direction. | Str: ``received``, ``sent`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | State of a packet based on io direction. | Str: ``received``, ``sent`` | false |
 
 ### zookeeper.request.active
 

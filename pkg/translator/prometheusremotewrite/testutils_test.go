@@ -221,6 +221,8 @@ func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time ti
 func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.SetDescription("test int gauge description")
+	metric.SetUnit("By")
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -236,6 +238,8 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.SetDescription("test double gauge description")
+	metric.SetUnit("By")
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))

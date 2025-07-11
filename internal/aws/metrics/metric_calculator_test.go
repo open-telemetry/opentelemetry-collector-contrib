@@ -248,34 +248,51 @@ func TestMapKeyNotEqualOnName(t *testing.T) {
 }
 
 func TestSweep(t *testing.T) {
-	sweepEvent := make(chan time.Time)
+	sweepEvent := make(chan time.Time, 2)
+	fakeTicker, push := newFakeTicker()
 	closed := &atomic.Bool{}
-
 	onSweep := func(now time.Time) {
 		sweepEvent <- now
 	}
 
 	mwe := &MapWithExpiry{
-		ttl:      1 * time.Millisecond,
-		lock:     &sync.Mutex{},
-		doneChan: make(chan struct{}),
+		ttl:       0,
+		lock:      &sync.Mutex{},
+		doneChan:  make(chan struct{}),
+		newTicker: func(time.Duration) Ticker { return fakeTicker },
 	}
 
-	start := time.Now()
 	go func() {
 		mwe.sweep(onSweep)
 		closed.Store(true)
 		close(sweepEvent)
 	}()
 
-	for i := 1; i <= 2; i++ {
-		<-sweepEvent
-		clockTime := time.Since(start)
-		require.False(t, closed.Load())
-		assert.LessOrEqual(t, mwe.ttl*time.Duration(i), clockTime)
-	}
+	push(time.Unix(100, 0))
+	push(time.Unix(200, 0))
+
+	t1 := <-sweepEvent
+	t2 := <-sweepEvent
+	assert.False(t, closed.Load())
+	assert.Equal(t, time.Unix(100, 0), t1)
+	assert.Equal(t, time.Unix(200, 0), t2)
+
 	require.NoError(t, mwe.Shutdown())
 	for range sweepEvent { //nolint:revive
 	}
 	assert.True(t, closed.Load(), "Sweeper did not terminate.")
+}
+
+type fakeTicker struct {
+	ch chan time.Time
+}
+
+func (f *fakeTicker) C() <-chan time.Time { return f.ch }
+func (f *fakeTicker) Stop()               {}
+
+func newFakeTicker() (*fakeTicker, func(time.Time)) {
+	ch := make(chan time.Time, 10)
+	ft := &fakeTicker{ch: ch}
+	push := func(t time.Time) { ch <- t }
+	return ft, push
 }

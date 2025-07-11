@@ -209,7 +209,8 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_resource",
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field.allResource = true
+				err := cfg.Field.UnmarshalText([]byte("resource"))
+				require.NoError(t, err, "UnmarshalText failed in test setup code: %v", err)
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -230,7 +231,8 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_attributes",
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field.allAttributes = true
+				err := cfg.Field.UnmarshalText([]byte("attributes"))
+				require.NoError(t, err, "UnmarshalText failed in test setup code: %v", err)
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -249,7 +251,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		t.Run("BuildandProcess/"+tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			cfg := tc.op
 			cfg.OutputIDs = []string{"fake"}
 			cfg.OnError = "drop"

@@ -23,12 +23,13 @@ func NewFactory() extension.Factory {
 
 func createExtension(_ context.Context, _ extension.Settings, config component.Config) (extension.Extension, error) {
 	return &jsonLogExtension{
-		config: config,
+		config: config.(*Config),
 	}, nil
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Mode: JSONEncodingModeBody,
+		Mode:      JSONEncodingModeBody,
+		ArrayMode: true,
 	}
 }

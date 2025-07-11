@@ -49,7 +49,7 @@ func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*Timeserie
 	name := metric.Name()
 	key := TimeseriesKey{
 		Name:       name,
-		Attributes: getAttributesSignature(kv),
+		Attributes: pdatautil.MapHash(kv),
 	}
 	switch metric.Type() {
 	case pmetric.MetricTypeHistogram:
@@ -72,19 +72,6 @@ func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*Timeserie
 	}
 	tsi.Mark = true
 	return tsi, ok
-}
-
-// Create a unique string signature for attributes values sorted by attribute keys.
-func getAttributesSignature(m pcommon.Map) AttributeHash {
-	// TODO(#38621): Investigate whether we should treat empty labels differently.
-	clearedMap := pcommon.NewMap()
-	for k, attrValue := range m.All() {
-		value := attrValue.Str()
-		if value != "" {
-			clearedMap.PutStr(k, value)
-		}
-	}
-	return pdatautil.MapHash(clearedMap)
 }
 
 // Remove timeseries that have aged out.

@@ -299,6 +299,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected = map[string]any{
 		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())

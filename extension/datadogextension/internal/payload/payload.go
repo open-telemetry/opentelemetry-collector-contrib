@@ -79,8 +79,8 @@ func (p *OtelCollectorPayload) SplitPayload(_ int) ([]marshaler.AbstractMarshale
 	return nil, errors.New(payloadSplitErr)
 }
 
-// PrepareOtelCollectorPayload takes metadata from various config values and prepares an OtelCollector payload
-func PrepareOtelCollectorPayload(
+// PrepareOtelCollectorMetadata takes metadata from various config values and prepares an OtelCollector payload
+func PrepareOtelCollectorMetadata(
 	hostname,
 	hostnameSource,
 	extensionUUID,

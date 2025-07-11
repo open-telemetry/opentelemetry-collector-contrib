@@ -41,7 +41,7 @@ func newUAATokenProvider(logger *zap.Logger, config LimitedClientConfig, usernam
 		client:         client,
 		username:       username,
 		password:       password,
-		tlsSkipVerify:  config.TLSSetting.InsecureSkipVerify,
+		tlsSkipVerify:  config.TLS.InsecureSkipVerify,
 		cachedToken:    "",
 		expirationTime: nil,
 		mutex:          &sync.Mutex{},

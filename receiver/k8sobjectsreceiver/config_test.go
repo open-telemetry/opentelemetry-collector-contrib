@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -191,6 +192,61 @@ func TestValidate(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestDeepCopy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		expected *K8sObjectsConfig
+	}{
+		{
+			name: "deep copy",
+			expected: &K8sObjectsConfig{
+				Name:             "pods",
+				Group:            "group",
+				Namespaces:       []string{"default"},
+				Mode:             PullMode,
+				FieldSelector:    "status.phase=Running",
+				LabelSelector:    "environment in (production),tier in (frontend)",
+				Interval:         time.Hour,
+				ResourceVersion:  "1",
+				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
+				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
+				gvr: &schema.GroupVersionResource{
+					Group:    "group",
+					Version:  "v1",
+					Resource: "pods",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.expected.DeepCopy()
+			shallowCopy := tt.expected
+
+			// Change all of the fields in the deep copy
+			actual.Name = "changed"
+			actual.Group = "changed"
+			actual.Namespaces[0] = "changed"
+			actual.Mode = WatchMode
+			actual.FieldSelector = "changed"
+			actual.LabelSelector = "changed"
+			actual.Interval = time.Minute
+			actual.ResourceVersion = "changed"
+			actual.ExcludeWatchType[0] = apiWatch.Deleted
+			actual.exclude[apiWatch.Bookmark] = true
+			actual.gvr.Group = "changed"
+			actual.gvr.Version = "changed"
+			actual.gvr.Resource = "changed"
+
+			// Make sure changing the deep copy didn't change the original value
+			assert.Equal(t, tt.expected, shallowCopy)
 		})
 	}
 }

@@ -1256,6 +1256,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 }
 
 func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
+	t.Skip("flaky test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37096")
 	// Prepare
 	traces0 := ptrace.NewTraces()
 

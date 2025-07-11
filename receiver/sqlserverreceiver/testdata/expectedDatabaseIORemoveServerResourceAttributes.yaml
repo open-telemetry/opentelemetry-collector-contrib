@@ -1,0 +1,1996 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4022272"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: master
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/master.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4096000"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: master
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/master.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.062
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: master
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/master.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.13
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: master
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/master.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "73"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: master
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/master.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "329"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: master
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/master.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: master
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "916480"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: mastlog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/mastlog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "8061952"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: mastlog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/mastlog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.008
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: mastlog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/mastlog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3.302
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: mastlog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/mastlog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "17"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: mastlog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/mastlog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "608"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: mastlog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/mastlog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: model
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10575872"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: modeldev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/model.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "860160"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: modeldev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/model.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.021
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: modeldev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/model.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.016
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: modeldev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/model.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "53"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: modeldev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/model.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "80"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: modeldev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/model.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: model
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1150464"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: modellog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/modellog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "968704"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: modellog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/modellog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.007
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: modellog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/modellog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.031
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: modellog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/modellog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: modellog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/modellog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "111"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: modellog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/modellog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: msdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "6840320"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBData
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBData.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "991232"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBData
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBData.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.051
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBData
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBData.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.026
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBData
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBData.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "108"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBData
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBData.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "102"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBData
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBData.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: msdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "660992"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBLog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBLog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1019904"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBLog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBLog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.005
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBLog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBLog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.027
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBLog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBLog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBLog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBLog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "117"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: MSDBLog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/MSDBLog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2113536"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "32768"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.009
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "35"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb.mdf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1007616"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: templog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/templog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "180224"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: templog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/templog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: templog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/templog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.004
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: templog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/templog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: templog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/templog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "17"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: LOG
+                    - key: logical_filename
+                      value:
+                        stringValue: templog
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/templog.ldf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev2
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb2.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev2
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb2.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.001
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev2
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb2.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.001
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev2
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb2.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev2
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb2.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev2
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb2.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev3
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb3.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev3
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb3.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev3
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb3.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev3
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb3.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev3
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb3.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev3
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb3.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev4
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb4.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev4
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb4.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.001
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev4
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb4.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev4
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb4.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev4
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb4.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev4
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb4.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev5
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb5.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev5
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb5.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev5
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb5.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev5
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb5.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev5
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb5.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev5
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb5.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev6
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb6.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev6
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb6.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev6
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb6.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev6
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb6.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev6
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb6.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev6
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb6.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev7
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb7.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev7
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb7.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.001
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev7
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb7.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.002
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev7
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb7.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev7
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb7.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev7
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb7.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: tempdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes of I/O on this file.
+            name: sqlserver.database.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "131072"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev8
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb8.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "90112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev8
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb8.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.001
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev8
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb8.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.001
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev8
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb8.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of operations issued on the file.
+            name: sqlserver.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev8
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb8.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: file_type
+                      value:
+                        stringValue: ROWS
+                    - key: logical_filename
+                      value:
+                        stringValue: tempdev8
+                    - key: physical_filename
+                      value:
+                        stringValue: /var/opt/mssql/data/tempdb8.ndf
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

@@ -43,7 +43,9 @@ type Config struct {
 	// LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
 	// https://opensearch.org/docs/latest/im-plugin/index/
 	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
-	LogsIndex string `mapstructure:"logs_index"`
+	LogsIndex           string `mapstructure:"logs_index"`
+	LogsIndexFallback   string `mapstructure:"logs_index_fallback"`
+	LogsIndexTimeFormat string `mapstructure:"logs_index_time_format"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
@@ -51,11 +53,13 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint   = errors.New("endpoint must be specified")
-	errDatasetNoValue     = errors.New("dataset must be specified")
-	errNamespaceNoValue   = errors.New("namespace must be specified")
-	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid = errors.New("mapping.mode is invalid")
+	errConfigNoEndpoint            = errors.New("endpoint must be specified")
+	errDatasetNoValue              = errors.New("dataset must be specified")
+	errNamespaceNoValue            = errors.New("namespace must be specified")
+	errBulkActionInvalid           = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid          = errors.New("mapping.mode is invalid")
+	errLogsIndexInvalidPlaceholder = errors.New("logs_index can only have one attribute or context key placeholder")
+	errLogsIndexTimeFormatInvalid  = errors.New("logs_index_time_format contains unsupported or invalid tokens")
 )
 
 type MappingsSettings struct {
@@ -139,6 +143,32 @@ func (cfg *Config) Validate() error {
 	}
 	if len(cfg.Namespace) == 0 {
 		multiErr = append(multiErr, errNamespaceNoValue)
+	}
+
+	// Validate logs index configuration only contains one placeholder
+	if cfg.LogsIndex != "" {
+		placeholderCount := strings.Count(cfg.LogsIndex, "%{")
+		if placeholderCount > 1 {
+			multiErr = append(multiErr, errLogsIndexInvalidPlaceholder)
+		}
+	}
+
+	// Validate LogsIndexTimeFormat if set
+	if cfg.LogsIndexTimeFormat != "" {
+		validTokens := []string{"yyyy", "yy", "MM", "dd", "HH", "mm", "ss"}
+		format := cfg.LogsIndexTimeFormat
+		remaining := format
+		for _, token := range validTokens {
+			remaining = strings.ReplaceAll(remaining, token, "")
+		}
+		// After removing all valid tokens, only allowed separators should remain
+		allowed := "-._+"
+		for _, r := range remaining {
+			if !strings.ContainsRune(allowed, r) {
+				multiErr = append(multiErr, errLogsIndexTimeFormatInvalid)
+				break
+			}
+		}
 	}
 
 	if cfg.BulkAction != "create" && cfg.BulkAction != "index" {

@@ -366,6 +366,42 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.adhoc.size:
+    enabled: false
+    description: Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.scheduled.size:
+    enabled: false
+    description: Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.completed.size:
+    enabled: false
+    description: Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.server.searchartifacts.incomplete.size:
+    enabled: false
+    description: Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   #`services/server/health/splunkd/details`
   splunk.health:
     enabled: true

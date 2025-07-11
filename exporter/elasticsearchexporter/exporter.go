@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
@@ -44,6 +45,11 @@ type elasticsearchExporter struct {
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize internal telemetry: %w", err)
+	}
+
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	exporter := &elasticsearchExporter{
@@ -54,6 +60,7 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
+		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
 	}
 	for mappingMode := range NumMappingModes {
 		encoder, err := newEncoder(mappingMode)
@@ -505,6 +512,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	// the specified mapping mode.
 	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
 	defer scopeMappingModeSessions.End()
+	dic := pd.ProfilesDictionary()
 
 	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
@@ -526,7 +534,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 					scopeSchemaURL:    sp.SchemaUrl(),
 				}
 				if err := e.pushProfileRecord(
-					ctx, encoder, ec, profile, defaultSession, eventsSession,
+					ctx, encoder, ec, dic, profile, defaultSession, eventsSession,
 					stackTracesSession, stackFramesSession, executablesSession,
 				); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
@@ -557,10 +565,11 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	ctx context.Context,
 	encoder documentEncoder,
 	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
 	profile pprofile.Profile,
 	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
 ) error {
-	return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
+	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
 		case otelserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)

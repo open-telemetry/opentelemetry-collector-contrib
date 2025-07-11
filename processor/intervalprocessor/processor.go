@@ -20,9 +20,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/metrics"
 )
 
-var _ processor.Metrics = (*Processor)(nil)
+var _ processor.Metrics = (*intervalProcessor)(nil)
 
-type Processor struct {
+type intervalProcessor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	logger *zap.Logger
@@ -43,10 +43,10 @@ type Processor struct {
 	nextConsumer consumer.Metrics
 }
 
-func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics) *Processor {
+func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics) *intervalProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &Processor{
+	return &intervalProcessor{
 		ctx:    ctx,
 		cancel: cancel,
 		logger: log,
@@ -68,7 +68,7 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 	}
 }
 
-func (p *Processor) Start(_ context.Context, _ component.Host) error {
+func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
 	exportTicker := time.NewTicker(p.config.Interval)
 	go func() {
 		for {
@@ -85,16 +85,16 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (p *Processor) Shutdown(_ context.Context) error {
+func (p *intervalProcessor) Shutdown(_ context.Context) error {
 	p.cancel()
 	return nil
 }
 
-func (p *Processor) Capabilities() consumer.Capabilities {
+func (p *intervalProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (p *intervalProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
 
 	p.stateLock.Lock()
@@ -201,7 +201,7 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 	}
 }
 
-func (p *Processor) exportMetrics() {
+func (p *intervalProcessor) exportMetrics() {
 	md := func() pmetric.Metrics {
 		p.stateLock.Lock()
 		defer p.stateLock.Unlock()
@@ -228,7 +228,7 @@ func (p *Processor) exportMetrics() {
 	}
 }
 
-func (p *Processor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
+func (p *intervalProcessor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
 	// Find the ResourceMetrics
 	resID := identity.OfResource(rm.Resource())
 	rmClone, ok := p.rmLookup[resID]

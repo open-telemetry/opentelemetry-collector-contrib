@@ -10,10 +10,11 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"html/template"
+	"math"
 	"net"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
@@ -64,13 +65,55 @@ type client interface {
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
-	getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	explainQuery(query string, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
 	client  *sql.DB
 	closeFn func() error
+}
+
+// explainQuery implements client.
+func (c *postgreSQLClient) explainQuery(query string, queryID string, logger *zap.Logger) (string, error) {
+	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
+	var queryBuilder strings.Builder
+	var nulls []string
+	counter := 1
+
+	for _, ch := range query {
+		if ch == '?' {
+			queryBuilder.WriteString(fmt.Sprintf("$%d", counter))
+			counter++
+			nulls = append(nulls, "null")
+		} else {
+			queryBuilder.WriteRune(ch)
+		}
+	}
+
+	preparedQuery := queryBuilder.String()
+
+	//nolint:errcheck
+	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+
+	// if there is no parameter needed, we can not put an empty bracket
+	nullsString := ""
+	if len(nulls) > 0 {
+		nullsString = "(" + strings.Join(nulls, ", ") + ")"
+	}
+	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
+	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, preparedQuery)
+	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
+
+	result, err := wrappedDb.QueryRows(context.Background())
+	if err != nil {
+		logger.Error("failed to explain statement", zap.Error(err))
+		return "", err
+	}
+	return obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -747,18 +790,16 @@ func indexKey(database, schema, table, index string) indexIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
-func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
-	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
-	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
-	// in this query, we should only gather query after 8:15
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit": limit,
+		"limit":                limit,
+		"newestQueryTimestamp": newestQueryTimestamp,
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
@@ -767,7 +808,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, log
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			logger.Error("failed getting log rows", zap.Error(err))
-			return []map[string]any{}, fmt.Errorf("getQuerySamples failed getting log rows: %w", err)
+			return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("getQuerySamples failed getting log rows: %w", err)
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
 		logger.Warn("problems encountered getting log rows", zap.Error(err))
@@ -797,22 +838,32 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, log
 			currentAttributes[dbPrefix+col] = row[col]
 		}
 
-		clientPort := 0
+		clientPort := int64(0)
 		if row["client_port"] != "" {
-			clientPort, err = strconv.Atoi(row["client_port"])
+			clientPort, err = strconv.ParseInt(row["client_port"], 10, 64)
 			if err != nil {
 				logger.Warn("failed to convert client_port to int", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
-		pid := 0
+		pid := int64(0)
 		if row["pid"] != "" {
-			pid, err = strconv.Atoi(row["pid"])
+			pid, err = strconv.ParseInt(row["pid"], 10, 64)
 			if err != nil {
-				logger.Warn("failed to convert pid to int", zap.Error(err))
+				logger.Warn("failed to convert pid to int64", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
+		_queryStartTimestamp := float64(0)
+		if row["_query_start_timestamp"] != "" {
+			_queryStartTimestamp, err = strconv.ParseFloat(row["_query_start_timestamp"], 64)
+			if err != nil {
+				logger.Warn("failed to convert _query_start_timestamp", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		newestQueryTimestamp = math.Max(newestQueryTimestamp, _queryStartTimestamp)
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row["query"])
 		if err != nil {
@@ -829,7 +880,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, log
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
-	return finalAttributes, errors.Join(errs...)
+	return finalAttributes, newestQueryTimestamp, errors.Join(errs...)
 }
 
 func convertMillisecondToSecond(column string, value string, logger *zap.Logger) (any, error) {
@@ -892,7 +943,7 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 	for _, row := range rows {
 		hasConvention := map[string]string{
 			"datname": "db.namespace",
-			"query":   "db.query.text",
+			"query":   QueryTextAttributeName,
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){

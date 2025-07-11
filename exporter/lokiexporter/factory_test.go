@@ -47,7 +47,7 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = ""
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			MinVersion: "invalid",
 		},

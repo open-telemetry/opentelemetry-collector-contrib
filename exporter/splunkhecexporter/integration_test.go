@@ -373,7 +373,7 @@ func TestSplunkHecExporter(t *testing.T) {
 			} else {
 				config.Index = "main"
 			}
-			config.TLSSetting.InsecureSkipVerify = true
+			config.TLS.InsecureSkipVerify = true
 
 			url, err := config.getURL()
 			require.NoError(t, err, "Must not error while getting URL")

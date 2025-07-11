@@ -5,6 +5,8 @@ package prometheusreceiver
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,6 +14,7 @@ import (
 
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -74,7 +77,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
 	assert.Equal(t, 5*time.Second, r0.TargetAllocator.Timeout)
-	assert.Equal(t, "client.crt", r0.TargetAllocator.TLSSetting.CertFile)
+	assert.Equal(t, "client.crt", r0.TargetAllocator.TLS.CertFile)
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -398,4 +401,80 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.Error(t, xconfmap.Validate(cfg))
+}
+
+func TestReloadPromConfigSecretHandling(t *testing.T) {
+	// This test verifies that the Reload() method preserves secrets instead of
+	// corrupting them to "<secret>" placeholders. This is critical for authentication
+	// to work properly when using configurations with basic auth or bearer tokens.
+
+	tests := []struct {
+		name       string
+		configYAML string
+		checkFn    func(t *testing.T, dst *PromConfig)
+	}{
+		{
+			name: "basic auth password preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-basic-auth"
+    basic_auth:
+      username: "testuser"
+      password: "mysecretpassword"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-basic-auth", scrapeConfig.JobName)
+
+				// The critical check: ensure the password is not "<secret>"
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(scrapeConfig.HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "mysecretpassword", password, "password should preserve original value")
+				assert.Equal(t, "testuser", scrapeConfig.HTTPClientConfig.BasicAuth.Username)
+			},
+		},
+		{
+			name: "bearer token preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-bearer-token"
+    authorization:
+      type: "Bearer"
+      credentials: "mySecretBearerToken123"
+    static_configs:
+      - targets: ["localhost:9090"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-bearer-token", scrapeConfig.JobName)
+
+				// Check that bearer token is preserved
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.Authorization, "authorization should be configured")
+				credentials := string(scrapeConfig.HTTPClientConfig.Authorization.Credentials)
+				assert.Equal(t, "mySecretBearerToken123", credentials, "credentials should preserve original value")
+				assert.Equal(t, "Bearer", scrapeConfig.HTTPClientConfig.Authorization.Type)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Load the config using promconfig.Load to simulate real usage
+			initialCfg, err := promconfig.Load(tt.configYAML, slog.New(slog.NewTextHandler(os.Stderr, nil)))
+			require.NoError(t, err)
+
+			// Convert to PromConfig and test the Reload method
+			// The Reload method should preserve secrets and not corrupt them
+			dst := (*PromConfig)(initialCfg)
+			err = dst.Reload()
+			require.NoError(t, err)
+
+			// Verify that secrets are preserved
+			tt.checkFn(t, dst)
+		})
+	}
 }

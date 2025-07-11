@@ -69,6 +69,11 @@ all_set:
       enabled: true
     postgresql.wal.lag:
       enabled: true
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
   resource_attributes:
     postgresql.database.name:
       enabled: true
@@ -148,6 +153,11 @@ none_set:
       enabled: false
     postgresql.wal.lag:
       enabled: false
+  events:
+    db.server.query_sample:
+      enabled: false
+    db.server.top_query:
+      enabled: false
   resource_attributes:
     postgresql.database.name:
       enabled: false
@@ -163,17 +173,25 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     postgresql.index.name:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     postgresql.schema.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     postgresql.table.name:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
@@ -181,15 +199,23 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "postgresql.database.name-val"
+      events_exclude:
+        - strict: "postgresql.database.name-val"
     postgresql.index.name:
       enabled: true
       metrics_exclude:
+        - strict: "postgresql.index.name-val"
+      events_exclude:
         - strict: "postgresql.index.name-val"
     postgresql.schema.name:
       enabled: true
       metrics_exclude:
         - strict: "postgresql.schema.name-val"
+      events_exclude:
+        - strict: "postgresql.schema.name-val"
     postgresql.table.name:
       enabled: true
       metrics_exclude:
+        - strict: "postgresql.table.name-val"
+      events_exclude:
         - strict: "postgresql.table.name-val"

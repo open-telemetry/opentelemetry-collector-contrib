@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverCPUCount                           MetricConfig `mapstructure:"sqlserver.cpu.count"`
 	SqlserverDatabaseBackupOrRestoreRate        MetricConfig `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
 	SqlserverDatabaseExecutionErrors            MetricConfig `mapstructure:"sqlserver.database.execution.errors"`
@@ -88,6 +89,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverCPUCount: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverDatabaseBackupOrRestoreRate: MetricConfig{
 			Enabled: false,
@@ -248,13 +252,17 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for sqlserver events.
 type EventsConfig struct {
-	DbServerTopQuery EventConfig `mapstructure:"db.server.top_query"`
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
 		DbServerTopQuery: EventConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

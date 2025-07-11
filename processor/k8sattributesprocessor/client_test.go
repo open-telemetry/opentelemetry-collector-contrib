@@ -28,6 +28,7 @@ type fakeClient struct {
 	NodeInformer       cache.SharedInformer
 	Namespaces         map[string]*kube.Namespace
 	Nodes              map[string]*kube.Node
+	Deployments        map[string]*kube.Deployment
 	StopCh             chan struct{}
 }
 
@@ -37,7 +38,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet, _ bool, _ time.Duration) (kube.Client, error) {
+func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
@@ -69,6 +70,11 @@ func (f *fakeClient) GetNamespace(namespace string) (*kube.Namespace, bool) {
 func (f *fakeClient) GetNode(nodeName string) (*kube.Node, bool) {
 	node, ok := f.Nodes[nodeName]
 	return node, ok
+}
+
+func (f *fakeClient) GetDeployment(deploymentUID string) (*kube.Deployment, bool) {
+	d, ok := f.Deployments[deploymentUID]
+	return d, ok
 }
 
 // Start is a noop for FakeClient.

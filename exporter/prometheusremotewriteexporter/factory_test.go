@@ -30,7 +30,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	invalidConfig := createDefaultConfig().(*Config)
 	invalidConfig.ClientConfig = confighttp.NewDefaultClientConfig()
 	invalidTLSConfig := createDefaultConfig().(*Config)
-	invalidTLSConfig.ClientConfig.TLSSetting = configtls.ClientConfig{
+	invalidTLSConfig.ClientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "nonexistent file",
 			CertFile: "",

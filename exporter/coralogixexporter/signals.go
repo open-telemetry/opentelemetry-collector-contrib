@@ -120,6 +120,10 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 			signalConfigWrapper.config.Headers = make(map[string]configopaque.String)
 		}
 		signalConfigWrapper.config.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
+
+		for k, v := range signalConfigWrapper.config.Headers {
+			e.metadata.Set(k, string(v))
+		}
 	}
 
 	e.callOptions = []grpc.CallOption{
@@ -129,8 +133,8 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 	return nil
 }
 
-func (e *signalExporter) EnableRateLimit(err error) {
-	e.rateError.enableRateLimit(consumererror.NewPermanent(err))
+func (e *signalExporter) EnableRateLimit() {
+	e.rateError.enableRateLimit()
 }
 
 func (e *signalExporter) canSend() bool {
@@ -150,12 +154,9 @@ func (e *signalExporter) canSend() bool {
 // Send a telemetry data request to the server. "perform" function is expected to make
 // the actual gRPC unary call that sends the request.
 func (e *signalExporter) processError(err error) error {
-	if err == nil {
-		return nil
-	}
-
 	st := status.Convert(err)
 	if st.Code() == codes.OK {
+		e.rateError.errorCount.Store(0)
 		return nil
 	}
 
@@ -164,7 +165,7 @@ func (e *signalExporter) processError(err error) error {
 	shouldRetry, shouldFlagRateLimit := shouldRetry(st.Code(), retryInfo)
 	if !shouldRetry {
 		if shouldFlagRateLimit {
-			e.EnableRateLimit(err)
+			e.EnableRateLimit()
 		}
 		return consumererror.NewPermanent(err)
 	}

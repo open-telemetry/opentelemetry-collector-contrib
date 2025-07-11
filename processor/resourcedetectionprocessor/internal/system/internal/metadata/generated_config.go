@@ -35,10 +35,13 @@ type ResourceAttributesConfig struct {
 	HostCPUStepping    ResourceAttributeConfig `mapstructure:"host.cpu.stepping"`
 	HostCPUVendorID    ResourceAttributeConfig `mapstructure:"host.cpu.vendor.id"`
 	HostID             ResourceAttributeConfig `mapstructure:"host.id"`
+	HostInterface      ResourceAttributeConfig `mapstructure:"host.interface"`
 	HostIP             ResourceAttributeConfig `mapstructure:"host.ip"`
 	HostMac            ResourceAttributeConfig `mapstructure:"host.mac"`
 	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
+	OsBuildID          ResourceAttributeConfig `mapstructure:"os.build.id"`
 	OsDescription      ResourceAttributeConfig `mapstructure:"os.description"`
+	OsName             ResourceAttributeConfig `mapstructure:"os.name"`
 	OsType             ResourceAttributeConfig `mapstructure:"os.type"`
 	OsVersion          ResourceAttributeConfig `mapstructure:"os.version"`
 }
@@ -69,6 +72,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HostID: ResourceAttributeConfig{
 			Enabled: false,
 		},
+		HostInterface: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		HostIP: ResourceAttributeConfig{
 			Enabled: false,
 		},
@@ -78,7 +84,13 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HostName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		OsBuildID: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		OsDescription: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		OsName: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		OsType: ResourceAttributeConfig{

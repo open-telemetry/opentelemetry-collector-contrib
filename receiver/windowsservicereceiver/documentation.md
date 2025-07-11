@@ -25,7 +25,7 @@ Gauge values map to service status as follows: 0 - Failed to retrieve service st
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of the windows Service being reported. | Any Str |
-| startup_mode | Startup mode of Windows Service | Str: ``boot_start``, ``system_start``, ``auto_start``, ``demand_start``, ``disabled`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| name | The name of the windows Service being reported. | Any Str | false |
+| startup_mode | Startup mode of Windows Service | Str: ``boot_start``, ``system_start``, ``auto_start``, ``demand_start``, ``disabled`` | false |

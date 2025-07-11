@@ -84,6 +84,7 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 		)
 	}
 
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 

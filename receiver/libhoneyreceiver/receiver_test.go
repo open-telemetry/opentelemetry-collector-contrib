@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
 func TestNewLibhoneyReceiver(t *testing.T) {
@@ -89,11 +90,12 @@ func TestLibhoneyReceiver_Start(t *testing.T) {
 func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
-		name           string
-		events         []libhoneyevent.LibhoneyEvent
-		contentType    string
-		expectedStatus int
-		wantError      bool
+		name             string
+		events           []libhoneyevent.LibhoneyEvent
+		contentType      string
+		expectedStatus   int
+		expectedResponse []response.ResponseInBatch
+		wantError        bool
 	}{
 		{
 			name: "valid_json_event",
@@ -109,6 +111,9 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 			},
 			contentType:    "application/json",
 			expectedStatus: http.StatusOK,
+			expectedResponse: []response.ResponseInBatch{
+				{Status: http.StatusAccepted},
+			},
 		},
 		{
 			name: "valid_msgpack_event",
@@ -126,11 +131,12 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "invalid_content_type",
-			events:         []libhoneyevent.LibhoneyEvent{},
-			contentType:    "text/plain",
-			expectedStatus: http.StatusUnsupportedMediaType,
-			wantError:      true,
+			name:             "invalid_content_type",
+			events:           []libhoneyevent.LibhoneyEvent{},
+			contentType:      "text/plain",
+			expectedStatus:   http.StatusUnsupportedMediaType,
+			wantError:        true,
+			expectedResponse: nil,
 		},
 	}
 
@@ -168,6 +174,13 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 				assert.Eventually(t, func() bool {
 					return sink.LogRecordCount() > 0
 				}, time.Second, 10*time.Millisecond)
+				assert.Equal(t, tt.contentType, resp.Header.Get("Content-Type"))
+			}
+			if tt.expectedResponse != nil {
+				var actualResponse []response.ResponseInBatch
+				err = json.NewDecoder(resp.Body).Decode(&actualResponse)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedResponse, actualResponse)
 			}
 		})
 	}

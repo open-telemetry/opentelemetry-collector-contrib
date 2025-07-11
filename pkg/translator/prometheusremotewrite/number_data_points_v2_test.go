@@ -10,12 +10,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/value"
+	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
@@ -35,17 +38,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
-				labels := labels.Labels{
-					labels.Label{
-						Name:  labels.MetricName,
-						Value: "test",
-					},
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[uint64]*writev2.TimeSeries{
-					labels.Hash(): {
+					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
 						},
 					},
 				}
@@ -61,17 +66,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
-				labels := labels.Labels{
-					labels.Label{
-						Name:  labels.MetricName,
-						Value: "test",
-					},
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[uint64]*writev2.TimeSeries{
-					labels.Hash(): {
+					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.5},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
 						},
 					},
 				}
@@ -87,17 +94,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
-				labels := labels.Labels{
-					labels.Label{
-						Name:  labels.MetricName,
-						Value: "staleNaN",
-					},
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "staleNaN"},
 				}
 				return map[uint64]*writev2.TimeSeries{
-					labels.Hash(): {
+					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
 							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: math.Float64frombits(value.StaleNaN)},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
 						},
 					},
 				}
@@ -115,7 +124,12 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				SendMetadata:      false,
 			}
 			converter := newPrometheusConverterV2()
-			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name())
+			m := metadata{
+				Type: otelMetricTypeToPromMetricTypeV2(metric),
+				Help: metric.Description(),
+				Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+			}
+			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name(), m)
 			w := tt.want()
 
 			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
@@ -139,17 +153,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		2, ts,
 	)
 	want := func() map[uint64]*writev2.TimeSeries {
-		labels := labels.Labels{
-			labels.Label{
-				Name:  labels.MetricName,
-				Value: "test",
-			},
+		labels := []prompb.Label{
+			{Name: model.MetricNameLabel, Value: "test"},
 		}
 		return map[uint64]*writev2.TimeSeries{
-			labels.Hash(): {
+			timeSeriesSignature(labels): {
 				LabelsRefs: []uint32{1, 2},
 				Samples: []writev2.Sample{
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 2},
+				},
+				Metadata: writev2.Metadata{
+					Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+					HelpRef: 3,
+					UnitRef: 4,
 				},
 			},
 		}
@@ -163,8 +179,19 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	}
 
 	converter := newPrometheusConverterV2()
-	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name())
-	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name())
+	m1 := metadata{
+		Type: otelMetricTypeToPromMetricTypeV2(metric1),
+		Help: metric1.Description(),
+		Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric1.Unit()),
+	}
+	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name(), m1)
+
+	m2 := metadata{
+		Type: otelMetricTypeToPromMetricTypeV2(metric2),
+		Help: metric2.Description(),
+		Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric2.Unit()),
+	}
+	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name(), m2)
 
 	assert.Equal(t, want(), converter.unique)
 }

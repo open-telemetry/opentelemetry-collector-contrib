@@ -57,6 +57,7 @@ func TestConvertToOtel(t *testing.T) {
 			TimeFlowEndNs:   1000000200,
 			SequenceNum:     1,
 			SamplingRate:    1,
+			TcpFlags:        1,
 		},
 	}
 
@@ -86,6 +87,7 @@ func TestConvertToOtel(t *testing.T) {
 	expectedAttributes.PutInt("flow.end", 1000000200)
 	expectedAttributes.PutInt("flow.sampling_rate", 1)
 	expectedAttributes.PutStr("flow.sampler_address", "192.168.1.100")
+	expectedAttributes.PutInt("flow.tcp_flags", 1)
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
 }
@@ -119,6 +121,7 @@ func TestEmptyConvertToOtel(t *testing.T) {
 	expectedAttributes.PutInt("flow.end", 0)
 	expectedAttributes.PutInt("flow.sampling_rate", 0)
 	expectedAttributes.PutStr("flow.sampler_address", "invalid IP")
+	expectedAttributes.PutInt("flow.tcp_flags", 0)
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
 }

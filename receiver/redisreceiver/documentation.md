@@ -86,9 +86,9 @@ System CPU consumed by the Redis server in seconds since server start
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | false |
 
 ### redis.db.avg_ttl
 
@@ -100,9 +100,9 @@ Average keyspace keys TTL
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| db | Redis database identifier | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| db | Redis database identifier | Any Str | false |
 
 ### redis.db.expires
 
@@ -114,9 +114,9 @@ Number of keyspace keys with an expiration
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| db | Redis database identifier | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| db | Redis database identifier | Any Str | false |
 
 ### redis.db.keys
 
@@ -128,9 +128,9 @@ Number of keyspace keys
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| db | Redis database identifier | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| db | Redis database identifier | Any Str | false |
 
 ### redis.keys.evicted
 
@@ -288,9 +288,9 @@ Total number of calls for a command
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| cmd | Redis command name | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cmd | Redis command name | Any Str | false |
 
 ### redis.cmd.latency
 
@@ -302,10 +302,10 @@ Command execution latency
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| cmd | Redis command name | Any Str |
-| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cmd | Redis command name | Any Str | false |
+| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | false |
 
 ### redis.cmd.usec
 
@@ -317,9 +317,9 @@ Total time for all executions of this command
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| cmd | Redis command name | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cmd | Redis command name | Any Str | false |
 
 ### redis.maxmemory
 
@@ -347,9 +347,9 @@ Redis node's role
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| role | Redis node's role | Str: ``replica``, ``primary`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| role | Redis node's role | Str: ``replica``, ``primary`` | false |
 
 ## Resource Attributes
 

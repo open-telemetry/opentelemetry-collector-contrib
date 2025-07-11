@@ -85,3 +85,9 @@ processors:
         statements:
           - set(attributes["datadog.log.source"], "otel")
 ```
+
+### My Collector K8s pod is getting rebooted on startup when I don't manually set a hostname under `exporters::datadog::hostname`
+
+This is due to a bug with underlying hostname detection blocking the `health_check` extension from responding to liveness/readiness probes on startup. To fix, either set `hostname_detection_timeout` to be less than the pod/daemonset `livenessProbe: failureThreshold * periodSeconds` so that the timeout for hostname detection on startup takes less time than the control plane waits before restarting the pod, or leave `hostname_detection_timeout` at the default `25s` value and double-check the `livenessProbe` and `readinessProbe` settings and ensure that the control plane will in fact wait long enough for startup to complete before restarting the pod.
+
+Hostname detection is currently required to initialize the Datadog Exporter, unless a hostname is specified manually under `hostname`.
