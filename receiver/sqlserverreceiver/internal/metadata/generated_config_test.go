@@ -30,6 +30,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchRequestRate:                   MetricConfig{Enabled: true},
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: true},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: true},
+					SqlserverComputerUptime:                     MetricConfig{Enabled: true},
 					SqlserverCPUCount:                           MetricConfig{Enabled: true},
 					SqlserverDatabaseBackupOrRestoreRate:        MetricConfig{Enabled: true},
 					SqlserverDatabaseCount:                      MetricConfig{Enabled: true},
@@ -75,7 +76,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverTransactionLogGrowthCount:          MetricConfig{Enabled: true},
 					SqlserverTransactionLogShrinkCount:          MetricConfig{Enabled: true},
 					SqlserverTransactionLogUsage:                MetricConfig{Enabled: true},
-					SqlserverUptimeComputer:                     MetricConfig{Enabled: true},
 					SqlserverUserConnectionCount:                MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -95,6 +95,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchRequestRate:                   MetricConfig{Enabled: false},
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: false},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: false},
+					SqlserverComputerUptime:                     MetricConfig{Enabled: false},
 					SqlserverCPUCount:                           MetricConfig{Enabled: false},
 					SqlserverDatabaseBackupOrRestoreRate:        MetricConfig{Enabled: false},
 					SqlserverDatabaseCount:                      MetricConfig{Enabled: false},
@@ -140,7 +141,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverTransactionLogGrowthCount:          MetricConfig{Enabled: false},
 					SqlserverTransactionLogShrinkCount:          MetricConfig{Enabled: false},
 					SqlserverTransactionLogUsage:                MetricConfig{Enabled: false},
-					SqlserverUptimeComputer:                     MetricConfig{Enabled: false},
 					SqlserverUserConnectionCount:                MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

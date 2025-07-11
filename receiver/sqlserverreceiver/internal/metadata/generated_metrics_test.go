@@ -81,6 +81,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverComputerUptimeDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordSqlserverCPUCountDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -231,9 +234,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
 
-			allMetricsCount++
-			mb.RecordSqlserverUptimeComputerDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
@@ -303,6 +303,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.computer.uptime":
+					assert.False(t, validatedMetrics["sqlserver.computer.uptime"], "Found a duplicate in the metrics slice: sqlserver.computer.uptime")
+					validatedMetrics["sqlserver.computer.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Computer uptime.", ms.At(i).Description())
+					assert.Equal(t, "{seconds}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "sqlserver.cpu.count":
 					assert.False(t, validatedMetrics["sqlserver.cpu.count"], "Found a duplicate in the metrics slice: sqlserver.cpu.count")
 					validatedMetrics["sqlserver.cpu.count"] = true
@@ -928,18 +940,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Percent of transaction log space used.", ms.At(i).Description())
 					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "sqlserver.uptime.computer":
-					assert.False(t, validatedMetrics["sqlserver.uptime.computer"], "Found a duplicate in the metrics slice: sqlserver.uptime.computer")
-					validatedMetrics["sqlserver.uptime.computer"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Computer uptime.", ms.At(i).Description())
-					assert.Equal(t, "{seconds}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

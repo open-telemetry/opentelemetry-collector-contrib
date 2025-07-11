@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverComputerUptime                     MetricConfig `mapstructure:"sqlserver.computer.uptime"`
 	SqlserverCPUCount                           MetricConfig `mapstructure:"sqlserver.cpu.count"`
 	SqlserverDatabaseBackupOrRestoreRate        MetricConfig `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
@@ -76,7 +77,6 @@ type MetricsConfig struct {
 	SqlserverTransactionLogGrowthCount          MetricConfig `mapstructure:"sqlserver.transaction_log.growth.count"`
 	SqlserverTransactionLogShrinkCount          MetricConfig `mapstructure:"sqlserver.transaction_log.shrink.count"`
 	SqlserverTransactionLogUsage                MetricConfig `mapstructure:"sqlserver.transaction_log.usage"`
-	SqlserverUptimeComputer                     MetricConfig `mapstructure:"sqlserver.uptime.computer"`
 	SqlserverUserConnectionCount                MetricConfig `mapstructure:"sqlserver.user.connection.count"`
 }
 
@@ -90,6 +90,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverComputerUptime: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverCPUCount: MetricConfig{
 			Enabled: false,
@@ -225,9 +228,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverTransactionLogUsage: MetricConfig{
 			Enabled: true,
-		},
-		SqlserverUptimeComputer: MetricConfig{
-			Enabled: false,
 		},
 		SqlserverUserConnectionCount: MetricConfig{
 			Enabled: true,

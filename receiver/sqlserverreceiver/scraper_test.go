@@ -82,7 +82,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
 	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
-	cfg.Metrics.SqlserverUptimeComputer.Enabled = enabled
+	cfg.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
 	// cfg.QuerySample.Enabled = enabled
 }

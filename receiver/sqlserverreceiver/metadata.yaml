@@ -655,7 +655,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-  sqlserver.uptime.computer:
+  sqlserver.computer.uptime:
     enabled: false
     description: Computer uptime.
     unit: "{seconds}"

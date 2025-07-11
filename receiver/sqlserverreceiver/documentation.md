@@ -220,6 +220,14 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.computer.uptime
+
+Computer uptime.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {seconds} | Gauge | Int |
+
 ### sqlserver.cpu.count
 
 Number of CPUs.
@@ -536,14 +544,6 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | “{transactions}/s” | Gauge | Double |
-
-### sqlserver.uptime.computer
-
-Computer uptime.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {seconds} | Gauge | Int |
 
 ## Default Events
 

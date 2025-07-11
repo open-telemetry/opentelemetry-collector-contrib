@@ -7,6 +7,8 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.computer.uptime:
+      enabled: true
     sqlserver.cpu.count:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
@@ -96,8 +98,6 @@ all_set:
     sqlserver.transaction_log.shrink.count:
       enabled: true
     sqlserver.transaction_log.usage:
-      enabled: true
-    sqlserver.uptime.computer:
       enabled: true
     sqlserver.user.connection.count:
       enabled: true
@@ -127,6 +127,8 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.computer.uptime:
+      enabled: false
     sqlserver.cpu.count:
       enabled: false
     sqlserver.database.backup_or_restore.rate:
@@ -216,8 +218,6 @@ none_set:
     sqlserver.transaction_log.shrink.count:
       enabled: false
     sqlserver.transaction_log.usage:
-      enabled: false
-    sqlserver.uptime.computer:
       enabled: false
     sqlserver.user.connection.count:
       enabled: false

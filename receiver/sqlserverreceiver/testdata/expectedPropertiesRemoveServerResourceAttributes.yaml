@@ -9,6 +9,14 @@ resourceMetrics:
             stringValue: ad8fb2b53dce
     scopeMetrics:
       - metrics:
+          - description: Computer uptime.
+            gauge:
+              dataPoints:
+                - asInt: "17394"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.computer.uptime
+            unit: '{seconds}'
           - description: Number of CPUs.
             gauge:
               dataPoints:
@@ -64,14 +72,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: sqlserver.database.count
             unit: '{databases}'
-          - description: Computer uptime.
-            gauge:
-              dataPoints:
-                - asInt: "17394"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.uptime.computer
-            unit: '{seconds}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

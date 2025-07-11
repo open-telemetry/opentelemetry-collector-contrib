@@ -568,7 +568,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
 		errs = append(errs, s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]))
-		errs = append(errs, s.mb.RecordSqlserverUptimeComputerDataPoint(now, row[computerUptime]))
+		errs = append(errs, s.mb.RecordSqlserverComputerUptimeDataPoint(now, row[computerUptime]))
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
