@@ -115,6 +115,10 @@ transform:
     - replace_all_matches(log.attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
     - replace_all_patterns(log.attributes, "value", "/account/\\d{4}", "/account/{accountId}")
     - set(log.body, log.attributes["http.route"])
+  profile_statements:
+    - keep_keys(resource.attributes, ["host.name"])
+    - set(profile.attributes["tag"], "profile#23")
+    - set(profile.original_payload_format, "json")
 ```
 
 In some situations a combination of Paths, functions, or enums is not allowed, and the solution 
@@ -134,7 +138,7 @@ Format:
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements:
+  <trace|metric|log|profile>_statements:
     - context: string
       error_mode: propagate
       conditions: 
