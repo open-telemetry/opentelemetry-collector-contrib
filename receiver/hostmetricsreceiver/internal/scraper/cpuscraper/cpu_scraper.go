@@ -5,16 +5,19 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
@@ -48,11 +51,20 @@ func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *c
 	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
-func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
+type reporterHost interface {
+	componentstatus.Reporter
+}
+
+func (s *cpuScraper) start(ctx context.Context, h component.Host) error {
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
+	smHost, ok := h.(reporterHost)
+	if !ok {
+		return errors.New("the process scraper is not compatible with the provided component.host")
+	}
+	smHost.Report(componentstatus.NewEventWithAttributesSet(componentstatus.StatusOK, attribute.NewSet(attribute.String("otel.subcomponent.id", "cpu_scraper"))))
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
