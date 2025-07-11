@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/elastic/go-docappender/v2"
@@ -244,7 +243,6 @@ func newAsyncBulkIndexer(
 	pool := &asyncBulkIndexer{
 		wg:               sync.WaitGroup{},
 		items:            make(chan docappender.BulkIndexerItem, config.NumWorkers),
-		stats:            bulkIndexerStats{},
 		telemetryBuilder: tb,
 	}
 	pool.wg.Add(numWorkers)
@@ -263,7 +261,6 @@ func newAsyncBulkIndexer(
 			telemetryBuilder:      tb,
 			logger:                logger,
 			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
-			stats:                 &pool.stats,
 		}
 		go func() {
 			defer pool.wg.Done()
@@ -273,14 +270,9 @@ func newAsyncBulkIndexer(
 	return pool, nil
 }
 
-type bulkIndexerStats struct {
-	docsIndexed atomic.Int64
-}
-
 type asyncBulkIndexer struct {
 	items            chan docappender.BulkIndexerItem
 	wg               sync.WaitGroup
-	stats            bulkIndexerStats // TODO (lahsivjar): Replace usage with telemetry builder
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
@@ -346,8 +338,6 @@ type asyncBulkIndexerWorker struct {
 	flushTimeout  time.Duration
 	flushBytes    int
 
-	stats *bulkIndexerStats
-
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
 	telemetryBuilder      *metadata.TelemetryBuilder
@@ -384,8 +374,9 @@ func (w *asyncBulkIndexerWorker) run() {
 }
 
 func (w *asyncBulkIndexerWorker) flush() {
+	// TODO (lahsivjar): Should use proper context else client metadata will not be accessible
 	ctx := context.Background()
-	stat, _ := flushBulkIndexer(
+	flushBulkIndexer(
 		ctx,
 		w.indexer,
 		w.flushTimeout,
@@ -393,8 +384,6 @@ func (w *asyncBulkIndexerWorker) flush() {
 		w.logger,
 		w.failedDocsInputLogger,
 	)
-	// TODO (lahsivjar): Handle docs not indexed due to error
-	w.stats.docsIndexed.Add(stat.Indexed)
 }
 
 func flushBulkIndexer(

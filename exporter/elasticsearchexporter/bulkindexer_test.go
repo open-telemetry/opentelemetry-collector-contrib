@@ -73,9 +73,7 @@ func TestAsyncBulkIndexer_flushOnClose(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	bulkIndexer := runBulkIndexerOnce(t, &cfg, client)
-
-	assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
+	runBulkIndexerOnce(t, &cfg, client)
 }
 
 func TestAsyncBulkIndexer_flush(t *testing.T) {
@@ -118,7 +116,6 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
-			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
 			assert.NoError(t, session.Flush(context.Background()))
 			session.End()
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
@@ -345,7 +342,6 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
-			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
 			if tt.wantMessage != "" {
 				messages := observed.FilterMessage(tt.wantMessage)
 				require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
