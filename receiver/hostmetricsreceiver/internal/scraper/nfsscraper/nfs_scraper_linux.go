@@ -321,7 +321,7 @@ func parseNfsdIoStats(values []uint64) (*nfsdIoStats, error) {
 
 	return &nfsdIoStats{
 		Read:  values[0],
-		Write: values[1],
+		write: values[1],
 	}, nil
 }
 

@@ -176,7 +176,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 
 	ioStats := &nfsdIoStats{
 		Read:  111,
-		Write: 464,
+		write: 464,
 	}
 
 	threadStats := &nfsdThreadStats{
