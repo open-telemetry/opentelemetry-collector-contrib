@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -114,10 +115,10 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 
 	config.QueueSettings = exporterhelper.NewDefaultQueueConfig()
 	config.QueueSettings.Sizer = exporterhelper.RequestSizerTypeItems
-	config.QueueSettings.Batch = &exporterhelper.BatchConfig{
+	config.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 200 * time.Millisecond,
 		MinSize:      8192,
-	}
+	})
 
 	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
