@@ -83,24 +83,24 @@ func mockGetNfsdStats() (*nfsdStats, error) {
 		threads: 16,
 	}
 
-	// Populate NfsdNetStats with sample data
-	netStats := &NfsdNetStats{
+	// Populate nfsdNetStats with sample data
+	netStats := &nfsdNetStats{
 		netCount:           25000,
 		udpCount:           0,
 		tcpCount:           25000,
 		tcpConnectionCount: 128,
 	}
 
-	// Populate NfsdRPCStats with sample data
-	rpcStats := &NfsdRPCStats{
+	// Populate nfsdRPCStats with sample data
+	rpcStats := &nfsdRPCStats{
 		rpcCount:       30000,
-		BadCount:       15,
-		BadFmtCount:    5,
-		BadAuthCount:   5,
-		BadClientCount: 5,
+		badCount:       15,
+		badFmtCount:    5,
+		badAuthCount:   5,
+		badClientCount: 5,
 	}
 
-	// Populate NfsdV3ProcedureStats with a slice of sample callStats
+	// Populate nfsdV3ProcedureStats with a slice of sample callStats
 	v3ProcStats := []callStats{
 		{nfsVersion: 3, nfsCallName: "GETATTR", nfsCallCount: 4500},
 		{nfsVersion: 3, nfsCallName: "SETATTR", nfsCallCount: 800},
@@ -110,13 +110,13 @@ func mockGetNfsdStats() (*nfsdStats, error) {
 		{nfsVersion: 3, nfsCallName: "WRITE", nfsCallCount: 5500},
 	}
 
-	// Populate NfsdV4ProcedureStats with a sample callStats for COMPOUND
+	// Populate nfsdV4ProcedureStats with a sample callStats for COMPOUND
 	// In NFSv4, most operations are wrapped in a single COMPOUND procedure.
 	v4ProcStats := []callStats{
 		{nfsVersion: 4, nfsCallName: "COMPOUND", nfsCallCount: 15000},
 	}
 
-	// Populate NfsdV4OperationStats with a slice of sample callStats for v4 operations
+	// Populate nfsdV4OperationStats with a slice of sample callStats for v4 operations
 	v4OpStats := []callStats{
 		{nfsVersion: 4, nfsCallName: "ACCESS", nfsCallCount: 2800},
 		{nfsVersion: 4, nfsCallName: "GETATTR", nfsCallCount: 3500},
@@ -132,11 +132,11 @@ func mockGetNfsdStats() (*nfsdStats, error) {
 		nfsdFhStats:          fhStats,
 		nfsdIoStats:          ioStats,
 		nfsdThreadStats:      threadStats,
-		NfsdNetStats:         netStats,
-		NfsdRPCStats:         rpcStats,
-		NfsdV3ProcedureStats: v3ProcStats,
-		NfsdV4ProcedureStats: v4ProcStats,
-		NfsdV4OperationStats: v4OpStats,
+		nfsdNetStats:         netStats,
+		nfsdRPCStats:         rpcStats,
+		nfsdV3ProcedureStats: v3ProcStats,
+		nfsdV4ProcedureStats: v4ProcStats,
+		nfsdV4OperationStats: v4OpStats,
 	}
 
 	return stats, nil
@@ -216,31 +216,31 @@ func TestScrape(t *testing.T) {
 
 			assertMetric(t, md, "nfs.server.thread.count", int64(scraper.nfsdStats.nfsdThreadStats.threads), noAttrs)
 
-			assertMetric(t, md, "nfs.server.net.count", int64(scraper.nfsdStats.NfsdNetStats.netCount), noAttrs)
-			assertMetric(t, md, "nfs.server.net.udp.count", int64(scraper.nfsdStats.NfsdNetStats.udpCount), noAttrs)
-			assertMetric(t, md, "nfs.server.net.tcp.count", int64(scraper.nfsdStats.NfsdNetStats.tcpCount), noAttrs)
-			assertMetric(t, md, "nfs.server.net.tcp.connection.count", int64(scraper.nfsdStats.NfsdNetStats.tcpConnectionCount), noAttrs)
+			assertMetric(t, md, "nfs.server.net.count", int64(scraper.nfsdStats.nfsdNetStats.netCount), noAttrs)
+			assertMetric(t, md, "nfs.server.net.udp.count", int64(scraper.nfsdStats.nfsdNetStats.udpCount), noAttrs)
+			assertMetric(t, md, "nfs.server.net.tcp.count", int64(scraper.nfsdStats.nfsdNetStats.tcpCount), noAttrs)
+			assertMetric(t, md, "nfs.server.net.tcp.connection.count", int64(scraper.nfsdStats.nfsdNetStats.tcpConnectionCount), noAttrs)
 
-			assertMetric(t, md, "nfs.server.rpc.count", int64(scraper.nfsdStats.NfsdRPCStats.rpcCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.bad.count", int64(scraper.nfsdStats.NfsdRPCStats.BadCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.badfmt.count", int64(scraper.nfsdStats.NfsdRPCStats.BadFmtCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.badauth.count", int64(scraper.nfsdStats.NfsdRPCStats.BadAuthCount), noAttrs)
-			assertMetric(t, md, "nfs.server.rpc.badclient.count", int64(scraper.nfsdStats.NfsdRPCStats.BadClientCount), noAttrs)
+			assertMetric(t, md, "nfs.server.rpc.count", int64(scraper.nfsdStats.nfsdRPCStats.rpcCount), noAttrs)
+			assertMetric(t, md, "nfs.server.rpc.bad.count", int64(scraper.nfsdStats.nfsdRPCStats.badCount), noAttrs)
+			assertMetric(t, md, "nfs.server.rpc.badfmt.count", int64(scraper.nfsdStats.nfsdRPCStats.badFmtCount), noAttrs)
+			assertMetric(t, md, "nfs.server.rpc.badauth.count", int64(scraper.nfsdStats.nfsdRPCStats.badAuthCount), noAttrs)
+			assertMetric(t, md, "nfs.server.rpc.badclient.count", int64(scraper.nfsdStats.nfsdRPCStats.badClientCount), noAttrs)
 
-			for _, s := range scraper.nfsdStats.NfsdV3ProcedureStats {
+			for _, s := range scraper.nfsdStats.nfsdV3ProcedureStats {
 				attrs := pcommon.NewMap()
 				attrs.PutInt("rpc.onc.version", s.nfsVersion)
 				attrs.PutStr("rpc.onc.procedure.name", s.nfsCallName)
 				assertMetric(t, md, "nfs.server.procedure.count", int64(s.nfsCallCount), attrs)
 			}
 
-			for _, s := range scraper.nfsdStats.NfsdV4ProcedureStats {
+			for _, s := range scraper.nfsdStats.nfsdV4ProcedureStats {
 				attrs := pcommon.NewMap()
 				attrs.PutInt("rpc.onc.version", s.nfsVersion)
 				attrs.PutStr("rpc.onc.procedure.name", s.nfsCallName)
 				assertMetric(t, md, "nfs.server.procedure.count", int64(s.nfsCallCount), attrs)
 			}
-			for _, s := range scraper.nfsdStats.NfsdV4OperationStats {
+			for _, s := range scraper.nfsdStats.nfsdV4OperationStats {
 				attrs := pcommon.NewMap()
 				attrs.PutInt("rpc.onc.version", s.nfsVersion)
 				attrs.PutStr("rpc.nfs.operation.name", s.nfsCallName)

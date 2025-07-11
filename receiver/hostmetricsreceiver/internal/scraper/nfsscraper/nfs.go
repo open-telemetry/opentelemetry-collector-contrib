@@ -51,7 +51,7 @@ type nfsdThreadStats struct {
 }
 
 // nfsd.net.* stats
-type NfsdNetStats struct {
+type nfsdNetStats struct {
 	netCount           uint64
 	udpCount           uint64
 	tcpCount           uint64
@@ -59,12 +59,12 @@ type NfsdNetStats struct {
 }
 
 // nfsd.rpc.* stats
-type NfsdRPCStats struct {
+type nfsdRPCStats struct {
 	rpcCount       uint64
-	BadCount       uint64
-	BadFmtCount    uint64
-	BadAuthCount   uint64
-	BadClientCount uint64
+	badCount       uint64
+	badFmtCount    uint64
+	badAuthCount   uint64
+	badClientCount uint64
 }
 
 // 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
@@ -82,9 +82,9 @@ type nfsdStats struct {
 	nfsdFhStats          *nfsdFhStats
 	nfsdIoStats          *nfsdIoStats
 	nfsdThreadStats      *nfsdThreadStats
-	NfsdNetStats         *NfsdNetStats
-	NfsdRPCStats         *NfsdRPCStats
-	NfsdV3ProcedureStats []callStats
-	NfsdV4ProcedureStats []callStats
-	NfsdV4OperationStats []callStats
+	nfsdNetStats         *nfsdNetStats
+	nfsdRPCStats         *nfsdRPCStats
+	nfsdV3ProcedureStats []callStats
+	nfsdV4ProcedureStats []callStats
+	nfsdV4OperationStats []callStats
 }

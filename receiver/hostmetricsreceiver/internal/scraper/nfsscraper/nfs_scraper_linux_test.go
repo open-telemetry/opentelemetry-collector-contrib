@@ -183,19 +183,19 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		threads: 261,
 	}
 
-	netStats := &NfsdNetStats{
+	netStats := &nfsdNetStats{
 		netCount:           1,
 		udpCount:           43,
 		tcpCount:           26,
 		tcpConnectionCount: 597,
 	}
 
-	rpcStats := &NfsdRPCStats{
+	rpcStats := &nfsdRPCStats{
 		rpcCount:       872,
-		BadCount:       367,
-		BadFmtCount:    960,
-		BadAuthCount:   94,
-		BadClientCount: 748,
+		badCount:       367,
+		badFmtCount:    960,
+		badAuthCount:   94,
+		badClientCount: 748,
 	}
 
 	nfsdV3ProcedureStats := []callStats{
@@ -312,11 +312,11 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		nfsdFhStats:          fhStats,
 		nfsdIoStats:          ioStats,
 		nfsdThreadStats:      threadStats,
-		NfsdNetStats:         netStats,
-		NfsdRPCStats:         rpcStats,
-		NfsdV3ProcedureStats: nfsdV3ProcedureStats,
-		NfsdV4ProcedureStats: nfsdV4ProcedureStats,
-		NfsdV4OperationStats: nfsdV4OperationStats,
+		nfsdNetStats:         netStats,
+		nfsdRPCStats:         rpcStats,
+		nfsdV3ProcedureStats: nfsdV3ProcedureStats,
+		nfsdV4ProcedureStats: nfsdV4ProcedureStats,
+		nfsdV4OperationStats: nfsdV4OperationStats,
 	}
 
 	return stats
@@ -350,7 +350,7 @@ func TestOSScrape(t *testing.T) {
 
 			assert.Equal(t, expectedNfsStats.nfsNetStats.netCount, nfsStats.nfsNetStats.netCount)
 
-			assert.Equal(t, expectedNfsdStats.NfsdNetStats.netCount, nfsdStats.NfsdNetStats.netCount)
+			assert.Equal(t, expectedNfsdStats.nfsdNetStats.netCount, nfsdStats.nfsdNetStats.netCount)
 		})
 	}
 }

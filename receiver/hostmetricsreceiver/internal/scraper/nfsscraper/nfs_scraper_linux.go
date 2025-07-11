@@ -279,12 +279,12 @@ func parseNfsRPCStats(values []uint64) (*nfsRPCStats, error) {
 	}, nil
 }
 
-func parseNfsdNetStats(values []uint64) (*NfsdNetStats, error) {
+func parseNfsdNetStats(values []uint64) (*nfsdNetStats, error) {
 	if len(values) < 4 {
 		return nil, errors.New("parsing nfs server network stats: unexpected field count")
 	}
 
-	return &NfsdNetStats{
+	return &nfsdNetStats{
 		netCount:           values[0],
 		udpCount:           values[1],
 		tcpCount:           values[2],
@@ -335,17 +335,17 @@ func parseNfsdThreadStats(values []uint64) (*nfsdThreadStats, error) {
 	}, nil
 }
 
-func parseNfsdRPCStats(values []uint64) (*NfsdRPCStats, error) {
+func parseNfsdRPCStats(values []uint64) (*nfsdRPCStats, error) {
 	if len(values) < 5 {
 		return nil, errors.New("parsing nfs server RPC stats: unexpected field count")
 	}
 
-	return &NfsdRPCStats{
+	return &nfsdRPCStats{
 		rpcCount:       values[0],
-		BadCount:       values[1],
-		BadFmtCount:    values[2],
-		BadAuthCount:   values[3],
-		BadClientCount: values[4],
+		badCount:       values[1],
+		badFmtCount:    values[2],
+		badAuthCount:   values[3],
+		badClientCount: values[4],
 	}, nil
 }
 
@@ -482,31 +482,31 @@ func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
 		case "net":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdNetStats, err = parseNfsdNetStats(values)
+				nfsdStats.nfsdNetStats, err = parseNfsdNetStats(values)
 				return err
 			}
 		case "rpc":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdRPCStats, err = parseNfsdRPCStats(values)
+				nfsdStats.nfsdRPCStats, err = parseNfsdRPCStats(values)
 				return err
 			}
 		case "proc3":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdV3ProcedureStats, err = parseNfsCallStats(3, nfsdV3Procedures, values)
+				nfsdStats.nfsdV3ProcedureStats, err = parseNfsCallStats(3, nfsdV3Procedures, values)
 				return err
 			}
 		case "proc4":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdV4ProcedureStats, err = parseNfsCallStats(4, nfsdV4Procedures, values)
+				nfsdStats.nfsdV4ProcedureStats, err = parseNfsCallStats(4, nfsdV4Procedures, values)
 				return err
 			}
 		case "proc4ops":
 			parse = func(values []uint64) error {
 				var err error
-				nfsdStats.NfsdV4OperationStats, err = parseNfsCallStats(4, nfsdV4Operations, values)
+				nfsdStats.nfsdV4OperationStats, err = parseNfsCallStats(4, nfsdV4Operations, values)
 				return err
 			}
 		}
