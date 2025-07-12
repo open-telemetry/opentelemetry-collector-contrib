@@ -89,6 +89,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "always"),
 								attribute.String("sampled", "true"),
+								attribute.String("dropped", "false"),
 							),
 							Value: 1,
 						},
@@ -109,6 +110,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("sampled", "true"),
+								attribute.String("dropped", "false"),
 							),
 							Value: 1,
 						},
@@ -286,6 +288,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "unique_id.always"),
 								attribute.String("sampled", "true"),
+								attribute.String("dropped", "false"),
 							),
 							Value: 1,
 						},
@@ -386,6 +389,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("policy", "always"),
 						attribute.String("sampled", "true"),
+						attribute.String("dropped", "false"),
 					),
 					Value: 1,
 				},
