@@ -46,6 +46,13 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(context.Background())
+	defer func() {
+		if t.Failed() {
+			metricBytes, errMarshal := golden.MarshalMetricsYAML(actualMetrics)
+			require.NoError(t, errMarshal)
+			t.Errorf("latest result:\n%s", metricBytes)
+		}
+	}()
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
