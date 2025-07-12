@@ -129,7 +129,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					r.SeverityText(),
 					uint8(r.SeverityNumber()),
 					serviceName,
-					r.Body().Str(),
+					r.Body().AsString(),
 					resURL,
 					resAttrBytes,
 					scopeURL,

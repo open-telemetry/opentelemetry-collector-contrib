@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.129.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.35.1-0.20250703115036-26a1aed9c04b
+	go.opentelemetry.io/collector/pdata v1.35.1-0.20250710172626-1ebb9b20cfa5
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )

@@ -88,8 +88,8 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/pdata v1.35.1-0.20250703115036-26a1aed9c04b h1:19DZJvIuU/eHqiM443bsH8IaL0orpg7szxNqfGlfDfs=
-go.opentelemetry.io/collector/pdata v1.35.1-0.20250703115036-26a1aed9c04b/go.mod h1:pttpb089864qG1k0DMeXLgwwTFLk+o3fAW9I6MF9tzw=
+go.opentelemetry.io/collector/pdata v1.35.1-0.20250710172626-1ebb9b20cfa5 h1:WKzBQEyphfDmlBYdlJ2u4QF94iHZ2Ykt0VTNzt9zteY=
+go.opentelemetry.io/collector/pdata v1.35.1-0.20250710172626-1ebb9b20cfa5/go.mod h1:pttpb089864qG1k0DMeXLgwwTFLk+o3fAW9I6MF9tzw=
 go.opentelemetry.io/otel v1.37.0 h1:9zhNfelUvx0KBfu/gb+ZgeAfAgtWrfHJZcAqFC228wQ=
 go.opentelemetry.io/otel v1.37.0/go.mod h1:ehE/umFRLnuLa/vSccNq9oS1ErUlkkK71gMcN34UG8I=
 go.opentelemetry.io/otel/metric v1.37.0 h1:mvwbQS5m0tbmqML4NqK+e3aDiO02vsf/WgbsdpcPoZE=
