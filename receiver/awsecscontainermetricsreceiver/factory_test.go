@@ -69,3 +69,24 @@ func TestCreateMetricsWithNilConsumer(t *testing.T) {
 	require.Error(t, err, "Nil Consumer")
 	require.Nil(t, metricsReceiver)
 }
+
+func TestCreateMetricsWithIgnoreMissingEndpoint(t *testing.T) {
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "")
+
+	config := createDefaultConfig().(*Config)
+	config.IgnoreMissingEndpoint = true
+
+	metricsReceiver, err := createMetricsReceiver(
+		context.Background(),
+		receivertest.NewNopSettings(metadata.Type),
+		config,
+		consumertest.NewNop(),
+	)
+
+	require.NoError(t, err, "Should not error when ignore_missing_endpoint is true")
+	require.NotNil(t, metricsReceiver, "Should create receiver even without endpoint")
+
+	receiver := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	_, isNoOpClient := receiver.restClient.(*noOpRestClient)
+	require.True(t, isNoOpClient, "REST client should be noOpRestClient when endpoint is missing")
+}

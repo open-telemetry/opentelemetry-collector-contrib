@@ -22,6 +22,8 @@ import (
 const (
 	// Default collection interval. Every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
+	// Default value for IgnoreMissingEndpoint when not specified in config
+	defaultIgnoreMissingEndpoint = false
 )
 
 // NewFactory creates a factory for AWS ECS Container Metrics receiver.
@@ -35,8 +37,15 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		CollectionInterval: defaultCollectionInterval,
+		CollectionInterval:    defaultCollectionInterval,
+		IgnoreMissingEndpoint: defaultIgnoreMissingEndpoint,
 	}
+}
+
+type noOpRestClient struct{}
+
+func (n *noOpRestClient) GetResponse(_ string) ([]byte, error) {
+	return nil, nil
 }
 
 // CreateMetrics creates an AWS ECS Container Metrics receiver.
@@ -46,9 +55,16 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	rCfg := baseCfg.(*Config)
+	logger := params.Logger
+
 	endpoint, err := endpoints.GetTMEV4FromEnv()
 	if err != nil || endpoint == nil {
-		return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)
+		if !rCfg.IgnoreMissingEndpoint {
+			return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)
+		}
+		logger.Warn("ECS metadata endpoint not available, but ignore_missing_endpoint is enabled")
+		return newAWSECSContainermetrics(logger, rCfg, consumer, &noOpRestClient{})
 	}
 	clientSettings := confighttp.ClientConfig{}
 	rest, err := ecsutil.NewRestClient(*endpoint, clientSettings, params.TelemetrySettings)
@@ -56,7 +72,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	rCfg := baseCfg.(*Config)
-	logger := params.Logger
 	return newAWSECSContainermetrics(logger, rCfg, consumer, rest)
 }
