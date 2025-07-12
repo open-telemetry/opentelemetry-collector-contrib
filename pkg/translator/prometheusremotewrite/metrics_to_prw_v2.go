@@ -9,13 +9,13 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
@@ -53,6 +53,8 @@ func newPrometheusConverterV2() *prometheusConverterV2 {
 
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
+	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace}
+	unitNamer := otlptranslator.UnitNamer{}
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -74,11 +76,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),
-					Unit: prometheustranslator.BuildCompliantPrometheusUnit(metric.Unit()),
+					Unit: unitNamer.Build(metric.Unit()),
 				}
 
 				// handle individual metrics based on type

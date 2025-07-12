@@ -16,14 +16,13 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -129,8 +128,9 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	}
 	sort.Stable(ByLabelName(labels))
 
+	namer := otlptranslator.LabelNamer{}
 	for _, label := range labels {
-		finalKey := prometheustranslator.NormalizeLabel(label.Name)
+		finalKey := namer.Build(label.Name)
 		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
 			// Only append to existing value if the new value is different
 			if existingValue != label.Value {
@@ -173,7 +173,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		// internal labels should be maintained
 		name := extras[i]
 		if len(name) <= 4 || name[:2] != "__" || name[len(name)-2:] != "__" {
-			name = prometheustranslator.NormalizeLabel(name)
+			name = namer.Build(name)
 		}
 		l[name] = extras[i+1]
 	}
@@ -304,18 +304,18 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		}
 		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
 			val := hex.EncodeToString(traceID[:])
-			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarTraceIDKey) + utf8.RuneCountInString(val)
+			exemplarRunes += utf8.RuneCountInString(otlptranslator.ExemplarTraceIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
-				Name:  prometheustranslator.ExemplarTraceIDKey,
+				Name:  otlptranslator.ExemplarTraceIDKey,
 				Value: val,
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 		}
 		if spanID := exemplar.SpanID(); !spanID.IsEmpty() {
 			val := hex.EncodeToString(spanID[:])
-			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarSpanIDKey) + utf8.RuneCountInString(val)
+			exemplarRunes += utf8.RuneCountInString(otlptranslator.ExemplarSpanIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
-				Name:  prometheustranslator.ExemplarSpanIDKey,
+				Name:  otlptranslator.ExemplarSpanIDKey,
 				Value: val,
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
@@ -505,7 +505,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		return
 	}
 
-	name := prometheustranslator.TargetInfoMetricName
+	name := otlptranslator.TargetInfoMetricName
 	if len(settings.Namespace) > 0 {
 		name = settings.Namespace + "_" + name
 	}

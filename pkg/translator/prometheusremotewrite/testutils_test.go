@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 var (
@@ -173,7 +172,7 @@ func getExemplar(v float64, t int64) prompb.Exemplar {
 	return prompb.Exemplar{
 		Value:     v,
 		Timestamp: t,
-		Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1)},
+		Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1)},
 	}
 }
 
