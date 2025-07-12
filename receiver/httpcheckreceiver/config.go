@@ -35,7 +35,8 @@ type Config struct {
 type targetConfig struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 	Method                  string   `mapstructure:"method"`
-	Endpoints               []string `mapstructure:"endpoints"` // Field for a list of endpoints
+	Endpoints               []string `mapstructure:"endpoints"`   // Field for a list of endpoints
+	CollectTLS              *bool    `mapstructure:"collect_tls"` // Optional: whether to collect TLS certificate metrics for HTTPS endpoints
 }
 
 // Validate validates an individual targetConfig.
