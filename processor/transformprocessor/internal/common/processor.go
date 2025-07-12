@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -30,8 +31,7 @@ func (r resourceStatements) Context() ContextID {
 }
 
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
+	for _, rspans := range td.ResourceSpans().All() {
 		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
@@ -48,8 +48,7 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 }
 
 func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
+	for _, rmetrics := range md.ResourceMetrics().All() {
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
@@ -66,9 +65,25 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 }
 
 func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
+	for _, rlogs := range ld.ResourceLogs().All() {
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
+		condition, err := r.Eval(ctx, tCtx)
+		if err != nil {
+			return err
+		}
+		if condition {
+			err := r.Execute(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r resourceStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	for _, rprofiles := range ld.ResourceProfiles().All() {
+		tCtx := ottlresource.NewTransformContext(rprofiles.Resource(), rprofiles)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -95,10 +110,8 @@ func (s scopeStatements) Context() ContextID {
 }
 
 func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspans := rspans.ScopeSpans().At(j)
+	for _, rspans := range td.ResourceSpans().All() {
+		for _, sspans := range rspans.ScopeSpans().All() {
 			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
@@ -116,10 +129,8 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 }
 
 func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			smetrics := rmetrics.ScopeMetrics().At(j)
+	for _, rmetrics := range md.ResourceMetrics().All() {
+		for _, smetrics := range rmetrics.ScopeMetrics().All() {
 			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
@@ -137,11 +148,28 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 }
 
 func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
+	for _, rlogs := range ld.ResourceLogs().All() {
+		for _, slogs := range rlogs.ScopeLogs().All() {
 			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
+			condition, err := s.Eval(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			if condition {
+				err := s.Execute(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s scopeStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	for _, rprofiles := range ld.ResourceProfiles().All() {
+		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
+			tCtx := ottlscope.NewTransformContext(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err
@@ -161,6 +189,7 @@ type baseContext interface {
 	TracesConsumer
 	MetricsConsumer
 	LogsConsumer
+	ProfilesConsumer
 }
 
 func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
