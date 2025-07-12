@@ -75,7 +75,7 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseCount.Enabled || cfg.Metrics.SqlserverCPUCount.Enabled {
+	if cfg.Metrics.SqlserverDatabaseCount.Enabled || cfg.Metrics.SqlserverCPUCount.Enabled || cfg.Metrics.SqlserverComputerUptime.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
