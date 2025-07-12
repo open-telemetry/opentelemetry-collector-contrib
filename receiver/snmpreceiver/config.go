@@ -122,19 +122,19 @@ type Config struct {
 
 	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
 	// of resource attribute names along with their resource attribute configurations
-	ResourceAttributes map[string]*ResourceAttributeConfig `mapstructure:"resource_attributes"`
+	ResourceAttributes map[string]*resourceAttributeConfig `mapstructure:"resource_attributes"`
 
 	// Attributes defines what attributes will be used on metrics for this receiver and is composed of
 	// attribute names along with their attribute configurations
-	Attributes map[string]*AttributeConfig `mapstructure:"attributes"`
+	Attributes map[string]*attributeConfig `mapstructure:"attributes"`
 
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
-	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+	Metrics map[string]*metricConfig `mapstructure:"metrics"`
 }
 
-// ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
-type ResourceAttributeConfig struct {
+// resourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
+type resourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
 	// OID is required only if ScalarOID or IndexedValuePrefix is not set.
@@ -157,8 +157,8 @@ type ResourceAttributeConfig struct {
 	_ struct{}
 }
 
-// AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
-type AttributeConfig struct {
+// attributeConfig contains config info about all of the metric attributes that will be used by this receiver.
+type attributeConfig struct {
 	// Value is optional, and will allow for a different attribute key other than the attribute name
 	Value string `mapstructure:"value"`
 	// Description is optional and describes what the attribute represents
@@ -174,25 +174,25 @@ type AttributeConfig struct {
 	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"`
 }
 
-// MetricConfig contains config info about a given metric
-type MetricConfig struct {
+// metricConfig contains config info about a given metric
+type metricConfig struct {
 	// Description is optional and describes what this metric represents
 	Description string `mapstructure:"description"`
 	// Unit is required
 	Unit string `mapstructure:"unit"`
 	// Either Gauge or Sum config is required
-	Gauge *GaugeMetric `mapstructure:"gauge"`
-	Sum   *SumMetric   `mapstructure:"sum"`
+	Gauge *gaugeMetric `mapstructure:"gauge"`
+	Sum   *sumMetric   `mapstructure:"sum"`
 	// Either ScalarOIDs or ColumnOIDs is required.
 	// ScalarOIDs is used if one or more scalar OID values is used for this metric.
 	// ColumnOIDs is used if one or more column OID indexed set of values is used
 	// for this metric.
-	ScalarOIDs []ScalarOID `mapstructure:"scalar_oids"`
-	ColumnOIDs []ColumnOID `mapstructure:"column_oids"`
+	ScalarOIDs []scalarOID `mapstructure:"scalar_oids"`
+	ColumnOIDs []columnOID `mapstructure:"column_oids"`
 }
 
-// GaugeMetric contains info about the value of the gauge metric
-type GaugeMetric struct {
+// gaugeMetric contains info about the value of the gauge metric
+type gaugeMetric struct {
 	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
 
@@ -200,8 +200,8 @@ type GaugeMetric struct {
 	_ struct{}
 }
 
-// SumMetric contains info about the value of the sum metric
-type SumMetric struct {
+// sumMetric contains info about the value of the sum metric
+type sumMetric struct {
 	// Aggregation is required and can be cumulative or delta
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
@@ -213,42 +213,42 @@ type SumMetric struct {
 	_ struct{}
 }
 
-// ScalarOID holds OID info for a scalar metric as well as any {resource} attributes
+// scalarOID holds OID info for a scalar metric as well as any {resource} attributes
 // that are attached to it
-type ScalarOID struct {
+type scalarOID struct {
 	// OID is required and is the scalar OID that is associated with a metric
 	OID string `mapstructure:"oid"`
 	// ResourceAttributes is optional and may contain only scalar OID values to associate this metric with
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is optional and may contain names and values associated with enum
-	// AttributeConfigs to associate with the value of the scalar OID
-	Attributes []Attribute `mapstructure:"attributes"`
+	// attributeConfigs to associate with the value of the scalar OID
+	Attributes []attribute `mapstructure:"attributes"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-// ColumnOID holds OID info for an indexed metric as well as any attributes
+// columnOID holds OID info for an indexed metric as well as any attributes
 // or resource attributes that are attached to it
-type ColumnOID struct {
+type columnOID struct {
 	// OID is required and is the column OID that is associated with a metric
 	OID string `mapstructure:"oid"`
 	// ResourceAttributes is required only if there are no Attributes associated with non enum
-	// AttributeConfigs defined here. Valid values are ResourceAttributeConfig names that will
+	// AttributeConfigs defined here. Valid values are resourceAttributeConfig names that will
 	// be used to differentiate the indexed values for the column OID
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is required only if there are no ResourceAttributes associated defined here.
-	// Valid values are non enum AttributeConfig names that will be used to differentiate the
+	// Valid values are non enum attributeConfig names that will be used to differentiate the
 	// indexed values for the column OID
-	Attributes []Attribute `mapstructure:"attributes"`
+	Attributes []attribute `mapstructure:"attributes"`
 }
 
-// Attribute is a connection between a metric configuration and an AttributeConfig
-type Attribute struct {
-	// Name is required and should match the key for an AttributeConfig
+// attribute is a connection between a metric configuration and an attributeConfig
+type attribute struct {
+	// Name is required and should match the key for an attributeConfig
 	Name string `mapstructure:"name"`
-	// Value is optional and is only needed for a matched AttributeConfig's with enum value.
-	// Value should match one of the AttributeConfig's enum values in this case
+	// Value is optional and is only needed for a matched attributeConfig's with enum value.
+	// Value should match one of the attributeConfig's enum values in this case
 	Value string `mapstructure:"value"`
 }
 
@@ -382,21 +382,21 @@ func validatePrivacy(cfg *Config) error {
 	return combinedErr
 }
 
-// validateMetricConfigs validates all MetricConfigs, AttributeConfigs, and ResourceAttributeConfigs
+// validateMetricConfigs validates all metricConfigs, attributeConfigs, and resourceAttributeConfigs
 func validateMetricConfigs(cfg *Config) error {
 	var combinedErr error
 
-	// Validate the Attribute and ResourceAttribute configs up front
+	// Validate the attribute and ResourceAttribute configs up front
 	combinedErr = errors.Join(combinedErr, validateAttributeConfigs(cfg))
 	combinedErr = errors.Join(combinedErr, validateResourceAttributeConfigs(cfg))
 
-	// Ensure there is at least one MetricConfig
+	// Ensure there is at least one metricConfig
 	metrics := cfg.Metrics
 	if len(metrics) == 0 {
 		return errors.Join(combinedErr, errMetricRequired)
 	}
 
-	// Make sure each MetricConfig has valid info
+	// Make sure each metricConfig has valid info
 	for metricName, metricCfg := range metrics {
 		if metricCfg.Unit == "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMetricNoUnit, metricName))
@@ -430,8 +430,8 @@ func validateMetricConfigs(cfg *Config) error {
 	return combinedErr
 }
 
-// validateColumnOID validates a ColumnOID
-func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) error {
+// validateColumnOID validates a columnOID
+func validateColumnOID(metricName string, columnOID columnOID, cfg *Config) error {
 	var combinedErr error
 
 	// Ensure that it contains an OID
@@ -489,8 +489,8 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 	return combinedErr
 }
 
-// validateScalarOID validates a ScalarOID
-func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) error {
+// validateScalarOID validates a scalarOID
+func validateScalarOID(metricName string, scalarOID scalarOID, cfg *Config) error {
 	var combinedErr error
 
 	// Ensure that it contains an OID
@@ -507,7 +507,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 		}
 
 		// Scalar OID metrics should only have Scalar OID resource attributes
-		// ResourceAttributeConfig validation ensures that (only) one of ScalarOID, OID, or IndexedValuePrefix is set before reaching this
+		// resourceAttributeConfig validation ensures that (only) one of scalarOID, OID, or IndexedValuePrefix is set before reaching this
 		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarMetricHasIndexedResourceAttribute, metricName, name))
 			continue
@@ -544,8 +544,8 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 	return combinedErr
 }
 
-// validateGauge validates a GaugeMetric
-func validateGauge(metricName string, gauge *GaugeMetric) error {
+// validateGauge validates a gaugeMetric
+func validateGauge(metricName string, gauge *gaugeMetric) error {
 	// Ensure valid values for ValueType
 	upperValType := strings.ToUpper(gauge.ValueType)
 	if upperValType != "INT" && upperValType != "DOUBLE" {
@@ -555,8 +555,8 @@ func validateGauge(metricName string, gauge *GaugeMetric) error {
 	return nil
 }
 
-// validateSum validates a SumMetric
-func validateSum(metricName string, sum *SumMetric) error {
+// validateSum validates a sumMetric
+func validateSum(metricName string, sum *sumMetric) error {
 	var combinedErr error
 
 	// Ensure valid values for ValueType
@@ -583,7 +583,7 @@ func validateAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Attribute has either an OID, Enum, or IndexedValuePrefix
+	// Make sure each attribute has either an OID, Enum, or IndexedValuePrefix
 	for attrName, attrCfg := range attributes {
 		if len(attrCfg.Enum) == 0 && attrCfg.OID == "" && attrCfg.IndexedValuePrefix == "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgAttributeConfigNoEnumOIDOrPrefix, attrName))
@@ -602,7 +602,7 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Resource Attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit
+	// Make sure each Resource attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit
 	for attrName, attrCfg := range resourceAttributes {
 		hasOID := attrCfg.OID != ""
 		hasScalarOID := attrCfg.ScalarOID != ""
