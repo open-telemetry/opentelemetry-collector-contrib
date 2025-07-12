@@ -68,7 +68,7 @@ The number of pages in the InnoDB buffer pool.
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc`` | false |
+| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc``, ``total`` | false |
 
 ### mysql.buffer_pool.usage
 
