@@ -530,9 +530,15 @@ func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) 
 }
 
 func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
+		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
+	)
+	c.telemetryBuilder.KafkaBrokerThrottlingLatency.Record(
+		context.Background(),
+		throttleInterval.Seconds(),
 		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
 	)
 }
@@ -542,9 +548,18 @@ func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, re
 	if err != nil {
 		outcome = "failure"
 	}
+	// KafkaReceiverLatency is deprecated in favor of KafkaReceiverReadLatency.
 	c.telemetryBuilder.KafkaReceiverLatency.Record(
 		context.Background(),
 		readWait.Milliseconds()+timeToRead.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+	)
+	c.telemetryBuilder.KafkaReceiverReadLatency.Record(
+		context.Background(),
+		readWait.Seconds()+timeToRead.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
@@ -562,7 +577,13 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
+	// KafkaReceiverMessages is deprecated in favor of KafkaReceiverRecords.
 	c.telemetryBuilder.KafkaReceiverMessages.Add(
+		context.Background(),
+		int64(m.NumRecords),
+		metric.WithAttributes(attrs...),
+	)
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),
@@ -576,6 +597,22 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		context.Background(),
 		int64(m.UncompressedBytes),
 		metric.WithAttributes(attrs...),
+	)
+}
+
+// OnFetchRecordUnbuffered is called when a fetched record is unbuffered and ready to be processed.
+// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookFetchRecordUnbuffered
+func (c *franzConsumer) OnFetchRecordUnbuffered(r *kgo.Record, polled bool) {
+	if !polled {
+		return // Record metrics when polled by `client.PollRecords()`.
+	}
+	c.telemetryBuilder.KafkaReceiverRecordsDelay.Record(
+		context.Background(),
+		time.Since(r.Timestamp).Seconds(),
+		metric.WithAttributes(
+			attribute.String("topic", r.Topic),
+			attribute.Int64("partition", int64(r.Partition)),
+		),
 	)
 }
 
