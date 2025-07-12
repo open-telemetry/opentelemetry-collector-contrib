@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -92,11 +93,12 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    1000,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
-					Batch: &exporterhelper.BatchConfig{
+					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: time.Second,
 						MinSize:      10,
 						MaxSize:      100,
-					},
+						Sizer:        exporterhelper.RequestSizerTypeItems,
+					}),
 				},
 				OtelAttrsToHec: splunk.HecToOtelAttrs{
 					Source:     "mysource",
@@ -242,7 +244,7 @@ func TestConfig_Validate(t *testing.T) {
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {
-				require.EqualError(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			}
 		})
 	}
