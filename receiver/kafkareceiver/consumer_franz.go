@@ -159,6 +159,11 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	}
 	c.obsrecv = obsrecv
 
+	var hooks kgo.Hook = c
+	if c.config.ReportRecordsDelay {
+		hooks = franzConsumerWithOptionalHooks{c}
+	}
+
 	// Create franz-go consumer client
 	client, err := kafka.NewFranzConsumerGroup(ctx,
 		c.config.ClientConfig,
@@ -172,7 +177,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		kgo.OnPartitionsLost(func(ctx context.Context, _ *kgo.Client, m map[string][]int32) {
 			c.lost(ctx, c.client, m, true)
 		}),
-		kgo.WithHooks(c),
+		kgo.WithHooks(hooks),
 	)
 	if err != nil {
 		return err
@@ -600,9 +605,16 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 	)
 }
 
+// franzConsumerWithOptionalHooks wraps franzConsumer
+// so the optional OnFetchRecordUnbuffered can be enabled.
+type franzConsumerWithOptionalHooks struct {
+	*franzConsumer
+}
+
 // OnFetchRecordUnbuffered is called when a fetched record is unbuffered and ready to be processed.
+// Note that this hook may slow down high-volume consuming a bit.
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookFetchRecordUnbuffered
-func (c *franzConsumer) OnFetchRecordUnbuffered(r *kgo.Record, polled bool) {
+func (c franzConsumerWithOptionalHooks) OnFetchRecordUnbuffered(r *kgo.Record, polled bool) {
 	if !polled {
 		return // Record metrics when polled by `client.PollRecords()`.
 	}

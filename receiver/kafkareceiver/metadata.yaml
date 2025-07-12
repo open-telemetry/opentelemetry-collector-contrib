@@ -140,8 +140,11 @@ telemetry:
       attributes: [node_id, topic, partition, outcome]
     kafka_receiver_records_delay:
       enabled: true
+      optional: true
       description: The time in seconds between producing and receiving a batch of records.
       extended_documentation: |
+        Optional, only reported when report_records_delay is enabled in config.
+        Note that this metric may slow down high-volume consuming.
         Only produced when franz-go is enabled.
         This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
       unit: s
