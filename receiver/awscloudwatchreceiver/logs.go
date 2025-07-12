@@ -167,10 +167,18 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (l *logsReceiver) Shutdown(_ context.Context) error {
+func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	l.settings.Logger.Debug("shutting down logs receiver")
 	close(l.doneChan)
 	l.wg.Wait()
+
+	if l.cloudwatchCheckpointPersister != nil {
+		if err := l.cloudwatchCheckpointPersister.Shutdown(ctx); err != nil {
+			l.settings.Logger.Error("failed to close storage client", zap.Error(err))
+			return err
+		}
+	}
+
 	return nil
 }
 
