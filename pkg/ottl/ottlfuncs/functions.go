@@ -104,6 +104,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewToLowerCaseFactory[K](),
 		NewToSnakeCaseFactory[K](),
 		NewToUpperCaseFactory[K](),
+		NewToValuesFactory[K](),
 		NewTruncateTimeFactory[K](),
 		NewTraceIDFactory[K](),
 		NewUnixFactory[K](),
