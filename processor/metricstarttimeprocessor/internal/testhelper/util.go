@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -339,7 +341,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
-			assert.Equal(t, test.Adjusted, adjusted)
+			assert.NoError(t, pmetrictest.CompareMetrics(test.Adjusted, adjusted))
 		})
 	}
 }
