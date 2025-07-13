@@ -2486,6 +2486,12 @@ results in
 
 The `UUID` function generates a v4 uuid string.
 
+### UUIDv7
+
+`UUIDv7()`
+
+The `UUIDv7` function generates a v7 uuid string.
+
 ### Weekday
 
 `Weekday(value)`
