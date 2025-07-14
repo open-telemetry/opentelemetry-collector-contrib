@@ -123,6 +123,7 @@ type oracleScraper struct {
 	logsBuilderConfig          metadata.LogsBuilderConfig
 	metricCache                *lru.Cache[string, map[string]int64]
 	topQueryCollectCfg         TopQueryCollection
+	obfuscator                 *obfuscator
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, hostName string) (scraper.Metrics, error) {
@@ -154,6 +155,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		metricCache:        metricCache,
 		topQueryCollectCfg: topQueryCollectCfg,
 		hostName:           hostName,
+		obfuscator:         newObfuscator(),
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -656,11 +658,11 @@ func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMe
 	var obfuscatedHits []queryMetricCacheHit
 	for _, hit := range hits {
 		// obfuscate and normalize the query text
-		obfuscatedSQL, err := obfuscateSQL(hit.queryText)
+		obfuscatedSQL, err := s.obfuscator.obfuscateSQLString(hit.queryText)
 		if err != nil {
 			s.logger.Error("oracleScraper failed getting metric rows", zap.Error(err))
 		} else {
-			obfuscatedSQLLowerCase := strings.ToLower(obfuscatedSQL.Query)
+			obfuscatedSQLLowerCase := strings.ToLower(obfuscatedSQL)
 			hit.queryText = obfuscatedSQLLowerCase
 			obfuscatedHits = append(obfuscatedHits, hit)
 		}

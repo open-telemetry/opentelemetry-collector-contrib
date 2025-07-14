@@ -280,6 +280,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 				instanceName:         "oracle-instance-sample-1",
 				hostName:             "oracle-host-sample-1",
+				obfuscator:           newObfuscator(),
 			}
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true

@@ -24,7 +24,8 @@ func TestObfuscateSQL(t *testing.T) {
                  WHERE s.salary > 50000
                     AND d.department_name LIKE 'IT%'
                  ORDER BY e.salary DESC;`
-	result, err := obfuscateSQL(origin)
+	obf := newObfuscator()
+	result, err := obf.obfuscateSQLString(origin)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, result.Query)
+	assert.Equal(t, expected, result)
 }
