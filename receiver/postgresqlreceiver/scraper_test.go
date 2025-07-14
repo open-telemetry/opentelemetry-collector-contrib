@@ -413,9 +413,10 @@ func TestScrapeQuerySample(t *testing.T) {
 		Logger: logger,
 	}
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
-		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "state", "query"},
-	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,idle,select * from pg_stat_activity where id = 32"))
+		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query"},
+	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32"))
 	actualLogs, err := scraper.scrapeQuerySamples(context.Background(), 30)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
@@ -534,7 +535,7 @@ func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
 }
 
 // getQuerySamples implements client.
-func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ *zap.Logger) ([]map[string]any, error) {
+func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ float64, _ *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 

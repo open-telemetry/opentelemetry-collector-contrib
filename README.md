@@ -80,13 +80,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 - [Yang Song](https://github.com/songy23), DataDog
 
-For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).
+For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
 
 ### Approvers
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Braydon Kains](https://github.com/braydonk), Google
-- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Christos Markou](https://github.com/ChrsMark), Elastic (On leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
@@ -94,7 +94,7 @@ For more information about the maintainer role, see the [community repository](h
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
-For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).
+For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
 ### Triagers
 
@@ -110,12 +110,12 @@ For more information about the approver role, see the [community repository](htt
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
-For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#triagers).
+For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).
 
 ### Emeritus Maintainers
 
-- [Daniel Jaglowski](https://github.com/djaglowski), Bindplane
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
+- [Daniel Jaglowski](https://github.com/djaglowski)
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
