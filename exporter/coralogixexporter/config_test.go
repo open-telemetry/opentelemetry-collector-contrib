@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -62,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
@@ -75,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
@@ -122,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
@@ -137,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
@@ -334,10 +335,10 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.PrivateKey = "test-key"
 	cfg.AppName = "test-app"
 	cfg.QueueSettings.Enabled = true
-	cfg.QueueSettings.Batch = &exporterhelper.BatchConfig{
+	cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 1 * time.Second,
 		MinSize:      100,
-	}
+	})
 
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {

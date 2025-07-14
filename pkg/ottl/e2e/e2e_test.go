@@ -559,6 +559,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ParseInt("0xAF", 0))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 175)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseInt("12345", 10))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 12345)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseInt("AF", 16))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 175)
+			},
+		},
+		{
 			statement: `set(attributes["test"], Double(1.0))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 1.0)
@@ -1206,6 +1224,14 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 2)
 			},
 		},
+		{
+			statement: `set(attributes["list"], Sort(Keys({"foo": "bar", "baz": "foo"})))`,
+			want: func(tCtx ottllog.TransformContext) {
+				attributes := tCtx.GetLogRecord().Attributes().PutEmptySlice("list")
+				attributes.AppendEmpty().SetStr("baz")
+				attributes.AppendEmpty().SetStr("foo")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1303,6 +1329,34 @@ func Test_e2e_ottl_features(t *testing.T) {
 			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where body == "operationA"`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("json_test", "pass")
+			},
+		},
+		{
+			name:      "where clause with ContainsValue return value",
+			statement: `set(attributes["test"], "pass") where ContainsValue(["hello", "world"], "hello")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause with ContainsValue ints return value",
+			statement: `set(attributes["test"], "pass") where ContainsValue([1, 2, 3, 4], 4)`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause with ContainsValue floats return value",
+			statement: `set(attributes["test"], "pass") where ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      `set attribute when tag "staging" is in tags attributes slice using ContainsValue`,
+			statement: `set(attributes["staging"], "true") where ContainsValue(attributes["foo"]["slice"], "val")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("staging", "true")
 			},
 		},
 		{

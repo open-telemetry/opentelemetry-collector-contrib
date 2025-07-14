@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -34,7 +35,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
-	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
+
+	// We customize the queue/batch settings.
+	assert.NotEqual(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
+
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
 	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
 	assert.Equal(t, ArrowConfig{
@@ -80,7 +84,7 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -91,11 +95,11 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					Keepalive: &configgrpc.KeepaliveClientConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,
-					},
+					}),
 				},
 			},
 		},
@@ -160,7 +164,7 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
@@ -173,7 +177,7 @@ func TestCreateTraces(t *testing.T) {
 			config: Config{
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},

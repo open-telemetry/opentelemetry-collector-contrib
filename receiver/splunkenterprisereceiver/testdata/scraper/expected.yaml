@@ -137,6 +137,24 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.total.size
             unit: By
+          - description: Gauge tracking the number of indexing process cpu seconds per instance
+            gauge:
+              dataPoints:
+                - asDouble: "69.20"
+                  attributes:
+                    - key: splunk.host
+                      value:
+                        stringValue: some-host
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.indexer.cpu.time
+            unit: '{s}'
           - description: The status of a rolling restart.
             gauge:
               dataPoints:
@@ -176,6 +194,42 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: splunk.indexer.throughput
             unit: By/s
+          - description: Gauge tracking the average IOPs used per instance
+            gauge:
+              dataPoints:
+                - asInt: "200400"
+                  attributes:
+                    - key: splunk.host
+                      value:
+                        stringValue: some-host
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.io.avg.iops
+            unit: '{iops}'
+          - description: Gauge tracking the average runtime of scheduled searches
+            gauge:
+              dataPoints:
+                - asDouble: 200.40
+                  attributes:
+                    - key: splunk.host
+                      value:
+                        stringValue: some-host
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.scheduler.avg.run.time
+            unit: '{ms}'
           - description: Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
             gauge:
               dataPoints:

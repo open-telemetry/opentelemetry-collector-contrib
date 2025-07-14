@@ -20,9 +20,15 @@ processors for higher throughput and resiliency. Message payload encoding is con
 
 ## Configuration settings
 
+> [!NOTE]
+> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> `exporter.kafkaexporter.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
+
 There are no required settings.
 
 The following settings can be optionally configured:
+
 - `brokers` (default = localhost:9092): The list of kafka brokers.
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
@@ -54,10 +60,10 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
-    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
+    - `aws_msk`
+      - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEER mechanism
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name

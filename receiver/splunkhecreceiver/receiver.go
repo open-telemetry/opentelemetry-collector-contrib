@@ -106,7 +106,7 @@ func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, er
 	}
 
 	transport := "http"
-	if config.TLSSetting != nil {
+	if config.TLS.HasValue() {
 		transport = "https"
 	}
 

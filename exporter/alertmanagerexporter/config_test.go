@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 						"another":                "somevalue",
 					}
 					client.Endpoint = "a.new.alertmanager.target:9093"
-					client.TLSSetting = configtls.ClientConfig{
+					client.TLS = configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
