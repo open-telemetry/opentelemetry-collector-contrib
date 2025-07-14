@@ -63,6 +63,7 @@ type sqlServerScraperHelper struct {
 	lb                     *metadata.LogsBuilder
 	cache                  *lru.Cache[string, int64]
 	lastExecutionTimestamp time.Time
+	obfuscator             *obfuscator
 }
 
 var (
@@ -91,6 +92,7 @@ func newSQLServerScraper(id component.ID,
 		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
+		obfuscator:             newObfuscator(),
 	}
 }
 
@@ -537,6 +539,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbPendingRecovery = "db_recoveryPending"
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
+	const cpuCount = "cpu_count"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -565,6 +568,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+		errs = append(errs, s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]))
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -696,7 +700,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			obfuscated, err := obfuscateSQL(statement)
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
 				return "", nil
@@ -729,7 +733,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			physicalReadsVal = int64(0)
 		}
 
-		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateXMLPlan(row[columnName]) })
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			return s.obfuscator.obfuscateXMLPlan(row[columnName])
+		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
 		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
@@ -966,7 +972,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.TopQueryCount),
+		sql.Named("top", s.config.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -992,7 +998,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			obfuscated, err := obfuscateSQL(statement)
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
 				return "", nil
