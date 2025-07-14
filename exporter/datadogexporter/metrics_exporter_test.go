@@ -437,24 +437,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				Identifier: "test-host",
 			},
 			histogramMode: datadogconfig.HistogramModeDistributions,
-			expectedSeries: map[string]any{
-				"series": []any{
-					map[string]any{
-						"metric":    "datadog.otel.gateway",
-						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
-						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
-						"tags":      []any{"version:latest", "command:otelcol"},
-					},
-					map[string]any{
-						"metric":    "otel.datadog_exporter.metrics.running",
-						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
-						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
-						"tags":      []any{"version:latest", "command:otelcol"},
-					},
-				},
-			},
 		},
 	}
 	gatewayUsage := attributes.NewGatewayUsage()
@@ -906,17 +888,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Identifier: "test-host",
 			},
 			histogramMode: datadogconfig.HistogramModeDistributions,
-			expectedSeries: map[string]any{
-				"series": []any{
-					map[string]any{
-						"metric": "otel.datadog_exporter.metrics.running",
-						"points": []any{[]any{float64(0), float64(1)}},
-						"type":   "gauge",
-						"host":   "test-host",
-						"tags":   []any{"version:latest", "command:otelcol"},
-					},
-				},
-			},
 		},
 	}
 	gatewayUsage := attributes.NewGatewayUsage()

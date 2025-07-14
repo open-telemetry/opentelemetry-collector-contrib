@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -334,10 +335,10 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.PrivateKey = "test-key"
 	cfg.AppName = "test-app"
 	cfg.QueueSettings.Enabled = true
-	cfg.QueueSettings.Batch = &exporterhelper.BatchConfig{
+	cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 1 * time.Second,
 		MinSize:      100,
-	}
+	})
 
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {
