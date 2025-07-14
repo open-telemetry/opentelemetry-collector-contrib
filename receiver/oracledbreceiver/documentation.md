@@ -279,7 +279,7 @@ Number of logon operations
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
+| {operation} | Sum | Int | Cumulative | true |
 
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
