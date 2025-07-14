@@ -6,6 +6,7 @@ status:
     beta: [logs, metrics, traces]
     development: [profiles]
   distributions: [contrib, k8s]
+  warnings: [Memory consumption, Other]
   codeowners:
     active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark]
     emeritus: [rmfitzpatrick]
