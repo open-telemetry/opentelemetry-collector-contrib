@@ -1736,7 +1736,6 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && f.Content.InfoCacheSize != "" {
-
 			infoCacheSize, err := strconv.ParseInt(f.Content.InfoCacheSize, 10, 64)
 			if err != nil {
 				errs <- err
