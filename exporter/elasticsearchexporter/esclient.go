@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
@@ -129,6 +129,11 @@ func newElasticsearchClient(
 		componentHost:   host,
 	}
 
+	maxRetries := defaultMaxRetries
+	if config.Retry.MaxRetries != 0 {
+		maxRetries = config.Retry.MaxRetries
+	}
+
 	return elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
@@ -145,7 +150,7 @@ func newElasticsearchClient(
 		RetryOnError: func(_ *http.Request, err error) bool {
 			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
 		},
-		MaxRetries:   min(defaultMaxRetries, config.Retry.MaxRetries),
+		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
@@ -168,21 +173,10 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 		return nil
 	}
 
-	expBackoff := backoff.NewExponentialBackOff()
-	if config.InitialInterval > 0 {
-		expBackoff.InitialInterval = config.InitialInterval
-	}
-	if config.MaxInterval > 0 {
-		expBackoff.MaxInterval = config.MaxInterval
-	}
-	expBackoff.Reset()
-
 	return func(attempts int) time.Duration {
-		if attempts == 1 {
-			expBackoff.Reset()
-		}
-
-		return expBackoff.NextBackOff()
+		next := min(config.MaxInterval, config.InitialInterval*(1<<(attempts-1)))
+		nextWithJitter := next/2 + time.Duration(rand.Float64()*float64(next/2))
+		return nextWithJitter
 	}
 }
 
