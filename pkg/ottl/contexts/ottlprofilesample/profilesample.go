@@ -74,7 +74,6 @@ func NewTransformContext(sample pprofile.Sample, dictionary pprofile.ProfilesDic
 	return tc
 }
 
-
 // GetProfileSample returns the profile from the TransformContext.
 func (tCtx TransformContext) GetProfileSample() pprofile.Sample {
 	return tCtx.sample
