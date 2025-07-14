@@ -1,0 +1,17 @@
+# Use one of: 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component that was changed.
+component: googlecloudspannerreceiver
+
+# A brief, user-facing description of the change.
+note: "Allow receiver to automatically discover and scrape all databases in a Spanner instance."
+
+# The issue number(s) this change resolves. You can also use the PR number.
+issues: [36553]
+
+# (Optional) More detailed information for the release notes.
+subtext: |
+  A new `scrape_all_databases` boolean flag can be set at the instance level.
+  When true, the receiver will use the Spanner Admin API to discover all databases,
+  eliminating the need for a static list.
