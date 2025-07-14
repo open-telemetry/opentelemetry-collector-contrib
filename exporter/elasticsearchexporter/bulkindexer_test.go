@@ -360,7 +360,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			defer bulkIndexer.Close(context.Background())
 
 			// Client metadata are not added to the telemetry for async bulk indexer
-			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": []string{"test"}})}
+			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
 			ctx := client.NewContext(context.Background(), info)
 			session := bulkIndexer.StartSession(ctx)
 			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
@@ -544,7 +544,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	require.NoError(t, err)
 	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop())
 
-	info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": []string{"test"}})}
+	info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
 	ctx := client.NewContext(context.Background(), info)
 	session := bi.StartSession(ctx)
 	assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))

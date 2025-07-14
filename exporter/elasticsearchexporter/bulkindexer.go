@@ -390,7 +390,7 @@ func (w *asyncBulkIndexerWorker) flush() {
 		ctx,
 		w.indexer,
 		w.flushTimeout,
-		nil, // async bulk indexer cannot propogate client context/metadata
+		nil, // async bulk indexer cannot propagate client context/metadata
 		w.telemetryBuilder,
 		w.logger,
 		w.failedDocsInputLogger,
