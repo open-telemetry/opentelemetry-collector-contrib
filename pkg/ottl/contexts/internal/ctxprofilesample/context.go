@@ -12,4 +12,5 @@ const (
 
 type Context interface {
 	GetProfileSample() pprofile.Sample
+	GetProfilesDictionary() pprofile.ProfilesDictionary
 }
