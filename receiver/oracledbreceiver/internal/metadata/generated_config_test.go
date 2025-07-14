@@ -70,6 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbUserRollbacks:                         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					HostName:             ResourceAttributeConfig{Enabled: true},
 					OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
 				},
 			},
@@ -121,6 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbUserRollbacks:                         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					HostName:             ResourceAttributeConfig{Enabled: false},
 					OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
 				},
 			},
@@ -145,6 +147,16 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	return cfg
 }
 
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
 func TestResourceAttributesConfig(t *testing.T) {
 	tests := []struct {
 		name string
@@ -157,12 +169,14 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				HostName:             ResourceAttributeConfig{Enabled: true},
 				OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				HostName:             ResourceAttributeConfig{Enabled: false},
 				OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
 			},
 		},
