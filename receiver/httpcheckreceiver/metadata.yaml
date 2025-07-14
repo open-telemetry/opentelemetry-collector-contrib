@@ -65,7 +65,7 @@ metrics:
     attributes: [http.url, error.message]
   httpcheck.tls.cert_remaining:
     description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
-    enabled: true
+    enabled: false
     gauge:
       value_type: int
     unit: "s"

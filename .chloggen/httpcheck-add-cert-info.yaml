@@ -2,5 +2,7 @@ change_type: enhancement
 component: httpcheckreceiver
 note: "Add TLS certificate checking capability for HTTPS endpoints."
 issues: [35968]
-subtext: "The receiver now collects TLS certificate metrics including time remaining until expiry, issuer, common name, and SANs. This can be disabled per target with `collect_tls: false`."
+subtext: |
+  The receiver can collect TLS certificate metrics including time remaining until expiry, issuer, common name, and SANs.
+  If the HttpCheckTLSCertRemaining metric is enabled and the endpoint is HTTPS, it will collect the certificate metrics.
 change_logs: [user]

@@ -26,7 +26,7 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
-For HTTPS endpoints, the receiver will also collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability.
+For HTTPS endpoints, the receiver can collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability. Note that TLS certificate metrics are disabled by default and must be explicitly enabled in the metrics configuration.
 
 ## Configuration
 
@@ -41,9 +41,18 @@ Each target has the following properties:
 - `endpoint` (optional): A single URL to be monitored.
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
-- `collect_tls` (optional, default: `true`): Whether to collect TLS certificate metrics for HTTPS endpoints.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
+
+To enable TLS certificate collection for HTTPS endpoints, configure the metrics section:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.tls.cert_remaining:
+        enabled: true
+```
 
 ### Example Configuration
 
@@ -51,6 +60,10 @@ At least one of `endpoint` or `endpoints` must be specified. Additionally, each 
 receivers:
   httpcheck:
     collection_interval: 30s
+    # Enable TLS certificate monitoring (disabled by default)
+    metrics:
+      httpcheck.tls.cert_remaining:
+        enabled: true
     targets:
       - method: "GET"
         endpoints:
@@ -67,7 +80,6 @@ receivers:
           Authorization: "Bearer <your_bearer_token>"
       - method: "GET"
         endpoint: "https://example.com"
-        collect_tls: false  # Disable TLS certificate collection for this target
 processors:
   batch:
     send_batch_max_size: 1000

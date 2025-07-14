@@ -71,7 +71,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckTLSCertRemainingDataPoint(ts, 1, "http.url-val", "http.tls.issuer-val", "http.tls.cn-val", []any{"http.tls.san-item1", "http.tls.san-item2"})
 

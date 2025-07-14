@@ -58,6 +58,16 @@ Records errors occurring during HTTP check.
 | http.method | HTTP request method | Any Str | false |
 | http.status_class | HTTP response status class | Any Str | false |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
 ### httpcheck.tls.cert_remaining
 
 Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.

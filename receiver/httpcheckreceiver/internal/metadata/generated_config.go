@@ -45,7 +45,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		HttpcheckTLSCertRemaining: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

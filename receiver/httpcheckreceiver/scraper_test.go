@@ -245,6 +245,8 @@ func TestHTTPSWithTLS(t *testing.T) {
 	defer server.Close()
 
 	cfg := createDefaultConfig().(*Config)
+	// Explicitly enable the TLS metric (to test the opt-in behavior)
+	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = true
 	cfg.Targets = []*targetConfig{
 		{
 			ClientConfig: confighttp.ClientConfig{
@@ -297,8 +299,9 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	collectTLS := false
 	cfg := createDefaultConfig().(*Config)
+	// Explicitly disable the TLS metric
+	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = false
 	cfg.Targets = []*targetConfig{
 		{
 			ClientConfig: confighttp.ClientConfig{
@@ -307,7 +310,6 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 					InsecureSkipVerify: true, // Skip verification for test server
 				},
 			},
-			CollectTLS: &collectTLS,
 		},
 	}
 

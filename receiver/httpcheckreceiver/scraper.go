@@ -157,10 +157,8 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			mux.Lock()
 
-			// Check if this is an HTTPS endpoint and extract TLS certificate info
-			// Default to true if CollectTLS is nil
-			collectTLS := h.cfg.Targets[targetIndex].CollectTLS == nil || *h.cfg.Targets[targetIndex].CollectTLS
-			if collectTLS && resp != nil && resp.TLS != nil {
+			// Check if TLS metric is enabled and this is an HTTPS endpoint
+			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
 				// Extract TLS info directly from the HTTP response
 				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
 				if issuer != "" || commonName != "" || len(sans) > 0 {
