@@ -74,15 +74,6 @@ func NewTransformContext(sample pprofile.Sample, dictionary pprofile.ProfilesDic
 	return tc
 }
 
-// WithCache sets the cache for the TransformContext.
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
-	}
-}
 
 // GetProfileSample returns the profile from the TransformContext.
 func (tCtx TransformContext) GetProfileSample() pprofile.Sample {
