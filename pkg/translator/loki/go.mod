@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.129.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.129.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.130.0
 	github.com/prometheus/common v0.65.0
 	github.com/prometheus/prometheus v0.304.3-0.20250703114031-419d436a447a
 	github.com/stretchr/testify v1.10.0
@@ -28,7 +28,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.129.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.130.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect

@@ -6,9 +6,9 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/service/xray v1.31.7
 	github.com/aws/smithy-go v1.22.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.129.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.129.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.130.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.130.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.36.0
 	go.opentelemetry.io/collector/component/componenttest v0.130.0

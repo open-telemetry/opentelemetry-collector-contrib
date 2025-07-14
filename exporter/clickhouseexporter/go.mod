@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.37.2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.129.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.130.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/component v1.36.0
