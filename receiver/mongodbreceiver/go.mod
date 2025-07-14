@@ -11,19 +11,19 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.mongodb.org/mongo-driver/v2 v2.2.2
-	go.opentelemetry.io/collector/component v1.35.1-0.20250710172626-1ebb9b20cfa5
+	go.opentelemetry.io/collector/component v1.35.1-0.20250710221238-9d67bd09d4bc
 	go.opentelemetry.io/collector/component/componenttest v0.129.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/config/confignet v1.35.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/config/configtls v1.35.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/confmap v1.35.1-0.20250710172626-1ebb9b20cfa5
+	go.opentelemetry.io/collector/config/confignet v1.35.1-0.20250710221238-9d67bd09d4bc
+	go.opentelemetry.io/collector/config/configopaque v1.35.1-0.20250710221238-9d67bd09d4bc
+	go.opentelemetry.io/collector/config/configtls v1.35.1-0.20250710221238-9d67bd09d4bc
+	go.opentelemetry.io/collector/confmap v1.35.1-0.20250710221238-9d67bd09d4bc
 	go.opentelemetry.io/collector/confmap/xconfmap v0.129.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/consumer v1.35.1-0.20250710172626-1ebb9b20cfa5
+	go.opentelemetry.io/collector/consumer v1.35.1-0.20250710221238-9d67bd09d4bc
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/featuregate v1.35.1-0.20250710172626-1ebb9b20cfa5
+	go.opentelemetry.io/collector/featuregate v1.35.1-0.20250710221238-9d67bd09d4bc
 	go.opentelemetry.io/collector/filter v0.129.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/pdata v1.35.1-0.20250710172626-1ebb9b20cfa5
-	go.opentelemetry.io/collector/receiver v1.35.1-0.20250710172626-1ebb9b20cfa5
+	go.opentelemetry.io/collector/pdata v1.35.1-0.20250710221238-9d67bd09d4bc
+	go.opentelemetry.io/collector/receiver v1.35.1-0.20250710221238-9d67bd09d4bc
 	go.opentelemetry.io/collector/receiver/receivertest v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/scraper v0.129.1-0.20250710172626-1ebb9b20cfa5
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.129.1-0.20250710172626-1ebb9b20cfa5
