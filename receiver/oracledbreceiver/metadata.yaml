@@ -395,5 +395,5 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{operations}"
+    unit: "{operation}"
 
