@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"sync"
+	"time"
 
 	// Import the Spanner Admin Database API client and protobufs.
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -35,138 +36,162 @@ var metadataYaml []byte
 
 var _ receiver.Metrics = (*googleCloudSpannerReceiver)(nil)
 
+// newReaderFunc is a function type that creates a new database reader.
+// It's defined as a type to make it mockable in tests.
+type newReaderFunc func(ctx context.Context, parsedMetadata []*metadata.MetricsMetadata, databaseID *datasource.DatabaseID, serviceAccountPath string, readerConfig statsreader.ReaderConfig, logger *zap.Logger) (statsreader.CompositeReader, error)
+
+// listDatabasesFunc is a function type for listing databases.
+// It's defined as a type to make it mockable in tests.
+type listDatabasesFunc func(ctx context.Context, projectID, instanceID, serviceAccountKey string) ([]string, error)
+
 type googleCloudSpannerReceiver struct {
-	logger         *zap.Logger
-	config         *Config
-	cancel         context.CancelFunc
-	projectReaders []statsreader.CompositeReader
-	metricsBuilder metadata.MetricsBuilder
-	readerConfig   statsreader.ReaderConfig
-	parsedMetadata []*metadata.MetricsMetadata
+	logger            *zap.Logger
+	config            *Config
+	cancel            context.CancelFunc
+	projectReaders    []*statsreader.ProjectReader // Readers for statically configured instances
+	metricsBuilder    metadata.MetricsBuilder
+	readerConfig      statsreader.ReaderConfig
+	parsedMetadata    []*metadata.MetricsMetadata
+	lastDiscoveryTime time.Time // Tracks the last time a dynamic discovery was performed.
 
 	// mu protects access to the databaseReaders map in dynamic mode.
 	mu sync.Mutex
-	// databaseReaders holds the readers for active databases when in dynamic mode.
+	// databaseReaders holds the readers for dynamically discovered databases.
 	databaseReaders map[string]statsreader.CompositeReader
+
+	// listDatabasesFunc is a function field that can be replaced in tests for mocking.
+	listDatabasesFunc listDatabasesFunc
+	// newDbReaderFunc is a function field that can be replaced in tests for mocking.
+	newDbReaderFunc newReaderFunc
 }
 
 func newGoogleCloudSpannerReceiver(logger *zap.Logger, config *Config) *googleCloudSpannerReceiver {
-	return &googleCloudSpannerReceiver{
+	r := &googleCloudSpannerReceiver{
 		logger:          logger,
 		config:          config,
 		databaseReaders: make(map[string]statsreader.CompositeReader),
 	}
+
+	// In production, these fields will point to the real implementations.
+	r.listDatabasesFunc = r.listDatabasesForInstance
+	r.newDbReaderFunc = func(ctx context.Context, parsedMetadata []*metadata.MetricsMetadata, databaseID *datasource.DatabaseID, serviceAccountPath string, readerConfig statsreader.ReaderConfig, logger *zap.Logger) (statsreader.CompositeReader, error) {
+		return statsreader.NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
+	}
+
+	return r
 }
 
-// Scrape acts as a dispatcher, choosing the scraping method based on the configuration.
 func (r *googleCloudSpannerReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
-	dynamicMode := false
-	for _, project := range r.config.Projects {
-		for _, instance := range project.Instances {
-			if instance.ScrapeAllDatabases {
-				dynamicMode = true
-				break
-			}
-		}
-		if dynamicMode {
-			break
-		}
-	}
-
-	if dynamicMode {
-		// Use the new dynamic discovery method.
-		return r.scrapeDynamic(ctx)
-	}
-
-	// Use the original static method.
-	return r.scrapeStatic(ctx)
-}
-
-// scrapeStatic contains the original scraping logic for statically configured databases.
-func (r *googleCloudSpannerReceiver) scrapeStatic(ctx context.Context) (pmetric.Metrics, error) {
-	var (
-		allMetricsDataPoints []*metadata.MetricsDataPoint
-		err                  error
-	)
-
-	for _, projectReader := range r.projectReaders {
-		dataPoints, readErr := projectReader.Read(ctx)
-		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
-		if readErr != nil {
-			err = multierr.Append(err, readErr)
-		}
-	}
-
-	metrics, buildErr := r.metricsBuilder.Build(allMetricsDataPoints)
-	if buildErr != nil {
-		err = multierr.Append(err, buildErr)
-	}
-
-	if err != nil && metrics.DataPointCount() > 0 {
-		err = scrapererror.NewPartialScrapeError(err, len(multierr.Errors(err)))
-	}
-	return metrics, err
-}
-
-// scrapeDynamic handles scraping for environments with at least one dynamically configured instance.
-func (r *googleCloudSpannerReceiver) scrapeDynamic(ctx context.Context) (pmetric.Metrics, error) {
-	r.logger.Debug("Executing dynamic scrape.")
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	activeReaders := make(map[string]statsreader.CompositeReader)
+	var allMetricsDataPoints []*metadata.MetricsDataPoint
 	var allErrors error
 
-	for _, project := range r.config.Projects {
-		for _, instance := range project.Instances {
-			databaseNames, err := r.getDatabaseNames(ctx, project, instance)
-			if err != nil {
-				allErrors = multierr.Append(allErrors, fmt.Errorf("failed to get database list for instance %s/%s: %w", project.ID, instance.ID, err))
-				continue
-			}
-
-			for _, dbName := range databaseNames {
-				readerKey := fmt.Sprintf("%s/%s/%s", project.ID, instance.ID, dbName)
-
-				if reader, found := r.databaseReaders[readerKey]; found {
-					activeReaders[readerKey] = reader
-					delete(r.databaseReaders, readerKey)
-				} else {
-					r.logger.Info("Discovered new database, creating reader.", zap.String("reader_key", readerKey))
-					dbID := datasource.NewDatabaseID(project.ID, instance.ID, dbName)
-					newReader, err := statsreader.NewDatabaseReader(ctx, r.parsedMetadata, dbID, project.ServiceAccountKey, r.readerConfig, r.logger)
-					if err != nil {
-						allErrors = multierr.Append(allErrors, fmt.Errorf("failed to create reader for %s: %w", readerKey, err))
-						continue
-					}
-					activeReaders[readerKey] = newReader
-				}
-			}
-		}
-	}
-
-	for key, staleReader := range r.databaseReaders {
-		r.logger.Info("Shutting down reader for removed or un-discoverable database.", zap.String("reader_key", key))
-		staleReader.Shutdown()
-	}
-	r.databaseReaders = activeReaders
-
-	var allMetricsDataPoints []*metadata.MetricsDataPoint
-	for key, reader := range r.databaseReaders {
-		dataPoints, readErr := reader.Read(ctx)
+	// 1. Scrape all statically configured instances
+	for _, projectReader := range r.projectReaders {
+		dataPoints, readErr := projectReader.Read(ctx)
 		if readErr != nil {
-			allErrors = multierr.Append(allErrors, fmt.Errorf("error reading from %s: %w", key, readErr))
-			continue
+			allErrors = multierr.Append(allErrors, readErr)
 		}
 		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
 	}
 
+	// 2. Scrape all dynamically configured instances
+	dynamicDataPoints, dynamicErr := r.scrapeDynamicInstances(ctx)
+	if dynamicErr != nil {
+		allErrors = multierr.Append(allErrors, dynamicErr)
+	}
+	allMetricsDataPoints = append(allMetricsDataPoints, dynamicDataPoints...)
+
+	// 3. Build metrics from all collected data points
 	metrics, buildErr := r.metricsBuilder.Build(allMetricsDataPoints)
 	if buildErr != nil {
 		allErrors = multierr.Append(allErrors, buildErr)
 	}
 
+	if allErrors != nil && metrics.DataPointCount() > 0 {
+		allErrors = scrapererror.NewPartialScrapeError(allErrors, len(multierr.Errors(allErrors)))
+	}
+
 	return metrics, allErrors
+}
+
+// scrapeDynamicInstances handles the discovery and scraping for all instances marked for dynamic scraping.
+func (r *googleCloudSpannerReceiver) scrapeDynamicInstances(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Determine if it's time to run a periodic discovery.
+	shouldDiscover := false
+	if r.config.DiscoveryInterval > 0 {
+		if time.Since(r.lastDiscoveryTime) > r.config.DiscoveryInterval {
+			shouldDiscover = true
+		}
+	}
+
+	if shouldDiscover {
+		r.logger.Info("Running periodic database discovery.", zap.Duration("interval", r.config.DiscoveryInterval))
+		r.lastDiscoveryTime = time.Now()
+		var discoveryErrors error
+
+		// Run a full discovery and reconciliation of readers
+		discoveredReaders := make(map[string]bool)
+		for _, project := range r.config.Projects {
+			for _, instance := range project.Instances {
+				if !instance.ScrapeAllDatabases {
+					continue
+				}
+
+				databaseNames, err := r.listDatabasesFunc(ctx, project.ID, instance.ID, project.ServiceAccountKey)
+				if err != nil {
+					discoveryErrors = multierr.Append(discoveryErrors, fmt.Errorf("failed to list databases for instance %s/%s: %w", project.ID, instance.ID, err))
+					continue
+				}
+
+				for _, dbName := range databaseNames {
+					readerKey := fmt.Sprintf("%s/%s/%s", project.ID, instance.ID, dbName)
+					discoveredReaders[readerKey] = true
+					if _, found := r.databaseReaders[readerKey]; !found {
+						r.logger.Info("Discovered new database, creating reader.", zap.String("reader_key", readerKey))
+						dbID := datasource.NewDatabaseID(project.ID, instance.ID, dbName)
+						newReader, err := r.newDbReaderFunc(ctx, r.parsedMetadata, dbID, project.ServiceAccountKey, r.readerConfig, r.logger)
+						if err != nil {
+							discoveryErrors = multierr.Append(discoveryErrors, fmt.Errorf("failed to create reader for %s: %w", readerKey, err))
+							continue
+						}
+						r.databaseReaders[readerKey] = newReader
+					}
+				}
+			}
+		}
+
+		// Shutdown any stale readers that were not found in this discovery cycle.
+		for key, reader := range r.databaseReaders {
+			if !discoveredReaders[key] {
+				r.logger.Info("Shutting down reader for removed database.", zap.String("reader_key", key))
+				reader.Shutdown()
+				delete(r.databaseReaders, key)
+			}
+		}
+
+		if discoveryErrors != nil {
+			r.logger.Error("Errors encountered during database discovery", zap.Error(discoveryErrors))
+		}
+	} else {
+		r.logger.Debug("Skipping periodic database discovery based on interval.")
+	}
+
+	// Read from all currently active dynamic readers
+	var allMetricsDataPoints []*metadata.MetricsDataPoint
+	var readErrors error
+	for key, reader := range r.databaseReaders {
+		dataPoints, err := reader.Read(ctx)
+		if err != nil {
+			readErrors = multierr.Append(readErrors, fmt.Errorf("error reading from %s: %w", key, err))
+			continue
+		}
+		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
+	}
+
+	return allMetricsDataPoints, readErrors
 }
 
 func (r *googleCloudSpannerReceiver) Start(ctx context.Context, _ component.Host) error {
@@ -180,12 +205,12 @@ func (r *googleCloudSpannerReceiver) Start(ctx context.Context, _ component.Host
 }
 
 func (r *googleCloudSpannerReceiver) Shutdown(ctx context.Context) error {
-	// Shutdown readers created in static mode
+	// Shutdown readers created for static mode
 	for _, projectReader := range r.projectReaders {
 		projectReader.Shutdown()
 	}
 
-	// Shutdown readers created in dynamic mode
+	// Shutdown readers created for dynamic mode
 	r.mu.Lock()
 	for _, reader := range r.databaseReaders {
 		reader.Shutdown()
@@ -205,6 +230,7 @@ func (r *googleCloudSpannerReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// initialize now performs the initial discovery for dynamic instances.
 func (r *googleCloudSpannerReceiver) initialize(ctx context.Context) error {
 	var err error
 	r.parsedMetadata, err = metadataparser.ParseMetadataConfig(metadataYaml)
@@ -220,8 +246,14 @@ func (r *googleCloudSpannerReceiver) initialize(ctx context.Context) error {
 		TruncateText:                      r.config.TruncateText,
 	}
 
-	// The original initialization path is preserved for the static configuration case.
-	err = r.initializeProjectReaders(ctx, r.parsedMetadata)
+	// Initialize readers for statically configured instances ONLY.
+	err = r.initializeStaticProjectReaders(ctx, r.parsedMetadata)
+	if err != nil {
+		return err
+	}
+
+	// Perform initial discovery for dynamically configured instances.
+	err = r.initializeDynamicDatabaseReaders(ctx)
 	if err != nil {
 		return err
 	}
@@ -229,19 +261,39 @@ func (r *googleCloudSpannerReceiver) initialize(ctx context.Context) error {
 	return r.initializeMetricsBuilder(r.parsedMetadata)
 }
 
-// getDatabaseNames returns the list of databases for an instance, either from static config or dynamic discovery.
-func (r *googleCloudSpannerReceiver) getDatabaseNames(ctx context.Context, project Project, instance Instance) ([]string, error) {
-	if instance.ScrapeAllDatabases {
-		r.logger.Debug("ScrapeAllDatabases is true; discovering databases.",
-			zap.String("project", project.ID),
-			zap.String("instance", instance.ID))
-		return r.listDatabasesForInstance(ctx, project.ID, instance.ID, project.ServiceAccountKey)
+// initializeDynamicDatabaseReaders performs the first discovery at startup.
+func (r *googleCloudSpannerReceiver) initializeDynamicDatabaseReaders(ctx context.Context) error {
+	r.logger.Info("Performing initial database discovery for dynamic instances.")
+	var allErrors error
+
+	for _, project := range r.config.Projects {
+		for _, instance := range project.Instances {
+			if instance.ScrapeAllDatabases {
+				databaseNames, err := r.listDatabasesFunc(ctx, project.ID, instance.ID, project.ServiceAccountKey)
+				if err != nil {
+					allErrors = multierr.Append(allErrors, fmt.Errorf("failed initial discovery for instance %s/%s: %w", project.ID, instance.ID, err))
+					continue
+				}
+
+				for _, dbName := range databaseNames {
+					readerKey := fmt.Sprintf("%s/%s/%s", project.ID, instance.ID, dbName)
+					r.logger.Info("Initial discovery: creating reader.", zap.String("reader_key", readerKey))
+					dbID := datasource.NewDatabaseID(project.ID, instance.ID, dbName)
+					newReader, err := r.newDbReaderFunc(ctx, r.parsedMetadata, dbID, project.ServiceAccountKey, r.readerConfig, r.logger)
+					if err != nil {
+						allErrors = multierr.Append(allErrors, fmt.Errorf("failed to create initial reader for %s: %w", readerKey, err))
+						continue
+					}
+					r.databaseReaders[readerKey] = newReader
+				}
+			}
+		}
 	}
 
-	r.logger.Debug("Using statically configured database list.",
-		zap.String("project", project.ID),
-		zap.String("instance", instance.ID))
-	return instance.Databases, nil
+	// Set the discovery time so the next discovery respects the interval.
+	r.lastDiscoveryTime = time.Now()
+
+	return allErrors
 }
 
 // listDatabasesForInstance uses the Spanner Database Admin Client to fetch all databases for a given instance.
@@ -283,17 +335,19 @@ func (r *googleCloudSpannerReceiver) listDatabasesForInstance(ctx context.Contex
 	return databaseNames, nil
 }
 
-// ----- Original helper functions preserved for static mode -----
-
-func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Context,
+// initializeStaticProjectReaders creates ProjectReaders ONLY for statically configured instances.
+func (r *googleCloudSpannerReceiver) initializeStaticProjectReaders(ctx context.Context,
 	parsedMetadata []*metadata.MetricsMetadata,
 ) error {
 	for _, project := range r.config.Projects {
-		projectReader, err := newProjectReader(ctx, r.logger, project, parsedMetadata, r.readerConfig)
+		projectReader, err := newStaticProjectReader(ctx, r.logger, project, parsedMetadata, r.readerConfig)
 		if err != nil {
 			return err
 		}
-		r.projectReaders = append(r.projectReaders, projectReader)
+		// newStaticProjectReader will return nil if there are no static instances, so we check.
+		if projectReader != nil {
+			r.projectReaders = append(r.projectReaders, projectReader)
+		}
 	}
 	return nil
 }
@@ -308,8 +362,11 @@ func (r *googleCloudSpannerReceiver) initializeMetricsBuilder(parsedMetadata []*
 	for _, project := range r.config.Projects {
 		instanceAmount += len(project.Instances)
 		for _, instance := range project.Instances {
-			// In static mode, we count configured databases.
-			databaseAmount += len(instance.Databases)
+			// In static mode, we count configured databases for a baseline cardinality limit.
+			// Dynamic instances are not counted here as their number can change.
+			if !instance.ScrapeAllDatabases {
+				databaseAmount += len(instance.Databases)
+			}
 		}
 	}
 
@@ -330,10 +387,12 @@ func (r *googleCloudSpannerReceiver) initializeMetricsBuilder(parsedMetadata []*
 	return nil
 }
 
-func newProjectReader(ctx context.Context, logger *zap.Logger, project Project, parsedMetadata []*metadata.MetricsMetadata,
+// newStaticProjectReader creates a ProjectReader containing readers ONLY for statically configured instances within a project.
+// If a project has no statically configured instances, it returns nil.
+func newStaticProjectReader(ctx context.Context, logger *zap.Logger, project Project, parsedMetadata []*metadata.MetricsMetadata,
 	readerConfig statsreader.ReaderConfig,
 ) (*statsreader.ProjectReader, error) {
-	logger.Debug("Constructing project reader for project", zap.String("project id", project.ID))
+	logger.Debug("Constructing project reader for static instances in project", zap.String("project id", project.ID))
 
 	var databaseReaders []statsreader.CompositeReader
 	for _, instance := range project.Instances {
@@ -353,6 +412,11 @@ func newProjectReader(ctx context.Context, logger *zap.Logger, project Project, 
 				databaseReaders = append(databaseReaders, databaseReader)
 			}
 		}
+	}
+
+	// If no static readers were created for this project, there's nothing to do.
+	if len(databaseReaders) == 0 {
+		return nil, nil
 	}
 
 	return statsreader.NewProjectReader(databaseReaders, logger), nil

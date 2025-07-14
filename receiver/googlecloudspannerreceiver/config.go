@@ -6,6 +6,7 @@ package googlecloudspannerreceiver // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -24,6 +25,9 @@ type Config struct {
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
 	TruncateText                      bool      `mapstructure:"truncate_text"`
+	// DiscoveryInterval determines how often the receiver checks for new or deleted databases for dynamic instances.
+	// If not set, discovery will run only once at startup.
+	DiscoveryInterval time.Duration `mapstructure:"discovery_interval,omitempty"`
 }
 
 type Project struct {
