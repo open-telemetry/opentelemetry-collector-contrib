@@ -52,3 +52,6 @@ jobs:
           gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd'
         env:
           GH_TOKEN: ${{ github.token }}
+        retry:
+          max_attempts: 3
+          delay_seconds: 15
