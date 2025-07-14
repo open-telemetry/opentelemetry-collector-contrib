@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
@@ -26,6 +28,7 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		RetryInterval: 10 * time.Minute,
 		RetryGap:      0,
 		MaxRetries:    0,
@@ -33,28 +36,77 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToTraces(
-	_ context.Context,
+	ctx context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	traces consumer.Traces,
 ) (connector.Traces, error) {
 	return newTracesToTraces(set, cfg, traces)
+	//t, err := newTracesToTraces(set, cfg, traces)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//expSettings := exporter.Settings{
+	//	ID:                set.ID,
+	//	TelemetrySettings: set.TelemetrySettings,
+	//	BuildInfo:         set.BuildInfo,
+	//}
+	//
+	//oCfg := cfg.(*Config)
+	//
+	//return exporterhelper.NewTraces(ctx, expSettings, cfg,
+	//	t.ConsumeTraces,
+	//	exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+	//	exporterhelper.WithQueue(oCfg.QueueSettings),
+	//)
 }
 
 func createMetricsToMetrics(
-	_ context.Context,
+	ctx context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	metrics consumer.Metrics,
 ) (connector.Metrics, error) {
-	return newMetricsToMetrics(set, cfg, metrics)
+	t, err := newMetricsToMetrics(set, cfg, metrics)
+	if err != nil {
+		return nil, err
+	}
+	expSettings := exporter.Settings{
+		ID:                set.ID,
+		TelemetrySettings: set.TelemetrySettings,
+		BuildInfo:         set.BuildInfo,
+	}
+
+	oCfg := cfg.(*Config)
+
+	return exporterhelper.NewMetrics(ctx, expSettings, cfg,
+		t.ConsumeMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+	)
 }
 
 func createLogsToLogs(
-	_ context.Context,
+	ctx context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	logs consumer.Logs,
 ) (connector.Logs, error) {
-	return newLogsToLogs(set, cfg, logs)
+	t, err := newLogsToLogs(set, cfg, logs)
+	if err != nil {
+		return nil, err
+	}
+	expSettings := exporter.Settings{
+		ID:                set.ID,
+		TelemetrySettings: set.TelemetrySettings,
+		BuildInfo:         set.BuildInfo,
+	}
+
+	oCfg := cfg.(*Config)
+
+	return exporterhelper.NewLogs(ctx, expSettings, cfg,
+		t.ConsumeLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+	)
 }

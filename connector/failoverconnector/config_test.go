@@ -4,6 +4,7 @@
 package failoverconnector
 
 import (
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"path/filepath"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				PipelinePriority: [][]pipeline.ID{
 					{
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
@@ -37,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				PipelinePriority: [][]pipeline.ID{
 					{
 						pipeline.NewIDWithName(pipeline.SignalTraces, "first"),
