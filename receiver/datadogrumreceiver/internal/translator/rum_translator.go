@@ -462,3 +462,54 @@ func flattenJSON(payload map[string]any) map[string]any {
     recurse(payload, "")
     return flat
 }
+
+func setAttributes(flatPayload map[string]any, attributes pcommon.Map) {
+    for rumKey, meta := range attributeMetaMap {
+        val, exists := flatPayload[rumKey]
+        if !exists {
+            continue
+        }
+
+        switch meta.Type {
+        case StringAttribute:
+            if s, ok := val.(string); ok {
+                attributes.PutStr(meta.OTLPName, s)
+            }
+        case BoolAttribute:
+            if b, ok := val.(bool); ok {
+                attributes.PutBool(meta.OTLPName, b)
+            }
+        case NumberAttribute:
+            if f, ok := val.(float64); ok {
+                attributes.PutDouble(meta.OTLPName, f)
+            }
+		case IntegerAttribute:
+			if i, ok := val.(int); ok {
+				attributes.PutInt(meta.OTLPName, int64(i))
+			}
+        case ObjectAttribute:
+            if o, ok := val.(map[string]any); ok {
+				objVal := attributes.PutEmptyMap(meta.OTLPName)
+                for k, v := range o {
+                    objVal.PutStr(meta.OTLPName + k, v.(string))
+                }
+            }
+        case ArrayAttribute:
+            if a, ok := val.([]any); ok {
+				arrVal := attributes.PutEmptySlice(meta.OTLPName)
+                for _, v := range a {
+					arrVal.AppendEmpty().SetStr(fmt.Sprintf("%v", v))
+				}
+            }
+        case StringOrArrayAttribute:
+            if s, ok := val.(string); ok {
+                attributes.PutStr(meta.OTLPName, s)
+            } else if a, ok := val.([]any); ok {
+				arrVal := attributes.PutEmptySlice(meta.OTLPName)
+                for _, v := range a {
+					arrVal.AppendEmpty().SetStr(fmt.Sprintf("%v", v))
+				}
+            }
+        }
+    }
+}
