@@ -17,6 +17,7 @@ package opsrampotlpexporter // import "go.opentelemetry.io/collector/exporter/ot
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"net/url"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -111,7 +113,7 @@ type Person struct {
 func getAuthToken(cfg SecuritySettings) (string, error) {
 	if tokenRenewInProgress {
 		for tokenRenewInProgress {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 10)
 		}
 		tokenRenewInProgress = true
 		return credentials.AccessToken, nil
@@ -146,6 +148,10 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(request)
 	if err != nil {
+		if strings.Contains(err.Error(), "x509: certificate signed by unknown authority") || strings.Contains(err.Error(), "TLS handshake timeout") {
+			// If the error is due to an untrusted certificate, we can try to get the token with TLS verification disabled.
+			return getAuthTokenWithTlsDisabled(cfg)
+		}
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -420,4 +426,53 @@ func (e *opsrampOTLPExporter) skipExpired(ld plog.Logs) {
 			})
 		}
 	}
+}
+
+func getAuthTokenWithTlsDisabled(cfg SecuritySettings) (string, error) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				return httpproxy.FromEnvironment().ProxyFunc()(req.URL)
+			},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	form := url.Values{}
+	form.Set("client_id", cfg.ClientID)
+	form.Set("client_secret", cfg.ClientSecret)
+	form.Set("grant_type", "client_credentials")
+
+	req, err := http.NewRequest("POST", cfg.OAuthServiceURL, bytes.NewBufferString(form.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if err := json.Unmarshal(body, &credentials); err != nil {
+		return "", err
+	}
+
+	return credentials.AccessToken, nil
 }
