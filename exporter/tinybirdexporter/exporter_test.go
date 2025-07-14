@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal/metadata"
 )
@@ -45,6 +46,140 @@ func TestNewExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exp := newExporter(tt.config, exportertest.NewNopSettings(metadata.Type))
 			assert.NotNil(t, exp)
+		})
+	}
+}
+
+func TestExportTraces(t *testing.T) {
+	type args struct {
+		traces ptrace.Traces
+		config Config
+	}
+	type want struct {
+		requestQuery   string
+		requestBody    string
+		responseStatus int
+		err            error
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "export without traces",
+			args: args{
+				traces: func() ptrace.Traces {
+					traces := ptrace.NewTraces()
+					rs := traces.ResourceSpans().AppendEmpty()
+					rs.ScopeSpans().AppendEmpty()
+					return traces
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Traces:       SignalConfig{Datasource: "traces_test"},
+					Wait:         false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=traces_test",
+				requestBody:    "",
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+		{
+			name: "export with full trace",
+			args: args{
+				traces: func() ptrace.Traces {
+					traces := ptrace.NewTraces()
+					rs := traces.ResourceSpans().AppendEmpty()
+					rs.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					resource := rs.Resource()
+					resource.Attributes().PutStr("service.name", "test-service")
+					resource.Attributes().PutStr("environment", "production")
+
+					ss := rs.ScopeSpans().AppendEmpty()
+					ss.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					scope := ss.Scope()
+					scope.SetName("test-scope")
+					scope.SetVersion("1.0.0")
+					scope.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
+
+					span := ss.Spans().AppendEmpty()
+					span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+					span.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+					span.SetParentSpanID(pcommon.SpanID([8]byte{9, 10, 11, 12, 13, 14, 15, 16}))
+					span.SetName("test-span")
+					span.SetKind(ptrace.SpanKindServer)
+					span.SetStartTimestamp(pcommon.Timestamp(1719158400000000000)) // 2024-06-23T16:00:00Z
+					span.SetEndTimestamp(pcommon.Timestamp(1719158401000000000))   // 2024-06-23T16:00:01Z
+					span.Status().SetCode(ptrace.StatusCodeOk)
+					span.Status().SetMessage("success")
+					span.Attributes().PutStr("http.method", "GET")
+					span.Attributes().PutStr("http.url", "/api/users")
+					span.Attributes().PutStr("user.id", "12345")
+
+					// Add span event
+					event := span.Events().AppendEmpty()
+					event.SetName("exception")
+					event.SetTimestamp(pcommon.Timestamp(1719158400500000000)) // 2024-06-23T16:00:00.5Z
+					event.Attributes().PutStr("exception.type", "RuntimeException")
+					event.Attributes().PutStr("exception.message", "Something went wrong")
+
+					// Add span link
+					link := span.Links().AppendEmpty()
+					link.SetTraceID(pcommon.TraceID([16]byte{17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}))
+					link.SetSpanID(pcommon.SpanID([8]byte{17, 18, 19, 20, 21, 22, 23, 24}))
+					link.TraceState().FromRaw("sampled=true")
+					link.Attributes().PutStr("link.type", "child")
+
+					return traces
+				}(),
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Traces:       SignalConfig{Datasource: "traces_test"},
+					Wait:         false,
+				},
+			},
+			want: want{
+				requestQuery:   "name=traces_test",
+				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_name":"test-scope","scope_version":"1.0.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","parent_span_id":"090a0b0c0d0e0f10","trace_state":"","trace_flags":0,"span_name":"test-span","span_kind":"Server","span_attributes":{"http.method":"GET","http.url":"/api/users","user.id":"12345"},"start_time":"2024-06-23T16:00:00Z","end_time":"2024-06-23T16:00:01Z","duration":1000000000,"status_code":"Ok","status_message":"success","events_timestamp":["2024-06-23T16:00:00.5Z"],"events_name":["exception"],"events_attributes":[{"exception.type":"RuntimeException","exception.message":"Something went wrong"}],"links_trace_id":["1112131415161718191a1b1c1d1e1f20"],"links_span_id":["1112131415161718"],"links_trace_state":["sampled=true"],"links_attributes":[{"link.type":"child"}]}`,
+				responseStatus: http.StatusOK,
+				err:            nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "POST", r.Method)
+				assert.Equal(t, "/v0/events", r.URL.Path)
+				assert.Equal(t, tt.want.requestQuery, r.URL.RawQuery)
+				assert.Equal(t, "application/x-ndjson", r.Header.Get("Content-Type"))
+				assert.Equal(t, "Bearer "+string(tt.args.config.Token), r.Header.Get("Authorization"))
+				gotBody, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				assert.JSONEq(t, tt.want.requestBody, string(gotBody))
+
+				w.WriteHeader(tt.want.responseStatus)
+			}))
+			defer server.Close()
+
+			tt.args.config.ClientConfig.Endpoint = server.URL
+
+			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
+			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+
+			err := exp.pushTraces(context.Background(), tt.args.traces)
+			if tt.want.err != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
