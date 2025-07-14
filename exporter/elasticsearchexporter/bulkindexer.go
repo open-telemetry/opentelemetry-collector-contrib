@@ -16,6 +16,7 @@ import (
 
 	"github.com/elastic/go-docappender/v2"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter"
@@ -122,9 +123,10 @@ func newSyncBulkIndexer(
 		flushTimeout:          config.Timeout,
 		flushBytes:            config.Flush.Bytes,
 		retryConfig:           config.Retry,
-		telemetryBuilder:      tb,
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+		telemetryMetadataKeys: config.TelemetryMetadataKeys,
+		telemetryBuilder:      tb,
 	}
 }
 
@@ -135,6 +137,7 @@ type syncBulkIndexer struct {
 	retryConfig           RetrySettings
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
+	telemetryMetadataKeys []string
 	telemetryBuilder      *metadata.TelemetryBuilder
 }
 
@@ -176,7 +179,12 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 	if err != nil {
 		return err
 	}
-	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1)
+	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(
+		ctx, 1,
+		metric.WithAttributeSet(attribute.NewSet(
+			getAttributesFromTelemetryMetadataKeys(ctx, s.s.telemetryMetadataKeys)...),
+		),
+	)
 	// flush bytes should operate on uncompressed length
 	// as Elasticsearch http.max_content_length measures uncompressed length.
 	if s.bi.UncompressedLen() >= s.s.flushBytes {
@@ -198,6 +206,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			ctx,
 			s.bi,
 			s.s.flushTimeout,
+			s.s.telemetryMetadataKeys,
 			s.s.telemetryBuilder,
 			s.s.logger,
 			s.s.failedDocsInputLogger,
@@ -381,6 +390,7 @@ func (w *asyncBulkIndexerWorker) flush() {
 		ctx,
 		w.indexer,
 		w.flushTimeout,
+		nil, // async bulk indexer cannot propogate client context/metadata
 		w.telemetryBuilder,
 		w.logger,
 		w.failedDocsInputLogger,
@@ -391,6 +401,7 @@ func flushBulkIndexer(
 	ctx context.Context,
 	bi *docappender.BulkIndexer,
 	timeout time.Duration,
+	tMetaKeys []string,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 	failedDocsInputLogger *zap.Logger,
@@ -405,11 +416,15 @@ func flushBulkIndexer(
 		defer cancel()
 	}
 	stat, err := bi.Flush(ctx)
+	defaultMetaAttrs := getAttributesFromTelemetryMetadataKeys(ctx, tMetaKeys)
+	defaultAttrsSet := attribute.NewSet(defaultMetaAttrs...)
 	if flushed := bi.BytesFlushed(); flushed > 0 {
-		tb.ElasticsearchFlushedBytes.Add(ctx, int64(flushed))
+		tb.ElasticsearchFlushedBytes.Add(ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet))
 	}
 	if flushed := bi.BytesUncompressedFlushed(); flushed > 0 {
-		tb.ElasticsearchFlushedUncompressedBytes.Add(ctx, int64(flushed))
+		tb.ElasticsearchFlushedUncompressedBytes.Add(
+			ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet),
+		)
 	}
 	if err != nil {
 		logger.Error("bulk indexer flush error", zap.Error(err))
@@ -417,7 +432,7 @@ func flushBulkIndexer(
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "timeout"),
+				append([]attribute.KeyValue{attribute.String("outcome", "timeout")}, defaultMetaAttrs...)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
@@ -433,14 +448,18 @@ func flushBulkIndexer(
 				outcome = "failed_client"
 			}
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				semconv.HTTPResponseStatusCode(bulkFailedErr.StatusCode()),
-				attribute.String("outcome", outcome),
+				append([]attribute.KeyValue{
+					semconv.HTTPResponseStatusCode(bulkFailedErr.StatusCode()),
+					attribute.String("outcome", outcome),
+				}, defaultMetaAttrs...)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "internal_server_error"),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "internal_server_error"),
+				}, defaultMetaAttrs...)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
@@ -451,7 +470,9 @@ func flushBulkIndexer(
 			ctx,
 			int64(1),
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "success"),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "success"),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -488,7 +509,9 @@ func flushBulkIndexer(
 			ctx,
 			stat.Indexed,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "success"),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "success"),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -497,7 +520,9 @@ func flushBulkIndexer(
 			ctx,
 			tooManyReqs,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "too_many"),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "too_many"),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -506,7 +531,9 @@ func flushBulkIndexer(
 			ctx,
 			clientFailed,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "failed_client"),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "failed_client"),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -515,7 +542,9 @@ func flushBulkIndexer(
 			ctx,
 			serverFailed,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "failed_server"),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "failed_server"),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -524,8 +553,10 @@ func flushBulkIndexer(
 			ctx,
 			stat.FailureStoreDocs.Used,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "failure_store"),
-				attribute.String("failure_store", string(docappender.FailureStoreStatusUsed)),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "failure_store"),
+					attribute.String("failure_store", string(docappender.FailureStoreStatusUsed)),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -534,8 +565,10 @@ func flushBulkIndexer(
 			ctx,
 			stat.FailureStoreDocs.Failed,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "failure_store"),
-				attribute.String("failure_store", string(docappender.FailureStoreStatusFailed)),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "failure_store"),
+					attribute.String("failure_store", string(docappender.FailureStoreStatusFailed)),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
@@ -544,15 +577,28 @@ func flushBulkIndexer(
 			ctx,
 			stat.FailureStoreDocs.NotEnabled,
 			metric.WithAttributeSet(attribute.NewSet(
-				attribute.String("outcome", "failure_store"),
-				attribute.String("failure_store", string(docappender.FailureStoreStatusNotEnabled)),
+				append([]attribute.KeyValue{
+					attribute.String("outcome", "failure_store"),
+					attribute.String("failure_store", string(docappender.FailureStoreStatusNotEnabled)),
+				}, defaultMetaAttrs...)...,
 			)),
 		)
 	}
 	if stat.RetriedDocs > 0 {
-		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs)
+		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs, metric.WithAttributeSet(defaultAttrsSet))
 	}
 	return err
+}
+
+func getAttributesFromTelemetryMetadataKeys(ctx context.Context, keys []string) []attribute.KeyValue {
+	clientInfo := client.FromContext(ctx)
+	attrs := make([]attribute.KeyValue, 0, len(keys))
+	for _, k := range keys {
+		if values := clientInfo.Metadata.Get(k); len(values) != 0 {
+			attrs = append(attrs, attribute.StringSlice(k, values))
+		}
+	}
+	return attrs
 }
 
 func getErrorHint(index, errorType string) string {

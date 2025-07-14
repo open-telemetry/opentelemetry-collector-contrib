@@ -17,6 +17,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -335,14 +336,15 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := Config{
-				NumWorkers: 1,
-				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1},
-				Retry:      tt.retrySettings,
+				NumWorkers:            1,
+				Flush:                 FlushSettings{Interval: time.Hour, Bytes: 1},
+				Retry:                 tt.retrySettings,
+				TelemetryMetadataKeys: []string{"x-test"},
 			}
 			if tt.logFailedDocsInput {
 				cfg.LogFailedDocsInput = true
 			}
-			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 				RoundTripFunc: tt.roundTripFunc,
 			}})
 			require.NoError(t, err)
@@ -353,12 +355,15 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 				metadatatest.NewSettings(ct).TelemetrySettings,
 			)
 			require.NoError(t, err)
-			bulkIndexer, err := newAsyncBulkIndexer(client, &cfg, false, tb, zap.New(core))
+			bulkIndexer, err := newAsyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
 			require.NoError(t, err)
 			defer bulkIndexer.Close(context.Background())
 
-			session := bulkIndexer.StartSession(context.Background())
-			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			// Client metadata are not added to the telemetry for async bulk indexer
+			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": []string{"test"}})}
+			ctx := client.NewContext(context.Background(), info)
+			session := bulkIndexer.StartSession(ctx)
+			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			if tt.wantMessage != "" {
@@ -513,8 +518,12 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 
 func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	var reqCnt atomic.Int64
-	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
-	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+	cfg := Config{
+		NumWorkers:            1,
+		Flush:                 FlushSettings{Interval: time.Hour, Bytes: 1},
+		TelemetryMetadataKeys: []string{"x-test"},
+	}
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 		RoundTripFunc: func(r *http.Request) (*http.Response, error) {
 			if r.URL.Path == "/_bulk" {
 				reqCnt.Add(1)
@@ -533,10 +542,12 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 		metadatatest.NewSettings(ct).TelemetrySettings,
 	)
 	require.NoError(t, err)
-	bi := newSyncBulkIndexer(client, &cfg, false, tb, zap.NewNop())
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop())
 
-	session := bi.StartSession(context.Background())
-	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": []string{"test"}})}
+	ctx := client.NewContext(context.Background(), info)
+	session := bi.StartSession(ctx)
+	assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
 	assert.NoError(t, session.Flush(context.Background()))
 	session.End()
@@ -547,24 +558,41 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			Value: 1, // empty session flush should be a no-op
 			Attributes: attribute.NewSet(
 				attribute.String("outcome", "success"),
+				attribute.StringSlice("x-test", []string{"test"}),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
-		{Value: 1},
+		{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.StringSlice("x-test", []string{"test"}),
+			),
+		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
 		{
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("outcome", "success"),
+				attribute.StringSlice("x-test", []string{"test"}),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
-		{Value: 43}, // hard-coding the flush bytes since the input is fixed
+		{
+			Value: 43, // hard-coding the flush bytes since the input is fixed
+			Attributes: attribute.NewSet(
+				attribute.StringSlice("x-test", []string{"test"}),
+			),
+		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualElasticsearchFlushedUncompressedBytes(t, ct, []metricdata.DataPoint[int64]{
-		{Value: 43}, // hard-coding the flush bytes since the input is fixed
+		{
+			Value: 43, // hard-coding the flush bytes since the input is fixed
+			Attributes: attribute.NewSet(
+				attribute.StringSlice("x-test", []string{"test"}),
+			),
+		},
 	}, metricdatatest.IgnoreTimestamp())
 }

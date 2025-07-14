@@ -101,6 +101,13 @@ type Config struct {
 	// then the Flush will be ignored even if Batcher.Enabled is false.
 	// TODO: Deprecate and remove this section in favor of sending_queue::batch.
 	Batcher BatcherConfig `mapstructure:"batcher"`
+
+	// Experimental: TelemetryMetadataKeys defines a list of client.Metadata keys
+	// that will be added to the exporter's telemetry if defined. The config only
+	// applies when batcher is used (set to `true` or `false`).
+	//
+	// Keys are case-insensitive and duplicates will trigger a validation error.
+	TelemetryMetadataKeys []string `mapstructure:"telemetry_metadata_keys"`
 }
 
 // BatcherConfig holds configuration for exporterbatcher.
@@ -352,6 +359,16 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
 		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
+	}
+
+	// Validate telemetry metadata keys
+	uniq := map[string]struct{}{}
+	for _, k := range cfg.TelemetryMetadataKeys {
+		kl := strings.ToLower(k)
+		if _, has := uniq[kl]; has {
+			return fmt.Errorf("telemetry_metadata_keys must be case-insenstive and unique, found duplicate: %s", kl)
+		}
+		uniq[kl] = struct{}{}
 	}
 
 	return nil
