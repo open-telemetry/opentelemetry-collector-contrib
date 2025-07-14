@@ -11,6 +11,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
+type CollectionRole string
+
+const (
+	LEADER CollectionRole = "LEADER"
+	NODE   CollectionRole = "NODE"
+	ALL    CollectionRole = "ALL"
+)
+
 // Config defines configuration for aws ecs container metrics receiver.
 type Config struct {
 	// AWSSessionSettings contains the common configuration options
@@ -19,6 +27,9 @@ type Config struct {
 
 	// CollectionInterval is the interval at which metrics should be collected. The default is 60 second.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+
+	// CollectionRole defines the role of the collector hosting the receiver
+	CollectionRole CollectionRole `mapstructure:"collection_role"`
 
 	// ContainerOrchestrator is the type of container orchestration service, e.g. eks or ecs. The default is eks.
 	ContainerOrchestrator string `mapstructure:"container_orchestrator"`

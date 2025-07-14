@@ -168,21 +168,10 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 		if err != nil {
 			return err
 		}
-	} else {
-		localNodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
-			hostInfo, hostName, stores.WithK8sDecorator(k8sDecorator))
-		if err != nil {
-			acir.settings.Logger.Warn("Unable to start local node decorator", zap.Error(err))
-		} else {
-			acir.decorators = append(acir.decorators, localNodeDecorator)
-		}
+		return nil
+	}
 
-		acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostInfo,
-			acir.settings.Logger, cadvisor.WithDecorator(localNodeDecorator))
-		if err != nil {
-			return err
-		}
-
+	if acir.config.CollectionRole == LEADER || acir.config.CollectionRole == ALL {
 		var leaderElection *k8sapiserver.LeaderElection
 		leaderElection, err = k8sapiserver.NewLeaderElection(acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
 			k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
@@ -201,6 +190,22 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 			if err != nil {
 				acir.settings.Logger.Warn("Unable to start kube apiserver prometheus scraper", zap.Error(err))
 			}
+		}
+	}
+
+	if acir.config.CollectionRole == NODE || acir.config.CollectionRole == ALL {
+		localNodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
+			hostInfo, hostName, stores.WithK8sDecorator(k8sDecorator))
+		if err != nil {
+			acir.settings.Logger.Warn("Unable to start local node decorator", zap.Error(err))
+		} else {
+			acir.decorators = append(acir.decorators, localNodeDecorator)
+		}
+
+		acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostInfo,
+			acir.settings.Logger, cadvisor.WithDecorator(localNodeDecorator))
+		if err != nil {
+			return err
 		}
 
 		err = acir.initDcgmScraper(ctx, host, hostInfo, localNodeDecorator)
@@ -224,6 +229,7 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 			acir.settings.Logger.Debug("Unable to start EFA scraper", zap.Error(err))
 		}
 	}
+
 	return nil
 }
 

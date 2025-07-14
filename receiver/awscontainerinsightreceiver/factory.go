@@ -19,6 +19,9 @@ const (
 	// Default collection interval. Every 60s the receiver will collect metrics
 	defaultCollectionInterval = 60 * time.Second
 
+	// Default collector role. Collect all metrics by default
+	defaultCollectionRole = ALL
+
 	// Default container orchestrator service is aws eks
 	defaultContainerOrchestrator = "eks"
 
@@ -64,6 +67,7 @@ func createDefaultConfig() component.Config {
 		ClusterName:                 defaultClusterName,
 		LeaderLockName:              defaultLeaderLockName,
 		EnableControlPlaneMetrics:   defaultEnableControlPlaneMetrics,
+		CollectionRole:              defaultCollectionRole,
 	}
 }
 
