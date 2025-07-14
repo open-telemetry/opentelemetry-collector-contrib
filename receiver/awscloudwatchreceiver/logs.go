@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -268,7 +269,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 
 	for nextToken != nil {
 		select {
-		// if done, we want to stop processing paginated stream of events
 		case _, ok := <-l.doneChan:
 			if !ok {
 				return nil
@@ -277,17 +277,24 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				l.settings.Logger.Error("unable to retrieve logs from cloudatch",
-					zap.String("logGroup", logGroup),
-					zap.Error(err))
-				break
+				var resourceNotFoundException *types.ResourceNotFoundException
+				if errors.As(err, &resourceNotFoundException) {
+					l.settings.Logger.Warn("log group no longer exists, skipping",
+						zap.String("logGroup", logGroup),
+						zap.Error(err))
+					return fmt.Errorf("log group %s no longer exists: %w", logGroup, err)
+				}
+				return fmt.Errorf("failed to retrieve logs from log group %s: %w", logGroup, err)
 			}
+
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
 			logs := l.processEvents(observedTime, logGroup, resp)
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
-					l.settings.Logger.Error("unable to consume logs", zap.Error(err))
-					break
+					l.settings.Logger.Error("unable to consume logs",
+						zap.String("logGroup", logGroup),
+						zap.Error(err))
+					return fmt.Errorf("failed to consume logs from log group %s: %w", logGroup, err)
 				}
 			}
 			nextToken = resp.NextToken
@@ -340,7 +347,6 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			}
 			group[logStreamName] = resourceLogs
 
-			// Ensure one scopeLogs is initialized so we can handle in standardized way going forward.
 			_ = resourceLogs.ScopeLogs().AppendEmpty()
 		}
 
