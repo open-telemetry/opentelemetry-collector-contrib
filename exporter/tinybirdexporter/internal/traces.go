@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal"
 
 import (
@@ -9,10 +12,10 @@ import (
 )
 
 type traceSignal struct {
-	ResourceSchemaUrl  string            `json:"resource_schema_url"`
+	ResourceSchemaURL  string            `json:"resource_schema_url"`
 	ResourceAttributes map[string]string `json:"resource_attributes"`
 	ServiceName        string            `json:"service_name"`
-	ScopeSchemaUrl     string            `json:"scope_schema_url"`
+	ScopeSchemaURL     string            `json:"scope_schema_url"`
 	ScopeName          string            `json:"scope_name"`
 	ScopeVersion       string            `json:"scope_version"`
 	ScopeAttributes    map[string]string `json:"scope_attributes"`
@@ -71,14 +74,14 @@ func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []m
 func ConvertTraces(td ptrace.Traces, encoder Encoder) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
-		schemaUrl := rs.SchemaUrl()
+		schemaURL := rs.SchemaUrl()
 		resource := rs.Resource()
 		resourceAttributesMap := resource.Attributes()
 		resourceAttributes := convertAttributes(resourceAttributesMap)
 		serviceName := getServiceName(resourceAttributesMap)
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
-			scopeSchemaUrl := ss.SchemaUrl()
+			ScopeSchemaURL := ss.SchemaUrl()
 			scope := ss.Scope()
 			scopeAttributes := convertAttributes(scope.Attributes())
 			for k := 0; k < ss.Spans().Len(); k++ {
@@ -86,11 +89,11 @@ func ConvertTraces(td ptrace.Traces, encoder Encoder) error {
 				attributes := span.Attributes()
 				eventsTimestamp, eventsName, eventsAttributes := convertEvents(span.Events())
 				linksTraceID, linksSpanID, linksTraceState, linksAttributes := convertLinks(span.Links())
-				traceSignal := traceSignal{
-					ResourceSchemaUrl:  schemaUrl,
+				traceEntry := traceSignal{
+					ResourceSchemaURL:  schemaURL,
 					ResourceAttributes: resourceAttributes,
 					ServiceName:        serviceName,
-					ScopeSchemaUrl:     scopeSchemaUrl,
+					ScopeSchemaURL:     ScopeSchemaURL,
 					ScopeName:          scope.Name(),
 					ScopeVersion:       scope.Version(),
 					ScopeAttributes:    scopeAttributes,
@@ -115,7 +118,7 @@ func ConvertTraces(td ptrace.Traces, encoder Encoder) error {
 					LinksTraceState:    linksTraceState,
 					LinksAttributes:    linksAttributes,
 				}
-				if err := encoder.Encode(traceSignal); err != nil {
+				if err := encoder.Encode(traceEntry); err != nil {
 					return err
 				}
 			}

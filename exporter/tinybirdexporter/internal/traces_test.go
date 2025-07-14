@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package internal
 
 import (
@@ -63,10 +66,10 @@ func TestConvertTraces(t *testing.T) {
 			},
 			want: []traceSignal{
 				{
-					ResourceSchemaUrl:  "https://opentelemetry.io/schemas/1.20.0",
+					ResourceSchemaURL:  "https://opentelemetry.io/schemas/1.20.0",
 					ResourceAttributes: map[string]string{},
 					ServiceName:        "",
-					ScopeSchemaUrl:     "https://opentelemetry.io/schemas/1.20.0",
+					ScopeSchemaURL:     "https://opentelemetry.io/schemas/1.20.0",
 					ScopeName:          "test-scope",
 					ScopeVersion:       "1.0.0",
 					ScopeAttributes:    map[string]string{},
@@ -126,13 +129,13 @@ func TestConvertTraces(t *testing.T) {
 			},
 			want: []traceSignal{
 				{
-					ResourceSchemaUrl: "https://opentelemetry.io/schemas/1.20.0",
+					ResourceSchemaURL: "https://opentelemetry.io/schemas/1.20.0",
 					ResourceAttributes: map[string]string{
 						"service.name": "test-service",
 						"environment":  "production",
 					},
 					ServiceName:    "test-service",
-					ScopeSchemaUrl: "https://opentelemetry.io/schemas/1.20.0",
+					ScopeSchemaURL: "https://opentelemetry.io/schemas/1.20.0",
 					ScopeName:      "test-scope",
 					ScopeVersion:   "1.0.0",
 					ScopeAttributes: map[string]string{
@@ -206,12 +209,12 @@ func TestConvertTraces(t *testing.T) {
 			},
 			want: []traceSignal{
 				{
-					ResourceSchemaUrl: "https://opentelemetry.io/schemas/1.20.0",
+					ResourceSchemaURL: "https://opentelemetry.io/schemas/1.20.0",
 					ResourceAttributes: map[string]string{
 						"service.name": "test-service",
 					},
 					ServiceName:     "test-service",
-					ScopeSchemaUrl:  "https://opentelemetry.io/schemas/1.20.0",
+					ScopeSchemaURL:  "https://opentelemetry.io/schemas/1.20.0",
 					ScopeName:       "test-scope",
 					ScopeVersion:    "1.0.0",
 					ScopeAttributes: map[string]string{},
