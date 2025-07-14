@@ -303,9 +303,9 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| function | The name of the function. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| function | The name of the function. | Any Str | false |
 
 ### postgresql.sequential_scans
 
