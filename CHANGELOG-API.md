@@ -7,6 +7,22 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `splunkhecexporter`: Update 'batcher' config to use internal deprecated struct instead of the one removed from the core. (#41224)
+- `elasticsearchexporter`: Update 'batcher' config to use internal struct instead of the one removed from the core. (#41225)
+- `sumologicprocessor`: Types that do not contribute to intended API surface will be unexported (#40660)
+  https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40641
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add a `GetOr` function to `ottl.Optional` to return a default value when the optional is empty. (#40243)
+- `metricstarttimeprocessor`: Add the start_time_metric, which sets the start time based on another metric in the batch of metrics. (#38383)
+
+<!-- previous-version -->
+
 ## v0.129.0
 
 ### 🛑 Breaking changes 🛑

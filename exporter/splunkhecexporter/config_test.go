@@ -244,7 +244,7 @@ func TestConfig_Validate(t *testing.T) {
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {
-				require.EqualError(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			}
 		})
 	}
