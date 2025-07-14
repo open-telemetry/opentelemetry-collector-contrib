@@ -109,7 +109,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 			e.logger.Warn("failed to create materialized view", zap.Error(err))
 		}
 
-		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Traces, e.cfg.propertiesStr())
+		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Traces, e.cfg.propertiesStrForUniqueKey())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
