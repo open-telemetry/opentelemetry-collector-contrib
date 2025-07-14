@@ -1,0 +1,14 @@
+opsrampmetricsfilter:
+  alert_definitions_configmap_name: "test-alert-config"
+  alert_definitions_key: "alert-definitions.yaml"
+  namespace: "test-namespace"
+
+opsrampmetricsfilter/production:
+  alert_definitions_configmap_name: "opsramp-alert-user-config"
+  alert_definitions_key: "alert-definitions.yaml"
+  namespace: "opsramp-agent"
+
+opsrampmetricsfilter/custom:
+  alert_definitions_configmap_name: "custom-alerts"
+  alert_definitions_key: "custom-alerts.yaml"
+  namespace: "monitoring"

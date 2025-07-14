@@ -1,0 +1,12 @@
+type: opsrampmetricsfilter
+
+status:
+  class: processor
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [opsramp]
+
+tests:
+  config:

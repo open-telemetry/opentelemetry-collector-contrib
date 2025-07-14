@@ -100,6 +100,7 @@ exporters:
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.113.0
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.113.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampmetricsfilterprocessor v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.113.0
@@ -269,6 +270,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../../receiver/postgresqlreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../../receiver/receivercreator
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampmetricsfilterprocessor => ../../processor/opsrampmetricsfilterprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor => ../../processor/logdedupprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver

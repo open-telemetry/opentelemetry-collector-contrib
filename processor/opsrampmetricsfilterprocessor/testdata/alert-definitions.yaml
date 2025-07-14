@@ -1,0 +1,83 @@
+alertDefinitions:
+  - resourceType: "k8s_cluster"
+    rules:
+      - name: "k8s_apiserver_requests_error_rate"
+        interval: "30s"
+        expr: "(sum(increase(apiserver_request_total{verb!=\"WATCH\",code=~\"5..\"}[5m])) / sum(increase(apiserver_request_total{verb!=\"WATCH\"}[5m]))) * 100"
+        isAvailability: false
+        warnOperator: ">"
+        warnThreshold: "5"
+        criticalOperator: ">"
+        criticalThreshold: "10"
+        alertSub: "K8s API Server Error Rate High"
+        alertBody: "The Kubernetes API server error rate is above threshold"
+      
+      - name: "k8s_cluster_nodes_health"
+        interval: "1m"
+        expr: "(sum(k8s_node_condition_ready{condition=\"Ready\",status=\"true\"}) / count(k8s_node_condition_ready{condition=\"Ready\"})) * 100"
+        isAvailability: true
+        warnOperator: "<"
+        warnThreshold: "90"
+        criticalOperator: "<"
+        criticalThreshold: "80"
+        alertSub: "K8s Cluster Nodes Unhealthy"
+        alertBody: "Some Kubernetes cluster nodes are not ready"
+
+  - resourceType: "k8s_pod"
+    rules:
+      - name: "k8s_pod_cpu_usage"
+        interval: "30s"
+        expr: "k8s_pod_cpu_limit_utilization_ratio * 100"
+        isAvailability: false
+        warnOperator: ">"
+        warnThreshold: "80"
+        criticalOperator: ">"
+        criticalThreshold: "90"
+        alertSub: "K8s Pod CPU Usage High"
+        alertBody: "Pod CPU usage is above threshold"
+
+      - name: "k8s_pod_memory_usage"
+        interval: "30s"
+        expr: "k8s_pod_memory_working_set / k8s_pod_memory_limit * 100"
+        isAvailability: false
+        warnOperator: ">"
+        warnThreshold: "80"
+        criticalOperator: ">"
+        criticalThreshold: "90"
+        alertSub: "K8s Pod Memory Usage High"
+        alertBody: "Pod memory usage is above threshold"
+
+  - resourceType: "k8s_node"
+    rules:
+      - name: "k8s_node_cpu_usage"
+        interval: "30s"
+        expr: "k8s_node_cpu_utilization * 100"
+        isAvailability: false
+        warnOperator: ">"
+        warnThreshold: "80"
+        criticalOperator: ">"
+        criticalThreshold: "90"
+        alertSub: "K8s Node CPU Usage High"
+        alertBody: "Node CPU usage is above threshold"
+
+      - name: "k8s_node_memory_usage"
+        interval: "30s"
+        expr: "(k8s_node_memory_working_set / k8s_node_memory_available) * 100"
+        isAvailability: false
+        warnOperator: ">"
+        warnThreshold: "80"
+        criticalOperator: ">"
+        criticalThreshold: "90"
+        alertSub: "K8s Node Memory Usage High"
+        alertBody: "Node memory usage is above threshold"
+
+      - name: "k8s_node_disk_usage"
+        interval: "1m"
+        expr: "k8s_node_filesystem_usage / k8s_node_filesystem_limit * 100"
+        isAvailability: false
+        warnOperator: ">"
+        warnThreshold: "80"
+        criticalOperator: ">"
+        criticalThreshold: "90"
+        alertSub: "K8s Node Disk Usage High"
+        alertBody: "Node disk usage is above threshold"

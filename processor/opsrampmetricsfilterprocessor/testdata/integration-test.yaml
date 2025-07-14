@@ -1,0 +1,23 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  # Minimal configuration - uses all defaults
+  opsrampmetricsfilter:
+  
+  batch:
+    timeout: 1s
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [opsrampmetricsfilter, batch]
+      exporters: [debug]
