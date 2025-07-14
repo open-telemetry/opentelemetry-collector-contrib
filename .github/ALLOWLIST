@@ -34,7 +34,6 @@ exporter/awscloudwatchlogsexporter
 e2etests
 exporter/carbonexporter
 exporter/kineticaexporter
-exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver

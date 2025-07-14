@@ -81,6 +81,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
+	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
 	// cfg.QuerySample.Enabled = enabled
 }
@@ -172,7 +173,7 @@ func TestSuccessfulScrape(t *testing.T) {
 				expectedMetrics, err := golden.ReadMetrics(expectedFile)
 				assert.NoError(t, err)
 
-				assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+				assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 					pmetrictest.IgnoreMetricDataPointsOrder(),
 					pmetrictest.IgnoreStartTimestamp(),
 					pmetrictest.IgnoreTimestamp(),
