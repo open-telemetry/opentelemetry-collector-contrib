@@ -28,9 +28,9 @@ type traceSignal struct {
 	SpanKind           string            `json:"span_kind"`
 	SpanAttributes     map[string]string `json:"span_attributes"`
 	StartTime          string            `json:"start_time"`
-	// Format start-end
+	// used when users choose the StartTime-to-EndTime approach
 	EndTime string `json:"end_time,omitempty"`
-	// format start-duration
+	// used when users choose the StartTime-plus-Duration approach
 	Duration         int64               `json:"duration,omitempty"`
 	StatusCode       string              `json:"status_code"`
 	StatusMessage    string              `json:"status_message"`
