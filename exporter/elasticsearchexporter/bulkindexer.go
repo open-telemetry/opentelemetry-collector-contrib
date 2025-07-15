@@ -125,7 +125,7 @@ func newSyncBulkIndexer(
 		retryConfig:           config.Retry,
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
-		telemetryMetadataKeys: config.TelemetryMetadataKeys,
+		telemetryMetadataKeys: config.MetadataKeys,
 		telemetryBuilder:      tb,
 	}
 }

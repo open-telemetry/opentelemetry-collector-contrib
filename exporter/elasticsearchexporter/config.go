@@ -102,12 +102,12 @@ type Config struct {
 	// TODO: Deprecate and remove this section in favor of sending_queue::batch.
 	Batcher BatcherConfig `mapstructure:"batcher"`
 
-	// Experimental: TelemetryMetadataKeys defines a list of client.Metadata keys
-	// that will be added to the exporter's telemetry if defined. The config only
+	// Experimental: MetadataKeys defines a list of client.Metadata keys that
+	// will be added to the exporter's telemetry if defined. The config only
 	// applies when batcher is used (set to `true` or `false`).
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
-	TelemetryMetadataKeys []string `mapstructure:"telemetry_metadata_keys"`
+	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 // BatcherConfig holds configuration for exporterbatcher.
@@ -363,7 +363,7 @@ func (cfg *Config) Validate() error {
 
 	// Validate telemetry metadata keys
 	uniq := map[string]struct{}{}
-	for _, k := range cfg.TelemetryMetadataKeys {
+	for _, k := range cfg.MetadataKeys {
 		kl := strings.ToLower(k)
 		if _, has := uniq[kl]; has {
 			return fmt.Errorf("telemetry_metadata_keys must be case-insenstive and unique, found duplicate: %s", kl)

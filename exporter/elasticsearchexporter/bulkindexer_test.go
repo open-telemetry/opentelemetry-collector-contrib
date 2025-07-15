@@ -336,10 +336,10 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := Config{
-				NumWorkers:            1,
-				Flush:                 FlushSettings{Interval: time.Hour, Bytes: 1},
-				Retry:                 tt.retrySettings,
-				TelemetryMetadataKeys: []string{"x-test"},
+				NumWorkers:   1,
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1},
+				Retry:        tt.retrySettings,
+				MetadataKeys: []string{"x-test"},
 			}
 			if tt.logFailedDocsInput {
 				cfg.LogFailedDocsInput = true
@@ -519,9 +519,9 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	var reqCnt atomic.Int64
 	cfg := Config{
-		NumWorkers:            1,
-		Flush:                 FlushSettings{Interval: time.Hour, Bytes: 1},
-		TelemetryMetadataKeys: []string{"x-test"},
+		NumWorkers:   1,
+		Flush:        FlushSettings{Interval: time.Hour, Bytes: 1},
+		MetadataKeys: []string{"x-test"},
 	}
 	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 		RoundTripFunc: func(r *http.Request) (*http.Response, error) {
