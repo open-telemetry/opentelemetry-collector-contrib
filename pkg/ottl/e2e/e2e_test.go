@@ -899,6 +899,39 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Sort(ToValues({"map_literal": { "child_map": {"ckey1":  "cvalue1", "ckey2": 3.14}}, "key1": 1})))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetDouble(3.14)
+				s.AppendEmpty().SetStr("cvalue1")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Sort(ToValues({"map_literal": { "child_map": {"ckey1":  "cvalue1", "ckey2": 3.14, "depth2_child": {"key1": "depth2_value1"}}}, "key1": 1}, depth=3)))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetDouble(3.14)
+				s.AppendEmpty().SetStr("cvalue1")
+				s.AppendEmpty().SetStr("depth2_value1")
+
+			},
+		},
+		{
+			statement: `set(attributes["test"], Sort(ToValues(maps=[{"foo": "bar", "child_map": {"ckey1":  "cvalue1", "ckey2": 3}}, {"key1": "value1", "child_map": {"a": "b", "c": "d"}}], depth=10)))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetInt(3)
+				s.AppendEmpty().SetStr("b")
+				s.AppendEmpty().SetStr("bar")
+				s.AppendEmpty().SetStr("cvalue1")
+				s.AppendEmpty().SetStr("d")
+				s.AppendEmpty().SetStr("value1")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseSimplifiedXML("<Log><id>1</id><Message>This is a log message!</Message></Log>"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				attr := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")

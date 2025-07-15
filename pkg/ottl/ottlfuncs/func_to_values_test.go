@@ -154,6 +154,13 @@ func Test_toValues(t *testing.T) {
 				"depth2Key2": "depth2Value2",
 			}},
 		},
+		{
+			name:    "an array of maps, depth 200",
+			aMap:    nilOptional,
+			maps:    multiMapGetters,
+			depth:   ottl.NewTestingOptional[int64](200),
+			wantRaw: []any{"value1", true, int64(42), []any{"value4", "value5", []any{"subArrValue1", "subArrValue2"}}, "value6", "depth1Value1", "depth1Value2", "depth2Value1", "depth2Value2"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
