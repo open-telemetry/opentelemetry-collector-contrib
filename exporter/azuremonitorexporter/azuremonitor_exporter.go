@@ -20,11 +20,12 @@ import (
 type azureMonitorExporter struct {
 	config           *Config
 	transportChannel appinsights.TelemetryChannel
+	settings         component.TelemetrySettings
 	logger           *zap.Logger
 	packer           *metricPacker
 }
 
-func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host) (err error) {
+func (exporter *azureMonitorExporter) Start(ctx context.Context, host component.Host) (err error) {
 	connectionVars, err := parseConnectionString(exporter.config)
 	if err != nil {
 		return
@@ -33,6 +34,10 @@ func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host)
 	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
 	exporter.config.Endpoint = connectionVars.IngestionURL
 	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
+	telemetryConfiguration.Client, err = exporter.config.ClientConfig.ToClient(ctx, host, exporter.settings)
+	if err != nil {
+		return
+	}
 	telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
 	telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
 	telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
