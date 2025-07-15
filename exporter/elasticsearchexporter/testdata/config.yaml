@@ -115,3 +115,8 @@ elasticsearch/batcher_minmax_size:
 elasticsearch/include_source_on_error:
   endpoint: https://elastic.example.com:9200
   include_source_on_error: true
+elasticsearch/metadata_keys:
+  endpoint: https://elastic.example.com:9200
+  metadata_keys:
+    - x-test-1
+    - x-test-2
