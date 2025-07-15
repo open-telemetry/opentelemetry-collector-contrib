@@ -2422,7 +2422,8 @@ The `UserAgent` Converter parses the string argument trying to match it against 
 
 `value` is a string or a path to a string.  If `value` is not a string an error is returned.
 
-The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version`, `user_agent.original`, `os.name` and `os.version` as defined in semconv v1.34.0.
+The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version`, `user_agent.original`, `os.name`, and `os.version` as defined in semconv v1.34.0. `os.name` and `os.version` are omitted if empty.
+
 
 Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
