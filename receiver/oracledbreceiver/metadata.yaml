@@ -4,6 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [dmitryax, crobert-1, atoulme]
@@ -11,6 +12,10 @@ status:
 resource_attributes:
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
+    enabled: true
+    type: string
+  host.name:
+    description: The host name of Oracle Server
     enabled: true
     type: string
 
@@ -24,7 +29,102 @@ attributes:
   tablespace_name:
     description: Tablespace name
     type: string
+  # attributes for events
+  ## top query
+  db.query.text:
+    description: The text of the database query being executed.
+    type: string
+  oracledb.query_plan:
+    description: The query execution plan used by the SQL Server.
+    type: string
+  oracledb.sql_id:
+    description: The SQL ID of the query.
+    type: string
+  oracledb.child_number:
+    description: The child number of the query.
+    type: string
+  oracledb.application_wait_time:
+    description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
+    type: double
+  oracledb.buffer_gets:
+    description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
+    type: int
+  oracledb.cluster_wait_time:
+    description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
+    type: double
+  oracledb.concurrency_wait_time:
+    description: Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta).
+    type: double
+  oracledb.cpu_time:
+    description: Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta).
+    type: double
+  oracledb.direct_reads:
+    description: The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta).
+    type: int
+  oracledb.direct_writes:
+    description: The number of direct path write operations, where data is written directly to disk from user memory (reporting delta).
+    type: int
+  oracledb.disk_reads:
+    description: The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta).
+    type: int
+  oracledb.elapsed_time:
+    description: The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
+    type: double
+  oracledb.executions:
+    description: The number of times a specific SQL query has been executed (reporting delta).
+    type: int
+  oracledb.physical_read_bytes:
+    description: The total number of bytes read from disk by a query (reporting delta).
+    type: int
+  oracledb.physical_read_requests:
+    description: The number of physical I/O read operations performed by a query (reporting delta).
+    type: int
+  oracledb.physical_write_bytes:
+    description: The total number of bytes written to disk by a query (reporting delta).
+    type: int
+  oracledb.physical_write_requests:
+    description: The number of times a query requested to write data to disk (reporting delta).
+    type: int
+  oracledb.rows_processed:
+    description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
+    type: int
+  oracledb.user_io_wait_time:
+    description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
+    type: double
+  db.server.name:
+    description: The name of the server hosting the database.
+    type: string
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
+    type: string
 
+events:
+  db.server.top_query:
+    enabled: false
+    description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
+    attributes:
+      - db.system.name
+      - db.server.name
+      - db.query.text
+      - oracledb.query_plan
+      - oracledb.sql_id
+      - oracledb.child_number
+      - oracledb.application_wait_time
+      - oracledb.buffer_gets
+      - oracledb.cluster_wait_time
+      - oracledb.concurrency_wait_time
+      - oracledb.cpu_time
+      - oracledb.direct_reads
+      - oracledb.direct_writes
+      - oracledb.disk_reads
+      - oracledb.elapsed_time
+      - oracledb.executions
+      - oracledb.physical_read_bytes
+      - oracledb.physical_read_requests
+      - oracledb.physical_write_bytes
+      - oracledb.physical_write_requests
+      - oracledb.rows_processed
+      - oracledb.user_io_wait_time
 metrics:
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds

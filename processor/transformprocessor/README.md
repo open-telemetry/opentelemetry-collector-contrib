@@ -46,7 +46,7 @@ transform:
   <trace|metric|log>_statements: []
 ```
 
-The Transform Processor's primary configuration section is broken down by signal (traces, metrics, and logs)
+The Transform Processor's primary configuration section is broken down by signal (traces, metrics, logs, and profiles)
 and allows you to configure a list of statements for the processor to execute. The list can be made of:
 
 - OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
@@ -54,11 +54,12 @@ and allows you to configure a list of statements for the processor to execute. T
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
-| Signal            | Path Prefix Values                             |
-|-------------------|------------------------------------------------|
-| trace_statements  | `resource`, `scope`, `span`, and `spanevent`   |
-| metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
-| log_statements    | `resource`, `scope`, and `log`                 |
+| Signal             | Path Prefix Values                             |
+|--------------------|------------------------------------------------|
+| trace_statements   | `resource`, `scope`, `span`, and `spanevent`   |
+| metric_statements  | `resource`, `scope`, `metric`, and `datapoint` |
+| log_statements     | `resource`, `scope`, and `log`                 |
+| profile_statements | `resource`, `scope`, and `profile`             |
 
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
@@ -114,6 +115,10 @@ transform:
     - replace_all_matches(log.attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
     - replace_all_patterns(log.attributes, "value", "/account/\\d{4}", "/account/{accountId}")
     - set(log.body, log.attributes["http.route"])
+  profile_statements:
+    - keep_keys(resource.attributes, ["host.name"])
+    - set(profile.attributes["tag"], "profile#23")
+    - set(profile.original_payload_format, "json")
 ```
 
 In some situations a combination of Paths, functions, or enums is not allowed, and the solution 
@@ -133,7 +138,7 @@ Format:
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements:
+  <trace|metric|log|profile>_statements:
     - context: string
       error_mode: propagate
       conditions: 

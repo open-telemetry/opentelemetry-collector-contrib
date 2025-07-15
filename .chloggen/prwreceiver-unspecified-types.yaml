@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: receiver/prometheusremotewrite
-note: Handle metrics with unspecified types without panicking.
-issues: [41005]
-subtext:
-change_logs: [user]
