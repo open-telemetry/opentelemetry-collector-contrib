@@ -122,7 +122,7 @@ extension/observer/ecsobserver/                                  @open-telemetry
 extension/observer/hostobserver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 extension/observer/kafkatopicsobserver/                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy
-extension/oidcauthextension/                                     @open-telemetry/collector-contrib-approvers
+extension/oidcauthextension/                                     @open-telemetry/collector-contrib-approvers @asweet-confluent
 extension/opampcustommessages/                                   @open-telemetry/collector-contrib-approvers @evan-bradley
 extension/opampextension/                                        @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
 extension/pprofextension/                                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
