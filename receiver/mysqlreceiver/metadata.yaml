@@ -59,9 +59,9 @@ attributes:
     enum: [pages_written, writes]
   log_operations:
     name_override: operation
-    description: The log operation types.
+    description: The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later.
     type: string
-    enum: [waits, write_requests, writes]
+    enum: [waits, write_requests, writes, fsyncs]
   operations:
     name_override: operation
     description: The operation types.

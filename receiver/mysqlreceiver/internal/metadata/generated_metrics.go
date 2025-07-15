@@ -600,6 +600,7 @@ const (
 	AttributeLogOperationsWaits
 	AttributeLogOperationsWriteRequests
 	AttributeLogOperationsWrites
+	AttributeLogOperationsFsyncs
 )
 
 // String returns the string representation of the AttributeLogOperations.
@@ -611,6 +612,8 @@ func (av AttributeLogOperations) String() string {
 		return "write_requests"
 	case AttributeLogOperationsWrites:
 		return "writes"
+	case AttributeLogOperationsFsyncs:
+		return "fsyncs"
 	}
 	return ""
 }
@@ -620,6 +623,7 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"waits":          AttributeLogOperationsWaits,
 	"write_requests": AttributeLogOperationsWriteRequests,
 	"writes":         AttributeLogOperationsWrites,
+	"fsyncs":         AttributeLogOperationsFsyncs,
 }
 
 // AttributeMysqlxThreads specifies the value mysqlx_threads attribute.
