@@ -22,7 +22,7 @@ jobs:
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
-      - name: Update to latest opentelemetry-collector release and create a PR
+      - name: Prepare to update dependencies
         run: |
           exec > >(tee log.out) 2>&1
           LAST_COMMIT=$(git -C ./opentelemetry-collector/ rev-parse HEAD)
@@ -32,8 +32,26 @@ jobs:
           branch="otelbot/update-otel-$(date +%s)"
           git checkout -b $branch
           make genotelcontribcol
-          make update-otel OTEL_STABLE_VERSION=${LAST_COMMIT} OTEL_VERSION=${LAST_COMMIT}
-          git push --set-upstream origin $branch  
+          echo "LAST_COMMIT=$LAST_COMMIT" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          
+      - name: Gets packages from links with retries
+        uses: nick-fields/retry@v3
+        with:  
+          retry_wait_seconds: 5
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error 
+          command: |
+            cd opentelemetry-collector-contrib
+            make update-otel OTEL_STABLE_VERSION=${{ env.LAST_COMMIT }} OTEL_VERSION=${{ env.LAST_COMMIT }}
+       
+      - name: Push and create PR
+        run: |  
+          cd opentelemetry-collector-contrib
+          git push --set-upstream origin ${{ env.BRANCH_NAME }}
           gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release"
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
