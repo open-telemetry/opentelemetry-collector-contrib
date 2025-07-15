@@ -83,7 +83,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.elastic.co/apm/v2 v2.7.1 // indirect
 	go.elastic.co/fastjson v1.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.130.0 // indirect

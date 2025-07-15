@@ -147,10 +147,10 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.3 // indirect
-	go.elastic.co/apm/module/apmhttp/v2 v2.6.3 // indirect
-	go.elastic.co/apm/v2 v2.7.0 // indirect
-	go.elastic.co/fastjson v1.5.0 // indirect
+	go.elastic.co/apm/module/apmelasticsearch/v2 v2.7.1 // indirect
+	go.elastic.co/apm/module/apmhttp/v2 v2.7.1 // indirect
+	go.elastic.co/apm/v2 v2.7.1 // indirect
+	go.elastic.co/fastjson v1.5.1 // indirect
 	go.etcd.io/bbolt v1.4.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
