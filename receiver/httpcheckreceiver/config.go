@@ -36,6 +36,7 @@ type targetConfig struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 	Method                  string   `mapstructure:"method"`
 	Endpoints               []string `mapstructure:"endpoints"` // Field for a list of endpoints
+	Body                    string   `mapstructure:"body"`
 }
 
 // Validate validates an individual targetConfig.
