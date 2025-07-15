@@ -299,7 +299,7 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {calls} | Sum | Int | Cumulative | true |
+| {call} | Sum | Int | Cumulative | true |
 
 #### Attributes
 

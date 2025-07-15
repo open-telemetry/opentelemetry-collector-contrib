@@ -1193,7 +1193,7 @@ type metricPostgresqlFunctionCalls struct {
 func (m *metricPostgresqlFunctionCalls) init() {
 	m.data.SetName("postgresql.function.calls")
 	m.data.SetDescription("The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.")
-	m.data.SetUnit("{calls}")
+	m.data.SetUnit("{call}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
