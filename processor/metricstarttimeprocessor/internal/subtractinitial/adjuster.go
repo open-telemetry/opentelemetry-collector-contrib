@@ -114,6 +114,8 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Histogram = pmetric.NewHistogramDataPoint()
 			minimalHistogramCopyTo(currentDist, referenceTsi.Histogram)
+			// Use the timestamp of the dropped point as the start timestamp for future points.
+			referenceTsi.Histogram.SetStartTimestamp(referenceTsi.Histogram.Timestamp())
 			previousTsi.Histogram = pmetric.NewHistogramDataPoint()
 			minimalHistogramCopyTo(currentDist, previousTsi.Histogram)
 			return true
@@ -127,7 +129,7 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 
 		if datapointstorage.IsResetHistogram(currentDist, previousTsi.Histogram) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
 
 			// Update the reference value with the metric point.
@@ -166,6 +168,8 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
 			minimalExponentialHistogramCopyTo(currentDist, referenceTsi.ExponentialHistogram)
+			// Use the timestamp of the dropped point as the start timestamp for future points.
+			referenceTsi.ExponentialHistogram.SetStartTimestamp(referenceTsi.ExponentialHistogram.Timestamp())
 			previousTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
 			minimalExponentialHistogramCopyTo(currentDist, previousTsi.ExponentialHistogram)
 			return true
@@ -179,7 +183,7 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 
 		if datapointstorage.IsResetExponentialHistogram(currentDist, previousTsi.ExponentialHistogram) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
 
 			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
@@ -218,6 +222,8 @@ func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.Timeseries
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Number = pmetric.NewNumberDataPoint()
 			minimalSumCopyTo(currentSum, referenceTsi.Number)
+			// Use the timestamp of the dropped point as the start timestamp for future points.
+			referenceTsi.Number.SetStartTimestamp(referenceTsi.Number.Timestamp())
 			previousTsi.Number = pmetric.NewNumberDataPoint()
 			minimalSumCopyTo(currentSum, previousTsi.Number)
 			return true
@@ -231,7 +237,7 @@ func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.Timeseries
 
 		if datapointstorage.IsResetSum(currentSum, previousTsi.Number) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSum.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentSum.SetStartTimestamp(resetStartTimeStamp)
 
 			referenceTsi.Number = pmetric.NewNumberDataPoint()
@@ -261,6 +267,8 @@ func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.Timese
 			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
 			minimalSummaryCopyTo(currentSummary, referenceTsi.Summary)
+			// Use the timestamp of the dropped point as the start timestamp for future points.
+			referenceTsi.Summary.SetStartTimestamp(referenceTsi.Summary.Timestamp())
 			previousTsi.Summary = pmetric.NewSummaryDataPoint()
 			minimalSummaryCopyTo(currentSummary, previousTsi.Summary)
 			return true
@@ -274,7 +282,7 @@ func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.Timese
 
 		if datapointstorage.IsResetSummary(currentSummary, previousTsi.Summary) {
 			// reset re-initialize everything and use the non adjusted points start time.
-			resetStartTimeStamp := pcommon.NewTimestampFromTime(pointStartTime.AsTime().Add(-1 * time.Millisecond))
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSummary.Timestamp().AsTime().Add(-1 * time.Millisecond))
 			currentSummary.SetStartTimestamp(resetStartTimeStamp)
 
 			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
