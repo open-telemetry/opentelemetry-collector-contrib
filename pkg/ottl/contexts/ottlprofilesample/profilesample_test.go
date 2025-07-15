@@ -89,21 +89,22 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
-			profileSample := createProfileSampleTelemetry()
+			profileSample, profile := createProfileSampleTelemetry()
 
-			tCtx := NewTransformContext(profileSample, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			tCtx := NewTransformContext(profileSample, profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(profileSample, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			tCtx = NewTransformContext(profileSample, pprofile.NewProfile(), pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
-			exProfileSample := createProfileSampleTelemetry()
+			exProfileSample, exProfile := createProfileSampleTelemetry()
 			exCache := pcommon.NewMap()
 			tt.modified(exProfileSample, exCache)
 
+			assert.Equal(t, exProfile, profile)
 			assert.Equal(t, exProfileSample, profileSample)
 			assert.Equal(t, exCache, testCache)
 		})
@@ -117,7 +118,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := pcommon.NewInstrumentationScope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContext(pprofile.NewSample(), pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+	profile := pprofile.NewProfile()
+	profile.SetDroppedAttributesCount(42)
+
+	ctx := NewTransformContext(pprofile.NewSample(), profile, pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 
 	tests := []struct {
 		name     string
@@ -173,8 +177,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	}
 }
 
-func createProfileSampleTelemetry() pprofile.Sample {
-	sample := pprofile.NewSample()
+func createProfileSampleTelemetry() (pprofile.Sample, pprofile.Profile) {
+	profile := pprofile.NewProfile()
+	sample := profile.Sample().AppendEmpty()
 	sample.SetLinkIndex(42)
 	sample.SetLocationsStartIndex(73)
 	sample.SetLocationsLength(97)
@@ -191,5 +196,5 @@ func createProfileSampleTelemetry() pprofile.Sample {
 		values.Append(3)
 	}
 
-	return sample
+	return sample, profile
 }

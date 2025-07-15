@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilesample"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
@@ -30,6 +31,7 @@ var (
 	_ ctxresource.Context      = TransformContext{}
 	_ ctxscope.Context         = TransformContext{}
 	_ ctxprofilesample.Context = TransformContext{}
+	_ ctxprofile.Context       = TransformContext{}
 	_ zapcore.ObjectMarshaler  = TransformContext{}
 )
 
@@ -45,6 +47,7 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 // TransformContext represents a profile and its associated hierarchy.
 type TransformContext struct {
 	sample               pprofile.Sample
+	profile              pprofile.Profile
 	dictionary           pprofile.ProfilesDictionary
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
@@ -57,9 +60,10 @@ type TransformContext struct {
 type TransformContextOption func(*TransformContext)
 
 // NewTransformContext creates a new TransformContext with the provided parameters.
-func NewTransformContext(sample pprofile.Sample, dictionary pprofile.ProfilesDictionary, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeProfiles pprofile.ScopeProfiles, resourceProfiles pprofile.ResourceProfiles, options ...TransformContextOption) TransformContext {
+func NewTransformContext(sample pprofile.Sample, profile pprofile.Profile, dictionary pprofile.ProfilesDictionary, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeProfiles pprofile.ScopeProfiles, resourceProfiles pprofile.ResourceProfiles, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		sample:               sample,
+		profile:              profile,
 		dictionary:           dictionary,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
@@ -73,7 +77,12 @@ func NewTransformContext(sample pprofile.Sample, dictionary pprofile.ProfilesDic
 	return tc
 }
 
-// GetProfileSample returns the profile from the TransformContext.
+// GetProfile returns the profile from the TransformContext.
+func (tCtx TransformContext) GetProfile() pprofile.Profile {
+	return tCtx.profile
+}
+
+// GetProfileSample returns the sample from the TransformContext.
 func (tCtx TransformContext) GetProfileSample() pprofile.Sample {
 	return tCtx.sample
 }
@@ -187,6 +196,7 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.Pa
 			ctxresource.Name:      ctxresource.PathGetSetter[TransformContext],
 			ctxscope.Name:         ctxscope.PathGetSetter[TransformContext],
 			ctxscope.LegacyName:   ctxscope.PathGetSetter[TransformContext],
+			ctxprofile.Name:       ctxprofile.PathGetSetter[TransformContext],
 			ctxprofilesample.Name: ctxprofilesample.PathGetSetter[TransformContext],
 		})
 }
