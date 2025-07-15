@@ -149,3 +149,90 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 
 	return metrics
 }
+
+func TestEnrichMetricNamesWithAttributes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		inputMetrics   []BMCHelixOMMetric
+		expectedNames  []string
+	}{
+		{
+			name: "Single metric without varying attributes",
+			inputMetrics: []BMCHelixOMMetric{
+				{
+					Labels: map[string]string{
+						"entityId":    "host:cpu:core0",
+						"metricName":  "system.cpu.time",
+						"cpu.mode":       "idle",
+						"cpu.logical_number":         "0",
+					},
+				},
+			},
+			expectedNames: []string{"system.cpu.time"},
+		},
+		{
+			name: "Metrics with different state values",
+			inputMetrics: []BMCHelixOMMetric{
+				{
+					Labels: map[string]string{
+						"entityId":   "host:cpu:core0",
+						"metricName": "system.cpu.time",
+						"cpu.mode":      "idle",
+					},
+				},
+				{
+					Labels: map[string]string{
+						"entityId":   "host:cpu:core0",
+						"metricName": "system.cpu.time",
+						"cpu.mode":      "user",
+					},
+				},
+			},
+			expectedNames: []string{
+				"system.cpu.time.idle",
+				"system.cpu.time.user",
+			},
+		},
+		{
+			name: "Metrics with multiple varying attributes",
+			inputMetrics: []BMCHelixOMMetric{
+				{
+					Labels: map[string]string{
+						"entityId":   "host:cpu:core0",
+						"metricName": "system.cpu.time",
+						"cpu.mode":      "system",
+						"cpu.mode.code": "0",
+						"cpu.logical_number":        "0",
+					},
+				},
+				{
+					Labels: map[string]string{
+						"entityId":   "host:cpu:core0",
+						"metricName": "system.cpu.time",
+						"cpu.mode":      "user",
+						"cpu.mode.code": "1",
+						"cpu.logical_number":        "0",
+					},
+				},
+			},
+			expectedNames: []string{
+				"system.cpu.time.system.0",
+				"system.cpu.time.user.1",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := enrichMetricNamesWithAttributes(tt.inputMetrics)
+
+			var actualNames []string
+			for _, m := range result {
+				actualNames = append(actualNames, m.Labels["metricName"])
+			}
+
+			assert.ElementsMatch(t, tt.expectedNames, actualNames)
+		})
+	}
+}

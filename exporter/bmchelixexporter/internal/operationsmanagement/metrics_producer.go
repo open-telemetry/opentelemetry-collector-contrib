@@ -6,6 +6,8 @@ package operationsmanagement // import "github.com/open-telemetry/opentelemetry-
 import (
 	"fmt"
 	"slices"
+	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,6 +37,19 @@ func NewMetricsProducer(logger *zap.Logger) *MetricsProducer {
 	return &MetricsProducer{
 		logger: logger,
 	}
+}
+// coreAttributes are label keys that should be ignored when building metric name suffixes.
+var coreAttributes = map[string]struct{}{
+	"source":                 {},
+	"unit":                   {},
+	"hostType":               {},
+	"isDeviceMappingEnabled": {},
+	"metricName":             {},
+	"hostname":               {},
+	"entityTypeId":           {},
+	"entityName":             {},
+	"instanceName":           {},
+	"entityId":               {},
 }
 
 // ProduceHelixPayload takes the OpenTelemetry metrics and converts them into the BMC Helix Operations Management metric format
@@ -68,7 +83,7 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 					mp.logger.Warn("Failed to create Helix metrics", zap.Error(err))
 					continue
 				}
-
+				
 				// Grow the helixMetrics slice for the new metrics
 				helixMetrics = slices.Grow(helixMetrics, len(newMetrics))
 
@@ -147,6 +162,12 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 	default:
 		return nil, fmt.Errorf("unsupported metric type %s", metric.Type())
 	}
+
+	// Enrich metric names with attributes
+	// This will modify the metric names based on the attributes that have more than one distinct value
+	// across the metrics with the same entityId and metricName
+	// This is done to ensure that the metric names are unique and meaningful in the BMC Helix Operations Management payload
+	helixMetrics = enrichMetricNamesWithAttributes(helixMetrics)
 
 	return helixMetrics, nil
 }
@@ -232,6 +253,12 @@ func (mp *MetricsProducer) updateEntityInformation(labels map[string]string, met
 		instanceName = entityName
 	}
 
+	// Trim trailing and leading colons from entityName
+	entityName = strings.Trim(entityName, ":")
+
+	// Remove any colons from the entityName to ensure compatibility with BMC Helix Operations Management
+	entityName = strings.ReplaceAll(entityName, ":", "")
+
 	// Set the entityTypeId, entityId, instanceName and entityName in labels
 	labels["entityTypeId"] = entityTypeID
 	labels["entityName"] = entityName
@@ -265,4 +292,67 @@ func extractResourceAttributes(resource pcommon.Resource) map[string]string {
 	}
 
 	return attributes
+}
+
+// enrichMetricNamesWithAttributes modifies the metric names by appending distinguishing attributes
+// that have more than one distinct value across the metrics with the same entityId and metricName
+// This is done to ensure that the metric names are unique in the BMC Helix Operations Management payload
+func enrichMetricNamesWithAttributes(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
+	type groupKey struct {
+		EntityID   string
+		MetricName string
+	}
+
+	// Step 1: Group metrics by (entityId + metricName)
+	groups := make(map[groupKey][]*BMCHelixOMMetric)
+	for i := range metrics {
+		m := &metrics[i]
+		key := groupKey{
+			EntityID:   m.Labels["entityId"],
+			MetricName: m.Labels["metricName"],
+		}
+		groups[key] = append(groups[key], m)
+	}
+
+	// Step 2: Process each group
+	for key, group := range groups {
+		attrValues := make(map[string]map[string]struct{})
+
+		// Collect all attribute values for each key
+		for _, m := range group {
+			for k, v := range m.Labels {
+				if _, shouldSkip := coreAttributes[k]; shouldSkip {
+					continue
+				}
+				if _, exists := attrValues[k]; !exists {
+					attrValues[k] = make(map[string]struct{})
+				}
+				attrValues[k][v] = struct{}{}
+			}
+		}
+
+		// Step 3: Identifying attributes (those with >1 distinct value)
+		var identifyingKeys []string
+		for k, vals := range attrValues {
+			if len(vals) > 1 {
+				identifyingKeys = append(identifyingKeys, k)
+			}
+		}
+		sort.Strings(identifyingKeys) // Ensure attributes ordering
+
+		// Step 4: Modify metric names by appending attribute values
+		for _, m := range group {
+			var suffix []string
+			for _, attrKey := range identifyingKeys {
+				if val, ok := m.Labels[attrKey]; ok {
+					suffix = append(suffix, val)
+				}
+			}
+			if len(suffix) > 0 {
+				m.Labels["metricName"] = key.MetricName + "." + strings.Join(suffix, ".")
+			}
+		}
+	}
+
+	return metrics
 }
