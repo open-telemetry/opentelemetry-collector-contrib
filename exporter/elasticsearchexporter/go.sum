@@ -17,6 +17,8 @@ github.com/elastic/elastic-transport-go/v8 v8.7.0 h1:OgTneVuXP2uip4BA658Xi6Hfw+P
 github.com/elastic/elastic-transport-go/v8 v8.7.0/go.mod h1:YLHer5cj0csTzNFXoNQ8qhtGY1GTvSqPnKWKaqQE3Hk=
 github.com/elastic/go-docappender/v2 v2.10.0 h1:gK7embg8JCedjkrfojhhWNufoG5ui7edBklakGXHtbQ=
 github.com/elastic/go-docappender/v2 v2.10.0/go.mod h1:uJH43KCtXmqFUhYj7Am1NiHv0MXf3vM6VxtNlA/Utks=
+github.com/elastic/go-docappender/v2 v2.11.0 h1:Sr6vKHff26mceWoFjkHFcFOTI4N6lIpyhY6snidq7Pg=
+github.com/elastic/go-docappender/v2 v2.11.0/go.mod h1:uSM4ZspehKGUjTEXaSRg5PmcOywMHJNECGbPSkINkJ0=
 github.com/elastic/go-elasticsearch/v8 v8.18.1 h1:lPsN2Wk6+QqBeD4ckmOax7G/Y8tAZgroDYG8j6/5Ce0=
 github.com/elastic/go-elasticsearch/v8 v8.18.1/go.mod h1:F3j9e+BubmKvzvLjNui/1++nJuJxbkhHefbaT0kFKGY=
 github.com/elastic/go-freelru v0.16.0 h1:gG2HJ1WXN2tNl5/p40JS/l59HjvjRhjyAa+oFTRArYs=
@@ -136,8 +138,11 @@ go.elastic.co/apm/module/apmhttp/v2 v2.6.3 h1:jwFovJZkccySKCyy2oE9ZKvUry/a4gdQHF
 go.elastic.co/apm/module/apmhttp/v2 v2.6.3/go.mod h1:w94Gkk6uzI/K+eJYKDLB66tvWC5uK0fSHyWcyX2jPlQ=
 go.elastic.co/apm/v2 v2.7.0 h1:fbsy3BmTTedIbj7+1Ay9Zpdfuztd8RUk7Dm0JvxRW/M=
 go.elastic.co/apm/v2 v2.7.0/go.mod h1:f1Sr3rVJju5winTjsJtKzofdU32L7+Mw/c23cVcn3Io=
+go.elastic.co/apm/v2 v2.7.1/go.mod h1:tQhBAjwh93b2leuAdzGwta/sP7Yc7QoKTSjeIHHDuog=
 go.elastic.co/fastjson v1.5.0 h1:XAQ7wrNObNnDiXC8qQKblkmLwh0vJjX3Z/jEj6/08SI=
 go.elastic.co/fastjson v1.5.0/go.mod h1:WtvH5wz8z9pDOPqNYSYKoLLv/9zCWZLeejHWuvdL/EM=
+go.elastic.co/fastjson v1.5.1 h1:zeh1xHrFH79aQ6Xsw7YxixvnOdAl3OSv0xch/jRDzko=
+go.elastic.co/fastjson v1.5.1/go.mod h1:WtvH5wz8z9pDOPqNYSYKoLLv/9zCWZLeejHWuvdL/EM=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector/client v1.36.0 h1:Hf1efpqzUJLz7aXSKIKhsGGNjsQ7fwdoQpd3NgGZeKM=
