@@ -16,28 +16,45 @@ import (
 func TestProduceHelixPayload(t *testing.T) {
 	t.Parallel()
 
-	sample := BMCHelixOMSample{
-		Value:     42,
-		Timestamp: 1634236000,
-	}
+	sample1 := BMCHelixOMSample{Value: 42, Timestamp: 1750926531000}
+	sample2 := BMCHelixOMSample{Value: 84, Timestamp: 1750926532000}
 
-	metric := BMCHelixOMMetric{
+	metric1 := BMCHelixOMMetric{
 		Labels: map[string]string{
 			"isDeviceMappingEnabled": "true",
 			"entityTypeId":           "test-entity-type-id",
-			"entityName":             "test-entity",
+			"entityName":             "test-entity-1",
 			"source":                 "OTEL",
 			"unit":                   "s",
 			"hostType":               "server",
 			"metricName":             "test_metric",
 			"hostname":               "test-hostname",
-			"instanceName":           "test-entity-Name",
-			"entityId":               "OTEL:test-hostname:test-entity-type-id:test-entity",
+			"instanceName":           "test-entity-Name-1",
+			"entityId":               "OTEL:test-hostname:test-entity-type-id:test-entity-1",
 			"parentEntityName":       "test-entity-type-id_container",
 			"parentEntityTypeId":     "test-entity-type-id_container",
 			"host.name":              "test-hostname",
 		},
-		Samples: []BMCHelixOMSample{sample},
+		Samples: []BMCHelixOMSample{sample1},
+	}
+
+	metric2 := BMCHelixOMMetric{
+		Labels: map[string]string{
+			"isDeviceMappingEnabled": "true",
+			"entityTypeId":           "test-entity-type-id",
+			"entityName":             "test-entity-2",
+			"source":                 "OTEL",
+			"unit":                   "s",
+			"hostType":               "server",
+			"metricName":             "test_metric",
+			"hostname":               "test-hostname",
+			"instanceName":           "test-entity-Name-2",
+			"entityId":               "OTEL:test-hostname:test-entity-type-id:test-entity-2",
+			"parentEntityName":       "test-entity-type-id_container",
+			"parentEntityTypeId":     "test-entity-type-id_container",
+			"host.name":              "test-hostname",
+		},
+		Samples: []BMCHelixOMSample{sample2},
 	}
 
 	parent := BMCHelixOMMetric{
@@ -54,7 +71,7 @@ func TestProduceHelixPayload(t *testing.T) {
 		Samples: []BMCHelixOMSample{},
 	}
 
-	expectedPayload := []BMCHelixOMMetric{parent, metric}
+	expectedPayload := []BMCHelixOMMetric{parent, metric1, metric2}
 
 	producer := NewMetricsProducer(zap.NewExample())
 
@@ -66,8 +83,8 @@ func TestProduceHelixPayload(t *testing.T) {
 		{
 			name: "SetGauge",
 			generateMockMetrics: func() pmetric.Metrics {
-				return generateMockMetrics(func(metric pmetric.Metric) pmetric.NumberDataPoint {
-					return metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				return generateMockMetrics(func(metric pmetric.Metric) pmetric.NumberDataPointSlice {
+					return metric.SetEmptyGauge().DataPoints()
 				})
 			},
 			expectedPayload: expectedPayload,
@@ -75,8 +92,8 @@ func TestProduceHelixPayload(t *testing.T) {
 		{
 			name: "SetSum",
 			generateMockMetrics: func() pmetric.Metrics {
-				return generateMockMetrics(func(metric pmetric.Metric) pmetric.NumberDataPoint {
-					return metric.SetEmptySum().DataPoints().AppendEmpty()
+				return generateMockMetrics(func(metric pmetric.Metric) pmetric.NumberDataPointSlice {
+					return metric.SetEmptySum().DataPoints()
 				})
 			},
 			expectedPayload: expectedPayload,
@@ -101,7 +118,7 @@ func TestProduceHelixPayload(t *testing.T) {
 }
 
 // Mock data generation for testing
-func generateMockMetrics(dpCreator func(metric pmetric.Metric) pmetric.NumberDataPoint) pmetric.Metrics {
+func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.NumberDataPointSlice) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	il := rm.ScopeMetrics().AppendEmpty().Metrics()
@@ -109,12 +126,26 @@ func generateMockMetrics(dpCreator func(metric pmetric.Metric) pmetric.NumberDat
 	metric.SetName("test_metric")
 	metric.SetDescription("This is a test metric")
 	metric.SetUnit("s")
-	dp := dpCreator(metric)
-	dp.Attributes().PutStr(string(conventions.HostNameKey), "test-hostname")
-	dp.Attributes().PutStr("entityName", "test-entity")
-	dp.Attributes().PutStr("entityTypeId", "test-entity-type-id")
-	dp.Attributes().PutStr("instanceName", "test-entity-Name")
-	dp.SetTimestamp(1634236000000000) // Example timestamp
-	dp.SetDoubleValue(42.0)
+
+	dps := setMetricType(metric) // only call this once!
+
+	// First datapoint
+	dp1 := dps.AppendEmpty()
+	dp1.Attributes().PutStr(string(conventions.HostNameKey), "test-hostname")
+	dp1.Attributes().PutStr("entityName", "test-entity-1")
+	dp1.Attributes().PutStr("entityTypeId", "test-entity-type-id")
+	dp1.Attributes().PutStr("instanceName", "test-entity-Name-1")
+	dp1.SetTimestamp(1750926531000000000)
+	dp1.SetDoubleValue(42.0)
+
+	// Second datapoint
+	dp2 := dps.AppendEmpty()
+	dp2.Attributes().PutStr(string(conventions.HostNameKey), "test-hostname")
+	dp2.Attributes().PutStr("entityName", "test-entity-2")
+	dp2.Attributes().PutStr("entityTypeId", "test-entity-type-id")
+	dp2.Attributes().PutStr("instanceName", "test-entity-Name-2")
+	dp2.SetTimestamp(1750926532000000000)
+	dp2.SetDoubleValue(84.0)
+
 	return metrics
 }
