@@ -153,19 +153,19 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name           string
-		inputMetrics   []BMCHelixOMMetric
-		expectedNames  []string
+		name          string
+		inputMetrics  []BMCHelixOMMetric
+		expectedNames []string
 	}{
 		{
 			name: "Single metric without varying attributes",
 			inputMetrics: []BMCHelixOMMetric{
 				{
 					Labels: map[string]string{
-						"entityId":    "host:cpu:core0",
-						"metricName":  "system.cpu.time",
-						"cpu.mode":       "idle",
-						"cpu.logical_number":         "0",
+						"entityId":           "host:cpu:core0",
+						"metricName":         "system.cpu.time",
+						"cpu.mode":           "idle",
+						"cpu.logical_number": "0",
 					},
 				},
 			},
@@ -178,14 +178,14 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 					Labels: map[string]string{
 						"entityId":   "host:cpu:core0",
 						"metricName": "system.cpu.time",
-						"cpu.mode":      "idle",
+						"cpu.mode":   "idle",
 					},
 				},
 				{
 					Labels: map[string]string{
 						"entityId":   "host:cpu:core0",
 						"metricName": "system.cpu.time",
-						"cpu.mode":      "user",
+						"cpu.mode":   "user",
 					},
 				},
 			},
@@ -199,20 +199,20 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 			inputMetrics: []BMCHelixOMMetric{
 				{
 					Labels: map[string]string{
-						"entityId":   "host:cpu:core0",
-						"metricName": "system.cpu.time",
-						"cpu.mode":      "system",
-						"cpu.mode.code": "0",
-						"cpu.logical_number":        "0",
+						"entityId":           "host:cpu:core0",
+						"metricName":         "system.cpu.time",
+						"cpu.mode":           "system",
+						"cpu.mode.code":      "0",
+						"cpu.logical_number": "0",
 					},
 				},
 				{
 					Labels: map[string]string{
-						"entityId":   "host:cpu:core0",
-						"metricName": "system.cpu.time",
-						"cpu.mode":      "user",
-						"cpu.mode.code": "1",
-						"cpu.logical_number":        "0",
+						"entityId":           "host:cpu:core0",
+						"metricName":         "system.cpu.time",
+						"cpu.mode":           "user",
+						"cpu.mode.code":      "1",
+						"cpu.logical_number": "0",
 					},
 				},
 			},

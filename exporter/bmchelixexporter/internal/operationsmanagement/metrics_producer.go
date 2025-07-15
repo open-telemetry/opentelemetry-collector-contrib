@@ -38,6 +38,7 @@ func NewMetricsProducer(logger *zap.Logger) *MetricsProducer {
 		logger: logger,
 	}
 }
+
 // coreAttributes are label keys that should be ignored when building metric name suffixes.
 var coreAttributes = map[string]struct{}{
 	"source":                 {},
@@ -83,7 +84,7 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 					mp.logger.Warn("Failed to create Helix metrics", zap.Error(err))
 					continue
 				}
-				
+
 				// Grow the helixMetrics slice for the new metrics
 				helixMetrics = slices.Grow(helixMetrics, len(newMetrics))
 
