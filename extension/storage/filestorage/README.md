@@ -34,7 +34,7 @@ Use `directory_permissions` to customize directory creation permissions, minus t
 `recreate` when set, will rename the existing data storage to `{filename}.backup` and a new data file will be created from scratch. This option is useful if underlying database is corrupted and as a result, it can halt the entire collector process due to a panic. See (#36840)[https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36840] for more details.
 
 > [!Note]
-> Enabling `recreate` will regenerate the database files, which may lead to data duplication. 
+> Enabling `recreate` will regenerate the database files, which may lead to data duplication or data loss. 
 
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):
