@@ -70,3 +70,38 @@ metrics:
       value_type: int
     unit: "s"
     attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]
+  httpcheck.dns_lookup.duration:
+    description: Time spent performing DNS lookup for the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.tcp_connection.duration:
+    description: Time spent establishing TCP connection to the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.tls_handshake.duration:
+    description: Time spent performing TLS handshake with the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.request.duration:
+    description: Time spent sending the HTTP request to the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.response.duration:
+    description: Time spent receiving the HTTP response from the endpoint.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]

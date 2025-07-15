@@ -1,21 +1,41 @@
 default:
 all_set:
   metrics:
+    httpcheck.dns_lookup.duration:
+      enabled: true
     httpcheck.duration:
       enabled: true
     httpcheck.error:
       enabled: true
+    httpcheck.request.duration:
+      enabled: true
+    httpcheck.response.duration:
+      enabled: true
     httpcheck.status:
       enabled: true
+    httpcheck.tcp_connection.duration:
+      enabled: true
     httpcheck.tls.cert_remaining:
+      enabled: true
+    httpcheck.tls_handshake.duration:
       enabled: true
 none_set:
   metrics:
+    httpcheck.dns_lookup.duration:
+      enabled: false
     httpcheck.duration:
       enabled: false
     httpcheck.error:
       enabled: false
+    httpcheck.request.duration:
+      enabled: false
+    httpcheck.response.duration:
+      enabled: false
     httpcheck.status:
       enabled: false
+    httpcheck.tcp_connection.duration:
+      enabled: false
     httpcheck.tls.cert_remaining:
+      enabled: false
+    httpcheck.tls_handshake.duration:
       enabled: false
