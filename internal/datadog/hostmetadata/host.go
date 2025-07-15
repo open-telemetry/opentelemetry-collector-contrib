@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/gcp"
@@ -49,6 +50,11 @@ func GetSourceProvider(set component.TelemetrySettings, configHostname string, t
 		return nil, fmt.Errorf("failed to build Kubernetes hostname provider: %w", err)
 	}
 
+	dockerProvider, err := docker.NewProvider(set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Docker hostname provider: %w", err)
+	}
+
 	chain, err := provider.Chain(
 		set.Logger,
 		map[string]source.Provider{
@@ -58,9 +64,10 @@ func GetSourceProvider(set component.TelemetrySettings, configHostname string, t
 			"ec2":        ec2Provider,
 			"gcp":        gcpProvider,
 			"kubernetes": k8sProvider,
+			"docker":     dockerProvider,
 			"system":     system.NewProvider(set.Logger),
 		},
-		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "system"},
+		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "docker", "system"},
 		timeout,
 	)
 	if err != nil {
