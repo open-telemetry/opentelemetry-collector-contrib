@@ -293,6 +293,20 @@ The number of deadlocks.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {deadlock} | Sum | Int | Cumulative | true |
 
+### postgresql.function.calls
+
+The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {call} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| function | The name of the function. | Any Str | false |
+
 ### postgresql.sequential_scans
 
 The number of sequential scans.
