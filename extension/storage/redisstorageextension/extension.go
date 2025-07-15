@@ -95,6 +95,25 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 		}
 	}
 	_, err := p.Exec(ctx)
+	// once the pipeline has been executed, we need to fetch all the values
+	// and set them on the op
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			value, err := rc.client.Get(ctx, rc.prefix+op.Key).Bytes()
+			if errors.Is(err, redis.Nil) {
+				continue
+			}
+			if value != nil {
+				// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
+				// to be able to return the value
+				op.Value = make([]byte, len(value))
+				copy(op.Value, value)
+			} else {
+				op.Value = nil
+			}
+		}
+	}
 	return err
 }
 
