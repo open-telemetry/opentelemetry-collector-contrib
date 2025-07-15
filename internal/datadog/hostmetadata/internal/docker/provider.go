@@ -6,6 +6,7 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -29,7 +30,8 @@ func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	}
 
 	if hostname == "" {
-		return source.Source{}, fmt.Errorf("Docker hostname is empty")
+		//lint:ignore ST1005, "Docker" is a proper noun
+		return source.Source{}, errors.New("Docker hostname is empty")
 	}
 
 	return source.Source{Kind: source.HostnameKind, Identifier: hostname}, nil
