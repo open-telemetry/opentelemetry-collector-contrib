@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -188,7 +189,7 @@ func TestGRPCReception(t *testing.T) {
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
-	tlsCreds := &configtls.ServerConfig{
+	tlsCreds := configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
@@ -200,7 +201,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLS: tlsCreds,
+		TLS: configoptional.Some(tlsCreds),
 	}
 
 	config := Protocols{

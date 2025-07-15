@@ -4,13 +4,15 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"encoding/binary"
 	"hash/crc32"
 	"sort"
 )
 
 const (
-	maxPositions  uint32 = 36000 // 360 degrees with two decimal places
-	defaultWeight int    = 100   // the number of points in the ring for each entry. For better results, it should be greater than 100.
+	maxPositions     uint32 = 36000 // 360 degrees with two decimal places
+	defaultWeight    int    = 100   // the number of points in the ring for each entry. For better results, it should be greater than 100.
+	linearProbeLimit int    = 10    // The number of times to probe ahead in the hash ring if there is a collision while constructing the hash ring
 )
 
 // position represents a specific angle in the ring.
@@ -103,10 +105,12 @@ func bsearch(pos position, left []ringItem, right []ringItem) ringItem {
 // The slice length of the result matches the numPoints.
 func positionsFor(endpoint string, numPoints int) []position {
 	res := make([]position, 0, numPoints)
+	buf := make([]byte, 4)
 	for i := 0; i < numPoints; i++ {
 		h := crc32.NewIEEE()
+		binary.LittleEndian.PutUint32(buf, uint32(i))
 		h.Write([]byte(endpoint))
-		h.Write([]byte{byte(i)})
+		h.Write(buf)
 		hash := h.Sum32()
 		pos := hash % maxPositions
 		res = append(res, position(pos))
@@ -122,14 +126,21 @@ func positionsForEndpoints(endpoints []string, weight int) []ringItem {
 	for _, endpoint := range endpoints {
 		// for this initial implementation, we don't allow endpoints to have custom weights
 		for _, pos := range positionsFor(endpoint, weight) {
-			// if this position is occupied already, skip this item
-			if _, found := positions[pos]; found {
-				continue
+			// if this position is occupied already, look ahead in the array for a free position
+			actualPos := pos
+			positionsProbed := 0
+			for positions[actualPos] && positionsProbed < linearProbeLimit {
+				actualPos = (actualPos + 1) % position(maxPositions)
+				positionsProbed++
 			}
-			positions[pos] = true
+			if positionsProbed >= linearProbeLimit {
+				continue // Not able to find a free spot; skip this item
+			}
+
+			positions[actualPos] = true
 
 			item := ringItem{
-				pos:      pos,
+				pos:      actualPos,
 				endpoint: endpoint,
 			}
 			items = append(items, item)
