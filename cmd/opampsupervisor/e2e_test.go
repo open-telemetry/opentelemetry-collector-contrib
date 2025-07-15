@@ -55,6 +55,36 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
+// getTestModes returns the test modes for the supervisor tests.
+// On Windows, HUPReload mode is excluded as SIGHUP signals are not available.
+func getTestModes() []struct {
+	name               string
+	UseHUPConfigReload bool
+} {
+	modes := []struct {
+		name               string
+		UseHUPConfigReload bool
+	}{
+		{
+			name:               "ProcessRestart",
+			UseHUPConfigReload: false,
+		},
+	}
+
+	// Only add HUPReload mode on non-Windows platforms
+	if runtime.GOOS != "windows" {
+		modes = append(modes, struct {
+			name               string
+			UseHUPConfigReload bool
+		}{
+			name:               "HUPReload",
+			UseHUPConfigReload: true,
+		})
+	}
+
+	return modes
+}
+
 var _ clientTypes.Logger = testLogger{}
 
 type testLogger struct {
@@ -220,19 +250,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPReload",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -309,19 +327,7 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 }
 
 func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -382,19 +388,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 }
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -458,26 +452,14 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 }
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
 			storageDir := t.TempDir()
 			remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 
-			cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+			cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t, true)
 			remoteConfigProto := &protobufs.AgentRemoteConfig{
 				Config: &protobufs.AgentConfigMap{
 					ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -546,7 +528,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	// create remote config to check agent's health
 	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
-	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t, false)
 	remoteConfigProto := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -717,19 +699,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 }
 
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -1291,8 +1261,8 @@ func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
 	return bytes.NewBuffer(colCfg), h.Sum(nil)
 }
 
-func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byte, remotePort int) {
-	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "healthcheck_config.yaml"))
+func createHealthCheckCollectorConf(t *testing.T, nopPipeline bool) (cfg *bytes.Buffer, hash []byte, remotePort int) {
+	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "healthcheck_config.tmpl.yaml"))
 	require.NoError(t, err)
 
 	templ, err := template.New("").Parse(string(colCfgTpl))
@@ -1301,7 +1271,9 @@ func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byt
 	var confmapBuf bytes.Buffer
 	err = templ.Execute(
 		&confmapBuf,
-		map[string]string{},
+		map[string]any{
+			"nopPipeline": nopPipeline,
+		},
 	)
 	require.NoError(t, err)
 
@@ -1323,19 +1295,7 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 }
 
 func TestSupervisorRestartCommand(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -1511,19 +1471,7 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 }
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
@@ -2014,19 +1962,7 @@ func TestSupervisorLogging(t *testing.T) {
 }
 
 func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
-	modes := []struct {
-		name               string
-		UseHUPConfigReload bool
-	}{
-		{
-			name:               "ProcessRestart",
-			UseHUPConfigReload: false,
-		},
-		{
-			name:               "HUPRestart",
-			UseHUPConfigReload: true,
-		},
-	}
+	modes := getTestModes()
 
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {

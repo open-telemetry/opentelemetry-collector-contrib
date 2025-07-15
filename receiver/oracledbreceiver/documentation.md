@@ -377,8 +377,60 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {queries} | Sum | Int | Cumulative | true |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.top_query
+
+Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| db.server.name | The name of the server hosting the database. | Any Str |
+| db.query.text | The text of the database query being executed. | Any Str |
+| oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str |
+| oracledb.sql_id | The SQL ID of the query. | Any Str |
+| oracledb.child_number | The child number of the query. | Any Str |
+| oracledb.application_wait_time | The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta). | Any Double |
+| oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int |
+| oracledb.cluster_wait_time | Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta). | Any Double |
+| oracledb.concurrency_wait_time | Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta). | Any Double |
+| oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double |
+| oracledb.direct_reads | The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta). | Any Int |
+| oracledb.direct_writes | The number of direct path write operations, where data is written directly to disk from user memory (reporting delta). | Any Int |
+| oracledb.disk_reads | The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta). | Any Int |
+| oracledb.elapsed_time | The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta). | Any Double |
+| oracledb.executions | The number of times a specific SQL query has been executed (reporting delta). | Any Int |
+| oracledb.physical_read_bytes | The total number of bytes read from disk by a query (reporting delta). | Any Int |
+| oracledb.physical_read_requests | The number of physical I/O read operations performed by a query (reporting delta). | Any Int |
+| oracledb.physical_write_bytes | The total number of bytes written to disk by a query (reporting delta). | Any Int |
+| oracledb.physical_write_requests | The number of times a query requested to write data to disk (reporting delta). | Any Int |
+| oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int |
+| oracledb.user_io_wait_time | The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta). | Any Double |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| host.name | The host name of Oracle Server | Any Str | true |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |
