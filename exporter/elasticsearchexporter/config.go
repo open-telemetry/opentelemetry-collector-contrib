@@ -104,7 +104,10 @@ type Config struct {
 
 	// Experimental: MetadataKeys defines a list of client.Metadata keys that
 	// will be added to the exporter's telemetry if defined. The config only
-	// applies when batcher is used (set to `true` or `false`).
+	// applies when batcher is used (set to `true` or `false`). The metadata keys
+	// are converted to lower case as key lookups for client metadata is case
+	// insensitive. This means that the metric produced by internal telemetry
+	// will also have the attribute in lower case.
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
