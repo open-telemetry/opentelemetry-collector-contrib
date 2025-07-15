@@ -7,7 +7,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.130.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.37.0
+	github.com/testcontainers/testcontainers-go v0.38.0
 	go.opentelemetry.io/collector/component v1.36.0
 	go.opentelemetry.io/collector/component/componenttest v0.130.0
 	go.opentelemetry.io/collector/config/configopaque v1.36.0
@@ -79,7 +79,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
