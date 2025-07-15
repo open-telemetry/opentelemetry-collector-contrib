@@ -18,13 +18,13 @@ func TestUnmarshal(t *testing.T) {
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
-				Name:      "default",
-				ExpectErr: false,
-				Expect:    NewConfig(),
+				Name:               "default",
+				ExpectUnmarshalErr: false,
+				Expect:             NewConfig(),
 			},
 			{
-				Name:      "all",
-				ExpectErr: false,
+				Name:               "all",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.MaxLogSize = 1000000

@@ -15,3 +15,6 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+  {{- if .use_hup_config_reload }}
+  use_hup_config_reload: {{ .use_hup_config_reload }}
+  {{- end }}

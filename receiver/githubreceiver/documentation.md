@@ -22,11 +22,11 @@ The number of changes (pull requests) in a repository, categorized by their stat
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
 
 ### vcs.change.duration
 
@@ -38,12 +38,12 @@ The time duration a change (pull request/merge request/changelist) has been in a
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str | false |
+| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` | false |
 
 ### vcs.change.time_to_approval
 
@@ -55,11 +55,11 @@ The amount of time it took a change (pull request) to go from open to approved.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str | false |
 
 ### vcs.change.time_to_merge
 
@@ -71,11 +71,11 @@ The amount of time it took a change (pull request) to go from open to merged.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str | false |
 
 ### vcs.ref.count
 
@@ -87,11 +87,11 @@ The number of refs of type branch in a repository.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` | false |
 
 ### vcs.ref.lines_delta
 
@@ -103,13 +103,13 @@ The number of lines added/removed in a ref (branch) relative to the default bran
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
-| vcs.line_change.type | The type of line change being measured on a ref (branch). | Str: ``added``, ``removed`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str | false |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` | false |
+| vcs.line_change.type | The type of line change being measured on a ref (branch). | Str: ``added``, ``removed`` | false |
 
 ### vcs.ref.revisions_delta
 
@@ -121,13 +121,13 @@ The number of revisions (commits) a ref (branch) is ahead/behind the branch from
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
-| vcs.revision_delta.direction | The type of revision comparison. | Str: ``ahead``, ``behind`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str | false |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` | false |
+| vcs.revision_delta.direction | The type of revision comparison. | Str: ``ahead``, ``behind`` | false |
 
 ### vcs.ref.time
 
@@ -139,12 +139,12 @@ Time a ref (branch) created from the default branch (trunk) has existed. The `vc
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str | false |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` | false |
 
 ### vcs.repository.count
 
@@ -174,10 +174,10 @@ The number of unique contributors to a repository.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str | false |
+| vcs.repository.name | The name of the VCS repository. | Any Str | false |
 
 ## Resource Attributes
 

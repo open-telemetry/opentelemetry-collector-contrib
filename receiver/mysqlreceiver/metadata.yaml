@@ -58,9 +58,9 @@ attributes:
     enum: [pages_written, writes]
   log_operations:
     name_override: operation
-    description: The log operation types.
+    description: The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later.
     type: string
-    enum: [waits, write_requests, writes]
+    enum: [waits, write_requests, writes, fsyncs]
   operations:
     name_override: operation
     description: The operation types.
@@ -487,6 +487,15 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
+      aggregation_temporality: cumulative
+  mysql.max_used_connections:
+    enabled: false
+    description: Maximum number of connections used simultaneously since the server started.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
       aggregation_temporality: cumulative
   mysql.connection.errors:
     enabled: false
