@@ -362,12 +362,14 @@ func (cfg *Config) Validate() error {
 	}
 
 	uniq := map[string]struct{}{}
-	for _, k := range cfg.MetadataKeys {
+	for i, k := range cfg.MetadataKeys {
 		kl := strings.ToLower(k)
 		if _, has := uniq[kl]; has {
 			return fmt.Errorf("metadata_keys must be case-insenstive and unique, found duplicate: %s", kl)
 		}
 		uniq[kl] = struct{}{}
+		// convert metadata keys to lower case as these are case insensitive
+		cfg.MetadataKeys[i] = kl
 	}
 
 	return nil
