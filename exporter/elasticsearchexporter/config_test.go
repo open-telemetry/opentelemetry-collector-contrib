@@ -478,7 +478,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.MetadataKeys = []string{"x-test-1", "x-test-2", "x-test-1"}
 			}),
-			err: `telemetry_metadata_keys must be case-insenstive and unique, found duplicate: x-test-1`,
+			err: `metadata_keys must be case-insenstive and unique, found duplicate: x-test-1`,
 		},
 	}
 

@@ -361,12 +361,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
 	}
 
-	// Validate telemetry metadata keys
 	uniq := map[string]struct{}{}
 	for _, k := range cfg.MetadataKeys {
 		kl := strings.ToLower(k)
 		if _, has := uniq[kl]; has {
-			return fmt.Errorf("telemetry_metadata_keys must be case-insenstive and unique, found duplicate: %s", kl)
+			return fmt.Errorf("metadata_keys must be case-insenstive and unique, found duplicate: %s", kl)
 		}
 		uniq[kl] = struct{}{}
 	}

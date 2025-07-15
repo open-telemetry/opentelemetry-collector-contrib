@@ -123,10 +123,10 @@ func newSyncBulkIndexer(
 		flushTimeout:          config.Timeout,
 		flushBytes:            config.Flush.Bytes,
 		retryConfig:           config.Retry,
+		metadataKeys:          config.MetadataKeys,
+		telemetryBuilder:      tb,
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
-		telemetryMetadataKeys: config.MetadataKeys,
-		telemetryBuilder:      tb,
 	}
 }
 
@@ -135,10 +135,10 @@ type syncBulkIndexer struct {
 	flushTimeout          time.Duration
 	flushBytes            int
 	retryConfig           RetrySettings
+	metadataKeys          []string
+	telemetryBuilder      *metadata.TelemetryBuilder
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
-	telemetryMetadataKeys []string
-	telemetryBuilder      *metadata.TelemetryBuilder
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -182,7 +182,7 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(
 		ctx, 1,
 		metric.WithAttributeSet(attribute.NewSet(
-			getAttributesFromTelemetryMetadataKeys(ctx, s.s.telemetryMetadataKeys)...),
+			getAttributesFromMetadataKeys(ctx, s.s.metadataKeys)...),
 		),
 	)
 	// flush bytes should operate on uncompressed length
@@ -206,7 +206,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			ctx,
 			s.bi,
 			s.s.flushTimeout,
-			s.s.telemetryMetadataKeys,
+			s.s.metadataKeys,
 			s.s.telemetryBuilder,
 			s.s.logger,
 			s.s.failedDocsInputLogger,
@@ -416,7 +416,7 @@ func flushBulkIndexer(
 		defer cancel()
 	}
 	stat, err := bi.Flush(ctx)
-	defaultMetaAttrs := getAttributesFromTelemetryMetadataKeys(ctx, tMetaKeys)
+	defaultMetaAttrs := getAttributesFromMetadataKeys(ctx, tMetaKeys)
 	defaultAttrsSet := attribute.NewSet(defaultMetaAttrs...)
 	if flushed := bi.BytesFlushed(); flushed > 0 {
 		tb.ElasticsearchFlushedBytes.Add(ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet))
@@ -590,7 +590,7 @@ func flushBulkIndexer(
 	return err
 }
 
-func getAttributesFromTelemetryMetadataKeys(ctx context.Context, keys []string) []attribute.KeyValue {
+func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribute.KeyValue {
 	clientInfo := client.FromContext(ctx)
 	attrs := make([]attribute.KeyValue, 0, len(keys))
 	for _, k := range keys {
