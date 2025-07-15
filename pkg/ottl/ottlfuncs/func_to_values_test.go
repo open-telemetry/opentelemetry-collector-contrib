@@ -30,7 +30,7 @@ func Test_toValues(t *testing.T) {
 					s.AppendEmpty().SetStr("value4")
 					s.AppendEmpty().SetStr("value5")
 					subArray := []any{"subArrValue1", "subArrValue2"}
-					s.AppendEmpty().SetEmptySlice().FromRaw(subArray)
+					_ = s.AppendEmpty().SetEmptySlice().FromRaw(subArray)
 					return m, nil
 				},
 			},

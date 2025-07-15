@@ -916,7 +916,6 @@ func Test_e2e_converters(t *testing.T) {
 				s.AppendEmpty().SetDouble(3.14)
 				s.AppendEmpty().SetStr("cvalue1")
 				s.AppendEmpty().SetStr("depth2_value1")
-
 			},
 		},
 		{
