@@ -8,8 +8,8 @@ import (
 	"errors"
 	"io"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowCollectorMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowCollectorMock "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1/mock"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/mock/gomock"

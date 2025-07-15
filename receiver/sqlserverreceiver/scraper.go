@@ -16,6 +16,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,6 +38,16 @@ const (
 	serverPortKey    = "server.port"
 )
 
+const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
+
+var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	removeServerResourceAttributeFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.129.0"),
+	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are removed from metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141"),
+)
+
 type sqlServerScraperHelper struct {
 	id                     component.ID
 	config                 *Config
@@ -52,6 +63,7 @@ type sqlServerScraperHelper struct {
 	lb                     *metadata.LogsBuilder
 	cache                  *lru.Cache[string, int64]
 	lastExecutionTimestamp time.Time
+	obfuscator             *obfuscator
 }
 
 var (
@@ -80,6 +92,7 @@ func newSQLServerScraper(id component.ID,
 		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
+		obfuscator:             newObfuscator(),
 	}
 }
 
@@ -174,8 +187,12 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		val, err = retrieveFloat(row, readLatencyMsKey)
 		if err != nil {
@@ -260,8 +277,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		switch row[counterKey] {
 		case activeTempTables:
@@ -518,6 +539,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbPendingRecovery = "db_recoveryPending"
 	const dbSuspect = "db_suspect"
 	const dbOffline = "db_offline"
+	const cpuCount = "cpu_count"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -533,8 +555,12 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -542,6 +568,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+		errs = append(errs, s.mb.RecordSqlserverCPUCountDataPoint(now, row[cpuCount]))
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -572,8 +599,12 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetHostName(s.config.Server)
+
+		if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+			rb.SetServerAddress(s.config.Server)
+			rb.SetServerPort(int64(s.config.Port))
+		}
 
 		val, err = retrieveFloat(row, waitTimeMs)
 		if err != nil {
@@ -669,10 +700,10 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			obfuscated, err := obfuscateSQL(statement)
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return statement, nil
+				return "", nil
 			}
 
 			return obfuscated, nil
@@ -702,7 +733,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			physicalReadsVal = int64(0)
 		}
 
-		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) { return obfuscateXMLPlan(row[columnName]) })
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			return s.obfuscator.obfuscateXMLPlan(row[columnName])
+		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
 		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
@@ -794,14 +827,14 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash st
 	return true, 0
 }
 
-type Item struct {
+type item struct {
 	row      sqlquery.StringMap
 	priority int64
 	index    int
 }
 
 // reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-type priorityQueue []*Item
+type priorityQueue []*item
 
 func (pq priorityQueue) Len() int { return len(pq) }
 
@@ -817,7 +850,7 @@ func (pq priorityQueue) Swap(i, j int) {
 
 func (pq *priorityQueue) Push(x any) {
 	n := len(*pq)
-	item := x.(*Item)
+	item := x.(*item)
 	item.index = n
 	*pq = append(*pq, item)
 }
@@ -847,7 +880,7 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	pq := make(priorityQueue, len(rows))
 	for i, row := range rows {
 		value := values[i]
-		pq[i] = &Item{
+		pq[i] = &item{
 			row:      row,
 			priority: value,
 			index:    i,
@@ -856,7 +889,7 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 	heap.Init(&pq)
 
 	for pq.Len() > 0 && len(results) < int(maximum) {
-		item := heap.Pop(&pq).(*Item)
+		item := heap.Pop(&pq).(*item)
 		results = append(results, item.row)
 	}
 	return results
@@ -939,7 +972,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.TopQueryCount),
+		sql.Named("top", s.config.MaxRowsPerQuery),
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -965,10 +998,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			obfuscated, err := obfuscateSQL(statement)
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return statement, nil
+				return "", nil
 			}
 			return obfuscated, nil
 		}).(string)

@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 const postgresqlPort = "5432"
@@ -185,6 +186,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		TopQueryCollection: TopQueryCollection{
 			Enabled: true,
 		},
+		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
@@ -212,6 +214,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found, "Expected to find a log record with the query text")
+	assert.True(t, ns.newestQueryTimestamp > 0)
 
 	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(context.Background(), 30, 30, 30)
 	assert.NoError(t, err)
