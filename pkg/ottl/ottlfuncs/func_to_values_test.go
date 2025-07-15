@@ -13,8 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var nilOptional ottl.Optional[ottl.PMapGetter[any]]
-var nilArrayOptional ottl.Optional[[]ottl.PMapGetter[any]]
+var (
+	nilOptional      ottl.Optional[ottl.PMapGetter[any]]
+	nilArrayOptional ottl.Optional[[]ottl.PMapGetter[any]]
+)
 
 func Test_toValues(t *testing.T) {
 	multiMapGetters := ottl.NewTestingOptional[[]ottl.PMapGetter[any]](
@@ -183,7 +185,9 @@ func Test_toValues_invalidInputs(t *testing.T) {
 				m := pcommon.NewMap()
 				m.PutStr("key1", "value1")
 				return m, nil
-			}})
+			},
+		},
+	)
 
 	multiMapGetters := ottl.NewTestingOptional[[]ottl.PMapGetter[any]](
 		[]ottl.PMapGetter[any]{
