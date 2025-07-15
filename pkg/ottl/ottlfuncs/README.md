@@ -524,6 +524,7 @@ Available Converters:
 - [ToLowerCase](#tolowercase)
 - [ToSnakeCase](#tosnakecase)
 - [ToUpperCase](#touppercase)
+- [ToValues](#tovalues)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2312,6 +2313,36 @@ Examples:
 The `ToUpperCase` Converter converts the `target` string into upper case (e.g. `MyMetricName` to `MYMETRICNAME`).
 
 `target` is a string.
+
+Examples:
+
+- `ToUpperCase(metric.name)`
+
+### ToValues
+
+`ToValues(Optional[map], Optional[maps], Optional[depth])` converts a `pcommon.Map` or an array of `pcommon.Map` into a slice of their values.
+
+`map` is a `pcommon.Map`
+
+`maps` is `[]pcommon.Map`
+
+Exactly one of `map` or `maps` must be specified. 
+
+`depth` is an `int64` greater than or equal to 0. An error is reported if depth is a negative integer. 
+
+`depth=0` means only the values from the top level map(s) are returned. 
+
+If `depth` is not specified, it defaults to `int64(math.MaxInt64)`, extracting values from nested maps.
+
+The function returns a `pcommon.Slice`. The order of elements in the output `pcommon.Slice` is not guaranteed.
+
+Examples:
+- `ToValues(maps=[{"key1": "value1", "key2": "value2",  "key3": 5}, {"a": "b", "a1": {"b1": "c", "b2": "d"}}])`
+- `ToValues(maps=[{"key1": "value1", "key2": "value2",  "key3": 5}, {"a": "b", "a1": {"b1": "c", "b2": "d"}}], depth = 10)`
+- `ToValues(maps=[{"key1": "value1", "key2": "value2",  "key3": 5}, {"a": "b", "a1": {"b1": "c", "b2": "d"}}], depth = 0)`
+- `ToValues({"key1": "value1", "key2": "value2",  "key3": 5}, depth = 0)`
+- `ToValues({"key1": "value1", "key2": "value2",  "key3": 5}, depth = 100)`
+- `ToValues({"key1": "value1", "key2": "value2",  "key3": 5})`
 
 Examples:
 
