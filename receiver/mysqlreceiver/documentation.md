@@ -172,7 +172,7 @@ The number of InnoDB log operations.
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| operation | The log operation types. | Str: ``waits``, ``write_requests``, ``writes`` | false |
+| operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | false |
 
 ### mysql.mysqlx_connections
 
@@ -429,6 +429,14 @@ The number of joins that perform table scans.
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` | false |
+
+### mysql.max_used_connections
+
+Maximum number of connections used simultaneously since the server started.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
 
 ### mysql.mysqlx_worker_threads
 
