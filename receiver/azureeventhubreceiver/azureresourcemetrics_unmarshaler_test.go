@@ -1,0 +1,68 @@
+package azureeventhubreceiver
+
+import (
+	"testing"
+
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
+)
+
+func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
+	encodedMetrics := `{"records":[
+{
+  "count":23,
+  "total":12292.1382,
+  "minimum":27.4786,
+  "maximum":6695.419,
+  "average":534.440791304348,
+  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
+  "time":"2025-07-14T12:45:00.0000000Z",
+  "metricName":"dependencies/duration",
+  "timeGrain":"PT1M"
+},
+{
+  "time":"2025-07-14T12:35:36.3259399Z",
+  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/SERVICE",
+  "ResourceGUID":"00000000-0000-0000-0000-000000000000",
+  "Type":"AppMetrics",
+  "AppRoleInstance":"00000000-0000-0000-0000-000000000000",
+  "AppRoleName":"service",
+  "AppVersion":"1.0.0.0",
+  "ClientBrowser":"Other",
+  "ClientCity":"City",
+  "ClientCountryOrRegion":"Country",
+  "ClientIP":"0.0.0.0",
+  "ClientModel":"Other",
+  "ClientOS":"Linux",
+  "ClientStateOrProvince":"Province",
+  "ClientType":"PC",
+  "IKey":"00000000-0000-0000-0000-000000000000",
+  "_BilledSize":444,
+  "SDKVersion":"dotnetiso:1.1.0.0_dotnet8.0.16:otel1.12.0:ext1.4.0",
+  "Name":"metric.name",
+  "Sum":8,
+  "Min":8,
+  "Max":8,
+  "ItemCount":1
+}
+]}`
+	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
+	logger := zap.NewNop()
+	unmarshaler := newAzureResourceMetricsUnmarshaler(
+		component.BuildInfo{
+			Command:     "Test",
+			Description: "Test",
+			Version:     "Test",
+		},
+		logger,
+		[]string{
+			"",
+		},
+	)
+	metrics, err := unmarshaler.UnmarshalMetrics(&event)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 9, metrics.MetricCount())
+}
