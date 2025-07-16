@@ -243,11 +243,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 	err = proto.Unmarshal(msg, sp)
 	require.NoError(t, err)
 
-	if enableReceiveResourceSpansV2 {
-		assert.Equal(t, "none", sp.Stats[0].Env)
-	} else {
-		assert.Equal(t, "do-not-use", sp.Stats[0].Env)
-	}
+	assert.Equal(t, "do-not-use", sp.Stats[0].Env)
 }
 
 func TestOperationAndResourceNameV2(t *testing.T) {
