@@ -5,6 +5,8 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -192,6 +194,140 @@ func TestScraperScrape(t *testing.T) {
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 		})
+	}
+}
+
+func TestExtractTLSInfo(t *testing.T) {
+	testCases := []struct {
+		desc             string
+		state            *tls.ConnectionState
+		expectIssuer     string
+		expectCommonName string
+		expectTimeLeft   int64
+		expectSANCount   int
+	}{
+		{
+			desc:             "nil connection state",
+			state:            nil,
+			expectIssuer:     "",
+			expectCommonName: "",
+			expectTimeLeft:   0,
+			expectSANCount:   0,
+		},
+		{
+			desc: "empty peer certificates",
+			state: &tls.ConnectionState{
+				PeerCertificates: []*x509.Certificate{},
+			},
+			expectIssuer:     "",
+			expectCommonName: "",
+			expectTimeLeft:   0,
+			expectSANCount:   0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			issuer, commonName, sans, timeLeft := extractTLSInfo(tc.state)
+			assert.Equal(t, tc.expectIssuer, issuer)
+			assert.Equal(t, tc.expectCommonName, commonName)
+			assert.Equal(t, tc.expectTimeLeft, timeLeft)
+			assert.Len(t, sans, tc.expectSANCount)
+		})
+	}
+}
+
+func TestHTTPSWithTLS(t *testing.T) {
+	// Create an HTTPS test server
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Explicitly enable the TLS metric (to test the opt-in behavior)
+	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = true
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+				TLS: configtls.ClientConfig{
+					InsecureSkipVerify: true, // Skip verification for test server
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	// Check that we have metrics
+	require.Positive(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	// Find the TLS certificate metric
+	found := false
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		if metric.Name() == "httpcheck.tls.cert_remaining" {
+			found = true
+			assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+			dp := metric.Gauge().DataPoints().At(0)
+
+			// Check attributes
+			attrs := dp.Attributes()
+			urlVal, ok := attrs.Get("http.url")
+			assert.True(t, ok)
+			assert.Equal(t, server.URL, urlVal.Str())
+
+			// The test server cert should have some time left
+			assert.Positive(t, dp.IntValue())
+			break
+		}
+	}
+	assert.True(t, found, "TLS certificate metric not found")
+}
+
+func TestHTTPSWithTLSDisabled(t *testing.T) {
+	// Create an HTTPS test server
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Explicitly disable the TLS metric
+	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = false
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+				TLS: configtls.ClientConfig{
+					InsecureSkipVerify: true, // Skip verification for test server
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	// Check that we have metrics but no TLS metric
+	require.Positive(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	// Ensure TLS certificate metric is NOT present
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		assert.NotEqual(t, "httpcheck.tls.cert_remaining", metric.Name())
 	}
 }
 

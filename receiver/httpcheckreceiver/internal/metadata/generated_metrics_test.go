@@ -71,6 +71,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
 
+			allMetricsCount++
+			mb.RecordHttpcheckTLSCertRemainingDataPoint(ts, 1, "http.url-val", "http.tls.issuer-val", "http.tls.cn-val", []any{"http.tls.san-item1", "http.tls.san-item2"})
+
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 
@@ -154,6 +157,30 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("http.status_class")
 					assert.True(t, ok)
 					assert.Equal(t, "http.status_class-val", attrVal.Str())
+				case "httpcheck.tls.cert_remaining":
+					assert.False(t, validatedMetrics["httpcheck.tls.cert_remaining"], "Found a duplicate in the metrics slice: httpcheck.tls.cert_remaining")
+					validatedMetrics["httpcheck.tls.cert_remaining"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("http.url")
+					assert.True(t, ok)
+					assert.Equal(t, "http.url-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("http.tls.issuer")
+					assert.True(t, ok)
+					assert.Equal(t, "http.tls.issuer-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("http.tls.cn")
+					assert.True(t, ok)
+					assert.Equal(t, "http.tls.cn-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("http.tls.san")
+					assert.True(t, ok)
+					assert.Equal(t, []any{"http.tls.san-item1", "http.tls.san-item2"}, attrVal.Slice().AsRaw())
 				}
 			}
 		})
