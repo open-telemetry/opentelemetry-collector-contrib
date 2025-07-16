@@ -167,7 +167,7 @@ func (a *authenticator) getTokenForHost(ctx context.Context, host string) (strin
 			// Example: if host is "management.azure.com", then the scope to get the
 			// token will be "https://management.azure.com/.default".
 			// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
-			fmt.Sprintf("https://%s/.default", host),
+			"https://monitor.azure.com/.default",
 		},
 	}
 
