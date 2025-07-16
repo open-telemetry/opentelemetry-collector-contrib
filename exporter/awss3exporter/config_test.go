@@ -475,6 +475,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 		},
 		MarshalerName: "otlp_json",
 		ResourceAttrsToS3: ResourceAttrsToS3{
+			S3Bucket: "com.awss3.bucket",
 			S3Prefix: "com.awss3.prefix",
 		},
 	}, e,
