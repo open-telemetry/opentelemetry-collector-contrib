@@ -678,7 +678,7 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("only retry failed items", func(t *testing.T) {
-		var attempts [3]int
+		var attempts [3]atomic.Int64
 		var wg sync.WaitGroup
 		wg.Add(1)
 
@@ -698,14 +698,14 @@ func TestExporterLogs(t *testing.T) {
 					panic(err)
 				}
 
+				newAttemptCount := attempts[idxInfo.Attributes.Idx].Add(1)
 				if idxInfo.Attributes.Idx == retryIdx {
-					if attempts[retryIdx] == 0 {
+					if newAttemptCount == 1 {
 						resp[i].Status = http.StatusTooManyRequests
 					} else {
 						defer wg.Done()
 					}
 				}
-				attempts[idxInfo.Attributes.Idx]++
 			}
 			return resp, nil
 		})
@@ -724,7 +724,7 @@ func TestExporterLogs(t *testing.T) {
 
 		wg.Wait() // <- this blocks forever if the event is not retried
 
-		assert.Equal(t, [3]int{1, 2, 1}, attempts)
+		assert.Equal(t, [3]int64{1, 2, 1}, [3]int64{attempts[0].Load(), attempts[1].Load(), attempts[2].Load()})
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {

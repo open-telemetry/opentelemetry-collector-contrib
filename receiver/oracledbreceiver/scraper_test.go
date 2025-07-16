@@ -309,6 +309,88 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 	}
 }
 
+var samplesQueryResponses = map[string][]metricRow{
+	samplesQuery: {{
+		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "OBJECT_NAME": "BLAH",
+		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "OBJECT_TYPE": "OBJECT_TYPE-A",
+		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1",
+	}},
+	"invalidQuery": {{
+		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y",
+		"SQL_CHILD_NUMBER": "0", "S.SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115",
+		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "",
+	}},
+}
+
+func TestSamplesQuery(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						samplesQueryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad samples data",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					samplesQueryResponses["invalidQuery"],
+				}}
+			},
+			errWanted: `failed to parse int64 for Duration, value was : strconv.ParseFloat: parsing "": invalid syntax`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logsCfg := metadata.DefaultLogsBuilderConfig()
+			logsCfg.ResourceAttributes.OracledbInstanceName.Enabled = true
+			logsCfg.ResourceAttributes.HostName.Enabled = true
+			logsCfg.Events.DbServerTopQuery.Enabled = false
+			logsCfg.Events.DbServerQuerySample.Enabled = true
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc: test.dbclientFn,
+				id:                 component.ID{},
+				lb:                 metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+				logsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
+				obfuscator:         newObfuscator(),
+			}
+			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
+			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(context.Background()))
+			}()
+			require.NoError(t, err)
+			logs, err := scrpr.scrapeLogs(context.Background())
+			expectedSamplesFile := filepath.Join("testdata", "expectedSamplesFile.yaml")
+
+			if test.errWanted != "" {
+				require.EqualError(t, err, test.errWanted)
+			} else {
+				// Uncomment line below to re-generate expected logs.
+				// golden.WriteLogs(t, expectedSamplesFile, logs)
+				require.NoError(t, err)
+				expectedLogs, _ := golden.ReadLogs(expectedSamplesFile)
+				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
+				assert.Equal(t, "db.server.query_sample", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+				assert.NoError(t, errs)
+			}
+		})
+	}
+}
+
 func readFile(fname string) []byte {
 	file, err := os.ReadFile(filepath.Join("testdata", fname))
 	if err != nil {

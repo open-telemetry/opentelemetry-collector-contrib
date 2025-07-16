@@ -581,6 +581,11 @@ func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[in
 	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
 }
 
+func (m *mockClient) getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[functionIdentifer]functionStat), args.Error(1)
+}
+
 func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
 	args := m.Called(ctx)
 	return args.Get(0).(*bgStat), args.Error(1)
@@ -815,5 +820,23 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 			},
 		}
 		m.On("getIndexStats", mock.Anything, database).Return(indexStats, nil)
+
+		function1 := "test_function1"
+		function2 := "test_function2"
+		functionStats := map[functionIdentifer]functionStat{
+			functionKey(database, schema, function1): {
+				database: database,
+				schema:   schema,
+				function: function1,
+				calls:    int64(index + 50),
+			},
+			functionKey(database, schema, function2): {
+				database: database,
+				schema:   schema,
+				function: function2,
+				calls:    int64(index + 51),
+			},
+		}
+		m.On("getFunctionStats", mock.Anything, database).Return(functionStats, nil)
 	}
 }
