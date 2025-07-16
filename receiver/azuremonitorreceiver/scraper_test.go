@@ -174,11 +174,10 @@ func TestAzureScraperScrape(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
-			includeTags := len(tt.fields.cfg.AppendTagsAsAttributes) > 0
 			optionsResolver := newMockClientOptionsResolver(
 				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
-				getResourcesMockData(includeTags),
+				getResourcesMockData(),
 				getMetricsDefinitionsMockData(),
 				getMetricsValuesMockData(),
 				nil,
@@ -491,7 +490,7 @@ func getNominalTestScraper() *azureScraper {
 	optionsResolver := newMockClientOptionsResolver(
 		getSubscriptionByIDMockData(),
 		getSubscriptionsMockData(),
-		getResourcesMockData(false),
+		getResourcesMockData(),
 		getMetricsDefinitionsMockData(),
 		getMetricsValuesMockData(),
 		nil,
@@ -601,7 +600,7 @@ func getTimeMock() timeNowIface {
 	return &timeMock{time: time.Now()}
 }
 
-func getResourcesMockData(tags bool) map[string][]armresources.ClientListResponse {
+func getResourcesMockData() map[string][]armresources.ClientListResponse {
 	id1, id2, id3, id4,
 		location1, name1, type1 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
@@ -615,14 +614,14 @@ func getResourcesMockData(tags bool) map[string][]armresources.ClientListRespons
 		Name:     &name1,
 		Type:     &type1,
 	}
-	if tags {
-		tagName1, tagValue1 := "tagName1", "tagValue1"
-		tagName2, tagValue2 := "tagName2", "tagValue2"
-		resourceID1.Tags = map[string]*string{
-			tagName1: &tagValue1,
-			tagName2: &tagValue2,
-		}
+
+	tagName1, tagValue1 := "tagName1", "tagValue1"
+	tagName2, tagValue2 := "tagName2", "tagValue2"
+	resourceID1.Tags = map[string]*string{
+		tagName1: &tagValue1,
+		tagName2: &tagValue2,
 	}
+
 	return map[string][]armresources.ClientListResponse{
 		"subscriptionId1": {
 			{

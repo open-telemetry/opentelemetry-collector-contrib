@@ -284,11 +284,10 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
-			includeTags := len(tt.fields.cfg.AppendTagsAsAttributes) > 0
 			optionsResolver := newMockClientOptionsResolver(
 				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
-				getResourcesMockData(includeTags),
+				getResourcesMockData(),
 				getMetricsDefinitionsMockData(),
 				nil,
 				getMetricsQueryResponseMockData(),
