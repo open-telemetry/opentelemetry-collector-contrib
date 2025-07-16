@@ -54,7 +54,7 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 		case pcommon.Slice:
 			return findIndexInSlice(s, valueVal), nil
 		default:
-			return nil, errors.New("source must be string or slice type")
+			return nil, errors.New("source must be of type string or slice)
 		}
 	}
 }
