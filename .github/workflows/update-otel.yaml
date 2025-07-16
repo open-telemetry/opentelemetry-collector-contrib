@@ -35,19 +35,17 @@ jobs:
           echo "LAST_COMMIT=$LAST_COMMIT" >> $GITHUB_ENV
           echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}         
       - name: Gets packages from links with retries
         uses: nick-fields/retry@v3
         with:  
-          retry_wait_seconds: 5
-          timeout_minutes: 15
+          retry_wait_seconds: 500
+          timeout_minutes: 120
           max_attempts: 3
           retry_on: error 
           command: |
             cd opentelemetry-collector-contrib
             make update-otel OTEL_STABLE_VERSION=${{ env.LAST_COMMIT }} OTEL_VERSION=${{ env.LAST_COMMIT }}
-       
       - name: Push and create PR
         run: |  
           cd opentelemetry-collector-contrib
