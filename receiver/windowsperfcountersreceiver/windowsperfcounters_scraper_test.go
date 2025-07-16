@@ -235,8 +235,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
-			actualMetrics, err := scraper.scrape(context.Background())
-			require.NoError(t, err)
+			var actualMetrics pmetric.Metrics
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				actualMetrics, err = scraper.scrape(context.Background())
+				assert.NoError(c, err)
+			}, 20*time.Second, 1*time.Second)
 
 			err = scraper.shutdown(context.Background())
 

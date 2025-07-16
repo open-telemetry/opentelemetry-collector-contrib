@@ -37,7 +37,6 @@ e2etests
 >>>>>>> main
 exporter/carbonexporter
 exporter/kineticaexporter
-exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver

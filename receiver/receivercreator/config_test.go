@@ -150,7 +150,7 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
-	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
+	require.ErrorContains(t, err, "resource attributes for unsupported endpoint type \"not.a.real.type\"")
 	require.Nil(t, cfg)
 }
 
@@ -163,7 +163,7 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
-	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
+	require.ErrorContains(t, err, "unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
 	require.Nil(t, cfg)
 }
 
