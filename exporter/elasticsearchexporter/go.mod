@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.23.0
 
 require (
-	github.com/cespare/xxhash v1.1.0
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elastic/go-docappender/v2 v2.11.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.1
