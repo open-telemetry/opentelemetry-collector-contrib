@@ -46,7 +46,7 @@ receivers:
     username: otelu
     password: ${env:RABBITMQ_PASSWORD}
     collection_interval: 10s
-     metrics:  # Enable node metrics by explicitly setting them to true
+    metrics:  # Enable node metrics by explicitly setting them to true
       rabbitmq.node.disk_free:
         enabled: true
       rabbitmq.node.disk_free_limit:
