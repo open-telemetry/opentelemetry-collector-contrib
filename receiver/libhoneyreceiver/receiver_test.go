@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -406,6 +407,20 @@ func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
+
+			// Simulate what confighttp does when IncludeMetadata is enabled
+			if tt.includeMetadata {
+				// Create metadata from headers
+				metadata := make(map[string][]string)
+				for key, values := range req.Header {
+					metadata[strings.ToLower(key)] = values
+				}
+				// Add client info to request context
+				ctx := client.NewContext(req.Context(), client.Info{
+					Metadata: client.NewMetadata(metadata),
+				})
+				req = req.WithContext(ctx)
+			}
 
 			r.handleEvent(w, req)
 
