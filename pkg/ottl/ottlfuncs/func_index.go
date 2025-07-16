@@ -13,6 +13,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+var valueComparator = ottl.NewValueComparator()
+
 type IndexArguments[K any] struct {
 	Source ottl.Getter[K]
 	Value  ottl.Getter[K]
@@ -54,16 +56,15 @@ func index[K any](source ottl.Getter[K], value ottl.Getter[K]) ottl.ExprFunc[K] 
 		case pcommon.Slice:
 			return findIndexInSlice(s, valueVal), nil
 		default:
-			return nil, errors.New("source must be of type string or slice)
+			return nil, errors.New("source must be of type string or slice")
 		}
 	}
 }
 
 func findIndexInSlice(slice pcommon.Slice, value any) int64 {
-	comparator := ottl.NewValueComparator()
 	for i := 0; i < slice.Len(); i++ {
 		sliceValue := slice.At(i).AsRaw()
-		if comparator.Equal(sliceValue, value) {
+		if valueComparator.Equal(sliceValue, value) {
 			return int64(i)
 		}
 	}
