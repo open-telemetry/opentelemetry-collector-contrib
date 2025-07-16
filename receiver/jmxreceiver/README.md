@@ -16,15 +16,14 @@
 
 ### Overview
 
-The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/README.md)
-to report metrics from a target MBean server using a built-in `otel` helper-utilizing Groovy script.
+The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/README.md) (built-in `otel` helper-utilizing Groovy script) or the [OpenTelemetry JMX Scraper](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper) (YAML metrics mapping) to report metrics from a target MBean server.
 
 ### Details
 
-This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
-connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
+This receiver will launch a child JRE process running the corresponding JAR (JMX Metric Gatherer or JMX Scraper) configured with your specified JMX
+connection information. It then reports metrics to an implicitly created OTLP receiver.
 In order to use you will need to download the most [recent release](https://github.com/open-telemetry/opentelemetry-java-contrib/releases)
-of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
+of the JMX JAR and configure the receiver with its path. It is assumed that the JRE is
 available on your system.
 
 # Configuration
@@ -57,18 +56,31 @@ receivers:
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
 
-The path for the JMX Metric Gatherer uber JAR to run. This must represent a released version 1.9+ of the jar, 
-which can be downloaded from [github](https://github.com/open-telemetry/opentelemetry-java-contrib/releases). 
-If a non-released version is required, you can specify a custom version by providing the sha256 hash of your 
-custom version of the jar during collector build time using the `ldflags` option. 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
+The path for the JMX JAR (JMX Metric Gatherer or JMX Scraper) to run. This must represent a released version 1.9+ of the jar,
+which can be downloaded from [github](https://github.com/open-telemetry/opentelemetry-java-contrib/releases).
+If a non-released version is required, you can specify a custom version by providing the sha256 hash of your
+custom version of the jar during collector build time using the `ldflags` option.
+
+For the JMX Metric Gatherer:
 
 ```bash
 go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=<sha256hash>" ...
 ```
 
+Custom JMX Scraper:
+
+```bash
+go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.ScraperHash=<sha256hash>" ...
+```
+
 ### endpoint
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host
-and port used to construct the Service URL the Metric Gatherer's JMX client should use. Value must be in the form of
+and port used to construct the Service URL the JMX client should use. Value must be in the form of
 `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of
 `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
 
@@ -78,10 +90,15 @@ _Required._
 
 ### target_system
 
-The built-in target system (or systems) metric gatherer script to run.
-Must be a subset of: `"activemq"`, `"cassandra"`, `"hbase"`, `"hadoop"`,  `"jetty"`, `"jvm"`, `"kafka"`, `"kafka-consumer"`, `"kafka-producer"`, `"solr"`, `"tomcat"`, `"wildfly"`.
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
-If additional target systems must be supported (because of a custom JMX metrics gatherer jar configured using the 
+The built-in target system (or systems) metric gatherer to run. Supported
+targets include:
+
+ - [JMX Scraper documentation](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper#configuration-reference)
+ - [JMX Gatherer documentation](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-metrics#target-systems)
+
+If additional target systems must be supported (because of a custom jar configured using the
 `MetricsGathererHash` build time config), they can be added with another build time flag.
 
 ```bash
@@ -91,17 +108,35 @@ go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/
 
 Corresponds to the `otel.jmx.target.system` property.
 
+### target_source
+
+**Supported by:** `jmx-scraper`
+
+Source of metrics definitions to use for `target_system`, supported values are `auto` (default), `instrumentation` and `legacy`. Find more details in the [JMX Scraper documentation](https://github.com/open-telemetry/opentelemetry-java-contrib/tree/main/jmx-scraper#configuration-reference).
+
+### jmx_configs
+
+**Supported by:** `jmx-scraper`
+
+Comma-separated list of paths to custom YAML metrics definition, mandatory when `target_system` is not set.
+
 ### collection_interval (default: `10s`)
 
-The interval time for the Groovy script to be run and metrics to be exported by the JMX Metric Gatherer within the persistent JRE process.
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
+The interval time for collecting the metrics to be exported by the JMX JAR within the persistent JRE process.
 
 Corresponds to the `otel.jmx.interval.milliseconds` property.
 
 ### initial_delay (default: `1s`)
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 Defines how long this receiver waits before starting.
 
 ### username
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 The username to use for JMX authentication.
 
@@ -109,11 +144,15 @@ Corresponds to the `otel.jmx.username` property.
 
 ### password
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
 
 ### otlp.endpoint (default: `0.0.0.0:<random open port>`)
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 The otlp exporter endpoint to which to listen and submit metrics.
 
@@ -121,11 +160,15 @@ Corresponds to the `otel.exporter.otlp.endpoint` property.
 
 ### otlp.timeout (default: `5s`)
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The otlp exporter request timeout.
 
 Corresponds to the `otel.exporter.otlp.metric.timeout` property.
 
 ### otlp.headers
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 The headers to include in otlp metric submission requests.
 
@@ -133,11 +176,15 @@ Corresponds to the `otel.exporter.otlp.metadata` property.
 
 ### keystore_path
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The keystore path is required if SSL is enabled on the target JVM.
 
 Corresponds to the `javax.net.ssl.keyStore` property.
 
 ### keystore_password
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 The keystore file password if required by SSL.
 
@@ -145,11 +192,15 @@ Corresponds to the `javax.net.ssl.keyStorePassword` property.
 
 ### keystore_type
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The keystore type if required by SSL.
 
 Corresponds to the `javax.net.ssl.keyStoreType` property.
 
-### truststore_path 
+### truststore_path
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 The truststore path if the SSL profile is required.
 
@@ -157,17 +208,23 @@ Corresponds to the `javax.net.ssl.trustStore` property.
 
 ### truststore_password
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The truststore file password if required by SSL.
 
 Corresponds to the `javax.net.ssl.trustStorePassword` property.
 
 ### truststore_type
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The truststore type if required by SSL.
 
 Corresponds to the `javax.net.ssl.trustStoreType` property.
 
 ### remote_profile
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 Supported JMX remote profiles are TLS in combination with SASL profiles: SASL/PLAIN, SASL/DIGEST-MD5 and SASL/CRAM-MD5.
 Should be one of: `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`,
@@ -177,21 +234,29 @@ Corresponds to the `otel.jmx.remote.profile` property.
 
 ### realm
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 The realm, as required by remote profile SASL/DIGEST-MD5.
 
 Corresponds to the `otel.jmx.realm` property.
 
 ### additional_jars
 
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
+
 Additional JARs to be included in the java command classpath. This is currently only used for support for `wildfly`, where the Additional Jar should be a version of the jboss-client jar found on your wildfly installation.
 
 ### resource_attributes
+
+**Supported by:** `jmx-scraper`, `jmx-gatherer`
 
 Map of resource attributes that will be applied to any metrics emitted from the metrics gatherer.
 
 Corresponds to the `otel.resource.attributes` property.
 
 ### log_level
+
+**Supported by:** `jmx-gatherer`
 
 SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`. If not provided, will attempt to match to the current log level of the collector.
 
