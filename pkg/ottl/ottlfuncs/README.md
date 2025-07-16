@@ -474,6 +474,7 @@ Available Converters:
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
+- [Index](#index)
 - [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
@@ -1075,6 +1076,34 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### Index
+
+`Index(source, value)`
+
+The `Index` Converter returns the index of the first occurrence of the `value` in the `source`, or -1 if not found.
+
+**Supported Source Types:**
+
+`source` can be `pcommon.Slice`, `pcommon.Value`, or following native Go slices:
+- `[]any` - slice with mixed types
+- `[]string` - string slice
+- `[]int`, `[]int16`, `[]int32`, `[]int64` - integer slices
+- `[]uint`, `[]uint16`, `[]uint32`, `[]uint64` - unsigned integer slices
+- `[]float32`, `[]float64` - floating-point slices
+- `[]bool` - boolean slice
+
+**Type requirements:**
+- For numeric types, the search `value` should be `int64` or `float64`
+- String and boolean comparisons require exact type matches
+
+The returned type is `int64`.
+
+**Examples:**
+
+- `Index("hello world", "world")` → returns `6`
+- `Index(log.attributes["tags"], "error")` → find string in string `log.attributes["tags"]` slice
+- `Index(log.attributes["scores"], int64(95))` → find value in numeric `log.attributes["scores"]` slice
 
 ### InsertXML
 
