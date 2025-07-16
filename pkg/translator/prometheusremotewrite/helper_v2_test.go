@@ -125,7 +125,7 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			converter := newPrometheusConverterV2()
+			converter := newPrometheusConverterV2(Settings{})
 
 			converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
 
@@ -255,7 +255,7 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverterV2()
+			converter := newPrometheusConverterV2(Settings{})
 
 			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
@@ -379,7 +379,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverterV2()
+			converter := newPrometheusConverterV2(Settings{})
 			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
 				Type: otelMetricTypeToPromMetricTypeV2(metric),

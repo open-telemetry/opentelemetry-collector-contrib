@@ -122,7 +122,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				DisableTargetInfo: false,
 				SendMetadata:      false,
 			}
-			converter := newPrometheusConverterV2()
+			converter := newPrometheusConverterV2(Settings{})
 			unitNamer := otlptranslator.UnitNamer{}
 			m := metadata{
 				Type: otelMetricTypeToPromMetricTypeV2(metric),
@@ -178,7 +178,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		SendMetadata:      false,
 	}
 
-	converter := newPrometheusConverterV2()
+	converter := newPrometheusConverterV2(Settings{})
 	unitNamer := otlptranslator.UnitNamer{}
 	m1 := metadata{
 		Type: otelMetricTypeToPromMetricTypeV2(metric1),

@@ -20,7 +20,7 @@ import (
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
 func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.TimeSeries, writev2.SymbolsTable, error) {
-	c := newPrometheusConverterV2()
+	c := newPrometheusConverterV2(settings)
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*writev2.TimeSeries, len(tss))
@@ -36,6 +36,10 @@ type prometheusConverterV2 struct {
 	// TODO handle conflicts
 	unique      map[uint64]*writev2.TimeSeries
 	symbolTable writev2.SymbolsTable
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
+	unitNamer   otlptranslator.UnitNamer
 }
 
 type metadata struct {
@@ -44,17 +48,18 @@ type metadata struct {
 	Unit string
 }
 
-func newPrometheusConverterV2() *prometheusConverterV2 {
+func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 	return &prometheusConverterV2{
 		unique:      map[uint64]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
+		labelNamer:  otlptranslator.LabelNamer{},
+		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
 
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
-	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace}
-	unitNamer := otlptranslator.UnitNamer{}
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -76,11 +81,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),
-					Unit: unitNamer.Build(metric.Unit()),
+					Unit: c.unitNamer.Build(metric.Unit()),
 				}
 
 				// handle individual metrics based on type

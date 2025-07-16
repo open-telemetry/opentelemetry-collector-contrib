@@ -738,7 +738,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
 			metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),

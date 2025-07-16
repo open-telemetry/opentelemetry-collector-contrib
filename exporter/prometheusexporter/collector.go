@@ -37,6 +37,9 @@ type collector struct {
 	constLabels       prometheus.Labels
 	metricFamilies    sync.Map
 	metricExpiration  time.Duration
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
 }
 
 type metricFamily struct {
@@ -45,15 +48,17 @@ type metricFamily struct {
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
-	namer := otlptranslator.LabelNamer{}
+	labelNamer := otlptranslator.LabelNamer{}
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         namer.Build(config.Namespace),
+		namespace:         labelNamer.Build(config.Namespace),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
 		metricExpiration:  config.MetricExpiration,
+		metricNamer:       otlptranslator.MetricNamer{WithMetricSuffixes: config.AddMetricSuffixes, Namespace: config.Namespace},
+		labelNamer:        labelNamer,
 	}
 }
 
@@ -119,9 +124,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map, scopeName string, scopeVersion string, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
-	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: c.addMetricSuffixes, Namespace: c.namespace}
-	labelNamer := otlptranslator.LabelNamer{}
-	name := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+	name := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -131,12 +134,12 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 
 	for k, v := range attributes.All() {
-		keys = append(keys, labelNamer.Build(k))
+		keys = append(keys, c.labelNamer.Build(k))
 		values = append(values, v.AsString())
 	}
 
 	for k, v := range scopeAttributes.All() {
-		keys = append(keys, labelNamer.Build("otel_scope_"+k))
+		keys = append(keys, c.labelNamer.Build("otel_scope_"+k))
 		values = append(values, v.AsString())
 	}
 
@@ -331,7 +334,6 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
 	var lastErr error
-	labelNamer := otlptranslator.LabelNamer{}
 
 	// deduplicate resourceAttrs by job and instance
 	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
@@ -367,7 +369,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		})
 
 		for k, v := range attributes.All() {
-			finalKey := labelNamer.Build(k)
+			finalKey := c.labelNamer.Build(k)
 			if existingVal, ok := labels[finalKey]; ok {
 				labels[finalKey] = existingVal + ";" + v.AsString()
 			} else {

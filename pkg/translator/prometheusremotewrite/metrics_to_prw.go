@@ -27,7 +27,7 @@ type Settings struct {
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
-	c := newPrometheusConverter()
+	c := newPrometheusConverter(settings)
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*prompb.TimeSeries, len(tss))
@@ -42,18 +42,24 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.Time
 type prometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
 	conflicts map[uint64][]*prompb.TimeSeries
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
+	unitNamer   otlptranslator.UnitNamer
 }
 
-func newPrometheusConverter() *prometheusConverter {
+func newPrometheusConverter(settings Settings) *prometheusConverter {
 	return &prometheusConverter{
-		unique:    map[uint64]*prompb.TimeSeries{},
-		conflicts: map[uint64][]*prompb.TimeSeries{},
+		unique:      map[uint64]*prompb.TimeSeries{},
+		conflicts:   map[uint64][]*prompb.TimeSeries{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
+		labelNamer:  otlptranslator.LabelNamer{},
+		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
 
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
-	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace}
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -75,7 +81,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
 
 				// handle individual metrics based on type
 				//exhaustive:enforce
