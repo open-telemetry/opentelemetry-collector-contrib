@@ -46,7 +46,7 @@ between the involved parties to allow work to begin or for the issue to be close
 
 It is recommended that a triager should follow these steps when a new issue is reported:
 
-1. Assess the validity of the issue. Here's an rough outline on how to assess:
+1. Assess the validity of the issue. Here's a rough outline on how to assess:
    - Does the issue include a clear description of the problem?
       - Whether it’s a bug report, an enhancement proposal, or a request for a new component, the purpose of the issue should be easy to understand.
    - The following outline is applicable to bugs or enhancements:
