@@ -17,3 +17,5 @@ oracledb:
   events:
     db.server.top_query:
       enabled: true
+    db.server.query_sample:
+      enabled: true

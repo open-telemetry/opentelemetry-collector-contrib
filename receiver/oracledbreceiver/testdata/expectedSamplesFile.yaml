@@ -1,0 +1,95 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: oracledb.instance.name
+          value:
+            stringValue: ""
+        - key: host.name
+          value:
+            stringValue: ""
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.query.text
+                value:
+                  stringValue: test_query
+              - key: db.system.name
+                value:
+                  stringValue: oracle
+              - key: user.name
+                value:
+                  stringValue: ADMIN
+              - key: db.namespace
+                value:
+                  stringValue: ""
+              - key: client.address
+                value:
+                  stringValue: TEST-MACHINE
+              - key: client.port
+                value:
+                  intValue: "54440"
+              - key: network.peer.address
+                value:
+                  stringValue: TEST-MACHINE
+              - key: network.peer.port
+                value:
+                  intValue: "54440"
+              - key: oracledb.plan_hash_value
+                value:
+                  stringValue: "34313939393139353638"
+              - key: oracledb.sql_id
+                value:
+                  stringValue: 48bc50b6fuz4y
+              - key: oracledb.child_number
+                value:
+                  stringValue: "0"
+              - key: oracledb.sid
+                value:
+                  stringValue: "675"
+              - key: oracledb.serial
+                value:
+                  stringValue: "51295"
+              - key: oracledb.process
+                value:
+                  stringValue: "1115"
+              - key: oracledb.schemaname
+                value:
+                  stringValue: ADMIN
+              - key: oracledb.program
+                value:
+                  stringValue: Oracle SQL Developer for VS Code
+              - key: oracledb.module
+                value:
+                  stringValue: Oracle SQL Developer for VS Code
+              - key: oracledb.status
+                value:
+                  stringValue: ACTIVE
+              - key: oracledb.state
+                value:
+                  stringValue: WAITED KNOWN TIME
+              - key: oracledb.wait_class
+                value:
+                  stringValue: ONE
+              - key: oracledb.event
+                value:
+                  stringValue: ""
+              - key: oracledb.object_name
+                value:
+                  stringValue: BLAH
+              - key: oracledb.object_type
+                value:
+                  stringValue: OBJECT_TYPE-A
+              - key: oracledb.osuser
+                value:
+                  stringValue: test-user
+              - key: oracledb.duration_sec
+                value:
+                  doubleValue: 1
+            body: {}
+            eventName: db.server.query_sample
+            spanId: ""
+            timeUnixNano: "1752581882636677000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+          version: latest

@@ -13,6 +13,66 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type eventDbServerQuerySample struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, userNameAttributeValue string, dbNamespaceAttributeValue string, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, oracledbPlanHashValueAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbProcessAttributeValue string, oracledbSchemanameAttributeValue string, oracledbProgramAttributeValue string, oracledbModuleAttributeValue string, oracledbStatusAttributeValue string, oracledbStateAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventAttributeValue string, oracledbObjectNameAttributeValue string, oracledbObjectTypeAttributeValue string, oracledbOsuserAttributeValue string, oracledbDurationSecAttributeValue float64) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.query_sample")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("user.name", userNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("client.address", clientAddressAttributeValue)
+	dp.Attributes().PutInt("client.port", clientPortAttributeValue)
+	dp.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
+	dp.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
+	dp.Attributes().PutStr("oracledb.plan_hash_value", oracledbPlanHashValueAttributeValue)
+	dp.Attributes().PutStr("oracledb.sql_id", oracledbSQLIDAttributeValue)
+	dp.Attributes().PutStr("oracledb.child_number", oracledbChildNumberAttributeValue)
+	dp.Attributes().PutStr("oracledb.sid", oracledbSidAttributeValue)
+	dp.Attributes().PutStr("oracledb.serial", oracledbSerialAttributeValue)
+	dp.Attributes().PutStr("oracledb.process", oracledbProcessAttributeValue)
+	dp.Attributes().PutStr("oracledb.schemaname", oracledbSchemanameAttributeValue)
+	dp.Attributes().PutStr("oracledb.program", oracledbProgramAttributeValue)
+	dp.Attributes().PutStr("oracledb.module", oracledbModuleAttributeValue)
+	dp.Attributes().PutStr("oracledb.status", oracledbStatusAttributeValue)
+	dp.Attributes().PutStr("oracledb.state", oracledbStateAttributeValue)
+	dp.Attributes().PutStr("oracledb.wait_class", oracledbWaitClassAttributeValue)
+	dp.Attributes().PutStr("oracledb.event", oracledbEventAttributeValue)
+	dp.Attributes().PutStr("oracledb.object_name", oracledbObjectNameAttributeValue)
+	dp.Attributes().PutStr("oracledb.object_type", oracledbObjectTypeAttributeValue)
+	dp.Attributes().PutStr("oracledb.osuser", oracledbOsuserAttributeValue)
+	dp.Attributes().PutDouble("oracledb.duration_sec", oracledbDurationSecAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerQuerySample) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerQuerySample(cfg EventConfig) eventDbServerQuerySample {
+	e := eventDbServerQuerySample{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 type eventDbServerTopQuery struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
@@ -79,6 +139,7 @@ type LogsBuilder struct {
 	buildInfo                      component.BuildInfo // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	eventDbServerQuerySample       eventDbServerQuerySample
 	eventDbServerTopQuery          eventDbServerTopQuery
 }
 
@@ -93,6 +154,7 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		logsBuffer:                     plog.NewLogs(),
 		logRecordsBuffer:               plog.NewLogRecordSlice(),
 		buildInfo:                      settings.BuildInfo,
+		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
 		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
@@ -152,6 +214,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
+	lb.eventDbServerQuerySample.emit(ils.LogRecords())
 	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
 	for _, op := range options {
@@ -187,6 +250,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	logs := lb.logsBuffer
 	lb.logsBuffer = plog.NewLogs()
 	return logs
+}
+
+// RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, userNameAttributeValue string, dbNamespaceAttributeValue string, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, oracledbPlanHashValueAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbProcessAttributeValue string, oracledbSchemanameAttributeValue string, oracledbProgramAttributeValue string, oracledbModuleAttributeValue string, oracledbStatusAttributeValue string, oracledbStateAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventAttributeValue string, oracledbObjectNameAttributeValue string, oracledbObjectTypeAttributeValue string, oracledbOsuserAttributeValue string, oracledbDurationSecAttributeValue float64) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbQueryTextAttributeValue, dbSystemNameAttributeValue, userNameAttributeValue, dbNamespaceAttributeValue, clientAddressAttributeValue, clientPortAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue, oracledbPlanHashValueAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbProcessAttributeValue, oracledbSchemanameAttributeValue, oracledbProgramAttributeValue, oracledbModuleAttributeValue, oracledbStatusAttributeValue, oracledbStateAttributeValue, oracledbWaitClassAttributeValue, oracledbEventAttributeValue, oracledbObjectNameAttributeValue, oracledbObjectTypeAttributeValue, oracledbOsuserAttributeValue, oracledbDurationSecAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
