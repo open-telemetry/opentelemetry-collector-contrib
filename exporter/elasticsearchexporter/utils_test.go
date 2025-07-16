@@ -308,20 +308,25 @@ func newTracesWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]a
 	return traces
 }
 
-func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
-	attrs.EnsureCapacity(len(m))
-	for k, v := range m {
-		switch vv := v.(type) {
+func fillAttributeMap(attrs pcommon.Map, inputMap map[string]any) {
+	attrs.EnsureCapacity(len(inputMap))
+	for k, v := range inputMap {
+		switch v := v.(type) {
 		case bool:
-			attrs.PutBool(k, vv)
+			attrs.PutBool(k, v)
 		case string:
-			attrs.PutStr(k, vv)
+			attrs.PutStr(k, v)
 		case []string:
 			slice := attrs.PutEmptySlice(k)
-			slice.EnsureCapacity(len(vv))
-			for _, s := range vv {
+			slice.EnsureCapacity(len(v))
+			for _, s := range v {
 				slice.AppendEmpty().SetStr(s)
 			}
+		case map[string]any:
+			// only valid for logs attributes because its value needs to support any type
+			// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes
+			m := attrs.PutEmptyMap(k)
+			fillAttributeMap(m, v)
 		}
 	}
 }
