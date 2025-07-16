@@ -263,7 +263,7 @@ type Config struct {
 	// useless.
 	Authentication *AuthConfig `mapstructure:"auth"`
 
-	// Credentials is deprecated.
+	// Deprecated: Credentials is deprecated.
 	Credentials        string `mapstructure:"credentials"`
 	ClientID           string `mapstructure:"client_id"`
 	ClientSecret       string `mapstructure:"client_secret"`

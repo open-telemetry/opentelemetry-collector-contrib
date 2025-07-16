@@ -15,6 +15,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -24,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 type Manager struct {
@@ -154,6 +154,21 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
 		}
 
+		// TODO(krajorama): remove once
+		// https://github.com/prometheus/prometheus/issues/16750 is solved
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35459
+		//   is implemented and is default.
+		if m.promCfg.GlobalConfig.MetricNameValidationScheme == "" {
+			m.promCfg.GlobalConfig.MetricNameValidationScheme = promconfig.LegacyValidationConfig
+		}
+
+		// Validate the scrape config and also fill in the defaults from the global config as needed.
+		err = scrapeConfig.Validate(m.promCfg.GlobalConfig)
+		if err != nil {
+			m.settings.Logger.Error("Failed to validate the scrape configuration", zap.Error(err))
+			return 0, err
+		}
+
 		m.promCfg.ScrapeConfigs = append(m.promCfg.ScrapeConfigs, scrapeConfig)
 	}
 
@@ -168,13 +183,14 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 func (m *Manager) applyCfg() error {
 	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
+	truePtr := true
 	if err != nil {
 		return fmt.Errorf("could not get scrape configs: %w", err)
 	}
 	if !m.enableNativeHistograms {
 		// Enforce scraping classic histograms to avoid dropping them.
 		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
-			scrapeConfig.AlwaysScrapeClassicHistograms = true
+			scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
 		}
 	}
 
