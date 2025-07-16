@@ -76,6 +76,8 @@ const (
 
 // ResourceAttrsToS3 defines the mapping of S3 uploading configuration values to resource attribute values.
 type ResourceAttrsToS3 struct {
+	// S3Bucket indicates the mapping of the bucket name used for uploading to a specific resource attribute value.
+	S3Bucket string `mapstructure:"s3_bucket"`
 	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
 	S3Prefix string `mapstructure:"s3_prefix"`
 	// prevent unkeyed literal initialization
