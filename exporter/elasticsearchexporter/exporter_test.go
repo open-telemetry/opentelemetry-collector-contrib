@@ -678,6 +678,7 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("only retry failed items", func(t *testing.T) {
+		var mu [3]sync.Mutex
 		var attempts [3]int
 		var wg sync.WaitGroup
 		wg.Add(1)
@@ -698,6 +699,7 @@ func TestExporterLogs(t *testing.T) {
 					panic(err)
 				}
 
+				mu[idxInfo.Attributes.Idx].Lock()
 				if idxInfo.Attributes.Idx == retryIdx {
 					if attempts[retryIdx] == 0 {
 						resp[i].Status = http.StatusTooManyRequests
@@ -706,6 +708,7 @@ func TestExporterLogs(t *testing.T) {
 					}
 				}
 				attempts[idxInfo.Attributes.Idx]++
+				mu[idxInfo.Attributes.Idx].Unlock()
 			}
 			return resp, nil
 		})
