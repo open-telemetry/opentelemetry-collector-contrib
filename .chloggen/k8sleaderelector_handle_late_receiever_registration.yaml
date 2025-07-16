@@ -1,22 +1,21 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
-
+change_type:
+  bug_fix
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: receivercreator
-
+component:
+  k8sleaderelector
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix incorrect traces consumer filtering in filterConsumerSignals function
+note: handle late registration of receivers to k8sleaderelector
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [41033]
+issues: [40346]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The bug caused traces consumers to be incorrectly filtered when metrics were disabled.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

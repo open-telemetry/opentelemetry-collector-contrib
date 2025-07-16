@@ -47,8 +47,9 @@ type postgreSQLScraper struct {
 	excludes      map[string]struct{}
 	cache         *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
-	separateSchemaAttr bool
-	queryPlanCache     *expirable.LRU[string, string]
+	separateSchemaAttr   bool
+	queryPlanCache       *expirable.LRU[string, string]
+	newestQueryTimestamp float64
 }
 
 type errsMux struct {
@@ -161,6 +162,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 		p.recordDatabase(now, database, r, numTables)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
+		p.collectFunctions(ctx, now, dbClient, database, &errs)
 	}
 
 	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
@@ -200,7 +202,8 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, err := dbClient.getQuerySamples(ctx, limit, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, logger)
+	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
 		return
@@ -486,6 +489,30 @@ func (p *postgreSQLScraper) collectIndexes(
 			rb.SetPostgresqlTableName(stat.table)
 		}
 		rb.SetPostgresqlIndexName(stat.index)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
+func (p *postgreSQLScraper) collectFunctions(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *errsMux,
+) {
+	funcStats, err := client.getFunctionStats(ctx, database)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+
+	for _, stat := range funcStats {
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function)
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(database)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(stat.schema)
+		}
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
