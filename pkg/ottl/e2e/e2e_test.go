@@ -1815,6 +1815,12 @@ func constructLogTransformContext() ottllog.TransformContext {
 	thing2.PutStr("name", "bar")
 	thing2.PutInt("value", 5)
 
+	s3 := logRecord.Attributes().PutEmptySlice("slices")
+	s3.AppendEmpty().SetStr("slice1")
+	s3.AppendEmpty().SetStr("slice2")
+	s3m1 := s3.AppendEmpty().SetEmptyMap()
+	s3m1.PutStr("name", "foo")
+
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
 
