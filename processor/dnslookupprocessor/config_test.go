@@ -27,9 +27,19 @@ func TestLoadConfig(t *testing.T) {
 		errMsg      string
 	}{
 		{
-			id:          component.NewIDWithName(metadata.Type, "missing_resolve_reverse"),
+			id:          component.NewIDWithName(metadata.Type, "missing_lookups"),
 			expectError: true,
-			errMsg:      "at least one of 'resolve' or 'reverse' must be configured",
+			errMsg:      "at least one lookup must be configured",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "empty_lookups"),
+			expectError: true,
+			errMsg:      "at least one lookup must be configured",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "missing_type"),
+			expectError: true,
+			errMsg:      "lookup type must be either 'resolve' or 'reverse'",
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_context"),
@@ -37,75 +47,79 @@ func TestLoadConfig(t *testing.T) {
 			errMsg:      "unknown context invalid_context",
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "invalid_source_attributes"),
-			expectError: true,
-			errMsg:      "at least one source_attributes must be specified for DNS resolution",
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "invalid_empty_target_attribute"),
-			expectError: true,
-			errMsg:      "target_attribute must be specified for DNS resolution",
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "valid_empty"),
 			expected: &Config{
-				Resolve: &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{string(semconv.SourceAddressKey)},
-					TargetAttribute:  sourceIPKey,
-				},
-				Reverse: &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{sourceIPKey},
-					TargetAttribute:  string(semconv.SourceAddressKey),
+				Lookups: []lookupConfig{
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{string(semconv.SourceAddressKey)},
+						TargetAttribute:  sourceIPKey,
+					},
+					{
+						Type:             reverse,
+						Context:          resource,
+						SourceAttributes: []string{sourceIPKey},
+						TargetAttribute:  string(semconv.SourceAddressKey),
+					},
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_target_attribute"),
 			expected: &Config{
-				Resolve: &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"custom.address"},
-					TargetAttribute:  sourceIPKey,
+				Lookups: []lookupConfig{
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{"custom.address"},
+						TargetAttribute:  sourceIPKey,
+					},
 				},
-				Reverse: nil,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_source_attributes"),
 			expected: &Config{
-				Resolve: nil,
-				Reverse: &lookupConfig{
-					Context:          record,
-					SourceAttributes: []string{sourceIPKey},
-					TargetAttribute:  "custom.address",
+				Lookups: []lookupConfig{
+					{
+						Type:             reverse,
+						Context:          record,
+						SourceAttributes: []string{sourceIPKey},
+						TargetAttribute:  "custom.address",
+					},
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_no_context"),
 			expected: &Config{
-				Resolve: nil,
-				Reverse: &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"custom.ip"},
-					TargetAttribute:  "custom.address",
+				Lookups: []lookupConfig{
+					{
+						Type:             reverse,
+						Context:          resource,
+						SourceAttributes: []string{"custom.ip"},
+						TargetAttribute:  "custom.address",
+					},
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "custom_attributes"),
 			expected: &Config{
-				Resolve: &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"custom.address", "proxy.address"},
-					TargetAttribute:  "custom.ip",
-				},
-				Reverse: &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"custom.ip", "proxy.ip"},
-					TargetAttribute:  "custom.address",
+				Lookups: []lookupConfig{
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{"custom.address", "proxy.address"},
+						TargetAttribute:  "custom.ip",
+					},
+					{
+						Type:             reverse,
+						Context:          resource,
+						SourceAttributes: []string{"custom.ip", "proxy.ip"},
+						TargetAttribute:  "custom.address",
+					},
 				},
 			},
 		},
@@ -122,19 +136,20 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 
-			if errUnmarshal := sub.Unmarshal(cfg); errUnmarshal != nil {
-				assert.True(t, tt.expectError, "Expected no error but got: %v", errUnmarshal)
-				assert.ErrorContains(t, errUnmarshal, tt.errMsg)
+			if err = sub.Unmarshal(cfg); err != nil {
+				assert.Error(t, err, "Expected error but got none")
+				assert.ErrorContains(t, err, tt.errMsg)
 				return
 			}
 
-			if errValidate := xconfmap.Validate(cfg); errValidate != nil {
-				assert.True(t, tt.expectError, "Expected no error but got: %v", errValidate)
-				assert.ErrorContains(t, errValidate, tt.errMsg)
+			err = xconfmap.Validate(cfg)
+			if tt.expectError {
+				assert.Error(t, err, "Expected error but got none")
+				assert.ErrorContains(t, err, tt.errMsg)
 				return
 			}
 
-			assert.False(t, tt.expectError, "Expected error but got none")
+			assert.NoError(t, err, "Expected no error but got: %v", err)
 			assert.Empty(t, tt.errMsg)
 			assert.Equal(t, tt.expected, cfg)
 		})
@@ -144,15 +159,19 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_Validate(t *testing.T) {
 	createValidConfig := func() Config {
 		return Config{
-			Resolve: &lookupConfig{
-				Context:          resource,
-				SourceAttributes: []string{"host.name"},
-				TargetAttribute:  "host.ip",
-			},
-			Reverse: &lookupConfig{
-				Context:          resource,
-				SourceAttributes: []string{"client.ip"},
-				TargetAttribute:  "client.name",
+			Lookups: []lookupConfig{
+				{
+					Type:             resolve,
+					Context:          resource,
+					SourceAttributes: []string{"host.name"},
+					TargetAttribute:  "host.ip",
+				},
+				{
+					Type:             resolve,
+					Context:          resource,
+					SourceAttributes: []string{"client.ip"},
+					TargetAttribute:  "client.name",
+				},
 			},
 		}
 	}
@@ -171,71 +190,83 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "Empty resolve attribute list",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.SourceAttributes = []string{}
+				cfg.Lookups[0].SourceAttributes = []string{}
 			},
 			expectError: true,
-			errorMsg:    "invalid resolve configuration: at least one source_attributes must be specified for DNS resolution",
+			errorMsg:    "at least one source_attributes must be specified for DNS resolution",
+		},
+		{
+			name: "Resolve attribute list with empty string",
+			mutateConfigFunc: func(cfg *Config) {
+				cfg.Lookups[0].SourceAttributes = []string{""}
+			},
+			expectError: true,
+			errorMsg:    "source_attributes cannot contain empty strings",
 		},
 		{
 			name: "Empty reverse attribute list",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve = &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"source.address"},
-					TargetAttribute:  "source.ip",
-				}
-				cfg.Reverse = &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{},
-					TargetAttribute:  "source.address",
+				cfg.Lookups = []lookupConfig{
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{"source.address"},
+						TargetAttribute:  "source.ip",
+					},
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{},
+						TargetAttribute:  "source.address",
+					},
 				}
 			},
 			expectError: true,
-			errorMsg:    "reverse configuration: at least one source_attributes must be specified for DNS resolution",
+			errorMsg:    "at least one source_attributes must be specified for DNS resolution",
 		},
 		{
 			name: "Missing resolve target_attribute",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.TargetAttribute = ""
+				cfg.Lookups[0].TargetAttribute = ""
 			},
 			expectError: true,
-			errorMsg:    "invalid resolve configuration: target_attribute must be specified for DNS resolution",
+			errorMsg:    "target_attribute must be specified for DNS resolution",
 		},
 		{
 			name: "Missing reverse target_attribute",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve = &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"source.address"},
-					TargetAttribute:  "source.ip",
-				}
-				cfg.Reverse = &lookupConfig{
-					Context:          resource,
-					SourceAttributes: []string{"source.ip"},
+				cfg.Lookups = []lookupConfig{
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{"source.address"},
+						TargetAttribute:  "source.ip",
+					},
+					{
+						Type:             resolve,
+						Context:          resource,
+						SourceAttributes: []string{"source.ip"},
+					},
 				}
 			},
 			expectError: true,
-			errorMsg:    "reverse configuration: target_attribute must be specified for DNS resolution",
+			errorMsg:    "target_attribute must be specified for DNS resolution",
 		},
 		{
 			name: "Invalid resolve context",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.Context = "invalid"
+				cfg.Lookups[0].Context = "invalid"
 			},
 			expectError: true,
-			errorMsg:    "resolve configuration: context must be either 'resource' or 'record'",
+			errorMsg:    "context must be either 'resource' or 'record'",
 		},
 		{
 			name: "Invalid reverse context",
 			mutateConfigFunc: func(cfg *Config) {
-				cfg.Reverse = &lookupConfig{
-					Context:          "invalid",
-					SourceAttributes: []string{"source.ip"},
-					TargetAttribute:  "source.address",
-				}
+				cfg.Lookups[1].Context = "invalid"
 			},
 			expectError: true,
-			errorMsg:    "reverse configuration: context must be either 'resource' or 'record'",
+			errorMsg:    "context must be either 'resource' or 'record'",
 		},
 	}
 

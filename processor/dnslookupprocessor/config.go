@@ -12,12 +12,27 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.31.0"
 )
 
+type lookupType string
+
 type contextID string
 
 const (
-	resource contextID = "resource"
-	record   contextID = "record"
+	resolve  lookupType = "resolve"
+	reverse  lookupType = "reverse"
+	resource contextID  = "resource"
+	record   contextID  = "record"
 )
+
+func (l *lookupType) UnmarshalText(text []byte) error {
+	str := lookupType(strings.ToLower(string(text)))
+	switch str {
+	case resolve, reverse:
+		*l = str
+		return nil
+	default:
+		return fmt.Errorf("unknown lookup type %s, available values: %s, %s", str, resolve, reverse)
+	}
+}
 
 func (c *contextID) UnmarshalText(text []byte) error {
 	str := contextID(strings.ToLower(string(text)))
@@ -32,11 +47,7 @@ func (c *contextID) UnmarshalText(text []byte) error {
 
 // Config holds the configuration for the DnsLookup processor.
 type Config struct {
-	// Resolve contains configuration for forward DNS lookups (hostname to IP).
-	Resolve *lookupConfig `mapstructure:"resolve"`
-
-	// Reverse contains configuration for reverse DNS lookups (IP to hostname).
-	Reverse *lookupConfig `mapstructure:"reverse"`
+	Lookups []lookupConfig `mapstructure:"lookups"`
 
 	// Hostfiles specifies the path to custom host files.
 	Hostfiles []string `mapstructure:"hostfiles"`
@@ -44,10 +55,13 @@ type Config struct {
 
 // lookupConfig defines the configuration for forward/reverse DNS resolution.
 type lookupConfig struct {
+	// Type specifies the type of resolution (resolve or reverse).
+	Type lookupType `mapstructure:"type"`
+
 	// Context specifies where to look for attributes (resource or record).
 	Context contextID `mapstructure:"context"`
 
-	// SourceAttributes is a list of attributes to check for hostnames/IP. The first valid hostname/IP is used.
+	// SourceAttributes is a list of attributes to take hostnames/IP. The first valid hostname/IP is used.
 	SourceAttributes []string `mapstructure:"source_attributes"`
 
 	// TargetAttribute is the attribute to store the resolved IP/hostname.
@@ -57,33 +71,35 @@ type lookupConfig struct {
 var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
-	validateLookupConfig := func(lc *lookupConfig) error {
-		if lc == nil {
-			return nil
+	validateLookup := func(lc lookupConfig) error {
+		if lc.Type != resolve && lc.Type != reverse {
+			return fmt.Errorf("lookup type must be either 'resolve' or 'reverse', got: %s", lc.Type)
 		}
-
 		if len(lc.SourceAttributes) == 0 {
 			return errors.New("at least one source_attributes must be specified for DNS resolution")
+		}
+		for _, attr := range lc.SourceAttributes {
+			if attr == "" {
+				return errors.New("source_attributes cannot contain empty strings")
+			}
 		}
 		if lc.TargetAttribute == "" {
 			return errors.New("target_attribute must be specified for DNS resolution")
 		}
 		if lc.Context != resource && lc.Context != record {
-			return fmt.Errorf("context must be either 'resource' or 'record', got: %s", lc.Context)
+			return fmt.Errorf("lookup context must be either 'resource' or 'record', got: %s", lc.Context)
 		}
 		return nil
 	}
 
-	if cfg.Resolve == nil && cfg.Reverse == nil {
-		return errors.New("at least one of 'resolve' or 'reverse' must be configured")
+	if len(cfg.Lookups) == 0 {
+		return errors.New("at least one lookup must be configured")
 	}
 
-	if err := validateLookupConfig(cfg.Resolve); err != nil {
-		return fmt.Errorf("invalid resolve configuration: %w", err)
-	}
-
-	if err := validateLookupConfig(cfg.Reverse); err != nil {
-		return fmt.Errorf("invalid reverse configuration: %w", err)
+	for _, lookup := range cfg.Lookups {
+		if err := validateLookup(lookup); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -100,33 +116,27 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if conf.IsSet("resolve") {
-		if cfg.Resolve == nil {
-			cfg.Resolve = &lookupConfig{}
+	// Set default values for lookups
+	for i := range cfg.Lookups {
+		lookup := &cfg.Lookups[i]
+		if lookup.Context == "" {
+			lookup.Context = resource
 		}
-		if !conf.IsSet("resolve::context") {
-			cfg.Resolve.Context = resource
+		if lookup.Type == resolve {
+			if len(lookup.SourceAttributes) == 0 {
+				lookup.SourceAttributes = []string{string(semconv.SourceAddressKey)}
+			}
+			if lookup.TargetAttribute == "" {
+				lookup.TargetAttribute = sourceIPKey
+			}
 		}
-		if !conf.IsSet("resolve::source_attributes") {
-			cfg.Resolve.SourceAttributes = []string{string(semconv.SourceAddressKey)}
-		}
-		if !conf.IsSet("resolve::target_attribute") {
-			cfg.Resolve.TargetAttribute = sourceIPKey
-		}
-	}
-
-	if conf.IsSet("reverse") {
-		if cfg.Reverse == nil {
-			cfg.Reverse = &lookupConfig{}
-		}
-		if !conf.IsSet("reverse::context") {
-			cfg.Reverse.Context = resource
-		}
-		if !conf.IsSet("reverse::source_attributes") {
-			cfg.Reverse.SourceAttributes = []string{sourceIPKey}
-		}
-		if !conf.IsSet("reverse::target_attribute") {
-			cfg.Reverse.TargetAttribute = string(semconv.SourceAddressKey)
+		if lookup.Type == reverse {
+			if len(lookup.SourceAttributes) == 0 {
+				lookup.SourceAttributes = []string{sourceIPKey}
+			}
+			if lookup.TargetAttribute == "" {
+				lookup.TargetAttribute = string(semconv.SourceAddressKey)
+			}
 		}
 	}
 

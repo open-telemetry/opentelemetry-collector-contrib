@@ -23,94 +23,112 @@ func TestProcessor(t *testing.T) {
 	testCases := []struct {
 		name      string
 		goldenDir string
-		resolve   *lookupConfig
-		reverse   *lookupConfig
+		lookups   []lookupConfig
 	}{
 		{
 			name:      "resolve source.address and reverse custom.ip",
 			goldenDir: "normal",
-			resolve:   defaultResolve(),
-			reverse:   customReverse(),
+			lookups: []lookupConfig{
+				defaultResolve(),
+				customReverse(),
+			},
 		},
 		{
 			name:      "attributes not found",
 			goldenDir: "attr_not_found",
-			resolve:   defaultResolve(),
-			reverse:   customReverse(),
+			lookups: []lookupConfig{
+				defaultResolve(),
+				customReverse(),
+			},
 		},
 		{
 			name:      "attributes are empty",
 			goldenDir: "attr_empty",
-			resolve:   defaultResolve(),
-			reverse:   customReverse(),
+			lookups: []lookupConfig{
+				defaultResolve(),
+				customReverse(),
+			},
 		},
 		{
 			name:      "take the first valid attribute",
 			goldenDir: "multiple_attrs",
-			resolve: &lookupConfig{
-				Context:          resource,
-				SourceAttributes: []string{"bad.address", "good.address"},
-				TargetAttribute:  "resolved.ip",
-			},
-			reverse: &lookupConfig{
-				Context:          resource,
-				SourceAttributes: []string{"bad.ip", "good.ip"},
-				TargetAttribute:  "resolved.address",
+			lookups: []lookupConfig{
+				{
+					Type:             resolve,
+					Context:          resource,
+					SourceAttributes: []string{"bad.address", "good.address"},
+					TargetAttribute:  "resolved.ip",
+				},
+				{
+					Type:             reverse,
+					Context:          resource,
+					SourceAttributes: []string{"bad.ip", "good.ip"},
+					TargetAttribute:  "resolved.address",
+				},
 			},
 		},
 		{
 			name:      "attributes has no resolution",
 			goldenDir: "no_resolution",
-			resolve:   defaultResolve(),
-			reverse:   customReverse(),
+			lookups: []lookupConfig{
+				defaultResolve(),
+				customReverse(),
+			},
 		},
 		{
 			name:      "custom resolve attributes",
 			goldenDir: "custom_resolve_attr",
-			resolve: &lookupConfig{
-				Context:          record,
-				SourceAttributes: []string{"custom.address", "custom.another.address"},
-				TargetAttribute:  "custom.ip",
+			lookups: []lookupConfig{
+				{
+					Type:             resolve,
+					Context:          record,
+					SourceAttributes: []string{"custom.address", "custom.another.address"},
+					TargetAttribute:  "custom.ip",
+				},
 			},
-			reverse: &lookupConfig{},
 		},
 		{
 			name:      "custom reverse attributes",
 			goldenDir: "custom_reverse_attr",
-			resolve:   defaultResolve(),
-			reverse: &lookupConfig{
-				Context:          record,
-				SourceAttributes: []string{"custom.ip", "custom.another.ip"},
-				TargetAttribute:  "custom.address",
+			lookups: []lookupConfig{
+				defaultResolve(),
+				{
+					Type:             reverse,
+					Context:          record,
+					SourceAttributes: []string{"custom.ip", "custom.another.ip"},
+					TargetAttribute:  "custom.address",
+				},
 			},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := createNonExpiryHostsConfig(t, tt.resolve, tt.reverse)
+			cfg := createNonExpiryHostsConfig(t, tt.lookups)
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
 }
 
-func defaultResolve() *lookupConfig {
-	return &lookupConfig{
+func defaultResolve() lookupConfig {
+	return lookupConfig{
+		Type:             resolve,
 		Context:          resource,
 		SourceAttributes: []string{"source.address"},
 		TargetAttribute:  "source.ip",
 	}
 }
 
-func customReverse() *lookupConfig {
-	return &lookupConfig{
+func customReverse() lookupConfig {
+	return lookupConfig{
+		Type:             reverse,
 		Context:          resource,
 		SourceAttributes: []string{"custom.ip", "custom.another.ip"},
 		TargetAttribute:  "custom.address",
 	}
 }
 
-func createNonExpiryHostsConfig(t *testing.T, resolve *lookupConfig, reverse *lookupConfig) component.Config {
+func createNonExpiryHostsConfig(t *testing.T, lookups []lookupConfig) component.Config {
 	const hostsContent = `
 192.168.1.20 example.com
 192.168.1.30 another.example.com
@@ -120,8 +138,7 @@ func createNonExpiryHostsConfig(t *testing.T, resolve *lookupConfig, reverse *lo
 	hostFilePath := testutil.CreateTempHostFile(t, hostsContent)
 
 	return &Config{
-		Resolve:   resolve,
-		Reverse:   reverse,
+		Lookups:   lookups,
 		Hostfiles: []string{hostFilePath},
 	}
 }

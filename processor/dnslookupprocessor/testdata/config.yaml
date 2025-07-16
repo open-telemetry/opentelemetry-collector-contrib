@@ -1,34 +1,38 @@
-dnslookup/missing_resolve_reverse:
-
+dnslookup/missing_lookups:
+dnslookup/empty_lookups:
+  lookups: []
+dnslookup/missing_type:
+  lookups:
+    - context: "record"
+      source_attributes: [ "source.address" ]
+      target_attribute: "source.ip"
 dnslookup/invalid_context:
-  reverse:
-    context: "invalid_context"
-dnslookup/invalid_source_attributes:
-  resolve:
-    source_attributes: []
-    target_attribute: "custom.ip"
-dnslookup/invalid_empty_target_attribute:
-  resolve:
-    source_attributes: ["custom.address"]
-    target_attribute: ""
+  lookups:
+    - type: reverse
+      context: "invalid_context"
 dnslookup/valid_empty:
-  resolve:
-  reverse:
+  lookups:
+    - type: resolve
+    - type: reverse
 dnslookup/valid_no_target_attribute:
-  resolve:
-    source_attributes: ["custom.address"]
+  lookups:
+    - type: resolve
+      source_attributes: ["custom.address"]
 dnslookup/valid_no_source_attributes:
-  reverse:
-    context: "record"
-    target_attribute: "custom.address"
+  lookups:
+    - type: reverse
+      context: "record"
+      target_attribute: "custom.address"
 dnslookup/valid_no_context:
-  reverse:
-    source_attributes: ["custom.ip"]
-    target_attribute: "custom.address"
+  lookups:
+    - type: reverse
+      source_attributes: ["custom.ip"]
+      target_attribute: "custom.address"
 dnslookup/custom_attributes:
-  resolve:
-    source_attributes: ["custom.address", "proxy.address"]
-    target_attribute: "custom.ip"
-  reverse:
-    source_attributes: ["custom.ip", "proxy.ip"]
-    target_attribute: "custom.address"
+  lookups:
+    - type: resolve
+      source_attributes: ["custom.address", "proxy.address"]
+      target_attribute: "custom.ip"
+    - type: reverse
+      source_attributes: ["custom.ip", "proxy.ip"]
+      target_attribute: "custom.address"

@@ -15,19 +15,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/resolver"
 )
 
-var errHostnameOrIPNotFound = errors.New("hostname/ip not found in attributes")
+var errSourceNotFound = errors.New("hostname/ip not found in attributes")
 
 type dnsLookupProcessor struct {
-	config       *Config
-	resolver     resolver.Resolver
-	processPairs []processPair
-	logger       *zap.Logger
-}
-
-// processPair holds a context ID and a function to process DNS lookups
-type processPair struct {
-	ContextID contextID
-	ProcessFn func(ctx context.Context, pMap pcommon.Map) error
+	config   *Config
+	resolver resolver.Resolver
+	logger   *zap.Logger
 }
 
 func newDNSLookupProcessor(config *Config, logger *zap.Logger) (*dnsLookupProcessor, error) {
@@ -42,8 +35,6 @@ func newDNSLookupProcessor(config *Config, logger *zap.Logger) (*dnsLookupProces
 		config:   config,
 		resolver: dnsResolver,
 	}
-
-	dp.processPairs = dp.createProcessPairs()
 
 	return dp, nil
 }
@@ -65,51 +56,20 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	return resolver.NewNoOpResolver(), nil
 }
 
-// createProcessPairs creates a list of processPair based on the configuration.
-func (dp *dnsLookupProcessor) createProcessPairs() []processPair {
-	if (dp.config.Resolve != nil && dp.config.Reverse != nil) &&
-		(dp.config.Resolve.Context == dp.config.Reverse.Context) {
-		return []processPair{
-			{
-				ContextID: dp.config.Resolve.Context,
-				ProcessFn: dp.processResolveReverseLookup,
-			},
-		}
+func (dp *dnsLookupProcessor) processLookup(ctx context.Context, pMap pcommon.Map, lookupConfig lookupConfig) error {
+	if lookupConfig.Type == resolve {
+		return dp.processResolveLookup(ctx, pMap, lookupConfig)
 	}
 
-	var processPairs []processPair
-
-	if dp.config.Resolve != nil {
-		processPairs = append(processPairs, processPair{
-			ContextID: dp.config.Resolve.Context,
-			ProcessFn: dp.processResolveLookup,
-		})
-	}
-
-	if dp.config.Reverse != nil {
-		processPairs = append(processPairs, processPair{
-			ContextID: dp.config.Reverse.Context,
-			ProcessFn: dp.processReverseLookup,
-		})
-	}
-
-	return processPairs
-}
-
-// processResolveReverseLookup performs both DNS forward and reverse lookups on a set of attributes
-func (dp *dnsLookupProcessor) processResolveReverseLookup(ctx context.Context, pMap pcommon.Map) error {
-	resolveErr := dp.processResolveLookup(ctx, pMap)
-	reverseErr := dp.processReverseLookup(ctx, pMap)
-
-	return errors.Join(resolveErr, reverseErr)
+	return dp.processReverseLookup(ctx, pMap, lookupConfig)
 }
 
 // processResolveLookup finds the hostname from attributes and resolves it to an IP address
-func (dp *dnsLookupProcessor) processResolveLookup(ctx context.Context, pMap pcommon.Map) error {
-	return dp.processLookup(
+func (dp *dnsLookupProcessor) processResolveLookup(ctx context.Context, pMap pcommon.Map, lookupConfig lookupConfig) error {
+	return dp.performLookup(
 		ctx,
 		pMap,
-		dp.config.Resolve,
+		lookupConfig,
 		func(hostname string) (string, error) {
 			return resolver.ValidateHostname(resolver.NormalizeHostname(hostname))
 		},
@@ -118,24 +78,24 @@ func (dp *dnsLookupProcessor) processResolveLookup(ctx context.Context, pMap pco
 }
 
 // processReverseLookup finds the IP from attributes and resolves it to a hostname
-func (dp *dnsLookupProcessor) processReverseLookup(ctx context.Context, pMap pcommon.Map) error {
-	return dp.processLookup(
+func (dp *dnsLookupProcessor) processReverseLookup(ctx context.Context, pMap pcommon.Map, lookupConfig lookupConfig) error {
+	return dp.performLookup(
 		ctx,
 		pMap,
-		dp.config.Reverse,
+		lookupConfig,
 		resolver.ValidateIP,
 		dp.resolver.Reverse,
 	)
 }
 
-func (dp *dnsLookupProcessor) processLookup(
+func (dp *dnsLookupProcessor) performLookup(
 	ctx context.Context,
 	pMap pcommon.Map,
-	config *lookupConfig,
+	lookupConfig lookupConfig,
 	validateFn func(string) (string, error),
 	lookupFn func(context.Context, string) ([]string, error),
 ) error {
-	source, err := strFromAttributes(config.SourceAttributes, pMap, validateFn)
+	source, err := extractSource(lookupConfig.SourceAttributes, pMap, validateFn)
 
 	// no hostname/IP found in attributes
 	if source == "" || err != nil {
@@ -149,7 +109,7 @@ func (dp *dnsLookupProcessor) processLookup(
 
 	// Successfully resolved with content. Save the results to attribute
 	if len(results) > 0 {
-		slice := pMap.PutEmptySlice(config.TargetAttribute)
+		slice := pMap.PutEmptySlice(lookupConfig.TargetAttribute)
 		for _, res := range results {
 			slice.AppendEmpty().SetStr(res)
 		}
@@ -157,10 +117,10 @@ func (dp *dnsLookupProcessor) processLookup(
 	return nil
 }
 
-// strFromAttributes returns the first IP/hostname from the given attributes.
+// extractSource returns the first IP/hostname from the given attributes.
 // It uses validateFn to check the format. If no valid IP/hostname is found, it returns an error.
-func strFromAttributes(attributes []string, pMap pcommon.Map, validateFn func(string) (string, error)) (string, error) {
-	lastErr := errHostnameOrIPNotFound
+func extractSource(attributes []string, pMap pcommon.Map, validateFn func(string) (string, error)) (string, error) {
+	lastErr := errSourceNotFound
 
 	for _, attr := range attributes {
 		if val, found := pMap.Get(attr); found {
