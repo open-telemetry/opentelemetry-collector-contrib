@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/elastic/go-docappender/v2 v2.10.0
+	github.com/elastic/go-docappender/v2 v2.11.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.1
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
@@ -83,8 +83,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.elastic.co/apm/v2 v2.7.0 // indirect
-	go.elastic.co/fastjson v1.5.0 // indirect
+	go.elastic.co/fastjson v1.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.130.1-0.20250715222903-0a7598ec1e19 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.36.1-0.20250715222903-0a7598ec1e19 // indirect
