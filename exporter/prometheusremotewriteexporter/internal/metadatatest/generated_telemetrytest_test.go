@@ -26,6 +26,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalBytesRead.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalBytesWritten.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWalLag.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReadLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReads.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReadsFailures.Add(context.Background(), 1)
@@ -48,6 +49,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalBytesWritten(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWalLag(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalReadLatency(t, testTel,
