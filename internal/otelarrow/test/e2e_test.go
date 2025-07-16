@@ -614,10 +614,10 @@ func TestIntegrationSelfTracing(t *testing.T) {
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
 		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
+			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
-			},
+			}),
 		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
