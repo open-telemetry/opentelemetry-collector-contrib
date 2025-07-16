@@ -17,14 +17,14 @@ func TestProtoPayload(t *testing.T) {
 	tests := []struct {
 		scenario string
 		config   Config
-		expected Log
+		expected log
 	}{
 		{
 			"AsProtobuf",
 			Config{
 				HandleProtoPayloadAs: HandleAsProtobuf,
 			},
-			Log{
+			log{
 				Body: map[string]any{
 					"@type": "type.googleapis.com/google.cloud.audit.AuditLog",
 					"authenticationInfo": map[string]any{
@@ -55,7 +55,7 @@ func TestProtoPayload(t *testing.T) {
 			Config{
 				HandleProtoPayloadAs: HandleAsJSON,
 			},
-			Log{
+			log{
 				Body: map[string]any{
 					"@type": "type.googleapis.com/google.cloud.audit.AuditLog",
 					"authenticationInfo": map[string]any{
@@ -86,7 +86,7 @@ func TestProtoPayload(t *testing.T) {
 			Config{
 				HandleProtoPayloadAs: HandleAsText,
 			},
-			Log{
+			log{
 				Body: "{  \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",  \"status\": {},  \"authenticationInfo\": {    \"principalEmail\": \"foo@bar.iam.gserviceaccount.com\",    \"serviceAccountDelegationInfo\": [      {        \"firstPartyPrincipal\": {          \"principalEmail\": \"foo@bar.iam.gserviceaccount.com\"        }      }    ],    \"principalSubject\": \"serviceAccount:foo@bar.iam.gserviceaccount.com\"  },  \"requestMetadata\": {    \"callerIp\": \"21.128.18.1\",    \"callerSuppliedUserAgent\": \"grpc-go/1.62.2,gzip(gfe)\",    \"requestAttributes\": {},    \"destinationAttributes\": {}  },  \"serviceName\": \"cloudresourcemanager.googleapis.com\",  \"methodName\": \"SearchProjects\",  \"authorizationInfo\": [    {      \"resourceAttributes\": {}    }  ],  \"resourceName\": \"projects/project-id\",  \"request\": {    \"query\": \"state:active AND NOT projectID:sys-*\",    \"@type\": \"type.googleapis.com/google.cloud.resourcemanager.v3.SearchProjectsRequest\"  }}",
 			},
 		},
@@ -94,7 +94,7 @@ func TestProtoPayload(t *testing.T) {
 
 	input := "{\"protoPayload\": {  \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",  \"status\": {},  \"authenticationInfo\": {    \"principalEmail\": \"foo@bar.iam.gserviceaccount.com\",    \"serviceAccountDelegationInfo\": [      {        \"firstPartyPrincipal\": {          \"principalEmail\": \"foo@bar.iam.gserviceaccount.com\"        }      }    ],    \"principalSubject\": \"serviceAccount:foo@bar.iam.gserviceaccount.com\"  },  \"requestMetadata\": {    \"callerIp\": \"21.128.18.1\",    \"callerSuppliedUserAgent\": \"grpc-go/1.62.2,gzip(gfe)\",    \"requestAttributes\": {},    \"destinationAttributes\": {}  },  \"serviceName\": \"cloudresourcemanager.googleapis.com\",  \"methodName\": \"SearchProjects\",  \"authorizationInfo\": [    {      \"resourceAttributes\": {}    }  ],  \"resourceName\": \"projects/project-id\",  \"request\": {    \"query\": \"state:active AND NOT projectID:sys-*\",    \"@type\": \"type.googleapis.com/google.cloud.resourcemanager.v3.SearchProjectsRequest\"  }} }"
 	for _, tt := range tests {
-		fn := func(t *testing.T, want Log) {
+		fn := func(t *testing.T, want log) {
 			extension := newConfiguredExtension(t, &tt.config)
 			defer assert.NoError(t, extension.Shutdown(context.Background()))
 
@@ -118,12 +118,12 @@ func TestProtoFieldTypes(t *testing.T) {
 	tests := []struct {
 		scenario string
 		input    string
-		expected Log
+		expected log
 	}{
 		{
 			"String",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",\n    \"serviceName\": \"OpenTelemetry\"\n  }\n}",
-			Log{
+			log{
 				Body: map[string]any{
 					"@type":       "type.googleapis.com/google.cloud.audit.AuditLog",
 					"serviceName": "OpenTelemetry",
@@ -133,7 +133,7 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			"Boolean",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",\n    \"authorizationInfo\": [\n      {\n        \"granted\": true\n      }\n    ]\n  }\n}",
-			Log{
+			log{
 				Body: map[string]any{
 					"@type":             "type.googleapis.com/google.cloud.audit.AuditLog",
 					"authorizationInfo": []any{map[string]any{"granted": true}},
@@ -143,7 +143,7 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			"EnumByString",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",\n    \"policyViolationInfo\": {\n      \"orgPolicyViolationInfo\": {\n        \"violationInfo\": [\n          {\n            \"policyType\": \"CUSTOM_CONSTRAINT\"\n          }\n        ]\n      }\n    }\n  }\n}",
-			Log{
+			log{
 				Body: map[string]any{
 					"@type":               "type.googleapis.com/google.cloud.audit.AuditLog",
 					"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": "CUSTOM_CONSTRAINT"}}}},
@@ -153,7 +153,7 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			"EnumByNumber",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",\n    \"policyViolationInfo\": {\n      \"orgPolicyViolationInfo\": {\n        \"violationInfo\": [\n          {\n            \"policyType\": 3\n          }\n        ]\n      }\n    }\n  }\n}",
-			Log{
+			log{
 				Body: map[string]any{
 					"@type":               "type.googleapis.com/google.cloud.audit.AuditLog",
 					"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": "CUSTOM_CONSTRAINT"}}}},
@@ -163,7 +163,7 @@ func TestProtoFieldTypes(t *testing.T) {
 		{
 			"BestEffortAnyType",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.examples/does.not.Exist\",\n    \"noName\": \"Foobar\"\n  }\n}",
-			Log{
+			log{
 				Body: map[string]any{
 					"noName": "Foobar",
 				},
@@ -175,7 +175,7 @@ func TestProtoFieldTypes(t *testing.T) {
 		HandleProtoPayloadAs: HandleAsProtobuf,
 	}
 	for _, tt := range tests {
-		fn := func(t *testing.T, want Log) {
+		fn := func(t *testing.T, want log) {
 			extension := newConfiguredExtension(t, &config)
 			defer assert.NoError(t, extension.Shutdown(context.Background()))
 
@@ -200,13 +200,13 @@ func TestProtoErrors(t *testing.T) {
 		scenario string
 		input    string
 		error    string
-		expected Log
+		expected log
 	}{
 		{
 			"UnknownJSONName",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",\n    \"ServiceName\": 42\n  }\n}",
 			"google.cloud.audit.AuditLog has no known field with JSON name ServiceName",
-			Log{
+			log{
 				Attributes: map[string]any{
 					"gcp.proto_payload": map[string]any{},
 				},
@@ -217,7 +217,7 @@ func TestProtoErrors(t *testing.T) {
 			"EnumTypeError",
 			"{\n  \"protoPayload\": {\n    \"@type\": \"type.googleapis.com/google.cloud.audit.AuditLog\",\n    \"policyViolationInfo\": {\n      \"orgPolicyViolationInfo\": {\n        \"violationInfo\": [\n          {\n            \"policyType\": {}\n          }\n        ]\n      }\n    }\n  }\n}",
 			"wrong type for enum: object",
-			Log{
+			log{
 				Body: map[string]any{
 					"policyViolationInfo": map[string]any{"orgPolicyViolationInfo": map[string]any{"violationInfo": []any{map[string]any{"policyType": nil}}}},
 				},
@@ -234,7 +234,7 @@ func TestProtoErrors(t *testing.T) {
 		HandleProtoPayloadAs: HandleAsProtobuf,
 	}
 	for _, tt := range tests {
-		fn := func(t *testing.T, want Log) {
+		fn := func(t *testing.T, want log) {
 			extension := newConfiguredExtension(t, &config)
 			defer assert.NoError(t, extension.Shutdown(context.Background()))
 

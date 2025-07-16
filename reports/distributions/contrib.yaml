@@ -34,6 +34,7 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -66,11 +67,13 @@ components:
         - ack
         - asapclient
         - awscloudwatchmetricstreams_encoding
+        - awslogs_encoding
         - awsproxy
         - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
@@ -147,6 +150,7 @@ components:
         - elasticsearch
         - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
@@ -228,6 +232,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

@@ -50,8 +50,8 @@ const (
 	signal1Attr3Value = true
 	signal1Attr4Key   = "sigattr4k"
 	signal1Attr4Value = 3.3
-	serviceName1      = "service-name-1"
-	serviceName2      = "service-name-2"
+	serviceName1      = "service-name-01"
+	serviceName2      = "service-name-02"
 )
 
 func TestNewMetricsExporter(t *testing.T) {

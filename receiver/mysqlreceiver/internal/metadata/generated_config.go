@@ -45,6 +45,7 @@ type MetricsConfig struct {
 	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
 	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
 	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
+	MysqlMaxUsedConnections      MetricConfig `mapstructure:"mysql.max_used_connections"`
 	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
 	MysqlMysqlxWorkerThreads     MetricConfig `mapstructure:"mysql.mysqlx_worker_threads"`
 	MysqlOpenedResources         MetricConfig `mapstructure:"mysql.opened_resources"`
@@ -128,6 +129,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MysqlLogOperations: MetricConfig{
 			Enabled: true,
+		},
+		MysqlMaxUsedConnections: MetricConfig{
+			Enabled: false,
 		},
 		MysqlMysqlxConnections: MetricConfig{
 			Enabled: true,
@@ -219,6 +223,38 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for mysql events.
+type EventsConfig struct {
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: true,
+		},
+	}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -229,6 +265,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -267,6 +310,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for mysql logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
