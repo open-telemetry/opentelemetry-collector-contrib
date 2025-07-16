@@ -1,4 +1,7 @@
-package translator
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogrumreceiver/internal/translator"
 
 import (
 	"net/http"
@@ -17,10 +20,10 @@ func ToLogs(payload map[string]any, req *http.Request, reqBytes []byte) plog.Log
 	in.Scope().SetName(InstrumentationScopeName)
 
 	newLogRecord := in.LogRecords().AppendEmpty()
-	
+
 	flatPayload := flattenJSON(payload)
 
-    setAttributes(flatPayload, newLogRecord.Attributes())
+	setAttributes(flatPayload, newLogRecord.Attributes())
 
 	return results
 }

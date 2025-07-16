@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("datadogrum")
-	ScopeName = "github.com/opentelemetry-collector-contrib/receiver/datadogrumreceiver"
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogrumreceiver"
 )
 
 const (

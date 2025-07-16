@@ -238,6 +238,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/datadogrum
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/envoyals

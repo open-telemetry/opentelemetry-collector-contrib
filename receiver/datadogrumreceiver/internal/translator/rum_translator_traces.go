@@ -1,4 +1,7 @@
-package translator
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogrumreceiver/internal/translator"
 
 import (
 	"fmt"
@@ -42,7 +45,7 @@ func ToTraces(payload map[string]any, req *http.Request, reqBytes []byte, tracep
 
 	flatPayload := flattenJSON(payload)
 
-    setAttributes(flatPayload, newSpan.Attributes())
+	setAttributes(flatPayload, newSpan.Attributes())
 
 	return results
 }
