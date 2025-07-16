@@ -26,6 +26,9 @@ TODO
 
 Some notable settings include:
 
+- `type` (default: `resolve`): Specifies the type of DNS lookup to perform. Available values:
+  - `resolve`: Performs forward DNS resolution (hostname to IP).
+  - `reverse`: Performs reverse DNS resolution (IP to hostname).
 - `context` (default: `resource`): Allows specifying the underlying telemetry context the processor will work with. Available values:
   - `resource`: Resource attributes.
   - `record`: Attributes within a data point, log record or a span.
@@ -42,23 +45,15 @@ Forward and reverse DNS resolution:
 ```yaml
 processors:
   dnslookup:
-    # Forward DNS resolution configuration (hostname to IP)
-    resolve:
-      # Context for attributes: "resource" or "record".
-      context: "record"
-      # List of attributes to check for hostnames. The first valid hostname is used.
-      source_attributes: ["source.address"]
-      # Attribute to store the resolved IP.
-      target_attribute: "source.ip"
-
-    # Reverse DNS resolution configuration (IP to hostname)
-    reverse:
-      # Context for attributes: "resource" or "record".
-      context: "record"
-      # List of attributes to check for IPs. The first valid IP is used.
-      source_attributes: ["source.ip"]
-      # Attribute to store the resolved hostname.
-      target_attribute: "source.address"
+    lookups:
+      - type: resolve                   # Type of resolution: "resolve" or "reverse"
+        context: "resource"             # Context for attributes: "resource" or "record".
+        source_attributes: ["source.address"] # List of attributes to check for hostnames. The first valid hostname is used.
+        target_attribute: "source.ip"   # Attribute to store the resolved IP.
+      - type: reverse                  
+        context: "resource"            
+        source_attributes: ["source.ip"]
+        target_attribute: "source.address"
     
     # Path to custom hosts files.
     hostfiles: 
