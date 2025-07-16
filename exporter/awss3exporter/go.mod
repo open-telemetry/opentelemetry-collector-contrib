@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.84
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.84.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.0
+	github.com/google/uuid v1.6.0
 	github.com/itchyny/timefmt-go v0.1.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.130.0
 	github.com/stretchr/testify v1.10.0
@@ -52,7 +53,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
