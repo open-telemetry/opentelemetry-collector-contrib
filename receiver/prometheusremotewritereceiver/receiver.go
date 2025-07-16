@@ -272,9 +272,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
 
 			// Add the remaining labels as resource attributes
-			for _, l := range ls {
-				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
-					attrs.PutStr(l.Name, l.Value)
+			for labelName, labelValue := range ls.Map() {
+				if labelName != "job" && labelName != "instance" && labelName != labels.MetricName {
+					attrs.PutStr(labelName, labelValue)
 				}
 			}
 			prw.rmCache.Add(hashedLabels, rm)
@@ -340,26 +340,30 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		metric, exists := metricCache[metricKey]
 		// If the metric does not exist, we create an empty metric and add it to the cache.
 		if !exists {
-			metric = scope.Metrics().AppendEmpty()
-			metric.SetName(metricName)
-			metric.SetUnit(unit)
-			metric.SetDescription(description)
-
 			switch ts.Metadata.Type {
 			case writev2.Metadata_METRIC_TYPE_GAUGE:
+				metric = setMetric(scope, metricName, unit, description)
 				metric.SetEmptyGauge()
 			case writev2.Metadata_METRIC_TYPE_COUNTER:
+				metric = setMetric(scope, metricName, unit, description)
 				sum := metric.SetEmptySum()
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 				// Histograms that comes with samples are considered as classic histograms and are not supported.
-				if len(ts.Samples) == 0 {
-					hist := metric.SetEmptyExponentialHistogram()
-					hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				if len(ts.Samples) != 0 {
+					// Drop classic histogram series as we will not handle them.
+					continue
 				}
+				metric = setMetric(scope, metricName, unit, description)
+				hist := metric.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
-				metric.SetEmptySummary()
+				// Drop summary series as we will not handle them.
+				continue
+			default:
+				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+				continue
 			}
 
 			metricCache[metricKey] = metric
@@ -378,18 +382,29 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			// Histograms that comes with samples are considered as classic histograms and are not supported.
-			if len(ts.Samples) == 0 {
-				addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts, &stats)
+			if len(ts.Samples) != 0 {
+				// Drop classic histogram series as we will not handle them.
+				continue
 			}
+			addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
+			// Drop summary series as we will not handle them.
+			continue
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
 	}
 
 	return otelMetrics, stats, badRequestErrors
+}
+
+// setMetric append a new empty metric and assign the name, unit and description to it.
+func setMetric(scope pmetric.ScopeMetrics, metricName, unit, description string) pmetric.Metric {
+	metric := scope.Metrics().AppendEmpty()
+	metric.SetName(metricName)
+	metric.SetUnit(unit)
+	metric.SetDescription(description)
+	return metric
 }
 
 // parseJobAndInstance turns the job and instance labels service resource attributes.
@@ -423,10 +438,6 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 		extractAttributes(ls).CopyTo(attributes)
 	}
 	stats.Samples += len(ts.Samples)
-}
-
-func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
 }
 
 func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
@@ -588,13 +599,13 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes return all attributes different from job, instance, metric name and scope name/version
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	for _, l := range ls {
-		if l.Name == "instance" || l.Name == "job" || // Become resource attributes
-			l.Name == labels.MetricName || // Becomes metric name
-			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+	for labelName, labelValue := range ls.Map() {
+		if labelName == "instance" || labelName == "job" || // Become resource attributes
+			labelName == labels.MetricName || // Becomes metric name
+			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
 			continue
 		}
-		attrs.PutStr(l.Name, l.Value)
+		attrs.PutStr(labelName, labelValue)
 	}
 	return attrs
 }

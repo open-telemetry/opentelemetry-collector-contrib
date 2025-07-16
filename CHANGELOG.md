@@ -7,6 +7,348 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `kubeletstats`: Move receiver.kubeletstats.enableCPUUsageMetrics feature gate to stable (#39650)
+- `geoipprocessor`: Use semantic convention Geo attributes (#34745)
+  Replace `geo.continent_code`, `geo.country_iso_code`, `geo.region_iso_code`
+  with semantic conventions `geo.continent.code`, `geo.country.iso_code`, `geo.region.iso_code`
+  attributes.
+  
+- `kafka`: The default client ID for Kafka components now honours configuration, and defaults to "otel-collector". (#41090)
+  The client ID configuration was ineffective, and (when using the Sarama implementation)
+  always defaulted to "sarama". We now honour the configuration, and the default has changed,
+  hence this is a breaking change for anyone relying on the client ID being "sarama".
+  
+- `servicegraphconnector`: Remove deprecated field `database_name_attribute` and update the documentation. (#41094)
+- `cmd/opampsupervisor`: Remote configuration by default now merges on top of user-provided config files. (#39963)
+  Previous, by default, user-provided config files were merged on top of all
+  other configuration. This is not the case anymore.
+  
+  The new default order configuration merging is as follows (from lowest to highest precedence):
+  
+  - `$OWN_TELEMETRY_CONFIG`
+  - <USER_PROVIDED_CONFIG_FILES>
+  - `$OPAMP_EXTENSION_CONFIG`
+  - `$REMOTE_CONFIG`
+  
+
+### 🚩 Deprecations 🚩
+
+- `splunkhecexporter`: Deprecate 'batcher' config, use 'sending_queue::batch' instead (#41224)
+- `spanmetricsconnector`: Mark dimensions_cache_size as deprecated following the upstream guidelines (#41101)
+
+### 🚀 New components 🚀
+
+- `tinybird`: Implement logs propagation for Tinybird exporter (#40475)
+
+### 💡 Enhancements 💡
+
+- `elasticsearchexporter`: Add telemetry for bulk indexers used to index documents to Elasticsearch. (#38610)
+- `coralogixprocessor`: Add transactions feature (#40863)
+  The transactions feature enables tracking of distributed transactions across microservices in a distributed system. 
+  It provides end-to-end visibility into request flows by correlating spans across different services, allowing 
+  developers to understand the complete journey of a request through their microservices architecture. This 
+  feature is particularly useful for identifying performance bottlenecks, debugging issues, and monitoring 
+  the health of distributed applications.
+  
+  More information:
+    https://coralogix.com/docs/user-guides/apm/features/transactions
+  
+- `coralogixprocessor`: Promote traces to alpha stability. (#41061)
+- `awslogsencodingextension`: Bump the stability to Alpha, and include it in otelcontribcol. (#38627)
+- `cgroupruntimeextension`: Promote to alpha stability (#41128)
+- `awslogsencodingextension`: Add support for AWS CloudTrail logs. (#40246)
+  The AWS Logs Encoding Extension now supports unmarshaling AWS CloudTrail logs into OpenTelemetry logs format.
+  The implementation follows OpenTelemetry semantic conventions for attributes like `rpc.method`, `rpc.system`,
+  `rpc.service`, `cloud.provider`, `cloud.region`, and `cloud.account.id`.
+  
+  CloudTrail logs can be used to monitor API activity across your AWS infrastructure, and this integration
+  enables ingestion of these logs into your OpenTelemetry pipeline for unified observability.
+  
+- `elasticsearchexporter`: Support profiles variable sampling frequency. (#40115)
+- `elasticsearchexporter`: Duplicate profiling events with count values larger than 1 (#40946)
+  Having all events with count=1 enables random sampling on the read path.
+- `elasticsearchexporter`: Store Sample level `service.name` with each profiling event. (#40967)
+- `elasticsearchexporter`: Increase metric grouping hash and _metric_names_hash from 32 bit to 64 bit to reduce collisions and chance of consequent data loss. (#41208)
+- `faroreceiver`: Ensure that the level is added to all the faro logs. (#40701)
+- `tinybirdexporter`: Add traces implementation (#40475)
+- `jsonlogencodingextension`: Add array_mode configuration option and add support to process arbitrary JSON inputs (#40877, #40545)
+  `array_mode` is default set to true to preserve backward compatibility. When set to `true`, extension accepts single or concatenated Json (ex:- NDJSON)
+- `filelogreceiver`: Add option `include_file_record_offset` to insert offset as attribute in log records as `log.file.record.offset` (#39684)
+- `githubreceiver`: Added the ability to convert custom repository properties to span attributes (#40878)
+- `elasticsearchexporter`: Improve error messages for invalid datapoints by including metric names in error output (#39063)
+  Previously, error messages for invalid number data points and histogram data points were generic.
+  Now they include the specific metric name to help with debugging and troubleshooting.
+  
+- `loadbalancingexporter`: Use a linear probe to decrease variance caused by hash collisions, which was causing a non-uniform distribution of loadbalancing. (#41200)
+- `metricstarttimeprocessor`: Add the start_time_metric, which sets the start time based on another metric in the batch of metrics. (#38383)
+- `mysqlreceiver`: Collect 'fsync' log operations. (#41175)
+- `mysqlreceiver`: Add mysql.max_used_connections metric (#40626)
+  mysql.max_used_connections contains the maximum number of used sessions since the instance start.
+- `sqlserverreceiver`: Adding 'sqlserver.cpu.count' metric (#41032)
+- `postgresqlreceiver`: Only scrape the query samples that are newer than last scraped (#40622)
+- `pkg/ottl`: Add new `Keys` converter to extract all keys from a given map. (#39256)
+- `pkg/ottl`: Added a new `ParseInt` OTTL Function. (#40758)
+- `receiver/postgresql`: Move receiver.postgresql.connectionPool feature gate to alpha (#30831)
+  This change updates the receiver to use the connection pooling for performance benefits.
+- `transformprocessor`: Add profiles support to transformprocessor. (#39009)
+- `prometheusremotewriteexporter`: Adds WAL bytes read/write metrics to the Prometheus Remote Write Exporter. The new metrics are:
+- `otelcol_exporter_prometheusremotewrite_wal_bytes_written`: The total number of bytes written to the WAL.
+- `otelcol_exporter_prometheusremotewrite_wal_bytes_read`: The total number of bytes reads from the WAL.
+ (#39556)
+- `cmd/opampsupervisor`: Allow the Supervisor send a SIGHUP signal to the agent to reload its configuration. (#40410)
+  This behavior is disabled by default. To enable it, set the `agent::enable_hup_reload` flag to `true` in the supervisor configuration.
+- `cmd/opampsupervisor`: Add support for total control of configuration merging through special configuration files (#39963)
+  The special configuration files can be used through the `agent::config_files` option to control the order
+  in which configuration is merged. This allows greater customization of this feature, so that it can adapt
+  many use cases without requiring code changes.
+  
+  Configuration is merged from the top of the list to the bottom, in order. This means that the first configuration
+  files will get overwritten by the later ones.
+  
+  Here's a list of the available special configuration options and what they represent:
+  
+  - "$OWN_TELEMETRY_CONFIG": configuration to set up the agent's own telemetry (resource, identifying and non-identifying attributes, etc.).
+  - "$OPAMP_EXTENSION_CONFIG": configuration for the agent's OpAMP extension to connect to the Supervisor.
+  - "$REMOTE_CONFIG": remote configuration received by the Supervisor.
+  
+  Here's an example that could be used to configure the Agent:
+  
+  ```
+  agent:
+    config_files:
+    - base_config.yaml
+    - $OWN_TELEMETRY_CONFIG
+    - $OPAMP_EXTENSION_CONFIG
+    - $REMOTE_CONFIG
+    - compliance_config.yaml
+  ```
+  
+  If **one or more** of the special files are not specified, they are automatically
+  added at predetermined positions in the list. The order is as follows:
+  
+  - `$OWN_TELEMETRY_CONFIG`
+  - <USER_PROVIDED_CONFIG_FILES>
+  - `$OPAMP_EXTENSION_CONFIG`
+  - `$REMOTE_CONFIG`
+  
+- `syslogexporter`: Add support for Unix sockets (#40740)
+  The `network` configuration now accepts `"unix"` as a valid option in addition to `"tcp"` and `"udp"`. When `network` is set to `"unix"`, the `endpoint` must be a valid Unix socket file path, and `port` is ignored.
+
+### 🧰 Bug fixes 🧰
+
+- `kafkareceiver (franz-go client)`: Fix race on lost partition (#41239)
+  When using the franz-go client, fixes an edge case where a consumer could
+  lose a partition while it is consuming messages. This leads to unexpected
+  behavior due to the race and likely cause the consumer to malfunction.
+  
+- `clickhouseexporter`: Fix log `Body` only recording `String` data (#41141)
+- `dorisexporter`: fix ddl for doris 3.0.6 and 2.1.10 (#40578, #40827)
+  1. Use `size_based` compaction policy for the trace graph table instead of `time_series`. | 2. Use `"inverted_index_storage_format"="V2"`. | 3. Use `zstd` as the default compression algorithm for all tables.
+- `prometheusremotewritereceiver`: Drop summary and classic histogram series as we will not handle them. (#40975)
+- `elasticsearchexporter`: Fetch `HostID`, `ContainerID`, `K8SPodName` and `K8sNamespaceName` from Resource instead of from Sample. (#40967)
+- `elasticsearchexporter`: Fix how profiles locations are interpreted and stored. (#40959)
+- `elasticsearchexporter`: Fix storing of sample attributes. (#40961)
+- `elasticsearchexporter`: Store process.executable.name as part of profiling events. (#40961)
+- `elasticsearchexporter`: Fix regression `retry::max_retries` not applying correctly for HTTP request levels retries (#39670)
+  The regression affected versions from v0.120.0 and might cause data loss due to prematurely stopping HTTP request level retries, e.g. when ES is unavailable, as it was cap to a maximum of 2 retries.
+- `elasticsearchexporter`: Fix incorrect retry backoff duration calculation (#41187)
+  Fixes a bug where backoff function is stateful and shared between bulk indexers, resulting in data race and incorrect retry backoff duration calculation.
+- `receivercreator`: Fix incorrect traces consumer filtering in filterConsumerSignals function (#41033)
+  The bug caused traces consumers to be incorrectly filtered when metrics were disabled.
+  
+- `receiver/lokireceiver`: fix parsing of Content-Type header (#41192)
+  When sending logs in json format a valid header like `Content-Type: application/json; charset=utf-8`
+  was rejected because the value was not equal to `application/json`.
+  This changes the parsing of `Content-Type` header to accept optional parameters.
+  
+- `pkg/ottl`: Fix OTTL functions by using setters. (#39100)
+- `cmd/opampsupervisor`: Supervisor without remote config capabilities now correctly ignores remote config messages. (#41166)
+- `awsxrayexporter`: Fix incorrect http url generation in trace segment when url.path is present (#40809)
+- `awscloudwatchreceiver`: Fixes issue with autodiscovered groups that were deleted preventing logs during that poll (#38940)
+- `receiver/prometheusreceiver`: Fixes masking of authentication credentials in Prometheus receiver, when reloading the Prometheus config. (#40520, #40916)
+- `kafkaexporter, kafkatopicsobserver, kafkametricsreceiver, kafkareceiver`: Fix aws_msk configuration in the doc (#41118)
+- `exporter/datadogexporter`: Ignore APM-related metrics for the running metric for metrics (#41228)
+  Runtime metrics and APM stats metrics are considered to be part of the APM product and as such they will not generate a metrics running metric.
+  
+- `filelogreceiver`: Fix `remove`, `copy`, and `move` operator configuration validation. (#40728)
+  Previously, the receiver would allow configurations that were guaranteed to cause a Collector panic. The Collector will now fail to start with friendly error messages.
+- `pkg/ottl`: Fix an issue where the attribute values were amended in the profiles dictionary. (#40738)
+- `pkg/ottl`: Fixes the OTTL nanoseconds formatter to correctly handle 9 digits of nanoseconds, ensuring accurate time formatting and parsing. (#41144)
+  Places that import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils" are likely affected by this change. For example, `FormatTime`and `Time` OTTL functions are affected. See [here](https://github.com/search?q=repo%3Aopen-telemetry%2Fopentelemetry-collector-contrib+%22github.com%2Fopen-telemetry%2Fopentelemetry-collector-contrib%2Finternal%2Fcoreinternal%2Ftimeutils%22&type=code) for a full list of affected functionalities.
+- `receiver/prometheusremotewrite`: Handle metrics with unspecified types without panicking. (#41005)
+- `sqlserverreceiver`: Fix incorrect configuration used in query sample collection. It was intended to retrieve the maximum number of rows per query from config.MaxRowsPerQuery, but it was mistakenly using config.TopQueryCount instead.
+ (#40943)
+- `datadogexporter`: Added ability for Datadog metrics serializer exporter to set proxy variables (#41041)
+
+<!-- previous-version -->
+
+## v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `elasticsearchexporter`: Add better ECS mapping for traces when using ECS mapping mode. Previously, traces were incorrectly processed by the generic encoder instead of applying ECS-compliant field mappings. (#40807)
+- `receiver/httpcheck`: Always close resp.Body and add timeout (#40552)
+- `pkg/stanza`: Remove deprecated decode package (#40861)
+- `podmanreceiver`: Deprecate "ssh-dss" host key algorithm for SSH connections (#40796)
+- `pkg`: Remove the fields from category FrontDoorAccessLog from the body log record and place them as log record attributes in translator azurelogs. (#40453)
+- `kafka`: remove broken SASL/AWS_MSK_IAM auth mechanism from Kafka components (#40554)
+- `kafkareceiver`: Improve kafkareceiver internal metrics telemetry (#40816)
+  This change adds the following internal telemetry metrics to the receiver:
+    - kafka_broker_connects
+    - kafka_broker_closed
+    - kafka_broker_throttling_duration
+    - kafka_receiver_bytes
+    - kafka_receiver_bytes_uncompressed
+    - kafka_receiver_latency
+  
+  In addition it removes explicit component "name" metrics attribute which should be enabled with "telemetry.newPipelineTelemetry"
+  collector feature gate instead. And changes "partition" metrics attribute to more direct "int64" type instead of "string".
+  
+- `datadogexporter`: Graduate exporter.datadogexporter.UseLogsAgentExporter feature gate to stable (#40925)
+- `sqlserverreceiver`: Only empty strings for query texts and query plans when obfuscation failed. (#40527)
+  This change applies only to top query collection and query sample collection.
+
+### 🚩 Deprecations 🚩
+
+- `logzioexporter`: Deprecates `jsonlog` and `logziospan` usage and replace with `plogotlp.ExportRequest` and `ptraceotlp.ExportRequest` accordingly. (#40192)
+- `datadogexporter`: Config `logs::dump_payloads` is no longer supported now that the UseLogsAgentExporter feature gate is stable. (#40925)
+- `prometheusremotewriteexporter`: Remove the stable exporter.prometheusremotewriteexporter.deprecateCreatedMetric featuregate (#40570)
+  It was supposed to be removed with v0.118.0.
+- `resourcedetectionprocessor`: Promote the processor.resourcedetection.removeGCPFaasID feature gate to beta. (#40601)
+  The faas.id attribute is replaced by the faas.instance attribute. | This disables detection of the faas.id resource attribute by default. | Re-enable by disabling the processor.resourcedetection.removeGCPFaasID feature gate.
+- `googlecloudexporter`: Remove the stable exporter.googlecloud.OTLPDirect featuregate (#17192)
+  It was supposed to be removed in v0.69.
+- `resourcedetectionprocessor`: Remove the stable processor.resourcedetection.hostCPUSteppingAsString featuregate (#40569)
+  It was supposed to be removed in v0.110.0.
+- `prometheusexporter, prometheusremotewriteexporter`: Promote the pkg.translator.prometheus.NormalizeName feature gate to stable. (#40603)
+  Use the add_metric_suffixes option on the prometheus exporters to | control the addition of suffixes instead of the feature gate.
+- `prometheusreceiver`: Promote the receiver.prometheusreceiver.RemoveLegacyResourceAttributes featuregate to stable (#40572)
+  It has been beta since v0.126.0
+
+### 🚀 New components 🚀
+
+- `extension/datadog`: Releases Datadog Extension in alpha. (#39589, #40715)
+  The Datadog Extension is now released in alpha status.
+  Using the configuration settings listed in the README will allow collectors to report configuration data to Datadog backend.
+  If enabled, collector configuration and build info will be viewable in Datadog Infrastructure Monitoring, specifically in Host List and Resource Catalog.
+  
+- `tinybirdexporter`: Introduce Tinybird Exporter (#40475)
+
+### 💡 Enhancements 💡
+
+- `windowseventlogreceiver`: Added option to prevent collector shutdown due to errors while opening channels (#36237)
+- `azuremonitorreceiver`: Add support for azureauth when batch api is enabled. (#40872)
+- `prometheusremotewritereceiver`: Add exponential histograms datapoints to the prometheusremotewritereceiver (#37277)
+- `hostmetricsreceiver`: Skeleton nfsscraper -- adds Linux nfs and nfsd metrics from /proc (#39978)
+- `receiver/hostmetrics`: Add `system.paging.faults` metrics on Windows (#40468)
+- `awslogsencodingextension`: Add support for AWS WAF logs. (#39407)
+- `azuremonitorreceiver`: fix unnecessarily exported struct (#40662)
+- `clickhouseexporter`: Support JSON type for logs and traces (#40547)
+  Added a feature gate to enable a JSON pipeline for logs and traces.
+  This feature gate ID is `clickhouse.json`, and will automatically use the new
+  DDL and column type on supported server versions.
+  You may also need to add `enable_json_type=1` to your connection
+  settings, depending on the server version.
+  
+- `datadogexporter`: Improve accuracy of conversion for single-point exponential histograms (#40867)
+- `datadogreceiver`: Implement the `/intake` endpoint (#39787)
+- `elasticsearchreceiver`: Add support for ES version 9 (#39929)
+- `exporter/datadog`: Adds support for `proxy_url` when using the logs agent exporter (#40640)
+- `kafkareceiver`: Add an Alpha feature gate `receiver.kafkareceiver.UseFranzGo` to use franz-go in the Kafka receiver for better performance. (#40628)
+  Adds an experimental opt-in support to use the franz-go client in the Kafka receiver.
+  The franz-go client is a high-performance Kafka client that can improve the performance of the Kafka receiver.
+  The default client remains sarama, which is used by the Kafka exporter and other components.
+  Enable the franz-go client by setting the `receiver.kafkareceiver.UseFranzGo` feature gate.
+  
+- `kafkareceiver`: Refactor Sarama client to pave the way for franz-go `featuregate` opt-in (#40628)
+- `googleclientauthextension`: Promote the googleclientauth extension to beta. (#31412)
+- `googlecloudmonitoringreceiver`: Add support for converting Google Cloud monitoring delta distribution metrics to OpenTelemetry histograms. (#39600)
+- `pkg/translator/prometheusremotewrite`: `FromMetricsV2` now supports translating histograms. (#33661)
+  The translation layer for Prometheus remote write 2 now supports histograms but is not fully implemented and ready for use.
+- `pkg/translator/prometheusremotewrite`: `FromMetricsV2` now supports translating summaries. (#33661)
+  The translation layer for Prometheus remote write 2 now supports summaries but is not fully implemented and ready for use.
+- `kafkaexporter`: Improve kafkaexporter internal metrics telemetry (#40815)
+- `kafkareceiver`: Create the consumer group asynchronously, and report component status (#40516)
+  This change ensures that the collector can start up if the Kafka cluster is not available
+  or the consumer group creation fails due to some other transient, retryable error.
+  
+  We also now report the component status to indicate if and when the consumer group has been
+  successfully created, and whether the receiver is ready to consume messages. This can be
+  observed via the healthcheckv2 extension.
+  
+- `logzioexporter`: Support `plogotlp.ExportRequest` struct for logs export, and `ptraceotlp.ExportRequest` struct for traces export. (#40192)
+- `netflowreceiver`: Add TCP flags attribute to netflow receiver. (#40487)
+- `prometheusremotewriteexporter`: Adds WAL latency metrics to the Prometheus Remote Write Exporter. The new metrics are:
+- `otelcol_exporter_prometheusremotewrite_wal_write_latency`: The latency of WAL writes.
+- `otelcol_exporter_prometheusremotewrite_wal_read_latency`: The latency of WAL reads.
+ (#39556)
+- `opensearchexporter`: Add support for dynamic log indexing in OpenSearch exporter (#34746, #38595)
+  - This feature allows users to specify dynamic log indices based on attributes.
+  - It supports time-based index name formatting and fallback options.
+  
+- `pkg/ottl`: Add new ContainsValue converter to check whether a value is present in a slice. (#30420)
+  Add `ottl.PSliceGetter`, a typed getter for `pcommon.Slice`
+  
+- `pkg/ottl`: Add accessors for profile attributes (#39681)
+- `azuremonitorreceiver`: Added new config that sets the number of unique resource IDs to fetch per Batch API call (#40112)
+- `sqlserverreceiver`: add feature gate for removing metrics resource attributes `server.address`, and `server.port` (#40579)
+  These are not resource attributes according to the semantic conventions. 
+  To enable this feature gate, when running the otel collector, pass the following argument `--feature-gates=receiver.sqlserver.RemoveServerResourceAttribute`.
+  
+- `sqlqueryreceiver`: Add SQL connection fields `host`, `port`, `database`, `username`, `password`, and `additional_params`. (#39760)
+  These options can be used instead of the existing `datasource` configuration option.
+- `sqlserverreceiver`: Update obfuscation library to use `mssql` mode. (#40525)
+  Now it can obfuscate more SQL Server specific queries which may not work before.
+- `processor/transform`: Introduce optional metric name suffix setup for metric conversion functions (#33850)
+  The affected functions are: convert_summary_count_val_to_sum(), convert_summary_sum_val_to_sum(), extract_count_metric(), extract_sum_metric()
+
+### 🧰 Bug fixes 🧰
+
+- `snowflakereceiver`: adds a pre-scrape check to see if metrics are enabled. (#40418)
+- `coralogixexporter`: Fix rate limit error count reset (#40811)
+  The rate limit error count was not reset just after a successful request.
+  
+  Also, we are printing now when the rate limit is triggered.
+  
+- `kafkareceiver`: Protect partition lost/revoke callback against unassigned groups (#40920)
+- `collectdreceiver`: Ensure the receiver closes its port when shutting down quickly after starting. (#40406)
+  Note that due to the nature of the timing issue this is extremely unlikely to affect a real user,
+  and really only likely to occur in unit tests.
+  
+- `datadogconnector`: Use proper syncronization to fix a collector panic when an error occurs (#40845)
+- `sqlserverreceiver`: export `host.name` as resource attributes for metrics (#40576)
+  in the metadata file, the `host.name` resource attribute is defined for metrics, but it is not exported in reality. this fixed 
+  the issue and export it as a resource attribute.
+  
+- `opampextension`: Set the default value of `ReportsAvailableComponents` to `true` (#40485)
+- `receivercreator`: Properly handle default endpoint for annotation discovery (#40712)
+  Annotation discovery should not add the default endpoint explicitly. Configuration
+  should be left empty if users do not set anything. Main flow of the receiver_creator
+  already adds the default endpoint, if not provided, at a later stage by also checking
+  if target receiver supports it. This patch ensures this logic is unified for both
+  annotation discovery and templated based discovery.
+  
+- `kafka`: Fixes a defect introduced in #39115 that prevents MSK IAM auth from working (#40720)
+  IAM auth requires TLS, but the config translation was enabling SASL when it intended to enable TLS
+- `receiver/httpcheck`: Fix resource leak caused by failure to close request body (#40695)
+- `receiver/simpleprometheus`: Fix bug that caused the labels configuration option to be ignored (#40722)
+- `awslogsencodingextension`: Fix bug in which concurrent go routines can end up using the same gzip reader (#40838)
+- `logdedupprocessor`: Taught logdedupprocessor not to panic if the dedup field source was not found or not a map (#40204)
+- `k8sattributesprocessor`: Make sure getIdentifiersFromAssoc() can handle container.id (#40745)
+- `libhoneyreceiver`: Fix parent id handling in libhoneyreceiver (#40934)
+- `prometheusreceiver`: Fix invalid metric name validation error in scrape start from target allocator. (#35459, #40788)
+  Prometheus made setting metric_name_validation_scheme, metric_name_escaping_scheme mandatory mandatory, use sane defaults.
+- `routingconnector`: Copy IsMonotonic and AggregationTemporality when routing metrics on datapoint context. (#37273)
+- `snowflakereceiver`: Correct handling of datatypes of Snowflake receiver (#40418)
+- `snowflakereceiver`: Rectified datatypes of storagemetrics of Snowflake receiver (#40857)
+- `hostmetricsreceiver`: Minor fix to the handling of conntrack errors (#40175)
+
+<!-- previous-version -->
+
 ## v0.128.0
 
 ### 🛑 Breaking changes 🛑

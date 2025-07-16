@@ -15,6 +15,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -24,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 type Manager struct {
@@ -183,13 +183,14 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 func (m *Manager) applyCfg() error {
 	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
+	truePtr := true
 	if err != nil {
 		return fmt.Errorf("could not get scrape configs: %w", err)
 	}
 	if !m.enableNativeHistograms {
 		// Enforce scraping classic histograms to avoid dropping them.
 		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
-			scrapeConfig.AlwaysScrapeClassicHistograms = true
+			scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
 		}
 	}
 
