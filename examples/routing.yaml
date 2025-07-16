@@ -1,0 +1,55 @@
+# Example configuration demonstrating Datadog exporter routing functionality
+# This shows how to enable routing for metrics with instrumentation scope "datadog.trace.metrics" 
+# to be routed to Datadog's stats endpoint using OTLP HTTP exporter
+
+exporters:
+  datadog:
+    # API configuration
+    api:
+      key: ${DD_API_KEY}
+      site: ${DD_SITE:datadoghq.com}
+    
+    # Metrics configuration with explicit routing configuration
+    metrics:
+      # Standard Datadog metrics endpoint
+      endpoint: https://api.${DD_SITE:datadoghq.com}
+      
+      # Routing configuration (disabled by default for backward compatibility)
+      routing:
+        enabled: true  # Must be explicitly enabled
+        otlp_endpoint: https://trace.agent.${DD_SITE:datadoghq.com}/api/v0.2/stats
+        otlp_headers:
+          "Dd-Protocol": "otlp"
+          "X-Datadog-Reported-Languages": "java"
+          # Note: "Dd-Api-Key" header is automatically set from api.key configuration
+        rules:
+          - name: "datadog_trace_metrics"
+            condition:
+              instrumentation_scope_name: "datadog.trace.metrics"
+            target: "otlp"
+
+    # Standard traces and logs configuration
+    traces:
+      endpoint: https://trace.agent.${DD_SITE:datadoghq.com}
+    logs:
+      endpoint: https://http-intake.logs.${DD_SITE:datadoghq.com}
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [datadog]
+    traces:
+      receivers: [otlp]
+      exporters: [datadog]
+    logs:
+      receivers: [otlp]
+      exporters: [datadog] 

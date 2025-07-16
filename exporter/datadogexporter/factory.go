@@ -397,7 +397,34 @@ func (f *factory) createMetricsExporter(
 			wg.Wait() // then wait for shutdown
 			return nil, metricsErr
 		}
-		pushMetricsFn = exp.PushMetricsDataScrubbed
+
+		// Check if routing is enabled and create OTLP exporter if needed
+		var otlpExporter exporter.Metrics
+		if cfg.Metrics.Routing.Enabled {
+			otlpExporter, err = createOTLPMetricsExporter(ctx, set, cfg.Metrics.Routing, string(cfg.API.Key))
+			if err != nil {
+				cancel()
+				wg.Wait()
+				return nil, fmt.Errorf("failed to create OTLP metrics exporter for routing: %w", err)
+			}
+			if otlpExporter != nil {
+				// Start the OTLP exporter as well
+				if err := otlpExporter.Start(ctx, nil); err != nil {
+					cancel()
+					wg.Wait()
+					return nil, fmt.Errorf("failed to start OTLP metrics exporter: %w", err)
+				}
+			}
+		}
+
+		if otlpExporter != nil {
+			// Use routing exporter
+			routingExp := newRoutingMetricsExporter(exp.PushMetricsDataScrubbed, otlpExporter, cfg.Metrics.Routing)
+			pushMetricsFn = routingExp.ConsumeMetrics
+		} else {
+			// Use standard Datadog exporter
+			pushMetricsFn = exp.PushMetricsDataScrubbed
+		}
 	}
 
 	exporter, err := exporterhelper.NewMetrics(

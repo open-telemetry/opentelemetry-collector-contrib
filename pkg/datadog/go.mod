@@ -32,6 +32,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.131.0
 	go.opentelemetry.io/collector/exporter v0.131.0
 	go.opentelemetry.io/collector/featuregate v1.37.0
+	go.opentelemetry.io/collector/pdata v1.37.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.42.0
 )
@@ -211,7 +212,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.131.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.131.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.131.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.37.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.131.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.131.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.131.0 // indirect

@@ -32,6 +32,9 @@ type MetricsConfig struct {
 
 	// SummaryConfig defines the export for OTLP Summaries.
 	SummaryConfig SummaryConfig `mapstructure:"summaries"`
+
+	// Routing defines the routing configuration for metrics
+	Routing MetricsRoutingConfig `mapstructure:"routing"`
 }
 
 type HistogramMode string

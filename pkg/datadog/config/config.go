@@ -353,6 +353,9 @@ func CreateDefaultConfig() component.Config {
 			SummaryConfig: SummaryConfig{
 				Mode: SummaryModeGauges,
 			},
+			// Routing is disabled by default for backward compatibility
+			// Users can enable it by setting metrics.routing.enabled to true
+			Routing: MetricsRoutingConfig{},
 		},
 
 		Traces: TracesExporterConfig{
