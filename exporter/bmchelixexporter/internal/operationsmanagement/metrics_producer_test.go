@@ -153,9 +153,9 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name          string
-		inputMetrics  []BMCHelixOMMetric
-		expectedNames []string
+		name           string
+		inputMetrics   []BMCHelixOMMetric
+		expectedLabels []map[string]string
 	}{
 		{
 			name: "Single metric without varying attributes",
@@ -169,7 +169,14 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 					},
 				},
 			},
-			expectedNames: []string{"system.cpu.time"},
+			expectedLabels: []map[string]string{
+				{
+					"entityId":           "host:cpu:core0",
+					"metricName":         "system.cpu.time",
+					"cpu.mode":           "idle",
+					"cpu.logical_number": "0",
+				},
+			},
 		},
 		{
 			name: "Metrics with different state values",
@@ -189,9 +196,23 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 					},
 				},
 			},
-			expectedNames: []string{
-				"system.cpu.time.idle",
-				"system.cpu.time.user",
+			expectedLabels: []map[string]string{
+				{
+					"metricName": "system.cpu.time",
+					"cpu.mode":   "idle",
+				},
+				{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time.idle",
+				},
+				{
+					"metricName": "system.cpu.time",
+					"cpu.mode":   "user",
+				},
+				{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time.user",
+				},
 			},
 		},
 		{
@@ -216,9 +237,29 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 					},
 				},
 			},
-			expectedNames: []string{
-				"system.cpu.time.system.0",
-				"system.cpu.time.user.1",
+			expectedLabels: []map[string]string{
+				{
+					"metricName":         "system.cpu.time",
+					"cpu.mode":           "system",
+					"cpu.mode.code":      "0",
+					"cpu.logical_number": "0",
+				},
+				{
+					"entityId":           "host:cpu:core0",
+					"metricName":         "system.cpu.time.system.0",
+					"cpu.logical_number": "0",
+				},
+				{
+					"metricName":         "system.cpu.time",
+					"cpu.mode":           "user",
+					"cpu.mode.code":      "1",
+					"cpu.logical_number": "0",
+				},
+				{
+					"entityId":           "host:cpu:core0",
+					"metricName":         "system.cpu.time.user.1",
+					"cpu.logical_number": "0",
+				},
 			},
 		},
 	}
@@ -227,12 +268,17 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := enrichMetricNamesWithAttributes(tt.inputMetrics)
 
-			var actualNames []string
+			var actualLabels []map[string]string
 			for _, m := range result {
-				actualNames = append(actualNames, m.Labels["metricName"])
+				// Copy to a new map to avoid mutation side-effects
+				labelsCopy := make(map[string]string)
+				for k, v := range m.Labels {
+					labelsCopy[k] = v
+				}
+				actualLabels = append(actualLabels, labelsCopy)
 			}
 
-			assert.ElementsMatch(t, tt.expectedNames, actualNames)
+			assert.ElementsMatch(t, tt.expectedLabels, actualLabels)
 		})
 	}
 }

@@ -91,7 +91,9 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 				// Loop through the newly created metrics and append them to the helixMetrics slice
 				// while also creating parent entities for container metrics
 				for _, m := range newMetrics {
-					helixMetrics = appendMetricWithParentEntity(helixMetrics, m, containerParentEntities)
+					if m.Labels["entityTypeId"] != "" {
+						helixMetrics = appendMetricWithParentEntity(helixMetrics, m, containerParentEntities)
+					}
 				}
 			}
 		}
@@ -297,26 +299,22 @@ func extractResourceAttributes(resource pcommon.Resource) map[string]string {
 
 // enrichMetricNamesWithAttributes modifies the metric names by appending distinguishing attributes
 // that have more than one distinct value across the metrics with the same entityId and metricName
+// A copy of the metric is created without entityId, entityTypeId, and entityName attributes
+// to ensure that the original metric is preserved for the BMC Helix VictoriaMetrics.
 // This is done to ensure that the metric names are unique in the BMC Helix Operations Management payload
 func enrichMetricNamesWithAttributes(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
-	type groupKey struct {
-		EntityID   string
-		MetricName string
-	}
-
 	// Step 1: Group metrics by (entityId + metricName)
-	groups := make(map[groupKey][]*BMCHelixOMMetric)
+	groups := make(map[string][]*BMCHelixOMMetric)
 	for i := range metrics {
 		m := &metrics[i]
-		key := groupKey{
-			EntityID:   m.Labels["entityId"],
-			MetricName: m.Labels["metricName"],
-		}
+		key := m.Labels["entityId"] + ":" + m.Labels["metricName"]
 		groups[key] = append(groups[key], m)
 	}
 
+	finalMetrics := make([]BMCHelixOMMetric, 0, len(metrics)*2)
+
 	// Step 2: Process each group
-	for key, group := range groups {
+	for _, group := range groups {
 		attrValues := make(map[string]map[string]struct{})
 
 		// Collect all attribute values for each key
@@ -336,24 +334,57 @@ func enrichMetricNamesWithAttributes(metrics []BMCHelixOMMetric) []BMCHelixOMMet
 		var identifyingKeys []string
 		for k, vals := range attrValues {
 			if len(vals) > 1 {
-				identifyingKeys = append(identifyingKeys, k)
+				identifyingKeys = insertSorted(identifyingKeys, k)
 			}
 		}
-		sort.Strings(identifyingKeys) // Ensure attributes ordering
 
 		// Step 4: Modify metric names by appending attribute values
 		for _, m := range group {
-			var suffix []string
+			originalMetricName := m.Labels["metricName"]
+
+			// Build suffix
+			var suffixParts []string
 			for _, attrKey := range identifyingKeys {
 				if val, ok := m.Labels[attrKey]; ok {
-					suffix = append(suffix, val)
+					suffixParts = append(suffixParts, val)
 				}
 			}
-			if len(suffix) > 0 {
-				m.Labels["metricName"] = key.MetricName + "." + strings.Join(suffix, ".")
+
+			// Only create copy + modify metric if there's a suffix to apply
+			if len(suffixParts) > 0 {
+				// Step 1: Raw copy without entityId/entityTypeId/entityName
+				rawCopy := BMCHelixOMMetric{
+					Labels:  make(map[string]string),
+					Samples: m.Samples,
+				}
+				for k, v := range m.Labels {
+					if k != "entityId" && k != "entityTypeId" && k != "entityName" {
+						rawCopy.Labels[k] = v
+					}
+				}
+				rawCopy.Labels["metricName"] = originalMetricName
+				finalMetrics = append(finalMetrics, rawCopy)
+
+				// Step 2: Modify the original metric
+				m.Labels["metricName"] = originalMetricName + "." + strings.Join(suffixParts, ".")
+				for _, attrKey := range identifyingKeys {
+					delete(m.Labels, attrKey) // Remove identifying attributes from the metric labels
+				}
 			}
+
+			// Always keep the (possibly modified) original metric
+			finalMetrics = append(finalMetrics, *m)
 		}
 	}
 
-	return metrics
+	return finalMetrics
+}
+
+// Binary-inserted sorted slice
+func insertSorted(keys []string, key string) []string {
+	idx := sort.SearchStrings(keys, key) // find insertion index
+	keys = append(keys, "")              // grow the slice by 1
+	copy(keys[idx+1:], keys[idx:])       // shift right to make room
+	keys[idx] = key                      // insert the new key
+	return keys
 }
