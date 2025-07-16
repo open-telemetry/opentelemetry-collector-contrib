@@ -109,3 +109,27 @@ Number of WAL writes that failed
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_written_exemplars
+
+Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {exemplar} | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_written_histograms
+
+Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {histogram} | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_written_samples
+
+Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {sample} | Sum | Int | true |

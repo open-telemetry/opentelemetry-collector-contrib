@@ -39,6 +39,9 @@ type TelemetryBuilder struct {
 	ExporterPrometheusremotewriteWalWriteLatency      metric.Int64Histogram
 	ExporterPrometheusremotewriteWalWrites            metric.Int64Counter
 	ExporterPrometheusremotewriteWalWritesFailures    metric.Int64Counter
+	ExporterPrometheusremotewriteWrittenExemplars     metric.Int64Counter
+	ExporterPrometheusremotewriteWrittenHistograms    metric.Int64Counter
+	ExporterPrometheusremotewriteWrittenSamples       metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -148,6 +151,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_prometheusremotewrite_wal_writes_failures",
 		metric.WithDescription("Number of WAL writes that failed"),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWrittenExemplars, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_written_exemplars",
+		metric.WithDescription("Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)"),
+		metric.WithUnit("{exemplar}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWrittenHistograms, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_written_histograms",
+		metric.WithDescription("Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)"),
+		metric.WithUnit("{histogram}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWrittenSamples, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_written_samples",
+		metric.WithDescription("Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)"),
+		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
