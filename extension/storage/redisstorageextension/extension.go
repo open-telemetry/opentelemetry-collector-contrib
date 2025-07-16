@@ -88,8 +88,6 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 		switch op.Type {
 		case storage.Delete:
 			p.Del(ctx, rc.prefix+op.Key)
-		case storage.Get:
-			p.Get(ctx, rc.prefix+op.Key)
 		case storage.Set:
 			p.Set(ctx, rc.prefix+op.Key, op.Value, rc.expiration)
 		}
