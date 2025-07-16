@@ -273,7 +273,6 @@ func (r *azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event
 	var azureMetrics azureMetricRecords
 	decoder := jsoniter.NewDecoder(bytes.NewReader(event.Data))
 	err := decoder.Decode(&azureMetrics)
-	//err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(event.Data, &azureMetrics)
 
 	if err != nil {
 		return md, err
