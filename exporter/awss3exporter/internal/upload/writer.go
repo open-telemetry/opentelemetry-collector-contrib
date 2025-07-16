@@ -23,6 +23,7 @@ type Manager interface {
 type ManagerOpt func(Manager)
 
 type UploadOptions struct {
+	OverrideBucket string
 	OverridePrefix string
 }
 
@@ -70,12 +71,16 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 	now := clock.Now(ctx)
 
 	overridePrefix := ""
+	overrideBucket := sw.bucket
 	if opts != nil {
 		overridePrefix = opts.OverridePrefix
+		if opts.OverrideBucket != "" {
+			overrideBucket = opts.OverrideBucket
+		}
 	}
 
 	_, err = sw.uploader.Upload(ctx, &s3.PutObjectInput{
-		Bucket:          aws.String(sw.bucket),
+		Bucket:          aws.String(overrideBucket),
 		Key:             aws.String(sw.builder.Build(now, overridePrefix)),
 		Body:            content,
 		ContentEncoding: aws.String(encoding),

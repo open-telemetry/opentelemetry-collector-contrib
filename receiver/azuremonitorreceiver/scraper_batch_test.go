@@ -23,14 +23,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
-type QueryResourcesResponseMockParams struct {
+type queryResourcesResponseMockParams struct {
 	subscriptionID  string
 	metricNamespace string
 	metricNames     []string
 	resourceIDs     azmetrics.ResourceIDList
 }
 
-func (p QueryResourcesResponseMockParams) Evaluate(subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList) bool {
+func (p queryResourcesResponseMockParams) Evaluate(subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList) bool {
 	metricNamesParamClone := slices.Clone(metricNames)
 	metricNamesClone := slices.Clone(p.metricNames)
 	slices.Sort(metricNamesParamClone)
@@ -45,12 +45,12 @@ func (p QueryResourcesResponseMockParams) Evaluate(subscriptionID, metricNamespa
 		reflect.DeepEqual(metricNamesClone, metricNamesParamClone) && reflect.DeepEqual(resourceIDsClone, resourceIDsParamClone)
 }
 
-type QueryResourcesResponseMock struct {
-	params   QueryResourcesResponseMockParams
+type queryResourcesResponseMock struct {
+	params   queryResourcesResponseMockParams
 	response azmetrics.QueryResourcesResponse
 }
 
-func newMockMetricsQueryResponse(metricsByParam []QueryResourcesResponseMock) func(ctx context.Context, subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList, options *azmetrics.QueryResourcesOptions) (resp azfake.Responder[azmetrics.QueryResourcesResponse], errResp azfake.ErrorResponder) {
+func newMockMetricsQueryResponse(metricsByParam []queryResourcesResponseMock) func(ctx context.Context, subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList, options *azmetrics.QueryResourcesOptions) (resp azfake.Responder[azmetrics.QueryResourcesResponse], errResp azfake.ErrorResponder) {
 	return func(_ context.Context, subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList, _ *azmetrics.QueryResourcesOptions) (resp azfake.Responder[azmetrics.QueryResourcesResponse], errResp azfake.ErrorResponder) {
 		for _, param := range metricsByParam {
 			if param.params.Evaluate(subscriptionID, metricNamespace, metricNames, resourceIDs) {
@@ -63,10 +63,10 @@ func newMockMetricsQueryResponse(metricsByParam []QueryResourcesResponseMock) fu
 	}
 }
 
-func getMetricsQueryResponseMockData() []QueryResourcesResponseMock {
-	return []QueryResourcesResponseMock{
+func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
+	return []queryResourcesResponseMock{
 		{
-			params: QueryResourcesResponseMockParams{
+			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId3",
 				metricNamespace: "type1",
 				metricNames:     []string{"metric7"},
@@ -86,12 +86,15 @@ func getMetricsQueryResponseMockData() []QueryResourcesResponseMock {
 									{
 										Data: []azmetrics.MetricValue{
 											{
+												// Send only timestamp with all other values nil is a case that can
+												// happen in the Azure responses.
 												TimeStamp: to.Ptr(time.Now()),
-												Average:   to.Ptr(1.),
-												Count:     to.Ptr(1.),
-												Maximum:   to.Ptr(1.),
-												Minimum:   to.Ptr(1.),
-												Total:     to.Ptr(1.),
+											},
+											{
+												TimeStamp: to.Ptr(time.Now()),
+												// Keep only Total to make sure that all values are considered.
+												// Not only Average
+												Total: to.Ptr(1.),
 											},
 										},
 									},
@@ -103,7 +106,7 @@ func getMetricsQueryResponseMockData() []QueryResourcesResponseMock {
 			},
 		},
 		{
-			params: QueryResourcesResponseMockParams{
+			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
 				metricNamespace: "type1",
 				metricNames:     []string{"metric1", "metric2"},
@@ -164,7 +167,7 @@ func getMetricsQueryResponseMockData() []QueryResourcesResponseMock {
 			},
 		},
 		{
-			params: QueryResourcesResponseMockParams{
+			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
 				metricNamespace: "type1",
 				metricNames:     []string{"metric3"},

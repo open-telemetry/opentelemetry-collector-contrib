@@ -26,7 +26,7 @@ const (
 
 var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
 	"processor.resourcedetection.removeGCPFaasID",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Remove faas.id from the GCP detector. Use faas.instance instead."),
 	featuregate.WithRegisterFromVersion("v0.87.0"))
 

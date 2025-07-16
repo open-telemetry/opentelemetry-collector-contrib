@@ -162,7 +162,7 @@ func (h *otelMetricHelper) createMetric(resourceKey string, metricName string, m
 
 // addMetricDataPoint creates a datapoint on the metric (metricName) attached to a resource (resourceKey) and populates it
 // based on the given data
-func (h *otelMetricHelper) addMetricDataPoint(resourceKey string, metricName string, metricCfg *MetricConfig, data SNMPData, attributes map[string]string) (*pmetric.NumberDataPoint, error) {
+func (h *otelMetricHelper) addMetricDataPoint(resourceKey string, metricName string, metricCfg *MetricConfig, data snmpData, attributes map[string]string) (*pmetric.NumberDataPoint, error) {
 	metric := h.getMetric(resourceKey, metricName)
 	if metric == nil {
 		return nil, fmt.Errorf("cannot retrieve datapoints from metric '%s' as it does not currently exist", metricName)

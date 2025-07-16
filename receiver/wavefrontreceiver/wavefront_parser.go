@@ -22,6 +22,9 @@ import (
 // into the internal format of the Collector
 type wavefrontParser struct {
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (

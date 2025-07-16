@@ -19,8 +19,8 @@ func ValidateRootPath(rootPath string) error {
 	return errors.New("root_path is supported on linux only")
 }
 
-func SetGoPsutilEnvVars(_ string) (common.EnvMap, error) {
-	return common.EnvMap{}, nil
+func SetGoPsutilEnvVars(_ string) common.EnvMap {
+	return common.EnvMap{}
 }
 
 func GetEnvWithContext(_ context.Context, _ string, dfault string, _ ...string) string {

@@ -72,7 +72,9 @@ func writeStatus(v *json.Visitor, status ptrace.Status) {
 	_ = v.OnKey("status")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	writeStringFieldSkipDefault(v, "message", status.Message())
-	writeStringFieldSkipDefault(v, "code", status.Code().String())
+	if code := status.Code(); code != ptrace.StatusCodeUnset {
+		writeStringFieldSkipDefault(v, "code", code.String())
+	}
 	_ = v.OnObjectFinished()
 }
 

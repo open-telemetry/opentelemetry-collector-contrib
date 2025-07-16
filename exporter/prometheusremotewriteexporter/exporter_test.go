@@ -165,7 +165,7 @@ func Test_Start(t *testing.T) {
 	clientConfig.Endpoint = "https://some.url:9411/api/prom/push"
 	clientConfigTLS := confighttp.NewDefaultClientConfig()
 	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
-	clientConfigTLS.TLSSetting = configtls.ClientConfig{
+	clientConfigTLS.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "nonexistent file",
 			CertFile: "",

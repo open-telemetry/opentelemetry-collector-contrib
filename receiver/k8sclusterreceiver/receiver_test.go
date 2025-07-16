@@ -280,11 +280,10 @@ func TestReceiverWithMetadata(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metadata not collected")
 
-	// Must have 3 entity events: once for the add, followed by an update and
-	// then another update, which unlike metadata calls actually happens since
-	// even unchanged entities trigger an event.
+	// Must have 4 entity events: once for the add, followed by an update and
+	// then another update, and then a delete.
 	require.Eventually(t, func() bool {
-		return logsConsumer.LogRecordCount() == 3
+		return logsConsumer.LogRecordCount() == 4
 	}, 10*time.Second, 100*time.Millisecond,
 		"entity events not collected")
 

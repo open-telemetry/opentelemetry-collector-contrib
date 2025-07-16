@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +29,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 		"X-Custom-Header": "loki_rocks",
 	}
 	clientConfig.Endpoint = "https://loki:3100/loki/api/v1/push"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "/var/lib/mycert.pem",
 			CertFile: "certfile",

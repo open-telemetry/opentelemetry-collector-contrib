@@ -204,7 +204,7 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *re
 		// Not a histogram.
 		return false
 	}
-	if md.Metric != metricName {
+	if md.MetricFamily != metricName {
 		// Not a native histogram because it has magic suffixes (e.g. _bucket).
 		return false
 	}
@@ -278,12 +278,6 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 	}
 
 	mf := t.getOrCreateMetricFamily(*rKey, getScopeID(l), mn)
-
-	// Workaround for https://github.com/prometheus/prometheus/issues/16217
-	if !t.enableNativeHistograms && mf.mtype == pmetric.MetricTypeHistogram && l.Get(model.MetricNameLabel) == mf.name {
-		return 0, nil
-	}
-
 	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
 
 	return 0, nil
@@ -482,7 +476,7 @@ func getScopeID(ls labels.Labels) scopeID {
 	return scope
 }
 
-func (t *transaction) initTransaction(labels labels.Labels) (*resourceKey, error) {
+func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 	target, ok := scrape.TargetFromContext(t.ctx)
 	if !ok {
 		return nil, errors.New("unable to find target in context")
@@ -492,12 +486,12 @@ func (t *transaction) initTransaction(labels labels.Labels) (*resourceKey, error
 		return nil, errors.New("unable to find MetricMetadataStore in context")
 	}
 
-	rKey, err := t.getJobAndInstance(labels)
+	rKey, err := t.getJobAndInstance(lbs)
 	if err != nil {
 		return nil, err
 	}
 	if _, ok := t.nodeResources[*rKey]; !ok {
-		t.nodeResources[*rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels())
+		t.nodeResources[*rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
 	}
 
 	t.isNew = false

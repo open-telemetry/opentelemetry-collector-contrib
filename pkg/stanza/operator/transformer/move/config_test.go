@@ -152,6 +152,18 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:            "invalid_missing_from",
+				ExpectBuildErrs: []error{errMissingFrom},
+			},
+			{
+				Name:            "invalid_missing_to",
+				ExpectBuildErrs: []error{errMissingTo},
+			},
+			{
+				Name:            "invalid_missing_to_and_from",
+				ExpectBuildErrs: []error{errMissingTo, errMissingFrom},
+			},
 		},
 	}.Run(t)
 }

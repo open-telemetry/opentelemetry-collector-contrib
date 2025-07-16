@@ -1,0 +1,10 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - startTimeUnixNano: "13000000000"
+                  timeUnixNano: "73000000000"
+        scope: {}

@@ -47,11 +47,6 @@ type Config struct {
 	// Default is 60s if unset.
 	MetricsFlushInterval *time.Duration `mapstructure:"metrics_flush_interval"`
 
-	// DatabaseNameAttribute is the attribute name used to identify the database name from span attributes.
-	// The default value is db.name.
-	// Deprecated: [v0.124.0] Use database_name_attributes instead.
-	DatabaseNameAttribute string `mapstructure:"database_name_attribute"`
-
 	// DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
 	// The default value is {"db.name"}.
 	DatabaseNameAttributes []string `mapstructure:"database_name_attributes"`
@@ -62,4 +57,7 @@ type StoreConfig struct {
 	MaxItems int `mapstructure:"max_items"`
 	// TTL is the time to live for items in the store.
 	TTL time.Duration `mapstructure:"ttl"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

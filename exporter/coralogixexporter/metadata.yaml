@@ -8,6 +8,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [povilasv, iblancasa, douglascamata]
+  warnings: ["Authentication issues in v0.127.0"]
 
 tests:
   config:

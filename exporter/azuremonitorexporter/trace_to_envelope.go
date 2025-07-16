@@ -521,7 +521,7 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 }
 
 // Returns the RPC status code as a string
-func getRPCStatusCodeAsString(rpcAttributes *RPCAttributes) (statusCodeAsString string) {
+func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString string) {
 	// Honor the attribute rpc.grpc.status_code if there
 	if rpcAttributes.RPCGRPCStatusCode != 0 {
 		return strconv.FormatInt(rpcAttributes.RPCGRPCStatusCode, 10)
@@ -606,8 +606,8 @@ func copyAttributesWithoutMapping(
 func copyAndExtractHTTPAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-) *HTTPAttributes {
-	attrs := &HTTPAttributes{}
+) *httpAttributes {
+	attrs := &httpAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -620,8 +620,8 @@ func copyAndExtractHTTPAttributes(
 func copyAndExtractRPCAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-) *RPCAttributes {
-	attrs := &RPCAttributes{}
+) *rpcAttributes {
+	attrs := &rpcAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -634,8 +634,8 @@ func copyAndExtractRPCAttributes(
 func copyAndExtractDatabaseAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-) *DatabaseAttributes {
-	attrs := &DatabaseAttributes{}
+) *databaseAttributes {
+	attrs := &databaseAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -648,8 +648,8 @@ func copyAndExtractDatabaseAttributes(
 func copyAndExtractMessagingAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-) *MessagingAttributes {
-	attrs := &MessagingAttributes{}
+) *messagingAttributes {
+	attrs := &messagingAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -662,8 +662,8 @@ func copyAndExtractMessagingAttributes(
 func copyAndExtractExceptionAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-) *ExceptionAttributes {
-	attrs := &ExceptionAttributes{}
+) *exceptionAttributes {
+	attrs := &exceptionAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -719,7 +719,7 @@ func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString
 	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError
 }
 
-func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAttributes, sb *strings.Builder) {
+func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *networkAttributes, sb *strings.Builder) {
 	// Favor name over IP for
 	if networkAttributes.NetPeerName != "" {
 		sb.WriteString(networkAttributes.NetPeerName)

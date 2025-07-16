@@ -35,6 +35,8 @@ all_set:
       enabled: true
     mysql.log_operations:
       enabled: true
+    mysql.max_used_connections:
+      enabled: true
     mysql.mysqlx_connections:
       enabled: true
     mysql.mysqlx_worker_threads:
@@ -92,6 +94,9 @@ all_set:
     mysql.tmp_resources:
       enabled: true
     mysql.uptime:
+      enabled: true
+  events:
+    db.server.query_sample:
       enabled: true
   resource_attributes:
     mysql.instance.endpoint:
@@ -132,6 +137,8 @@ none_set:
       enabled: false
     mysql.log_operations:
       enabled: false
+    mysql.max_used_connections:
+      enabled: false
     mysql.mysqlx_connections:
       enabled: false
     mysql.mysqlx_worker_threads:
@@ -190,6 +197,9 @@ none_set:
       enabled: false
     mysql.uptime:
       enabled: false
+  events:
+    db.server.query_sample:
+      enabled: false
   resource_attributes:
     mysql.instance.endpoint:
       enabled: false
@@ -199,9 +209,13 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     mysql.instance.endpoint:
       enabled: true
       metrics_exclude:
+        - strict: "mysql.instance.endpoint-val"
+      events_exclude:
         - strict: "mysql.instance.endpoint-val"

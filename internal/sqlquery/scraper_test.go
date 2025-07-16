@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -527,4 +528,308 @@ func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
 	}
 	_, err := scrpr.ScrapeMetrics(context.Background())
 	assert.Error(t, err)
+}
+
+func TestBuildDataSourceString(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		driver      string
+		host        string
+		port        int
+		database    string
+		username    string
+		password    string
+		queryParams map[string]any
+		expected    string
+		wantErr     bool
+	}{
+		{
+			name:     "postgresql basic",
+			driver:   "postgres",
+			host:     "localhost",
+			port:     5432,
+			database: "postgres",
+			expected: "postgresql://localhost:5432/postgres",
+		},
+		{
+			name:     "postgresql with username and password",
+			driver:   "postgres",
+			host:     "localhost",
+			port:     5432,
+			database: "postgres",
+			username: "user",
+			password: "pass",
+			expected: "postgresql://user:pass@localhost:5432/postgres",
+		},
+		{
+			name:        "postgresql with ssl",
+			driver:      "postgres",
+			host:        "localhost",
+			port:        5432,
+			database:    "postgres",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"sslmode": "require"},
+			expected:    "postgresql://user:pass@localhost:5432/postgres?sslmode=require",
+		},
+		{
+			name:        "postgresql with ssl and additional params",
+			driver:      "postgres",
+			host:        "localhost",
+			port:        5432,
+			database:    "postgres",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"sslmode": "require", "param1": "value1", "param2": "value2"},
+			expected:    "postgresql://user:pass@localhost:5432/postgres?param1=value1&param2=value2&sslmode=require",
+		},
+		{
+			name:     "mysql basic",
+			driver:   "mysql",
+			host:     "localhost",
+			port:     3306,
+			database: "mydb",
+			expected: "tcp(localhost:3306)/mydb",
+		},
+		{
+			name:        "mysql with tls",
+			driver:      "mysql",
+			host:        "localhost",
+			port:        3306,
+			database:    "mydb",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"tls": true},
+			expected:    "user:pass@tcp(localhost:3306)/mydb?tls=true",
+		},
+		{
+			name:        "snowflake basic",
+			driver:      "snowflake",
+			host:        "account",
+			port:        443,
+			database:    "mydb",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"schema": "PUBLIC", "warehouse": "WH", "role": "SYSADMIN"},
+			expected:    "user:pass@account:443/mydb?role=SYSADMIN&schema=PUBLIC&warehouse=WH",
+		},
+		{
+			name:     "sqlserver basic",
+			driver:   "sqlserver",
+			host:     "localhost",
+			port:     1433,
+			database: "mydb",
+			expected: "sqlserver://localhost:1433?database=mydb",
+		},
+		{
+			name:        "sqlserver with username and password",
+			driver:      "sqlserver",
+			host:        "localhost",
+			port:        1433,
+			database:    "mydb",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"encrypt": true},
+			expected:    "sqlserver://user:pass@localhost:1433?database=mydb&encrypt=true",
+		},
+		{
+			name:     "oracle basic",
+			driver:   "oracle",
+			host:     "localhost",
+			port:     2484,
+			database: "service_name",
+			expected: "oracle://localhost:2484/service_name",
+		},
+		{
+			name:        "oracle with username and password",
+			driver:      "oracle",
+			host:        "localhost",
+			port:        2484,
+			database:    "service_name",
+			username:    "user2",
+			password:    "pass2",
+			queryParams: map[string]any{"retry_count": 3, "timeout": 30},
+			expected:    "oracle://user2:pass2@localhost:2484/service_name?retry_count=3&timeout=30",
+		},
+		{
+			name:     "unsupported database type",
+			driver:   "unsupported-db",
+			host:     "localhost",
+			port:     1234,
+			database: "mydb",
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "postgresql with invalid username",
+			driver:   "postgres",
+			host:     "localhost",
+			port:     5432,
+			database: "mydb",
+			username: "user@domain",
+			password: "pass",
+			expected: "postgresql://user%40domain:pass@localhost:5432/mydb",
+		},
+		{
+			name:     "postgresql with invalid password",
+			driver:   "postgres",
+			host:     "localhost",
+			port:     5432,
+			database: "mydb",
+			username: "user",
+			password: "pass#word@123%456&789=0",
+			expected: "postgresql://user:pass%23word%40123%25456%26789%3D0@localhost:5432/mydb",
+		},
+		{
+			name:     "postgresql with invalid username and password",
+			driver:   "postgres",
+			host:     "localhost",
+			port:     5432,
+			database: "mydb",
+			username: "user@domain",
+			password: "pass#word@123",
+			expected: "postgresql://user%40domain:pass%23word%40123@localhost:5432/mydb",
+		},
+		{
+			name:        "postgresql with invalid username, password and query params",
+			driver:      "postgres",
+			host:        "localhost",
+			port:        5432,
+			database:    "mydb",
+			username:    "user@domain",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
+			expected:    "postgresql://user%40domain:pass%23word%40123@localhost:5432/mydb?app=my%23app&sslmode=disable",
+		},
+		{
+			name:        "mysql with invalid username and password, no escaping",
+			driver:      "mysql",
+			host:        "localhost",
+			port:        3306,
+			database:    "mydb",
+			username:    "user@domain+",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
+			expected:    "user@domain+:pass#word@123@tcp(localhost:3306)/mydb?app=my%23app&sslmode=disable",
+		},
+		{
+			name:        "snowflake with invalid username and password",
+			driver:      "snowflake",
+			host:        "account",
+			port:        443,
+			database:    "mydb",
+			username:    "user@domain%",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
+			expected:    "user%40domain%25:pass%23word%40123@account:443/mydb?app=my%23app&sslmode=disable",
+		},
+		{
+			name:        "sqlserver with invalid username and password",
+			driver:      "sqlserver",
+			host:        "localhost",
+			port:        1433,
+			database:    "mydb",
+			username:    "user@domain^",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
+			expected:    "sqlserver://user%40domain%5E:pass%23word%40123@localhost:1433?app=my%23app&database=mydb&sslmode=disable",
+		},
+		{
+			name:        "oracle with invalid username and password",
+			driver:      "oracle",
+			host:        "localhost",
+			port:        2484,
+			database:    "service_name",
+			username:    "user@domain<",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
+			expected:    "oracle://user%40domain%3C:pass%23word%40123@localhost:2484/service_name?app=my%23app&sslmode=disable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := BuildDataSourceString(Config{
+				Driver:           tt.driver,
+				Host:             tt.host,
+				Port:             tt.port,
+				Database:         tt.database,
+				Username:         tt.username,
+				Password:         configopaque.String(tt.password),
+				AdditionalParams: tt.queryParams,
+			})
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Empty(t, got)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expected, got)
+			}
+		})
+	}
+}
+
+func TestBuildDataSourceStringSQLServer(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   Config
+		expected string
+		wantErr  bool
+	}{
+		{
+			name: "SQL Server without instance",
+			config: Config{
+				Host:     "localhost",
+				Port:     1433,
+				Database: "mydb",
+				Driver:   "sqlserver",
+				Username: "test",
+				Password: "password",
+			},
+			expected: "sqlserver://test:password@localhost:1433?database=mydb",
+			wantErr:  false,
+		},
+		{
+			name: "SQL Server with instance",
+			config: Config{
+				Host:     "localhost\\instance",
+				Port:     1433,
+				Database: "mydb",
+				Username: "test",
+				Driver:   "sqlserver",
+				Password: "password",
+			},
+			expected: "sqlserver://test:password@localhost:1433/instance?database=mydb",
+			wantErr:  false,
+		},
+		{
+			name: "SQL Server with instance and additional params",
+			config: Config{
+				Host:     "localhost\\instance",
+				Port:     1433,
+				Database: "mydb",
+				Driver:   "sqlserver",
+				Username: "test",
+				Password: "password",
+				AdditionalParams: map[string]any{
+					"encrypt": true,
+				},
+			},
+			expected: "sqlserver://test:password@localhost:1433/instance?database=mydb&encrypt=true",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := BuildDataSourceString(tt.config)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
 }

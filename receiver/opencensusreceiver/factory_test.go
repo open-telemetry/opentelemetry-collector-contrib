@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -134,15 +135,15 @@ func TestCreateMetrics(t *testing.T) {
 			cfg: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: defaultNetAddr,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionAge: 60 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             30 * time.Second,
 							PermitWithoutStream: true,
-						},
-					},
+						}),
+					}),
 				},
 			},
 		},

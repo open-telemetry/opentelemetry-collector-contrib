@@ -13,8 +13,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
-	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2/fake"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
+	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/fake"
 
@@ -102,7 +102,7 @@ func newMockClientOptionsResolver(
 	resources map[string][]armresources.ClientListResponse,
 	metricsDefinitions map[string][]armmonitor.MetricDefinitionsClientListResponse,
 	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
-	metricsQueryResponses []QueryResourcesResponseMock,
+	metricsQueryResponses []queryResourcesResponseMock,
 ) ClientOptionsResolver {
 	// Init resources client options from resources mock data
 	armResourcesClientOptions := make(map[string]*arm.ClientOptions)

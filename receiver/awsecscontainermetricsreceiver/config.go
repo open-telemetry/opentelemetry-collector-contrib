@@ -11,4 +11,7 @@ import (
 type Config struct {
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

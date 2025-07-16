@@ -99,6 +99,15 @@ func TestValidate(t *testing.T) {
 			},
 			err: "bucket interval must be non-negative",
 		},
+		{
+			name: "With ignore_missing_datadog_fields",
+			cfg: &Config{
+				Traces: datadogconfig.TracesConnectorConfig{
+					IgnoreMissingDatadogFields: true,
+				},
+			},
+			err: "ignore_missing_datadog_fields is not yet supported in the connector",
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {

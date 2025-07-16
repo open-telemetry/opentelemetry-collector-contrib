@@ -2160,6 +2160,202 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardPSliceGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardPSliceGetter[any]
+		want             any
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "pcommon.slice type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewSlice(), nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]any type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []any{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]string type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []string{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int16 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int32 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]int64 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []int64{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint16 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint16{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint32 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]uint64 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []uint64{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]float32 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []float32{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "[]float64 type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []float64{}, nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "ValueTypeSlice type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewValueSlice(), nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Slice but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardPSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Slice but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardPSliceGetter_WrappedError(t *testing.T) {
+	getter := StandardPSliceGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	var typeError TypeError
+	assert.ErrorAs(t, err, &typeError)
+}
+
 func Test_StandardPMapGetter(t *testing.T) {
 	tests := []struct {
 		name             string

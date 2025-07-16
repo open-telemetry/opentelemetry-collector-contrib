@@ -77,30 +77,42 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err)
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
-			// Windows does not currently support the faults metric
 			expectedMetrics := 4
-			if runtime.GOOS == "windows" {
-				expectedMetrics = 3
-			}
-
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
-			startIndex := 0
-			if runtime.GOOS != "windows" {
-				assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
-				startIndex++
+			var pagingUsageMetricIdx, pagingUtilizationMetricIdx, pagingOperationsMetricIdx, pagingFaultsMetricIdx int
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				switch metric.Name() {
+				case "system.paging.faults":
+					pagingFaultsMetricIdx = i
+				case "system.paging.operations":
+					pagingOperationsMetricIdx = i
+				case "system.paging.usage":
+					pagingUsageMetricIdx = i
+				case "system.paging.utilization":
+					pagingUtilizationMetricIdx = i
+				default:
+					assert.Fail(t, "Unexpected metric found", metric.Name())
+				}
 			}
 
-			assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)},
+			// This test historically ensured that some metrics had the same timestamp, keeping this legacy behavior.
+
+			assertPageFaultsMetricValid(t, metrics.At(pagingFaultsMetricIdx), test.expectedStartTime)
+
+			assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(pagingOperationsMetricIdx)},
 				test.expectedStartTime, false)
 
-			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)
-			startIndex++
+			internal.AssertSameTimeStampForMetrics(t, metrics, pagingUsageMetricIdx, pagingUsageMetricIdx+2)
 
-			assertPagingUsageMetricValid(t, metrics.At(startIndex))
-			internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
-			startIndex++
-			assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
+			assertPagingUsageMetricValid(t, metrics.At(pagingUsageMetricIdx))
+			if runtime.GOOS != "windows" {
+				// On Windows, page faults do not have the same timestamp as paging operations
+				internal.AssertSameTimeStampForMetrics(t, metrics, pagingFaultsMetricIdx, pagingFaultsMetricIdx+2)
+			}
+
+			assertPagingUtilizationMetricValid(t, metrics.At(pagingUtilizationMetricIdx))
 		})
 	}
 }

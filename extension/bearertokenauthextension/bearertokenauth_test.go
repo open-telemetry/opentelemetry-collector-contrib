@@ -26,7 +26,7 @@ func TestPerRPCAuth(t *testing.T) {
 	// test meta data is properly
 	bauth := newBearerTokenAuth(cfg, nil)
 	assert.NotNil(t, bauth)
-	perRPCAuth := &PerRPCAuth{auth: bauth}
+	perRPCAuth := &perRPCAuth{auth: bauth}
 	md, err := perRPCAuth.GetRequestMetadata(context.Background())
 	assert.NoError(t, err)
 	expectedMetadata := map[string]string{

@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-type AdxLog struct {
+type adxLog struct {
 	Timestamp          string         // The timestamp of the occurrence. Formatted into string as RFC3339Nano
 	ObservedTimestamp  string         // The timestamp of logs observed in opentelemetry collector.  Formatted into string as RFC3339Nano
 	TraceID            string         // TraceId associated to the log
@@ -26,11 +26,11 @@ type AdxLog struct {
 }
 
 // Convert the plog to the type ADXLog, this matches the scheme in the Log table in the database
-func mapToAdxLog(resource pcommon.Resource, scope pcommon.InstrumentationScope, logData plog.LogRecord, _ *zap.Logger) *AdxLog {
+func mapToAdxLog(resource pcommon.Resource, scope pcommon.InstrumentationScope, logData plog.LogRecord, _ *zap.Logger) *adxLog {
 	logAttrib := logData.Attributes().AsRaw()
 	clonedLogAttrib := cloneMap(logAttrib)
 	copyMap(clonedLogAttrib, getScopeMap(scope))
-	adxLog := &AdxLog{
+	adxLog := &adxLog{
 		Timestamp:          logData.Timestamp().AsTime().Format(time.RFC3339Nano),
 		ObservedTimestamp:  logData.ObservedTimestamp().AsTime().Format(time.RFC3339Nano),
 		TraceID:            traceutil.TraceIDToHexOrEmptyString(logData.TraceID()),

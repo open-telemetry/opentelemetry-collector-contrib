@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,22 +21,14 @@ func Test_truncateAll(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
-			return tCtx, nil
-		},
-	}
-
 	tests := []struct {
-		name   string
-		target ottl.PMapGetter[pcommon.Map]
-		limit  int64
-		want   func(pcommon.Map)
+		name  string
+		limit int64
+		want  func(pcommon.Map)
 	}{
 		{
-			name:   "truncate map",
-			target: target,
-			limit:  1,
+			name:  "truncate map",
+			limit: 1,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "h")
 				expectedMap.PutInt("test2", 3)
@@ -43,9 +36,8 @@ func Test_truncateAll(t *testing.T) {
 			},
 		},
 		{
-			name:   "truncate map to zero",
-			target: target,
-			limit:  0,
+			name:  "truncate map to zero",
+			limit: 0,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "")
 				expectedMap.PutInt("test2", 3)
@@ -53,9 +45,8 @@ func Test_truncateAll(t *testing.T) {
 			},
 		},
 		{
-			name:   "truncate nothing",
-			target: target,
-			limit:  100,
+			name:  "truncate nothing",
+			limit: 100,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -63,9 +54,8 @@ func Test_truncateAll(t *testing.T) {
 			},
 		},
 		{
-			name:   "truncate exact",
-			target: target,
-			limit:  11,
+			name:  "truncate exact",
+			limit: 11,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -78,12 +68,27 @@ func Test_truncateAll(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := TruncateAll(tt.target, tt.limit)
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			exprFunc, err := TruncateAll(target, tt.limit)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(nil, scenarioMap)
+			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
-			assert.Nil(t, result)
+			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -94,16 +99,19 @@ func Test_truncateAll(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	_, err := TruncateAll[any](&ottl.StandardPMapGetter[any]{}, -1)
+	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 }
 
 func Test_truncateAll_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -115,9 +123,12 @@ func Test_truncateAll_bad_input(t *testing.T) {
 }
 
 func Test_truncateAll_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 

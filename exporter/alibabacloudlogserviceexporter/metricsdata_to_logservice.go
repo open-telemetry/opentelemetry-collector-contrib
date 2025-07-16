@@ -26,26 +26,26 @@ const (
 	summaryLabelKey    = "quantile"
 )
 
-type KeyValue struct {
+type keyValue struct {
 	Key   string
 	Value string
 }
 
-type KeyValues struct {
-	keyValues []KeyValue
+type keyValues struct {
+	keyValues []keyValue
 }
 
-func (kv *KeyValues) Len() int { return len(kv.keyValues) }
-func (kv *KeyValues) Swap(i, j int) {
+func (kv *keyValues) Len() int { return len(kv.keyValues) }
+func (kv *keyValues) Swap(i, j int) {
 	kv.keyValues[i], kv.keyValues[j] = kv.keyValues[j], kv.keyValues[i]
 }
-func (kv *KeyValues) Less(i, j int) bool { return kv.keyValues[i].Key < kv.keyValues[j].Key }
+func (kv *keyValues) Less(i, j int) bool { return kv.keyValues[i].Key < kv.keyValues[j].Key }
 
-func (kv *KeyValues) Sort() {
+func (kv *keyValues) Sort() {
 	sort.Sort(kv)
 }
 
-func (kv *KeyValues) Replace(key, value string) {
+func (kv *keyValues) Replace(key, value string) {
 	key = sanitize(key)
 	findIndex := sort.Search(len(kv.keyValues), func(index int) bool {
 		return kv.keyValues[index].Key >= key
@@ -55,28 +55,28 @@ func (kv *KeyValues) Replace(key, value string) {
 	}
 }
 
-func (kv *KeyValues) Append(key, value string) {
+func (kv *keyValues) Append(key, value string) {
 	key = sanitize(key)
-	kv.keyValues = append(kv.keyValues, KeyValue{
+	kv.keyValues = append(kv.keyValues, keyValue{
 		key,
 		value,
 	})
 }
 
-func (kv *KeyValues) Clone() KeyValues {
-	var newKeyValues KeyValues
-	newKeyValues.keyValues = make([]KeyValue, len(kv.keyValues))
+func (kv *keyValues) Clone() keyValues {
+	var newKeyValues keyValues
+	newKeyValues.keyValues = make([]keyValue, len(kv.keyValues))
 	copy(newKeyValues.keyValues, kv.keyValues)
 	return newKeyValues
 }
 
-func (kv *KeyValues) String() string {
+func (kv *keyValues) String() string {
 	var builder strings.Builder
 	kv.labelToStringBuilder(&builder)
 	return builder.String()
 }
 
-func (kv *KeyValues) labelToStringBuilder(sb *strings.Builder) {
+func (kv *keyValues) labelToStringBuilder(sb *strings.Builder) {
 	for index, label := range kv.keyValues {
 		sb.WriteString(label.Key)
 		sb.WriteString("#$#")
@@ -111,7 +111,7 @@ func formatMetricName(name string) string {
 
 func newMetricLogFromRaw(
 	name string,
-	labels KeyValues,
+	labels keyValues,
 	nsec int64,
 	value float64,
 ) *sls.Log {
@@ -139,14 +139,14 @@ func newMetricLogFromRaw(
 	}
 }
 
-func resourceToMetricLabels(labels *KeyValues, resource pcommon.Resource) {
+func resourceToMetricLabels(labels *keyValues, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	for k, v := range attrs.All() {
 		labels.Append(k, v.AsString())
 	}
 }
 
-func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, defaultLabels keyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
@@ -176,7 +176,7 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 	return logs
 }
 
-func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSlice, defaultLabels keyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
@@ -222,7 +222,7 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 	return logs
 }
 
-func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice, defaultLabels keyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
@@ -257,7 +257,7 @@ func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice,
 	return logs
 }
 
-func metricDataToLogServiceData(md pmetric.Metric, defaultLabels KeyValues) (logs []*sls.Log) {
+func metricDataToLogServiceData(md pmetric.Metric, defaultLabels keyValues) (logs []*sls.Log) {
 	//exhaustive:enforce
 	switch md.Type() {
 	case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
@@ -281,7 +281,7 @@ func metricsDataToLogServiceData(
 	resMetrics := md.ResourceMetrics()
 	for i := 0; i < resMetrics.Len(); i++ {
 		resMetricSlice := resMetrics.At(i)
-		var defaultLabels KeyValues
+		var defaultLabels keyValues
 		resourceToMetricLabels(&defaultLabels, resMetricSlice.Resource())
 		insMetricSlice := resMetricSlice.ScopeMetrics()
 		for j := 0; j < insMetricSlice.Len(); j++ {

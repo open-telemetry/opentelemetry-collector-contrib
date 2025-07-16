@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/config"
+	"github.com/open-telemetry/otel-arrow/go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -58,10 +59,17 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxElapsedTime:      10 * time.Minute,
 			},
 			QueueSettings: exporterhelper.QueueBatchConfig{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-				Sizer:        exporterhelper.RequestSizerTypeRequests,
+				Enabled:         true,
+				NumConsumers:    2,
+				QueueSize:       10,
+				Sizer:           exporterhelper.RequestSizerTypeItems,
+				BlockOnOverflow: true,
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
+					MinSize:      1000,
+					MaxSize:      10000,
+				}),
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
@@ -71,29 +79,20 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "none",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
 				},
-				Keepalive: &configgrpc.KeepaliveClientConfig{
+				Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
 					Time:                20 * time.Second,
 					PermitWithoutStream: true,
 					Timeout:             30 * time.Second,
-				},
+				}),
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
-			},
-			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
-				Enabled:      true,
-				FlushTimeout: 200 * time.Millisecond,
-				SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
-					Sizer:   exporterhelper.RequestSizerTypeItems,
-					MinSize: 1000,
-					MaxSize: 10000,
-				},
+				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))}),
 			},
 			Arrow: ArrowConfig{
 				NumStreams:         2,

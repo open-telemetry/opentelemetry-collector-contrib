@@ -7,7 +7,7 @@ import "go.opentelemetry.io/collector/config/confighttp"
 
 const (
 	// DefaultServerEndpoint is the default port for the local metadata HTTP server.
-	DefaultServerEndpoint = "localhost:8088"
+	DefaultServerEndpoint = "localhost:9875"
 )
 
 // Config contains the information necessary for configuring the local metadata HTTP server.

@@ -27,6 +27,9 @@ type Config struct {
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	ApplicationNames               []string `mapstructure:"application_names"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates missing and invalid configuration fields.

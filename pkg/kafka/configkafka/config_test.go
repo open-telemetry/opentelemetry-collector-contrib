@@ -54,11 +54,23 @@ func TestClientConfig(t *testing.T) {
 				},
 			},
 		},
-		"sasl_aws_msk_iam": {
+		"sasl_aws_msk_iam_oauthbearer": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
 				cfg.Authentication.SASL = &SASLConfig{
-					Mechanism: "AWS_MSK_IAM",
+					Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
+				}
+				return cfg
+			}(),
+		},
+		"sasl_aws_msk_iam_oauthbearer_with_region": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.Authentication.SASL = &SASLConfig{
+					Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
+					AWSMSK: AWSMSKConfig{
+						Region: "us-east-1",
+					},
 				}
 				return cfg
 			}(),
@@ -107,7 +119,7 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: "invalid protocol version: invalid version `none`",
 		},
 		"sasl_invalid_mechanism": {
-			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
 		},
 		"sasl_invalid_version": {
 			expectedErr: "auth::sasl: version has to be either 0 or 1. configured value -1",
@@ -178,9 +190,17 @@ func TestProducerConfig(t *testing.T) {
 				RequiredAcks:    0,
 				Compression:     "zstd",
 				CompressionParams: configcompression.CompressionParams{
-					Level: configcompression.DefaultCompressionLevel,
+					// zero is treated as the codec-specific default
+					Level: 0,
 				},
 				FlushMaxMessages: 2,
+			},
+		},
+		"snappy_compression": {
+			expected: ProducerConfig{
+				MaxMessageBytes: 1000000,
+				RequiredAcks:    1,
+				Compression:     "snappy",
 			},
 		},
 		"invalid_compression_level": {

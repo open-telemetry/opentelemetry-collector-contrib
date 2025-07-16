@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 					config.Endpoint = "https://somedest:1234/api/v2/spans"
 					config.WriteBufferSize = 524288
 					config.Timeout = 5 * time.Second
-					config.TLSSetting = configtls.ClientConfig{
+					config.TLS = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
 					config.MaxIdleConns = maxIdleConns

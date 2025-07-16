@@ -349,6 +349,13 @@ resourceMetrics:
                         stringValue: writes
                   startTimeUnixNano: "1674545255370693000"
                   timeUnixNano: "1674545265375344000"
+                - asInt: "78"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1674545255370693000"
+                  timeUnixNano: "1674545265375344000"
               isMonotonic: true
             unit: "1"
           - description: The number of mysqlx connections.
