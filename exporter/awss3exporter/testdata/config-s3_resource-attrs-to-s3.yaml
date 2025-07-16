@@ -11,6 +11,7 @@ exporters:
         endpoint: "http://endpoint.com"
         storage_class: "STANDARD"
     resource_attrs_to_s3:
+      s3_bucket: "com.awss3.bucket"
       s3_prefix: "com.awss3.prefix"
 
 processors:
