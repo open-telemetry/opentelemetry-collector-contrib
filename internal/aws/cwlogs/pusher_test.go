@@ -160,7 +160,7 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	// the actual log event add operation happens after the func newLogEventBatchIfNeeded
 	assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 1)
 
-	p.logEventBatch.byteTotal = maxRequestPayloadBytes - logEvent.eventPayloadBytes() + 1
+	p.logEventBatch.byteTotal = maxEventPayloadBytes - logEvent.eventPayloadBytes() + 1
 	assert.NotNil(t, p.addLogEvent(logEvent))
 	assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 1)
 
@@ -277,4 +277,101 @@ func TestMultiStreamPusher(t *testing.T) {
 	assert.Len(t, inputs[1].LogEvents, 1)
 	assert.Equal(t, "foo", *inputs[1].LogGroupName)
 	assert.Equal(t, "bar2", *inputs[1].LogStreamName)
+}
+
+// Test cases for 1MB event support
+func TestEventValidation_1MBLimit(t *testing.T) {
+	logger := zap.NewNop()
+
+	// Test event at exactly 1MB minus headers and suffix
+	maxMessageSize := defaultMaxEventPayloadBytes - perEventHeaderBytes
+	largeMessage := strings.Repeat("a", maxMessageSize)
+
+	event := NewEvent(time.Now().UnixMilli(), largeMessage)
+	event.GeneratedTime = time.Now()
+	err := event.Validate(logger)
+	assert.NoError(t, err)
+	assert.Equal(t, largeMessage, *event.InputLogEvent.Message)
+}
+
+func TestEventValidation_Over1MB(t *testing.T) {
+	logger := zap.NewNop()
+
+	// Test event over 1MB - should be truncated
+	oversizeMessage := strings.Repeat("a", defaultMaxEventPayloadBytes)
+
+	event := NewEvent(time.Now().UnixMilli(), oversizeMessage)
+	event.GeneratedTime = time.Now()
+	err := event.Validate(logger)
+	assert.NoError(t, err)
+	assert.Contains(t, *event.InputLogEvent.Message, truncatedSuffix)
+	assert.LessOrEqual(t, len(*event.InputLogEvent.Message), defaultMaxEventPayloadBytes-perEventHeaderBytes)
+}
+
+func TestEventValidation_Between256KBand1MB(t *testing.T) {
+	logger := zap.NewNop()
+
+	// Test event between 256KB and 1MB - should pass through unchanged
+	mediumMessage := strings.Repeat("a", 512*1024) // 512KB
+
+	event := NewEvent(time.Now().UnixMilli(), mediumMessage)
+	event.GeneratedTime = time.Now()
+	err := event.Validate(logger)
+	assert.NoError(t, err)
+	assert.Equal(t, mediumMessage, *event.InputLogEvent.Message)
+	assert.NotContains(t, *event.InputLogEvent.Message, truncatedSuffix)
+}
+
+func TestBatchSizeLogic_1MBEvents(t *testing.T) {
+	streamKey := StreamKey{
+		LogGroupName:  "test-group",
+		LogStreamName: "test-stream",
+	}
+
+	batch := newEventBatch(streamKey)
+
+	// Create an event close to 1MB
+	largeMessage := strings.Repeat("a", 900*1024) // 900KB
+	event := NewEvent(time.Now().UnixMilli(), largeMessage)
+	event.GeneratedTime = time.Now()
+
+	// First event should fit
+	assert.False(t, batch.exceedsLimit(event.eventPayloadBytes()))
+
+	batch.append(event)
+
+	// Second large event should exceed batch limit (total would be ~1.8MB > 1MB limit)
+	event2 := NewEvent(time.Now().UnixMilli(), largeMessage)
+	event2.GeneratedTime = time.Now()
+	assert.True(t, batch.exceedsLimit(event2.eventPayloadBytes()))
+}
+
+func TestBatchSizeLogic_CorrectLimitUsed(t *testing.T) {
+	streamKey := StreamKey{
+		LogGroupName:  "test-group",
+		LogStreamName: "test-stream",
+	}
+
+	batch := newEventBatch(streamKey)
+
+	// Test that batch uses maxEventPayloadBytes (1MB) consistently
+	// This test ensures the bug fix is working correctly
+
+	// Create events that total just under 1MB
+	// Account for perEventHeaderBytes (26 bytes per event)
+	messageSize := 100*1024 - perEventHeaderBytes // ~100KB per event including headers
+	smallMessage := strings.Repeat("a", messageSize)
+
+	// Add 10 events (10 * ~102KB = ~1024KB = exactly 1MB)
+	for i := 0; i < 10; i++ {
+		event := NewEvent(time.Now().UnixMilli(), smallMessage)
+		event.GeneratedTime = time.Now()
+		assert.False(t, batch.exceedsLimit(event.eventPayloadBytes()), "Event %d should fit", i)
+		batch.append(event)
+	}
+
+	// 11th event should exceed the 1MB batch limit
+	event11 := NewEvent(time.Now().UnixMilli(), smallMessage)
+	event11.GeneratedTime = time.Now()
+	assert.True(t, batch.exceedsLimit(event11.eventPayloadBytes()), "11th event should exceed batch limit")
 }

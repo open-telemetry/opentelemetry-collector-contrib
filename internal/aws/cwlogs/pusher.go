@@ -17,11 +17,10 @@ import (
 const (
 	// http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
 	// In truncation logic, it assuming this constant value is larger than perEventHeaderBytes + len(truncatedSuffix)
-	defaultMaxEventPayloadBytes = 1024 * 256 // 256KB
+	defaultMaxEventPayloadBytes = 1024 * 1024 // 1MB
 	// http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-	maxRequestEventCount   = 10000
-	perEventHeaderBytes    = 26
-	maxRequestPayloadBytes = 1024 * 1024 * 1
+	maxRequestEventCount = 10000
+	perEventHeaderBytes  = 26
 
 	truncatedSuffix = "[Truncated...]"
 
@@ -225,7 +224,7 @@ func newLogPusher(streamKey StreamKey,
 // listed here: http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
 //
 // Need to pay attention to the below 2 limits:
-// Event size 256 KB (maximum). This limit cannot be changed.
+// Event size 1 MB (maximum). This limit cannot be changed.
 // Batch size 1 MB (maximum). This limit cannot be changed.
 func (p *logPusher) AddLogEntry(logEvent *Event) error {
 	var err error
