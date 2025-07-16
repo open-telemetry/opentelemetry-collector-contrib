@@ -88,6 +88,16 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errNoCert.Error(),
 		},
+		{
+			name: "invalid timestamp_format",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint:        "0.0.0.0:9999",
+					TimestampFormat: "bad",
+				},
+			},
+			expectedErr: "invalid timestamp_format \"bad\"",
+		},
 	}
 
 	for _, tc := range cases {
@@ -121,9 +131,10 @@ func TestLoadConfig(t *testing.T) {
 							KeyFile:  "some_key_file",
 						},
 					},
-					Secret:         "1234567890abcdef1234567890abcdef",
-					TimestampField: "EdgeStartTimestamp",
-					Separator:      ".",
+					Secret:          "1234567890abcdef1234567890abcdef",
+					TimestampField:  "EdgeStartTimestamp",
+					TimestampFormat: "rfc3339",
+					Separator:       ".",
 					Attributes: map[string]string{
 						"ClientIP":         "http_request.client_ip",
 						"ClientRequestURI": "http_request.uri",
