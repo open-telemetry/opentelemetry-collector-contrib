@@ -53,6 +53,9 @@ attributes:
       - sync
       - write
     name_override: type
+  function:
+    description: The name of the function.
+    type: string
   lock_type:
     description: Type of the lockable object.
     type: string
@@ -490,6 +493,15 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.function.calls:
+    enabled: false
+    description: The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
+    unit: "{call}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [function]
 tests:
   config:
   goleak:

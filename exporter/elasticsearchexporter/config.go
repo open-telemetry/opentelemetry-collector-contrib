@@ -101,6 +101,16 @@ type Config struct {
 	// then the Flush will be ignored even if Batcher.Enabled is false.
 	// TODO: Deprecate and remove this section in favor of sending_queue::batch.
 	Batcher BatcherConfig `mapstructure:"batcher"`
+
+	// Experimental: MetadataKeys defines a list of client.Metadata keys that
+	// will be added to the exporter's telemetry if defined. The config only
+	// applies when batcher is used (set to `true` or `false`). The metadata keys
+	// are converted to lower case as key lookups for client metadata is case
+	// insensitive. This means that the metric produced by internal telemetry
+	// will also have the attribute in lower case.
+	//
+	// Keys are case-insensitive and duplicates will trigger a validation error.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 // BatcherConfig holds configuration for exporterbatcher.
@@ -352,6 +362,17 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
 		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
+	}
+
+	uniq := map[string]struct{}{}
+	for i, k := range cfg.MetadataKeys {
+		kl := strings.ToLower(k)
+		if _, has := uniq[kl]; has {
+			return fmt.Errorf("metadata_keys must be case-insenstive and unique, found duplicate: %s", kl)
+		}
+		uniq[kl] = struct{}{}
+		// convert metadata keys to lower case as these are case insensitive
+		cfg.MetadataKeys[i] = kl
 	}
 
 	return nil

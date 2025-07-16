@@ -1,0 +1,58 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: mysql
+              - key: mysql.threads.thread_id
+                value:
+                  intValue: "1034384"
+              - key: user.name
+                value:
+                  stringValue: myuser
+              - key: db.namespace
+                value:
+                  stringValue: adventureworks
+              - key: mysql.threads.processlist_command
+                value:
+                  stringValue: Query
+              - key: mysql.threads.processlist_state
+                value:
+                  stringValue: executing
+              - key: db.query.text
+                value:
+                  stringValue: SELECT soh.SalesOrderID, soh.OrderDate, c.CustomerID, p.Name AS ProductName, sod.OrderQty, sod.LineTotal FROM salesorderheader soh JOIN salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID JOIN product p ON sod.ProductID = p.ProductID JOIN customer c ON soh.CustomerID = c.CustomerID ORDER BY soh.OrderDate DESC
+              - key: mysql.events_statements_current.digest
+                value:
+                  stringValue: aaaaaa
+              - key: mysql.event_id
+                value:
+                  intValue: "17470257762"
+              - key: mysql.wait_type
+                value:
+                  stringValue: CPU
+              - key: mysql.events_waits_current.timer_wait
+                value:
+                  doubleValue: 1.2851652e-05
+              - key: client.address
+                value:
+                  stringValue: 192.168.1.80
+              - key: client.port
+                value:
+                  intValue: "1234"
+              - key: network.peer.address
+                value:
+                  stringValue: 192.168.1.80
+              - key: network.peer.port
+                value:
+                  intValue: "1234"
+            body: {}
+            eventName: db.server.query_sample
+            spanId: ""
+            timeUnixNano: "1751033212422664000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+          version: latest

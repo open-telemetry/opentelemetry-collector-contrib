@@ -357,6 +357,14 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
   - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input_rate_limit` (default="1s"): Rate limiting of logs emitted by `log_failed_docs_input` config, e.g. "1s" means roughly 1 log line per second. A zero or negative value disables rate limiting.
 
+### Metadata keys
+
+Metadata keys are a list of client metadata keys that the exporter currently uses to enrich internal telemetry.
+
+⚠️ This is experimental and may change at any time.
+
+- `metadata_keys` (optional): List of metadata keys that will be added to the exporter's telemetry if defined. The config only applies when batcher is used (set to `true` or `false`). The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case.
+
 ## Exporting metrics
 
 Metrics support is currently in development.

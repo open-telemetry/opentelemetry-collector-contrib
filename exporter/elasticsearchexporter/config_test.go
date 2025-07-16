@@ -351,6 +351,15 @@ func TestConfig(t *testing.T) {
 				cfg.IncludeSourceOnError = &includeSource
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "metadata_keys"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.MetadataKeys = []string{"x-test-1", "x-test-2"}
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -463,6 +472,13 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Retry.MaxRequests = 1
 			}),
 			err: `must not specify both retry::max_requests and retry::max_retries`,
+		},
+		"duplicate metadata_keys specified": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.MetadataKeys = []string{"x-test-1", "x-test-2", "x-test-1"}
+			}),
+			err: `metadata_keys must be case-insenstive and unique, found duplicate: x-test-1`,
 		},
 	}
 
