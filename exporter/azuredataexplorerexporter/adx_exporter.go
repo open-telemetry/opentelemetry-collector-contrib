@@ -146,8 +146,9 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 	var ingestor azkustoingest.Ingestor
 
 	var ingestOptions []azkustoingest.FileOption
-	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
-	ingestOptions = append(ingestOptions, azkustoingest.CompressionType(ingestoptions.GZIP))
+	ingestOptions = append(ingestOptions,
+		azkustoingest.FileFormat(azkustoingest.JSON),
+		azkustoingest.CompressionType(ingestoptions.GZIP))
 	// Expect that this mapping is already existent
 	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
 		ingestOptions = append(ingestOptions, refOption)
@@ -194,7 +195,7 @@ func getMappingRef(config *Config, telemetryDataType int) azkustoingest.FileOpti
 
 func createKcsb(config *Config, version string) *azkustodata.ConnectionStringBuilder {
 	var kcsb *azkustodata.ConnectionStringBuilder
-	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
+	isManagedIdentity := strings.TrimSpace(config.ManagedIdentityID) != ""
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {

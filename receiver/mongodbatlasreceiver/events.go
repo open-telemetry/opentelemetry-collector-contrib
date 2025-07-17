@@ -106,8 +106,7 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.wg.Wait()
 
 	var err []error
-	err = append(err, er.client.Shutdown())
-	err = append(err, er.checkpoint(ctx))
+	err = append(err, er.client.Shutdown(), er.checkpoint(ctx))
 
 	return errors.Join(err...)
 }

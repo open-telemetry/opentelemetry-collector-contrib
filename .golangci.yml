@@ -113,17 +113,14 @@ linters:
 
     gocritic:
       disabled-checks:
-        - appendCombine
         - badRegexp
         - commentedOutCode
         - deferInLoop
         - emptyFallthrough
-        - emptyStringTest
         - equalFold
         - evalOrder
         - exposedSyncMutex
         - filepathJoin
-        - httpNoBody
         - hugeParam
         - importShadow
         - initClause
@@ -158,7 +155,6 @@ linters:
         - unnecessaryBlock
         - unnecessaryDefer
         - whyNoLint
-        - yodaStyleExpr
 
       enable-all: true
 

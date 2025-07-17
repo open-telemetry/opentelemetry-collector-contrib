@@ -311,7 +311,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 	s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	resourceIDs := s.resourceTypes[subscriptionID][resourceType].resourceIDs
-	if len(resourceIDs) == 0 && len(resourceIDs[0]) > 0 {
+	if len(resourceIDs) == 0 && resourceIDs[0] != "" {
 		return
 	}
 
