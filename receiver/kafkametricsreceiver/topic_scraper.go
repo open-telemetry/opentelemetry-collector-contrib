@@ -50,7 +50,7 @@ func (s *topicScraper) start(_ context.Context, _ component.Host) error {
 }
 
 func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	if s.client == nil {
+	if s.client == nil || s.client.Closed() {
 		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in topics scraper: %w", err)
@@ -61,7 +61,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	topics, err := s.client.Topics()
 	if err != nil {
 		s.settings.Logger.Error("Error fetching cluster topics ", zap.Error(err))
-		return pmetric.Metrics{}, err
+		return pmetric.Metrics{}, s.resetClientOnError(err)
 	}
 
 	scrapeErrors := scrapererror.ScrapeErrors{}
@@ -183,4 +183,14 @@ func createTopicsScraper(_ context.Context, cfg Config, settings receiver.Settin
 		scraper.WithStart(s.start),
 		scraper.WithShutdown(s.shutdown),
 	)
+}
+
+func (s *topicScraper) resetClientOnError(err error) error {
+	if isRecoverableError(err) {
+		s.client.Close()
+		s.client = nil
+		return fmt.Errorf("closing client because of reconnection error %w", err)
+	}
+
+	return err
 }
