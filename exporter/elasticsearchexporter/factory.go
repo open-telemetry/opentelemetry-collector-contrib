@@ -50,8 +50,8 @@ func createDefaultConfig() component.Config {
 	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
-		QueueSettings: qs,
-		ClientConfig:  httpClientConfig,
+		QueueBatchConfig: qs,
+		ClientConfig:     httpClientConfig,
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},
@@ -113,12 +113,17 @@ func createLogsExporter(
 		return nil, err
 	}
 
+	qbs := exporterhelper.NewLogsQueueBatchSettings()
+	if len(cf.MetadataKeys) > 0 {
+		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+	}
+
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		exporter.pushLogsData,
-		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
+		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown, qbs)...,
 	)
 }
 
@@ -136,12 +141,17 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	qbs := exporterhelper.NewTracesQueueBatchSettings()
+	if len(cf.MetadataKeys) > 0 {
+		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+	}
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		exporter.pushMetricsData,
-		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
+		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown, qbs)...,
 	)
 }
 
@@ -158,12 +168,17 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
+	qbs := exporterhelper.NewTracesQueueBatchSettings()
+	if len(cf.MetadataKeys) > 0 {
+		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+	}
+
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
 		exporter.pushTraceData,
-		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
+		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown, qbs)...,
 	)
 }
 
@@ -185,12 +200,17 @@ func createProfilesExporter(
 		return nil, err
 	}
 
+	qbs := xexporterhelper.NewProfilesQueueBatchSettings()
+	if len(cf.MetadataKeys) > 0 {
+		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+	}
+
 	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
 		exporter.pushProfilesData,
-		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
+		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown, qbs)...,
 	)
 }
 
@@ -198,16 +218,21 @@ func exporterhelperOptions(
 	cfg *Config,
 	start component.StartFunc,
 	shutdown component.ShutdownFunc,
+	qbs exporterhelper.QueueBatchSettings,
 ) []exporterhelper.Option {
 	opts := []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
 	}
-	qs := cfg.QueueSettings
-	if cfg.Batcher.enabledSet {
+	qbc := cfg.QueueBatchConfig
+	switch {
+	case qbc.Batch.HasValue():
+		// Latest queue batch settings are used, prioritize them
+		opts = append(opts, exporterhelper.WithQueueBatch(qbc, qbs))
+	case cfg.Batcher.enabledSet:
 		if cfg.Batcher.Enabled {
-			qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
+			qbc.Batch = configoptional.Some(exporterhelper.BatchConfig{
 				FlushTimeout: cfg.Batcher.FlushTimeout,
 				MinSize:      cfg.Batcher.MinSize,
 				MaxSize:      cfg.Batcher.MaxSize,
@@ -216,18 +241,20 @@ func exporterhelperOptions(
 
 			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
 			// behavior of the deprecated batcher.
-			if !qs.Enabled {
-				qs.Enabled = true
-				qs.WaitForResult = true
+			if !qbc.Enabled {
+				qbc.Enabled = true
+				qbc.WaitForResult = true
 			}
 		}
 
-		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-		//
-		// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-		// to ensure sending data to the background workers will not block indefinitely.
-		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
+		opts = append(opts, exporterhelper.WithQueue(qbc))
+	default:
+		opts = append(opts, exporterhelper.WithQueue(qbc))
 	}
-	opts = append(opts, exporterhelper.WithQueue(qs))
+	// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+	//
+	// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
+	// to ensure sending data to the background workers will not block indefinitely.
+	opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	return opts
 }
