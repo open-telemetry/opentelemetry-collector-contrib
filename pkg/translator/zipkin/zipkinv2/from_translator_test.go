@@ -107,8 +107,8 @@ func TestExtractScopeTags(t *testing.T) {
 			},
 			res: map[string]string{
 				"custom.key":         "custom.val",
-				"otel.scope.name":    "otel-lib",
-				"otel.scope.version": "v1.2.3",
+				"otel.library.name":    "otel-lib",
+				"otel.library.version": "v1.2.3",
 			},
 		},
 	}
