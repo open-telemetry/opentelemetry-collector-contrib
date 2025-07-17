@@ -33,6 +33,7 @@ The following settings are optional:
     * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
     * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
 * `split_logs_at_newline` (default: false): If true, the receiver will create a separate log record for each line in the request body.
+* `split_logs_at_json_boundary` (default: false): If true, the receiver will parse the request body to JSON and send each object as a log. Splitting on new line overrides json boundary so only enable one at a time.
 * `convert_headers_to_attributes` (optional): add all request headers (excluding `required_header` if also set) log attributes
 * `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
 
@@ -66,7 +67,7 @@ This receiver does not attempt to marshal the body into a structured format as i
 
 ### Split logs at JSON boundary example
 
-If you don't have clear new-line splits between objects, the regex `}\s.{` will match the boundary between objects.
+If you don't have clear new-line splits between objects, the receiver can use the JSON parser to handle separating the objects.
 `split_logs_at_json_boundary: true`
 
 ```yaml
@@ -76,8 +77,6 @@ know it!"}
 ```
 
 This settings works when JSON objects have newlines in the middle of a string or multiple objects on a line.
-
-
 
 ### Configuration Example
 

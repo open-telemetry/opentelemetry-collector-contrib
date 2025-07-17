@@ -5,10 +5,12 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bufio"
-	"fmt"
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,8 +27,6 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	headers http.Header,
 	query url.Values,
 ) (plog.Logs, int) {
-	fmt.Println("reqToLog")
-
 	// we simply dont split the data passed into scan (i.e. scan the whole thing)
 	// the downside to this approach is that only 1 log per request can be handled.
 	// NOTE: logs will contain these newline characters which could have formatting
@@ -54,7 +54,7 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 		if er.cfg.SplitLogsAtNewLine {
 			lines = strings.Split(sc.Text(), "\n")
 		} else if er.cfg.ShouldSplitLogsAtJSONBoundary() {
-			lines = splitJSONObjects(sc.Text())
+			lines = splitJSONObjectsDecoder(sc.Text())
 		}
 
 		for _, line := range lines {
@@ -118,6 +118,29 @@ func splitJSONObjects(data string) []string {
 	}
 	// Add the last object
 	result = append(result, data[lastIdx:])
+
+	return result
+}
+
+// splitJSONObjectsDecoder uses json.Decoder to properly parse concatenated JSON objects
+func splitJSONObjectsDecoder(data string) []string {
+	var result []string
+	decoder := json.NewDecoder(bytes.NewReader([]byte(data)))
+
+	for {
+		var obj json.RawMessage
+		err := decoder.Decode(&obj)
+		if err != nil {
+			// If we hit EOF or any other error, we're done
+			break
+		}
+		result = append(result, string(obj))
+	}
+
+	// If no valid JSON objects were found, return the original data
+	if len(result) == 0 {
+		return []string{data}
+	}
 
 	return result
 }
