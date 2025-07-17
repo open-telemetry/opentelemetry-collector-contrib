@@ -32,6 +32,27 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_written_samples:
+      enabled: true
+      description: Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_written_histograms:
+      enabled: true
+      description: Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)
+      unit: "{histogram}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_written_exemplars:
+      enabled: true
+      description: Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)
+      unit: "{exemplar}"
+      sum:
+        value_type: int
+        monotonic: true
     exporter_prometheusremotewrite_consumers:
       enabled: true
       description: Number of configured workers to use to fan out the outgoing requests
@@ -95,7 +116,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
     exporter_prometheusremotewrite_wal_bytes_read:
       enabled: true
       description: Total number of bytes read from the WAL
@@ -103,3 +123,9 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_lag:
+      enabled: true
+      description: WAL lag
+      unit: "1"
+      gauge:
+        value_type: int

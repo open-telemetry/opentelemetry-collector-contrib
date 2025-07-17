@@ -368,7 +368,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 
 	// Record summary as span attributes, empty string for ignored items
-	if s.config.Summary == debug && len(valuesAttr) > 0 {
+	if s.config.Summary == debug && valuesAttr != "" {
 		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
 			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
 		}

@@ -23,7 +23,7 @@ func (f *rfc3164Formatter) format(logRecord plog.LogRecord) string {
 	appnameString := f.formatAppname(logRecord)
 	messageString := f.formatMessage(logRecord)
 	appnameMessageDelimiter := ""
-	if len(appnameString) > 0 && messageString != emptyMessage {
+	if appnameString != "" && messageString != emptyMessage {
 		appnameMessageDelimiter = " "
 	}
 	formatted := fmt.Sprintf("<%s>%s %s %s%s%s\n", priorityString, timestampString, hostnameString, appnameString, appnameMessageDelimiter, messageString)

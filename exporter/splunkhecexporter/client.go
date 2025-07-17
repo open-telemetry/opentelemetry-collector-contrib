@@ -637,7 +637,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 }
 
 func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), http.NoBody)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
