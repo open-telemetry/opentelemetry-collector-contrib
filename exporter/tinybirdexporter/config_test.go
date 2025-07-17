@@ -39,12 +39,15 @@ func TestLoadConfig(t *testing.T) {
 					cfg.Endpoint = "https://api.tinybird.co"
 					return cfg
 				}(),
-				RetryConfig: configretry.NewDefaultBackOffConfig(),
-				QueueConfig: exporterhelper.NewDefaultQueueConfig(),
-				Token:       "test-token",
-				Metrics:     SignalConfig{Datasource: "metrics"},
-				Traces:      SignalConfig{Datasource: "traces"},
-				Logs:        SignalConfig{Datasource: "logs"},
+				RetryConfig:                 configretry.NewDefaultBackOffConfig(),
+				QueueConfig:                 exporterhelper.NewDefaultQueueConfig(),
+				Token:                       "test-token",
+				MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
+				MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
+				MetricsHistogram:            SignalConfig{Datasource: "metrics_histogram"},
+				MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+				Traces:                      SignalConfig{Datasource: "traces"},
+				Logs:                        SignalConfig{Datasource: "logs"},
 			},
 		},
 		{
@@ -67,17 +70,23 @@ func TestLoadConfig(t *testing.T) {
 					cfg.Enabled = false
 					return cfg
 				}(),
-				Token:   "test-token",
-				Metrics: SignalConfig{Datasource: "metrics"},
-				Traces:  SignalConfig{Datasource: "traces"},
-				Logs:    SignalConfig{Datasource: "logs"},
-				Wait:    true,
+				Token:                       "test-token",
+				MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
+				MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
+				MetricsHistogram:            SignalConfig{Datasource: "metrics_histogram"},
+				MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+				Traces:                      SignalConfig{Datasource: "traces"},
+				Logs:                        SignalConfig{Datasource: "logs"},
+				Wait:                        true,
 			},
 		},
 		{
 			id:      component.NewIDWithName(component.MustNewType(typeStr), "invalid_datasource"),
 			subName: "tinybird/invalid_datasource",
-			errorMessage: "metrics: invalid datasource \"metrics-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
+			errorMessage: "metrics_gauge: invalid datasource \"metrics-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
+				"metrics_sum: invalid datasource \"metrics-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
+				"metrics_histogram: invalid datasource \"metrics-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
+				"metrics_exponential_histogram: invalid datasource \"metrics-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
 				"traces: invalid datasource \"traces-with-dashes\": only letters, numbers, and underscores are allowed" + "\n" +
 				"logs: invalid datasource \"logs-with-dashes\": only letters, numbers, and underscores are allowed",
 		},
