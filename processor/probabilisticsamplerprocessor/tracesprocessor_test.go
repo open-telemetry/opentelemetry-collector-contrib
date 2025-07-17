@@ -1104,7 +1104,8 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 				require.True(t, hasR)
 				require.True(t, threshold.ShouldSample(rnd))
 
-				if found++; find == found {
+				found++
+				if find == found {
 					break
 				}
 			}
