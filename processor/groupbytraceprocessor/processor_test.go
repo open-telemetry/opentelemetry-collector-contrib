@@ -306,8 +306,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	next := &mockProcessor{
 		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			require.Equal(t, 2, traces.ResourceSpans().Len())
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0))
-			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(1))
+			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0), traces.ResourceSpans().At(1))
 			wg.Done()
 			return nil
 		},

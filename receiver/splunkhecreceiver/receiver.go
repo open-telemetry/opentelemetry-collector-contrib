@@ -330,7 +330,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, consumerErr)
 	} else {
 		var ackErr error
-		if len(channelID) > 0 && r.ackExt != nil {
+		if channelID != "" && r.ackExt != nil {
 			ackErr = r.processSuccessResponseWithAck(resp, channelID)
 		} else {
 			ackErr = r.processSuccessResponse(resp, okRespBody)
@@ -361,7 +361,7 @@ func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
 }
 
 func (r *splunkReceiver) validateChannelHeader(channelID string) error {
-	if len(channelID) == 0 {
+	if channelID == "" {
 		return errors.New(responseErrDataChannelMissing)
 	}
 
@@ -485,7 +485,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	var ackErr error
-	if len(channelID) > 0 && r.ackExt != nil {
+	if channelID != "" && r.ackExt != nil {
 		ackErr = r.processSuccessResponseWithAck(resp, channelID)
 	} else {
 		ackErr = r.processSuccessResponse(resp, okRespBody)
