@@ -69,14 +69,14 @@ These configuration options are for connecting to a SNMP host.
   - `AES256c`
 - `privacy_password`: The privacy password used for the SNMP connection. This is only available if `security_level` is set to `auth_priv`.
 
-### Metric/attribute Configuration
+### Metric/Attribute Configuration
 These configuration options are for determining what metrics and attributes will be created with what SNMP data
 
 - `resource_attributes`: This may be configured with one or more key value pairs of resource attribute names and resource attribute configurations.
 - `attributes` This may be configured with one or more key value pairs of attribute names and attribute configurations
 - `metrics`: This is the only required parameter. The must be configured with one or more key value pairs of metric names and metric configuration.
 
-#### Resource attribute Configuration
+#### Resource Attribute Configuration
 Resource attribute configurations are used to define what resource attributes will be used in a collection.
 
 | Field Name           | Description                              | Value        |
@@ -86,8 +86,8 @@ Resource attribute configurations are used to define what resource attributes wi
 | `indexed_value_prefix` | Required if no `scalar_oid` or `oid`. This is a string prefix which will be added to the indices of returned metric indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
 | `description`          | Definition of what the resource attribute represents  | string       |
 
-#### attribute Configuration
-attribute configurations are used to define what resource attributes will be used in a collection.
+#### Attribute Configuration
+Attribute configurations are used to define what resource attributes will be used in a collection.
 
 | Field Name           | Description                                           | Value                           |
 | --                   | --                                                    | --                              |
@@ -101,19 +101,19 @@ attribute configurations are used to define what resource attributes will be use
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
 | `unit`        | Required. To display what is actually being measured for this metric | string                | 1       |
-| `gauge`       | Required if no `sum`. Details that this metric is of the gauge type | gaugeMetric              |         |
-| `sum`         | Required if no `gauge`. Details that this metric is of the sum type | sumMetric                |         |
-| `column_oids` | Required if no `scalar_oids`. Details that this metric is made from one or more columns in an SNMP table. The returned indexed SNMP data for these OIDs might either be datapoints on a single metrics, or datapoints across multiple metrics attached to different resources depending on the column OID configurations | columnOID[] |        |
-| `scalar_oids` | Required if no `column_oids`. Details that this metric is made from one or more scalard SNMP values (multiple scalar OIDs would represent multiple datapoints within the same metric) | scalarOID[]       |       |
+| `gauge`       | Required if no `sum`. Details that this metric is of the gauge type | GaugeMetric              |         |
+| `sum`         | Required if no `gauge`. Details that this metric is of the sum type | SumMetric                |         |
+| `column_oids` | Required if no `scalar_oids`. Details that this metric is made from one or more columns in an SNMP table. The returned indexed SNMP data for these OIDs might either be datapoints on a single metrics, or datapoints across multiple metrics attached to different resources depending on the column OID configurations | ColumnOID[] |        |
+| `scalar_oids` | Required if no `column_oids`. Details that this metric is made from one or more scalard SNMP values (multiple scalar OIDs would represent multiple datapoints within the same metric) | ScalarOID[]       |       |
 | `description` | Definition of what the metric represents                       | string                      |         |
 
-#### gaugeMetric Configuration
+#### GaugeMetric Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
 | `value_type`  | The value type of this metric's data. Can be either `int` or `double` | string             | double   |
 
-#### sumMetric Configuration
+#### SumMetric Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
@@ -121,23 +121,23 @@ attribute configurations are used to define what resource attributes will be use
 | `monotonic` | Whether this is a monotonic sum or not                         | bool                        | false   |
 | `aggregation` | The aggregation type of this metric's data. Can be either `cumulative` or `delta` | string | cumulative |
 
-#### scalarOID Configuration
+#### ScalarOID Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
 | `oid`       | The SNMP scalar OID value to grab data from (must end in .0).  | string                      |         |
 | `resource_attributes` | The names of the related resource attribute configurations, allowing scalar oid metrics to be added to resources that have one or more scalar oid resource attributes. Cannot have indexed resource attributes as values. | string[] | | 
-| `attributes` | The names of the related attribute enum configurations as well as the values to attach to this returned SNMP scalar data. This can be used to have a metric config with multiple ScalarOIDs as different datapoints with different attribute values within the same metric | attribute              |    |
+| `attributes` | The names of the related attribute enum configurations as well as the values to attach to this returned SNMP scalar data. This can be used to have a metric config with multiple ScalarOIDs as different datapoints with different attribute values within the same metric | Attribute              |    |
 
-#### columnOID Configuration
+#### ColumnOID Configuration
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
 | `oid`       | The SNMP scalar OID value to grab data from (must end in .0).  | string                      |         |
-| `attributes` | The names of the related attribute configurations as well as the enum values to attach to this returned SNMP indexed data if the attribute configuration has enum data. This can be used to attach a specific metric SNMP column OID to an attribute. In doing so, multiple datapoints for a single metric will be created for each returned SNMP indexed data value for the metric along with different attribute values to differentiate them. This also can be used to have a metric config with multiple ColumnOIDs as different datapoints with different attribute values within the same metric | attribute[]            |    |
+| `attributes` | The names of the related attribute configurations as well as the enum values to attach to this returned SNMP indexed data if the attribute configuration has enum data. This can be used to attach a specific metric SNMP column OID to an attribute. In doing so, multiple datapoints for a single metric will be created for each returned SNMP indexed data value for the metric along with different attribute values to differentiate them. This also can be used to have a metric config with multiple ColumnOIDs as different datapoints with different attribute values within the same metric | Attribute[]            |    |
 | `resource_attributes` | The names of the related resource attribute configurations. This is used to attach a specific metric SNMP column OID to a resource attribute. In doing so, multiple resources will be created for each returned SNMP indexed data value for the metric | string[]              |    |
 
-#### attribute
+#### Attribute
 
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
