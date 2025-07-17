@@ -732,15 +732,15 @@ func TestStackTrace(t *testing.T) {
 				)
 
 				l := dic.LocationTable().AppendEmpty()
-				l.SetMappingIndex(0)
+				l.SetMappingIndex(1)
 				l.SetAddress(address)
 				l.AttributeIndices().Append(0)
 				l = dic.LocationTable().AppendEmpty()
-				l.SetMappingIndex(1)
+				l.SetMappingIndex(2)
 				l.SetAddress(address2)
 				l.AttributeIndices().Append(1)
 				l = dic.LocationTable().AppendEmpty()
-				l.SetMappingIndex(2)
+				l.SetMappingIndex(3)
 				l.SetAddress(address3)
 				l.AttributeIndices().Append(2)
 
@@ -749,7 +749,20 @@ func TestStackTrace(t *testing.T) {
 				li = l.Line().AppendEmpty()
 				li.SetLine(3)
 
-				m := dic.MappingTable().AppendEmpty()
+				// Create a location without build ID
+				f := dic.FunctionTable().AppendEmpty()
+				dic.StringTable().Append("fibonacci")
+				f.SetNameStrindex(int32(dic.StringTable().Len() - 1))
+				dic.StringTable().Append("myApp")
+				f.SetFilenameStrindex(int32(dic.StringTable().Len() - 1))
+				locWithoutBuildID := dic.LocationTable().AppendEmpty()
+				locWithoutBuildID.SetMappingIndex(0)
+				locWithoutBuildID.AttributeIndices().Append(0)
+				li = locWithoutBuildID.Line().AppendEmpty()
+				li.SetLine(99)
+
+				m := dic.MappingTable().AppendEmpty() // empty default mapping at pos 0
+				m = dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(3)
 				m = dic.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(4)
@@ -760,21 +773,23 @@ func TestStackTrace(t *testing.T) {
 			},
 			buildProfile: func() pprofile.Profile {
 				p := pprofile.NewProfile()
-				p.LocationIndices().FromRaw([]int32{0, 1, 2})
+				p.LocationIndices().FromRaw([]int32{0, 1, 2, 3})
 
 				s := p.Sample().AppendEmpty()
-				s.SetLocationsLength(3)
+				s.SetLocationsStartIndex(0)
+				s.SetLocationsLength(4)
 
 				return p
 			},
 
 			wantTrace: StackTrace{
 				EcsVersion: EcsVersion{V: EcsVersionString},
-				FrameIDs:   frameID3Base64 + frameID2Base64 + frameIDBase64,
+				FrameIDs:   "5KovZMXfW0vkqi9kxd9bSwAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,
 					libpf.NativeFrame,
+					libpf.KernelFrame,
 				}),
 			},
 		},
