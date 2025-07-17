@@ -132,7 +132,6 @@ linters:
         - preferFprint
         - preferStringWriter
         - preferWriteByte
-        - ptrToRefParam
         - rangeValCopy
         - redundantSprint
         - regexpSimplify
