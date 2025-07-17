@@ -871,7 +871,7 @@ func TestExtractionRules(t *testing.T) {
 					}, {
 						Name:  "l2",
 						Key:   "label2",
-						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
 						From:  MetadataFromPod,
 					},
 				},
@@ -899,7 +899,7 @@ func TestExtractionRules(t *testing.T) {
 					}, {
 						Name:  "l2",
 						Key:   "label2",
-						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
 					},
 				},
 			},
