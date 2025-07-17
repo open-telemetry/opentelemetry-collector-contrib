@@ -906,7 +906,6 @@ func Test_e2e_converters(t *testing.T) {
 				s.AppendEmpty().SetInt(1)
 				s.AppendEmpty().SetBool(true)
 				s.AppendEmpty().SetStr("value")
-
 			},
 		},
 		{
