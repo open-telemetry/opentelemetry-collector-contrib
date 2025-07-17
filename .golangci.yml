@@ -150,7 +150,6 @@ linters:
         - typeDefFirst
         - typeUnparen
         - uncheckedInlineErr
-        - unlabelStmt
         - unnamedResult
         - unnecessaryBlock
         - unnecessaryDefer
