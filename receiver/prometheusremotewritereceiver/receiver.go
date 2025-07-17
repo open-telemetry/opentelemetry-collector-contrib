@@ -193,11 +193,13 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	w.WriteHeader(http.StatusNoContent)
 
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+
+	resourceMetricsCount := m.ResourceMetrics().Len()
 	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 	}
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", resourceMetricsCount, err)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
