@@ -137,7 +137,6 @@ linters:
         - redundantSprint
         - regexpSimplify
         - returnAfterHttpError
-        - sqlQuery
         - sloppyReassign
         - sprintfQuotedString
         - stringsCompare
